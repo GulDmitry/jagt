@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jawo-orchestrator
+
+orchestrator:
+  # Root is auto-detected by walking up from the launch dir to the folder
+  # containing mcp_client.js; set ORCHESTRATOR_ROOT only to override it.
+  # config.json / state.json live in the root unless overridden here.
+  root: ${ORCHESTRATOR_ROOT:}
+  config-file: ${ORCHESTRATOR_CONFIG_FILE:}
+  state-file: ${ORCHESTRATOR_STATE_FILE:}
+  # Platform strategies (see dev.jawo.orchestrator.platform): notifier is selected
+  # by `platform`, terminal window driver by `terminal`, editor by `editor-command`
+  # (any CLI launcher: idea, code, subl). Defaults = macOS + Warp + IntelliJ.
+  platform: macos
+  terminal: warp
+  # Editor launcher + args; the worktree path is appended. LaunchServices `open -a`
+  # is Toolbox-independent. Alternatives: [code] for VS Code, [subl] for Sublime.
+  editor-command: ["open", "-a", "IntelliJ IDEA"]
+  claude-command: claude
+  # Initial prompt every spawned sub-agent starts with (otherwise the session idles).
+  agent-prompt: >-
+    You are the sub-agent for this worktree. Read task_context.md, set your status to IN_PROGRESS
+    via update_agent_status, and start working on the task. Follow the rules in CLAUDE.md. Work
+    autonomously: when done and verified, commit to your task branch WITHOUT asking for permission
+    and set status REVIEW_PENDING.
+  tmux-command: /opt/homebrew/bin/tmux
+  # Auto-open a Warp window attached to the agents' tmux session. Disable in
+  # smoke tests (--orchestrator.open-warp-window=false) so tests leave no windows behind.
+  open-warp-window: true
+  watchdog:
+    stale-after: 5m

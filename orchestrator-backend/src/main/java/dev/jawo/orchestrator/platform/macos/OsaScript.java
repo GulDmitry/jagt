@@ -1,0 +1,27 @@
+package dev.jawo.orchestrator.platform.macos;
+
+import dev.jawo.orchestrator.service.ProcessRunner;
+import org.springframework.stereotype.Component;
+
+import java.time.Duration;
+import java.util.List;
+
+@Component
+public class OsaScript {
+
+    private static final Duration TIMEOUT = Duration.ofSeconds(30);
+
+    private final ProcessRunner processRunner;
+
+    public OsaScript(ProcessRunner processRunner) {
+        this.processRunner = processRunner;
+    }
+
+    public void run(String script) {
+        processRunner.run(null, TIMEOUT, List.of("osascript", "-e", script)).expectSuccess("osascript");
+    }
+
+    public static String string(String value) {
+        return '"' + value.replace("\\", "\\\\").replace("\"", "\\\"") + '"';
+    }
+}

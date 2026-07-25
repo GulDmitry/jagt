@@ -1,0 +1,14 @@
+state.json
+.omc/
+.idea/
+*.iml
+build/
+.gradle/
+node_modules/
+.DS_Store
+.classpath
+.project
+.settings/
+.factorypath
+config.json
+target/

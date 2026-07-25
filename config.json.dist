@@ -1,0 +1,19 @@
+{
+  "tmuxSession": "jawo",
+  "viewMode": "shared",
+  "mergeRequestDefaults": {
+    "removeSourceBranch": true,
+    "squash": true
+  },
+  "projects": {
+    "my-project": {
+      "path": "/absolute/path/to/base/repository",
+      "baseBranch": "origin/main",
+      "deployBranch": "dev",
+      "labels": [
+        "proj",
+        "my-project"
+      ]
+    }
+  }
+}
