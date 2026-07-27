@@ -1,6 +1,8 @@
 {
   "tmuxSession": "jawo",
   "viewMode": "shared",
+  "keepViewer": true,
+  "mrTitlePattern": "{ticket} {title}",
   "mergeRequestDefaults": {
     "removeSourceBranch": true,
     "squash": true

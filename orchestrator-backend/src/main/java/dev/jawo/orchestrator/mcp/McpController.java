@@ -67,9 +67,12 @@ public class McpController {
             String active = minutes < 1 ? "just now" : minutes + "m ago";
             out.append(String.format("%-6s %-12s %-16s %-10s %-12s %s%n",
                     t.alias() == null ? "-" : t.alias(), id, t.status(), t.project(), active, t.worktreePath()));
-            if (t.message() != null && !t.message().isBlank()) {
-                out.append("                    └ ").append(t.message()).append('\n');
+            String detail = dev.jawo.orchestrator.model.DashboardLine.forTask(id, t);
+            if (!detail.isBlank()) {
+                out.append("                    └ ").append(detail).append('\n');
             }
+            out.append("                    → ").append(dev.jawo.orchestrator.model.NextMove.forStatus(t.status()))
+                    .append('\n');
         });
         if (tasks.isEmpty()) {
             out.append("(no tasks)\n");

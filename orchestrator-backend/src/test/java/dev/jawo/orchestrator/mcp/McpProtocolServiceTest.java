@@ -23,7 +23,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, false, null)));
+                null, null, null, null, null, null, null, false, null)));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         JsonNode response = protocol.handle(
@@ -34,7 +34,7 @@ class McpProtocolServiceTest {
                 .findFirst().orElseThrow()
                 .path("inputSchema").path("properties").path("status").path("enum");
         assertThat(statusEnum).extracting(JsonNode::asText).containsExactly(
-                "NEW", "IN_PROGRESS", "REVIEW_PENDING", "CI_POLLING", "CI_FAILED", "DONE");
+                "NEW", "IN_PROGRESS", "REVIEW_PENDING", "CI_POLLING", "CI_FAILED", "DEPLOYED", "DONE");
     }
 
     @Test
@@ -42,7 +42,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, false, null)));
+                null, null, null, null, null, null, null, false, null)));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         JsonNode response = protocol.handle(mapper.readTree(
@@ -61,7 +61,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, false, null)));
+                null, null, null, null, null, null, null, false, null)));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         JsonNode error = protocol.parseError("unexpected character");
@@ -74,8 +74,8 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, false, null)));
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 1000, null, "a1", null));
+                null, null, null, null, null, null, null, false, null)));
+        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 1000, null, "a1", null, null, null));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"), root.toString());
@@ -88,10 +88,10 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, false, null)));
+                null, null, null, null, null, null, null, false, null)));
         long freshTimestamp = System.currentTimeMillis();
         state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS,
-                freshTimestamp, null, "a1", null));
+                freshTimestamp, null, "a1", null, null, null));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"), root.toString());

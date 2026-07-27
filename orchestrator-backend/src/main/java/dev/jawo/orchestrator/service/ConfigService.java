@@ -19,7 +19,18 @@ import java.util.Map;
 public class ConfigService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record ConfigFile(Map<String, ProjectConfig> projects, String tmuxSession, String viewMode) {
+    public record ConfigFile(Map<String, ProjectConfig> projects, String tmuxSession, String viewMode,
+                             Boolean keepViewer, String mrTitlePattern) {
+
+        /** Default true: the agents window/tab stays open (reserved) after the last task is done. */
+        public boolean keepViewerOrDefault() {
+            return keepViewer == null || keepViewer;
+        }
+
+        /** Placeholders {ticket} and {title}. Default: the ticket id, a space, then the Jira title. */
+        public String mrTitlePatternOrDefault() {
+            return mrTitlePattern == null || mrTitlePattern.isBlank() ? "{ticket} {title}" : mrTitlePattern;
+        }
     }
 
     private final ObjectMapper mapper;
@@ -38,7 +49,7 @@ public class ConfigService {
         try {
             ConfigFile config = mapper.readValue(Files.readString(paths.configFile()), ConfigFile.class);
             return new ConfigFile(config.projects() == null ? Map.of() : config.projects(),
-                    config.tmuxSession(), config.viewMode());
+                    config.tmuxSession(), config.viewMode(), config.keepViewer(), config.mrTitlePattern());
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read config file " + paths.configFile(), e);
         }

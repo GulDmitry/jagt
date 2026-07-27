@@ -13,6 +13,7 @@ public record OrchestratorProperties(
         String platform,
         String terminal,
         List<String> editorCommand,
+        List<String> editorDiffCommand,
         String claudeCommand,
         String agentPrompt,
         String tmuxCommand,

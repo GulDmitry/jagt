@@ -32,4 +32,13 @@ public class CliEditorDriver implements EditorDriver {
         processRunner.run(null, Duration.ofSeconds(20), command)
                 .expectSuccess(String.join(" ", command));
     }
+
+    @Override
+    public void openDiff(Path left, Path right) {
+        List<String> command = new ArrayList<>(properties.editorDiffCommand());
+        command.add(left.toString());
+        command.add(right.toString());
+        processRunner.run(null, Duration.ofSeconds(20), command)
+                .expectSuccess(String.join(" ", command));
+    }
 }

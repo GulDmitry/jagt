@@ -21,8 +21,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   in README's Configuration section — keep it in sync.
 - Orchestrator root is auto-detected at startup: nearest parent dir containing `mcp_client.js`
   (`OrchestratorPaths`); overridable via `ORCHESTRATOR_ROOT`. No absolute user paths in the repo.
+- `initialize_task` copies the base repo's run configs into the worktree so `ide` opens it ready to
+  run — both `.run/` (modern) and `.idea/runConfigurations/` (legacy). Only "Store as project file"
+  configs live there; workspace-only ones don't copy. Best-effort, gitignored, no-op if absent.
 - `state.json` — SSOT for tasks (gitignored, auto-created).
-  Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, CI_POLLING, CI_FAILED, DONE.
+  Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, CI_POLLING, CI_FAILED, DEPLOYED, DONE.
 - `master_prompt.md` — system prompt for the Master session (router, never writes code).
 
 ## Session roles
@@ -33,6 +36,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   rules; instructions arrive via `task_context.md`.
 
 ## Engineering constraints (do not regress)
+- CRITICAL git safety: the ONLY write to a shared branch anywhere is `deploy` (task branch ->
+  `deployBranch`, via `GitService.mergeIntoAndPush`). `ship` creates/updates a merge REQUEST only —
+  never merges. The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
+  pushes/merges to it. `deployTask` REFUSES when `deployBranch` == `baseBranch`. Sub-agents are
+  forbidden (prompt rule) from pushing/merging anywhere but their own task branch. A worktree branch
+  is cut FROM `origin/<baseBranch>` and inherits it as upstream, so `GitService.detachUpstream` unsets
+  it right after creation — a bare `git push` then errors ("no upstream") instead of pushing the task
+  branch straight into the release branch.
 - All git ops in `GitService` under a per-repository `ReentrantLock` (index.lock races are per-repo;
   a slow fetch in one project must not block another).
 - Sub-agents can only act on their own task (X-Working-Directory scoping is ENFORCED in
@@ -78,6 +89,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 
 ## Conventions
 - Markdown and docs: aim for ~120-character lines, hard max 150; don't force awkward wrapping.
+- Prompt structure (per Anthropic prompt-engineering guidance): wrap concerns in named XML sections
+  (`<role>`, `<rules>`, `<output_format>`, `<examples>`); the Master emits fixed-grammar terse lines,
+  NOT JSON (no constrained decoding from a CLI system prompt — JSON is cost without guarantee). Forbid
+  preamble explicitly; damp deliberation with "respond directly", never "do not think" (that leaks
+  `<thinking>` tags). JSON is only for persisted state (`state.json`).
 
 ## Testing etiquette
 - Smoke tests MUST leave no trace: pass `--orchestrator.open-warp-window=false` (otherwise every test

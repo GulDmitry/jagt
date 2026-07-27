@@ -12,14 +12,22 @@ public record TaskState(
         long lastActiveTimestamp,
         String message,
         String alias,
-        String remoteUrl
+        String remoteUrl,
+        String title,
+        String mrUrl
 ) {
 
     public TaskState withStatus(TaskStatus status, String message) {
-        return new TaskState(project, worktreePath, status, System.currentTimeMillis(), message, alias, remoteUrl);
+        return new TaskState(project, worktreePath, status, System.currentTimeMillis(), message, alias,
+                remoteUrl, title, mrUrl);
     }
 
     public TaskState touched() {
         return withStatus(status, message);
+    }
+
+    public TaskState withMrUrl(String mrUrl) {
+        return new TaskState(project, worktreePath, status, lastActiveTimestamp, message, alias,
+                remoteUrl, title, mrUrl);
     }
 }

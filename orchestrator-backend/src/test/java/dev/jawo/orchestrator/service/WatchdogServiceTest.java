@@ -24,11 +24,11 @@ class WatchdogServiceTest {
     void alertsHumanWhenAgentDiesBeforeItsFirstStatusUpdate(@TempDir Path root) {
         OrchestratorProperties properties = new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, false,
+                null, null, null, null, null, null, null, false,
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.NEW,
-                System.currentTimeMillis() - Duration.ofMinutes(6).toMillis(), null, "a1", null));
+                System.currentTimeMillis() - Duration.ofMinutes(6).toMillis(), null, "a1", null, null, null));
         UserNotifier notifier = mock(UserNotifier.class);
 
         new WatchdogService(state, notifier, properties).scan();
@@ -40,11 +40,11 @@ class WatchdogServiceTest {
     void staysQuietWhenTaskWaitsForHumanReview(@TempDir Path root) {
         OrchestratorProperties properties = new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, false,
+                null, null, null, null, null, null, null, false,
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING,
-                System.currentTimeMillis() - Duration.ofMinutes(60).toMillis(), null, "a1", null));
+                System.currentTimeMillis() - Duration.ofMinutes(60).toMillis(), null, "a1", null, null, null));
         UserNotifier notifier = mock(UserNotifier.class);
 
         new WatchdogService(state, notifier, properties).scan();

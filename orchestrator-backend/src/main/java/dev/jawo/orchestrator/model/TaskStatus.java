@@ -6,5 +6,6 @@ public enum TaskStatus {
     REVIEW_PENDING,
     CI_POLLING,
     CI_FAILED,
+    DEPLOYED,
     DONE
 }

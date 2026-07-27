@@ -34,6 +34,16 @@ public interface TerminalDriver {
     void bringToFront();
 
     /**
+     * Brings the agents viewer to the user's screen — raises the window whose
+     * title starts with {@code dedicatedTitle} (addressed, no keystrokes) and
+     * activates the app. Returns true if such a window was found and raised.
+     * Note: a terminal with no tab-selection API (e.g. Warp) can raise a WINDOW
+     * but cannot switch to a specific TAB — so the viewer must be its own window
+     * for this to land on the right task. Best-effort; never throws.
+     */
+    boolean reveal(String dedicatedTitle);
+
+    /**
      * Closes the dedicated agents window(s) matching {@code dedicatedTitle}.
      * Called when the LAST task is removed — end-of-day cleanup. Individual
      * tabs need not (and on Warp cannot) be closed programmatically; dead

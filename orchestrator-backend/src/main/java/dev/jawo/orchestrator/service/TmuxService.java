@@ -180,9 +180,16 @@ public class TmuxService {
             processRunner.run(null, TIMEOUT, List.of(tmux(), "new-session",
                             "-d", "-s", session, "-c", paths.root().toString()))
                     .expectSuccess("tmux new-session " + session);
-            // Click a task name in the status bar to switch to it.
-            processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-t", session, "mouse", "on"));
         }
+        // Responsiveness + task switching. escape-time 0 removes the ESC delay that
+        // makes TUIs feel sluggish; mouse OFF avoids scroll/jank hijack in the agent's
+        // full-screen Claude TUI (switch with Shift+Left/Right instead — Warp doesn't
+        // grab those, unlike Ctrl+b). Re-applied each time; server-global and cheap.
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-sg", "escape-time", "0"));
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "focus-events", "on"));
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-t", session, "mouse", "off"));
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Left", "previous-window"));
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
     }
 
     /** If no terminal client is attached to the session, ask the terminal driver for a tab. */

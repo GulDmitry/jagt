@@ -56,6 +56,7 @@ public class GitService {
                         processRunner.run(projectPath, GIT_TIMEOUT,
                                         List.of("git", "worktree", "add", worktreePath.toString(), branch))
                                 .expectSuccess("git worktree add (resume) " + worktreePath);
+                        detachUpstream(projectPath, branch);
                         return;
                     }
                 }
@@ -63,7 +64,18 @@ public class GitService {
             processRunner.run(projectPath, GIT_TIMEOUT,
                             List.of("git", "worktree", "add", "-b", branch, worktreePath.toString(), baseBranch))
                     .expectSuccess("git worktree add " + worktreePath);
+            detachUpstream(projectPath, branch);
         });
+    }
+
+    /**
+     * CRITICAL SAFETY: a branch created from origin/release/sng inherits it as
+     * upstream, so a bare `git push` from an agent would target the RELEASE
+     * branch. Unset the upstream — now a bare push errors ("no upstream"), and
+     * the agent must push explicitly to its own branch.
+     */
+    private void detachUpstream(Path projectPath, String branch) {
+        processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "--unset-upstream", branch));
     }
 
     /**
@@ -118,8 +130,10 @@ public class GitService {
                             "-B", tempBranch, temp.toString(), "origin/" + targetBranch))
                     .expectSuccess("git worktree add (deploy) " + targetBranch);
             try {
-                var merge = processRunner.run(temp, GIT_TIMEOUT,
-                        List.of("git", "merge", "--no-edit", sourceBranch));
+                // Explicit message: the merge runs on a temp branch (jawo-deploy-*), and git's
+                // default "into <current branch>" would leak that name instead of the real target.
+                var merge = processRunner.run(temp, GIT_TIMEOUT, List.of("git", "merge", "--no-edit",
+                        "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch, sourceBranch));
                 if (merge.exitCode() != 0) {
                     processRunner.run(temp, GIT_TIMEOUT, List.of("git", "merge", "--abort"));
                     throw new IllegalStateException("Merge CONFLICT merging " + sourceBranch + " into "
@@ -133,6 +147,25 @@ public class GitService {
                         List.of("git", "worktree", "remove", "--force", temp.toString()));
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", tempBranch));
             }
+        });
+    }
+
+    /**
+     * A throwaway detached worktree at the base branch, for `idea diff <base> <task worktree>`
+     * (shows the task's changes as a directory compare). Reused per task: the previous one is
+     * removed first, so diffs don't accumulate. Returns the checkout path.
+     */
+    public Path checkoutBaseForDiff(Path projectPath, String baseBranch, String taskId) {
+        return withRepoLock(projectPath, () -> {
+            processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
+                    .expectSuccess("git fetch in " + projectPath);
+            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jawo-diff-" + taskId);
+            processRunner.run(projectPath, GIT_TIMEOUT,
+                    List.of("git", "worktree", "remove", "--force", temp.toString()));
+            processRunner.run(projectPath, GIT_TIMEOUT,
+                            List.of("git", "worktree", "add", "--detach", temp.toString(), baseBranch))
+                    .expectSuccess("git worktree add (diff base) " + temp);
+            return temp;
         });
     }
 

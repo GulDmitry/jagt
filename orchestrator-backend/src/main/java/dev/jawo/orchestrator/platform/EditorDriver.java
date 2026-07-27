@@ -15,4 +15,7 @@ import java.nio.file.Path;
 public interface EditorDriver {
 
     void open(Path path);
+
+    /** Opens a diff/compare window between two paths (no project). IntelliJ: `idea diff`. */
+    void openDiff(Path left, Path right);
 }

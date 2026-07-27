@@ -82,6 +82,60 @@ class GitServiceTest {
     }
 
     @Test
+    void namesTheRealTargetBranchInTheDeployMergeCommit(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "branch", "dev"));
+        Files.writeString(repo.resolve("d.txt"), "dev diverges");
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "dev"));
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "dev"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "dev"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "PAN-1", "main"));
+        Files.writeString(repo.resolve("g.txt"), "task");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        GitService git = new GitService(runner);
+
+        git.mergeIntoAndPush(repo, "PAN-1", "dev");
+
+        runner.run(repo, timeout, List.of("git", "fetch", "-q"));
+        String subject = runner.run(repo, timeout,
+                List.of("git", "log", "-1", "--format=%s", "origin/dev")).stdout().trim();
+        assertThat(subject).isEqualTo("Merge branch 'PAN-1' into dev");
+    }
+
+    @Test
+    void leavesTheTaskBranchWithoutTheBaseBranchAsUpstream(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "release", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "release"));
+        GitService git = new GitService(runner);
+
+        git.createWorktree(repo, dir.resolve("wt"), "PAN-1", "origin/release", GitService.BranchStrategy.FRESH);
+
+        var upstream = runner.run(dir.resolve("wt"), timeout,
+                List.of("git", "rev-parse", "--abbrev-ref", "PAN-1@{upstream}"));
+        assertThat(upstream.exitCode()).isNotZero();
+    }
+
+    @Test
     void abortsDeployCleanlyWhenMergeConflicts(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

@@ -73,6 +73,13 @@ public class WarpTerminalDriver implements TerminalDriver {
     }
 
     @Override
+    public boolean reveal(String dedicatedTitle) {
+        boolean raised = raiseDedicatedWindow(dedicatedTitle);
+        bringToFront();
+        return raised;
+    }
+
+    @Override
     public void closeViewerWindow(String dedicatedTitle) {
         try {
             osaScript.run("""
