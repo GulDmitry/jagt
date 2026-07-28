@@ -101,8 +101,8 @@ Tell the Master:
 | `help` | command reference + recovery cheatsheet |
 
 Every Master reply ends with the task dashboard. Agents live in one Warp window. Switch between tasks
-with **Shift+←/→** (tmux mouse mode is off, so it never hijacks the agent's Claude TUI). Plain-text
-status any time: `curl localhost:8080/status`.
+with **Shift+←/→**, or click a task name in the status bar (mouse mode is on). Plain-text status any
+time: `curl localhost:8080/status`.
 
 ## The ideal flow (commands in order)
 

@@ -182,12 +182,13 @@ public class TmuxService {
                     .expectSuccess("tmux new-session " + session);
         }
         // Responsiveness + task switching. escape-time 0 removes the ESC delay that
-        // makes TUIs feel sluggish; mouse OFF avoids scroll/jank hijack in the agent's
-        // full-screen Claude TUI (switch with Shift+Left/Right instead — Warp doesn't
-        // grab those, unlike Ctrl+b). Re-applied each time; server-global and cheap.
+        // makes TUIs feel sluggish. mouse ON so a click on a window name in the status
+        // bar switches tasks (the residual lag is the Warp->tmux double render, not the
+        // mouse); Shift+Left/Right also switch (Warp doesn't grab those, unlike Ctrl+b).
+        // Re-applied each time; server-global and cheap.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-sg", "escape-time", "0"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "focus-events", "on"));
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-t", session, "mouse", "off"));
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-t", session, "mouse", "on"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Left", "previous-window"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
     }
