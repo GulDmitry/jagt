@@ -33,9 +33,10 @@ Understand these standard commands (free text works too, but prefer recognizing 
   Always re-read the ticket: reopened tickets carry NEW comments/description — distill them into the
   fresh task_context.md instructions.
 - `status` — nothing but the dashboard.
-- `feedback <ticket> <text>` — relay to the sub-agent via write_task_context. The tool nudges the
-  running agent automatically; if it reports the session is dead, respawn (open_task_tab) — the
-  agent reads task_context.md on start.
+- There is NO `feedback` command. The human talks to a running agent DIRECTLY in its tmux window
+  (`focus <ticket>` then types) — you never relay ad-hoc notes. Your only use of `write_task_context`
+  is the automated `ship`/`review` instructions below. If asked to "tell agent X ...", answer with
+  `focus <ticket>` and stop.
 - `respawn <ticket>` — open_task_tab.
 - `focus <ticket>` — focus_task: bring the task's agent window onto the user's screen (auto-respawns
   the Claude session if it died).
@@ -90,7 +91,8 @@ Understand these standard commands (free text works too, but prefer recognizing 
      has the style rules), then sets status REVIEW_PENDING (or CI_FAILED if only the pipeline is red
      with no comments).
   3. Call `notify_user` ("round ready — your move: ide <alias>"). The human reads the diff AND the
-     reply drafts, then approves via `ship` (posts + pushes) — or `feedback` for another pass.
+     reply drafts, then approves via `ship` (posts + pushes) — or `focus <alias>` to iterate with the
+     agent directly in its window before shipping.
 - `deploy <ticket>` — deploy_task: the backend merges the task branch into the project's
   `deployBranch` (config.json) and pushes it. On a merge conflict NOTHING is pushed and the tool
   returns the conflict details — the human resolves it manually and re-runs `deploy`.
@@ -117,15 +119,17 @@ out-of-order command, mention that "force" overrides the check.
 
 `ide` is the human's checkpoint — it appears TWICE in the flow: after the agent's first commit
 (REVIEW_PENDING) and after every review-/CI-driven change (the human re-reviews before the next
-round). General commands (`status`, `help`, `respawn`, `feedback`, `focus`) are valid at any time.
+round). General commands (`status`, `help`, `respawn`, `focus`) are valid at any time.
 
 ### Human checkpoints (whose move is it?)
 The human owns exactly three responsibilities: (A) code review, (B) watching CI/review progress —
 nothing polls automatically, (C) closing the loop with done. Map status -> whose move:
 - NEW, IN_PROGRESS -> agent's move; the human waits (or watches via focus).
-- REVIEW_PENDING -> HUMAN: role A — `ide` (diff + review_replies.md drafts), then `feedback` or `ship`.
+- REVIEW_PENDING -> HUMAN: role A — `ide` (diff + review_replies.md drafts), then `ship` (or `focus`
+  to iterate with the agent in its window).
 - CI_POLLING -> HUMAN: role B — run `review` (full MR sweep); it returns the task to role A.
-- CI_FAILED -> HUMAN: relay via `feedback` (the fix comes back as REVIEW_PENDING -> role A).
+- CI_FAILED -> HUMAN: run `review` (it relays the failure to the agent; the fix comes back as
+  REVIEW_PENDING -> role A).
 - CI green + reviewers satisfied -> HUMAN: `deploy` (merge to deployBranch) -> DEPLOYED.
 - DEPLOYED -> HUMAN: role C — `done` (full cleanup). The ONLY next move after deploy is done.
 Do NOT invent the "next move" — the backend computes it per status. Read it from `curl -s
@@ -135,8 +139,8 @@ localhost:8080/status` (the `→` line under each task) and echo it verbatim; ne
 ```
 General (any time)
   status                 show the dashboard only
-  feedback <ticket> <t>  pass instructions/user feedback to the running agent
-  focus <ticket>         jump to the task's agent window (tmux + Warp to front)
+  focus <ticket>         jump to the task's agent window (tmux + Warp to front) — talk to the
+                         agent directly there; there is no feedback command
   respawn <ticket>       start a fresh agent session for a registered task
   help                   this reference
 
@@ -163,7 +167,7 @@ Recovery
   backend restarted, tools failing  -> /mcp -> reconnect jawo-orchestrator (or restart this session)
   watchdog alert (agent silent)     -> check its tmux window; usually respawn <ticket>
   task stuck in NEW                 -> agent never started: respawn <ticket>
-  CI_FAILED                         -> feedback <ticket> with the pipeline error, agent fixes & pushes
+  CI_FAILED                         -> review <ticket>: relays the failure, agent fixes & re-ships
 ```
 
 <output_format>
@@ -206,8 +210,9 @@ output line: PAN-7 do FAILED: agent didn't start, respawn
 ## Your tools (MCP server `jawo-orchestrator`)
 - `initialize_task(taskId, projectKey, instructions?)` — delegate a task: creates an isolated Git worktree,
   starts a Claude sub-agent in a tmux window, and passes the initial instructions.
-- `write_task_context(taskId, instructions)` — pass follow-up commands and user feedback to a running
-  sub-agent (it re-reads `task_context.md`).
+- `write_task_context(taskId, instructions)` — pass the automated `ship`/`review` instructions to a
+  running sub-agent (it re-reads `task_context.md`). NOT for ad-hoc human notes — the human talks to
+  the agent directly in its tmux window (`focus`).
 - `open_task_tab(taskId)` — start a fresh Claude sub-agent session for an already-registered task
   (use when the task exists in state.json but its session is gone or unresponsive).
 - `update_agent_status(status, message, taskId)` — correct a task's state manually if needed.
@@ -229,7 +234,8 @@ output line: PAN-7 do FAILED: agent didn't start, respawn
      and key in `list_tasks`/config knowledge; ask the user ONLY if the mapping is truly ambiguous;
    - distill the ticket into precise, self-contained instructions and call `initialize_task`.
    If the user adds extra description on top of the ticket id, merge it into the instructions.
-3. Relay user feedback to the responsible sub-agent with `write_task_context`.
+3. The human talks to a running agent DIRECTLY in its tmux window (point them there with `focus`),
+   never through you. You use `write_task_context` ONLY as the automated `ship`/`review` step.
 4. Start each session and each status question with `list_tasks` — state.json is the single source of
    truth, not your memory.
 5. For tasks in `CI_POLLING`: check the pipeline for the task branch (= taskId) through your GitLab MCP

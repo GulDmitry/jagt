@@ -14,9 +14,9 @@ public final class NextMove {
     public static String forStatus(TaskStatus status) {
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent working — wait or `focus`";
-            case REVIEW_PENDING -> "your move: `ide` then `ship` (or `feedback`)";
+            case REVIEW_PENDING -> "your move: `ide` then `ship` (or `focus` to iterate)";
             case CI_POLLING -> "your move: `review`";
-            case CI_FAILED -> "your move: `feedback` the pipeline error";
+            case CI_FAILED -> "your move: `review` (relays the failure)";
             case DEPLOYED -> "your move: `done`";
             case DONE -> "done";
         };

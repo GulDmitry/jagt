@@ -90,10 +90,9 @@ Tell the Master:
 |---------|--------|
 | `do <ticket> [plan] [notes]` | fetch the ticket, spin up a sub-agent in an isolated worktree; `plan` = plan mode |
 | `status` | dashboard only |
-| `feedback <ticket> <text>` | relay a note/correction to the running sub-agent |
 | `respawn <ticket>` | restart a sub-agent session for an already-registered task |
 | `done <ticket>` | close the task at any stage: full cleanup — window, worktree, state (branch kept) |
-| `focus <ticket>` | jump to the task's agent window (tmux window + Warp to front) |
+| `focus <ticket>` | jump to the task's agent window — **talk to the agent directly there** (no `feedback` command) |
 | `ide <ticket>` | review checkpoint: diff window of changes vs base, no project (`ide <ticket> project` opens the full project to run) |
 | `review <ticket>` | full MR sweep (pipeline + comments): agent fixes locally + drafts replies; nothing pushed |
 | `deploy <ticket>` | merge the task branch into the project's `deployBranch` and push (conflicts → you) |
@@ -101,7 +100,7 @@ Tell the Master:
 | `help` | command reference + recovery cheatsheet |
 
 Every Master reply ends with the task dashboard. Agents live in one Warp window. Switch between tasks
-with **Shift+←/→**, or click a task name in the status bar at the bottom (mouse mode is on). Plain-text
+with **Shift+←/→** (tmux mouse mode is off, so it never hijacks the agent's Claude TUI). Plain-text
 status any time: `curl localhost:8080/status`.
 
 ## The ideal flow (commands in order)
@@ -112,7 +111,6 @@ The Master validates the command order against the task status (override with "f
 flowchart TD
     DO["do ABC-123 [plan]"]
     IDE1["ide ABC-123"]
-    FB["feedback ABC-123 ..."]
     SHIP["ship ABC-123"]
     REVIEW["review ABC-123"]
     IDE2["ide ABC-123"]
@@ -120,11 +118,10 @@ flowchart TD
     DONE["done ABC-123"]
 
     FOCUS["focus ABC-123"]
-    DO -.->|"optional: watch the agent live"| FOCUS
+    DO -.->|"watch / talk to the agent live"| FOCUS
     FOCUS -.-> IDE1
     DO -->|"agent works — no commits"| IDE1
-    IDE1 -->|"needs changes"| FB
-    FB -->|"agent reworks"| IDE1
+    IDE1 -->|"needs changes: focus + tell the agent in its window"| IDE1
     IDE1 -->|"approved"| SHIP
     SHIP -->|"1st time: commit + push + create MR / next: push + post replies"| REVIEW
     REVIEW -->|"pipeline + comments → agent fixes locally, drafts replies"| IDE2
@@ -133,7 +130,7 @@ flowchart TD
     DEPLOY -->|"merged into deployBranch, pushed (conflicts → you)"| DONE
 
     classDef cmd font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
-    class DO,FOCUS,IDE1,FB,SHIP,REVIEW,IDE2,DEPLOY,DONE cmd;
+    class DO,FOCUS,IDE1,SHIP,REVIEW,IDE2,DEPLOY,DONE cmd;
 ```
 
 The `ship → review → ide → ship` loop repeats once per review round (bot + human comments, CI) until
@@ -152,7 +149,7 @@ The system never acts on the MR/CI by itself — three checkpoints are explicitl
 
 | # | role | when | command |
 |---|------|------|---------|
-| A | code review | agent committed (REVIEW_PENDING) and after every review round | `ide` → then `feedback` or `ship` |
+| A | code review | agent committed (REVIEW_PENDING) and after every review round | `ide` → then `ship` (or `focus` to iterate in-session) |
 | B | CI/CD + review progress | after `ship` (nothing polls automatically) | `review` |
 | C | closing the loop | CI green, reviewers satisfied | `done` (full cleanup) |
 

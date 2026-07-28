@@ -504,7 +504,7 @@ class OrchestratorToolsTest {
     }
 
     @Test
-    void reportsDeadSessionWhenFeedbackTargetsClosedAgent(@TempDir Path root) {
+    void reportsDeadSessionWhenWriteTaskContextTargetsClosedAgent(@TempDir Path root) {
         OrchestratorProperties properties = new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
                 null, null, null, null, null, null, null, false,

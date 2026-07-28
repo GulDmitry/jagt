@@ -109,7 +109,7 @@ public class McpProtocolService {
 
         register("write_task_context", """
                 {
-                  "description": "Write instructions to <worktree>/task_context.md of a task. Used by the Master to pass commands and user feedback to sub-agents.",
+                  "description": "Write instructions to <worktree>/task_context.md of a task. Used by the Master's automated ship/review steps; not for ad-hoc human notes (the human talks to the agent directly in its tmux window).",
                   "type": "object",
                   "properties": {
                     "taskId": {"type": "string"},
