@@ -451,16 +451,28 @@ public class OrchestratorTools {
         }
         // Server approval alone is not enough: Claude's auto-mode classifier still
         // gates individual MCP calls, silently freezing agents on invisible prompts
-        // (even notify_user gets blocked) — pre-allow every jawo tool.
+        // (even notify_user gets blocked) — pre-allow every jawo tool. The optional
+        // agentOutputStyle from config.json is pinned here (a worktree is an untrusted
+        // project where the human's global style may not apply); default null → omitted.
         writeString(worktreePath.resolve(".claude").resolve("settings.local.json"),
-                """
-                {
+                agentSettingsJson(configService.load().agentOutputStyleOrNull()));
+    }
+
+    /**
+     * The generated worktree {@code .claude/settings.local.json}: pre-approves the jawo MCP tools
+     * and, when config.json sets {@code agentOutputStyle}, pins it. Valid JSON either way.
+     */
+    static String agentSettingsJson(String outputStyle) {
+        String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
+                : "\n  \"outputStyle\": \"" + outputStyle.replace("\\", "\\\\").replace("\"", "\\\"") + "\",";
+        return """
+                {%s
                   "enableAllProjectMcpServers": true,
                   "permissions": {
                     "allow": ["mcp__jawo-orchestrator"]
                   }
                 }
-                """);
+                """.formatted(styleLine);
     }
 
     private void symlink(Path link, Path target) {

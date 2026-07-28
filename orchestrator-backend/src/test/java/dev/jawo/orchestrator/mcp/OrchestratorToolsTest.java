@@ -46,7 +46,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jawo");
         when(tmux.killTaskWindows("jawo", "TEST-1")).thenReturn(1);
@@ -69,7 +69,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "tab-per-task", null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "tab-per-task", null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jawo")).thenReturn("jawo");
         when(tmux.killTaskWindows("jawo-TEST-1", "TEST-1")).thenReturn(1);
@@ -92,7 +92,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jawo")).thenReturn("jawo");
         TerminalDriver terminal = mock(TerminalDriver.class);
@@ -115,7 +115,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", false, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", false, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jawo")).thenReturn("jawo");
         TerminalDriver terminal = mock(TerminalDriver.class);
@@ -384,7 +384,7 @@ class OrchestratorToolsTest {
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(new ConfigService.ConfigFile(
-                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null));
+                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null, null));
         GitService git = mock(GitService.class);
         when(git.remoteUrl(any())).thenThrow(new IllegalStateException("remote lookup failed"));
         OrchestratorTools tools = new OrchestratorTools(config,
@@ -489,7 +489,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jawo");
         when(tmux.taskWindowState("jawo", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
@@ -513,7 +513,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jawo");
         when(tmux.taskWindowState("jawo", "ABC-1")).thenReturn(TmuxService.WindowState.MISSING);
@@ -539,7 +539,7 @@ class OrchestratorToolsTest {
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(new ConfigService.ConfigFile(
-                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null));
+                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null, null));
         GitService git = mock(GitService.class);
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
@@ -552,5 +552,14 @@ class OrchestratorToolsTest {
         tools.initializeTask("ABC-2", "proj", null, null, null, null);
 
         assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
+    }
+
+    @Test
+    void pinsConfiguredOutputStyleInGeneratedAgentSettings() {
+        String json = OrchestratorTools.agentSettingsJson("sob-ai:Engineer");
+
+        String style = new JsonMapper().readTree(json).path("outputStyle").asText(null);
+
+        assertThat(style).isEqualTo("sob-ai:Engineer");
     }
 }

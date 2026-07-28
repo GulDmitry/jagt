@@ -20,7 +20,7 @@ public class ConfigService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ConfigFile(Map<String, ProjectConfig> projects, String tmuxSession, String viewMode,
-                             Boolean keepViewer, String mrTitlePattern) {
+                             Boolean keepViewer, String mrTitlePattern, String agentOutputStyle) {
 
         /** Default true: the agents window/tab stays open (reserved) after the last task is done. */
         public boolean keepViewerOrDefault() {
@@ -30,6 +30,16 @@ public class ConfigService {
         /** Placeholders {ticket} and {title}. Default: the ticket id, a space, then the Jira title. */
         public String mrTitlePatternOrDefault() {
             return mrTitlePattern == null || mrTitlePattern.isBlank() ? "{ticket} {title}" : mrTitlePattern;
+        }
+
+        /**
+         * Optional Claude output style pinned into each agent worktree's settings. Default null:
+         * nothing is written and agents use Claude's own resolved style. A fresh worktree is an
+         * untrusted project where the human's global style may not apply, so this lets the human
+         * force one (e.g. "sob-ai:Engineer") without jawo reading their global config.
+         */
+        public String agentOutputStyleOrNull() {
+            return agentOutputStyle == null || agentOutputStyle.isBlank() ? null : agentOutputStyle.strip();
         }
     }
 
@@ -49,7 +59,8 @@ public class ConfigService {
         try {
             ConfigFile config = mapper.readValue(Files.readString(paths.configFile()), ConfigFile.class);
             return new ConfigFile(config.projects() == null ? Map.of() : config.projects(),
-                    config.tmuxSession(), config.viewMode(), config.keepViewer(), config.mrTitlePattern());
+                    config.tmuxSession(), config.viewMode(), config.keepViewer(), config.mrTitlePattern(),
+                    config.agentOutputStyle());
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read config file " + paths.configFile(), e);
         }

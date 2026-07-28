@@ -52,6 +52,7 @@ exact keys.
 | `viewMode` | `shared` = all tasks inside one tab; `tab-per-task` = a Warp tab per task |
 | `keepViewer` | keep the agents tab/window open (reserved) after the last task (default `true`) — drag it into a group once and it stays |
 | `mrTitlePattern` | MR/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
+| `agentOutputStyle` | optional Claude output style pinned into each agent worktree, e.g. `sob-ai:Engineer` (default empty = Claude's own style) |
 | `mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
 
 `orchestrator-backend/src/main/resources/application.yml` (machine/OS level, restart to apply):

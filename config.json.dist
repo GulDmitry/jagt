@@ -3,6 +3,7 @@
   "viewMode": "shared",
   "keepViewer": true,
   "mrTitlePattern": "{ticket} {title}",
+  "agentOutputStyle": "",
   "mergeRequestDefaults": {
     "removeSourceBranch": true,
     "squash": true
