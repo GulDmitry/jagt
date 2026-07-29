@@ -34,3 +34,17 @@
 2026-07-29T11:51:06.413+02:00  WARN 86301 --- [jawo-orchestrator] [main] org.jline                                : Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
 2026-07-29T11:58:47.783+02:00  INFO 86301 --- [jawo-orchestrator] [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
 2026-07-29T11:58:47.792+02:00  INFO 86301 --- [jawo-orchestrator] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-07-29T12:17:41.210+02:00  INFO 94413 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : Starting OrchestratorApplication using Java 25.0.3 with PID 94413 (/Users/dzmitry/www/jawo/orchestrator-backend/build/classes/java/main started by dzmitry in /Users/dzmitry/www/jawo/orchestrator-backend)
+2026-07-29T12:17:41.212+02:00  INFO 94413 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : No active profile set, falling back to 1 default profile: "default"
+2026-07-29T12:17:41.543+02:00  INFO 94413 --- [jawo-orchestrator] [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-07-29T12:17:41.549+02:00  INFO 94413 --- [jawo-orchestrator] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-29T12:17:41.549+02:00  INFO 94413 --- [jawo-orchestrator] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-07-29T12:17:41.563+02:00  INFO 94413 --- [jawo-orchestrator] [main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 333 ms
+2026-07-29T12:17:41.709+02:00  INFO 94413 --- [jawo-orchestrator] [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-07-29T12:17:41.712+02:00  INFO 94413 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : Started OrchestratorApplication in 0.682 seconds (process running for 0.882)
+2026-07-29T12:17:41.898+02:00  WARN 94413 --- [jawo-orchestrator] [main] org.jline                                : Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+2026-07-29T12:18:11.740+02:00  INFO 94413 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-07-29T12:18:11.741+02:00  INFO 94413 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-07-29T12:18:11.745+02:00  INFO 94413 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 4 ms
+2026-07-29T12:18:48.383+02:00  INFO 94413 --- [jawo-orchestrator] [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-07-29T12:18:48.392+02:00  INFO 94413 --- [jawo-orchestrator] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete

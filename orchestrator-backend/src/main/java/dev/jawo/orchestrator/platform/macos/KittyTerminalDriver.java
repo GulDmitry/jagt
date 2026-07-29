@@ -75,8 +75,10 @@ public class KittyTerminalDriver implements TerminalDriver {
             }
             return;
         }
-        // First open: launch a dedicated kitty window already attached to the session.
-        var open = processRunner.run(null, TIMEOUT, List.of(kittyCommand,
+        // First open: launch a dedicated kitty window already attached to the session. --detach forks
+        // kitty into the background and returns immediately; without it the GUI process runs in the
+        // foreground and ProcessRunner blocks until timeout.
+        var open = processRunner.run(null, TIMEOUT, List.of(kittyCommand, "--detach",
                 "--single-instance", "--instance-group", "jawo-" + tmuxSession,
                 "--listen-on", socket, "-o", "allow_remote_control=yes",
                 "--title", dedicatedTitle, "--directory", tabCwd.toString(),
