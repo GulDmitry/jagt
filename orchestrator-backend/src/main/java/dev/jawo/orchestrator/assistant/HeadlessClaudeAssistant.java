@@ -43,6 +43,14 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "projectPath":{"type":"string"},\
             "title":{"type":"string"}},\
             "required":["exists","sourceBranch","projectPath","title"]}""";
+    private static final String REVIEW_SCHEMA = """
+            {"type":"object","properties":{\
+            "exists":{"type":"boolean"},\
+            "pipelineStatus":{"type":"string"},\
+            "comments":{"type":"array","items":{"type":"string"}}},\
+            "required":["exists","pipelineStatus","comments"]}""";
+    /** The review sweep makes several GitLab calls; give it much longer than a single lookup. */
+    private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
 
     private final ProcessRunner processRunner;
     private final OrchestratorProperties properties;
@@ -88,15 +96,36 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 n.path("projectPath").asString(""), n.path("title").asString("")));
     }
 
+    @Override
+    public Optional<ReviewFacts> readReview(String mrUrl) {
+        if (mrUrl == null || !mrUrl.startsWith("http")) {
+            return Optional.empty();
+        }
+        String prompt = "Review sweep of the GitLab merge request at " + mrUrl + " via your GitLab MCP"
+                + " tools. Return exists, pipelineStatus (latest pipeline result, e.g. success/failed/none),"
+                + " and comments — every UNRESOLVED discussion note (bots like CodeRabbit + humans),"
+                + " each as one string \"author (file:line): body\". Empty array if none.";
+        return ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT).map(n -> {
+            List<String> comments = new ArrayList<>();
+            n.path("comments").forEach(c -> comments.add(c.asString("")));
+            return new ReviewFacts(n.path("exists").asBoolean(false),
+                    n.path("pipelineStatus").asString(""), comments);
+        });
+    }
+
     /** Runs one stripped, schema-forced headless Claude call; empty on any failure. */
     private Optional<JsonNode> ask(String prompt, String schema, String label) {
+        return ask(prompt, schema, label, TIMEOUT);
+    }
+
+    private Optional<JsonNode> ask(String prompt, String schema, String label, Duration timeout) {
         List<String> cmd = new ArrayList<>(List.of(properties.claudeCommand(), prompt, "-p",
                 "--setting-sources", settingSources, "--json-schema", schema));
         if (model != null && !model.isBlank()) {
             cmd.add("--model");
             cmd.add(model);
         }
-        var result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), TIMEOUT, cmd);
+        var result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
         if (result.exitCode() != 0 || result.stdout().isBlank()) {
             log.warn("Headless assistant failed for {} (exit {}): {}", label, result.exitCode(),
                     result.stderr().isBlank() ? result.stdout() : result.stderr());

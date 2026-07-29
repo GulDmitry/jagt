@@ -341,6 +341,11 @@ public class OrchestratorTools {
         return stateService.prettyJson();
     }
 
+    /** The MR url linked to a task (via ship/resume), or null. Resolves aliases. Used by `review`. */
+    public String taskMrUrl(String taskId) {
+        return requireTask(canonicalTaskId(taskId)).mrUrl();
+    }
+
     public String notifyUser(String title, String message) {
         userNotifier.notify(title == null ? "jawo" : title, message);
         return "Notification sent";

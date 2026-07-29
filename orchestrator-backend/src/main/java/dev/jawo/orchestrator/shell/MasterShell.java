@@ -98,6 +98,7 @@ public class MasterShell implements ApplicationRunner {
                 case "help" -> help();
                 case "do" -> doTask(tok);
                 case "resume" -> resumeTask(tok);
+                case "review" -> reviewTask(tok);
                 case "focus" -> tools.focusTask(arg(tok, 1, "focus <ticket>"));
                 case "ide" -> tools.openInIde(arg(tok, 1, "ide <ticket> [project]"),
                         tok.contains("project") ? "project" : "diff", null);
@@ -157,6 +158,41 @@ public class MasterShell implements ApplicationRunner {
         return tools.resumeTask(ticket, mrUrl);
     }
 
+    /**
+     * MR sweep: pull the MR's pipeline + unresolved comments (headless) and relay ONE brief to the
+     * agent via task_context.md, which fixes locally and drafts replies. Nothing is pushed/posted.
+     */
+    private String reviewTask(List<String> tok) {
+        String ticket = arg(tok, 1, "review <ticket>");
+        String mrUrl = tools.taskMrUrl(ticket);
+        if (mrUrl == null || mrUrl.isBlank()) {
+            return "error: no MR linked to " + ticket + " — `ship` or `resume <mr-url>` first";
+        }
+        var sweep = assistant.readReview(mrUrl);
+        if (sweep.isEmpty() || !sweep.get().exists()) {
+            return "error: could not read the MR review for " + mrUrl;
+        }
+        var r = sweep.get();
+        boolean pipelineFailed = r.pipelineStatus() != null && r.pipelineStatus().toLowerCase().contains("fail");
+        if (r.comments().isEmpty() && !pipelineFailed) {
+            return "review " + ticket + ": pipeline " + r.pipelineStatus()
+                    + ", no unresolved comments — your move: `deploy` or `done`";
+        }
+        StringBuilder brief = new StringBuilder("Review round for MR ").append(mrUrl).append(".\n");
+        if (pipelineFailed) {
+            brief.append("Pipeline: ").append(r.pipelineStatus()).append(" — fix the failing build.\n");
+        }
+        if (!r.comments().isEmpty()) {
+            brief.append("Unresolved comments — fix the valid ones LOCALLY (no commit/push) and draft a"
+                    + " reply for EACH in review_replies.md:\n");
+            r.comments().forEach(c -> brief.append("- ").append(c).append('\n'));
+        }
+        brief.append("When done, set status REVIEW_PENDING. Do NOT push or post anything yourself.");
+        tools.writeTaskContext(ticket, brief.toString());
+        return "review " + ticket + ": relayed " + r.comments().size() + " comment(s), pipeline "
+                + r.pipelineStatus() + " -> agent";
+    }
+
     /** Picks the jawo project whose configured labels intersect the ticket's labels (or Jira key). */
     private String resolveByLabels(TicketFacts f) {
         Map<String, List<String>> projectLabels = new java.util.LinkedHashMap<>();
@@ -211,6 +247,7 @@ public class MasterShell implements ApplicationRunner {
         lines.add("  do <ticket> [project] [plan] spin up a sub-agent in a worktree");
         lines.add("  resume <mr-url>              reopened MR: resume its branch + link it -> CI_POLLING");
         lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
+        lines.add("  review <ticket>              pull the MR's pipeline + comments, relay them to the agent");
         lines.add("  ide <ticket> [project]       diff of changes vs base (or full project)");
         lines.add("  deploy <ticket>              merge task branch into deployBranch + push");
         lines.add("  respawn <ticket>             restart a dead agent session");

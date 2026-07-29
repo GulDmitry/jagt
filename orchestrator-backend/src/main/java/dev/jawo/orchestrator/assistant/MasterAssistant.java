@@ -20,8 +20,18 @@ public interface MasterAssistant {
     record MergeRequestFacts(boolean exists, String sourceBranch, String projectPath, String title) {
     }
 
+    /**
+     * A review sweep of an MR: latest pipeline result and every UNRESOLVED discussion note (bots +
+     * humans), each pre-formatted as one line for relaying to the agent.
+     */
+    record ReviewFacts(boolean exists, String pipelineStatus, List<String> comments) {
+    }
+
     Optional<TicketFacts> readTicket(String ticketKey);
 
     /** Reads an MR by URL so `resume` can recover its source branch (= the task) and project. */
     Optional<MergeRequestFacts> readMergeRequest(String mrUrl);
+
+    /** The `review` sweep: pipeline state + unresolved comments of an MR (a slow, multi-call read). */
+    Optional<ReviewFacts> readReview(String mrUrl);
 }
