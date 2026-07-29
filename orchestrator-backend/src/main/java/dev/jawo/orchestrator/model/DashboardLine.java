@@ -19,6 +19,7 @@ public final class DashboardLine {
         }
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "pipeline/build failed");
+            case SHIPPING -> "SHIPPING: agent committing & pushing… (focus to watch)";
             case CI_POLLING, DEPLOYED -> orDefault(task.mrUrl(), "MR link missing");
             case DONE -> "";
             // In review: show the clickable MR link once one exists (e.g. after ship/resume),

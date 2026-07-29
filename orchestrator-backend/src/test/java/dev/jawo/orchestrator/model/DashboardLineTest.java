@@ -46,6 +46,13 @@ class DashboardLineTest {
     }
 
     @Test
+    void showsShippingWhileTheAgentPushes() {
+        TaskState task = new TaskState("p", "/wt", TaskStatus.SHIPPING, 0, "shipping", "a1", null, "title", null);
+
+        assertThat(DashboardLine.forTask("ABC-1", task)).startsWith("SHIPPING");
+    }
+
+    @Test
     void showsTheMrLinkWhenReviewPendingHasOne() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEW_PENDING, 0,
                 null, "a1", null, "some title", "https://host/mr/417");

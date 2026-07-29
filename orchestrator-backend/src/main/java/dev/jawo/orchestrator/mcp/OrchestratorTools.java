@@ -355,6 +355,10 @@ public class OrchestratorTools {
     public String ship(String taskId) {
         taskId = canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
+        if (task.status() != TaskStatus.REVIEW_PENDING) {
+            throw new IllegalStateException("ship: " + taskId + " is " + task.status()
+                    + ", not REVIEW_PENDING — nothing new to ship (already shipping/shipped, or still working).");
+        }
         ProjectConfig project = configService.project(task.project());
         String baseBranch = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
         ConfigService.ConfigFile config = configService.load();
@@ -374,6 +378,9 @@ public class OrchestratorTools {
                 + repliesStep
                 + "5. Report back with update_agent_status CI_POLLING, message \"MR: <the merge request url>\".";
         writeTaskContext(taskId, instruction);
+        // Flip to SHIPPING now so the dashboard shows ship is underway (the status only reaches
+        // CI_POLLING when the agent reports back the MR) and a second `ship` is refused meanwhile.
+        stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.SHIPPING, "shipping"));
         return "ship " + taskId + ": approval relayed — agent will commit \"" + title
                 + "\", push, ensure the MR, post replies, then report CI_POLLING.";
     }

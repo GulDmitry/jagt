@@ -15,6 +15,7 @@ public final class NextMove {
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent working — wait or `focus`";
             case REVIEW_PENDING -> "your move: `ide` then `ship` (or `focus` to iterate)";
+            case SHIPPING -> "shipping — agent committing/pushing; wait for the MR (or `focus`)";
             case CI_POLLING -> "your move: `review`";
             case CI_FAILED -> "your move: `review` (relays the failure)";
             case DEPLOYED -> "your move: `done`";
