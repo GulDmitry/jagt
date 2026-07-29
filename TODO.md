@@ -28,6 +28,35 @@ Leaning (A): then the Master side needs ZERO LLM calls. A local "vectorization-c
 here — command parsing needs no model (grammar), and ticket distillation / agentic tool-calling need a
 capable model, not embeddings.
 
+**Decided direction — two-tier dispatch (balance of speed / flexibility / cost).** Keep NL flexibility
+but off the hot path, so a plain command never waits on a model:
+1. Parse input as a grammar command → execute deterministically via `OrchestratorTools` (instant, 0
+   tokens, 0 network). This is ~95% of interactions (`ship p1`, `focus s2`, `status`, `done`).
+2. No grammar match / free text ("залей ту задачу с логином") → hand the raw text to a LEAN headless
+   Claude that maps it to a grammar command → VALIDATE (`SAFE_ID`, project mapping) → execute. Tokens +
+   latency only here, only when flexibility is actually used. The LLM never executes directly — it only
+   proposes; deterministic code executes after the gate (asymmetric-failure-cost rule).
+
+Lean headless Claude recipe (kills the token/latency bloat from the user's global MCPs + rules):
+```
+claude -p --model haiku \
+  --strict-mcp-config --mcp-config /dev/null \   # ignore ALL global MCP servers (their schemas = tokens)
+  --setting-sources project \                    # skip global CLAUDE.md / plugins / rules
+  --append-system-prompt "<grammar + current task list>"
+```
+Prefer headless Haiku over a resident local model: a 3-7B local model adds 4-8 GB RAM (the machine
+already swaps — see the jdtls incident); headless `-p` holds nothing resident, needs no infra, and with a
+stripped context is nearly as cheap. Revisit a local model only if API cost ever dominates.
+
+External ops (Jira/GitLab): tokens-in-backend is now allowed (env vars), so do these as deterministic
+REST clients in the backend (0 model) — or leave them in the sub-agent. The NL fallback only maps
+text→command; it never reaches outside. Ticket distillation moves INTO the sub-agent (pass the raw ticket
+to `task_context.md`; the agent reads + plans itself).
+
+Tech: **Spring Shell** in the backend (same JVM, direct calls) — NOT JShell (separate process, Java
+syntax, no Spring context). Next step: skeleton = Spring Shell parser + a `HeadlessClaude` wrapper around
+the flags above.
+
 ## Automation
 
 ### Auto-poll GitLab after `ship` (remove the manual `ci`/`review` step)
