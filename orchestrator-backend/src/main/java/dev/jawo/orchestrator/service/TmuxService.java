@@ -168,6 +168,30 @@ public class TmuxService {
         }
     }
 
+    /**
+     * Epoch-millis of the window's last terminal activity (any output) — a working agent keeps
+     * printing (spinner, tokens, build logs) even when it makes no MCP call, so this catches
+     * "busy but silent on MCP" that lastActiveTimestamp misses. 0 if the window is gone/unknown.
+     */
+    public long lastWindowActivityMillis(String session, String taskId) {
+        synchronized (lock) {
+            var windowId = findWindowId(session, taskId);
+            if (windowId.isEmpty()) {
+                return 0;
+            }
+            var r = processRunner.run(null, TIMEOUT, List.of(tmux(), "display-message",
+                    "-p", "-t", windowId.get(), "#{window_activity}"));
+            if (r.exitCode() != 0 || r.stdout().isBlank()) {
+                return 0;
+            }
+            try {
+                return Long.parseLong(r.stdout().trim()) * 1000L;
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+    }
+
     private Optional<String> findWindowId(String session, String taskId) {
         var windows = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-windows",
                 "-t", "=" + session, "-F", "#{window_id} #{window_name}"));

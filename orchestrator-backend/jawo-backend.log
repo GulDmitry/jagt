@@ -103,3 +103,4 @@
 2026-07-29T13:36:01.790+02:00  INFO 23859 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
 2026-07-29T13:36:01.791+02:00  INFO 23859 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
 2026-07-29T13:36:01.792+02:00  INFO 23859 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-07-29T14:42:23.670+02:00  WARN 23859 --- [jawo-orchestrator] [scheduling-1] d.j.o.service.WatchdogService            : Watchdog: task PAN-2575 silent for 5 min
