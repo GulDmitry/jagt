@@ -567,9 +567,9 @@ class OrchestratorToolsTest {
 
     @ParameterizedTest
     @CsvSource({
-        "git@gitlab.sobrado.ch:sng/sng-back.git, sng/sng-back",
-        "https://gitlab.sobrado.ch/sng/sng-back.git, sng/sng-back",
-        "https://gitlab.sobrado.ch/sng/sng-back, sng/sng-back"
+        "git@example.com:group-a/backend.git, group-a/backend",
+        "https://example.com/group-a/backend.git, group-a/backend",
+        "https://example.com/group-a/backend, group-a/backend"
     })
     void derivesGitProjectPathFromRemote(String remote, String expected) {
         assertThat(OrchestratorTools.gitProjectPath(remote)).isEqualTo(expected);

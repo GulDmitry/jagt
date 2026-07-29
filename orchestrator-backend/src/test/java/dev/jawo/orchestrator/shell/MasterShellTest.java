@@ -12,11 +12,11 @@ class MasterShellTest {
 
     @Test
     void matchesTheProjectWhoseLabelIsAmongTheTicketLabels() {
-        TicketFacts facts = new TicketFacts(true, "RCS - initial module API", "PAN", List.of("BE", "NoTesting", "SNG"));
-        Map<String, List<String>> projectLabels = Map.of("sng", List.of("SNG"), "sobrado", List.of("PHP"));
+        TicketFacts facts = new TicketFacts(true, "Some ticket title", "ABC", List.of("area-x", "no-test", "backend"));
+        Map<String, List<String>> projectLabels = Map.of("group-a", List.of("backend"), "group-b", List.of("frontend"));
 
         List<String> matches = MasterShell.projectsMatching(facts, projectLabels);
 
-        assertThat(matches).containsExactly("sng");
+        assertThat(matches).containsExactly("group-a");
     }
 }
