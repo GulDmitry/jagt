@@ -99,6 +99,7 @@ public class MasterShell implements ApplicationRunner {
                 case "do" -> doTask(tok);
                 case "resume" -> resumeTask(tok);
                 case "review" -> reviewTask(tok);
+                case "ship" -> tools.ship(arg(tok, 1, "ship <ticket>"));
                 case "focus" -> tools.focusTask(arg(tok, 1, "focus <ticket>"));
                 case "ide" -> tools.openInIde(arg(tok, 1, "ide <ticket> [project]"),
                         tok.contains("project") ? "project" : "diff", null);
@@ -247,6 +248,7 @@ public class MasterShell implements ApplicationRunner {
         lines.add("  do <ticket> [project] [plan] spin up a sub-agent in a worktree");
         lines.add("  resume <mr-url>              reopened MR: resume its branch + link it -> CI_POLLING");
         lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
+        lines.add("  ship <ticket>                approve: agent commits (pattern title), pushes, MR, posts replies");
         lines.add("  review <ticket>              pull the MR's pipeline + comments, relay them to the agent");
         lines.add("  ide <ticket> [project]       diff of changes vs base (or full project)");
         lines.add("  deploy <ticket>              merge task branch into deployBranch + push");

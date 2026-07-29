@@ -346,6 +346,33 @@ public class OrchestratorTools {
         return requireTask(canonicalTaskId(taskId)).mrUrl();
     }
 
+    /**
+     * The human approved the current uncommitted changes. Ship is the ONLY commit point: it relays the
+     * approval to the agent (which owns the GitLab MCP) via task_context.md — commit with the pattern
+     * title, push, create the MR if absent (target = baseBranch), post any drafted review replies, and
+     * report back CI_POLLING with the MR url. jawo itself never touches the remote.
+     */
+    public String ship(String taskId) {
+        taskId = canonicalTaskId(taskId);
+        TaskState task = requireTask(taskId);
+        ProjectConfig project = configService.project(task.project());
+        String baseBranch = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
+        String title = configService.load().mrTitlePatternOrDefault()
+                .replace("{ticket}", taskId)
+                .replace("{title}", task.title() == null ? "" : task.title())
+                .trim();
+        String instruction = "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"
+                + "1. Commit ALL current changes with EXACTLY this message: \"" + title + "\".\n"
+                + "2. Push branch " + taskId + ".\n"
+                + "3. If no merge request exists for this branch yet, create one via your GitLab MCP:"
+                + " source " + taskId + " -> target " + baseBranch + ", title \"" + title + "\".\n"
+                + "4. If review_replies.md exists, post each drafted reply to its MR thread, then delete it.\n"
+                + "5. Report back with update_agent_status CI_POLLING, message \"MR: <the merge request url>\".";
+        writeTaskContext(taskId, instruction);
+        return "ship " + taskId + ": approval relayed — agent will commit \"" + title
+                + "\", push, ensure the MR, post replies, then report CI_POLLING.";
+    }
+
     public String notifyUser(String title, String message) {
         userNotifier.notify(title == null ? "jawo" : title, message);
         return "Notification sent";
