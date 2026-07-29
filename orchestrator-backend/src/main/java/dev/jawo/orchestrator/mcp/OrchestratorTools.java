@@ -15,6 +15,7 @@ import dev.jawo.orchestrator.service.StateService;
 import dev.jawo.orchestrator.service.TmuxService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -47,6 +48,11 @@ public class OrchestratorTools {
     private final OrchestratorProperties properties;
     private final OrchestratorPaths paths;
     private final PromptTemplates prompts;
+    /** Plugins the agent sessions should NOT load — heavy LSP plugins spawn a ~1-2GB JDT server per
+     *  worktree and agents don't need them (they have file tools). Field-injected so the many test
+     *  constructors need no change; null in tests = disable nothing. */
+    @Value("${orchestrator.agent-disabled-plugins:}")
+    private List<String> agentDisabledPlugins;
 
     public OrchestratorTools(ConfigService configService, StateService stateService, GitService gitService,
                              TmuxService tmuxService, EditorDriver editorDriver, TerminalDriver terminalDriver,
@@ -253,6 +259,7 @@ public class OrchestratorTools {
                 + "' was kept" + (project == null ? " (worktree left on disk: project missing from config.json)" : "")
                 + (closedViewer ? ". Last task gone — the agents window was closed." : "");
     }
+
 
     /** Merges the task branch into the project's deploy branch and pushes it. */
     public String deployTask(String taskId, String callerTaskId) {
@@ -461,24 +468,35 @@ public class OrchestratorTools {
         // agentOutputStyle from config.json is pinned here (a worktree is an untrusted
         // project where the human's global style may not apply); default null → omitted.
         writeString(worktreePath.resolve(".claude").resolve("settings.local.json"),
-                agentSettingsJson(configService.load().agentOutputStyleOrNull()));
+                agentSettingsJson(configService.load().agentOutputStyleOrNull(), agentDisabledPlugins));
     }
 
     /**
-     * The generated worktree {@code .claude/settings.local.json}: pre-approves the jawo MCP tools
-     * and, when config.json sets {@code agentOutputStyle}, pins it. Valid JSON either way.
+     * The generated worktree {@code .claude/settings.local.json}: pre-approves the jawo MCP tools,
+     * optionally pins {@code agentOutputStyle}, and disables the given plugins for the agent (heavy
+     * LSP plugins spawn a JDT server per worktree — agents don't need them). Valid JSON in all cases.
      */
-    static String agentSettingsJson(String outputStyle) {
+    static String agentSettingsJson(String outputStyle, List<String> disabledPlugins) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
                 : "\n  \"outputStyle\": \"" + outputStyle.replace("\\", "\\\\").replace("\"", "\\\"") + "\",";
+        String pluginsLine = "";
+        if (disabledPlugins != null) {
+            String entries = disabledPlugins.stream()
+                    .filter(p -> p != null && !p.isBlank())
+                    .map(p -> "\"" + p.strip() + "\": false")
+                    .collect(Collectors.joining(", "));
+            if (!entries.isBlank()) {
+                pluginsLine = "\n  \"enabledPlugins\": {" + entries + "},";
+            }
+        }
         return """
-                {%s
+                {%s%s
                   "enableAllProjectMcpServers": true,
                   "permissions": {
                     "allow": ["mcp__jawo-orchestrator"]
                   }
                 }
-                """.formatted(styleLine);
+                """.formatted(styleLine, pluginsLine);
     }
 
     private void symlink(Path link, Path target) {

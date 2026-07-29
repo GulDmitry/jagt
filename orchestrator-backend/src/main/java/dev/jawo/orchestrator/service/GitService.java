@@ -86,6 +86,7 @@ public class GitService {
      */
     public void removeWorktree(Path projectPath, Path worktreePath, String branchToDelete) {
         withRepoLock(projectPath, () -> {
+            reapWorktreeProcesses(worktreePath);
             var removed = processRunner.run(projectPath, GIT_TIMEOUT,
                     List.of("git", "worktree", "remove", "--force", worktreePath.toString()));
             if (removed.exitCode() != 0) {
@@ -228,6 +229,31 @@ public class GitService {
      * admin entries, and deletes any leftover directory on disk (a prior run — possibly of another
      * repo sharing the same taskId — can leave the path, which would fail `git worktree add`).
      */
+    /**
+     * Kills processes still rooted (cwd) in a worktree about to be removed — chiefly language servers
+     * (jdtls, ~1-2GB): an LSP plugin typically starts its server DETACHED (own process group, to be
+     * reused across editor restarts), so it orphans and survives the agent session's death rather than
+     * dying with it. Best-effort, macOS {@code lsof}; failures are logged, never thrown.
+     */
+    private void reapWorktreeProcesses(Path worktree) {
+        var lsof = processRunner.run(null, GIT_TIMEOUT,
+                List.of("lsof", "-a", "-c", "java", "-d", "cwd", "-Fpn"));
+        String target = worktree.toString();
+        String pid = null;
+        for (String line : lsof.stdout().lines().toList()) {
+            if (line.startsWith("p")) {
+                pid = line.substring(1);
+            } else if (line.startsWith("n") && pid != null) {
+                String cwd = line.substring(1);
+                if (cwd.equals(target) || cwd.startsWith(target + "/")) {
+                    processRunner.run(null, GIT_TIMEOUT, List.of("kill", "-9", pid));
+                    log.info("Reaped worktree-rooted process {} ({})", pid, cwd);
+                    pid = null;
+                }
+            }
+        }
+    }
+
     private void clearDiffWorktree(Path projectPath, Path temp) {
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "remove", "--force", temp.toString()));
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));

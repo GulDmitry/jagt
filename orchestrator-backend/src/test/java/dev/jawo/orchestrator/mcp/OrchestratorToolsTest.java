@@ -557,10 +557,20 @@ class OrchestratorToolsTest {
 
     @Test
     void pinsConfiguredOutputStyleInGeneratedAgentSettings() {
-        String json = OrchestratorTools.agentSettingsJson("sob-ai:Engineer");
+        String json = OrchestratorTools.agentSettingsJson("sob-ai:Engineer", null);
 
         String style = new JsonMapper().readTree(json).path("outputStyle").asText(null);
 
         assertThat(style).isEqualTo("sob-ai:Engineer");
+    }
+
+    @Test
+    void disablesConfiguredPluginsInGeneratedAgentSettings() {
+        String json = OrchestratorTools.agentSettingsJson(null, List.of("jdtls-lsp@claude-plugins-official"));
+
+        boolean enabled = new JsonMapper().readTree(json)
+                .path("enabledPlugins").path("jdtls-lsp@claude-plugins-official").asBoolean(true);
+
+        assertThat(enabled).isFalse();
     }
 }

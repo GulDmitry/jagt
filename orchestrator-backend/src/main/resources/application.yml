@@ -50,6 +50,14 @@ orchestrator:
   assistant:
     setting-sources: user,project,local
     # model:            # e.g. sonnet; blank = your default model
+  # Plugins disabled in each agent worktree's settings.local.json. Default EMPTY: agents KEEP their
+  # LSP (code intelligence — go-to-def, references, diagnostics; worth the RAM). jawo reaps each
+  # worktree's JDT server on `done` so finished tasks don't leave servers behind. Only opt in below
+  # if you're RAM-constrained and accept dumber agents (MCP plugins like Jira/GitLab stay enabled):
+  # agent-disabled-plugins:
+  #   - jdtls-lsp@claude-plugins-official
+  #   - php-lsp@claude-plugins-official
+  #   - oh-my-claudecode@omc
   tmux-command: /opt/homebrew/bin/tmux
   # Auto-open a Warp window attached to the agents' tmux session. Disable in
   # smoke tests (--orchestrator.open-warp-window=false) so tests leave no windows behind.

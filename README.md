@@ -68,6 +68,7 @@ exact keys.
 | `orchestrator.claude-command` | agent CLI, default `claude` |
 | `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits, default `user,project,local` (no MCP path hardcoded) |
 | `orchestrator.assistant.model` | model for the ticket-read (blank = your default; a strong model is more reliable at the tool call) |
+| `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default: the LSP plugins — each spawns a ~1-2GB JDT server; agents don't need them) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
 | `orchestrator.tmux-command` | tmux binary, default `/opt/homebrew/bin/tmux` |
 | `orchestrator.open-warp-window` | auto-open the terminal window (`false` in tests) |

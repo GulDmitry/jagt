@@ -105,6 +105,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   falls back to an explicit project. Headless `-p` does NOT auto-load plugin MCP without
   `--setting-sources` (verified: default `-p` sees zero Jira tools).
 
+## Agent resource hygiene
+- Each sub-agent is a Claude Code session in a worktree, so each spawns its OWN language server
+  (jdtls ~1-2GB per Java worktree) — they can't be shared (worktrees have different uncommitted code;
+  LSP is per-root). Agents KEEP their LSP (code intelligence is worth the RAM), so jawo instead REAPS
+  each worktree's language server on `done`/`remove_task` (`reapWorktreeProcesses`: `lsof` for procs
+  whose cwd is the worktree, `kill -9`) — an orphaned/hung jdtls survives the agent's exit otherwise.
+  `orchestrator.agent-disabled-plugins` writes `enabledPlugins: {"<name>": false}` into the worktree
+  settings — default EMPTY (opt-in for RAM-constrained setups; disabling an absent plugin is a no-op).
+
 ## Conventions
 - Markdown and docs: aim for ~120-character lines, hard max 150; don't force awkward wrapping.
 - Prompt structure (per Anthropic prompt-engineering guidance): wrap concerns in named XML sections
