@@ -44,4 +44,12 @@ class DashboardLineTest {
 
         assertThat(DashboardLine.forTask("PAN-1", task)).isEqualTo("PAN-1");
     }
+
+    @Test
+    void showsTheMrLinkWhenReviewPendingHasOne() {
+        TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEW_PENDING, 0,
+                null, "a1", null, "some title", "https://host/mr/417");
+
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/417");
+    }
 }

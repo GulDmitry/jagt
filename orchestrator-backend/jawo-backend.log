@@ -75,3 +75,17 @@
 2026-07-29T13:04:52.269+02:00  INFO 15035 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
 2026-07-29T13:04:52.269+02:00  INFO 15035 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
 2026-07-29T13:04:52.270+02:00  INFO 15035 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-07-29T13:08:05.169+02:00  INFO 15035 --- [jawo-orchestrator] [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-07-29T13:08:05.183+02:00  INFO 15035 --- [jawo-orchestrator] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-07-29T13:08:12.555+02:00  INFO 16664 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : Starting OrchestratorApplication using Java 25.0.3 with PID 16664 (/Users/dzmitry/www/jawo/orchestrator-backend/build/classes/java/main started by dzmitry in /Users/dzmitry/www/jawo/orchestrator-backend)
+2026-07-29T13:08:12.556+02:00  INFO 16664 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : No active profile set, falling back to 1 default profile: "default"
+2026-07-29T13:08:12.778+02:00  INFO 16664 --- [jawo-orchestrator] [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-07-29T13:08:12.782+02:00  INFO 16664 --- [jawo-orchestrator] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-29T13:08:12.782+02:00  INFO 16664 --- [jawo-orchestrator] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-07-29T13:08:12.793+02:00  INFO 16664 --- [jawo-orchestrator] [main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 223 ms
+2026-07-29T13:08:12.908+02:00  INFO 16664 --- [jawo-orchestrator] [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-07-29T13:08:12.910+02:00  INFO 16664 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : Started OrchestratorApplication in 0.49 seconds (process running for 0.591)
+2026-07-29T13:08:13.198+02:00  WARN 16664 --- [jawo-orchestrator] [main] org.jline                                : Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+2026-07-29T13:08:35.949+02:00  INFO 16664 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-07-29T13:08:35.950+02:00  INFO 16664 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-07-29T13:08:35.951+02:00  INFO 16664 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

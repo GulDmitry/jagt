@@ -21,8 +21,15 @@ public final class DashboardLine {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "pipeline/build failed");
             case CI_POLLING, DEPLOYED -> orDefault(task.mrUrl(), "MR link missing");
             case DONE -> "";
-            case NEW, IN_PROGRESS, REVIEW_PENDING -> orDefault(task.title(), taskId);
+            // In review: show the clickable MR link once one exists (e.g. after ship/resume),
+            // otherwise the ticket title (or id) while still pre-MR.
+            case REVIEW_PENDING -> hasMr(task) ? task.mrUrl() : orDefault(task.title(), taskId);
+            case NEW, IN_PROGRESS -> orDefault(task.title(), taskId);
         };
+    }
+
+    private static boolean hasMr(TaskState task) {
+        return task.mrUrl() != null && !task.mrUrl().isBlank();
     }
 
     private static String orDefault(String value, String fallback) {
