@@ -5,7 +5,6 @@ import dev.jawo.orchestrator.service.ProcessRunner;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,12 +24,13 @@ public class CliEditorDriver implements EditorDriver {
         this.properties = properties;
     }
 
+    // Detached: GUI launchers (idea, open -a) may not return until the IDE is ready or the window
+    // closes; waiting would time out and then kill the window we just opened.
     @Override
     public void open(Path path) {
         List<String> command = new ArrayList<>(properties.editorCommand());
         command.add(path.toString());
-        processRunner.run(null, Duration.ofSeconds(20), command)
-                .expectSuccess(String.join(" ", command));
+        processRunner.runDetached(null, command);
     }
 
     @Override
@@ -38,7 +38,6 @@ public class CliEditorDriver implements EditorDriver {
         List<String> command = new ArrayList<>(properties.editorDiffCommand());
         command.add(left.toString());
         command.add(right.toString());
-        processRunner.run(null, Duration.ofSeconds(20), command)
-                .expectSuccess(String.join(" ", command));
+        processRunner.runDetached(null, command);
     }
 }

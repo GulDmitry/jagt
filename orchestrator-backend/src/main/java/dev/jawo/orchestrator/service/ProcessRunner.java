@@ -27,6 +27,27 @@ public class ProcessRunner {
         return run(workingDir, timeout, Map.of(), command);
     }
 
+    /**
+     * Fire-and-forget: start the process and return immediately, never waiting for or killing it.
+     * For GUI launchers (`idea diff`, editors) whose CLI blocks until the IDE is ready or the window
+     * closes — waiting would time out and then destroy the very window it opened. Only a failure to
+     * START (bad binary) is reported; the launched app's own errors are its business.
+     */
+    public void runDetached(Path workingDir, List<String> command) {
+        try {
+            ProcessBuilder builder = new ProcessBuilder(command);
+            if (workingDir != null) {
+                builder.directory(workingDir.toFile());
+            }
+            builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
+            builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
+            builder.redirectError(ProcessBuilder.Redirect.DISCARD);
+            builder.start();
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to launch: " + String.join(" ", command), e);
+        }
+    }
+
     public ProcessResult run(Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
