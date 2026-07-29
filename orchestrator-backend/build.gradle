@@ -20,16 +20,22 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    // Master control terminal (JLine REPL). Spring Shell 4.x targets Spring Framework 7 / Boot 4.
-    // The starter doesn't pull JLine transitively — the interactive shell needs it explicitly.
-    implementation 'org.springframework.shell:spring-shell-starter:4.0.0'
-    implementation 'org.springframework.shell:spring-shell-jline:4.0.0'
+    // Master control terminal: a hand-rolled JLine REPL. (Spring Shell 4 was tried, but its
+    // annotation arg-binding wouldn't attach @Argument/@Option to component-scanned @Command
+    // methods — every command rejected argument tokens. JLine gives full control over tokenization.)
+    implementation 'org.jline:jline:3.30.6'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
+}
+
+// Spring Shell reads command parameter names/metadata reflectively — needs -parameters,
+// otherwise @Option/@Argument never attach and commands reject any argument token.
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add('-parameters')
 }
 
 // The Master shell reads stdin; Gradle does not forward it to bootRun unless asked.

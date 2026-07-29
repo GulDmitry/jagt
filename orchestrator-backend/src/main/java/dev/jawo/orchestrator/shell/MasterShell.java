@@ -1,0 +1,147 @@
+package dev.jawo.orchestrator.shell;
+
+import dev.jawo.orchestrator.mcp.OrchestratorTools;
+import dev.jawo.orchestrator.service.ConfigService;
+import dev.jawo.orchestrator.service.DashboardRenderer;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.UserInterruptException;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * The Master control terminal: a deterministic JLine REPL running in the backend process. It parses a
+ * fixed grammar and calls {@link OrchestratorTools} directly (same JVM — no LLM, no MCP round-trip, no
+ * drift). Every command prints its result then the dashboard, so the terminal always ends on current
+ * state. Callers here are the Master (never a sub-agent), so the {@code callerTaskId} scoping arg is
+ * always {@code null}.
+ *
+ * <p>{@code ship}/{@code review} are not here yet: they delegate GitLab/Jira work to the sub-agent
+ * (its own MCP) via {@code write_task_context}; that lands with the delegation layer.
+ */
+@Component
+@Order(Integer.MAX_VALUE)
+public class MasterShell implements ApplicationRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(MasterShell.class);
+
+    private final OrchestratorTools tools;
+    private final DashboardRenderer dashboard;
+    private final ConfigService configService;
+
+    public MasterShell(OrchestratorTools tools, DashboardRenderer dashboard, ConfigService configService) {
+        this.tools = tools;
+        this.dashboard = dashboard;
+        this.configService = configService;
+    }
+
+    @Override
+    public void run(ApplicationArguments args) {
+        Terminal terminal;
+        try {
+            terminal = TerminalBuilder.builder().system(true).name("jawo").build();
+        } catch (IOException e) {
+            log.warn("No terminal available — Master shell disabled ({})", e.getMessage());
+            return;
+        }
+        LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
+        var w = terminal.writer();
+        w.println("jawo — Master control terminal. Type 'help'. Ctrl-D to detach (agents keep running).");
+        w.flush();
+        while (true) {
+            String line;
+            try {
+                line = reader.readLine("jawo> ");
+            } catch (UserInterruptException e) {
+                continue;
+            } catch (EndOfFileException e) {
+                break;
+            }
+            if (line == null || line.isBlank()) {
+                continue;
+            }
+            if (line.strip().equals("quit") || line.strip().equals("exit")) {
+                break;
+            }
+            w.println(dispatch(line.strip()));
+            w.flush();
+        }
+    }
+
+    private String dispatch(String line) {
+        List<String> tok = List.of(line.split("\\s+"));
+        String cmd = tok.get(0);
+        try {
+            String result = switch (cmd) {
+                case "status" -> "";
+                case "help" -> help();
+                case "do" -> doTask(tok);
+                case "focus" -> tools.focusTask(arg(tok, 1, "focus <ticket>"));
+                case "ide" -> tools.openInIde(arg(tok, 1, "ide <ticket> [project]"),
+                        tok.contains("project") ? "project" : "diff", null);
+                case "deploy" -> tools.deployTask(arg(tok, 1, "deploy <ticket>"), null);
+                case "respawn" -> tools.openTaskTab(arg(tok, 1, "respawn <ticket>"), null);
+                case "done" -> tools.removeTask(arg(tok, 1, "done <ticket>"), null);
+                default -> "unknown command '" + cmd + "' — try 'help'";
+            };
+            return result.isBlank() ? dashboard.render() : result + "\n\n" + dashboard.render();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return "error: " + e.getMessage();
+        }
+    }
+
+    private String doTask(List<String> tok) {
+        String ticket = arg(tok, 1, "do <ticket> [project] [plan]");
+        boolean plan = tok.contains("plan");
+        String project = tok.stream().skip(2).filter(t -> !t.equals("plan")).findFirst().orElse(null);
+        String instructions = "Read " + ticket + " via your Jira MCP and implement it.";
+        return tools.initializeTask(ticket, resolveProject(project), instructions, plan ? "plan" : null, null, null);
+    }
+
+    private String resolveProject(String project) {
+        Set<String> keys = configService.load().projects().keySet();
+        if (project != null && !project.isBlank()) {
+            if (!keys.contains(project)) {
+                throw new IllegalArgumentException("unknown project '" + project + "'. Configured: " + keys);
+            }
+            return project;
+        }
+        if (keys.size() == 1) {
+            return keys.iterator().next();
+        }
+        throw new IllegalArgumentException("multiple projects " + keys + " — specify one: do <ticket> <project>");
+    }
+
+    private static String arg(List<String> tok, int i, String usage) {
+        if (tok.size() <= i || tok.get(i).isBlank()) {
+            throw new IllegalArgumentException("usage: " + usage);
+        }
+        return tok.get(i);
+    }
+
+    private static String help() {
+        List<String> lines = new ArrayList<>();
+        lines.add("commands (task = ticket id or alias):");
+        lines.add("  status                       show the dashboard");
+        lines.add("  do <ticket> [project] [plan] spin up a sub-agent in a worktree");
+        lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
+        lines.add("  ide <ticket> [project]       diff of changes vs base (or full project)");
+        lines.add("  deploy <ticket>              merge task branch into deployBranch + push");
+        lines.add("  respawn <ticket>             restart a dead agent session");
+        lines.add("  done <ticket>                full cleanup (window, worktree, state; branch kept)");
+        lines.add("  help | quit                  this reference | detach (agents keep running)");
+        return String.join("\n", lines);
+    }
+}

@@ -4,13 +4,10 @@ server:
 spring:
   application:
     name: jawo-orchestrator
-  # The backend process IS the Master control terminal (Spring Shell). Keep the console clean:
+  # The backend process IS the Master control terminal (JLine REPL). Keep the console clean:
   # no Spring banner, logs go to a file (tail it separately), only the shell prints to the console.
   main:
     banner-mode: "off"
-  shell:
-    interactive:
-      enabled: true
 
 logging:
   threshold:
