@@ -59,6 +59,8 @@ public class MasterShell implements ApplicationRunner {
         LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
         var w = terminal.writer();
         w.println("jawo — Master control terminal. Type 'help'. Ctrl-D to detach (agents keep running).");
+        w.println();
+        w.println(dashboard.render());
         w.flush();
         while (true) {
             String line;
