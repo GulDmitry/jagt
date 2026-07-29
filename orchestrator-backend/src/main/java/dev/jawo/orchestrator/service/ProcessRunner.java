@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -23,11 +24,16 @@ public class ProcessRunner {
     }
 
     public ProcessResult run(Path workingDir, Duration timeout, List<String> command) {
+        return run(workingDir, timeout, Map.of(), command);
+    }
+
+    public ProcessResult run(Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             if (workingDir != null) {
                 builder.directory(workingDir.toFile());
             }
+            builder.environment().putAll(env);
             Process process = builder.start();
             // Drain both streams before waitFor to avoid pipe-buffer deadlock on chatty commands.
             var stdoutReader = process.inputReader();

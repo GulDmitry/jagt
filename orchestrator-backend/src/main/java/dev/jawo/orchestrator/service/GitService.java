@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -151,22 +152,82 @@ public class GitService {
     }
 
     /**
-     * A throwaway detached worktree at the base branch, for `idea diff <base> <task worktree>`
-     * (shows the task's changes as a directory compare). Reused per task: the previous one is
-     * removed first, so diffs don't accumulate. Returns the checkout path.
+     * Left side of the `ide` diff: a throwaway detached worktree at the base branch. Reused per
+     * task (previous one removed first). Pair with {@link #checkoutWorktreeCleanForDiff} for the
+     * right side — the two clean checkouts are what the editor folder-diffs. Returns the path.
      */
     public Path checkoutBaseForDiff(Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
             Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jawo-diff-" + taskId);
-            processRunner.run(projectPath, GIT_TIMEOUT,
-                    List.of("git", "worktree", "remove", "--force", temp.toString()));
+            clearDiffWorktree(projectPath, temp);
             processRunner.run(projectPath, GIT_TIMEOUT,
                             List.of("git", "worktree", "add", "--detach", temp.toString(), baseBranch))
                     .expectSuccess("git worktree add (diff base) " + temp);
             return temp;
         });
+    }
+
+    /**
+     * Right side of the `ide` diff: a clean detached worktree of the task's CURRENT tracked state
+     * (committed + uncommitted), built through a throwaway index so {@code .gitignore} AND
+     * {@code .git/info/exclude} are honored. This is the fix for `idea diff` on the live worktree,
+     * whose raw folder compare ignores git and dumps hundreds of untracked files — the orchestrator
+     * plumbing (mcp_client.js, .mcp.json, .claude/, CLAUDE.md, task_context.md, .run/) and build/IDE
+     * artifacts. Snapshotting via {@code git add -A} in a temp index drops exactly those. Reused per
+     * task (previous one removed first). Returns the checkout path.
+     */
+    public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
+        return withRepoLock(projectPath, () -> {
+            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jawo-diff-new-" + taskId);
+            clearDiffWorktree(projectPath, temp);
+            Path index;
+            try {
+                index = Files.createTempFile("jawo-diff-index-" + taskId + "-", "");
+            } catch (IOException e) {
+                throw new UncheckedIOException("Cannot allocate temp git index for diff of " + taskId, e);
+            }
+            try {
+                Map<String, String> env = Map.of("GIT_INDEX_FILE", index.toString());
+                processRunner.run(worktreePath, GIT_TIMEOUT, env, List.of("git", "read-tree", "HEAD"))
+                        .expectSuccess("git read-tree (clean diff) " + taskId);
+                processRunner.run(worktreePath, GIT_TIMEOUT, env, List.of("git", "add", "-A"))
+                        .expectSuccess("git add -A (clean diff) " + taskId);
+                String tree = processRunner.run(worktreePath, GIT_TIMEOUT, env, List.of("git", "write-tree"))
+                        .expectSuccess("git write-tree (clean diff) " + taskId).stdout().trim();
+                String commit = processRunner.run(worktreePath, GIT_TIMEOUT,
+                                List.of("git", "commit-tree", tree, "-p", baseBranch, "-m", "jawo diff " + taskId))
+                        .expectSuccess("git commit-tree (clean diff) " + taskId).stdout().trim();
+                processRunner.run(projectPath, GIT_TIMEOUT,
+                                List.of("git", "worktree", "add", "--detach", temp.toString(), commit))
+                        .expectSuccess("git worktree add (clean diff) " + temp);
+                return temp;
+            } finally {
+                try {
+                    Files.deleteIfExists(index);
+                } catch (IOException e) {
+                    log.warn("Could not delete temp diff index {}: {}", index, e.getMessage());
+                }
+            }
+        });
+    }
+
+    /**
+     * Clears a reused diff worktree path: unregisters it (if this repo knows it), prunes stale
+     * admin entries, and deletes any leftover directory on disk (a prior run — possibly of another
+     * repo sharing the same taskId — can leave the path, which would fail `git worktree add`).
+     */
+    private void clearDiffWorktree(Path projectPath, Path temp) {
+        processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "remove", "--force", temp.toString()));
+        processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
+        if (Files.exists(temp)) {
+            try (var paths = Files.walk(temp)) {
+                paths.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+            } catch (IOException e) {
+                log.warn("Could not delete stale diff worktree {}: {}", temp, e.getMessage());
+            }
+        }
     }
 
     /**

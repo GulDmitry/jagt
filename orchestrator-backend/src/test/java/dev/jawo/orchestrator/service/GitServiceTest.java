@@ -173,6 +173,33 @@ class GitServiceTest {
     }
 
     @Test
+    void excludesGitIgnoredPlumbingFromTheIdeDiffSnapshot(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitService git = new GitService(runner);
+        Path wt = dir.resolve("wt");
+        git.createWorktree(repo, wt, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
+        Files.writeString(wt.resolve("f.txt"), "task change");
+        Files.writeString(wt.resolve("new.js"), "new source");
+        Files.writeString(wt.resolve("mcp_client.js"), "plumbing");
+        Files.writeString(repo.resolve(".git").resolve("info").resolve("exclude"), "mcp_client.js\n");
+
+        Path clean = git.checkoutWorktreeCleanForDiff(wt, repo, "origin/main", "ABC-1");
+
+        assertThat(clean.resolve("mcp_client.js")).doesNotExist();
+        assertThat(clean.resolve("f.txt")).hasContent("task change");
+        assertThat(clean.resolve("new.js")).hasContent("new source");
+    }
+
+    @Test
     void publishesTaskCommitsWhenDeployMergesCleanly(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

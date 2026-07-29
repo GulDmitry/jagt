@@ -187,9 +187,13 @@ public class OrchestratorTools {
             throw new IllegalArgumentException("Unknown ide mode '" + mode + "'. Allowed: diff, project");
         }
         // Default: diff window vs base — review-only, no project, no dead recent-project entry.
+        // Both sides are clean git checkouts: a raw folder-diff of the live worktree would ignore
+        // .gitignore/info-exclude and dump the plumbing + build artifacts (hundreds of files).
         ProjectConfig project = configService.project(task.project());
-        Path base = gitService.checkoutBaseForDiff(Path.of(project.path()), project.baseBranch(), taskId);
-        editorDriver.openDiff(base, worktree);
+        Path projectPath = Path.of(project.path());
+        Path base = gitService.checkoutBaseForDiff(projectPath, project.baseBranch(), taskId);
+        Path clean = gitService.checkoutWorktreeCleanForDiff(worktree, projectPath, project.baseBranch(), taskId);
+        editorDriver.openDiff(base, clean);
         return "Opened diff of " + taskId + " (changes vs " + project.baseBranch() + ") — no project created";
     }
 

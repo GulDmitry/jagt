@@ -233,6 +233,7 @@ class OrchestratorToolsTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         GitService git = mock(GitService.class);
         when(git.checkoutBaseForDiff(any(), any(), any())).thenReturn(java.nio.file.Path.of("/tmp/base"));
+        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any())).thenReturn(java.nio.file.Path.of("/tmp/clean"));
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
                 editor, mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths,
@@ -240,7 +241,7 @@ class OrchestratorToolsTest {
 
         tools.openInIde("a1", null, null);
 
-        verify(editor).openDiff(java.nio.file.Path.of("/tmp/base"), java.nio.file.Path.of("/wt"));
+        verify(editor).openDiff(java.nio.file.Path.of("/tmp/base"), java.nio.file.Path.of("/tmp/clean"));
     }
 
     @Test
