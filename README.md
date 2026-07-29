@@ -66,6 +66,8 @@ exact keys.
 | `orchestrator.editor-command` | editor launcher list, default `[open, -a, IntelliJ IDEA]`; e.g. `[code]` |
 | `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff`, default `[.../idea, diff]` (`open -a` can't diff) |
 | `orchestrator.claude-command` | agent CLI, default `claude` |
+| `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits, default `user,project,local` (no MCP path hardcoded) |
+| `orchestrator.assistant.model` | model for the ticket-read (blank = your default; a strong model is more reliable at the tool call) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
 | `orchestrator.tmux-command` | tmux binary, default `/opt/homebrew/bin/tmux` |
 | `orchestrator.open-warp-window` | auto-open the terminal window (`false` in tests) |

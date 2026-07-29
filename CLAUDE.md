@@ -93,6 +93,18 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `permissions.allow: ["mcp__jawo-orchestrator"]`. Miss it → `ship`/`feedback` stall on an invisible
   prompt.
 
+## Master assistant (headless one-shot)
+- The backend talks to no external systems, but `do <ticket>` needs the Jira ticket read BEFORE a
+  worktree/agent exists. `HeadlessClaudeAssistant` (`MasterAssistant`) spawns a one-shot
+  `claude "<prompt>" -p --setting-sources user,project,local --json-schema '<schema>'` (stdin
+  `/dev/null` via `ProcessRunner`). It hardcodes NO MCP server or path — `--setting-sources` makes the
+  child inherit the human's OWN MCP (portable, OS-independent); `--json-schema` forces deterministic
+  JSON. Runs from `java.io.tmpdir` so only user-level MCP loads (no jawo project MCP → fewer tokens).
+  Project is resolved by intersecting the ticket's labels with each project's `labels`
+  (`MasterShell.projectsMatching`); the title is cached for the commit. Any failure → empty → `do`
+  falls back to an explicit project. Headless `-p` does NOT auto-load plugin MCP without
+  `--setting-sources` (verified: default `-p` sees zero Jira tools).
+
 ## Conventions
 - Markdown and docs: aim for ~120-character lines, hard max 150; don't force awkward wrapping.
 - Prompt structure (per Anthropic prompt-engineering guidance): wrap concerns in named XML sections

@@ -34,6 +34,10 @@ public class ProcessRunner {
                 builder.directory(workingDir.toFile());
             }
             builder.environment().putAll(env);
+            // No jawo subprocess reads our stdin — feed them /dev/null so none can steal the
+            // Master shell's stdin (the backend's stdin is the JLine REPL), and so tools like
+            // `claude -p` get immediate EOF instead of a 3s stdin wait.
+            builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
             Process process = builder.start();
             // Drain both streams before waitFor to avoid pipe-buffer deadlock on chatty commands.
             var stdoutReader = process.inputReader();

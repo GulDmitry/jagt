@@ -43,6 +43,13 @@ orchestrator:
     via update_agent_status, and start working on the task. Follow the rules in CLAUDE.md. Work
     autonomously: when done and verified, commit to your task branch WITHOUT asking for permission
     and set status REVIEW_PENDING.
+  # Master assistant: a one-shot headless Claude for `do <ticket>` — reads the Jira ticket to resolve
+  # the project (matching the ticket's labels to your projects' `labels`) and grab the title. It
+  # inherits YOUR MCP servers via --setting-sources (jawo hardcodes NO server or path); --json-schema
+  # forces deterministic JSON. If it can't read the ticket, `do` falls back to an explicit project.
+  assistant:
+    setting-sources: user,project,local
+    # model:            # e.g. sonnet; blank = your default model
   tmux-command: /opt/homebrew/bin/tmux
   # Auto-open a Warp window attached to the agents' tmux session. Disable in
   # smoke tests (--orchestrator.open-warp-window=false) so tests leave no windows behind.

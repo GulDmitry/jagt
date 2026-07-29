@@ -1,5 +1,7 @@
 package dev.jawo.orchestrator.shell;
 
+import dev.jawo.orchestrator.assistant.MasterAssistant;
+import dev.jawo.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jawo.orchestrator.mcp.OrchestratorTools;
 import dev.jawo.orchestrator.service.ConfigService;
 import dev.jawo.orchestrator.service.DashboardRenderer;
@@ -18,7 +20,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -40,11 +44,14 @@ public class MasterShell implements ApplicationRunner {
     private final OrchestratorTools tools;
     private final DashboardRenderer dashboard;
     private final ConfigService configService;
+    private final MasterAssistant assistant;
 
-    public MasterShell(OrchestratorTools tools, DashboardRenderer dashboard, ConfigService configService) {
+    public MasterShell(OrchestratorTools tools, DashboardRenderer dashboard, ConfigService configService,
+                       MasterAssistant assistant) {
         this.tools = tools;
         this.dashboard = dashboard;
         this.configService = configService;
+        this.assistant = assistant;
     }
 
     @Override
@@ -106,10 +113,54 @@ public class MasterShell implements ApplicationRunner {
 
     private String doTask(List<String> tok) {
         String ticket = arg(tok, 1, "do <ticket> [project] [plan]");
-        boolean plan = tok.contains("plan");
-        String project = tok.stream().skip(2).filter(t -> !t.equals("plan")).findFirst().orElse(null);
-        String instructions = "Read " + ticket + " via your Jira MCP and implement it.";
-        return tools.initializeTask(ticket, resolveProject(project), instructions, plan ? "plan" : null, null, null);
+        String mode = tok.contains("plan") ? "plan" : null;
+        String explicit = tok.stream().skip(2).filter(t -> !t.equals("plan")).findFirst().orElse(null);
+
+        // Explicit project given: skip the ticket read, agent distills the ticket itself.
+        if (explicit != null) {
+            return tools.initializeTask(ticket, resolveProject(explicit),
+                    "Read " + ticket + " via your Jira MCP and implement it.", mode, null, null);
+        }
+        // No project: read the ticket once (headless) to resolve the project by labels + grab the title.
+        var facts = assistant.readTicket(ticket);
+        if (facts.isPresent() && !facts.get().exists()) {
+            return "error: Jira issue " + ticket + " not found";
+        }
+        if (facts.isPresent()) {
+            TicketFacts f = facts.get();
+            String instructions = "Implement Jira " + ticket + " — \"" + f.title()
+                    + "\". Read the ticket via your Jira MCP for full details, then work.";
+            return tools.initializeTask(ticket, resolveByLabels(f), instructions, mode, null, f.title());
+        }
+        // Assistant unavailable — fall back to single-project or the explicit-project error.
+        return tools.initializeTask(ticket, resolveProject(null),
+                "Read " + ticket + " via your Jira MCP and implement it.", mode, null, null);
+    }
+
+    /** Picks the jawo project whose configured labels intersect the ticket's labels (or Jira key). */
+    private String resolveByLabels(TicketFacts f) {
+        Map<String, List<String>> projectLabels = new java.util.LinkedHashMap<>();
+        configService.load().projects().forEach((k, v) -> projectLabels.put(k, v.labels()));
+        List<String> matches = projectsMatching(f, projectLabels);
+        if (matches.size() == 1) {
+            return matches.get(0);
+        }
+        if (matches.isEmpty()) {
+            throw new IllegalArgumentException("no project matches ticket labels " + f.labels()
+                    + " — specify: do <ticket> <project>");
+        }
+        throw new IllegalArgumentException("ticket labels match multiple projects " + matches
+                + " — specify: do <ticket> <project>");
+    }
+
+    /** Pure: the project keys whose labels intersect the ticket's labels or its Jira project key. */
+    static List<String> projectsMatching(TicketFacts f, Map<String, List<String>> projectLabels) {
+        Set<String> tokens = new HashSet<>(f.labels());
+        tokens.add(f.jiraProject());
+        return projectLabels.entrySet().stream()
+                .filter(e -> e.getValue() != null && e.getValue().stream().anyMatch(tokens::contains))
+                .map(Map.Entry::getKey)
+                .toList();
     }
 
     private String resolveProject(String project) {
