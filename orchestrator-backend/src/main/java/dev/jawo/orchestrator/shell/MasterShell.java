@@ -97,6 +97,7 @@ public class MasterShell implements ApplicationRunner {
                 case "status" -> "";
                 case "help" -> help();
                 case "do" -> doTask(tok);
+                case "resume" -> resumeTask(tok);
                 case "focus" -> tools.focusTask(arg(tok, 1, "focus <ticket>"));
                 case "ide" -> tools.openInIde(arg(tok, 1, "ide <ticket> [project]"),
                         tok.contains("project") ? "project" : "diff", null);
@@ -135,6 +136,14 @@ public class MasterShell implements ApplicationRunner {
         // Assistant unavailable — fall back to single-project or the explicit-project error.
         return tools.initializeTask(ticket, resolveProject(null),
                 "Read " + ticket + " via your Jira MCP and implement it.", mode, null, null);
+    }
+
+    /** Reopened ticket: resume its existing branch + the caller-given open MR, at CI_POLLING (no new MR). */
+    private String resumeTask(List<String> tok) {
+        String ticket = arg(tok, 1, "resume <ticket> <mr-url>");
+        String mrUrl = tok.stream().skip(2).filter(t -> t.startsWith("http")).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("resume needs the MR url: resume <ticket> <mr-url>"));
+        return tools.resumeTask(ticket, mrUrl);
     }
 
     /** Picks the jawo project whose configured labels intersect the ticket's labels (or Jira key). */
@@ -189,6 +198,7 @@ public class MasterShell implements ApplicationRunner {
         lines.add("commands (task = ticket id or alias):");
         lines.add("  status                       show the dashboard");
         lines.add("  do <ticket> [project] [plan] spin up a sub-agent in a worktree");
+        lines.add("  resume <ticket> <mr-url>     reopened ticket: resume its branch + that MR -> CI_POLLING");
         lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
         lines.add("  ide <ticket> [project]       diff of changes vs base (or full project)");
         lines.add("  deploy <ticket>              merge task branch into deployBranch + push");

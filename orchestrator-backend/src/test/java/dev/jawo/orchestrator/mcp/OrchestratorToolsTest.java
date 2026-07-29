@@ -16,6 +16,7 @@ import dev.jawo.orchestrator.service.TmuxService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -562,6 +563,16 @@ class OrchestratorToolsTest {
         String style = new JsonMapper().readTree(json).path("outputStyle").asText(null);
 
         assertThat(style).isEqualTo("sob-ai:Engineer");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "git@gitlab.sobrado.ch:sng/sng-back.git, sng/sng-back",
+        "https://gitlab.sobrado.ch/sng/sng-back.git, sng/sng-back",
+        "https://gitlab.sobrado.ch/sng/sng-back, sng/sng-back"
+    })
+    void derivesGitProjectPathFromRemote(String remote, String expected) {
+        assertThat(OrchestratorTools.gitProjectPath(remote)).isEqualTo(expected);
     }
 
     @Test

@@ -260,6 +260,56 @@ public class OrchestratorTools {
                 + (closedViewer ? ". Last task gone — the agents window was closed." : "");
     }
 
+    /**
+     * Re-enter a reopened task on its EXISTING branch (= taskId) plus a caller-supplied open MR, at
+     * CI_POLLING — so `review`/`deploy` continue on that same MR instead of `ship` creating a new one.
+     * The project is derived from the MR url (matched against each project's git remote). The branch
+     * is resumed with its commits; the agent starts in review mode (does not re-implement).
+     */
+    public String resumeTask(String taskId, String mrUrl) {
+        if (mrUrl == null || !mrUrl.contains("http")) {
+            throw new IllegalArgumentException("resume needs the MR url: resume <ticket> <mr-url>");
+        }
+        if (!SAFE_ID.matcher(taskId).matches()) {
+            throw new IllegalArgumentException("Invalid ticket id '" + taskId + "'");
+        }
+        String projectKey = projectForMrUrl(mrUrl);
+        String instructions = "Reopened for review. Your branch is resumed with its existing commits and"
+                + " MR " + mrUrl + " is open. Do NOT re-implement — wait; when the Master relays review"
+                + " comments via task_context.md, address them.";
+        initializeTask(taskId, projectKey, instructions, null, "resume", null);
+        updateAgentStatus("CI_POLLING", "MR: " + mrUrl, taskId, null);
+        return "Resumed " + taskId + " on its existing branch; linked MR " + mrUrl
+                + "; status CI_POLLING — run `review` or `deploy`.";
+    }
+
+    private String projectForMrUrl(String mrUrl) {
+        for (var e : configService.load().projects().entrySet()) {
+            String path = gitProjectPath(gitService.remoteUrl(Path.of(e.getValue().path())));
+            if (path != null && mrUrl.contains(path)) {
+                return e.getKey();
+            }
+        }
+        throw new IllegalArgumentException("no configured project matches MR url: " + mrUrl);
+    }
+
+    /** {@code git@host:group/proj.git} or {@code https://host/group/proj(.git)} -> {@code group/proj}. */
+    static String gitProjectPath(String remoteUrl) {
+        if (remoteUrl == null || remoteUrl.isBlank()) {
+            return null;
+        }
+        String s = remoteUrl.trim();
+        if (s.endsWith(".git")) {
+            s = s.substring(0, s.length() - 4);
+        }
+        if (s.startsWith("http")) {
+            int host = s.indexOf('/', s.indexOf("://") + 3);
+            return host < 0 ? null : s.substring(host + 1);
+        }
+        int colon = s.indexOf(':');
+        return colon < 0 ? null : s.substring(colon + 1);
+    }
+
 
     /** Merges the task branch into the project's deploy branch and pushes it. */
     public String deployTask(String taskId, String callerTaskId) {
