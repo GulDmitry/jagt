@@ -138,11 +138,22 @@ public class MasterShell implements ApplicationRunner {
                 "Read " + ticket + " via your Jira MCP and implement it.", mode, null, null);
     }
 
-    /** Reopened ticket: resume its existing branch + the caller-given open MR, at CI_POLLING (no new MR). */
+    /**
+     * Reopened MR: `resume <mr-url>` — the MR is enough. The assistant reads it for the source branch
+     * (= the task) and project; jawo resumes that branch + links the MR at CI_POLLING (no new MR). An
+     * explicit ticket token may be given to skip the lookup.
+     */
     private String resumeTask(List<String> tok) {
-        String ticket = arg(tok, 1, "resume <ticket> <mr-url>");
-        String mrUrl = tok.stream().skip(2).filter(t -> t.startsWith("http")).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("resume needs the MR url: resume <ticket> <mr-url>"));
+        String mrUrl = tok.stream().skip(1).filter(t -> t.startsWith("http")).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("usage: resume <mr-url>"));
+        String ticket = tok.stream().skip(1).filter(t -> !t.startsWith("http")).findFirst().orElse(null);
+        if (ticket == null) {
+            var mr = assistant.readMergeRequest(mrUrl);
+            if (mr.isEmpty() || !mr.get().exists()) {
+                return "error: could not read MR (or not found): " + mrUrl;
+            }
+            ticket = mr.get().sourceBranch();
+        }
         return tools.resumeTask(ticket, mrUrl);
     }
 
@@ -198,7 +209,7 @@ public class MasterShell implements ApplicationRunner {
         lines.add("commands (task = ticket id or alias):");
         lines.add("  status                       show the dashboard");
         lines.add("  do <ticket> [project] [plan] spin up a sub-agent in a worktree");
-        lines.add("  resume <ticket> <mr-url>     reopened ticket: resume its branch + that MR -> CI_POLLING");
+        lines.add("  resume <mr-url>              reopened MR: resume its branch + link it -> CI_POLLING");
         lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
         lines.add("  ide <ticket> [project]       diff of changes vs base (or full project)");
         lines.add("  deploy <ticket>              merge task branch into deployBranch + push");

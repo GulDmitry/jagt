@@ -16,5 +16,12 @@ public interface MasterAssistant {
     record TicketFacts(boolean exists, String title, String jiraProject, List<String> labels) {
     }
 
+    /** Facts about an existing merge request. {@code exists=false} means the URL resolved to nothing. */
+    record MergeRequestFacts(boolean exists, String sourceBranch, String projectPath, String title) {
+    }
+
     Optional<TicketFacts> readTicket(String ticketKey);
+
+    /** Reads an MR by URL so `resume` can recover its source branch (= the task) and project. */
+    Optional<MergeRequestFacts> readMergeRequest(String mrUrl);
 }

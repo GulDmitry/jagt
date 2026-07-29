@@ -61,3 +61,17 @@
 2026-07-29T12:21:58.738+02:00  INFO 97295 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
 2026-07-29T12:21:58.739+02:00  INFO 97295 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 0 ms
 2026-07-29T12:33:16.030+02:00  WARN 97295 --- [jawo-orchestrator] [scheduling-1] d.j.o.service.WatchdogService            : Watchdog: task PAN-2575 silent for 5 min
+2026-07-29T13:03:29.941+02:00  INFO 97295 --- [jawo-orchestrator] [SpringApplicationShutdownHook] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-07-29T13:03:29.950+02:00  INFO 97295 --- [jawo-orchestrator] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-07-29T13:03:32.484+02:00  INFO 15035 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : Starting OrchestratorApplication using Java 25.0.3 with PID 15035 (/Users/dzmitry/www/jawo/orchestrator-backend/build/classes/java/main started by dzmitry in /Users/dzmitry/www/jawo/orchestrator-backend)
+2026-07-29T13:03:32.485+02:00  INFO 15035 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : No active profile set, falling back to 1 default profile: "default"
+2026-07-29T13:03:32.723+02:00  INFO 15035 --- [jawo-orchestrator] [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-07-29T13:03:32.728+02:00  INFO 15035 --- [jawo-orchestrator] [main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-07-29T13:03:32.728+02:00  INFO 15035 --- [jawo-orchestrator] [main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.22]
+2026-07-29T13:03:32.739+02:00  INFO 15035 --- [jawo-orchestrator] [main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 238 ms
+2026-07-29T13:03:32.864+02:00  INFO 15035 --- [jawo-orchestrator] [main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-07-29T13:03:32.866+02:00  INFO 15035 --- [jawo-orchestrator] [main] d.j.o.OrchestratorApplication            : Started OrchestratorApplication in 0.527 seconds (process running for 0.63)
+2026-07-29T13:03:33.157+02:00  WARN 15035 --- [jawo-orchestrator] [main] org.jline                                : Unable to create a system terminal, creating a dumb terminal (enable debug logging for more information)
+2026-07-29T13:04:52.269+02:00  INFO 15035 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-07-29T13:04:52.269+02:00  INFO 15035 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-07-29T13:04:52.270+02:00  INFO 15035 --- [jawo-orchestrator] [http-nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms

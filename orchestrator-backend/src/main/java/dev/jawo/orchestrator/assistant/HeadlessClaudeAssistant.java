@@ -36,6 +36,13 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "jiraProject":{"type":"string"},\
             "labels":{"type":"array","items":{"type":"string"}}},\
             "required":["exists","title","jiraProject","labels"]}""";
+    private static final String MR_SCHEMA = """
+            {"type":"object","properties":{\
+            "exists":{"type":"boolean"},\
+            "sourceBranch":{"type":"string"},\
+            "projectPath":{"type":"string"},\
+            "title":{"type":"string"}},\
+            "required":["exists","sourceBranch","projectPath","title"]}""";
 
     private final ProcessRunner processRunner;
     private final OrchestratorProperties properties;
@@ -60,30 +67,45 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         String prompt = "Fetch Jira issue " + ticketKey + " via your Jira MCP tools. Return exists=true"
                 + " with its summary as title, its project key as jiraProject, and its labels. If it does"
                 + " not exist, exists=false with empty strings and array.";
+        return ask(prompt, TICKET_SCHEMA, ticketKey).map(n -> {
+            List<String> labels = new ArrayList<>();
+            n.path("labels").forEach(l -> labels.add(l.asString("")));
+            return new TicketFacts(n.path("exists").asBoolean(false),
+                    n.path("title").asString(""), n.path("jiraProject").asString(""), labels);
+        });
+    }
+
+    @Override
+    public Optional<MergeRequestFacts> readMergeRequest(String mrUrl) {
+        if (mrUrl == null || !mrUrl.startsWith("http")) {
+            return Optional.empty();
+        }
+        String prompt = "Fetch the GitLab merge request at " + mrUrl + " via your GitLab MCP tools. Return"
+                + " exists=true with its source branch as sourceBranch, its project path (group/project)"
+                + " as projectPath, and its title. If it does not exist, exists=false with empty strings.";
+        return ask(prompt, MR_SCHEMA, mrUrl).map(n -> new MergeRequestFacts(
+                n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
+                n.path("projectPath").asString(""), n.path("title").asString("")));
+    }
+
+    /** Runs one stripped, schema-forced headless Claude call; empty on any failure. */
+    private Optional<JsonNode> ask(String prompt, String schema, String label) {
         List<String> cmd = new ArrayList<>(List.of(properties.claudeCommand(), prompt, "-p",
-                "--setting-sources", settingSources, "--json-schema", TICKET_SCHEMA));
+                "--setting-sources", settingSources, "--json-schema", schema));
         if (model != null && !model.isBlank()) {
             cmd.add("--model");
             cmd.add(model);
         }
         var result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), TIMEOUT, cmd);
         if (result.exitCode() != 0 || result.stdout().isBlank()) {
-            log.warn("Headless assistant failed for {} (exit {}): {}", ticketKey, result.exitCode(),
+            log.warn("Headless assistant failed for {} (exit {}): {}", label, result.exitCode(),
                     result.stderr().isBlank() ? result.stdout() : result.stderr());
             return Optional.empty();
         }
-        return parse(result.stdout(), ticketKey);
-    }
-
-    private Optional<TicketFacts> parse(String json, String ticketKey) {
         try {
-            JsonNode n = mapper.readTree(json);
-            List<String> labels = new ArrayList<>();
-            n.path("labels").forEach(l -> labels.add(l.asString("")));
-            return Optional.of(new TicketFacts(n.path("exists").asBoolean(false),
-                    n.path("title").asString(""), n.path("jiraProject").asString(""), labels));
+            return Optional.of(mapper.readTree(result.stdout()));
         } catch (RuntimeException e) {
-            log.warn("Headless assistant returned unparseable JSON for {}: {}", ticketKey, e.toString());
+            log.warn("Headless assistant returned unparseable JSON for {}: {}", label, e.toString());
             return Optional.empty();
         }
     }
