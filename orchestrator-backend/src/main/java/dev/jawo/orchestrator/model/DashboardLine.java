@@ -21,11 +21,10 @@ public final class DashboardLine {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "pipeline/build failed");
             case SHIPPING -> "SHIPPING: agent committing & pushing… (focus to watch)";
             case CI_POLLING, DEPLOYED -> orDefault(task.mrUrl(), "MR link missing");
-            case DONE -> "";
-            // In review: show the clickable MR link once one exists (e.g. after ship/resume),
-            // otherwise the ticket title (or id) while still pre-MR.
-            case REVIEW_PENDING -> hasMr(task) ? task.mrUrl() : orDefault(task.title(), taskId);
-            case NEW, IN_PROGRESS -> orDefault(task.title(), taskId);
+            // The title now lives in its own dashboard column, so the detail line is contextual only:
+            // the clickable MR link once one exists, nothing while still pre-MR.
+            case REVIEW_PENDING -> hasMr(task) ? task.mrUrl() : "";
+            case NEW, IN_PROGRESS, DONE -> "";
         };
     }
 

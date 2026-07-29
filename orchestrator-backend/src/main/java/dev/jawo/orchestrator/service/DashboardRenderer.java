@@ -31,14 +31,14 @@ public class DashboardRenderer {
         StringBuilder out = new StringBuilder();
         out.append("jawo orchestrator — ").append(tasks.size()).append(" task(s)   updated ")
                 .append(LocalTime.now().format(CLOCK)).append('\n').append('\n');
-        out.append(String.format("%-6s %-12s %-16s %-10s %-12s %s%n",
-                "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE", "WORKTREE"));
+        out.append(String.format("%-5s %-11s %-14s %-8s %-9s %s%n",
+                "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE", "TITLE"));
         long now = System.currentTimeMillis();
         tasks.forEach((id, t) -> {
             long minutes = (now - t.lastActiveTimestamp()) / 60_000;
             String active = minutes < 1 ? "just now" : minutes + "m ago";
-            out.append(String.format("%-6s %-12s %-16s %-10s %-12s %s%n",
-                    t.alias() == null ? "-" : t.alias(), id, t.status(), t.project(), active, t.worktreePath()));
+            out.append(String.format("%-5s %-11s %-14s %-8s %-9s %s%n",
+                    t.alias() == null ? "-" : t.alias(), id, t.status(), t.project(), active, shortTitle(t.title())));
             String detail = DashboardLine.forTask(id, t);
             if (!detail.isBlank()) {
                 out.append("                    └ ").append(detail).append('\n');
@@ -49,5 +49,14 @@ public class DashboardRenderer {
             out.append("(no tasks)\n");
         }
         return out.toString();
+    }
+
+    /** One-line, truncated ticket title so every row says what the task is, even when many. */
+    private static String shortTitle(String title) {
+        if (title == null || title.isBlank()) {
+            return "";
+        }
+        String oneLine = title.strip().replaceAll("\\s+", " ");
+        return oneLine.length() <= 34 ? oneLine : oneLine.substring(0, 33) + "…";
     }
 }

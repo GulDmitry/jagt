@@ -7,11 +7,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class DashboardLineTest {
 
     @Test
-    void showsTicketTitleWhileInDevelopment() {
+    void showsNoDetailWhileInDevelopment() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.IN_PROGRESS, 0,
-                "Widened try/finally; tests green", "a1", null, "Fix duplicate PK on GCC copy", null);
+                "some progress note", "a1", null, "Some ticket title", null);
 
-        assertThat(DashboardLine.forTask("PAN-1", task)).isEqualTo("Fix duplicate PK on GCC copy");
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEmpty();
     }
 
     @Test
@@ -19,7 +19,7 @@ class DashboardLineTest {
         TaskState task = new TaskState("p", "/wt", TaskStatus.CI_POLLING, 0,
                 "MR: https://gitlab/x/-/merge_requests/9", "a1", null, "title", "https://gitlab/x/-/merge_requests/9");
 
-        assertThat(DashboardLine.forTask("PAN-1", task)).isEqualTo("https://gitlab/x/-/merge_requests/9");
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
 
     @Test
@@ -27,7 +27,7 @@ class DashboardLineTest {
         TaskState task = new TaskState("p", "/wt", TaskStatus.CI_FAILED, 0,
                 "trigger_commons failed", "a1", null, "title", "https://mr");
 
-        assertThat(DashboardLine.forTask("PAN-1", task)).startsWith("PROBLEM: ").contains("trigger_commons");
+        assertThat(DashboardLine.forTask("ABC-1", task)).startsWith("PROBLEM: ").contains("trigger_commons");
     }
 
     @Test
@@ -35,14 +35,14 @@ class DashboardLineTest {
         TaskState task = new TaskState("p", "/wt", TaskStatus.IN_PROGRESS, 0,
                 "awaiting: FE or BE decision", "a1", null, "title", null);
 
-        assertThat(DashboardLine.forTask("PAN-1", task)).isEqualTo("NEEDS INPUT: FE or BE decision");
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
 
     @Test
-    void fallsBackToTaskIdWhenNoTitleYet() {
+    void showsNoDetailForAFreshTask() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.NEW, 0, null, "a1", null, null, null);
 
-        assertThat(DashboardLine.forTask("PAN-1", task)).isEqualTo("PAN-1");
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEmpty();
     }
 
     @Test
