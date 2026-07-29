@@ -44,8 +44,8 @@ public class TmuxService {
         return configured == null || configured.isBlank() ? "jawo" : configured;
     }
 
-    public void openTaskWindow(String session, String dedicatedTitle, String taskId, Path worktreePath,
-                               boolean planMode) {
+    public void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias,
+                               Path worktreePath, boolean planMode) {
         synchronized (lock) {
             ensureSession(session);
             // One task = one window: respawns must never accumulate duplicates.
@@ -68,6 +68,12 @@ public class TmuxService {
                     "-w", "-t", windowId, "automatic-rename", "off"));
             if (rename.exitCode() != 0) {
                 log.warn("Could not pin tmux window name for {}: {}", taskId, rename.stderr());
+            }
+            // Window NAME stays the taskId (findWindowId/killTaskWindows match on it); the alias
+            // rides in a window user-option so the terminal title can show "taskId (alias)".
+            if (alias != null && !alias.isBlank()) {
+                processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
+                        "-w", "-t", windowId, "@jawo_alias", alias));
             }
             ensureViewer(session, dedicatedTitle, worktreePath);
         }
@@ -192,7 +198,9 @@ public class TmuxService {
         // Drive the terminal (tab) title to the active window name = taskId, so a title-aware
         // terminal like kitty decorates the tab with the current task. Harmless on Warp.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles", "on"));
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string", "#W"));
+        // "taskId (alias)" when the window carries an alias, else just the window name.
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string",
+                "#{?#{@jawo_alias},#W (#{@jawo_alias}),#W}"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Left", "previous-window"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
     }

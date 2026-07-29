@@ -108,7 +108,7 @@ public class OrchestratorTools {
 
         String session;
         try {
-            session = openTab(taskId, worktreePath, config, plan);
+            session = openTab(taskId, alias, worktreePath, config, plan);
         } catch (RuntimeException e) {
             return "Task " + taskId + " registered and worktree created at " + worktreePath
                     + ", but the agent session failed to start: " + e.getMessage()
@@ -169,7 +169,8 @@ public class OrchestratorTools {
     public String openTaskTab(String taskId, String mode) {
         taskId = canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        String session = openTab(taskId, Path.of(task.worktreePath()), configService.load(), planMode(mode));
+        String session = openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(),
+                planMode(mode));
         return "New Claude session started for " + taskId + " in tmux window '" + taskId + "' of session '"
                 + session + "' (worktree " + task.worktreePath() + ")"
                 + (planMode(mode) ? " in PLAN MODE" : "");
@@ -303,14 +304,14 @@ public class OrchestratorTools {
         Path worktreePath = Path.of(task.worktreePath());
         switch (tmuxService.taskWindowState(session, taskId)) {
             case MISSING -> {
-                tmuxService.openTaskWindow(session, dedicatedTitle, taskId, worktreePath, false);
+                tmuxService.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
                 respawned = true;
             }
             case DEAD_SHELL -> {
                 // The window survived only for post-mortem inspection; focusing it
                 // must hand the user a live agent, not a dead prompt.
                 tmuxService.killTaskWindows(session, taskId);
-                tmuxService.openTaskWindow(session, dedicatedTitle, taskId, worktreePath, false);
+                tmuxService.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
                 respawned = true;
             }
             case AGENT_RUNNING -> {
@@ -376,10 +377,11 @@ public class OrchestratorTools {
     }
 
     /** Starts the agent in a tmux window and returns its session name. */
-    private String openTab(String taskId, Path worktreePath, ConfigService.ConfigFile config, boolean planMode) {
+    private String openTab(String taskId, String alias, Path worktreePath, ConfigService.ConfigFile config,
+                           boolean planMode) {
         String session = agentSession(config, taskId);
         tmuxService.openTaskWindow(session, tmuxService.sessionName(config.tmuxSession()), taskId,
-                worktreePath, planMode);
+                alias, worktreePath, planMode);
         return session;
     }
 
