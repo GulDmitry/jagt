@@ -189,6 +189,10 @@ public class TmuxService {
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-sg", "escape-time", "0"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "focus-events", "on"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-t", session, "mouse", "on"));
+        // Drive the terminal (tab) title to the active window name = taskId, so a title-aware
+        // terminal like kitty decorates the tab with the current task. Harmless on Warp.
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles", "on"));
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string", "#W"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Left", "previous-window"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
     }

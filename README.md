@@ -16,7 +16,8 @@ MCP access to the systems the agents need (Jira, GitLab/GitHub).
 | terminal-notifier | `brew install terminal-notifier` (reliable macOS notifications; osascript fallback is often silently suppressed) |
 | Node 18+ | `brew install node` |
 | Claude Code CLI | claude.com/claude-code |
-| Warp | warp.dev |
+| kitty | `brew install kitty` (default agents terminal; or set `terminal: warp`) |
+| Warp | warp.dev (only if `terminal: warp`) |
 | IntelliJ IDEA | JetBrains Toolbox (see the run-config note below) |
 | git | Xcode CLT / brew |
 
@@ -60,7 +61,8 @@ exact keys.
 | key | meaning |
 |-----|---------|
 | `orchestrator.platform` | notifier strategy, default `macos` (osascript) |
-| `orchestrator.terminal` | terminal driver, default `warp` (tab configs + `warp://tab_config`) |
+| `orchestrator.terminal` | agents viewer: `kitty` (default — titled/closable tabs, fast) or `warp`; both run over tmux |
+| `orchestrator.kitty-command` | kitty binary, default `kitty` (only for `terminal: kitty`) |
 | `orchestrator.editor-command` | editor launcher list, default `[open, -a, IntelliJ IDEA]`; e.g. `[code]` |
 | `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff`, default `[.../idea, diff]` (`open -a` can't diff) |
 | `orchestrator.claude-command` | agent CLI, default `claude` |

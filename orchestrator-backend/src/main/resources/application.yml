@@ -16,7 +16,10 @@ orchestrator:
   # by `platform`, terminal window driver by `terminal`, editor by `editor-command`
   # (any CLI launcher: idea, code, subl). Defaults = macOS + Warp + IntelliJ.
   platform: macos
-  terminal: warp
+  # Agents viewer: kitty (default — addressable, closable, titled tabs + fast GPU render) or warp.
+  # Both run over tmux, so agents persist regardless. kitty needs `brew install kitty`.
+  terminal: kitty
+  # kitty-command: kitty   # override the kitty binary if not on PATH
   # Editor launcher + args; the worktree path is appended. LaunchServices `open -a`
   # is Toolbox-independent. Alternatives: [code] for VS Code, [subl] for Sublime.
   editor-command: ["open", "-a", "IntelliJ IDEA"]

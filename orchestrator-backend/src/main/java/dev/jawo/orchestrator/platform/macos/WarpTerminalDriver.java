@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * before opening a tab; if absent, the tab config opens a new window.
  */
 @Component
-@ConditionalOnProperty(prefix = "orchestrator", name = "terminal", havingValue = "warp", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "orchestrator", name = "terminal", havingValue = "warp", matchIfMissing = false)
 public class WarpTerminalDriver implements TerminalDriver {
 
     private static final Logger log = LoggerFactory.getLogger(WarpTerminalDriver.class);

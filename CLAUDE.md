@@ -61,8 +61,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `~/.warp/launch_configurations/`) whenever `tmux list-clients` shows nobody attached.
 - OS/app-specific code lives behind strategies in `dev.jawo.orchestrator.platform`: `UserNotifier`
   (selected by `orchestrator.platform`, default macos), `TerminalDriver` (`orchestrator.terminal`,
-  default warp), `EditorDriver` (`orchestrator.editor-command` list, default `open -a "IntelliJ IDEA"`).
-  A Linux port = new impls of these three interfaces + config, no core changes.
+  default `kitty`; `warp` still available), `EditorDriver` (`orchestrator.editor-command` list,
+  default `open -a "IntelliJ IDEA"`). A Linux port = new impls of these three interfaces + config.
+- `KittyTerminalDriver` drives kitty via its remote-control CLI (`kitty @ --to unix:<per-session
+  socket>`): one dedicated instance (`--single-instance --instance-group --listen-on -o
+  allow_remote_control=yes`), tabs titled + closable (unlike Warp). Runs OVER tmux (tab execs `tmux
+  attach`), so agents persist; `closeViewerWindow` kills the instance by its socket path (macOS keeps
+  the app alive after windows close, and `close-os-window`/`--match all` are NOT kitty commands).
+  Tab decoration comes from tmux `set-titles` → active window name (taskId).
 - Agent liveness in a tmux window is detected via child processes of `#{pane_pid}` —
   `pane_current_command` always reports the shell (no job control in `sh -c` compound commands).
 - One task = one tmux window: `openTaskWindow` kills same-named windows before spawning.
