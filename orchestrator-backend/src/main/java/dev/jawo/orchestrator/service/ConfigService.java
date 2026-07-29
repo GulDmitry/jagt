@@ -20,7 +20,8 @@ public class ConfigService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ConfigFile(Map<String, ProjectConfig> projects, String tmuxSession, String viewMode,
-                             Boolean keepViewer, String mrTitlePattern, String agentOutputStyle) {
+                             Boolean keepViewer, String mrTitlePattern, String agentOutputStyle,
+                             Boolean postReviewReplies) {
 
         /** Default true: the agents window/tab stays open (reserved) after the last task is done. */
         public boolean keepViewerOrDefault() {
@@ -41,6 +42,15 @@ public class ConfigService {
         public String agentOutputStyleOrNull() {
             return agentOutputStyle == null || agentOutputStyle.isBlank() ? null : agentOutputStyle.strip();
         }
+
+        /**
+         * Default true: on `ship`, the agent posts its drafted review replies to the MR threads (current
+         * behaviour). False: the replies stay in {@code review_replies.md} for the human — only code is
+         * pushed. Either way the agent drafts a per-comment "comment -> intended reply" block each round.
+         */
+        public boolean postReviewRepliesOrDefault() {
+            return postReviewReplies == null || postReviewReplies;
+        }
     }
 
     private final ObjectMapper mapper;
@@ -60,7 +70,7 @@ public class ConfigService {
             ConfigFile config = mapper.readValue(Files.readString(paths.configFile()), ConfigFile.class);
             return new ConfigFile(config.projects() == null ? Map.of() : config.projects(),
                     config.tmuxSession(), config.viewMode(), config.keepViewer(), config.mrTitlePattern(),
-                    config.agentOutputStyle());
+                    config.agentOutputStyle(), config.postReviewReplies());
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read config file " + paths.configFile(), e);
         }

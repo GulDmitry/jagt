@@ -4,6 +4,7 @@
   "keepViewer": true,
   "mrTitlePattern": "{ticket} {title}",
   "agentOutputStyle": "",
+  "postReviewReplies": true,
   "mergeRequestDefaults": {
     "removeSourceBranch": true,
     "squash": true

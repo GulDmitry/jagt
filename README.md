@@ -53,6 +53,7 @@ exact keys.
 | `viewMode` | `shared` = all tasks inside one tab; `tab-per-task` = a Warp tab per task |
 | `keepViewer` | keep the agents tab/window open (reserved) after the last task (default `true`) — drag it into a group once and it stays |
 | `mrTitlePattern` | MR/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
+| `postReviewReplies` | on `ship`, auto-post the agent's replies to MR threads (default `true`); `false` keeps them in `review_replies.md` |
 | `agentOutputStyle` | optional Claude output style pinned into each agent worktree, e.g. `sob-ai:Engineer` (default empty = Claude's own style) |
 | `mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
 
@@ -68,7 +69,7 @@ exact keys.
 | `orchestrator.claude-command` | agent CLI, default `claude` |
 | `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits, default `user,project,local` (no MCP path hardcoded) |
 | `orchestrator.assistant.model` | model for the ticket-read (blank = your default; a strong model is more reliable at the tool call) |
-| `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default: the LSP plugins — each spawns a ~1-2GB JDT server; agents don't need them) |
+| `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty; opt-in for RAM-constrained setups) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
 | `orchestrator.tmux-command` | tmux binary, default `/opt/homebrew/bin/tmux` |
 | `orchestrator.open-warp-window` | auto-open the terminal window (`false` in tests) |

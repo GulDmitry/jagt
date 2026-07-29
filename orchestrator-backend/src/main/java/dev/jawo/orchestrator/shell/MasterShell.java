@@ -184,8 +184,9 @@ public class MasterShell implements ApplicationRunner {
             brief.append("Pipeline: ").append(r.pipelineStatus()).append(" — fix the failing build.\n");
         }
         if (!r.comments().isEmpty()) {
-            brief.append("Unresolved comments — fix the valid ones LOCALLY (no commit/push) and draft a"
-                    + " reply for EACH in review_replies.md:\n");
+            brief.append("Unresolved comments — fix the valid ones LOCALLY (no commit/push). For EACH"
+                    + " comment write a block in review_replies.md: the original comment (with its thread"
+                    + " link if available) followed by the reply you intend to post:\n");
             r.comments().forEach(c -> brief.append("- ").append(c).append('\n'));
         }
         brief.append("When done, set status REVIEW_PENDING. Do NOT push or post anything yourself.");
