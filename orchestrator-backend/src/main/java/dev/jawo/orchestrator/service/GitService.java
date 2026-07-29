@@ -120,6 +120,16 @@ public class GitService {
         withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
+            // Nothing-to-deploy guard: refuse when the source branch has no commits beyond the
+            // target (empty branch, or already deployed) — deploy is decoupled from review state,
+            // its ONLY precondition is that there is committed work to ship downstream.
+            String ahead = processRunner.run(projectPath, GIT_TIMEOUT,
+                            List.of("git", "rev-list", "--count", "origin/" + targetBranch + ".." + sourceBranch))
+                    .expectSuccess("git rev-list count " + sourceBranch).stdout().trim();
+            if ("0".equals(ahead)) {
+                throw new IllegalStateException("Nothing to deploy: branch '" + sourceBranch
+                        + "' has no commits beyond " + targetBranch + " (commit work first, or it is already deployed).");
+            }
             Path temp;
             try {
                 temp = Files.createTempDirectory("jawo-deploy-");

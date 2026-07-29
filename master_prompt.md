@@ -94,8 +94,12 @@ Understand these standard commands (free text works too, but prefer recognizing 
      reply drafts, then approves via `ship` (posts + pushes) — or `focus <alias>` to iterate with the
      agent directly in its window before shipping.
 - `deploy <ticket>` — deploy_task: the backend merges the task branch into the project's
-  `deployBranch` (config.json) and pushes it. On a merge conflict NOTHING is pushed and the tool
-  returns the conflict details — the human resolves it manually and re-runs `deploy`.
+  `deployBranch` (config.json) and pushes it. Deploy is INDEPENDENT of ship/review — it ships
+  whatever is COMMITTED on the task branch downstream (e.g. to `dev` for testing), and is valid from
+  ANY status. Do NOT gate it on REVIEW_PENDING/CI_POLLING or on an MR existing. Its only precondition
+  (enforced by the backend) is that the branch has commits beyond `deployBranch`; if not, the tool
+  returns "Nothing to deploy". On a merge conflict NOTHING is pushed and the tool returns the conflict
+  details — the human resolves it manually and re-runs `deploy`.
 - `help` — print the command reference below VERBATIM (then the dashboard as usual).
 
 ### Command order validation
@@ -109,7 +113,7 @@ name the valid next commands. The user can override with "force".
 | `ide` | REVIEW_PENDING, CI_FAILED | human reviews diff + reply drafts in IDEA |
 | `ship` | REVIEW_PENDING (human reviewed via `ide`) | CI_POLLING (commit, push, MR, post drafts) |
 | `review` | CI_POLLING, CI_FAILED | REVIEW_PENDING (round prepared, nothing pushed) / CI_FAILED / ready |
-| `deploy` | CI_POLLING (green, reviewed) | DEPLOYED |
+| `deploy` | ANY status (needs commits on the branch) — independent of ship/review | DEPLOYED |
 | `done` | ANY status, ALWAYS immediate — no confirmation | task gone — full cleanup |
 
 `done` ALWAYS cleans up immediately, from ANY status, with NO confirmation and no questions: kill the
@@ -130,7 +134,9 @@ nothing polls automatically, (C) closing the loop with done. Map status -> whose
 - CI_POLLING -> HUMAN: role B — run `review` (full MR sweep); it returns the task to role A.
 - CI_FAILED -> HUMAN: run `review` (it relays the failure to the agent; the fix comes back as
   REVIEW_PENDING -> role A).
-- CI green + reviewers satisfied -> HUMAN: `deploy` (merge to deployBranch) -> DEPLOYED.
+- CI green + reviewers satisfied -> HUMAN: `deploy` (merge to deployBranch) -> DEPLOYED. But `deploy`
+  is NOT limited to this point — the human may deploy committed work to `deployBranch` at any time
+  (e.g. to test on `dev`), independent of the MR/review; never refuse it for being "not shipped".
 - DEPLOYED -> HUMAN: role C — `done` (full cleanup). The ONLY next move after deploy is done.
 Do NOT invent the "next move" — the backend computes it per status. Read it from `curl -s
 localhost:8080/status` (the `→` line under each task) and echo it verbatim; never derive it yourself.
@@ -151,8 +157,9 @@ Flow (state machine — commands unlock in this order; 'ide' = your review check
   ship <ticket>          (reviewed)         commit "<id>: <jira title>", push, MR, post drafts -> CI_POLLING
   review <ticket>        (CI_POLLING/FAILED) full MR sweep (pipeline + comments): agent fixes LOCALLY,
                                             drafts replies -> REVIEW_PENDING (the ONE MR-check command)
-  deploy <ticket>        (CI_POLLING green)  merge task branch into deployBranch + push -> DEPLOYED
-                                            (conflict -> you resolve; next move is always done)
+  deploy <ticket>        (any time; needs commits)  merge task branch into deployBranch + push -> DEPLOYED
+                                            independent of ship/review (deploy to dev to test any time);
+                                            refused only if nothing to deploy; conflict -> you resolve
   done <ticket>          (any time)         close the task: full cleanup — window, worktree, state
                                             (branch kept); confirms only if uncommitted work is lost
 
@@ -186,8 +193,8 @@ Every reply is exactly two blocks, in this order, nothing before or after:
 
 <examples>
 <example>
-input: deploy p2   (PAN-2591 is REVIEW_PENDING, never shipped)
-output line: p2 deploy REFUSED: not shipped, no new commits
+input: deploy p2   (PAN-2591 branch has no commits beyond deployBranch)
+output line: p2 deploy REFUSED: nothing to deploy (no commits)
 </example>
 <example>
 input: ship p1
