@@ -20,10 +20,28 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    // Master control terminal (JLine REPL). Spring Shell 4.x targets Spring Framework 7 / Boot 4.
+    // The starter doesn't pull JLine transitively — the interactive shell needs it explicitly.
+    implementation 'org.springframework.shell:spring-shell-starter:4.0.0'
+    implementation 'org.springframework.shell:spring-shell-jline:4.0.0'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
+}
+
+// The Master shell reads stdin; Gradle does not forward it to bootRun unless asked.
+// --enable-native-access silences JLine's restricted-method warnings on the clean shell console.
+tasks.named('bootRun') {
+    standardInput = System.in
+    jvmArgs('--enable-native-access=ALL-UNNAMED')
+}
+
+// So `java -jar` gets the same native-access grant without a command-line flag.
+tasks.named('bootJar') {
+    manifest {
+        attributes('Enable-Native-Access': 'ALL-UNNAMED')
+    }
 }
