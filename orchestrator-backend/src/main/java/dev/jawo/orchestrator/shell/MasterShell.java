@@ -78,7 +78,8 @@ public class MasterShell implements ApplicationRunner {
         }
         LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
         var w = terminal.writer();
-        w.println("jawo — Master control terminal. Type 'help'. Ctrl-D to detach (agents keep running).");
+        w.println("jawo — Master control terminal. Type 'help'. `quit`/`exit`/Ctrl-D stops the backend"
+                + " (agents keep running in tmux).");
         w.println();
 
         int refreshSeconds = configService.load().dashboardRefreshSecondsOrDefault();
@@ -87,7 +88,22 @@ public class MasterShell implements ApplicationRunner {
         dashboardPinned = status != null;
         ScheduledExecutorService ticker = null;
         if (dashboardPinned) {
+            // JLine pins the status to the absolute bottom but draws the prompt at the current cursor
+            // (top, since scrollback is empty at startup) — a full-screen gap between them. Pre-fill so
+            // the prompt starts just above the dashboard; command output then scrolls in naturally above.
+            int gap = terminal.getHeight() - (int) dashboard.render().lines().count() - 2;
+            for (int i = 0; i < gap; i++) {
+                w.println();
+            }
             paintDashboard(status, terminal);
+            terminal.handle(Terminal.Signal.WINCH, sig -> {   // keep the pinned region correct on resize
+                synchronized (paintLock) {
+                    if (!stopped) {
+                        status.resize();
+                        paintLocked(status, terminal);
+                    }
+                }
+            });
             ticker = Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "jawo-dashboard-refresh");
                 t.setDaemon(true);
@@ -157,6 +173,11 @@ public class MasterShell implements ApplicationRunner {
                 }
             }
         }
+        // The backend is a web app: returning from run() leaves the JVM alive (server threads are
+        // non-daemon), and JLine's raw mode swallows Ctrl-C — so the terminal would hang. The Master
+        // shell IS this process's UI, so quitting it stops the backend. Agents keep running in tmux.
+        log.info("Master shell exited — stopping backend (agents keep running in tmux).");
+        System.exit(0);
     }
 
     /** Repaints the pinned dashboard region in place (no scrollback growth); ANSI colors preserved. */
