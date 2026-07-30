@@ -98,7 +98,7 @@ public class McpProtocolService {
 
         register("open_in_ide", """
                 {
-                  "description": "Open a task in IntelliJ. mode 'diff' (default) opens a diff window of the task's changes vs its base branch (no project, no dead recent-project entry); mode 'project' opens the worktree as a full project (needed to run the app). taskId defaults to the calling worktree's task.",
+                  "description": "Open a task in IntelliJ. mode 'project' (default) opens the worktree as a full project (needed to run the app; use Git → Local Changes for a live diff vs base); mode 'diff' opens a STATIC snapshot diff vs base — it does NOT auto-refresh (re-run to update). taskId defaults to the calling worktree's task.",
                   "type": "object",
                   "properties": {
                     "taskId": {"type": "string"},

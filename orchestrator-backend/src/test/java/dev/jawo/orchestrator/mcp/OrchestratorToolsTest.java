@@ -222,7 +222,7 @@ class OrchestratorToolsTest {
     }
 
     @Test
-    void opensDiffAgainstBaseByDefault(@TempDir Path root) {
+    void opensStaticDiffAgainstBaseWhenModeIsDiff(@TempDir Path root) {
         OrchestratorProperties properties = new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
                 null, null, null, null, null, null, null, false,
@@ -240,9 +240,28 @@ class OrchestratorToolsTest {
                 editor, mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths,
                 new PromptTemplates());
 
-        tools.openInIde("a1", null, null);
+        tools.openInIde("a1", "diff", null);
 
         verify(editor).openDiff(java.nio.file.Path.of("/tmp/base"), java.nio.file.Path.of("/tmp/clean"));
+    }
+
+    @Test
+    void opensWorktreeAsProjectByDefault(@TempDir Path root) {
+        OrchestratorProperties properties = new OrchestratorProperties(
+                root.toString(), null, root.resolve("state.json").toString(),
+                null, null, null, null, null, null, null, false,
+                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null));
+        EditorDriver editor = mock(EditorDriver.class);
+        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+                mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
+                properties, paths, new PromptTemplates());
+
+        tools.openInIde("a1", null, null);
+
+        verify(editor).open(java.nio.file.Path.of("/wt"));
     }
 
     @Test

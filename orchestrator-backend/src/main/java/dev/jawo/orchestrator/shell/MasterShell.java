@@ -186,8 +186,8 @@ public class MasterShell implements ApplicationRunner {
                 case "review" -> reviewTask(tok);
                 case "ship" -> tools.ship(arg(tok, 1, "ship <ticket>"));
                 case "focus" -> tools.focusTask(arg(tok, 1, "focus <ticket>"));
-                case "ide" -> tools.openInIde(arg(tok, 1, "ide <ticket> [project]"),
-                        tok.contains("project") ? "project" : "diff", null);
+                case "ide" -> tools.openInIde(arg(tok, 1, "ide <ticket> [diff]"),
+                        tok.contains("diff") ? "diff" : "project", null);
                 case "deploy" -> tools.deployTask(arg(tok, 1, "deploy <ticket>"), null);
                 case "respawn" -> tools.openTaskTab(arg(tok, 1, "respawn <ticket>"), null);
                 case "done" -> tools.removeTask(arg(tok, 1, "done <ticket>"), null);
@@ -362,7 +362,7 @@ public class MasterShell implements ApplicationRunner {
         lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
         lines.add("  ship <ticket>                approve: agent commits (pattern title), pushes, MR, posts replies");
         lines.add("  review <ticket>              pull the MR's pipeline + comments, relay them to the agent");
-        lines.add("  ide <ticket> [project]       diff of changes vs base (or full project)");
+        lines.add("  ide <ticket> [diff]          open worktree project (live Git diff); `diff` = static snapshot vs base");
         lines.add("  deploy <ticket>              merge task branch into deployBranch + push");
         lines.add("  respawn <ticket>             restart a dead agent session");
         lines.add("  done <ticket>                full cleanup (window, worktree, state; branch kept)");

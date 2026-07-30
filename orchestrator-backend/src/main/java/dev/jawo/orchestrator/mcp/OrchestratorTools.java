@@ -191,22 +191,27 @@ public class OrchestratorTools {
         String taskId = resolveTaskId(explicitTaskId, callerTaskId);
         TaskState task = requireTask(taskId);
         Path worktree = Path.of(task.worktreePath());
-        if ("project".equalsIgnoreCase(mode)) {
-            editorDriver.open(worktree);
-            return "Opened " + task.worktreePath() + " as a project in the editor";
+        if ("diff".equalsIgnoreCase(mode)) {
+            // Explicit diff: a STATIC snapshot vs base — review-only, no project. Both sides are clean git
+            // checkouts (a raw folder-diff of the live worktree would ignore .gitignore and dump build
+            // artifacts). It does NOT auto-update: the right side is frozen at this call, so the IDE's
+            // Refresh does nothing — re-run `ide <ticket> diff`, or use the live project (default) instead.
+            ProjectConfig project = configService.project(task.project());
+            Path projectPath = Path.of(project.path());
+            Path base = gitService.checkoutBaseForDiff(projectPath, project.baseBranch(), taskId);
+            Path clean = gitService.checkoutWorktreeCleanForDiff(worktree, projectPath, project.baseBranch(), taskId);
+            editorDriver.openDiff(base, clean);
+            return "Opened STATIC diff of " + taskId + " (changes vs " + project.baseBranch()
+                    + ") — snapshot, does not refresh; re-run for a fresh one";
         }
-        if (mode != null && !mode.isBlank() && !"diff".equalsIgnoreCase(mode)) {
-            throw new IllegalArgumentException("Unknown ide mode '" + mode + "'. Allowed: diff, project");
+        if (mode != null && !mode.isBlank() && !"project".equalsIgnoreCase(mode)) {
+            throw new IllegalArgumentException("Unknown ide mode '" + mode + "'. Allowed: project, diff");
         }
-        // Default: diff window vs base — review-only, no project, no dead recent-project entry.
-        // Both sides are clean git checkouts: a raw folder-diff of the live worktree would ignore
-        // .gitignore/info-exclude and dump the plumbing + build artifacts (hundreds of files).
-        ProjectConfig project = configService.project(task.project());
-        Path projectPath = Path.of(project.path());
-        Path base = gitService.checkoutBaseForDiff(projectPath, project.baseBranch(), taskId);
-        Path clean = gitService.checkoutWorktreeCleanForDiff(worktree, projectPath, project.baseBranch(), taskId);
-        editorDriver.openDiff(base, clean);
-        return "Opened diff of " + taskId + " (changes vs " + project.baseBranch() + ") — no project created";
+        // Default: open the worktree as a project. Its live Git view (Local Changes) is the review surface —
+        // auto-refreshing and .gitignore-aware, unlike the static `diff` snapshot.
+        editorDriver.open(worktree);
+        return "Opened " + task.worktreePath() + " as a project in the editor"
+                + " (use Git → Local Changes for a live diff vs base)";
     }
 
     public String writeTaskContext(String taskId, String instructions) {

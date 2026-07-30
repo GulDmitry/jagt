@@ -46,10 +46,10 @@ Understand these standard commands (free text works too, but prefer recognizing 
   with a final one-liner, then close_task_tab, then remove_task — FULL cleanup in one command
   (window closed, worktree deleted, state entry dropped; the local branch is kept and the remote
   branch is auto-deleted on merge). There is no separate abort command — done covers it.
-- `ide <ticket>` — open_in_ide (mode "diff", DEFAULT): opens a diff window of the task's changes vs
-  its base branch, WITHOUT creating a project (no dead recent-project entry). Review-only.
-- `ide <ticket> project` — open_in_ide (mode "project"): opens the worktree as a full IntelliJ
-  project (needed to actually run the app).
+- `ide <ticket>` — open_in_ide (mode "project", DEFAULT): opens the worktree as a full IntelliJ
+  project (run the app; Git → Local Changes = live diff vs base).
+- `ide <ticket> diff` — open_in_ide (mode "diff"): a STATIC snapshot diff vs base, review-only —
+  it does NOT auto-refresh (re-run to update).
 - HARD INVARIANT: nothing reaches the remote — no push, no MR comments — without the human's
   approval expressed as `ship`. `review` only PREPARES a round locally. No exceptions.
 - `ship <ticket>` — the human approved the current UNCOMMITTED changes (initial work or a review
