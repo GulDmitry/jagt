@@ -127,14 +127,22 @@ public class MasterShell implements ApplicationRunner {
         }
 
         try {
+            int eofStreak = 0;
             while (true) {
                 String line;
                 try {
                     line = reader.readLine("jawo> ");
+                    eofStreak = 0;
                 } catch (UserInterruptException e) {
                     continue;
                 } catch (EndOfFileException e) {
-                    break;
+                    // Ctrl-D raises EOF, but don't treat it as a special quit (avoid clashing with the
+                    // user's other shortcuts) — only `exit`/`quit` leave. A genuinely closed stdin raises
+                    // EOF in a tight loop, though, so bail after a short streak to avoid spinning.
+                    if (++eofStreak >= 3) {
+                        break;
+                    }
+                    continue;
                 }
                 if (line == null || line.isBlank()) {
                     continue;
