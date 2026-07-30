@@ -27,6 +27,10 @@ MCP access to the systems the agents need (Jira, GitLab/GitHub).
 cp config.json.dist config.json   # then fill in your projects
 ```
 
+**UTF-8 locale (kitty):** kitty honors the libc locale, and macOS has no `C.UTF-8` — if the shell
+locale isn't a real UTF-8 one (e.g. `/etc/zprofile` forces `LANG=C.UTF-8`), kitty silently drops
+non-ASCII input (Cyrillic dictation/paste). Fix: `export LANG=en_US.UTF-8` in `~/.zshrc`.
+
 Agent tabs are opened via Warp Tab Configs (generated into `~/.warp/tab_configs/`, opened with
 `warp://tab_config/<name>`) — no shell hooks needed.
 
@@ -103,7 +107,7 @@ Tell the Master:
 | `respawn <ticket>` | restart a sub-agent session for an already-registered task |
 | `done <ticket>` | close the task at any stage: full cleanup — window, worktree, state (branch kept) |
 | `focus <ticket>` | jump to the task's agent window — **talk to the agent directly there** (no `feedback` command) |
-| `ide <ticket>` | review checkpoint: diff window of changes vs base, no project (`ide <ticket> project` opens the full project to run) |
+| `ide <ticket>` | open the worktree as a project (run the app; **Git → Local Changes** = live diff vs base). `ide <ticket> diff` opens a static snapshot diff — it does **not** auto-refresh (re-run to update) |
 | `review <ticket>` | full MR sweep (pipeline + comments): agent fixes locally + drafts replies; nothing pushed |
 | `deploy <ticket>` | merge the task branch into the project's `deployBranch` and push (conflicts → you) |
 | `ship <ticket>` | review approved: commit as "<id>: <jira title>", push, open MR, watch CI |
