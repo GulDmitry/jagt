@@ -88,13 +88,10 @@ public class MasterShell implements ApplicationRunner {
         dashboardPinned = status != null;
         ScheduledExecutorService ticker = null;
         if (dashboardPinned) {
-            // JLine pins the status to the absolute bottom but draws the prompt at the current cursor
-            // (top, since scrollback is empty at startup) — a full-screen gap between them. Pre-fill so
-            // the prompt starts just above the dashboard; command output then scrolls in naturally above.
-            int gap = terminal.getHeight() - (int) dashboard.render().lines().count() - 2;
-            for (int i = 0; i < gap; i++) {
-                w.println();
-            }
+            // The dashboard lives in JLine's status region, pinned at the bottom and sized to its own
+            // content — it grows to 5, 10, 50 tasks on its own, and command input + output scroll in the
+            // area ABOVE it. No manual space reservation (an earlier pre-fill hack reserved the startup
+            // size and got overrun — the growing region ate the header/output when tasks were added).
             paintDashboard(status, terminal);
             terminal.handle(Terminal.Signal.WINCH, sig -> {   // keep the pinned region correct on resize
                 synchronized (paintLock) {
