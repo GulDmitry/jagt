@@ -101,6 +101,11 @@ public class MasterShell implements ApplicationRunner {
                 }
             }, refreshSeconds, refreshSeconds, TimeUnit.SECONDS);
         } else {
+            if (refreshSeconds > 0) {
+                w.println("(live dashboard off: terminal '" + terminal.getType() + "' can't pin a status"
+                        + " region — run the jar directly in a real terminal, NOT `./gradlew bootRun`"
+                        + " (Gradle captures stdout, so there's no TTY). See README > Build & run.)");
+            }
             w.println(dashboard.render());
             w.flush();
         }

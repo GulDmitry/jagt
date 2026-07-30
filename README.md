@@ -86,16 +86,18 @@ exact keys.
 
 ## Run
 
-```bash
-# tab 1 — backend
-cd orchestrator-backend && ./gradlew bootRun
+The backend process **is** the Master control terminal (a deterministic JLine REPL — no separate
+Claude session). Run it in a real terminal tab (Warp/kitty):
 
-# tab 2 — Master
-claude --append-system-prompt "$(cat master_prompt.md)"
+```bash
+cd orchestrator-backend
+./gradlew build                                        # once
+java -jar build/libs/orchestrator-backend-0.1.0.jar
 ```
 
-The Master is a router — run it at low reasoning effort so it answers fast and doesn't deliberate
-over simple commands (`/model` → low, or your CLI's effort setting).
+`./gradlew bootRun` also works, but Gradle captures stdout so the app gets **no TTY** — the dashboard
+then prints inline after each command instead of the pinned, auto-refreshing region (it says so on
+startup). Run the **jar directly** for the live dashboard.
 
 ## Usage`
 
