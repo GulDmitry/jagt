@@ -13,7 +13,7 @@
  */
 const readline = require('node:readline');
 
-const SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:8080/mcp';
+const SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:8290/mcp';
 const CWD = process.cwd();
 
 // A backend restart must not kill the session's MCP connection: Claude Code

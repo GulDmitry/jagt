@@ -118,7 +118,7 @@ Tell the Master:
 
 Every Master reply ends with the task dashboard. Agents live in one Warp window. Switch between tasks
 with **Shift+←/→**, or click a task name in the status bar (mouse mode is on). Plain-text status any
-time: `curl localhost:8080/status`.
+time: `curl localhost:8290/status`.
 
 ## The ideal flow (commands in order)
 

@@ -1,5 +1,7 @@
 server:
-  port: 8080
+  # Non-standard on purpose: 8080 collides with everything in a microservice dev setup. Override with
+  # --server.port=... or SERVER_PORT if 8290 is taken (also set MCP_SERVER_URL for mcp_client.js then).
+  port: 8290
 
 spring:
   application:

@@ -36,7 +36,7 @@ of text:
 
 ## Orchestrator system knowledge
 - Master project (orchestrator root): %s
-- Backend: Spring Boot at http://localhost:8080 (MCP over `./mcp_client.js`, already configured via `.mcp.json` in this directory)
+- Backend: Spring Boot at http://localhost:8290 (MCP over `./mcp_client.js`, already configured via `.mcp.json` in this directory)
 - State SSOT: %s
 - User config: %s
 

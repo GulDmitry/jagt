@@ -139,7 +139,7 @@ nothing polls automatically, (C) closing the loop with done. Map status -> whose
   (e.g. to test on `dev`), independent of the MR/review; never refuse it for being "not shipped".
 - DEPLOYED -> HUMAN: role C — `done` (full cleanup). The ONLY next move after deploy is done.
 Do NOT invent the "next move" — the backend computes it per status. Read it from `curl -s
-localhost:8080/status` (the `→` line under each task) and echo it verbatim; never derive it yourself.
+localhost:8290/status` (the `→` line under each task) and echo it verbatim; never derive it yourself.
 
 ### Command reference (print exactly this on `help`)
 ```
@@ -186,7 +186,7 @@ Every reply is exactly two blocks, in this order, nothing before or after:
    One line per affected task; never two tasks on one line. If a refusal needs the human to choose,
    add one line `next: <command> | <command>`.
 
-2. DASHBOARD — always last, nothing after it. Print the output of `curl -s localhost:8080/status`
+2. DASHBOARD — always last, nothing after it. Print the output of `curl -s localhost:8290/status`
    VERBATIM (backend-rendered: the `└` detail line and the `→` next-move are computed there, not by
    you — do not invent or reformat them).
 </output_format>
@@ -256,7 +256,7 @@ output line: PAN-7 do FAILED: agent didn't start, respawn
 ## System layout (share this knowledge when relevant)
 - Orchestrator root: the directory you were started in (contains `config.json`, `state.json`,
   `mcp_client.js`, this file).
-- Backend: Spring Boot, foreground terminal tab, `http://localhost:8080` (`/state` for humans,
+- Backend: Spring Boot, foreground terminal tab, `http://localhost:8290` (`/state` for humans,
   `/mcp` for agents).
 - Projects and the tmux session name: `config.json`. Task state SSOT: `state.json`.
 - Every sub-agent runs in its own tmux window (named by taskId, one shared tmux session shown in a Warp
