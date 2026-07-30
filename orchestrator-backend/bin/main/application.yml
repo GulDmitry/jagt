@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jawo-orchestrator
+  # The backend process IS the Master control terminal (JLine REPL). Keep the console clean:
+  # no Spring banner, logs go to a file (tail it separately), only the shell prints to the console.
+  main:
+    banner-mode: "off"
+
+logging:
+  threshold:
+    console: "off"
+  file:
+    name: ${LOG_FILE:jawo-backend.log}
+
+orchestrator:
+  # Root is auto-detected by walking up from the launch dir to the folder
+  # containing mcp_client.js; set ORCHESTRATOR_ROOT only to override it.
+  # config.json / state.json live in the root unless overridden here.
+  root: ${ORCHESTRATOR_ROOT:}
+  config-file: ${ORCHESTRATOR_CONFIG_FILE:}
+  state-file: ${ORCHESTRATOR_STATE_FILE:}
+  # Platform strategies (see dev.jawo.orchestrator.platform): notifier is selected
+  # by `platform`, terminal window driver by `terminal`, editor by `editor-command`
+  # (any CLI launcher: idea, code, subl). Defaults = macOS + Warp + IntelliJ.
+  platform: macos
+  # Agents viewer: kitty (default — addressable, closable, titled tabs + fast GPU render) or warp.
+  # Both run over tmux, so agents persist regardless. kitty needs `brew install kitty`.
+  terminal: kitty
+  # kitty-command: kitty   # override the kitty binary if not on PATH
+  # Editor launcher + args; the worktree path is appended. LaunchServices `open -a`
+  # is Toolbox-independent. Alternatives: [code] for VS Code, [subl] for Sublime.
+  editor-command: ["open", "-a", "IntelliJ IDEA"]
+  # `ide <ticket> diff` opens a diff window (task changes vs base) — needs the idea binary,
+  # `open -a` can't diff. Paths are appended: <left> <right>.
+  editor-diff-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea", "diff"]
+  claude-command: claude
+  # Initial prompt every spawned sub-agent starts with (otherwise the session idles).
+  agent-prompt: >-
+    You are the sub-agent for this worktree. Read task_context.md, set your status to IN_PROGRESS
+    via update_agent_status, and start working on the task. Follow the rules in CLAUDE.md. Work
+    autonomously: when done and verified, commit to your task branch WITHOUT asking for permission
+    and set status REVIEW_PENDING.
+  # Master assistant: a one-shot headless Claude for `do <ticket>` — reads the Jira ticket to resolve
+  # the project (matching the ticket's labels to your projects' `labels`) and grab the title. It
+  # inherits YOUR MCP servers via --setting-sources (jawo hardcodes NO server or path); --json-schema
+  # forces deterministic JSON. If it can't read the ticket, `do` falls back to an explicit project.
+  assistant:
+    setting-sources: user,project,local
+    # model:            # e.g. sonnet; blank = your default model
+  # Plugins disabled in each agent worktree's settings.local.json. Default EMPTY: agents KEEP their
+  # LSP (code intelligence — go-to-def, references, diagnostics; worth the RAM). jawo reaps each
+  # worktree's JDT server on `done` so finished tasks don't leave servers behind. Only opt in below
+  # if you're RAM-constrained and accept dumber agents (MCP plugins like Jira/GitLab stay enabled):
+  # agent-disabled-plugins:
+  #   - jdtls-lsp@claude-plugins-official
+  #   - php-lsp@claude-plugins-official
+  #   - oh-my-claudecode@omc
+  tmux-command: /opt/homebrew/bin/tmux
+  # Auto-open a Warp window attached to the agents' tmux session. Disable in
+  # smoke tests (--orchestrator.open-warp-window=false) so tests leave no windows behind.
+  open-warp-window: true
+  watchdog:
+    stale-after: 5m

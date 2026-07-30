@@ -22,7 +22,7 @@ public class ConfigService {
     public record ConfigFile(Map<String, ProjectConfig> projects, String tmuxSession, String viewMode,
                              Boolean keepViewer, String mrTitlePattern, String agentOutputStyle,
                              Boolean postReviewReplies, java.util.List<String> reviewReplyAuthors,
-                             java.util.List<String> worktreeCopyGlobs) {
+                             java.util.List<String> worktreeCopyGlobs, Integer dashboardRefreshSeconds) {
 
         /** Default true: the agents window/tab stays open (reserved) after the last task is done. */
         public boolean keepViewerOrDefault() {
@@ -72,6 +72,18 @@ public class ConfigService {
             return worktreeCopyGlobs == null || worktreeCopyGlobs.isEmpty()
                     ? java.util.List.of("**/.env") : worktreeCopyGlobs;
         }
+
+        /**
+         * How often (seconds) the Master shell repaints its pinned dashboard region. Default 10.
+         * {@code <= 0} disables auto-refresh (and any value below is clamped to 0), leaving the
+         * dashboard to redraw only after a command — the safe fallback on terminals without a status area.
+         */
+        public int dashboardRefreshSecondsOrDefault() {
+            if (dashboardRefreshSeconds == null) {
+                return 10;
+            }
+            return dashboardRefreshSeconds < 0 ? 0 : dashboardRefreshSeconds;
+        }
     }
 
     private final ObjectMapper mapper;
@@ -92,7 +104,7 @@ public class ConfigService {
             return new ConfigFile(config.projects() == null ? Map.of() : config.projects(),
                     config.tmuxSession(), config.viewMode(), config.keepViewer(), config.mrTitlePattern(),
                     config.agentOutputStyle(), config.postReviewReplies(), config.reviewReplyAuthors(),
-                    config.worktreeCopyGlobs());
+                    config.worktreeCopyGlobs(), config.dashboardRefreshSeconds());
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read config file " + paths.configFile(), e);
         }

@@ -11,6 +11,8 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.AttributedString;
+import org.jline.utils.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -24,6 +26,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -55,6 +60,13 @@ public class MasterShell implements ApplicationRunner {
         this.assistant = assistant;
     }
 
+    /** Serializes ALL terminal writes off the reader thread: the refresh ticker, printAbove, and status.close. */
+    private final Object paintLock = new Object();
+    /** True once the dashboard lives in a pinned status region: dispatch then returns only the command result. */
+    private volatile boolean dashboardPinned;
+    /** Set under {@link #paintLock} on shutdown so a late tick never paints into a closing status region. */
+    private boolean stopped;
+
     @Override
     public void run(ApplicationArguments args) {
         Terminal terminal;
@@ -68,26 +80,98 @@ public class MasterShell implements ApplicationRunner {
         var w = terminal.writer();
         w.println("jawo — Master control terminal. Type 'help'. Ctrl-D to detach (agents keep running).");
         w.println();
-        w.println(dashboard.render());
-        w.flush();
-        while (true) {
-            String line;
-            try {
-                line = reader.readLine("jawo> ");
-            } catch (UserInterruptException e) {
-                continue;
-            } catch (EndOfFileException e) {
-                break;
-            }
-            if (line == null || line.isBlank()) {
-                continue;
-            }
-            if (line.strip().equals("quit") || line.strip().equals("exit")) {
-                break;
-            }
-            w.println(dispatch(line.strip()));
+
+        int refreshSeconds = configService.load().dashboardRefreshSecondsOrDefault();
+        boolean dumb = terminal.getType() == null || terminal.getType().startsWith(Terminal.TYPE_DUMB);
+        Status status = refreshSeconds > 0 && !dumb ? Status.getStatus(terminal, true) : null;
+        dashboardPinned = status != null;
+        ScheduledExecutorService ticker = null;
+        if (dashboardPinned) {
+            paintDashboard(status, terminal);
+            ticker = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "jawo-dashboard-refresh");
+                t.setDaemon(true);
+                return t;
+            });
+            ticker.scheduleWithFixedDelay(() -> {
+                try {
+                    paintDashboard(status, terminal);
+                } catch (RuntimeException e) {
+                    log.debug("dashboard refresh failed: {}", e.toString());
+                }
+            }, refreshSeconds, refreshSeconds, TimeUnit.SECONDS);
+        } else {
+            w.println(dashboard.render());
             w.flush();
         }
+
+        try {
+            while (true) {
+                String line;
+                try {
+                    line = reader.readLine("jawo> ");
+                } catch (UserInterruptException e) {
+                    continue;
+                } catch (EndOfFileException e) {
+                    break;
+                }
+                if (line == null || line.isBlank()) {
+                    continue;
+                }
+                if (line.strip().equals("quit") || line.strip().equals("exit")) {
+                    break;
+                }
+                String out = dispatch(line.strip());
+                if (dashboardPinned) {
+                    // printAbove + repaint must be atomic against the ticker, else their escape
+                    // sequences interleave and mangle the cursor. Both under paintLock.
+                    synchronized (paintLock) {
+                        if (!out.isBlank()) {
+                            reader.printAbove(out);
+                        }
+                        paintLocked(status, terminal);
+                    }
+                } else {
+                    w.println(out);
+                    w.flush();
+                }
+            }
+        } finally {
+            if (ticker != null) {
+                ticker.shutdownNow();
+                try {
+                    ticker.awaitTermination(2, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            synchronized (paintLock) {
+                stopped = true;
+                if (status != null) {
+                    status.close();
+                }
+            }
+        }
+    }
+
+    /** Repaints the pinned dashboard region in place (no scrollback growth); ANSI colors preserved. */
+    private void paintDashboard(Status status, Terminal terminal) {
+        synchronized (paintLock) {
+            paintLocked(status, terminal);
+        }
+    }
+
+    /** Caller MUST hold {@link #paintLock}. No-op once {@link #stopped}, so a late tick never paints a closed region. */
+    private void paintLocked(Status status, Terminal terminal) {
+        if (stopped) {
+            return;
+        }
+        List<AttributedString> lines = new ArrayList<>();
+        for (String line : dashboard.render().split("\\R")) {
+            lines.add(AttributedString.fromAnsi(line));
+        }
+        status.update(lines);
+        terminal.flush();
     }
 
     private String dispatch(String line) {
@@ -109,10 +193,21 @@ public class MasterShell implements ApplicationRunner {
                 case "done" -> tools.removeTask(arg(tok, 1, "done <ticket>"), null);
                 default -> "unknown command '" + cmd + "' — try 'help'";
             };
-            return result.isBlank() ? dashboard.render() : result + "\n\n" + dashboard.render();
+            return withDashboard(result, dashboardPinned, dashboardPinned ? "" : dashboard.render());
         } catch (IllegalArgumentException | IllegalStateException e) {
             return "error: " + e.getMessage();
         }
+    }
+
+    /**
+     * What the command loop prints. When the dashboard is pinned it lives in the status region, so only the
+     * command result goes to the scrollback; otherwise the dashboard is appended (blank result = dashboard alone).
+     */
+    static String withDashboard(String result, boolean pinned, String dashboardText) {
+        if (pinned) {
+            return result;
+        }
+        return result.isBlank() ? dashboardText : result + "\n\n" + dashboardText;
     }
 
     /** A bare issue key like {@code ABC-123} — used only to skip the read on the fast path, never parsed out of a URL. */

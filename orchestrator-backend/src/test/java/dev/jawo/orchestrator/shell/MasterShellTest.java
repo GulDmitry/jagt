@@ -39,7 +39,7 @@ class MasterShellTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(new ConfigService.ConfigFile(
                 Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of())),
-                null, null, null, null, null, null, null, null));
+                null, null, null, null, null, null, null, null, null));
         when(assistant.readTicket("https://tracker.example.com/browse/ABC-123"))
                 .thenReturn(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC", List.of())));
         MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant);
@@ -47,5 +47,20 @@ class MasterShellTest {
         shell.doTask(List.of("do", "https://tracker.example.com/browse/ABC-123", "group-a"));
 
         verify(tools).initializeTask(eq("ABC-123"), eq("group-a"), anyString(), isNull(), isNull(), eq("Some title"));
+    }
+
+    @Test
+    void pinnedDashboardKeepsCommandOutputToTheResultOnly() {
+        assertThat(MasterShell.withDashboard("shipped p1", true, "DASH")).isEqualTo("shipped p1");
+    }
+
+    @Test
+    void inlineDashboardAppendsItAfterANonBlankResult() {
+        assertThat(MasterShell.withDashboard("shipped p1", false, "DASH")).isEqualTo("shipped p1\n\nDASH");
+    }
+
+    @Test
+    void inlineDashboardIsShownAloneForABlankResult() {
+        assertThat(MasterShell.withDashboard("", false, "DASH")).isEqualTo("DASH");
     }
 }
