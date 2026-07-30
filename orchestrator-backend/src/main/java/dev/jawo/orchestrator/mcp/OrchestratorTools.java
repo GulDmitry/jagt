@@ -279,9 +279,10 @@ public class OrchestratorTools {
             throw new IllegalArgumentException("Invalid ticket id '" + taskId + "'");
         }
         String projectKey = projectForMrUrl(mrUrl);
-        String instructions = "Reopened for review. Your branch is resumed with its existing commits and"
-                + " MR " + mrUrl + " is open. Do NOT re-implement — wait; when the Master relays review"
-                + " comments via task_context.md, address them.";
+        String instructions = "Reopened for review. Your branch is resumed with its existing commits and MR "
+                + mrUrl + " is open — there is NOTHING to build or commit right now. Do NOT re-implement, and"
+                + " do NOT call update_agent_status: the Master has already set your status (CI_POLLING). Stay"
+                + " idle; only when the Master relays review comments via task_context.md do you address them.";
         initializeTask(taskId, projectKey, instructions, null, "resume", null);
         updateAgentStatus("CI_POLLING", "MR: " + mrUrl, taskId, null);
         return "Resumed " + taskId + " on its existing branch; linked MR " + mrUrl

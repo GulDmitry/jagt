@@ -59,4 +59,12 @@ class DashboardLineTest {
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/417");
     }
+
+    @Test
+    void showsTheMrLinkForAReviewPendingTaskEvenWhenTheAgentLeftAnAwaitingNote() {
+        TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEW_PENDING, 0,
+                "awaiting: review comments; branch resumed, MR open", "a1", null, "title", "https://host/mr/425");
+
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/425");
+    }
 }

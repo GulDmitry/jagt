@@ -14,7 +14,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 /**
  * {@link MasterAssistant} via a one-shot headless Claude. Portable by design: it hardcodes NO MCP
@@ -28,14 +27,14 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
 
     private static final Logger log = LoggerFactory.getLogger(HeadlessClaudeAssistant.class);
     private static final Duration TIMEOUT = Duration.ofMinutes(3);
-    private static final Pattern SAFE_KEY = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
     private static final String TICKET_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
+            "key":{"type":"string"},\
             "title":{"type":"string"},\
             "jiraProject":{"type":"string"},\
             "labels":{"type":"array","items":{"type":"string"}}},\
-            "required":["exists","title","jiraProject","labels"]}""";
+            "required":["exists","key","title","jiraProject","labels"]}""";
     private static final String MR_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
@@ -68,17 +67,20 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     @Override
-    public Optional<TicketFacts> readTicket(String ticketKey) {
-        if (ticketKey == null || !SAFE_KEY.matcher(ticketKey).matches()) {
+    public Optional<TicketFacts> readTicket(String ticketRef) {
+        if (ticketRef == null || ticketRef.isBlank()) {
             return Optional.empty();
         }
-        String prompt = "Fetch Jira issue " + ticketKey + " via your Jira MCP tools. Return exists=true"
-                + " with its summary as title, its project key as jiraProject, and its labels. If it does"
-                + " not exist, exists=false with empty strings and array.";
-        return ask(prompt, TICKET_SCHEMA, ticketKey).map(n -> {
+        String prompt = "Read the work item identified by \"" + ticketRef + "\" — this is EITHER an issue"
+                + " key (e.g. ABC-123) OR a URL to it in some tracker (Jira, GitHub, GitLab, …). Open it"
+                + " with the matching MCP tool: if it is a URL, follow the URL — do NOT try to parse a key"
+                + " out of it. Return exists=true with its canonical issue key as key, its summary as"
+                + " title, its project key as jiraProject, and its labels. If it cannot be read,"
+                + " exists=false with empty strings and array.";
+        return ask(prompt, TICKET_SCHEMA, ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
-            return new TicketFacts(n.path("exists").asBoolean(false),
+            return new TicketFacts(n.path("exists").asBoolean(false), n.path("key").asString(""),
                     n.path("title").asString(""), n.path("jiraProject").asString(""), labels);
         });
     }

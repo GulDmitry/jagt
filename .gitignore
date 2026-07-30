@@ -12,3 +12,6 @@ node_modules/
 .factorypath
 config.json
 target/
+
+# Backend runtime log
+orchestrator-backend/*.log

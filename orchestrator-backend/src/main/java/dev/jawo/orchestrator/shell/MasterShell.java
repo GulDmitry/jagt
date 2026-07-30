@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * The Master control terminal: a deterministic JLine REPL running in the backend process. It parses a
@@ -114,30 +115,45 @@ public class MasterShell implements ApplicationRunner {
         }
     }
 
-    private String doTask(List<String> tok) {
-        String ticket = arg(tok, 1, "do <ticket> [project] [plan]");
+    /** A bare issue key like {@code ABC-123} — used only to skip the read on the fast path, never parsed out of a URL. */
+    private static final Pattern KEY_REF = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
+
+    String doTask(List<String> tok) {
+        String ref = arg(tok, 1, "do <ticket|url> [project] [plan]");
         String mode = tok.contains("plan") ? "plan" : null;
         String explicit = tok.stream().skip(2).filter(t -> !t.equals("plan")).findFirst().orElse(null);
+        boolean bareKey = KEY_REF.matcher(ref).matches();
 
-        // Explicit project given: skip the ticket read, agent distills the ticket itself.
-        if (explicit != null) {
-            return tools.initializeTask(ticket, resolveProject(explicit),
-                    "Read " + ticket + " via your Jira MCP and implement it.", mode, null, null);
+        // Fast path: a bare key + explicit project needs no read — the key IS the task id.
+        if (bareKey && explicit != null) {
+            return tools.initializeTask(ref, resolveProject(explicit),
+                    "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null);
         }
-        // No project: read the ticket once (headless) to resolve the project by labels + grab the title.
-        var facts = assistant.readTicket(ticket);
+        // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
+        // and returns the canonical key (jawo names the branch/worktree by it; it is NOT parsed from a URL).
+        var facts = assistant.readTicket(ref);
         if (facts.isPresent() && !facts.get().exists()) {
-            return "error: Jira issue " + ticket + " not found";
+            return "error: could not read " + ref + " (bad/inaccessible URL or unknown key?)";
         }
         if (facts.isPresent()) {
             TicketFacts f = facts.get();
-            String instructions = "Implement Jira " + ticket + " — \"" + f.title()
-                    + "\". Read the ticket via your Jira MCP for full details, then work.";
-            return tools.initializeTask(ticket, resolveByLabels(f), instructions, mode, null, f.title());
+            // Name the task by the canonical key the assistant read back; if it returned none but the
+            // caller already gave a bare key, that key is a fine task id (a URL has no such fallback).
+            String taskId = f.key() != null && !f.key().isBlank() ? f.key() : (bareKey ? ref : null);
+            if (taskId == null) {
+                return "error: read " + ref + " but the assistant returned no issue key to name the task";
+            }
+            String project = explicit != null ? resolveProject(explicit) : resolveByLabels(f);
+            String instructions = "Implement " + taskId + " — \"" + f.title()
+                    + "\". Read it via your issue-tracker MCP for full details, then work.";
+            return tools.initializeTask(taskId, project, instructions, mode, null, f.title());
         }
-        // Assistant unavailable — fall back to single-project or the explicit-project error.
-        return tools.initializeTask(ticket, resolveProject(null),
-                "Read " + ticket + " via your Jira MCP and implement it.", mode, null, null);
+        // Assistant unavailable: only a bare key can proceed — a URL has no derivable task id without it.
+        if (!bareKey) {
+            return "error: assistant unavailable — pass an issue key (not a URL), or add the project";
+        }
+        return tools.initializeTask(ref, resolveProject(explicit),
+                "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null);
     }
 
     /**

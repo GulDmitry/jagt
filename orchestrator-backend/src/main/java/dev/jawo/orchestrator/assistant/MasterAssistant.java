@@ -12,8 +12,12 @@ import java.util.Optional;
  */
 public interface MasterAssistant {
 
-    /** Facts distilled from a Jira ticket. {@code exists=false} means the key was not found. */
-    record TicketFacts(boolean exists, String title, String jiraProject, List<String> labels) {
+    /**
+     * Facts distilled from a work item. The input may be an issue KEY or a URL to it (Jira or any
+     * tracker); {@code key} is the canonical id the assistant read back (jawo names the branch/worktree
+     * by it — it is NOT parsed from the URL). {@code exists=false} means it could not be read.
+     */
+    record TicketFacts(boolean exists, String key, String title, String jiraProject, List<String> labels) {
     }
 
     /** Facts about an existing merge request. {@code exists=false} means the URL resolved to nothing. */
@@ -27,7 +31,8 @@ public interface MasterAssistant {
     record ReviewFacts(boolean exists, String pipelineStatus, List<String> comments) {
     }
 
-    Optional<TicketFacts> readTicket(String ticketKey);
+    /** Reads a work item given an issue KEY or a URL to it (any tracker); returns its canonical key + facts. */
+    Optional<TicketFacts> readTicket(String ticketRef);
 
     /** Reads an MR by URL so `resume` can recover its source branch (= the task) and project. */
     Optional<MergeRequestFacts> readMergeRequest(String mrUrl);

@@ -14,18 +14,22 @@ public final class DashboardLine {
 
     public static String forTask(String taskId, TaskState task) {
         String message = task.message();
-        if (message != null && message.toLowerCase().startsWith("awaiting")) {
-            return "NEEDS INPUT: " + message.replaceFirst("(?i)^awaiting:?\\s*", "");
-        }
+        boolean awaiting = message != null && message.toLowerCase().startsWith("awaiting");
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "pipeline/build failed");
             case SHIPPING -> "SHIPPING: agent committing & pushing… (focus to watch)";
             case CI_POLLING, DEPLOYED -> orDefault(task.mrUrl(), "MR link missing");
-            // The title now lives in its own dashboard column, so the detail line is contextual only:
-            // the clickable MR link once one exists, nothing while still pre-MR.
-            case REVIEW_PENDING -> hasMr(task) ? task.mrUrl() : "";
-            case NEW, IN_PROGRESS, DONE -> "";
+            // A live MR is the clickable next step — show it even if the agent also left an "awaiting"
+            // note; only fall back to NEEDS INPUT / blank when there is no MR yet. (The title lives in
+            // its own dashboard column, so this line stays contextual.)
+            case REVIEW_PENDING -> hasMr(task) ? task.mrUrl() : (awaiting ? needsInput(message) : "");
+            case NEW, IN_PROGRESS -> awaiting ? needsInput(message) : "";
+            case DONE -> "";
         };
+    }
+
+    private static String needsInput(String message) {
+        return "NEEDS INPUT: " + message.replaceFirst("(?i)^awaiting:?\\s*", "");
     }
 
     private static boolean hasMr(TaskState task) {
