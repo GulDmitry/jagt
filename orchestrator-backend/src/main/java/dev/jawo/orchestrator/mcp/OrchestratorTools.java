@@ -20,9 +20,13 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -96,6 +100,7 @@ public class OrchestratorTools {
             excludeOrchestratorFiles(projectPath);
             linkOrchestratorFiles(worktreePath);
             copyRunConfigurations(projectPath, worktreePath);
+            copyEnvFiles(projectPath, worktreePath);
             writeString(worktreePath.resolve("CLAUDE.md"),
                     subAgentContext(taskId, projectKey, project, worktreePath, remoteUrl, config));
             if (instructions != null && !instructions.isBlank()) {
@@ -640,6 +645,46 @@ public class OrchestratorTools {
     static void copyRunConfigurations(Path projectPath, Path worktreePath) {
         for (String dir : List.of(".run", ".idea/runConfigurations")) {
             copyTree(projectPath.resolve(dir), worktreePath.resolve(dir), worktreePath);
+        }
+    }
+
+    /** Directories never worth scanning for .env files (huge and/or generated). */
+    private static final Set<String> ENV_SCAN_SKIP =
+            Set.of(".git", "node_modules", "build", "target", "out", "dist", ".gradle", ".idea");
+
+    /**
+     * The run configs reference module {@code .env} files (e.g. {@code sng/.env}) for the Spring app,
+     * but those are gitignored — absent from a fresh worktree, so the copied run config fails to start.
+     * Copy every {@code .env}/{@code .env.*} from the base repo to the same relative path in the
+     * worktree. Best-effort; heavy dirs are skipped. (These are secrets living only in the local,
+     * gitignored worktree.)
+     */
+    static void copyEnvFiles(Path projectPath, Path worktreePath) {
+        try {
+            Files.walkFileTree(projectPath, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path d, BasicFileAttributes a) {
+                    return ENV_SCAN_SKIP.contains(d.getFileName().toString())
+                            ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path f, BasicFileAttributes a) {
+                    String name = f.getFileName().toString();
+                    if (name.equals(".env") || name.startsWith(".env.")) {
+                        Path to = worktreePath.resolve(projectPath.relativize(f));
+                        try {
+                            Files.createDirectories(to.getParent());
+                            Files.copy(f, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        } catch (IOException e) {
+                            log.warn("Could not copy env file {} -> {}: {}", f, to, e.getMessage());
+                        }
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            log.warn("Could not scan {} for .env files: {}", projectPath, e.getMessage());
         }
     }
 

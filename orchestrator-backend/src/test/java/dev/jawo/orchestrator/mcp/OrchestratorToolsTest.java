@@ -565,6 +565,22 @@ class OrchestratorToolsTest {
         assertThat(style).isEqualTo("sob-ai:Engineer");
     }
 
+    @Test
+    void copiesEnvFilesIntoTheWorktreeSkippingHeavyDirs(@TempDir Path root) throws Exception {
+        Path base = root.resolve("base");
+        java.nio.file.Files.createDirectories(base.resolve("app"));
+        java.nio.file.Files.writeString(base.resolve("app/.env"), "SECRET=1");
+        java.nio.file.Files.createDirectories(base.resolve("node_modules"));
+        java.nio.file.Files.writeString(base.resolve("node_modules/.env"), "IGNORED=1");
+        Path wt = root.resolve("wt");
+        java.nio.file.Files.createDirectories(wt);
+
+        OrchestratorTools.copyEnvFiles(base, wt);
+
+        assertThat(wt.resolve("app/.env")).exists().hasContent("SECRET=1");
+        assertThat(wt.resolve("node_modules/.env")).doesNotExist();
+    }
+
     @ParameterizedTest
     @CsvSource({
         "git@example.com:group-a/backend.git, group-a/backend",
