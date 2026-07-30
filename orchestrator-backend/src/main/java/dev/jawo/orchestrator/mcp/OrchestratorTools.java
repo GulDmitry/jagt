@@ -366,9 +366,13 @@ public class OrchestratorTools {
     public String ship(String taskId) {
         taskId = canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        if (task.status() != TaskStatus.REVIEW_PENDING) {
+        // ship IS the human's explicit approval, so accept IN_PROGRESS too: agents often finish without
+        // self-reporting REVIEW_PENDING, and the human looking at a done session shouldn't be blocked by
+        // that reporting gap. Still refuse the ship-pipeline states so a double-ship can't fire.
+        if (task.status() != TaskStatus.REVIEW_PENDING && task.status() != TaskStatus.IN_PROGRESS) {
             throw new IllegalStateException("ship: " + taskId + " is " + task.status()
-                    + ", not REVIEW_PENDING — nothing new to ship (already shipping/shipped, or still working).");
+                    + " — ship only from IN_PROGRESS or REVIEW_PENDING (SHIPPING/CI_POLLING/DEPLOYED are"
+                    + " already in the ship pipeline; NEW/DONE have nothing to ship).");
         }
         ProjectConfig project = configService.project(task.project());
         String baseBranch = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
