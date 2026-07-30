@@ -222,6 +222,28 @@ class GitServiceTest {
     }
 
     @Test
+    void clearsAStaleLeftoverDirectoryBeforeCreatingTheWorktree(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        Path wt = dir.resolve("wt");
+        Files.createDirectories(wt);
+        Files.writeString(wt.resolve("leftover.txt"), "stale");
+        GitService git = new GitService(runner);
+
+        git.createWorktree(repo, wt, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
+
+        assertThat(wt.resolve("f.txt")).hasContent("base");
+    }
+
+    @Test
     void deletesTheDirectoryEvenWhenGitWorktreeRemoveFails(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

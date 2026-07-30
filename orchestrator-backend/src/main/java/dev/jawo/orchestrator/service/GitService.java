@@ -40,6 +40,13 @@ public class GitService {
         withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
+            // Self-heal: a previous `done` may have unregistered the worktree but failed to delete the
+            // directory (a file held open), which makes `git worktree add` below fail "already exists".
+            // Clear a stale leftover at the target path before creating.
+            if (Files.exists(worktreePath)) {
+                log.warn("Clearing a stale leftover worktree directory before creating {}", worktreePath);
+                clearWorktreePath(projectPath, worktreePath);
+            }
             boolean branchExists = processRunner.run(projectPath, GIT_TIMEOUT,
                     List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0;
             if (branchExists) {
@@ -175,7 +182,7 @@ public class GitService {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
             Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jawo-diff-" + taskId);
-            clearDiffWorktree(projectPath, temp);
+            clearWorktreePath(projectPath, temp);
             processRunner.run(projectPath, GIT_TIMEOUT,
                             List.of("git", "worktree", "add", "--detach", temp.toString(), baseBranch))
                     .expectSuccess("git worktree add (diff base) " + temp);
@@ -195,7 +202,7 @@ public class GitService {
     public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
             Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jawo-diff-new-" + taskId);
-            clearDiffWorktree(projectPath, temp);
+            clearWorktreePath(projectPath, temp);
             Path index;
             try {
                 index = Files.createTempFile("jawo-diff-index-" + taskId + "-", "");
@@ -257,7 +264,7 @@ public class GitService {
         }
     }
 
-    private void clearDiffWorktree(Path projectPath, Path temp) {
+    private void clearWorktreePath(Path projectPath, Path temp) {
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "remove", "--force", temp.toString()));
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
         if (Files.exists(temp)) {
