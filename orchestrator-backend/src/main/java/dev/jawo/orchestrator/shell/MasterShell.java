@@ -78,7 +78,7 @@ public class MasterShell implements ApplicationRunner {
         }
         LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
         var w = terminal.writer();
-        w.println("jawo — Master control terminal. Type 'help'. `quit`/`exit`/Ctrl-D stops the backend"
+        w.println("jawo — Master control terminal. Type 'help'. Type 'exit' to stop the backend"
                 + " (agents keep running in tmux).");
         w.println();
 
