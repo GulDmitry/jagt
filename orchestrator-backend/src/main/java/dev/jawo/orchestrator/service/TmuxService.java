@@ -225,6 +225,11 @@ public class TmuxService {
         // "taskId (alias)" when the window carries an alias, else just the window name.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string",
                 "#{?#{@jawo_alias},#W (#{@jawo_alias}),#W}"));
+        // The status-bar window list (what you scan while attached) shows only #I:#W by default — add the
+        // alias there too, so "PAN-2554 (p1)" is visible in the bar, not just in the terminal tab title.
+        String windowFormat = "#I:#W#{?#{@jawo_alias}, (#{@jawo_alias}),}";
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-format", windowFormat));
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-current-format", windowFormat));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Left", "previous-window"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
     }
