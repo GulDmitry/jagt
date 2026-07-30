@@ -92,7 +92,7 @@ Claude session). Run it in a real terminal tab (Warp/kitty):
 ```bash
 cd orchestrator-backend
 ./gradlew build                                        # once
-java -jar build/libs/orchestrator-backend-0.1.0.jar
+java -jar build/libs/orchestrator-backend-0.2.0.jar
 ```
 
 `./gradlew bootRun` also works, but Gradle captures stdout so the app gets **no TTY** — the dashboard

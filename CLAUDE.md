@@ -152,7 +152,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 
 ## Build & run
 - The backend process IS the Master control terminal (JLine REPL); run it in a REAL terminal so the
-  dashboard pins + auto-refreshes: `./gradlew build` then `java -jar build/libs/orchestrator-backend-0.1.0.jar`.
+  dashboard pins + auto-refreshes: `./gradlew build` then `java -jar build/libs/orchestrator-backend-0.2.0.jar`.
 - `./gradlew bootRun` works but Gradle captures stdout → JLine gets a `dumb` terminal (no TTY) → the
   pinned/auto-refresh dashboard falls back to inline-after-each-command (proven: no-TTY ⇒ dumb ⇒
   `Status` unavailable). The shell prints a one-line notice when this happens. Java 25, port 8080.
