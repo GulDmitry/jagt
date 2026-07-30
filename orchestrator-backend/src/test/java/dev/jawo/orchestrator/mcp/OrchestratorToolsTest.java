@@ -47,7 +47,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jawo");
         when(tmux.killTaskWindows("jawo", "TEST-1")).thenReturn(1);
@@ -70,7 +70,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "tab-per-task", null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "tab-per-task", null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jawo")).thenReturn("jawo");
         when(tmux.killTaskWindows("jawo-TEST-1", "TEST-1")).thenReturn(1);
@@ -93,7 +93,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jawo")).thenReturn("jawo");
         TerminalDriver terminal = mock(TerminalDriver.class);
@@ -116,7 +116,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", false, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", false, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jawo")).thenReturn("jawo");
         TerminalDriver terminal = mock(TerminalDriver.class);
@@ -386,7 +386,7 @@ class OrchestratorToolsTest {
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(new ConfigService.ConfigFile(
-                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null, null, null, null));
+                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null, null, null, null, null));
         GitService git = mock(GitService.class);
         when(git.remoteUrl(any())).thenThrow(new IllegalStateException("remote lookup failed"));
         OrchestratorTools tools = new OrchestratorTools(config,
@@ -491,7 +491,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jawo");
         when(tmux.taskWindowState("jawo", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
@@ -515,7 +515,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jawo");
         when(tmux.taskWindowState("jawo", "ABC-1")).thenReturn(TmuxService.WindowState.MISSING);
@@ -541,7 +541,7 @@ class OrchestratorToolsTest {
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(new ConfigService.ConfigFile(
-                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null, null, null, null));
+                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null, null, null, null, null));
         GitService git = mock(GitService.class);
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
@@ -566,18 +566,21 @@ class OrchestratorToolsTest {
     }
 
     @Test
-    void copiesEnvFilesIntoTheWorktreeSkippingHeavyDirs(@TempDir Path root) throws Exception {
+    void copiesLocalFilesMatchingGlobsSkippingHeavyDirs(@TempDir Path root) throws Exception {
         Path base = root.resolve("base");
         java.nio.file.Files.createDirectories(base.resolve("app"));
         java.nio.file.Files.writeString(base.resolve("app/.env"), "SECRET=1");
+        java.nio.file.Files.createDirectories(base.resolve("lib"));
+        java.nio.file.Files.writeString(base.resolve("lib/key.pem"), "PEM");
         java.nio.file.Files.createDirectories(base.resolve("node_modules"));
         java.nio.file.Files.writeString(base.resolve("node_modules/.env"), "IGNORED=1");
         Path wt = root.resolve("wt");
         java.nio.file.Files.createDirectories(wt);
 
-        OrchestratorTools.copyEnvFiles(base, wt);
+        OrchestratorTools.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"));
 
         assertThat(wt.resolve("app/.env")).exists().hasContent("SECRET=1");
+        assertThat(wt.resolve("lib/key.pem")).exists().hasContent("PEM");
         assertThat(wt.resolve("node_modules/.env")).doesNotExist();
     }
 

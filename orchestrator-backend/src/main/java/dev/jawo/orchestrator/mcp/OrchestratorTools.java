@@ -100,7 +100,7 @@ public class OrchestratorTools {
             excludeOrchestratorFiles(projectPath);
             linkOrchestratorFiles(worktreePath);
             copyRunConfigurations(projectPath, worktreePath);
-            copyEnvFiles(projectPath, worktreePath);
+            copyLocalFiles(projectPath, worktreePath, configService.load().worktreeCopyGlobsOrDefault());
             writeString(worktreePath.resolve("CLAUDE.md"),
                     subAgentContext(taskId, projectKey, project, worktreePath, remoteUrl, config));
             if (instructions != null && !instructions.isBlank()) {
@@ -657,43 +657,50 @@ public class OrchestratorTools {
         }
     }
 
-    /** Directories never worth scanning for .env files (huge and/or generated). */
-    private static final Set<String> ENV_SCAN_SKIP =
+    /** Directories never worth scanning for local files (huge and/or generated). */
+    private static final Set<String> COPY_SCAN_SKIP =
             Set.of(".git", "node_modules", "build", "target", "out", "dist", ".gradle", ".idea");
 
     /**
-     * The run configs reference module {@code .env} files (e.g. {@code sng/.env}) for the Spring app,
-     * but those are gitignored — absent from a fresh worktree, so the copied run config fails to start.
-     * Copy every {@code .env}/{@code .env.*} from the base repo to the same relative path in the
-     * worktree. Best-effort; heavy dirs are skipped. (These are secrets living only in the local,
-     * gitignored worktree.)
+     * Copies gitignored LOCAL files matching the configured {@code worktreeCopyGlobs} from the base
+     * repo to the same relative path in a new worktree — module {@code .env}, key files, SSL certs
+     * etc. that the run configs reference but git omits, so the app can start in the worktree. The
+     * patterns are per-project config, NOT hardcoded. Best-effort; heavy dirs skipped. (Secrets live
+     * only in the local, gitignored worktree.)
      */
-    static void copyEnvFiles(Path projectPath, Path worktreePath) {
+    static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
+        var matchers = (globs == null ? List.<String>of() : globs).stream()
+                .filter(g -> g != null && !g.isBlank())
+                .map(g -> java.nio.file.FileSystems.getDefault().getPathMatcher("glob:" + g.strip()))
+                .toList();
+        if (matchers.isEmpty()) {
+            return;
+        }
         try {
             Files.walkFileTree(projectPath, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path d, BasicFileAttributes a) {
-                    return ENV_SCAN_SKIP.contains(d.getFileName().toString())
+                    return COPY_SCAN_SKIP.contains(d.getFileName().toString())
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult visitFile(Path f, BasicFileAttributes a) {
-                    String name = f.getFileName().toString();
-                    if (name.equals(".env") || name.startsWith(".env.")) {
-                        Path to = worktreePath.resolve(projectPath.relativize(f));
+                    Path rel = projectPath.relativize(f);
+                    if (matchers.stream().anyMatch(m -> m.matches(rel))) {
+                        Path to = worktreePath.resolve(rel);
                         try {
                             Files.createDirectories(to.getParent());
                             Files.copy(f, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                         } catch (IOException e) {
-                            log.warn("Could not copy env file {} -> {}: {}", f, to, e.getMessage());
+                            log.warn("Could not copy local file {} -> {}: {}", f, to, e.getMessage());
                         }
                     }
                     return FileVisitResult.CONTINUE;
                 }
             });
         } catch (IOException e) {
-            log.warn("Could not scan {} for .env files: {}", projectPath, e.getMessage());
+            log.warn("Could not scan {} for local files: {}", projectPath, e.getMessage());
         }
     }
 

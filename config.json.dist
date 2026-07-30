@@ -6,6 +6,7 @@
   "agentOutputStyle": "",
   "postReviewReplies": true,
   "reviewReplyAuthors": [],
+  "worktreeCopyGlobs": ["**/.env"],
   "mergeRequestDefaults": {
     "removeSourceBranch": true,
     "squash": true

@@ -23,10 +23,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   (`OrchestratorPaths`); overridable via `ORCHESTRATOR_ROOT`. No absolute user paths in the repo.
 - `initialize_task` copies the base repo's run configs into the worktree so `ide` opens it ready to
   run — both `.run/` (modern) and `.idea/runConfigurations/` (legacy). Only "Store as project file"
-  configs live there; workspace-only ones don't copy. It ALSO copies every `.env`/`.env.*` from the
-  base repo to the same relative worktree path (`copyEnvFiles`, heavy dirs skipped) — run configs
-  reference module `.env` files (e.g. `app/.env`) which are gitignored and otherwise missing, so the
-  app wouldn't start. Best-effort, gitignored, no-op if absent.
+  configs live there; workspace-only ones don't copy. It ALSO copies gitignored local files matching
+  the per-project `worktreeCopyGlobs` (default `["**/.env"]`) from the base repo to the same relative
+  worktree path (`copyLocalFiles`, heavy dirs skipped) — run configs reference module `.env`, key
+  files, SSL certs (e.g. `app/.env`, `**/*.pem`) which are gitignored and otherwise missing, so the
+  app wouldn't start. Patterns are config, NOT hardcoded. Best-effort, gitignored, no-op if absent.
 - `state.json` — SSOT for tasks (gitignored, auto-created).
   Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, CI_POLLING, CI_FAILED, DEPLOYED, DONE.
 - `master_prompt.md` — system prompt for the Master session (router, never writes code).

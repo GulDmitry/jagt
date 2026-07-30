@@ -21,7 +21,8 @@ public class ConfigService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ConfigFile(Map<String, ProjectConfig> projects, String tmuxSession, String viewMode,
                              Boolean keepViewer, String mrTitlePattern, String agentOutputStyle,
-                             Boolean postReviewReplies, java.util.List<String> reviewReplyAuthors) {
+                             Boolean postReviewReplies, java.util.List<String> reviewReplyAuthors,
+                             java.util.List<String> worktreeCopyGlobs) {
 
         /** Default true: the agents window/tab stays open (reserved) after the last task is done. */
         public boolean keepViewerOrDefault() {
@@ -60,6 +61,17 @@ public class ConfigService {
         public java.util.List<String> reviewReplyAuthorsOrEmpty() {
             return reviewReplyAuthors == null ? java.util.List.of() : reviewReplyAuthors;
         }
+
+        /**
+         * Glob patterns (relative to the repo root) of gitignored local files — secrets, keys, module
+         * {@code .env}, SSL certs — to copy from the base repo into each new worktree so the app can
+         * run there. Default {@code ["**}{@code /.env"]}; projects add their own (e.g. {@code
+         * "**}{@code /*.pem"}, {@code "**}{@code /gcs-key-file.json"}). Not hardcoded — per project.
+         */
+        public java.util.List<String> worktreeCopyGlobsOrDefault() {
+            return worktreeCopyGlobs == null || worktreeCopyGlobs.isEmpty()
+                    ? java.util.List.of("**/.env") : worktreeCopyGlobs;
+        }
     }
 
     private final ObjectMapper mapper;
@@ -79,7 +91,8 @@ public class ConfigService {
             ConfigFile config = mapper.readValue(Files.readString(paths.configFile()), ConfigFile.class);
             return new ConfigFile(config.projects() == null ? Map.of() : config.projects(),
                     config.tmuxSession(), config.viewMode(), config.keepViewer(), config.mrTitlePattern(),
-                    config.agentOutputStyle(), config.postReviewReplies(), config.reviewReplyAuthors());
+                    config.agentOutputStyle(), config.postReviewReplies(), config.reviewReplyAuthors(),
+                    config.worktreeCopyGlobs());
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read config file " + paths.configFile(), e);
         }
