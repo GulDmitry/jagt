@@ -225,8 +225,12 @@ public class OrchestratorTools {
                         "The Master updated task_context.md — re-read it now and follow the new instructions.")) {
             return "Instructions written to task_context.md and the agent was nudged to re-read them.";
         }
-        return "Instructions written to " + task.worktreePath() + "/task_context.md, but the agent session"
-                + " is NOT running — respawn it (open_task_tab/focus); it reads task_context.md on start.";
+        // Session not running (killed / crashed / never started): respawn it — a fresh Claude session
+        // reads task_context.md on start and acts on the relayed instruction, so ship/review can't
+        // dead-end against a dead agent.
+        openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), false);
+        return "Instructions written to task_context.md; the agent session was down, so it was respawned"
+                + " to read and follow them.";
     }
 
     /** Closes the task's tmux window(s), killing the Claude session; worktree and state stay. */
@@ -357,23 +361,19 @@ public class OrchestratorTools {
         return requireTask(canonicalTaskId(taskId)).mrUrl();
     }
 
-    /** Whether a ship proceeds: RELAY to a live agent, RECOVER a crashed ship (respawn), or REFUSE. */
-    enum ShipAction { RELAY, RECOVER, REFUSE }
+    /** Whether a ship may proceed at all (delivery + respawning a dead agent is writeTaskContext's job). */
+    enum ShipGate { PROCEED, REFUSE }
 
     /**
-     * Pure ship gate. ship IS the human's approval, so IN_PROGRESS and REVIEW_PENDING both RELAY (agents
-     * often finish without self-reporting REVIEW_PENDING). A task stuck at SHIPPING whose agent has DIED
-     * mid-ship is RECOVERable (respawn); while its agent is still live the ship is in flight → REFUSE, so
-     * a double-ship can't fire. Everything past the MR (CI_POLLING/CI_FAILED/DEPLOYED) and NEW/DONE REFUSE.
+     * Pure ship gate. ship IS the human's approval, so IN_PROGRESS and REVIEW_PENDING both PROCEED (agents
+     * often finish without self-reporting REVIEW_PENDING); a task stuck at SHIPPING whose agent has DIED
+     * mid-ship also PROCEEDs (recovery). While a SHIPPING agent is still live the ship is in flight →
+     * REFUSE (no double-ship). Everything past the MR (CI_POLLING/CI_FAILED/DEPLOYED) and NEW/DONE REFUSE.
      */
-    static ShipAction shipAction(TaskStatus status, boolean agentLive) {
-        if (status == TaskStatus.REVIEW_PENDING || status == TaskStatus.IN_PROGRESS) {
-            return ShipAction.RELAY;
-        }
-        if (status == TaskStatus.SHIPPING && !agentLive) {
-            return ShipAction.RECOVER;
-        }
-        return ShipAction.REFUSE;
+    static ShipGate shipGate(TaskStatus status, boolean agentLive) {
+        boolean allowed = status == TaskStatus.REVIEW_PENDING || status == TaskStatus.IN_PROGRESS
+                || (status == TaskStatus.SHIPPING && !agentLive);
+        return allowed ? ShipGate.PROCEED : ShipGate.REFUSE;
     }
 
     /**
@@ -389,12 +389,12 @@ public class OrchestratorTools {
         boolean agentLive = tmuxService.taskWindowState(agentSession(config, taskId), taskId)
                 == TmuxService.WindowState.AGENT_RUNNING;
         // ship IS the human's explicit approval → accept IN_PROGRESS too (agents often finish without
-        // self-reporting REVIEW_PENDING). Also RECOVER a task stuck at SHIPPING whose agent died mid-ship
+        // self-reporting REVIEW_PENDING). Also recover a task stuck at SHIPPING whose agent died mid-ship
         // (crash / API 529) — but only when the agent is NOT live, so an in-flight ship is never doubled.
-        // Past the MR (CI_POLLING/CI_FAILED/DEPLOYED) and NEW/DONE: refuse.
+        // Past the MR (CI_POLLING/CI_FAILED/DEPLOYED) and NEW/DONE: refuse. writeTaskContext respawns the
+        // agent if it's down, so a killed session is no dead-end.
         TaskStatus st = task.status();
-        ShipAction action = shipAction(st, agentLive);
-        if (action == ShipAction.REFUSE) {
+        if (shipGate(st, agentLive) == ShipGate.REFUSE) {
             throw new IllegalStateException("ship: " + taskId + " is " + st
                     + (st == TaskStatus.SHIPPING
                             ? " with its agent still shipping — a ship is in flight; `focus` to watch it."
@@ -427,12 +427,7 @@ public class OrchestratorTools {
                 + " source " + taskId + " -> target " + baseBranch + ", title \"" + title + "\".\n"
                 + repliesStep
                 + "5. Report back with update_agent_status CI_POLLING, message \"MR: <the merge request url>\".";
-        writeTaskContext(taskId, instruction);
-        if (action == ShipAction.RECOVER) {
-            // The previous ship's agent died mid-ship. Respawn it so it re-reads the ship instruction
-            // from task_context.md and finishes the push/MR/report.
-            openTaskTab(taskId, null);
-        }
+        writeTaskContext(taskId, instruction);   // respawns the agent if the session is down
         // Flip to SHIPPING now so the dashboard shows ship is underway (the status only reaches
         // CI_POLLING when the agent reports back the MR) and a second `ship` is refused meanwhile.
         stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.SHIPPING, "shipping"));

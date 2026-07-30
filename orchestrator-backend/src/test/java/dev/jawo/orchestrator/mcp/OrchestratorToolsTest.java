@@ -285,18 +285,19 @@ class OrchestratorToolsTest {
 
     @ParameterizedTest
     @CsvSource({
-            "IN_PROGRESS,    true,  RELAY",
-            "REVIEW_PENDING, false, RELAY",
-            "SHIPPING,       false, RECOVER",
+            "IN_PROGRESS,    true,  PROCEED",
+            "IN_PROGRESS,    false, PROCEED",
+            "REVIEW_PENDING, true,  PROCEED",
+            "SHIPPING,       false, PROCEED",
             "SHIPPING,       true,  REFUSE",
             "CI_POLLING,     false, REFUSE",
             "DEPLOYED,       false, REFUSE",
             "NEW,            true,  REFUSE",
             "DONE,           false, REFUSE"
     })
-    void shipActionRelaysRecoversOrRefusesByStatusAndAgentLiveness(
-            TaskStatus status, boolean agentLive, OrchestratorTools.ShipAction expected) {
-        assertThat(OrchestratorTools.shipAction(status, agentLive)).isEqualTo(expected);
+    void shipGateProceedsOrRefusesByStatusAndAgentLiveness(
+            TaskStatus status, boolean agentLive, OrchestratorTools.ShipGate expected) {
+        assertThat(OrchestratorTools.shipGate(status, agentLive)).isEqualTo(expected);
     }
 
     @Test
@@ -541,7 +542,7 @@ class OrchestratorToolsTest {
     }
 
     @Test
-    void reportsDeadSessionWhenWriteTaskContextTargetsClosedAgent(@TempDir Path root) {
+    void respawnsADownSessionWhenWriteTaskContextTargetsIt(@TempDir Path root) {
         OrchestratorProperties properties = new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
                 null, null, null, null, null, null, null, false,
@@ -560,7 +561,8 @@ class OrchestratorToolsTest {
 
         String result = tools.writeTaskContext("a1", "new instructions");
 
-        assertThat(result).contains("NOT running");
+        assertThat(result).contains("respawned");
+        verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false));
     }
 
     @Test
