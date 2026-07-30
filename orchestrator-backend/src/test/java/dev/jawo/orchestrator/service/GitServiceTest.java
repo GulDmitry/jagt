@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,6 +34,36 @@ class GitServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("recreate")
                 .hasMessageContaining("resume");
+    }
+
+    @Test
+    void removeWorktreeReapsEveryWorktreeRootedProcessNotJustJava(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitService git = new GitService(runner);
+        Path wt = dir.resolve("wt");
+        git.createWorktree(repo, wt, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
+        // A NON-java process rooted in the worktree stands in for the agent's Node session / any MCP
+        // plugin daemon that would otherwise survive removal and repopulate the directory. Removal must
+        // reap it generically (by cwd), not only java (jdtls).
+        Process rooted = new ProcessBuilder("sleep", "300").directory(wt.toFile()).start();
+        try {
+            git.removeWorktree(repo, wt, "ABC-1");
+
+            assertThat(rooted.waitFor(5, TimeUnit.SECONDS))
+                    .as("a non-java process rooted in the worktree must be reaped on removal")
+                    .isTrue();
+        } finally {
+            rooted.destroyForcibly();
+        }
     }
 
     @Test

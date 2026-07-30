@@ -105,13 +105,7 @@ public class GitService {
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
             }
             // Finish the job whether git deleted the tree or only unregistered it.
-            if (Files.exists(worktreePath)) {
-                try (var paths = Files.walk(worktreePath)) {
-                    paths.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
-                } catch (IOException e) {
-                    log.warn("Could not delete worktree remnants at {}: {}", worktreePath, e.getMessage());
-                }
-            }
+            forceDeleteDir(worktreePath);
             if (branchToDelete != null) {
                 var branch = processRunner.run(projectPath, GIT_TIMEOUT,
                         List.of("git", "branch", "-D", branchToDelete));
@@ -246,9 +240,22 @@ public class GitService {
      * dying with it. Best-effort, macOS {@code lsof}; failures are logged, never thrown.
      */
     private void reapWorktreeProcesses(Path worktree) {
+        // Reap EVERY process whose cwd is under the worktree — NOT just java (jdtls). The agent is a Node
+        // process and any of its MCP plugins may run daemons/hooks that write state into the cwd; a
+        // java-only reap left those alive to repopulate the directory right after we deleted it, so the
+        // worktree leaked. jawo assumes nothing about which process/plugin — cwd-under-worktree is the
+        // generic, precise selector (only the task's own procs), so this handles any of them.
         var lsof = processRunner.run(null, GIT_TIMEOUT,
-                List.of("lsof", "-a", "-c", "java", "-d", "cwd", "-Fpn"));
-        String target = worktree.toString();
+                List.of("lsof", "-d", "cwd", "-Fpn"));
+        // lsof reports the REAL path (symlinks resolved, e.g. macOS /var -> /private/var), so canonicalize
+        // the worktree path too or the cwd comparison silently misses. Falls back to the plain absolute
+        // path once the dir is already gone (a later delete pass) — nothing to reap there anyway.
+        String target;
+        try {
+            target = worktree.toRealPath().toString();
+        } catch (IOException e) {
+            target = worktree.toAbsolutePath().normalize().toString();
+        }
         String pid = null;
         for (String line : lsof.stdout().lines().toList()) {
             if (line.startsWith("p")) {
@@ -267,12 +274,27 @@ public class GitService {
     private void clearWorktreePath(Path projectPath, Path temp) {
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "remove", "--force", temp.toString()));
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
-        if (Files.exists(temp)) {
-            try (var paths = Files.walk(temp)) {
+        forceDeleteDir(temp);
+    }
+
+    /**
+     * Delete a directory and everything under it, robustly and GENERICALLY. Some process rooted in the
+     * dir may keep recreating untracked files (any agent/plugin writing state to its cwd — jawo assumes
+     * nothing about which), so each pass first REAPS every process whose cwd is under the dir (killing the
+     * writer, whatever it is), then re-scans and deletes. Killing-then-deleting converges: once the last
+     * writer is gone a pass finds the tree static and removes it. Not tied to any specific file or plugin.
+     */
+    private void forceDeleteDir(Path dir) {
+        for (int attempt = 0; attempt < 4 && Files.exists(dir); attempt++) {
+            reapWorktreeProcesses(dir);
+            try (var paths = Files.walk(dir)) {
                 paths.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
             } catch (IOException e) {
-                log.warn("Could not delete stale diff worktree {}: {}", temp, e.getMessage());
+                log.warn("Delete of {} failed (attempt {}): {}", dir, attempt + 1, e.getMessage());
             }
+        }
+        if (Files.exists(dir)) {
+            log.warn("Directory {} still present after delete passes — a live process keeps repopulating it", dir);
         }
     }
 
