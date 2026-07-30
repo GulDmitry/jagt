@@ -29,7 +29,8 @@ cp config.json.dist config.json   # then fill in your projects
 
 **UTF-8 locale (kitty):** kitty honors the libc locale, and macOS has no `C.UTF-8` — if the shell
 locale isn't a real UTF-8 one (e.g. `/etc/zprofile` forces `LANG=C.UTF-8`), kitty silently drops
-non-ASCII input (Cyrillic dictation/paste). Fix: `export LANG=en_US.UTF-8` in `~/.zshrc`.
+non-ASCII input (Cyrillic dictation/paste). Fix: `export LANG=en_US.UTF-8` in `~/.zshenv` — it runs
+before `/etc/zprofile`, whose `[ -z "$LANG" ]` guard then skips.
 
 Agent tabs are opened via Warp Tab Configs (generated into `~/.warp/tab_configs/`, opened with
 `warp://tab_config/<name>`) — no shell hooks needed.

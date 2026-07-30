@@ -133,6 +133,23 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - Unit tests: `cd orchestrator-backend && ./gradlew test`. EVERY fixed bug gets a regression unit test
   (sob-ai:unit-testing rules), verified RED by actually reverting the fix and running the test.
 
+## Code quality — the test is the litmus of the production code
+- A test is the embodiment of the main code's cleanliness. If a test needs ~5+ objects set up, or its
+  cognitive load / composition is high, the SMELL IS IN THE PRODUCTION CODE (poor decomposition /
+  isolation), NOT the test — fix the code so the test goes light (sob-ai:unit-testing §5). Never paper
+  over it with fatter test setup or shared fixtures.
+- No fat constructors / positional null-soup. Keep params to ~4-6; beyond that GROUP collaborators into a
+  cohesive component (composition) or use a builder. Config/value records get a builder or a
+  `defaults()` + `withX` withers — never call a 10-arg record constructor with a row of `null`s. (Lombok
+  `@Builder`/`@Value` is welcome for non-record boilerplate, added deliberately; it does NOT apply to
+  records, so jawo's config records need a hand-rolled builder/defaults.)
+- Prefer composition over many injected dependencies; SOLID + clean-code defaults — standard for 30 years,
+  apply them, don't reinvent.
+- SELF-CONTROL LOOP (mandatory, every code+test change): run the changed tests through the
+  sob-ai:unit-testing skill (hand off to an agent). If it reports a test as compositionally heavy / high
+  cognitive load / too much setup, that is a signal to REFACTOR THE PRODUCTION CODE until the test is
+  light — then re-run. Deliver only when tests are BOTH light and green (and reviewed, see below).
+
 ## Build & run
 - Backend: `cd orchestrator-backend && ./gradlew bootRun` (Java 25, port 8080).
 - Jar: `./gradlew build` → `build/libs/orchestrator-backend-0.1.0.jar`.
