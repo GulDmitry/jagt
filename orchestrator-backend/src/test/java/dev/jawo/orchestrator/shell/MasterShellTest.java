@@ -8,6 +8,7 @@ import dev.jawo.orchestrator.model.ProjectConfig;
 import dev.jawo.orchestrator.service.ConfigService;
 import dev.jawo.orchestrator.service.DashboardRenderer;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,8 @@ class MasterShellTest {
                 null, null, null, null, null, null, null, null, null));
         when(assistant.readTicket("https://tracker.example.com/browse/ABC-123"))
                 .thenReturn(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC", List.of())));
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant);
+        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant,
+                mock(ConfigurableApplicationContext.class));
 
         shell.doTask(List.of("do", "https://tracker.example.com/browse/ABC-123", "group-a"));
 
@@ -56,7 +58,8 @@ class MasterShellTest {
         MasterAssistant assistant = mock(MasterAssistant.class);
         when(assistant.readMergeRequest("https://host/mr/425"))
                 .thenReturn(Optional.of(new MergeRequestFacts(true, "PROJ-1", "group/proj", "PROJ-1 Excel export")));
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class), assistant);
+        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class), assistant,
+                mock(ConfigurableApplicationContext.class));
 
         shell.resumeTask(List.of("resume", "https://host/mr/425"));
 
@@ -64,17 +67,23 @@ class MasterShellTest {
     }
 
     @Test
-    void pinnedDashboardKeepsCommandOutputToTheResultOnly() {
-        assertThat(MasterShell.withDashboard("shipped p1", true, "DASH")).isEqualTo("shipped p1");
+    void exitClosesTheSpringContextInsteadOfLeavingItToTheShutdownHook() {
+        ConfigurableApplicationContext context = mock(ConfigurableApplicationContext.class);
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
+                mock(ConfigService.class), mock(MasterAssistant.class), context);
+
+        shell.stopBackend();
+
+        verify(context).close();
     }
 
     @Test
-    void inlineDashboardAppendsItAfterANonBlankResult() {
-        assertThat(MasterShell.withDashboard("shipped p1", false, "DASH")).isEqualTo("shipped p1\n\nDASH");
+    void appendsTheDashboardAfterANonBlankResult() {
+        assertThat(MasterShell.withDashboard("shipped p1", "DASH")).isEqualTo("shipped p1\n\nDASH");
     }
 
     @Test
-    void inlineDashboardIsShownAloneForABlankResult() {
-        assertThat(MasterShell.withDashboard("", false, "DASH")).isEqualTo("DASH");
+    void showsTheDashboardAloneForABlankResult() {
+        assertThat(MasterShell.withDashboard("", "DASH")).isEqualTo("DASH");
     }
 }

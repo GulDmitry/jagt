@@ -11,12 +11,11 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-import org.jline.utils.AttributedString;
-import org.jline.utils.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
@@ -26,9 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -51,21 +47,16 @@ public class MasterShell implements ApplicationRunner {
     private final DashboardRenderer dashboard;
     private final ConfigService configService;
     private final MasterAssistant assistant;
+    private final ConfigurableApplicationContext context;
 
     public MasterShell(OrchestratorTools tools, DashboardRenderer dashboard, ConfigService configService,
-                       MasterAssistant assistant) {
+                       MasterAssistant assistant, ConfigurableApplicationContext context) {
         this.tools = tools;
         this.dashboard = dashboard;
         this.configService = configService;
         this.assistant = assistant;
+        this.context = context;
     }
-
-    /** Serializes ALL terminal writes off the reader thread: the refresh ticker, printAbove, and status.close. */
-    private final Object paintLock = new Object();
-    /** True once the dashboard lives in a pinned status region: dispatch then returns only the command result. */
-    private volatile boolean dashboardPinned;
-    /** Set under {@link #paintLock} on shutdown so a late tick never paints into a closing status region. */
-    private boolean stopped;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -81,47 +72,8 @@ public class MasterShell implements ApplicationRunner {
         w.println("jawo — Master control terminal. Type 'help'. Type 'exit' to stop the backend"
                 + " (agents keep running in tmux).");
         w.println();
-
-        int refreshSeconds = configService.load().dashboardRefreshSecondsOrDefault();
-        boolean dumb = terminal.getType() == null || terminal.getType().startsWith(Terminal.TYPE_DUMB);
-        Status status = refreshSeconds > 0 && !dumb ? Status.getStatus(terminal, true) : null;
-        dashboardPinned = status != null;
-        ScheduledExecutorService ticker = null;
-        if (dashboardPinned) {
-            // The dashboard lives in JLine's status region, pinned at the bottom and sized to its own
-            // content — it grows to 5, 10, 50 tasks on its own, and command input + output scroll in the
-            // area ABOVE it. No manual space reservation (an earlier pre-fill hack reserved the startup
-            // size and got overrun — the growing region ate the header/output when tasks were added).
-            paintDashboard(status, terminal);
-            terminal.handle(Terminal.Signal.WINCH, sig -> {   // keep the pinned region correct on resize
-                synchronized (paintLock) {
-                    if (!stopped) {
-                        status.resize();
-                        paintLocked(status, terminal);
-                    }
-                }
-            });
-            ticker = Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "jawo-dashboard-refresh");
-                t.setDaemon(true);
-                return t;
-            });
-            ticker.scheduleWithFixedDelay(() -> {
-                try {
-                    paintDashboard(status, terminal);
-                } catch (RuntimeException e) {
-                    log.debug("dashboard refresh failed: {}", e.toString());
-                }
-            }, refreshSeconds, refreshSeconds, TimeUnit.SECONDS);
-        } else {
-            if (refreshSeconds > 0) {
-                w.println("(live dashboard off: terminal '" + terminal.getType() + "' can't pin a status"
-                        + " region — run the jar directly in a real terminal, NOT `./gradlew bootRun`"
-                        + " (Gradle captures stdout, so there's no TTY). See README > Build & run.)");
-            }
-            w.println(dashboard.render());
-            w.flush();
-        }
+        w.println(dashboard.render());
+        w.flush();
 
         try {
             int eofStreak = 0;
@@ -133,9 +85,9 @@ public class MasterShell implements ApplicationRunner {
                 } catch (UserInterruptException e) {
                     continue;
                 } catch (EndOfFileException e) {
-                    // Ctrl-D raises EOF, but don't treat it as a special quit (avoid clashing with the
-                    // user's other shortcuts) — only `exit`/`quit` leave. A genuinely closed stdin raises
-                    // EOF in a tight loop, though, so bail after a short streak to avoid spinning.
+                    // Ctrl-D raises EOF; don't treat it as a special quit (avoid clashing with the user's
+                    // other shortcuts) — only `exit`/`quit` leave. A genuinely closed stdin raises EOF in a
+                    // tight loop, so bail after a short streak to avoid spinning.
                     if (++eofStreak >= 3) {
                         break;
                     }
@@ -144,65 +96,31 @@ public class MasterShell implements ApplicationRunner {
                 if (line == null || line.isBlank()) {
                     continue;
                 }
-                if (line.strip().equals("quit") || line.strip().equals("exit")) {
+                String cmd = line.strip();
+                if (cmd.equals("quit") || cmd.equals("exit")) {
                     break;
                 }
-                String out = dispatch(line.strip());
-                if (dashboardPinned) {
-                    // printAbove + repaint must be atomic against the ticker, else their escape
-                    // sequences interleave and mangle the cursor. Both under paintLock.
-                    synchronized (paintLock) {
-                        if (!out.isBlank()) {
-                            reader.printAbove(out);
-                        }
-                        paintLocked(status, terminal);
-                    }
-                } else {
-                    w.println(out);
-                    w.flush();
-                }
+                w.println(dispatch(cmd));
+                w.flush();
             }
         } finally {
-            if (ticker != null) {
-                ticker.shutdownNow();
-                try {
-                    ticker.awaitTermination(2, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            synchronized (paintLock) {
-                stopped = true;
-                if (status != null) {
-                    status.close();
-                }
-            }
+            stopBackend();
         }
-        // The backend is a web app: returning from run() leaves the JVM alive (server threads are
-        // non-daemon), and JLine's raw mode swallows Ctrl-C — so the terminal would hang. The Master
-        // shell IS this process's UI, so quitting it stops the backend. Agents keep running in tmux.
-        log.info("Master shell exited — stopping backend (agents keep running in tmux).");
+        // context.close() (in stopBackend) stops the web server; the hard-exit then guarantees the process
+        // ends even if a non-daemon thread lingers. Safe here — the context is already closed, so the JVM
+        // shutdown hook has nothing to close and stays quiet.
         System.exit(0);
     }
 
-    /** Repaints the pinned dashboard region in place (no scrollback growth); ANSI colors preserved. */
-    private void paintDashboard(Status status, Terminal terminal) {
-        synchronized (paintLock) {
-            paintLocked(status, terminal);
-        }
-    }
-
-    /** Caller MUST hold {@link #paintLock}. No-op once {@link #stopped}, so a late tick never paints a closed region. */
-    private void paintLocked(Status status, Terminal terminal) {
-        if (stopped) {
-            return;
-        }
-        List<AttributedString> lines = new ArrayList<>();
-        for (String line : dashboard.render().split("\\R")) {
-            lines.add(AttributedString.fromAnsi(line));
-        }
-        status.update(lines);
-        terminal.flush();
+    /**
+     * Stop the backend when the shell exits. Close the Spring context HERE, while the fat-jar classloader
+     * is still live: if the JVM shutdown hook closed it instead, its close-time logging would load a
+     * logback class (ThrowableProxy) for the first time from the nested jar while that loader is already
+     * closing → NoClassDefFoundError. Closing now does that logging early and quietly. Agents live in tmux.
+     */
+    void stopBackend() {
+        log.info("Master shell exited — stopping backend (agents keep running in tmux).");
+        context.close();
     }
 
     private String dispatch(String line) {
@@ -224,20 +142,14 @@ public class MasterShell implements ApplicationRunner {
                 case "done" -> tools.removeTask(arg(tok, 1, "done <ticket>"), null);
                 default -> "unknown command '" + cmd + "' — try 'help'";
             };
-            return withDashboard(result, dashboardPinned, dashboardPinned ? "" : dashboard.render());
+            return withDashboard(result, dashboard.render());
         } catch (IllegalArgumentException | IllegalStateException e) {
             return "error: " + e.getMessage();
         }
     }
 
-    /**
-     * What the command loop prints. When the dashboard is pinned it lives in the status region, so only the
-     * command result goes to the scrollback; otherwise the dashboard is appended (blank result = dashboard alone).
-     */
-    static String withDashboard(String result, boolean pinned, String dashboardText) {
-        if (pinned) {
-            return result;
-        }
+    /** What the command loop prints: the command result then the dashboard (a blank result = dashboard alone). */
+    static String withDashboard(String result, String dashboardText) {
         return result.isBlank() ? dashboardText : result + "\n\n" + dashboardText;
     }
 
