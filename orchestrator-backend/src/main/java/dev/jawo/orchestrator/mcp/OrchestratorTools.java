@@ -276,7 +276,7 @@ public class OrchestratorTools {
      * The project is derived from the MR url (matched against each project's git remote). The branch
      * is resumed with its commits; the agent starts in review mode (does not re-implement).
      */
-    public String resumeTask(String taskId, String mrUrl) {
+    public String resumeTask(String taskId, String mrUrl, String title) {
         if (mrUrl == null || !mrUrl.contains("http")) {
             throw new IllegalArgumentException("resume needs the MR url: resume <ticket> <mr-url>");
         }
@@ -288,7 +288,7 @@ public class OrchestratorTools {
                 + mrUrl + " is open — there is NOTHING to build or commit right now. Do NOT re-implement, and"
                 + " do NOT call update_agent_status: the Master has already set your status (CI_POLLING). Stay"
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
-        initializeTask(taskId, projectKey, instructions, null, "resume", null);
+        initializeTask(taskId, projectKey, instructions, null, "resume", title);
         updateAgentStatus("CI_POLLING", "MR: " + mrUrl, taskId, null);
         return "Resumed " + taskId + " on its existing branch; linked MR " + mrUrl
                 + "; status CI_POLLING — run `review` or `deploy`.";

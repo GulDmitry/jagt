@@ -256,18 +256,23 @@ public class MasterShell implements ApplicationRunner {
      * (= the task) and project; jawo resumes that branch + links the MR at CI_POLLING (no new MR). An
      * explicit ticket token may be given to skip the lookup.
      */
-    private String resumeTask(List<String> tok) {
+    String resumeTask(List<String> tok) {
         String mrUrl = tok.stream().skip(1).filter(t -> t.startsWith("http")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("usage: resume <mr-url>"));
         String ticket = tok.stream().skip(1).filter(t -> !t.startsWith("http")).findFirst().orElse(null);
-        if (ticket == null) {
-            var mr = assistant.readMergeRequest(mrUrl);
-            if (mr.isEmpty() || !mr.get().exists()) {
-                return "error: could not read MR (or not found): " + mrUrl;
+        // Read the MR (one MCP call jawo already needs for the branch) — it also carries the title, so a
+        // resumed task shows one on the dashboard just like a `do` task, not a blank.
+        String title = null;
+        var mr = assistant.readMergeRequest(mrUrl);
+        if (mr.isPresent() && mr.get().exists()) {
+            title = mr.get().title();
+            if (ticket == null) {
+                ticket = mr.get().sourceBranch();
             }
-            ticket = mr.get().sourceBranch();
+        } else if (ticket == null) {
+            return "error: could not read MR (or not found): " + mrUrl;
         }
-        return tools.resumeTask(ticket, mrUrl);
+        return tools.resumeTask(ticket, mrUrl, title);
     }
 
     /**
