@@ -6,7 +6,7 @@
   "agentOutputStyle": "",
   "postReviewReplies": true,
   "reviewReplyAuthors": [],
-  "worktreeCopyGlobs": ["**/.env"],
+  "worktreeCopyGlobs": ["**/.env", "**/*.pem", "**/*.pub", "**/*.p12", "**/*.jks", "**/*.keystore"],
   "mergeRequestDefaults": {
     "removeSourceBranch": true,
     "squash": true
