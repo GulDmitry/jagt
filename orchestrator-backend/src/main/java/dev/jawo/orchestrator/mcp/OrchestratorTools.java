@@ -357,6 +357,25 @@ public class OrchestratorTools {
         return requireTask(canonicalTaskId(taskId)).mrUrl();
     }
 
+    /** Whether a ship proceeds: RELAY to a live agent, RECOVER a crashed ship (respawn), or REFUSE. */
+    enum ShipAction { RELAY, RECOVER, REFUSE }
+
+    /**
+     * Pure ship gate. ship IS the human's approval, so IN_PROGRESS and REVIEW_PENDING both RELAY (agents
+     * often finish without self-reporting REVIEW_PENDING). A task stuck at SHIPPING whose agent has DIED
+     * mid-ship is RECOVERable (respawn); while its agent is still live the ship is in flight → REFUSE, so
+     * a double-ship can't fire. Everything past the MR (CI_POLLING/CI_FAILED/DEPLOYED) and NEW/DONE REFUSE.
+     */
+    static ShipAction shipAction(TaskStatus status, boolean agentLive) {
+        if (status == TaskStatus.REVIEW_PENDING || status == TaskStatus.IN_PROGRESS) {
+            return ShipAction.RELAY;
+        }
+        if (status == TaskStatus.SHIPPING && !agentLive) {
+            return ShipAction.RECOVER;
+        }
+        return ShipAction.REFUSE;
+    }
+
     /**
      * The human approved the current uncommitted changes. Ship is the ONLY commit point: it relays the
      * approval to the agent (which owns the GitLab MCP) via task_context.md — commit with the pattern
@@ -366,17 +385,24 @@ public class OrchestratorTools {
     public String ship(String taskId) {
         taskId = canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        // ship IS the human's explicit approval, so accept IN_PROGRESS too: agents often finish without
-        // self-reporting REVIEW_PENDING, and the human looking at a done session shouldn't be blocked by
-        // that reporting gap. Still refuse the ship-pipeline states so a double-ship can't fire.
-        if (task.status() != TaskStatus.REVIEW_PENDING && task.status() != TaskStatus.IN_PROGRESS) {
-            throw new IllegalStateException("ship: " + taskId + " is " + task.status()
-                    + " — ship only from IN_PROGRESS or REVIEW_PENDING (SHIPPING/CI_POLLING/DEPLOYED are"
-                    + " already in the ship pipeline; NEW/DONE have nothing to ship).");
+        ConfigService.ConfigFile config = configService.load();
+        boolean agentLive = tmuxService.taskWindowState(agentSession(config, taskId), taskId)
+                == TmuxService.WindowState.AGENT_RUNNING;
+        // ship IS the human's explicit approval → accept IN_PROGRESS too (agents often finish without
+        // self-reporting REVIEW_PENDING). Also RECOVER a task stuck at SHIPPING whose agent died mid-ship
+        // (crash / API 529) — but only when the agent is NOT live, so an in-flight ship is never doubled.
+        // Past the MR (CI_POLLING/CI_FAILED/DEPLOYED) and NEW/DONE: refuse.
+        TaskStatus st = task.status();
+        ShipAction action = shipAction(st, agentLive);
+        if (action == ShipAction.REFUSE) {
+            throw new IllegalStateException("ship: " + taskId + " is " + st
+                    + (st == TaskStatus.SHIPPING
+                            ? " with its agent still shipping — a ship is in flight; `focus` to watch it."
+                            : " — ship only from IN_PROGRESS or REVIEW_PENDING (CI_POLLING/CI_FAILED/DEPLOYED"
+                                    + " are past the MR; NEW/DONE have nothing to ship)."));
         }
         ProjectConfig project = configService.project(task.project());
         String baseBranch = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
-        ConfigService.ConfigFile config = configService.load();
         String title = config.mrTitlePatternOrDefault()
                 .replace("{ticket}", taskId)
                 .replace("{title}", task.title() == null ? "" : task.title())
@@ -402,6 +428,11 @@ public class OrchestratorTools {
                 + repliesStep
                 + "5. Report back with update_agent_status CI_POLLING, message \"MR: <the merge request url>\".";
         writeTaskContext(taskId, instruction);
+        if (action == ShipAction.RECOVER) {
+            // The previous ship's agent died mid-ship. Respawn it so it re-reads the ship instruction
+            // from task_context.md and finishes the push/MR/report.
+            openTaskTab(taskId, null);
+        }
         // Flip to SHIPPING now so the dashboard shows ship is underway (the status only reaches
         // CI_POLLING when the agent reports back the MR) and a second `ship` is refused meanwhile.
         stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.SHIPPING, "shipping"));

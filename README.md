@@ -168,6 +168,15 @@ The system never acts on the MR/CI by itself — three checkpoints are explicitl
 | B | CI/CD + review progress | after `ship` (nothing polls automatically) | `review` |
 | C | closing the loop | CI green, reviewers satisfied | `done` (full cleanup) |
 
+## Troubleshooting
+
+| symptom | what happened | what to do |
+|---------|---------------|------------|
+| Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash, or an API 5xx/"Overloaded" 529) before reporting `CI_POLLING` | `ship <ticket>` **again** — jawo sees the dead agent and respawns it to finish the push/MR. (If the agent is still alive, `ship` refuses — `focus` to watch the in-flight ship.) |
+| Agent seems hung / no response, or nothing happens after `ship`/`review` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to open its window and see what it's doing; `respawn <ticket>` restarts a dead session (it re-reads `task_context.md` and resumes); `done <ticket>` abandons it entirely (window + worktree + language server) |
+| `API Error: 529 Overloaded` in an agent | transient Anthropic overload, server-side | wait a moment and re-run the command; the task state is unchanged |
+| Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Setup** |
+
 ## Internals
 
 Architecture, fault-tolerance guarantees and engineering constraints: see [CLAUDE.md](CLAUDE.md).

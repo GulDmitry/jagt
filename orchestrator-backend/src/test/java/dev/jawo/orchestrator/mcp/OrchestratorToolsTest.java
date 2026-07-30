@@ -283,26 +283,20 @@ class OrchestratorToolsTest {
         verify(editor).open(java.nio.file.Path.of("/wt"));
     }
 
-    @Test
-    void shipsFromInProgressSinceShipIsTheHumanApproval(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, "Title", null));
-        ConfigService config = mock(ConfigService.class);
-        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(
-                Map.of(), "jawo", null, null, null, null, null, null, null, null));
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
-                mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
-
-        tools.ship("ABC-1");
-
-        assertThat(state.task("ABC-1").get().status()).isEqualTo(TaskStatus.SHIPPING);
+    @ParameterizedTest
+    @CsvSource({
+            "IN_PROGRESS,    true,  RELAY",
+            "REVIEW_PENDING, false, RELAY",
+            "SHIPPING,       false, RECOVER",
+            "SHIPPING,       true,  REFUSE",
+            "CI_POLLING,     false, REFUSE",
+            "DEPLOYED,       false, REFUSE",
+            "NEW,            true,  REFUSE",
+            "DONE,           false, REFUSE"
+    })
+    void shipActionRelaysRecoversOrRefusesByStatusAndAgentLiveness(
+            TaskStatus status, boolean agentLive, OrchestratorTools.ShipAction expected) {
+        assertThat(OrchestratorTools.shipAction(status, agentLive)).isEqualTo(expected);
     }
 
     @Test
