@@ -84,6 +84,25 @@ Open questions / design:
 
 ## UX
 
+### Live-refresh the dashboard in place (don't scroll a new copy each time)
+Today the dashboard only redraws after a command. Want it to refresh on its own (~10s, or on state
+change) so "ACTIVE 5m ago" and statuses stay current without typing `status` — and crucially redraw IN
+PLACE (fixed region, terminal doesn't scroll down), not append a fresh copy each tick.
+
+Design:
+- The shell blocks on JLine `reader.readLine("jawo> ")`, so a background repaint must not disturb the
+  typed buffer. `reader.printAbove(...)` does that but SCROLLS (each tick appends above the prompt) — not
+  what we want.
+- True in-place: JLine has a `Status` region (`Status.getStatus(terminal)`, multi-line, redrawn in a
+  fixed block at the bottom) — render the dashboard into that instead of the scrollback. Alternative:
+  reserve a block + ANSI cursor save/restore + clear-to-EOL. Prefer `Status` (handles resize/wrap).
+- Trigger: prefer EVENT-DRIVEN over a 10s poll — local dashboard state is `state.json`, mutated in-process
+  by `StateService` (agent MCP calls land in the backend). A `StateService` change listener can signal the
+  shell to repaint immediately (0 latency, no busy poll); keep a slow ~10s tick only to refresh the
+  relative "ACTIVE Xm ago" clock. Debounce coalesced writes.
+- Keep command output in the scrollback (normal `println`); only the dashboard block lives in the fixed
+  region. Ctrl-D / no-TTY path must degrade to the current print-once behavior.
+
 ### Move off Warp — persistent typing lag + no tab/split control API
 Typing in a tmux window through Warp is sluggish ("like jelly", noticeable input delay), and Warp has no
 programmatic surface for tabs/splits/windows (URI scheme only — verified). Both point to a different host
