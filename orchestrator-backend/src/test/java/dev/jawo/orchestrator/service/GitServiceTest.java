@@ -222,6 +222,27 @@ class GitServiceTest {
     }
 
     @Test
+    void deletesTheDirectoryEvenWhenGitWorktreeRemoveFails(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        Path leftover = dir.resolve("leftover");
+        Files.createDirectories(leftover);
+        Files.writeString(leftover.resolve("junk.txt"), "x");
+        GitService git = new GitService(runner);
+
+        git.removeWorktree(repo, leftover, null);
+
+        assertThat(leftover).doesNotExist();
+    }
+
+    @Test
     void publishesTaskCommitsWhenDeployMergesCleanly(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

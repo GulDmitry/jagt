@@ -90,11 +90,14 @@ public class GitService {
             var removed = processRunner.run(projectPath, GIT_TIMEOUT,
                     List.of("git", "worktree", "remove", "--force", worktreePath.toString()));
             if (removed.exitCode() != 0) {
-                log.warn("git worktree remove {} failed: {}", worktreePath, removed.stderr());
-                return;
+                // git commonly UNregisters the worktree but then fails to delete the directory (a file
+                // held open at that instant, IDE/build metadata). Do NOT stop here — prune the admin
+                // entry and force-delete the dir below, or the worktree leaks on disk.
+                log.warn("git worktree remove {} exited {}: {} — pruning and deleting the directory",
+                        worktreePath, removed.exitCode(), removed.stderr());
+                processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
             }
-            // An open IDE (`.idea/`) or editor may drop metadata into the dir around
-            // removal — git leaves such remnants behind; finish the job.
+            // Finish the job whether git deleted the tree or only unregistered it.
             if (Files.exists(worktreePath)) {
                 try (var paths = Files.walk(worktreePath)) {
                     paths.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
