@@ -63,7 +63,7 @@ class WatchdogServiceTest {
 
     private static ConfigService configMock() {
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null));
         return config;
     }
 

@@ -371,10 +371,19 @@ public class OrchestratorTools {
                 .replace("{ticket}", taskId)
                 .replace("{title}", task.title() == null ? "" : task.title())
                 .trim();
-        String repliesStep = config.postReviewRepliesOrDefault()
-                ? "4. If review_replies.md exists, post each drafted reply to its MR thread, then delete it.\n"
-                : "4. Do NOT post any replies — LEAVE review_replies.md untouched for the human to post; only"
-                        + " the code is pushed.\n";
+        String repliesStep;
+        if (!config.postReviewRepliesOrDefault()) {
+            repliesStep = "4. Do NOT post any replies — LEAVE review_replies.md untouched for the human to"
+                    + " post; only the code is pushed.\n";
+        } else if (config.reviewReplyAuthorsOrEmpty().isEmpty()) {
+            repliesStep = "4. If review_replies.md exists, post each drafted reply to its MR thread, then"
+                    + " delete it.\n";
+        } else {
+            repliesStep = "4. If review_replies.md exists, post drafted replies ONLY to threads whose comment"
+                    + " author matches (case-insensitive) any of: "
+                    + String.join(", ", config.reviewReplyAuthorsOrEmpty())
+                    + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones.\n";
+        }
         String instruction = "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"
                 + "1. Commit ALL current changes with EXACTLY this message: \"" + title + "\".\n"
                 + "2. Push branch " + taskId + ".\n"

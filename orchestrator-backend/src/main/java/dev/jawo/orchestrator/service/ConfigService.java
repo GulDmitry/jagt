@@ -21,7 +21,7 @@ public class ConfigService {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ConfigFile(Map<String, ProjectConfig> projects, String tmuxSession, String viewMode,
                              Boolean keepViewer, String mrTitlePattern, String agentOutputStyle,
-                             Boolean postReviewReplies) {
+                             Boolean postReviewReplies, java.util.List<String> reviewReplyAuthors) {
 
         /** Default true: the agents window/tab stays open (reserved) after the last task is done. */
         public boolean keepViewerOrDefault() {
@@ -51,6 +51,15 @@ public class ConfigService {
         public boolean postReviewRepliesOrDefault() {
             return postReviewReplies == null || postReviewReplies;
         }
+
+        /**
+         * Optional whitelist: when non-empty, drafted review replies are posted ONLY to threads whose
+         * author matches one of these (case-insensitive substring, e.g. "coderabbit"). Empty = post to
+         * every thread (the default). Only meaningful when {@link #postReviewRepliesOrDefault()} is true.
+         */
+        public java.util.List<String> reviewReplyAuthorsOrEmpty() {
+            return reviewReplyAuthors == null ? java.util.List.of() : reviewReplyAuthors;
+        }
     }
 
     private final ObjectMapper mapper;
@@ -70,7 +79,7 @@ public class ConfigService {
             ConfigFile config = mapper.readValue(Files.readString(paths.configFile()), ConfigFile.class);
             return new ConfigFile(config.projects() == null ? Map.of() : config.projects(),
                     config.tmuxSession(), config.viewMode(), config.keepViewer(), config.mrTitlePattern(),
-                    config.agentOutputStyle(), config.postReviewReplies());
+                    config.agentOutputStyle(), config.postReviewReplies(), config.reviewReplyAuthors());
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read config file " + paths.configFile(), e);
         }

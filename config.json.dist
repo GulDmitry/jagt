@@ -5,6 +5,7 @@
   "mrTitlePattern": "{ticket} {title}",
   "agentOutputStyle": "",
   "postReviewReplies": true,
+  "reviewReplyAuthors": [],
   "mergeRequestDefaults": {
     "removeSourceBranch": true,
     "squash": true
