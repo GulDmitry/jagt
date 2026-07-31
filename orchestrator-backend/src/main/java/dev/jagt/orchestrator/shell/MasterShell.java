@@ -73,7 +73,7 @@ public class MasterShell implements ApplicationRunner {
      * region → its top drops → the whole prompt+dashboard construction sits lower and more scrollback rows
      * stay above the prompt (a multi-line `help` no longer scrolls its head off the top of the screen).
      */
-    private static final int COMMAND_ROWS = 13;
+    private static final int COMMAND_ROWS = 17;
 
     @Override
     public void run(ApplicationArguments args) {
