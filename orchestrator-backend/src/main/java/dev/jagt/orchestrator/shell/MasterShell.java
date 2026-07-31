@@ -83,6 +83,14 @@ public class MasterShell implements ApplicationRunner {
     /** Cap the in-memory output log so a long-running session can't grow it without bound. */
     private static final int MAX_LOG_LINES = 2000;
 
+    /** Every command, for Tab-completion of the first word. */
+    private static final List<String> COMMANDS = List.of("status", "do", "resume", "review", "ship",
+            "focus", "ide", "deploy", "respawn", "done", "help", "quit", "exit");
+    /** Commands whose first argument is an EXISTING task (so Tab completes its alias/id); `do`/`resume`
+     *  take a new ticket/URL, not a current task. */
+    private static final Set<String> TASK_ARG_COMMANDS = Set.of(
+            "review", "ship", "focus", "ide", "deploy", "respawn", "done");
+
     @Override
     public void run(ApplicationArguments args) {
         ConfigService.ConfigFile config = configService.load();
@@ -237,6 +245,8 @@ public class MasterShell implements ApplicationRunner {
                         histIdx = history.size();
                     } else if (ctrl && cc == 'l') {
                         outputLog.clear();                            // ^L: clear the screen (scrollback log)
+                    } else if (type == KeyType.Tab) {
+                        completeInput(editor, outputLog);             // command / alias / ticket / flag completion
                     } else {
                         editKey(editor, key);   // arrows L/R, Home, End, Delete, Ctrl-A/E/U/K/W, printable insert
                     }
@@ -285,6 +295,93 @@ public class MasterShell implements ApplicationRunner {
             c = c.getCause();
         }
         return c.getMessage() != null ? c.getMessage() : c.toString();
+    }
+
+    /**
+     * Tab-complete the word at the end of the input: the command (first word), an existing task's alias/id
+     * (a {@code <ticket>} arg), or a flag (`ide … diff`, `do … plan`). A single match is filled in with a
+     * trailing space; several matches extend to the common prefix, or list the options (task options show
+     * the title, so a bare number is recognisable). Purely local — the command set is fixed and known.
+     */
+    void completeInput(LineEditor editor, List<String> outputLog) {
+        String[] parts = editor.text().split(" ", -1);
+        int idx = parts.length - 1;
+        String word = parts[idx];
+        String cmd = parts[0];
+        if (idx == 1 && TASK_ARG_COMMANDS.contains(cmd)) {
+            completeTaskArg(editor, outputLog, parts, idx, word);
+            return;
+        }
+        List<String> pool;
+        if (idx == 0) {
+            pool = COMMANDS;
+        } else if (cmd.equals("ide") && idx == 2) {
+            pool = List.of("diff");
+        } else if (cmd.equals("do") && idx >= 2) {
+            pool = List.of("plan");
+        } else {
+            return;
+        }
+        List<String> matches = pool.stream().filter(c -> c.startsWith(word)).distinct().sorted().toList();
+        if (matches.size() == 1) {
+            setLastToken(editor, parts, idx, matches.get(0));
+        } else if (!matches.isEmpty()) {
+            String common = commonPrefix(matches);
+            if (!common.equals(word)) {
+                parts[idx] = common;
+                editor.setText(String.join(" ", parts));            // extend, no trailing space (still ambiguous)
+            } else {
+                outputLog.add("  " + String.join("   ", matches));  // list the options
+                capLog(outputLog);
+            }
+        }
+    }
+
+    /** Complete a {@code <ticket>} argument from the live tasks; on ambiguity, list matches WITH titles. */
+    private void completeTaskArg(LineEditor editor, List<String> outputLog, String[] parts, int idx, String word) {
+        List<OrchestratorTools.TaskChoice> choices = tools.taskChoices();
+        List<String> matches = choices.stream()
+                .flatMap(c -> java.util.stream.Stream.of(c.alias(), c.id()))
+                .filter(t -> t != null && !t.isBlank() && t.startsWith(word))
+                .distinct().sorted().toList();
+        if (matches.size() == 1) {
+            setLastToken(editor, parts, idx, matches.get(0));
+        } else if (!matches.isEmpty()) {
+            String common = commonPrefix(matches);
+            if (!common.equals(word)) {
+                parts[idx] = common;
+                editor.setText(String.join(" ", parts));
+            } else {
+                choices.stream()
+                        .filter(c -> startsWith(c.alias(), word) || startsWith(c.id(), word))
+                        .forEach(c -> outputLog.add(String.format("  %-5s %-11s %s",
+                                c.alias() == null ? "-" : c.alias(), c.id(), c.title() == null ? "" : c.title())));
+                capLog(outputLog);
+            }
+        }
+    }
+
+    private static void setLastToken(LineEditor editor, String[] parts, int idx, String token) {
+        parts[idx] = token;
+        editor.setText(String.join(" ", parts) + " ");   // single match → fill in, ready for the next word
+    }
+
+    private static boolean startsWith(String s, String prefix) {
+        return s != null && s.startsWith(prefix);
+    }
+
+    /** Longest common prefix of a non-empty list — how far an ambiguous completion can safely fill in. */
+    private static String commonPrefix(List<String> tokens) {
+        String prefix = tokens.get(0);
+        for (String t : tokens) {
+            int n = Math.min(prefix.length(), t.length());
+            int i = 0;
+            while (i < n && prefix.charAt(i) == t.charAt(i)) {
+                i++;
+            }
+            prefix = prefix.substring(0, i);
+        }
+        return prefix;
     }
 
     /**

@@ -390,6 +390,17 @@ public class OrchestratorTools {
         return requireTask(canonicalTaskId(taskId)).mrUrl();
     }
 
+    /** A task's Tab-completion choice: its alias, id and title — the Master matches on alias/id and shows
+     *  the title in the hint so the human recognises which task a bare number is. */
+    public record TaskChoice(String alias, String id, String title) { }
+
+    /** Every task, for the Master shell's Tab-completion of a {@code <ticket>} argument. */
+    public List<TaskChoice> taskChoices() {
+        List<TaskChoice> choices = new java.util.ArrayList<>();
+        stateService.tasks().forEach((id, t) -> choices.add(new TaskChoice(t.alias(), id, t.title())));
+        return choices;
+    }
+
     /**
      * A clean `review` (CI green, no unresolved comments) IS a state transition: mark the task REVIEWED so
      * the dashboard's next move becomes `deploy`/`done` instead of looping back to `review`. Master-only.

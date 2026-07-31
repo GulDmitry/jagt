@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.service.DashboardRenderer;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -74,6 +75,51 @@ class MasterShellTest {
         shell.stopBackend();
 
         verify(context).close();
+    }
+
+    @Test
+    void tabCompletesAUniqueCommand() {
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
+                mock(ConfigService.class), mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("sh");
+
+        shell.completeInput(editor, new ArrayList<>());
+
+        assertThat(editor.text()).isEqualTo("ship ");
+    }
+
+    @Test
+    void tabCompletesATaskAliasFromTheLiveTasks() {
+        OrchestratorTools tools = mock(OrchestratorTools.class);
+        when(tools.taskChoices()).thenReturn(List.of(new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel")));
+        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class),
+                mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("ship p1");
+
+        shell.completeInput(editor, new ArrayList<>());
+
+        assertThat(editor.text()).isEqualTo("ship p1 ");
+    }
+
+    @Test
+    void tabListsAmbiguousTasksWithTheirTitlesInsteadOfCompleting() {
+        OrchestratorTools tools = mock(OrchestratorTools.class);
+        when(tools.taskChoices()).thenReturn(List.of(
+                new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel export flag"),
+                new OrchestratorTools.TaskChoice("p2", "PAN-2540", "Login rate limit")));
+        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class),
+                mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("ship p");
+        List<String> log = new ArrayList<>();
+
+        shell.completeInput(editor, log);
+
+        assertThat(editor.text()).isEqualTo("ship p");   // ambiguous → unchanged, options listed instead
+        assertThat(log).anyMatch(l -> l.contains("PAN-2536") && l.contains("Excel export flag"));
+        assertThat(log).anyMatch(l -> l.contains("PAN-2540") && l.contains("Login rate limit"));
     }
 
     @Test
