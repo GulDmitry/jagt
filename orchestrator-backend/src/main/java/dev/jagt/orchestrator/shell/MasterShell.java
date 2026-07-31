@@ -280,7 +280,25 @@ public class MasterShell implements ApplicationRunner {
 
         String[] dash = dashboard.render().split("\\R");
         int body = Math.max(1, height - 1);                       // rows above the input line
-        int dashRows = Math.min(dash.length, Math.max(1, body - commandRows));
+
+        // Expand the dashboard: wrap a long task title onto continuation lines indented under the TITLE
+        // column, so the whole title is visible; every other line passes through unchanged.
+        int titleAvail = Math.max(1, width - DashboardRenderer.COL_TITLE);
+        String indent = " ".repeat(DashboardRenderer.COL_TITLE);
+        List<DashRow> drows = new ArrayList<>();
+        for (String line : dash) {
+            if (isTaskRow(line) && line.length() > DashboardRenderer.COL_TITLE) {
+                String head = line.substring(0, DashboardRenderer.COL_TITLE);
+                List<String> parts = wrap(line.substring(DashboardRenderer.COL_TITLE), titleAvail);
+                drows.add(new DashRow(head + parts.get(0), RowKind.TASK));
+                for (int p = 1; p < parts.size(); p++) {
+                    drows.add(new DashRow(indent + parts.get(p), RowKind.TITLE_CONT));
+                }
+            } else {
+                drows.add(new DashRow(line, isTaskRow(line) ? RowKind.TASK : RowKind.PLAIN));
+            }
+        }
+        int dashRows = Math.min(drows.size(), Math.max(1, body - commandRows));
         int outputRows = body - dashRows;                          // output log gets whatever is left on top
         int dashTop = outputRows;
 
@@ -307,23 +325,26 @@ public class MasterShell implements ApplicationRunner {
                 put(g, y, "", width, TextColor.ANSI.DEFAULT, false);
             }
         }
+        // The alias, ticket and title all share ONE colour (distinct from the shell's cyan prompt) so a
+        // task's identity reads as one unit; status/project/active stay plain.
+        TextColor idColor = TextColor.ANSI.MAGENTA_BRIGHT;
         for (int i = 0; i < dashRows; i++) {
-            String text = i < dash.length ? dash[i] : "";
-            if (dash.length > dashRows && i == dashRows - 1) {     // more tasks than fit → collapse the tail
-                text = "  … +" + (dash.length - dashRows + 1) + " more — see all: curl localhost:8290/status";
-            }
             int y = dashTop + i;
-            if (isTaskRow(text)) {
-                // Highlight the columns the human scans by — alias, ticket, title — each its own colour, so a
-                // task is easy to spot and recognise (the bare number alone doesn't say what the task is).
-                put(g, y, text, width, TextColor.ANSI.DEFAULT, false);   // base row (status/project/active plain)
-                colorSpan(g, y, text, DashboardRenderer.COL_ALIAS, DashboardRenderer.ALIAS_W,
-                        TextColor.ANSI.CYAN_BRIGHT, width);
-                colorSpan(g, y, text, DashboardRenderer.COL_TASK, DashboardRenderer.TASK_W,
-                        TextColor.ANSI.YELLOW_BRIGHT, width);
-                colorSpan(g, y, text, DashboardRenderer.COL_TITLE, width, TextColor.ANSI.GREEN_BRIGHT, width);
-            } else {
-                put(g, y, text, width, dashColor(text), text.startsWith("jagt orchestrator"));
+            if (drows.size() > dashRows && i == dashRows - 1) {    // more rows than fit → collapse the tail
+                put(g, y, "  … +" + (drows.size() - dashRows + 1) + " more — see all: curl localhost:8290/status",
+                        width, TextColor.ANSI.YELLOW_BRIGHT, false);
+                continue;
+            }
+            DashRow dr = drows.get(i);
+            switch (dr.kind()) {
+                case TASK -> {
+                    put(g, y, dr.text(), width, TextColor.ANSI.DEFAULT, false);   // base (status/project/active)
+                    colorSpan(g, y, dr.text(), DashboardRenderer.COL_ALIAS, DashboardRenderer.ALIAS_W, idColor, width);
+                    colorSpan(g, y, dr.text(), DashboardRenderer.COL_TASK, DashboardRenderer.TASK_W, idColor, width);
+                    colorSpan(g, y, dr.text(), DashboardRenderer.COL_TITLE, width, idColor, width);
+                }
+                case TITLE_CONT -> put(g, y, dr.text(), width, idColor, true);
+                case PLAIN -> put(g, y, dr.text(), width, dashColor(dr.text()), dr.text().startsWith("jagt orchestrator"));
             }
         }
         if (busy != null) {                                        // a command is running: spinner, no prompt
@@ -397,6 +418,11 @@ public class MasterShell implements ApplicationRunner {
 
     /** One coloured, wrapped output-log display line. */
     private record Row(String text, TextColor color, boolean bold) { }
+
+    /** How a dashboard display row is coloured: a header/detail line, a task row, or a wrapped-title tail. */
+    private enum RowKind { PLAIN, TASK, TITLE_CONT }
+
+    private record DashRow(String text, RowKind kind) { }
 
     /**
      * Word-wrap {@code s} to {@code width} columns: break at the last space before the limit, or hard-break
