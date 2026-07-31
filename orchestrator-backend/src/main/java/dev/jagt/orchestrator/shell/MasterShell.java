@@ -312,7 +312,19 @@ public class MasterShell implements ApplicationRunner {
             if (dash.length > dashRows && i == dashRows - 1) {     // more tasks than fit → collapse the tail
                 text = "  … +" + (dash.length - dashRows + 1) + " more — see all: curl localhost:8290/status";
             }
-            put(g, dashTop + i, text, width, dashColor(text), text.startsWith("jagt orchestrator"));
+            int y = dashTop + i;
+            if (isTaskRow(text)) {
+                // Highlight the columns the human scans by — alias, ticket, title — each its own colour, so a
+                // task is easy to spot and recognise (the bare number alone doesn't say what the task is).
+                put(g, y, text, width, TextColor.ANSI.DEFAULT, false);   // base row (status/project/active plain)
+                colorSpan(g, y, text, DashboardRenderer.COL_ALIAS, DashboardRenderer.ALIAS_W,
+                        TextColor.ANSI.CYAN_BRIGHT, width);
+                colorSpan(g, y, text, DashboardRenderer.COL_TASK, DashboardRenderer.TASK_W,
+                        TextColor.ANSI.YELLOW_BRIGHT, width);
+                colorSpan(g, y, text, DashboardRenderer.COL_TITLE, width, TextColor.ANSI.GREEN_BRIGHT, width);
+            } else {
+                put(g, y, text, width, dashColor(text), text.startsWith("jagt orchestrator"));
+            }
         }
         if (busy != null) {                                        // a command is running: spinner, no prompt
             put(g, height - 1, busy, width, TextColor.ANSI.YELLOW_BRIGHT, true);
@@ -349,6 +361,28 @@ public class MasterShell implements ApplicationRunner {
             g.enableModifiers(SGR.BOLD);
         }
         g.putString(0, row, fit(text, width));
+        g.disableModifiers(SGR.BOLD);
+        g.setForegroundColor(TextColor.ANSI.DEFAULT);
+    }
+
+    /** A dashboard task row (has an alias in column 0) — not the header, column header, overflow or details. */
+    private static boolean isTaskRow(String text) {
+        return !text.isEmpty() && text.charAt(0) != ' '
+                && !text.startsWith("jagt orchestrator")
+                && !text.startsWith("ALIAS")
+                && !text.startsWith("(no tasks)");
+    }
+
+    /** Recolour (bold) the column [start, start+len) of an already-drawn row, clipped to the line and width. */
+    private static void colorSpan(TextGraphics g, int row, String line, int start, int len, TextColor color,
+                                  int width) {
+        int end = Math.min(line.length(), Math.min(width, start + len));
+        if (start >= end) {
+            return;
+        }
+        g.setForegroundColor(color);
+        g.enableModifiers(SGR.BOLD);
+        g.putString(start, row, line.substring(start, end));
         g.disableModifiers(SGR.BOLD);
         g.setForegroundColor(TextColor.ANSI.DEFAULT);
     }
