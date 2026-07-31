@@ -158,6 +158,7 @@ public class MasterShell implements ApplicationRunner {
             while (true) {
                 TerminalSize resized = screen.doResizeIfNecessary();   // null unless the size changed
 
+                boolean drained = false;
                 if (pending != null && pending.isDone()) {             // command finished → drain it onto the UI
                     try {
                         String out = pending.get();
@@ -172,6 +173,7 @@ public class MasterShell implements ApplicationRunner {
                     capLog(outputLog);
                     pending = null;
                     runningLabel = null;
+                    drained = true;                                    // show the result NOW, not on the next tick
                 }
 
                 KeyStroke key = screen.pollInput();
@@ -220,7 +222,7 @@ public class MasterShell implements ApplicationRunner {
 
                 long now = System.currentTimeMillis();
                 long interval = pending != null ? 120 : refreshMillis;   // animate the spinner while busy
-                if (key != null || resized != null || now - lastRender >= interval) {
+                if (key != null || resized != null || drained || now - lastRender >= interval) {
                     lastRender = now;
                     String busy = pending == null ? null : spinner(now) + " running " + runningLabel
                             + " … " + ((now - runningSince) / 1000) + "s   (Ctrl-C to cancel)";
