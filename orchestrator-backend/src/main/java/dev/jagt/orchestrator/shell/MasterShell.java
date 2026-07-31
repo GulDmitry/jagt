@@ -67,8 +67,13 @@ public class MasterShell implements ApplicationRunner {
     private final Object paintLock = new Object();
     /** Set under {@link #paintLock} on shutdown so a late tick never paints into a closing region. */
     private boolean stopped;
-    /** Rows kept free ABOVE the pinned dashboard for the banner, recent command output, and the prompt. */
-    private static final int COMMAND_ROWS = 8;
+    /**
+     * Rows kept free ABOVE the pinned dashboard for the banner, recent command output, and the prompt.
+     * The pinned region is bottom-anchored at {@code height - COMMAND_ROWS}, so a LARGER value shrinks the
+     * region → its top drops → the whole prompt+dashboard construction sits lower and more scrollback rows
+     * stay above the prompt (a multi-line `help` no longer scrolls its head off the top of the screen).
+     */
+    private static final int COMMAND_ROWS = 13;
 
     @Override
     public void run(ApplicationArguments args) {
