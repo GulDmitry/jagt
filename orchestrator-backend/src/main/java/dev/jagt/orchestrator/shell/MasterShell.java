@@ -5,8 +5,10 @@ import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
+import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.input.KeyType;
@@ -72,6 +74,9 @@ public class MasterShell implements ApplicationRunner {
      * Configurable via {@code dashboardReservedRows} in config.json; read at startup (default 17).
      */
     private int commandRows = 17;
+
+    /** Cap the in-memory output log so a long-running session can't grow it without bound. */
+    private static final int MAX_LOG_LINES = 2000;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -150,6 +155,9 @@ public class MasterShell implements ApplicationRunner {
                         if (!out.isBlank()) {
                             outputLog.addAll(List.of(out.split("\\R")));
                         }
+                        if (outputLog.size() > MAX_LOG_LINES) {   // bound the log so a long session can't leak
+                            outputLog.subList(0, outputLog.size() - MAX_LOG_LINES).clear();
+                        }
                     }
                 }
                 render(screen, outputLog, input.toString());
@@ -190,19 +198,46 @@ public class MasterShell implements ApplicationRunner {
 
         int from = Math.max(0, outputLog.size() - outputRows);     // last outputRows lines, oldest first
         for (int i = 0; i < outputRows && from + i < outputLog.size(); i++) {
-            g.putString(0, i, fit(outputLog.get(from + i), width));
+            String line = outputLog.get(from + i);
+            // A colored command echo ("jagt> …") heads each block — that IS the visual separator; errors red.
+            TextColor c = line.startsWith("jagt> ") ? TextColor.ANSI.CYAN_BRIGHT
+                    : line.startsWith("error:") ? TextColor.ANSI.RED_BRIGHT
+                    : TextColor.ANSI.DEFAULT;
+            put(g, i, line, width, c, line.startsWith("jagt> "));
         }
         for (int i = 0; i < dashRows; i++) {
             String text = i < dash.length ? dash[i] : "";
             if (dash.length > dashRows && i == dashRows - 1) {     // more tasks than fit → collapse the tail
-                text = "  … +" + (dash.length - dashRows + 1) + " more — type `status` or curl localhost:8290/status";
+                text = "  … +" + (dash.length - dashRows + 1) + " more — see all: curl localhost:8290/status";
             }
-            g.putString(0, dashTop + i, fit(text, width));
+            put(g, dashTop + i, text, width, dashColor(text), text.startsWith("jagt orchestrator"));
         }
-        String prompt = "jagt> " + input;
-        g.putString(0, height - 1, fit(prompt, width));
-        screen.setCursorPosition(new TerminalPosition(Math.min(prompt.length(), Math.max(0, width - 1)), height - 1));
+        put(g, height - 1, "jagt> ", width, TextColor.ANSI.CYAN_BRIGHT, true);     // input line: prompt…
+        g.putString(6, height - 1, fit(input, Math.max(0, width - 6)));            // …then the typed text
+        screen.setCursorPosition(new TerminalPosition(Math.min(6 + input.length(), Math.max(0, width - 1)), height - 1));
         screen.refresh();
+    }
+
+    /** Color for one dashboard line: header green, action-needed rows yellow, the "…+N" overflow yellow. */
+    private static TextColor dashColor(String text) {
+        if (text.startsWith("jagt orchestrator")) {
+            return TextColor.ANSI.GREEN_BRIGHT;
+        }
+        if (text.contains("your move") || text.contains("… +")) {
+            return TextColor.ANSI.YELLOW_BRIGHT;
+        }
+        return TextColor.ANSI.DEFAULT;
+    }
+
+    /** Draw one full-width row in a color (bold optional), then reset the graphics to defaults. */
+    private static void put(TextGraphics g, int row, String text, int width, TextColor color, boolean bold) {
+        g.setForegroundColor(color);
+        if (bold) {
+            g.enableModifiers(SGR.BOLD);
+        }
+        g.putString(0, row, fit(text, width));
+        g.disableModifiers(SGR.BOLD);
+        g.setForegroundColor(TextColor.ANSI.DEFAULT);
     }
 
     /** Pad/truncate to exactly the terminal width so a full-screen redraw leaves no stale characters. */
