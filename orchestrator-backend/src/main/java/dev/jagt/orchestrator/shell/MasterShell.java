@@ -1,16 +1,18 @@
-package dev.jawo.orchestrator.shell;
+package dev.jagt.orchestrator.shell;
 
-import dev.jawo.orchestrator.assistant.MasterAssistant;
-import dev.jawo.orchestrator.assistant.MasterAssistant.TicketFacts;
-import dev.jawo.orchestrator.mcp.OrchestratorTools;
-import dev.jawo.orchestrator.service.ConfigService;
-import dev.jawo.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.assistant.MasterAssistant;
+import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
+import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.DashboardRenderer;
 import org.jline.reader.EndOfFileException;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.UserInterruptException;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.AttributedString;
+import org.jline.utils.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -25,6 +27,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -58,29 +63,65 @@ public class MasterShell implements ApplicationRunner {
         this.context = context;
     }
 
+    /** Serializes status-region writes off the reader thread: the refresh ticker, WINCH, and close. */
+    private final Object paintLock = new Object();
+    /** Set under {@link #paintLock} on shutdown so a late tick never paints into a closing region. */
+    private boolean stopped;
+    /** Rows kept free ABOVE the pinned dashboard for the banner, recent command output, and the prompt. */
+    private static final int COMMAND_ROWS = 8;
+
     @Override
     public void run(ApplicationArguments args) {
         Terminal terminal;
         try {
-            terminal = TerminalBuilder.builder().system(true).name("jawo").build();
+            terminal = TerminalBuilder.builder().system(true).name("jagt").build();
         } catch (IOException e) {
             log.warn("No terminal available — Master shell disabled ({})", e.getMessage());
             return;
         }
         LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
         var w = terminal.writer();
-        w.println("jawo — Master control terminal. Type 'help'. Type 'exit' to stop the backend"
+        w.println("jagt — Master control terminal. Type 'help'. Type 'exit' to stop the backend"
                 + " (agents keep running in tmux).");
-        w.println();
-        w.println(dashboard.render());
         w.flush();
+
+        int refreshSeconds = configService.load().dashboardRefreshSecondsOrDefault();
+        boolean dumb = terminal.getType() == null || terminal.getType().startsWith(Terminal.TYPE_DUMB);
+        Status status = refreshSeconds > 0 && !dumb ? Status.getStatus(terminal, true) : null;
+        ScheduledExecutorService ticker = null;
+        if (status != null) {
+            // Anchor the prompt right ABOVE the pinned region: fill the screen so the input line starts just
+            // above where JLine pins the Status (which is the absolute bottom — otherwise a full-screen gap).
+            for (int i = 0; i < terminal.getHeight(); i++) {
+                w.println();
+            }
+            w.flush();
+            paint(status, terminal);
+            terminal.handle(Terminal.Signal.WINCH, sig -> paint(status, terminal));
+            ticker = Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "jagt-dashboard-refresh");
+                t.setDaemon(true);
+                return t;
+            });
+            ticker.scheduleWithFixedDelay(() -> {
+                try {
+                    paint(status, terminal);   // in place, constant-height region → no scroll, no spam
+                } catch (RuntimeException e) {
+                    log.debug("dashboard refresh failed: {}", e.toString());
+                }
+            }, refreshSeconds, refreshSeconds, TimeUnit.SECONDS);
+        } else {
+            // No pinned region (refresh disabled, or a non-TTY like `./gradlew bootRun`): inline fallback.
+            w.println(dashboard.render());
+            w.flush();
+        }
 
         try {
             int eofStreak = 0;
             while (true) {
                 String line;
                 try {
-                    line = reader.readLine("jawo> ");
+                    line = reader.readLine("jagt> ");
                     eofStreak = 0;
                 } catch (UserInterruptException e) {
                     continue;
@@ -100,16 +141,71 @@ public class MasterShell implements ApplicationRunner {
                 if (cmd.equals("quit") || cmd.equals("exit")) {
                     break;
                 }
-                w.println(dispatch(cmd));
-                w.flush();
+                String out = dispatch(cmd);
+                if (status != null) {
+                    // Command output scrolls ABOVE the prompt (printAbove); then repaint the pinned board.
+                    synchronized (paintLock) {
+                        if (!out.isBlank()) {
+                            reader.printAbove(out);
+                        }
+                        paintLocked(status, terminal);
+                    }
+                } else {
+                    w.println(withDashboard(out, dashboard.render()));
+                    w.flush();
+                }
             }
         } finally {
+            if (ticker != null) {
+                ticker.shutdownNow();
+                try {
+                    ticker.awaitTermination(2, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            synchronized (paintLock) {
+                stopped = true;
+                if (status != null) {
+                    status.close();
+                }
+            }
             stopBackend();
         }
         // context.close() (in stopBackend) stops the web server; the hard-exit then guarantees the process
         // ends even if a non-daemon thread lingers. Safe here — the context is already closed, so the JVM
         // shutdown hook has nothing to close and stays quiet.
         System.exit(0);
+    }
+
+    private void paint(Status status, Terminal terminal) {
+        synchronized (paintLock) {
+            paintLocked(status, terminal);
+        }
+    }
+
+    /**
+     * Render the dashboard into a CONSTANT-height region pinned at the bottom (pad short lines with blanks,
+     * truncate when there are more than fit). Caller holds {@link #paintLock}. The fixed height is the key:
+     * JLine's Status garbles when the region grows/shrinks, so we never resize it — {@code update} then
+     * refreshes IN PLACE (no scroll), which is why the timer refresh doesn't spam the scrollback.
+     */
+    private void paintLocked(Status status, Terminal terminal) {
+        if (stopped) {
+            return;
+        }
+        int region = Math.max(6, terminal.getHeight() - COMMAND_ROWS);
+        String[] rows = dashboard.render().split("\\R");
+        List<AttributedString> lines = new ArrayList<>();
+        for (int i = 0; i < region; i++) {
+            lines.add(i < rows.length ? AttributedString.fromAnsi(rows[i]) : AttributedString.EMPTY);
+        }
+        if (rows.length > region) {   // more tasks than fit the region: say so on the last visible line
+            lines.set(region - 1, new AttributedString("  … +" + (rows.length - region + 1)
+                    + " more — `status` or curl localhost:8290/status"));
+        }
+        status.update(lines, true);
+        terminal.flush();
     }
 
     /**
@@ -142,13 +238,13 @@ public class MasterShell implements ApplicationRunner {
                 case "done" -> tools.removeTask(arg(tok, 1, "done <ticket>"), null);
                 default -> "unknown command '" + cmd + "' — try 'help'";
             };
-            return withDashboard(result, dashboard.render());
+            return result;
         } catch (IllegalArgumentException | IllegalStateException e) {
             return "error: " + e.getMessage();
         }
     }
 
-    /** What the command loop prints: the command result then the dashboard (a blank result = dashboard alone). */
+    /** Inline-fallback formatting (no pinned region): the command result then the dashboard (blank result = dashboard alone). */
     static String withDashboard(String result, String dashboardText) {
         return result.isBlank() ? dashboardText : result + "\n\n" + dashboardText;
     }
@@ -168,7 +264,7 @@ public class MasterShell implements ApplicationRunner {
                     "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null);
         }
         // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
-        // and returns the canonical key (jawo names the branch/worktree by it; it is NOT parsed from a URL).
+        // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
         var facts = assistant.readTicket(ref);
         if (facts.isPresent() && !facts.get().exists()) {
             return "error: could not read " + ref + " (bad/inaccessible URL or unknown key?)";
@@ -196,14 +292,14 @@ public class MasterShell implements ApplicationRunner {
 
     /**
      * Reopened MR: `resume <mr-url>` — the MR is enough. The assistant reads it for the source branch
-     * (= the task) and project; jawo resumes that branch + links the MR at CI_POLLING (no new MR). An
+     * (= the task) and project; jagt resumes that branch + links the MR at CI_POLLING (no new MR). An
      * explicit ticket token may be given to skip the lookup.
      */
     String resumeTask(List<String> tok) {
         String mrUrl = tok.stream().skip(1).filter(t -> t.startsWith("http")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("usage: resume <mr-url>"));
         String ticket = tok.stream().skip(1).filter(t -> !t.startsWith("http")).findFirst().orElse(null);
-        // Read the MR (one MCP call jawo already needs for the branch) — it also carries the title, so a
+        // Read the MR (one MCP call jagt already needs for the branch) — it also carries the title, so a
         // resumed task shows one on the dashboard just like a `do` task, not a blank.
         String title = null;
         var mr = assistant.readMergeRequest(mrUrl);
@@ -254,7 +350,7 @@ public class MasterShell implements ApplicationRunner {
                 + r.pipelineStatus() + " -> agent";
     }
 
-    /** Picks the jawo project whose configured labels intersect the ticket's labels (or Jira key). */
+    /** Picks the jagt project whose configured labels intersect the ticket's labels (or Jira key). */
     private String resolveByLabels(TicketFacts f) {
         Map<String, List<String>> projectLabels = new java.util.LinkedHashMap<>();
         configService.load().projects().forEach((k, v) -> projectLabels.put(k, v.labels()));

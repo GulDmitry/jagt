@@ -1,12 +1,12 @@
-package dev.jawo.orchestrator.shell;
+package dev.jagt.orchestrator.shell;
 
-import dev.jawo.orchestrator.assistant.MasterAssistant;
-import dev.jawo.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
-import dev.jawo.orchestrator.assistant.MasterAssistant.TicketFacts;
-import dev.jawo.orchestrator.mcp.OrchestratorTools;
-import dev.jawo.orchestrator.model.ProjectConfig;
-import dev.jawo.orchestrator.service.ConfigService;
-import dev.jawo.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.assistant.MasterAssistant;
+import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
+import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
+import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.DashboardRenderer;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 

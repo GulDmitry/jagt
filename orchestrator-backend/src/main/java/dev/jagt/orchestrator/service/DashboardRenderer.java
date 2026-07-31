@@ -1,8 +1,8 @@
-package dev.jawo.orchestrator.service;
+package dev.jagt.orchestrator.service;
 
-import dev.jawo.orchestrator.model.DashboardLine;
-import dev.jawo.orchestrator.model.NextMove;
-import dev.jawo.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.DashboardLine;
+import dev.jagt.orchestrator.model.NextMove;
+import dev.jagt.orchestrator.model.TaskState;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalTime;
@@ -29,7 +29,7 @@ public class DashboardRenderer {
     public String render() {
         Map<String, TaskState> tasks = stateService.tasks();
         StringBuilder out = new StringBuilder();
-        out.append("jawo orchestrator — ").append(tasks.size()).append(" task(s)   updated ")
+        out.append("jagt orchestrator — ").append(tasks.size()).append(" task(s)   updated ")
                 .append(LocalTime.now().format(CLOCK)).append('\n').append('\n');
         out.append(String.format("%-5s %-11s %-14s %-8s %-9s %s%n",
                 "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE", "TITLE"));
