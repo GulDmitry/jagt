@@ -33,6 +33,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -138,61 +142,125 @@ public class MasterShell implements ApplicationRunner {
         LineEditor editor = new LineEditor();
         List<String> history = new ArrayList<>();
         int histIdx = 0;                                           // navigation cursor; == size() means "new line"
-        long lastRefresh = System.currentTimeMillis();
-        render(screen, outputLog, editor, true);
-        while (true) {
-            TerminalSize resized = screen.doResizeIfNecessary();   // null unless the terminal size changed
-            KeyStroke key = screen.pollInput();
-            if (key != null) {
-                KeyType type = key.getKeyType();
-                boolean ctrl = key.isCtrlDown() && type == KeyType.Character;
-                if (type == KeyType.EOF) {
-                    return;
-                } else if (type == KeyType.Enter) {
-                    String line = editor.text().strip();
-                    editor.clear();
-                    if (line.equals("exit") || line.equals("quit")) {
-                        return;
-                    }
-                    if (!line.isEmpty()) {
-                        history.add(line);
-                        outputLog.add("jagt> " + line);
-                        String out = dispatch(line);
-                        if (!out.isBlank()) {
+        // Commands (resume/review/do spawn a headless `claude` and take tens of seconds) run on a worker so
+        // the UI thread keeps polling input + repainting — otherwise Enter freezes the whole TUI until done.
+        ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "jagt-command");
+            t.setDaemon(true);
+            return t;
+        });
+        Future<String> pending = null;
+        String runningLabel = null;
+        long runningSince = 0;
+        long lastRender = System.currentTimeMillis();
+        render(screen, outputLog, editor, null, true);
+        try {
+            while (true) {
+                TerminalSize resized = screen.doResizeIfNecessary();   // null unless the size changed
+
+                if (pending != null && pending.isDone()) {             // command finished → drain it onto the UI
+                    try {
+                        String out = pending.get();
+                        if (out != null && !out.isBlank()) {
                             outputLog.addAll(List.of(out.split("\\R")));
                         }
-                        if (outputLog.size() > MAX_LOG_LINES) {   // bound the log so a long session can't leak
-                            outputLog.subList(0, outputLog.size() - MAX_LOG_LINES).clear();
-                        }
+                    } catch (CancellationException ignored) {
+                        // already noted in the log when cancelled
+                    } catch (Exception e) {
+                        outputLog.add("error: " + rootMessage(e));
                     }
-                    histIdx = history.size();
-                } else if (type == KeyType.ArrowUp) {
-                    histIdx = recallHistory(editor, history, histIdx, -1);
-                } else if (type == KeyType.ArrowDown) {
-                    histIdx = recallHistory(editor, history, histIdx, +1);
-                } else if (ctrl && Character.toLowerCase(key.getCharacter()) == 'c') {
-                    editor.clear();                               // ^C: abort the current line → fresh prompt
-                    histIdx = history.size();
-                } else if (ctrl && Character.toLowerCase(key.getCharacter()) == 'l') {
-                    outputLog.clear();                            // ^L: clear the screen (scrollback log)
-                } else {
-                    editKey(editor, key);   // arrows L/R, Home, End, Delete, Ctrl-A/E/U/K/W, printable insert
+                    capLog(outputLog);
+                    pending = null;
+                    runningLabel = null;
                 }
-                render(screen, outputLog, editor, resized != null);
-                continue;
+
+                KeyStroke key = screen.pollInput();
+                if (key != null) {
+                    KeyType type = key.getKeyType();
+                    boolean ctrl = key.isCtrlDown() && type == KeyType.Character;
+                    char cc = type == KeyType.Character ? Character.toLowerCase(key.getCharacter()) : 0;
+                    if (type == KeyType.EOF) {
+                        return;
+                    } else if (pending != null) {
+                        if (ctrl && cc == 'c') {                        // busy: only ^C (cancel) is honored
+                            pending.cancel(true);
+                            outputLog.add("^C — cancelled " + runningLabel);
+                            pending = null;
+                            runningLabel = null;
+                        }
+                    } else if (type == KeyType.Enter) {
+                        String line = editor.text().strip();
+                        editor.clear();
+                        if (line.equals("exit") || line.equals("quit")) {
+                            return;
+                        }
+                        if (!line.isEmpty()) {
+                            history.add(line);
+                            histIdx = history.size();
+                            outputLog.add("jagt> " + line);
+                            capLog(outputLog);
+                            runningLabel = line;
+                            runningSince = System.currentTimeMillis();
+                            String cmd = line;
+                            pending = worker.submit(() -> dispatch(cmd));   // off the UI thread
+                        }
+                    } else if (type == KeyType.ArrowUp) {
+                        histIdx = recallHistory(editor, history, histIdx, -1);
+                    } else if (type == KeyType.ArrowDown) {
+                        histIdx = recallHistory(editor, history, histIdx, +1);
+                    } else if (ctrl && cc == 'c') {
+                        editor.clear();                               // ^C: abort the current line → fresh prompt
+                        histIdx = history.size();
+                    } else if (ctrl && cc == 'l') {
+                        outputLog.clear();                            // ^L: clear the screen (scrollback log)
+                    } else {
+                        editKey(editor, key);   // arrows L/R, Home, End, Delete, Ctrl-A/E/U/K/W, printable insert
+                    }
+                }
+
+                long now = System.currentTimeMillis();
+                long interval = pending != null ? 120 : refreshMillis;   // animate the spinner while busy
+                if (key != null || resized != null || now - lastRender >= interval) {
+                    lastRender = now;
+                    String busy = pending == null ? null : spinner(now) + " running " + runningLabel
+                            + " … " + ((now - runningSince) / 1000) + "s   (Ctrl-C to cancel)";
+                    render(screen, outputLog, editor, busy, resized != null);
+                }
+                if (key == null) {
+                    try {
+                        Thread.sleep(20);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
             }
-            long now = System.currentTimeMillis();
-            if (resized != null || now - lastRefresh >= refreshMillis) {
-                lastRefresh = now;
-                render(screen, outputLog, editor, resized != null);
-            }
-            try {
-                Thread.sleep(30);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            }
+        } finally {
+            worker.shutdownNow();
         }
+    }
+
+    private static final String SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
+
+    /** One braille spinner frame chosen from the clock, so it animates without any per-command state. */
+    private static String spinner(long now) {
+        return String.valueOf(SPINNER.charAt((int) ((now / 120) % SPINNER.length())));
+    }
+
+    /** Bound the output log so a long-running session can't grow it without limit. */
+    private static void capLog(List<String> log) {
+        if (log.size() > MAX_LOG_LINES) {
+            log.subList(0, log.size() - MAX_LOG_LINES).clear();
+        }
+    }
+
+    /** Deepest cause message, for showing a failed background command's reason on one line. */
+    private static String rootMessage(Throwable t) {
+        Throwable c = t;
+        while (c.getCause() != null && c.getCause() != c) {
+            c = c.getCause();
+        }
+        return c.getMessage() != null ? c.getMessage() : c.toString();
     }
 
     /**
@@ -203,7 +271,8 @@ public class MasterShell implements ApplicationRunner {
      * {@code refresh(DELTA)} sends only the cells that actually changed; {@code full} (first paint / resize)
      * uses COMPLETE.
      */
-    private void render(Screen screen, List<String> outputLog, LineEditor editor, boolean full) throws IOException {
+    private void render(Screen screen, List<String> outputLog, LineEditor editor, String busy, boolean full)
+            throws IOException {
         TerminalSize size = screen.getTerminalSize();
         int height = size.getRows();
         int width = size.getColumns();
@@ -231,14 +300,19 @@ public class MasterShell implements ApplicationRunner {
             }
             put(g, dashTop + i, text, width, dashColor(text), text.startsWith("jagt orchestrator"));
         }
-        String text = editor.text();
-        int avail = Math.max(1, width - 6);                        // columns available for the typed text
-        int cur = editor.cursor();
-        int start = cur >= avail ? cur - avail + 1 : 0;            // horizontal scroll to keep the cursor visible
-        String visible = text.substring(Math.min(start, text.length()), Math.min(text.length(), start + avail));
-        put(g, height - 1, "jagt> ", width, TextColor.ANSI.CYAN_BRIGHT, true);     // input line: prompt…
-        g.putString(6, height - 1, fit(visible, avail));                           // …then the (scrolled) text
-        screen.setCursorPosition(new TerminalPosition(6 + (cur - start), height - 1));
+        if (busy != null) {                                        // a command is running: spinner, no prompt
+            put(g, height - 1, busy, width, TextColor.ANSI.YELLOW_BRIGHT, true);
+            screen.setCursorPosition(null);                        // hide the cursor while busy
+        } else {
+            String text = editor.text();
+            int avail = Math.max(1, width - 6);                    // columns available for the typed text
+            int cur = editor.cursor();
+            int start = cur >= avail ? cur - avail + 1 : 0;        // horizontal scroll to keep the cursor visible
+            String visible = text.substring(Math.min(start, text.length()), Math.min(text.length(), start + avail));
+            put(g, height - 1, "jagt> ", width, TextColor.ANSI.CYAN_BRIGHT, true); // input line: prompt…
+            g.putString(6, height - 1, fit(visible, avail));                       // …then the (scrolled) text
+            screen.setCursorPosition(new TerminalPosition(6 + (cur - start), height - 1));
+        }
         // DELTA writes only changed cells (smooth, no flicker); COMPLETE redraws all on first paint / resize.
         screen.refresh(full ? Screen.RefreshType.COMPLETE : Screen.RefreshType.DELTA);
     }
