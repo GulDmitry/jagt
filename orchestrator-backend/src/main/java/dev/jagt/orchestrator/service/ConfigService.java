@@ -114,9 +114,8 @@ public class ConfigService {
         }
 
         /**
-         * How often (seconds) the Master shell repaints its pinned dashboard region. Default 10.
-         * {@code <= 0} disables auto-refresh (and any value below is clamped to 0), leaving the
-         * dashboard to redraw only after a command — the safe fallback on terminals without a status area.
+         * How often (seconds) the Master TUI repaints the dashboard. Default 10. {@code <= 0} disables the
+         * periodic refresh (clamped to 0), so the screen redraws only on input or terminal resize.
          */
         public int dashboardRefreshSecondsOrDefault() {
             if (dashboardRefreshSeconds == null) {

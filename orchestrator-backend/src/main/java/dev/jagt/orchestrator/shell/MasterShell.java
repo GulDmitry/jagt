@@ -5,14 +5,15 @@ import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.UserInterruptException;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
-import org.jline.utils.AttributedString;
-import org.jline.utils.Status;
+import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
+import com.googlecode.lanterna.screen.Screen;
+import com.googlecode.lanterna.screen.TerminalScreen;
+import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.Terminal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -21,15 +22,15 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -63,119 +64,46 @@ public class MasterShell implements ApplicationRunner {
         this.context = context;
     }
 
-    /** Serializes status-region writes off the reader thread: the refresh ticker, WINCH, and close. */
-    private final Object paintLock = new Object();
-    /** Set under {@link #paintLock} on shutdown so a late tick never paints into a closing region. */
-    private boolean stopped;
     /**
-     * MINIMUM rows kept free ABOVE the pinned dashboard for the banner, recent command output, and the
-     * prompt. The dashboard region hugs its own content at the bottom (prompt directly above it, no blank
-     * gap); this value only CAPS how tall that region may grow — beyond {@code height - commandRows} lines
-     * the extra tasks collapse into a "… +N" overflow line. Larger = the region caps sooner (more headroom).
-     * Configurable via {@code dashboardReservedRows} in config.json; read once at startup (default 17).
+     * Rows reserved for the command-output + input area BELOW the dashboard, so the dashboard region never
+     * eats the whole screen when there are many tasks. The full-screen TUI stacks the output log on top,
+     * the dashboard table beneath it, and the input line at the very bottom — all in one Lanterna
+     * back-buffer that is re-laid-out and fully redrawn on resize (no scroll-region/anchor fragility).
+     * Configurable via {@code dashboardReservedRows} in config.json; read at startup (default 17).
      */
     private int commandRows = 17;
 
     @Override
     public void run(ApplicationArguments args) {
-        Terminal terminal;
-        try {
-            terminal = TerminalBuilder.builder().system(true).name("jagt").build();
-        } catch (IOException e) {
-            log.warn("No terminal available — Master shell disabled ({})", e.getMessage());
-            return;
-        }
-        LineReader reader = LineReaderBuilder.builder().terminal(terminal).build();
-        var w = terminal.writer();
-        w.println("jagt — Master control terminal. Type 'help'. Type 'exit' to stop the backend"
-                + " (agents keep running in tmux).");
-        w.flush();
-
         ConfigService.ConfigFile config = configService.load();
         int refreshSeconds = config.dashboardRefreshSecondsOrDefault();
         this.commandRows = config.dashboardReservedRowsOrDefault();
-        boolean dumb = terminal.getType() == null || terminal.getType().startsWith(Terminal.TYPE_DUMB);
-        Status status = refreshSeconds > 0 && !dumb ? Status.getStatus(terminal, true) : null;
-        ScheduledExecutorService ticker = null;
-        if (status != null) {
-            // Anchor the prompt right ABOVE the pinned region: fill the screen so the input line starts just
-            // above where JLine pins the Status (which is the absolute bottom — otherwise a full-screen gap).
-            for (int i = 0; i < terminal.getHeight(); i++) {
-                w.println();
-            }
-            w.flush();
-            paint(status, terminal);
-            terminal.handle(Terminal.Signal.WINCH, sig -> paint(status, terminal));
-            ticker = Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "jagt-dashboard-refresh");
-                t.setDaemon(true);
-                return t;
-            });
-            ticker.scheduleWithFixedDelay(() -> {
-                try {
-                    paint(status, terminal);   // in place, constant-height region → no scroll, no spam
-                } catch (RuntimeException e) {
-                    log.debug("dashboard refresh failed: {}", e.toString());
-                }
-            }, refreshSeconds, refreshSeconds, TimeUnit.SECONDS);
-        } else {
-            // No pinned region (refresh disabled, or a non-TTY like `./gradlew bootRun`): inline fallback.
-            w.println(dashboard.render());
-            w.flush();
-        }
 
+        Screen screen = null;
         try {
-            int eofStreak = 0;
-            while (true) {
-                String line;
-                try {
-                    line = reader.readLine("jagt> ");
-                    eofStreak = 0;
-                } catch (UserInterruptException e) {
-                    continue;
-                } catch (EndOfFileException e) {
-                    // Ctrl-D raises EOF; don't treat it as a special quit (avoid clashing with the user's
-                    // other shortcuts) — only `exit`/`quit` leave. A genuinely closed stdin raises EOF in a
-                    // tight loop, so bail after a short streak to avoid spinning.
-                    if (++eofStreak >= 3) {
-                        break;
-                    }
-                    continue;
-                }
-                if (line == null || line.isBlank()) {
-                    continue;
-                }
-                String cmd = line.strip();
-                if (cmd.equals("quit") || cmd.equals("exit")) {
-                    break;
-                }
-                String out = dispatch(cmd);
-                if (status != null) {
-                    // Command output scrolls ABOVE the prompt (printAbove); then repaint the pinned board.
-                    synchronized (paintLock) {
-                        if (!out.isBlank()) {
-                            reader.printAbove(out);
-                        }
-                        paintLocked(status, terminal);
-                    }
-                } else {
-                    w.println(withDashboard(out, dashboard.render()));
-                    w.flush();
-                }
+            // A TUI needs a real interactive terminal. Under `gradlew bootRun` (Gradle pipes stdout) or any
+            // other non-TTY there is no console — fall back to a plain line REPL instead of a garbled TUI.
+            if (System.console() == null) {
+                runInlineFallback();
+            } else {
+                // Force a text terminal: never let Lanterna fall back to a Swing window (it would if a GUI
+                // is present) — the Master is a terminal app.
+                Terminal terminal = new DefaultTerminalFactory().setForceTextTerminal(true).createTerminal();
+                screen = new TerminalScreen(terminal);
+                screen.startScreen();
+                // 0 (or less) = no periodic refresh: redraw only on input/resize (matches the config doc).
+                long refreshMillis = refreshSeconds > 0 ? refreshSeconds * 1000L : Long.MAX_VALUE;
+                runTui(screen, refreshMillis);
             }
+        } catch (IOException e) {
+            log.warn("Master shell terminal unavailable — running inline ({})", e.getMessage());
+            runInlineFallback();
         } finally {
-            if (ticker != null) {
-                ticker.shutdownNow();
+            if (screen != null) {
                 try {
-                    ticker.awaitTermination(2, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
-            synchronized (paintLock) {
-                stopped = true;
-                if (status != null) {
-                    status.close();
+                    screen.stopScreen();
+                } catch (IOException e) {
+                    log.debug("screen stop failed: {}", e.toString());
                 }
             }
             stopBackend();
@@ -186,45 +114,128 @@ public class MasterShell implements ApplicationRunner {
         System.exit(0);
     }
 
-    private void paint(Status status, Terminal terminal) {
-        synchronized (paintLock) {
-            paintLocked(status, terminal);
+    /**
+     * The full-screen TUI loop: one Lanterna back-buffer holding the command-output log (top), the
+     * dashboard table (middle), and the input line (bottom). Each iteration polls a keystroke, applies it,
+     * repaints when the refresh interval elapses, and — crucially — calls {@code doResizeIfNecessary} + a
+     * full redraw, so a terminal resize just re-lays-out cleanly (the whole class of JLine scroll-region /
+     * ghost / prompt-anchor bugs cannot occur when every frame is drawn from scratch into a back buffer).
+     */
+    private void runTui(Screen screen, long refreshMillis) throws IOException {
+        List<String> outputLog = new ArrayList<>();
+        outputLog.add("jagt — type a command ('help'); 'exit' stops the backend (agents keep running).");
+        StringBuilder input = new StringBuilder();
+        long lastRefresh = System.currentTimeMillis();
+        render(screen, outputLog, input.toString());
+        while (true) {
+            KeyStroke key = screen.pollInput();
+            if (key != null) {
+                KeyType type = key.getKeyType();
+                if (type == KeyType.EOF) {
+                    return;
+                }
+                if (type == KeyType.Character) {
+                    input.append(key.getCharacter());
+                } else if (type == KeyType.Backspace && input.length() > 0) {
+                    input.deleteCharAt(input.length() - 1);
+                } else if (type == KeyType.Enter) {
+                    String line = input.toString().strip();
+                    input.setLength(0);
+                    if (line.equals("exit") || line.equals("quit")) {
+                        return;
+                    }
+                    if (!line.isEmpty()) {
+                        outputLog.add("jagt> " + line);
+                        String out = dispatch(line);
+                        if (!out.isBlank()) {
+                            outputLog.addAll(List.of(out.split("\\R")));
+                        }
+                    }
+                }
+                render(screen, outputLog, input.toString());
+                continue;
+            }
+            long now = System.currentTimeMillis();
+            if (screen.doResizeIfNecessary() != null || now - lastRefresh >= refreshMillis) {
+                lastRefresh = now;
+                render(screen, outputLog, input.toString());
+            }
+            try {
+                Thread.sleep(30);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 
     /**
-     * Render the dashboard into a bottom-pinned region sized to the dashboard's OWN line count (capped at
-     * {@code height - commandRows}, overflow truncated to a "… +N" line) — so it hugs the bottom with the
-     * prompt directly above and no blank gap at any terminal size. Caller holds {@link #paintLock}.
-     * {@code status.update} redraws IN PLACE and resizes as the task count changes, so the timer refresh
-     * neither scrolls nor spams the scrollback.
+     * Draw the whole screen from scratch into Lanterna's back buffer: output log on top, dashboard table
+     * beneath it (capped so {@code commandRows} rows stay for output+input; overflow → a "… +N" line), and
+     * the input line at the very bottom. Redrawing every frame is what makes resize trivially correct.
      */
-    private void paintLocked(Status status, Terminal terminal) {
-        if (stopped) {
-            return;
+    private void render(Screen screen, List<String> outputLog, String input) throws IOException {
+        screen.doResizeIfNecessary();
+        TerminalSize size = screen.getTerminalSize();
+        int height = size.getRows();
+        int width = size.getColumns();
+        screen.clear();
+        TextGraphics g = screen.newTextGraphics();
+
+        String[] dash = dashboard.render().split("\\R");
+        int body = Math.max(1, height - 1);                       // rows above the input line
+        int dashRows = Math.min(dash.length, Math.max(1, body - commandRows));
+        int outputRows = body - dashRows;                          // output log gets whatever is left on top
+        int dashTop = outputRows;
+
+        int from = Math.max(0, outputLog.size() - outputRows);     // last outputRows lines, oldest first
+        for (int i = 0; i < outputRows && from + i < outputLog.size(); i++) {
+            g.putString(0, i, fit(outputLog.get(from + i), width));
         }
-        String[] rows = dashboard.render().split("\\R");
-        // Size the region to the dashboard's OWN height so it hugs the bottom with the prompt directly above
-        // and no blank filler — at any terminal height. commandRows only CAPS the growth (keeping that many
-        // rows free above for the banner, command output and prompt); overflow collapses into a "… +N" line.
-        int maxRegion = Math.max(1, terminal.getHeight() - commandRows);
-        int region = Math.min(rows.length, maxRegion);
-        List<AttributedString> lines = new ArrayList<>(region);
-        for (int i = 0; i < region; i++) {
-            lines.add(AttributedString.fromAnsi(rows[i]));
+        for (int i = 0; i < dashRows; i++) {
+            String text = i < dash.length ? dash[i] : "";
+            if (dash.length > dashRows && i == dashRows - 1) {     // more tasks than fit → collapse the tail
+                text = "  … +" + (dash.length - dashRows + 1) + " more — type `status` or curl localhost:8290/status";
+            }
+            g.putString(0, dashTop + i, fit(text, width));
         }
-        if (rows.length > region) {   // more tasks than fit: collapse the overflow onto the last visible line
-            lines.set(region - 1, new AttributedString("  … +" + (rows.length - region + 1)
-                    + " more — `status` or curl localhost:8290/status"));
+        String prompt = "jagt> " + input;
+        g.putString(0, height - 1, fit(prompt, width));
+        screen.setCursorPosition(new TerminalPosition(Math.min(prompt.length(), Math.max(0, width - 1)), height - 1));
+        screen.refresh();
+    }
+
+    /** Pad/truncate to exactly the terminal width so a full-screen redraw leaves no stale characters. */
+    private static String fit(String s, int width) {
+        if (width <= 0) {
+            return "";
         }
-        // Growing the pinned region garbles if JLine diffs against the smaller previous frame (stale header,
-        // misplaced prompt). Force a clean rebuild whenever the line count changes; a steady refresh (same
-        // size) still diffs in place, so the timer tick neither flickers nor scrolls.
-        if (status.size() != lines.size()) {
-            status.reset();
+        return s.length() > width ? s.substring(0, width) : s + " ".repeat(width - s.length());
+    }
+
+    /**
+     * No-TTY fallback (e.g. {@code gradlew bootRun}, where Gradle pipes stdout): a plain line REPL that
+     * prints each command's result followed by the dashboard. There is no interactive terminal to draw on.
+     */
+    private void runInlineFallback() {
+        log.info("No interactive terminal — Master shell running inline (dashboard after each command).");
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+        System.out.println(withDashboard("", dashboard.render()));
+        try {
+            String line;
+            while ((line = in.readLine()) != null) {
+                String cmd = line.strip();
+                if (cmd.isEmpty()) {
+                    continue;
+                }
+                if (cmd.equals("exit") || cmd.equals("quit")) {
+                    break;
+                }
+                System.out.println(withDashboard(dispatch(cmd), dashboard.render()));
+            }
+        } catch (IOException e) {
+            log.warn("inline shell input closed: {}", e.getMessage());
         }
-        status.update(lines, true);
-        terminal.flush();
     }
 
     /**

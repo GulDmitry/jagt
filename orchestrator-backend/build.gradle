@@ -20,10 +20,11 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    // Master control terminal: a hand-rolled JLine REPL. (Spring Shell 4 was tried, but its
-    // annotation arg-binding wouldn't attach @Argument/@Option to component-scanned @Command
-    // methods — every command rejected argument tokens. JLine gives full control over tokenization.)
-    implementation 'org.jline:jline:3.30.6'
+    // Master control terminal: a full-screen TUI (Lanterna). One screen shows the dashboard, the command
+    // output, and the input line together — Lanterna owns a back-buffer and re-lays-out + full-redraws on
+    // resize, so there is no scroll-region/ghost/prompt-anchor fragility (the JLine pinned-Status approach
+    // could not survive terminal resize; see CLAUDE.md). Pure-Java, cross-platform.
+    implementation 'com.googlecode.lanterna:lanterna:3.1.3'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

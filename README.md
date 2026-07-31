@@ -64,8 +64,8 @@ exact keys.
 | `reviewReplyAuthors` | when non-empty, auto-post replies ONLY to threads whose author matches one (e.g. `["coderabbit"]`); empty = all authors |
 | `worktreeCopyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
 | `agentOutputStyle` | optional Claude output style pinned into each agent worktree, e.g. `sob-ai:Engineer` (default empty = Claude's own style) |
-| `dashboardRefreshSeconds` | how often the Master shell repaints its pinned dashboard in place (default `10`; `0` disables auto-refresh) |
-| `dashboardReservedRows` | minimum rows kept free above the pinned dashboard for banner/output/prompt; caps how tall the region grows before extra tasks overflow to `… +N` (default `17`) |
+| `dashboardRefreshSeconds` | how often the TUI refreshes the dashboard, in seconds (default `10`) |
+| `dashboardReservedRows` | rows reserved for the command output + input below the dashboard, capping the dashboard's height (extra tasks overflow to `… +N`); default `17` |
 | `mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
 
 `orchestrator-backend/src/main/resources/application.yml` (machine/OS level, restart to apply):
@@ -89,8 +89,9 @@ exact keys.
 
 ## Run
 
-The backend process **is** the Master control terminal (a deterministic JLine REPL — no separate
-Claude session). Run it in a real terminal tab (Warp/kitty):
+The backend process **is** the Master control terminal (a deterministic full-screen TUI — no separate
+Claude session). One screen shows the command output, the dashboard, and the `jagt>` input line
+together. Run it in a real terminal tab (Warp/kitty):
 
 ```bash
 cd orchestrator-backend
@@ -98,9 +99,9 @@ cd orchestrator-backend
 java -jar build/libs/orchestrator-backend-0.2.0.jar
 ```
 
-`./gradlew bootRun` also works, but Gradle captures stdout so the app gets **no TTY** — the dashboard
-then prints inline after each command instead of the pinned, auto-refreshing region (it says so on
-startup). Run the **jar directly** for the live dashboard.
+`./gradlew bootRun` also works, but Gradle captures stdout so the app gets **no TTY** — it then falls
+back to a plain inline line-REPL (dashboard printed after each command) instead of the full-screen TUI.
+Run the **jar directly** for the live dashboard.
 
 ## Usage`
 
@@ -180,6 +181,7 @@ The system never acts on the MR/CI by itself — three checkpoints are explicitl
 | Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash, or an API 5xx/"Overloaded" 529) before reporting `CI_POLLING` | `ship <ticket>` **again** — jagt sees the dead agent and respawns it to finish the push/MR. (If the agent is still alive, `ship` refuses — `focus` to watch the in-flight ship.) |
 | Agent seems hung / no response, or nothing happens after `ship`/`review` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to open its window and see what it's doing; `respawn <ticket>` restarts a dead session (it re-reads `task_context.md` and resumes); `done <ticket>` abandons it entirely (window + worktree + language server) |
 | `API Error: 529 Overloaded` in an agent | transient Anthropic overload, server-side | wait a moment and re-run the command; the task state is unchanged |
+| `deploy` aborts with `Merge CONFLICT … into <deployBranch>` | the task branch and `deployBranch` (e.g. `dev`) changed the same lines (often `liquibase/master.yaml`); jagt merges in a **throwaway** worktree, so it aborts + discards it — **nothing is pushed** and there is **no** half-merged checkout to fix in place | resolve on the **task branch**, then retry: `ide <ticket>` → in that worktree `git fetch origin && git merge origin/<deployBranch>` → fix the conflicts + commit → `git push origin <ticket>` (a bare `git push` is intentionally disabled) → `deploy <ticket>` again (now conflict-free). Or `focus <ticket>` and have the agent do the merge. |
 | Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Setup** |
 
 ## Internals

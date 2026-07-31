@@ -40,15 +40,18 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   rules; instructions arrive via `task_context.md`.
 
 ## Engineering constraints (do not regress)
-- MASTER DASHBOARD = PINNED + AUTO-REFRESH (firm product decision — do NOT revert to inline). The Master
-  shell's dashboard is a FIXED region pinned at the bottom of the terminal (JLine `Status`), refreshed
-  IN PLACE every `dashboardRefreshSeconds` (config.json, default 10; smaller = more often). It must NOT
-  scroll a fresh copy per refresh, the prompt sits directly ABOVE it (no full-screen gap), and it grows
-  with the task count. Reverting this to an inline "print after each command" dashboard is a REGRESSION —
-  past sessions did it repeatedly; don't. Terminal layout IS testable, never "fix it blind": run the jar
-  inside tmux and read the rendered screen with `tmux capture-pane -p` (a real PTY, unlike the sandbox).
-  Known gotcha: JLine pins `Status` to the ABSOLUTE bottom while the prompt follows the content cursor —
-  anchor the prompt just above the region and verify grow/shrink + a command's output in tmux.
+- MASTER SHELL = FULL-SCREEN TUI (Lanterna), ONE integrated screen. `MasterShell` runs a Lanterna
+  `Screen`: command-output log on top, the dashboard table beneath it, the `jagt>` input line pinned to
+  the bottom row — all in one back-buffer, redrawn from scratch every frame (`render()`), refreshed every
+  `dashboardRefreshSeconds` (config.json, default 10). Resize is handled by `doResizeIfNecessary()` + the
+  full redraw — DO NOT reintroduce a JLine `Status`/scroll-region pinned bar or any absolute-bottom cursor
+  anchoring: that could not survive terminal resize (DECSTBM resets on resize → orphaned ghost dashboard +
+  the prompt flying to row 1), which cost many sessions. `dashboardReservedRows` caps the dashboard height
+  so ≥ that many rows stay for output+input (overflow → a "… +N" line). Terminal layout IS testable, never
+  "fix it blind": `orchestrator-backend/scripts/dashboard-layout-smoke.sh` drives the jar in tmux and
+  asserts the invariants (one dashboard header, input pinned to the bottom row, dashboard above it) across
+  startup + resize both ways + task-count changes. Run it after ANY change to `MasterShell` rendering.
+  No-TTY (e.g. `gradlew bootRun`) falls back to a plain inline line-REPL.
 - CRITICAL git safety: the ONLY write to a shared branch anywhere is `deploy` (task branch ->
   `deployBranch`, via `GitService.mergeIntoAndPush`). `ship` creates/updates a merge REQUEST only —
   never merges. The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
@@ -169,9 +172,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   enforced here as a workflow rule, not in settings.json.)
 
 ## Build & run
-- The backend process IS the Master control terminal (JLine REPL); run it in a REAL terminal so the
-  dashboard pins + auto-refreshes: `./gradlew build` then `java -jar build/libs/orchestrator-backend-0.2.0.jar`.
-- `./gradlew bootRun` works but Gradle captures stdout → JLine gets a `dumb` terminal (no TTY) → the
-  pinned/auto-refresh dashboard falls back to inline-after-each-command (proven: no-TTY ⇒ dumb ⇒
-  `Status` unavailable). The shell prints a one-line notice when this happens. Java 25, port 8290.
+- The backend process IS the Master control terminal (Lanterna full-screen TUI); run it in a REAL terminal
+  so the TUI can take over the screen: `./gradlew build` then `java -jar build/libs/orchestrator-backend-0.2.0.jar`.
+- `./gradlew bootRun` works but Gradle captures stdout → no TTY (`System.console()` is null) → the TUI
+  falls back to a plain inline line-REPL (dashboard printed after each command). Run the jar directly for
+  the full-screen TUI. Java 25, port 8290.
 - Verify: `curl -s localhost:8290/state`.
