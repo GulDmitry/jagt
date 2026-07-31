@@ -34,7 +34,8 @@ class McpProtocolServiceTest {
                 .findFirst().orElseThrow()
                 .path("inputSchema").path("properties").path("status").path("enum");
         assertThat(statusEnum).extracting(JsonNode::asText).containsExactly(
-                "NEW", "IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "CI_POLLING", "CI_FAILED", "DEPLOYED", "DONE");
+                "NEW", "IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "CI_POLLING", "CI_FAILED", "REVIEWED",
+                "DEPLOYED", "DONE");
     }
 
     @Test

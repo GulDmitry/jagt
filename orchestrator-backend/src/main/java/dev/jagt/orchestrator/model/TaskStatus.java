@@ -7,6 +7,7 @@ public enum TaskStatus {
     SHIPPING,
     CI_POLLING,
     CI_FAILED,
+    REVIEWED,
     DEPLOYED,
     DONE
 }

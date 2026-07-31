@@ -19,6 +19,11 @@ class NextMoveTest {
     }
 
     @Test
+    void pointsToDeployOrDoneAfterACleanReviewNotBackToReview() {
+        assertThat(NextMove.forStatus(TaskStatus.REVIEWED)).contains("deploy").doesNotContain("`review`");
+    }
+
+    @Test
     void tellsHumanToReviewAndShipWhenAgentAwaitsReview() {
         assertThat(NextMove.forStatus(TaskStatus.REVIEW_PENDING)).contains("ide").contains("ship");
     }

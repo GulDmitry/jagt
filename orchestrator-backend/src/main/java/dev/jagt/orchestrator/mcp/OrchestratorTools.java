@@ -390,6 +390,15 @@ public class OrchestratorTools {
         return requireTask(canonicalTaskId(taskId)).mrUrl();
     }
 
+    /**
+     * A clean `review` (CI green, no unresolved comments) IS a state transition: mark the task REVIEWED so
+     * the dashboard's next move becomes `deploy`/`done` instead of looping back to `review`. Master-only.
+     */
+    public void markReviewed(String taskId) {
+        stateService.updateTask(canonicalTaskId(taskId),
+                t -> t.withStatus(TaskStatus.REVIEWED, "reviewed — CI green, no unresolved comments"));
+    }
+
     /** Whether a ship may proceed at all (delivery + respawning a dead agent is writeTaskContext's job). */
     enum ShipGate { PROCEED, REFUSE }
 

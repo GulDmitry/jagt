@@ -774,8 +774,12 @@ public class MasterShell implements ApplicationRunner {
             return "error: could not read the MR review for " + mrUrl;
         }
         var r = sweep.get();
-        boolean pipelineFailed = r.pipelineStatus() != null && r.pipelineStatus().toLowerCase().contains("fail");
+        String pipeline = r.pipelineStatus() == null ? "" : r.pipelineStatus().toLowerCase();
+        boolean pipelineFailed = pipeline.contains("fail");
         if (r.comments().isEmpty() && !pipelineFailed) {
+            if (pipeline.contains("success")) {   // only advance when CI is GREEN, not merely still running
+                tools.markReviewed(ticket);       // → dashboard next move becomes deploy/done
+            }
             return "review " + ticket + ": pipeline " + r.pipelineStatus()
                     + ", no unresolved comments — your move: `deploy` or `done`";
         }

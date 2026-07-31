@@ -23,6 +23,14 @@ class DashboardLineTest {
     }
 
     @Test
+    void showsMrLinkWhenReviewedAndReadyToDeploy() {
+        TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEWED, 0,
+                "reviewed", "a1", null, "title", "https://gitlab/x/-/merge_requests/9");
+
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://gitlab/x/-/merge_requests/9");
+    }
+
+    @Test
     void shoutsInCapsWhenPipelineFailed() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.CI_FAILED, 0,
                 "trigger_commons failed", "a1", null, "title", "https://mr");

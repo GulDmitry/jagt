@@ -18,6 +18,7 @@ public final class NextMove {
             case SHIPPING -> "shipping — agent committing/pushing; wait for the MR (or `focus`)";
             case CI_POLLING -> "your move: `review`";
             case CI_FAILED -> "your move: `review` (relays the failure)";
+            case REVIEWED -> "your move: `deploy` or `done`";
             case DEPLOYED -> "your move: `done`";
             case DONE -> "done";
         };
