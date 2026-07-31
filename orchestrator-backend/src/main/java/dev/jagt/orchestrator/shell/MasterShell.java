@@ -116,17 +116,39 @@ public class MasterShell implements ApplicationRunner {
         } finally {
             if (screen != null) {
                 try {
-                    screen.stopScreen();
-                } catch (IOException e) {
-                    log.debug("screen stop failed: {}", e.toString());
+                    screen.stopScreen();                          // restore the terminal (leave the alt screen)
+                } catch (Throwable t) {                           // best-effort — a corrupted jar may fail here
+                    log.debug("screen stop failed: {}", t.toString());
                 }
             }
-            stopBackend();
+            shutdownBackend();                                    // closes the context and GUARANTEES the JVM exits
         }
-        // context.close() (in stopBackend) stops the web server; the hard-exit then guarantees the process
-        // ends even if a non-daemon thread lingers. Safe here — the context is already closed, so the JVM
-        // shutdown hook has nothing to close and stays quiet.
-        System.exit(0);
+    }
+
+    /**
+     * Stop the backend and GUARANTEE the process dies. {@code context.close()} runs on a side thread with a
+     * hard cap: if {@code ./gradlew build} rewrote the fat jar IN PLACE while this JVM was running (see
+     * CLAUDE.md), lazy class loading is corrupted and close() can throw {@code NoClassDefFoundError} or hang
+     * — which used to leave non-daemon Tomcat threads alive, so {@code exit} hung until killed by hand.
+     * Either way we {@code halt(0)}: it skips shutdown hooks and needs no class loading. Agents live in
+     * their own tmux processes, so halting this JVM never touches them.
+     */
+    private void shutdownBackend() {
+        Thread closer = new Thread(() -> {
+            try {
+                stopBackend();
+            } catch (Throwable t) {
+                log.debug("backend stop failed (jar may have been rebuilt in place): {}", t.toString());
+            }
+        }, "jagt-shutdown");
+        closer.setDaemon(true);
+        closer.start();
+        try {
+            closer.join(3000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        Runtime.getRuntime().halt(0);
     }
 
     /**
