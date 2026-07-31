@@ -13,7 +13,9 @@ node_modules/
 config.json
 target/
 
-# Backend runtime log
+# Backend runtime log (logback writes to the process cwd — repo root when the jar
+# is run there, or orchestrator-backend/ — including rotated .log.<date>.<n>.gz files)
+jagt-backend.log*
 orchestrator-backend/*.log
 
 # Junk empty files created in the repo root by the terminal (stray redirects/pastes)
