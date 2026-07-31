@@ -1,11 +1,13 @@
-# jawo — Multi-Agent Dev Orchestrator
+# jagt — Multi-Agent Dev Orchestrator
 
 Delegate Jira tickets to Claude Code agents. A Spring Boot backend manages isolated Git worktrees and
 task state; you talk to one **Master** session, it spawns one sub-agent per ticket. Agents run as tmux
-windows inside a single Warp window that opens automatically.
+windows inside a single terminal window (kitty by default, Warp optional) that opens automatically.
 
-macOS-only by design: Warp, IntelliJ IDEA, tmux, Claude Code CLI. Your Claude Code must already have
-MCP access to the systems the agents need (Jira, GitLab/GitHub).
+macOS today — the notifier, editor, and terminal live behind swappable platform strategies, so a Linux
+port is those three impls plus config (see [CLAUDE.md](CLAUDE.md)). Requires IntelliJ IDEA, tmux, and
+the Claude Code CLI. Your Claude Code must already have MCP access to the systems the agents need
+(Jira, GitLab/GitHub).
 
 ## Prerequisites
 
@@ -37,7 +39,7 @@ Agent tabs are opened via Warp Tab Configs (generated into `~/.warp/tab_configs/
 
 IntelliJ run configs: a worktree opens without the base project's run configs. To carry them over,
 mark a config "Store as project file" (Run → Edit Configurations) — it becomes a file under `.run/`
-(or legacy `.idea/runConfigurations/`), and jawo copies those folders into every new worktree so
+(or legacy `.idea/runConfigurations/`), and jagt copies those folders into every new worktree so
 `ide` opens ready to run.
 
 The committed `.claude/settings.json` pre-approves the orchestrator's MCP tools for the Master session
@@ -54,7 +56,7 @@ exact keys.
 | `projects.<key>.baseBranch` | branch new task branches start from, e.g. `origin/main` |
 | `projects.<key>.deployBranch` | target of the `deploy` command, e.g. `dev` (omit to disable deploy) |
 | `projects.<key>.labels` | hints for mapping tickets to the project |
-| `tmuxSession` | name of the agents' tmux session (default `jawo`) |
+| `tmuxSession` | name of the agents' tmux session (default `jagt`) |
 | `viewMode` | `shared` = all tasks inside one tab; `tab-per-task` = a Warp tab per task |
 | `keepViewer` | keep the agents tab/window open (reserved) after the last task (default `true`) — drag it into a group once and it stays |
 | `mrTitlePattern` | MR/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
@@ -174,7 +176,7 @@ The system never acts on the MR/CI by itself — three checkpoints are explicitl
 
 | symptom | what happened | what to do |
 |---------|---------------|------------|
-| Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash, or an API 5xx/"Overloaded" 529) before reporting `CI_POLLING` | `ship <ticket>` **again** — jawo sees the dead agent and respawns it to finish the push/MR. (If the agent is still alive, `ship` refuses — `focus` to watch the in-flight ship.) |
+| Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash, or an API 5xx/"Overloaded" 529) before reporting `CI_POLLING` | `ship <ticket>` **again** — jagt sees the dead agent and respawns it to finish the push/MR. (If the agent is still alive, `ship` refuses — `focus` to watch the in-flight ship.) |
 | Agent seems hung / no response, or nothing happens after `ship`/`review` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to open its window and see what it's doing; `respawn <ticket>` restarts a dead session (it re-reads `task_context.md` and resumes); `done <ticket>` abandons it entirely (window + worktree + language server) |
 | `API Error: 529 Overloaded` in an agent | transient Anthropic overload, server-side | wait a moment and re-run the command; the task state is unchanged |
 | Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Setup** |

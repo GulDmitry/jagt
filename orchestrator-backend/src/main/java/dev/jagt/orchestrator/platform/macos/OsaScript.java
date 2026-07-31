@@ -1,6 +1,6 @@
-package dev.jawo.orchestrator.platform.macos;
+package dev.jagt.orchestrator.platform.macos;
 
-import dev.jawo.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.service.ProcessRunner;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;

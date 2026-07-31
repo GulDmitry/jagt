@@ -1,18 +1,18 @@
-package dev.jawo.orchestrator.mcp;
+package dev.jagt.orchestrator.mcp;
 
-import dev.jawo.orchestrator.config.OrchestratorPaths;
-import dev.jawo.orchestrator.config.OrchestratorProperties;
-import dev.jawo.orchestrator.config.PromptTemplates;
-import dev.jawo.orchestrator.model.ProjectConfig;
-import dev.jawo.orchestrator.model.TaskState;
-import dev.jawo.orchestrator.model.TaskStatus;
-import dev.jawo.orchestrator.platform.EditorDriver;
-import dev.jawo.orchestrator.platform.TerminalDriver;
-import dev.jawo.orchestrator.platform.UserNotifier;
-import dev.jawo.orchestrator.service.ConfigService;
-import dev.jawo.orchestrator.service.GitService;
-import dev.jawo.orchestrator.service.StateService;
-import dev.jawo.orchestrator.service.TmuxService;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.platform.EditorDriver;
+import dev.jagt.orchestrator.platform.TerminalDriver;
+import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TmuxService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,8 +49,8 @@ class OrchestratorToolsTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(null)).thenReturn("jawo");
-        when(tmux.killTaskWindows("jawo", "TEST-1")).thenReturn(1);
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.killTaskWindows("jagt", "TEST-1")).thenReturn(1);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
@@ -70,17 +70,17 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "tab-per-task", null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jagt", "tab-per-task", null, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName("jawo")).thenReturn("jawo");
-        when(tmux.killTaskWindows("jawo-TEST-1", "TEST-1")).thenReturn(1);
+        when(tmux.sessionName("jagt")).thenReturn("jagt");
+        when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
 
         tools.closeTaskTab("t1", null);
 
-        verify(tmux).killTaskWindows("jawo-TEST-1", "TEST-1");
+        verify(tmux).killTaskWindows("jagt-TEST-1", "TEST-1");
     }
 
     @Test
@@ -93,9 +93,9 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jagt", "shared", null, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName("jawo")).thenReturn("jawo");
+        when(tmux.sessionName("jagt")).thenReturn("jagt");
         TerminalDriver terminal = mock(TerminalDriver.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), terminal, mock(UserNotifier.class), properties, paths,
@@ -116,9 +116,9 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jawo", "shared", false, null, null, null, null, null, null));
+        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jagt", "shared", false, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName("jawo")).thenReturn("jawo");
+        when(tmux.sessionName("jagt")).thenReturn("jagt");
         TerminalDriver terminal = mock(TerminalDriver.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), terminal, mock(UserNotifier.class), properties, paths,
@@ -126,7 +126,7 @@ class OrchestratorToolsTest {
 
         tools.removeTask("a1", null);
 
-        verify(terminal).closeViewerWindow("jawo");
+        verify(terminal).closeViewerWindow("jagt");
     }
 
     @Test
@@ -529,9 +529,9 @@ class OrchestratorToolsTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(null)).thenReturn("jawo");
-        when(tmux.taskWindowState("jawo", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
-        when(tmux.nudgeTaskWindow(eq("jawo"), eq("ABC-1"), anyString())).thenReturn(true);
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
@@ -553,8 +553,8 @@ class OrchestratorToolsTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null));
         TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(null)).thenReturn("jawo");
-        when(tmux.taskWindowState("jawo", "ABC-1")).thenReturn(TmuxService.WindowState.MISSING);
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.MISSING);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
@@ -583,7 +583,7 @@ class OrchestratorToolsTest {
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
         TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(null)).thenReturn("jawo");
+        when(tmux.sessionName(null)).thenReturn("jagt");
         OrchestratorTools tools = new OrchestratorTools(config, state, git, tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
@@ -619,6 +619,38 @@ class OrchestratorToolsTest {
         assertThat(wt.resolve("app/.env")).exists().hasContent("SECRET=1");
         assertThat(wt.resolve("lib/key.pem")).exists().hasContent("PEM");
         assertThat(wt.resolve("node_modules/.env")).doesNotExist();
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "ABC-42 Widget layout is off, ABC-42, Widget layout is off",
+        "ABC-42: tidy imports,        ABC-42, tidy imports",
+        "Widget layout is off,        ABC-42, Widget layout is off",
+        "ABC-42,                      ABC-42, ''"
+    })
+    void stripsLeadingTicketSoTheShipTitleNeverDoublesIt(String stored, String ticket, String expected) {
+        assertThat(OrchestratorTools.stripTicketPrefix(stored, ticket)).isEqualTo(expected);
+    }
+
+    @Test
+    void firstShipCommitsTheExactPatternTitleAndOpensTheMr() {
+        String instruction = OrchestratorTools.shipInstruction(true, "ABC-42 Widget layout is off",
+                "ABC-42", "dev", "");
+
+        assertThat(instruction)
+                .contains("EXACTLY this message: \"ABC-42 Widget layout is off\"")
+                .contains("create one via your GitLab MCP");
+    }
+
+    @Test
+    void reviewRoundShipCommitsAConciseSummaryNotTheTicketTitle() {
+        String instruction = OrchestratorTools.shipInstruction(false, "ABC-42 Widget layout is off",
+                "ABC-42", "dev", "");
+
+        assertThat(instruction)
+                .contains("CONCISE one-line message")
+                .doesNotContain("EXACTLY this message")
+                .doesNotContain("ABC-42 Widget layout is off");
     }
 
     @ParameterizedTest

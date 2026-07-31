@@ -1,4 +1,4 @@
-# jawo — TODO / future ideas
+# jagt — TODO / future ideas
 
 Backlog of ideas, not commitments. Newest thinking at the top of each section.
 
@@ -90,7 +90,7 @@ change) so "ACTIVE 5m ago" and statuses stay current without typing `status` —
 PLACE (fixed region, terminal doesn't scroll down), not append a fresh copy each tick.
 
 Design:
-- The shell blocks on JLine `reader.readLine("jawo> ")`, so a background repaint must not disturb the
+- The shell blocks on JLine `reader.readLine("jagt> ")`, so a background repaint must not disturb the
   typed buffer. `reader.printAbove(...)` does that but SCROLLS (each tick appends above the prompt) — not
   what we want.
 - True in-place: JLine has a `Status` region (`Status.getStatus(terminal)`, multi-line, redrawn in a

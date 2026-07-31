@@ -1,6 +1,6 @@
 {
   "enableAllProjectMcpServers": true,
   "permissions": {
-    "allow": ["mcp__jawo-orchestrator"]
+    "allow": ["mcp__jagt-orchestrator"]
   }
 }

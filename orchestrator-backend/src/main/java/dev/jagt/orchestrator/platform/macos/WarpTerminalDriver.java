@@ -1,8 +1,8 @@
-package dev.jawo.orchestrator.platform.macos;
+package dev.jagt.orchestrator.platform.macos;
 
-import dev.jawo.orchestrator.config.OrchestratorProperties;
-import dev.jawo.orchestrator.platform.TerminalDriver;
-import dev.jawo.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.platform.TerminalDriver;
+import dev.jagt.orchestrator.service.ProcessRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

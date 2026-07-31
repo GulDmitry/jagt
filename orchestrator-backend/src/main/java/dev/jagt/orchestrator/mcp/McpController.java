@@ -1,7 +1,7 @@
-package dev.jawo.orchestrator.mcp;
+package dev.jagt.orchestrator.mcp;
 
-import dev.jawo.orchestrator.service.DashboardRenderer;
-import dev.jawo.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.service.StateService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

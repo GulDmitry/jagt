@@ -1,11 +1,11 @@
-package dev.jawo.orchestrator.assistant;
+package dev.jagt.orchestrator.assistant;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
  * A one-shot, hard-formatted headless Claude call for the Master side: spin up a stripped session
- * that inherits ONLY the human's own MCP servers (no hardcoded servers/paths in jawo), ask one
+ * that inherits ONLY the human's own MCP servers (no hardcoded servers/paths in jagt), ask one
  * question, force a deterministic JSON answer, done. Used to read a Jira ticket before a worktree
  * exists (so the sub-agent can't do it yet). Empty result = assistant unavailable / call failed —
  * callers fall back to explicit input.
@@ -14,7 +14,7 @@ public interface MasterAssistant {
 
     /**
      * Facts distilled from a work item. The input may be an issue KEY or a URL to it (Jira or any
-     * tracker); {@code key} is the canonical id the assistant read back (jawo names the branch/worktree
+     * tracker); {@code key} is the canonical id the assistant read back (jagt names the branch/worktree
      * by it — it is NOT parsed from the URL). {@code exists=false} means it could not be read.
      */
     record TicketFacts(boolean exists, String key, String title, String jiraProject, List<String> labels) {

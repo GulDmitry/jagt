@@ -1,8 +1,8 @@
-package dev.jawo.orchestrator.service;
+package dev.jagt.orchestrator.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import dev.jawo.orchestrator.config.OrchestratorPaths;
-import dev.jawo.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.model.TaskState;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 

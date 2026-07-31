@@ -1,8 +1,8 @@
-package dev.jawo.orchestrator.service;
+package dev.jagt.orchestrator.service;
 
-import dev.jawo.orchestrator.config.OrchestratorProperties;
-import dev.jawo.orchestrator.model.TaskStatus;
-import dev.jawo.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.platform.UserNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;

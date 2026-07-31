@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.service;
+package dev.jagt.orchestrator.service;
 
 import org.junit.jupiter.api.Test;
 

@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.config;
+package dev.jagt.orchestrator.config;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;

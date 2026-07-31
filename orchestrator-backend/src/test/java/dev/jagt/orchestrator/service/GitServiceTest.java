@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.service;
+package dev.jagt.orchestrator.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -200,7 +200,7 @@ class GitServiceTest {
         String devAfterConflict = runner.run(repo, timeout, List.of("git", "rev-parse", "origin/dev~0")).stdout().trim();
         String devTipWithOnlyDevCommit = runner.run(repo, timeout, List.of("git", "rev-parse", "dev")).stdout().trim();
         assertThat(devAfterConflict).isEqualTo(devTipWithOnlyDevCommit).isNotEqualTo(devBefore);
-        assertThat(runner.run(repo, timeout, List.of("git", "branch", "--list", "jawo-deploy*")).stdout()).isBlank();
+        assertThat(runner.run(repo, timeout, List.of("git", "branch", "--list", "jagt-deploy*")).stdout()).isBlank();
     }
 
     @Test

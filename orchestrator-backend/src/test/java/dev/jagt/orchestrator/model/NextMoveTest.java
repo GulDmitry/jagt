@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.model;
+package dev.jagt.orchestrator.model;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

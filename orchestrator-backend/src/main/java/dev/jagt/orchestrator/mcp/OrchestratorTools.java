@@ -1,18 +1,18 @@
-package dev.jawo.orchestrator.mcp;
+package dev.jagt.orchestrator.mcp;
 
-import dev.jawo.orchestrator.config.OrchestratorPaths;
-import dev.jawo.orchestrator.config.OrchestratorProperties;
-import dev.jawo.orchestrator.config.PromptTemplates;
-import dev.jawo.orchestrator.model.ProjectConfig;
-import dev.jawo.orchestrator.model.TaskState;
-import dev.jawo.orchestrator.model.TaskStatus;
-import dev.jawo.orchestrator.platform.EditorDriver;
-import dev.jawo.orchestrator.platform.TerminalDriver;
-import dev.jawo.orchestrator.platform.UserNotifier;
-import dev.jawo.orchestrator.service.ConfigService;
-import dev.jawo.orchestrator.service.GitService;
-import dev.jawo.orchestrator.service.StateService;
-import dev.jawo.orchestrator.service.TmuxService;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.platform.EditorDriver;
+import dev.jagt.orchestrator.platform.TerminalDriver;
+import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TmuxService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -168,7 +168,7 @@ public class OrchestratorTools {
         // control back (finished review / broke CI). Only on the transition, never on
         // the agent's frequent IN_PROGRESS keep-alives.
         if (newStatus != previous && (newStatus == TaskStatus.REVIEW_PENDING || newStatus == TaskStatus.CI_FAILED)) {
-            userNotifier.notify("jawo · " + taskId, dev.jawo.orchestrator.model.NextMove.forStatus(newStatus));
+            userNotifier.notify("jagt · " + taskId, dev.jagt.orchestrator.model.NextMove.forStatus(newStatus));
         }
         return "Task " + taskId + " -> " + newStatus + (shortMessage == null ? "" : " (" + shortMessage + ")");
     }
@@ -292,7 +292,9 @@ public class OrchestratorTools {
                 + mrUrl + " is open — there is NOTHING to build or commit right now. Do NOT re-implement, and"
                 + " do NOT call update_agent_status: the Master has already set your status (CI_POLLING). Stay"
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
-        initializeTask(taskId, projectKey, instructions, null, "resume", title);
+        // The MR title the assistant read is already ticket-prefixed (the pattern built it); store it bare so
+        // the dashboard isn't redundant and a later ship's pattern expansion stays single-prefixed.
+        initializeTask(taskId, projectKey, instructions, null, "resume", stripTicketPrefix(title, taskId));
         updateAgentStatus("CI_POLLING", "MR: " + mrUrl, taskId, null);
         return "Resumed " + taskId + " on its existing branch; linked MR " + mrUrl
                 + "; status CI_POLLING — run `review` or `deploy`.";
@@ -339,11 +341,11 @@ public class OrchestratorTools {
                     + "' has no deployBranch in config.json — set it to enable deploy");
         }
         // HARD SAFETY: deploy is the ONLY merge in the whole system, and it must NEVER
-        // target the base/release branch that tasks are cut from. jawo never writes there.
+        // target the base/release branch that tasks are cut from. jagt never writes there.
         String base = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
         if (project.deployBranch().equals(base)) {
             throw new IllegalArgumentException("REFUSED: deployBranch equals the base branch '" + base
-                    + "'. jawo must never merge into the branch tasks are created from — point deployBranch"
+                    + "'. jagt must never merge into the branch tasks are created from — point deployBranch"
                     + " at a downstream branch (e.g. dev).");
         }
         gitService.mergeIntoAndPush(Path.of(project.path()), taskId, project.deployBranch());
@@ -380,7 +382,7 @@ public class OrchestratorTools {
      * The human approved the current uncommitted changes. Ship is the ONLY commit point: it relays the
      * approval to the agent (which owns the GitLab MCP) via task_context.md — commit with the pattern
      * title, push, create the MR if absent (target = baseBranch), post any drafted review replies, and
-     * report back CI_POLLING with the MR url. jawo itself never touches the remote.
+     * report back CI_POLLING with the MR url. jagt itself never touches the remote.
      */
     public String ship(String taskId) {
         taskId = canonicalTaskId(taskId);
@@ -403,9 +405,15 @@ public class OrchestratorTools {
         }
         ProjectConfig project = configService.project(task.project());
         String baseBranch = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
+        // The MR does not exist until the first ship creates it (resume also sets mrUrl); its presence marks
+        // a REVIEW-ROUND ship, where the commit describes the fixes, not the (already-titled) MR.
+        boolean firstShip = task.mrUrl() == null;
+        // Strip any leading ticket from the stored title BEFORE applying the pattern, so the id can never
+        // appear twice regardless of flow (a resumed task's title came from the already-prefixed MR title)
+        // or how many ships ran — the expansion is idempotent.
         String title = config.mrTitlePatternOrDefault()
                 .replace("{ticket}", taskId)
-                .replace("{title}", task.title() == null ? "" : task.title())
+                .replace("{title}", stripTicketPrefix(task.title(), taskId))
                 .trim();
         String repliesStep;
         if (!config.postReviewRepliesOrDefault()) {
@@ -420,23 +428,58 @@ public class OrchestratorTools {
                     + String.join(", ", config.reviewReplyAuthorsOrEmpty())
                     + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones.\n";
         }
-        String instruction = "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"
-                + "1. Commit ALL current changes with EXACTLY this message: \"" + title + "\".\n"
-                + "2. Push branch " + taskId + ".\n"
-                + "3. If no merge request exists for this branch yet, create one via your GitLab MCP:"
-                + " source " + taskId + " -> target " + baseBranch + ", title \"" + title + "\".\n"
-                + repliesStep
-                + "5. Report back with update_agent_status CI_POLLING, message \"MR: <the merge request url>\".";
-        writeTaskContext(taskId, instruction);   // respawns the agent if the session is down
+        writeTaskContext(taskId, shipInstruction(firstShip, title, taskId, baseBranch, repliesStep));
         // Flip to SHIPPING now so the dashboard shows ship is underway (the status only reaches
         // CI_POLLING when the agent reports back the MR) and a second `ship` is refused meanwhile.
         stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.SHIPPING, "shipping"));
-        return "ship " + taskId + ": approval relayed — agent will commit \"" + title
-                + "\", push, ensure the MR, post replies, then report CI_POLLING.";
+        return "ship " + taskId + ": approval relayed — agent will commit "
+                + (firstShip ? "\"" + title + "\" and open the MR" : "a concise review-fix message on the existing MR")
+                + ", push, post replies, then report CI_POLLING.";
+    }
+
+    /**
+     * The ship instruction relayed to the agent. First ship: commit the exact pattern title and open the
+     * MR. Review round (MR already exists): commit a concise, meaningful one-liner describing the fixes —
+     * repeating the ticket title on every round is noise — and leave the existing MR's title alone.
+     */
+    static String shipInstruction(boolean firstShip, String title, String taskId, String baseBranch,
+                                  String repliesStep) {
+        String commitStep = firstShip
+                ? "1. Commit ALL current changes with EXACTLY this message: \"" + title + "\".\n"
+                : "1. Commit ALL current changes with a CONCISE one-line message — max ~10 words, imperative"
+                        + " mood, NO ticket id — summarizing ONLY the review fixes you just made"
+                        + " (e.g. \"Guard null sort key, fix header toggle\").\n";
+        String mrStep = firstShip
+                ? "3. No merge request exists yet — create one via your GitLab MCP: source " + taskId
+                        + " -> target " + baseBranch + ", title \"" + title + "\".\n"
+                : "3. The merge request already exists — do NOT create a new one or retitle it.\n";
+        return "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"
+                + commitStep
+                + "2. Push branch " + taskId + ".\n"
+                + mrStep
+                + repliesStep
+                + "5. Report back with update_agent_status CI_POLLING, message \"MR: <the merge request url>\".";
+    }
+
+    /**
+     * The title with a leading {@code <taskId>} (and its separators) removed, so applying
+     * {@code mrTitlePattern} can never double the ticket — a resumed task inherits the MR title, which the
+     * pattern already prefixed with the id. Idempotent: stripping an already-bare title is a no-op. Empty
+     * ("") when the title carried nothing but the ticket; null stays null.
+     */
+    static String stripTicketPrefix(String title, String taskId) {
+        if (title == null) {
+            return null;
+        }
+        String t = title.strip();
+        if (taskId != null && !taskId.isBlank() && t.regionMatches(true, 0, taskId, 0, taskId.length())) {
+            t = t.substring(taskId.length()).replaceFirst("^[\\s:|/–—-]+", "").strip();
+        }
+        return t;
     }
 
     public String notifyUser(String title, String message) {
-        userNotifier.notify(title == null ? "jawo" : title, message);
+        userNotifier.notify(title == null ? "jagt" : title, message);
         return "Notification sent";
     }
 
@@ -608,7 +651,7 @@ public class OrchestratorTools {
         }
         // Server approval alone is not enough: Claude's auto-mode classifier still
         // gates individual MCP calls, silently freezing agents on invisible prompts
-        // (even notify_user gets blocked) — pre-allow every jawo tool. The optional
+        // (even notify_user gets blocked) — pre-allow every jagt tool. The optional
         // agentOutputStyle from config.json is pinned here (a worktree is an untrusted
         // project where the human's global style may not apply); default null → omitted.
         writeString(worktreePath.resolve(".claude").resolve("settings.local.json"),
@@ -616,7 +659,7 @@ public class OrchestratorTools {
     }
 
     /**
-     * The generated worktree {@code .claude/settings.local.json}: pre-approves the jawo MCP tools,
+     * The generated worktree {@code .claude/settings.local.json}: pre-approves the jagt MCP tools,
      * optionally pins {@code agentOutputStyle}, and disables the given plugins for the agent (heavy
      * LSP plugins spawn a JDT server per worktree — agents don't need them). Valid JSON in all cases.
      */
@@ -637,7 +680,7 @@ public class OrchestratorTools {
                 {%s%s
                   "enableAllProjectMcpServers": true,
                   "permissions": {
-                    "allow": ["mcp__jawo-orchestrator"]
+                    "allow": ["mcp__jagt-orchestrator"]
                   }
                 }
                 """.formatted(styleLine, pluginsLine);

@@ -1,8 +1,8 @@
-package dev.jawo.orchestrator.mcp;
+package dev.jagt.orchestrator.mcp;
 
-import dev.jawo.orchestrator.model.TaskState;
-import dev.jawo.orchestrator.model.TaskStatus;
-import dev.jawo.orchestrator.service.StateService;
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.service.StateService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -169,7 +169,7 @@ public class McpProtocolService {
                   "description": "Send an OS push notification to the human (e.g. 'review round addressed — ABC-123'). Use when human attention is needed.",
                   "type": "object",
                   "properties": {
-                    "title": {"type": "string", "description": "Defaults to 'jawo'."},
+                    "title": {"type": "string", "description": "Defaults to 'jagt'."},
                     "message": {"type": "string"}
                   },
                   "required": ["message"]
@@ -248,7 +248,7 @@ public class McpProtocolService {
         result.put("protocolVersion", requestedVersion);
         result.putObject("capabilities").putObject("tools");
         ObjectNode serverInfo = result.putObject("serverInfo");
-        serverInfo.put("name", "jawo-orchestrator");
+        serverInfo.put("name", "jagt-orchestrator");
         serverInfo.put("version", "0.1.0");
         return result;
     }

@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.platform;
+package dev.jagt.orchestrator.platform;
 
 import java.nio.file.Path;
 
@@ -18,7 +18,7 @@ public interface TerminalDriver {
      * <p>Contract: if a window whose title starts with {@code dedicatedTitle}
      * exists, add a new TAB to it; otherwise create the dedicated window. The
      * opened tab/window must end up attached to {@code tmuxSession} (the Warp
-     * impl drops a one-shot {@code .jawo_tab} marker into {@code tabCwd} and
+     * impl drops a one-shot {@code .jagt_tab} marker into {@code tabCwd} and
      * relies on a shell-rc hook that execs {@code tmux attach}).
      * Must debounce internally: the UI needs seconds to open and attach, and
      * the orchestrator may call again meanwhile. Failures: log, don't throw.

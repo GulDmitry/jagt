@@ -1,10 +1,10 @@
-package dev.jawo.orchestrator.mcp;
+package dev.jagt.orchestrator.mcp;
 
-import dev.jawo.orchestrator.config.OrchestratorPaths;
-import dev.jawo.orchestrator.config.OrchestratorProperties;
-import dev.jawo.orchestrator.model.TaskState;
-import dev.jawo.orchestrator.model.TaskStatus;
-import dev.jawo.orchestrator.service.StateService;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.JsonNode;

@@ -15,3 +15,6 @@ target/
 
 # Backend runtime log
 orchestrator-backend/*.log
+
+# Eclipse/VS Code Java output (not used by Gradle)
+orchestrator-backend/bin/

@@ -1,7 +1,7 @@
-package dev.jawo.orchestrator.platform;
+package dev.jagt.orchestrator.platform;
 
-import dev.jawo.orchestrator.config.OrchestratorProperties;
-import dev.jawo.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.service.ProcessRunner;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;

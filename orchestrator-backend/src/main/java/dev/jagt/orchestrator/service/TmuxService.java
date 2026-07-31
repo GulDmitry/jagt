@@ -1,8 +1,8 @@
-package dev.jawo.orchestrator.service;
+package dev.jagt.orchestrator.service;
 
-import dev.jawo.orchestrator.config.OrchestratorPaths;
-import dev.jawo.orchestrator.config.OrchestratorProperties;
-import dev.jawo.orchestrator.platform.TerminalDriver;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.platform.TerminalDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,7 +41,7 @@ public class TmuxService {
     }
 
     public String sessionName(String configured) {
-        return configured == null || configured.isBlank() ? "jawo" : configured;
+        return configured == null || configured.isBlank() ? "jagt" : configured;
     }
 
     public void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias,
@@ -56,7 +56,7 @@ public class TmuxService {
             String command = properties.claudeCommand()
                     + (planMode ? " --permission-mode plan" : "")
                     + " " + shellQuote(properties.agentPrompt())
-                    + "; printf '\\n[jawo] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
+                    + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
             // -P -F prints the window id (@N): the only target immune to name
             // collisions when the same task is respawned via open_task_tab.
             String windowId = processRunner.run(null, TIMEOUT, List.of(tmux(), "new-window",
@@ -73,7 +73,7 @@ public class TmuxService {
             // rides in a window user-option so the terminal title can show "taskId (alias)".
             if (alias != null && !alias.isBlank()) {
                 processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
-                        "-w", "-t", windowId, "@jawo_alias", alias));
+                        "-w", "-t", windowId, "@jagt_alias", alias));
             }
             ensureViewer(session, dedicatedTitle, worktreePath);
         }
@@ -224,10 +224,10 @@ public class TmuxService {
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles", "on"));
         // "taskId (alias)" when the window carries an alias, else just the window name.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string",
-                "#{?#{@jawo_alias},#W (#{@jawo_alias}),#W}"));
+                "#{?#{@jagt_alias},#W (#{@jagt_alias}),#W}"));
         // The status-bar window list (what you scan while attached) shows only #I:#W by default — add the
         // alias there too, so "PAN-2554 (p1)" is visible in the bar, not just in the terminal tab title.
-        String windowFormat = "#I:#W#{?#{@jawo_alias}, (#{@jawo_alias}),}";
+        String windowFormat = "#I:#W#{?#{@jagt_alias}, (#{@jagt_alias}),}";
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-format", windowFormat));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-current-format", windowFormat));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Left", "previous-window"));

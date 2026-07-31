@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.model;
+package dev.jagt.orchestrator.model;
 
 /**
  * Whose move it is, and the command to run, for a task in a given status.

@@ -1,7 +1,7 @@
-package dev.jawo.orchestrator.assistant;
+package dev.jagt.orchestrator.assistant;
 
-import dev.jawo.orchestrator.config.OrchestratorProperties;
-import dev.jawo.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.service.ProcessRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +20,7 @@ import java.util.Optional;
  * server or path — {@code --setting-sources user,project,local} makes the child inherit the human's
  * own MCP config (so whatever Jira/GitLab MCP the human already has, this call gets), and
  * {@code --json-schema} forces a deterministic JSON answer. Runs from the temp dir so only the
- * human's user-level MCP loads (no jawo project MCP), keeping the context — and tokens — small.
+ * human's user-level MCP loads (no jagt project MCP), keeping the context — and tokens — small.
  */
 @Component
 public class HeadlessClaudeAssistant implements MasterAssistant {

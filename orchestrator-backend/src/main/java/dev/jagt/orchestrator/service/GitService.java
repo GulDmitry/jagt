@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.service;
+package dev.jagt.orchestrator.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,16 +137,16 @@ public class GitService {
             }
             Path temp;
             try {
-                temp = Files.createTempDirectory("jawo-deploy-");
+                temp = Files.createTempDirectory("jagt-deploy-");
             } catch (IOException e) {
                 throw new UncheckedIOException("Cannot create temp dir for deploy worktree", e);
             }
-            String tempBranch = "jawo-deploy-" + sourceBranch;
+            String tempBranch = "jagt-deploy-" + sourceBranch;
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "add",
                             "-B", tempBranch, temp.toString(), "origin/" + targetBranch))
                     .expectSuccess("git worktree add (deploy) " + targetBranch);
             try {
-                // Explicit message: the merge runs on a temp branch (jawo-deploy-*), and git's
+                // Explicit message: the merge runs on a temp branch (jagt-deploy-*), and git's
                 // default "into <current branch>" would leak that name instead of the real target.
                 var merge = processRunner.run(temp, GIT_TIMEOUT, List.of("git", "merge", "--no-edit",
                         "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch, sourceBranch));
@@ -175,7 +175,7 @@ public class GitService {
         return withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jawo-diff-" + taskId);
+            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jagt-diff-" + taskId);
             clearWorktreePath(projectPath, temp);
             processRunner.run(projectPath, GIT_TIMEOUT,
                             List.of("git", "worktree", "add", "--detach", temp.toString(), baseBranch))
@@ -195,11 +195,11 @@ public class GitService {
      */
     public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
-            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jawo-diff-new-" + taskId);
+            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jagt-diff-new-" + taskId);
             clearWorktreePath(projectPath, temp);
             Path index;
             try {
-                index = Files.createTempFile("jawo-diff-index-" + taskId + "-", "");
+                index = Files.createTempFile("jagt-diff-index-" + taskId + "-", "");
             } catch (IOException e) {
                 throw new UncheckedIOException("Cannot allocate temp git index for diff of " + taskId, e);
             }
@@ -212,7 +212,7 @@ public class GitService {
                 String tree = processRunner.run(worktreePath, GIT_TIMEOUT, env, List.of("git", "write-tree"))
                         .expectSuccess("git write-tree (clean diff) " + taskId).stdout().trim();
                 String commit = processRunner.run(worktreePath, GIT_TIMEOUT,
-                                List.of("git", "commit-tree", tree, "-p", baseBranch, "-m", "jawo diff " + taskId))
+                                List.of("git", "commit-tree", tree, "-p", baseBranch, "-m", "jagt diff " + taskId))
                         .expectSuccess("git commit-tree (clean diff) " + taskId).stdout().trim();
                 processRunner.run(projectPath, GIT_TIMEOUT,
                                 List.of("git", "worktree", "add", "--detach", temp.toString(), commit))
@@ -243,7 +243,7 @@ public class GitService {
         // Reap EVERY process whose cwd is under the worktree — NOT just java (jdtls). The agent is a Node
         // process and any of its MCP plugins may run daemons/hooks that write state into the cwd; a
         // java-only reap left those alive to repopulate the directory right after we deleted it, so the
-        // worktree leaked. jawo assumes nothing about which process/plugin — cwd-under-worktree is the
+        // worktree leaked. jagt assumes nothing about which process/plugin — cwd-under-worktree is the
         // generic, precise selector (only the task's own procs), so this handles any of them.
         var lsof = processRunner.run(null, GIT_TIMEOUT,
                 List.of("lsof", "-d", "cwd", "-Fpn"));
@@ -279,7 +279,7 @@ public class GitService {
 
     /**
      * Delete a directory and everything under it, robustly and GENERICALLY. Some process rooted in the
-     * dir may keep recreating untracked files (any agent/plugin writing state to its cwd — jawo assumes
+     * dir may keep recreating untracked files (any agent/plugin writing state to its cwd — jagt assumes
      * nothing about which), so each pass first REAPS every process whose cwd is under the dir (killing the
      * writer, whatever it is), then re-scans and deletes. Killing-then-deleting converges: once the last
      * writer is gone a pass finds the tree static and removes it. Not tied to any specific file or plugin.

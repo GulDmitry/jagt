@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.model;
+package dev.jagt.orchestrator.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;

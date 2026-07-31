@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.platform;
+package dev.jagt.orchestrator.platform;
 
 /**
  * OS notification strategy. Selected via {@code orchestrator.platform}

@@ -1,4 +1,4 @@
-package dev.jawo.orchestrator.model;
+package dev.jagt.orchestrator.model;
 
 /**
  * The one-line detail shown under a task in the dashboard. Context-driven and

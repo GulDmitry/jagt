@@ -1,8 +1,8 @@
-package dev.jawo.orchestrator.service;
+package dev.jagt.orchestrator.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import dev.jawo.orchestrator.config.OrchestratorPaths;
-import dev.jawo.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.model.ProjectConfig;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -38,7 +38,7 @@ public class ConfigService {
          * Optional Claude output style pinned into each agent worktree's settings. Default null:
          * nothing is written and agents use Claude's own resolved style. A fresh worktree is an
          * untrusted project where the human's global style may not apply, so this lets the human
-         * force one (e.g. "sob-ai:Engineer") without jawo reading their global config.
+         * force one (e.g. "sob-ai:Engineer") without jagt reading their global config.
          */
         public String agentOutputStyleOrNull() {
             return agentOutputStyle == null || agentOutputStyle.isBlank() ? null : agentOutputStyle.strip();

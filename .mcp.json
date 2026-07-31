@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "jawo-orchestrator": {
+    "jagt-orchestrator": {
       "type": "stdio",
       "command": "node",
       "args": ["./mcp_client.js"]
