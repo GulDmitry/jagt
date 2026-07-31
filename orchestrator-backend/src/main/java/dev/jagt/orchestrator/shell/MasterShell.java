@@ -131,8 +131,9 @@ public class MasterShell implements ApplicationRunner {
         outputLog.add("jagt — type a command ('help'); 'exit' stops the backend (agents keep running).");
         StringBuilder input = new StringBuilder();
         long lastRefresh = System.currentTimeMillis();
-        render(screen, outputLog, input.toString());
+        render(screen, outputLog, input.toString(), true);
         while (true) {
+            TerminalSize resized = screen.doResizeIfNecessary();   // null unless the terminal size changed
             KeyStroke key = screen.pollInput();
             if (key != null) {
                 KeyType type = key.getKeyType();
@@ -160,13 +161,13 @@ public class MasterShell implements ApplicationRunner {
                         }
                     }
                 }
-                render(screen, outputLog, input.toString());
+                render(screen, outputLog, input.toString(), resized != null);
                 continue;
             }
             long now = System.currentTimeMillis();
-            if (screen.doResizeIfNecessary() != null || now - lastRefresh >= refreshMillis) {
+            if (resized != null || now - lastRefresh >= refreshMillis) {
                 lastRefresh = now;
-                render(screen, outputLog, input.toString());
+                render(screen, outputLog, input.toString(), resized != null);
             }
             try {
                 Thread.sleep(30);
@@ -178,16 +179,17 @@ public class MasterShell implements ApplicationRunner {
     }
 
     /**
-     * Draw the whole screen from scratch into Lanterna's back buffer: output log on top, dashboard table
-     * beneath it (capped so {@code commandRows} rows stay for output+input; overflow → a "… +N" line), and
-     * the input line at the very bottom. Redrawing every frame is what makes resize trivially correct.
+     * Draw the whole screen into Lanterna's back buffer: output log on top, dashboard table beneath it
+     * (capped so {@code commandRows} rows stay for output+input; overflow → a "… +N" line), and the input
+     * line at the very bottom. NEVER {@code screen.clear()} — that forces a full terminal wipe on the next
+     * refresh (visible flicker on every keystroke/tick). Instead every row is drawn (empties blanked) and
+     * {@code refresh(DELTA)} sends only the cells that actually changed; {@code full} (first paint / resize)
+     * uses COMPLETE.
      */
-    private void render(Screen screen, List<String> outputLog, String input) throws IOException {
-        screen.doResizeIfNecessary();
+    private void render(Screen screen, List<String> outputLog, String input, boolean full) throws IOException {
         TerminalSize size = screen.getTerminalSize();
         int height = size.getRows();
         int width = size.getColumns();
-        screen.clear();
         TextGraphics g = screen.newTextGraphics();
 
         String[] dash = dashboard.render().split("\\R");
@@ -197,8 +199,8 @@ public class MasterShell implements ApplicationRunner {
         int dashTop = outputRows;
 
         int from = Math.max(0, outputLog.size() - outputRows);     // last outputRows lines, oldest first
-        for (int i = 0; i < outputRows && from + i < outputLog.size(); i++) {
-            String line = outputLog.get(from + i);
+        for (int i = 0; i < outputRows; i++) {                     // draw EVERY row (blank the empties): with
+            String line = from + i < outputLog.size() ? outputLog.get(from + i) : "";   // no clear(), unwritten
             // A colored command echo ("jagt> …") heads each block — that IS the visual separator; errors red.
             TextColor c = line.startsWith("jagt> ") ? TextColor.ANSI.CYAN_BRIGHT
                     : line.startsWith("error:") ? TextColor.ANSI.RED_BRIGHT
@@ -215,7 +217,8 @@ public class MasterShell implements ApplicationRunner {
         put(g, height - 1, "jagt> ", width, TextColor.ANSI.CYAN_BRIGHT, true);     // input line: prompt…
         g.putString(6, height - 1, fit(input, Math.max(0, width - 6)));            // …then the typed text
         screen.setCursorPosition(new TerminalPosition(Math.min(6 + input.length(), Math.max(0, width - 1)), height - 1));
-        screen.refresh();
+        // DELTA writes only changed cells (smooth, no flicker); COMPLETE redraws all on first paint / resize.
+        screen.refresh(full ? Screen.RefreshType.COMPLETE : Screen.RefreshType.DELTA);
     }
 
     /** Color for one dashboard line: header green, action-needed rows yellow, the "…+N" overflow yellow. */
