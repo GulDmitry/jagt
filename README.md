@@ -65,7 +65,7 @@ exact keys.
 | `worktreeCopyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
 | `agentOutputStyle` | optional Claude output style pinned into each agent worktree, e.g. `sob-ai:Engineer` (default empty = Claude's own style) |
 | `dashboardRefreshSeconds` | how often the Master shell repaints its pinned dashboard in place (default `10`; `0` disables auto-refresh) |
-| `dashboardReservedRows` | rows kept free above the pinned dashboard for the banner, command output and prompt (default `17`, fits full `help`; larger = more scrollback shown) |
+| `dashboardReservedRows` | minimum rows kept free above the pinned dashboard for banner/output/prompt; caps how tall the region grows before extra tasks overflow to `… +N` (default `17`) |
 | `mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
 
 `orchestrator-backend/src/main/resources/application.yml` (machine/OS level, restart to apply):

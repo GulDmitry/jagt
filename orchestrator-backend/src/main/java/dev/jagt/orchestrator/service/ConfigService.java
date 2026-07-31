@@ -126,9 +126,10 @@ public class ConfigService {
         }
 
         /**
-         * Rows the Master shell keeps free ABOVE its pinned dashboard for the banner, recent command
-         * output, and the prompt. Default 17 (fits the full {@code help} listing). Larger = the region
-         * sits lower and more scrollback stays visible; negatives are clamped to 0.
+         * MINIMUM rows the Master shell keeps free ABOVE its pinned dashboard for the banner, command
+         * output, and the prompt. The dashboard hugs its own content at the bottom regardless of terminal
+         * size; this only CAPS how tall the pinned region may grow (beyond it, tasks overflow to a "… +N"
+         * line). Default 17; negatives are clamped to 0.
          */
         public int dashboardReservedRowsOrDefault() {
             if (dashboardReservedRows == null) {

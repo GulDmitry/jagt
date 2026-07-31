@@ -68,10 +68,10 @@ public class MasterShell implements ApplicationRunner {
     /** Set under {@link #paintLock} on shutdown so a late tick never paints into a closing region. */
     private boolean stopped;
     /**
-     * Rows kept free ABOVE the pinned dashboard for the banner, recent command output, and the prompt.
-     * The pinned region is bottom-anchored at {@code height - commandRows}, so a LARGER value shrinks the
-     * region → its top drops → the whole prompt+dashboard construction sits lower and more scrollback rows
-     * stay above the prompt (a multi-line `help` no longer scrolls its head off the top of the screen).
+     * MINIMUM rows kept free ABOVE the pinned dashboard for the banner, recent command output, and the
+     * prompt. The dashboard region hugs its own content at the bottom (prompt directly above it, no blank
+     * gap); this value only CAPS how tall that region may grow — beyond {@code height - commandRows} lines
+     * the extra tasks collapse into a "… +N" overflow line. Larger = the region caps sooner (more headroom).
      * Configurable via {@code dashboardReservedRows} in config.json; read once at startup (default 17).
      */
     private int commandRows = 17;
@@ -193,24 +193,35 @@ public class MasterShell implements ApplicationRunner {
     }
 
     /**
-     * Render the dashboard into a CONSTANT-height region pinned at the bottom (pad short lines with blanks,
-     * truncate when there are more than fit). Caller holds {@link #paintLock}. The fixed height is the key:
-     * JLine's Status garbles when the region grows/shrinks, so we never resize it — {@code update} then
-     * refreshes IN PLACE (no scroll), which is why the timer refresh doesn't spam the scrollback.
+     * Render the dashboard into a bottom-pinned region sized to the dashboard's OWN line count (capped at
+     * {@code height - commandRows}, overflow truncated to a "… +N" line) — so it hugs the bottom with the
+     * prompt directly above and no blank gap at any terminal size. Caller holds {@link #paintLock}.
+     * {@code status.update} redraws IN PLACE and resizes as the task count changes, so the timer refresh
+     * neither scrolls nor spams the scrollback.
      */
     private void paintLocked(Status status, Terminal terminal) {
         if (stopped) {
             return;
         }
-        int region = Math.max(6, terminal.getHeight() - commandRows);
         String[] rows = dashboard.render().split("\\R");
-        List<AttributedString> lines = new ArrayList<>();
+        // Size the region to the dashboard's OWN height so it hugs the bottom with the prompt directly above
+        // and no blank filler — at any terminal height. commandRows only CAPS the growth (keeping that many
+        // rows free above for the banner, command output and prompt); overflow collapses into a "… +N" line.
+        int maxRegion = Math.max(1, terminal.getHeight() - commandRows);
+        int region = Math.min(rows.length, maxRegion);
+        List<AttributedString> lines = new ArrayList<>(region);
         for (int i = 0; i < region; i++) {
-            lines.add(i < rows.length ? AttributedString.fromAnsi(rows[i]) : AttributedString.EMPTY);
+            lines.add(AttributedString.fromAnsi(rows[i]));
         }
-        if (rows.length > region) {   // more tasks than fit the region: say so on the last visible line
+        if (rows.length > region) {   // more tasks than fit: collapse the overflow onto the last visible line
             lines.set(region - 1, new AttributedString("  … +" + (rows.length - region + 1)
                     + " more — `status` or curl localhost:8290/status"));
+        }
+        // Growing the pinned region garbles if JLine diffs against the smaller previous frame (stale header,
+        // misplaced prompt). Force a clean rebuild whenever the line count changes; a steady refresh (same
+        // size) still diffs in place, so the timer tick neither flickers nor scrolls.
+        if (status.size() != lines.size()) {
+            status.reset();
         }
         status.update(lines, true);
         terminal.flush();
