@@ -161,7 +161,12 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - SELF-CONTROL LOOP (mandatory, every code+test change): run the changed tests through the
   sob-ai:unit-testing skill (hand off to an agent). If it reports a test as compositionally heavy / high
   cognitive load / too much setup, that is a signal to REFACTOR THE PRODUCTION CODE until the test is
-  light — then re-run. Deliver only when tests are BOTH light and green (and reviewed, see below).
+  light — then re-run. Deliver only when tests are BOTH light and green AND reviewed (next bullet).
+- CODE REVIEW IS MANDATORY AFTER EVERY CODE CHANGE, BEFORE COMMITTING: run the `code-review` skill (or the
+  `oh-my-claudecode:code-reviewer` agent) on the working diff. Fix every real finding (or explicitly note
+  why it's a non-issue), then re-review if the fixes are non-trivial. No commit lands unreviewed — this is
+  a hard gate, not a suggestion. (A shell hook can only *remind*; it cannot invoke a skill, so this is
+  enforced here as a workflow rule, not in settings.json.)
 
 ## Build & run
 - The backend process IS the Master control terminal (JLine REPL); run it in a REAL terminal so the

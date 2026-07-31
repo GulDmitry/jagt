@@ -8,6 +8,7 @@
   "reviewReplyAuthors": [],
   "worktreeCopyGlobs": ["**/.env", "**/*.pem", "**/*.pub", "**/*.p12", "**/*.jks", "**/*.keystore"],
   "dashboardRefreshSeconds": 10,
+  "dashboardReservedRows": 17,
   "mergeRequestDefaults": {
     "removeSourceBranch": true,
     "squash": true

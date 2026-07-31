@@ -22,7 +22,47 @@ public class ConfigService {
     public record ConfigFile(Map<String, ProjectConfig> projects, String tmuxSession, String viewMode,
                              Boolean keepViewer, String mrTitlePattern, String agentOutputStyle,
                              Boolean postReviewReplies, java.util.List<String> reviewReplyAuthors,
-                             java.util.List<String> worktreeCopyGlobs, Integer dashboardRefreshSeconds) {
+                             java.util.List<String> worktreeCopyGlobs, Integer dashboardRefreshSeconds,
+                             Integer dashboardReservedRows) {
+
+        /** All-optional baseline: every field null/empty, so each {@code *OrDefault} returns its documented default. */
+        public static ConfigFile defaults() {
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null, null);
+        }
+
+        public ConfigFile withProjects(Map<String, ProjectConfig> newProjects) {
+            return new ConfigFile(newProjects, tmuxSession, viewMode, keepViewer, mrTitlePattern, agentOutputStyle,
+                    postReviewReplies, reviewReplyAuthors, worktreeCopyGlobs, dashboardRefreshSeconds,
+                    dashboardReservedRows);
+        }
+
+        public ConfigFile withTmuxSession(String session) {
+            return new ConfigFile(projects, session, viewMode, keepViewer, mrTitlePattern, agentOutputStyle,
+                    postReviewReplies, reviewReplyAuthors, worktreeCopyGlobs, dashboardRefreshSeconds,
+                    dashboardReservedRows);
+        }
+
+        public ConfigFile withViewMode(String mode) {
+            return new ConfigFile(projects, tmuxSession, mode, keepViewer, mrTitlePattern, agentOutputStyle,
+                    postReviewReplies, reviewReplyAuthors, worktreeCopyGlobs, dashboardRefreshSeconds,
+                    dashboardReservedRows);
+        }
+
+        public ConfigFile withKeepViewer(Boolean keep) {
+            return new ConfigFile(projects, tmuxSession, viewMode, keep, mrTitlePattern, agentOutputStyle,
+                    postReviewReplies, reviewReplyAuthors, worktreeCopyGlobs, dashboardRefreshSeconds,
+                    dashboardReservedRows);
+        }
+
+        public ConfigFile withDashboardRefreshSeconds(Integer seconds) {
+            return new ConfigFile(projects, tmuxSession, viewMode, keepViewer, mrTitlePattern, agentOutputStyle,
+                    postReviewReplies, reviewReplyAuthors, worktreeCopyGlobs, seconds, dashboardReservedRows);
+        }
+
+        public ConfigFile withDashboardReservedRows(Integer rows) {
+            return new ConfigFile(projects, tmuxSession, viewMode, keepViewer, mrTitlePattern, agentOutputStyle,
+                    postReviewReplies, reviewReplyAuthors, worktreeCopyGlobs, dashboardRefreshSeconds, rows);
+        }
 
         /** Default true: the agents window/tab stays open (reserved) after the last task is done. */
         public boolean keepViewerOrDefault() {
@@ -84,6 +124,18 @@ public class ConfigService {
             }
             return dashboardRefreshSeconds < 0 ? 0 : dashboardRefreshSeconds;
         }
+
+        /**
+         * Rows the Master shell keeps free ABOVE its pinned dashboard for the banner, recent command
+         * output, and the prompt. Default 17 (fits the full {@code help} listing). Larger = the region
+         * sits lower and more scrollback stays visible; negatives are clamped to 0.
+         */
+        public int dashboardReservedRowsOrDefault() {
+            if (dashboardReservedRows == null) {
+                return 17;
+            }
+            return dashboardReservedRows < 0 ? 0 : dashboardReservedRows;
+        }
     }
 
     private final ObjectMapper mapper;
@@ -101,10 +153,7 @@ public class ConfigService {
         }
         try {
             ConfigFile config = mapper.readValue(Files.readString(paths.configFile()), ConfigFile.class);
-            return new ConfigFile(config.projects() == null ? Map.of() : config.projects(),
-                    config.tmuxSession(), config.viewMode(), config.keepViewer(), config.mrTitlePattern(),
-                    config.agentOutputStyle(), config.postReviewReplies(), config.reviewReplyAuthors(),
-                    config.worktreeCopyGlobs(), config.dashboardRefreshSeconds());
+            return config.projects() == null ? config.withProjects(Map.of()) : config;
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read config file " + paths.configFile(), e);
         }

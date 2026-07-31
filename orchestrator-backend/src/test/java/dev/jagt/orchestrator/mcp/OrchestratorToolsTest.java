@@ -47,7 +47,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.killTaskWindows("jagt", "TEST-1")).thenReturn(1);
@@ -70,7 +70,8 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jagt", "tab-per-task", null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withTmuxSession("jagt").withViewMode("tab-per-task"));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
@@ -93,7 +94,8 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jagt", "shared", null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withTmuxSession("jagt").withViewMode("shared"));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         TerminalDriver terminal = mock(TerminalDriver.class);
@@ -116,7 +118,8 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), "jagt", "shared", false, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withTmuxSession("jagt").withViewMode("shared").withKeepViewer(false));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         TerminalDriver terminal = mock(TerminalDriver.class);
@@ -421,8 +424,8 @@ class OrchestratorToolsTest {
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(
-                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null))));
         GitService git = mock(GitService.class);
         when(git.remoteUrl(any())).thenThrow(new IllegalStateException("remote lookup failed"));
         OrchestratorTools tools = new OrchestratorTools(config,
@@ -527,7 +530,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
@@ -551,7 +554,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.MISSING);
@@ -577,8 +580,8 @@ class OrchestratorToolsTest {
         state.putTask("ABC-1", new TaskState("proj", "/first", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(
-                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null)), null, null, null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null))));
         GitService git = mock(GitService.class);
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));

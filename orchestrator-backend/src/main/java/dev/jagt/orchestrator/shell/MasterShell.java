@@ -69,11 +69,12 @@ public class MasterShell implements ApplicationRunner {
     private boolean stopped;
     /**
      * Rows kept free ABOVE the pinned dashboard for the banner, recent command output, and the prompt.
-     * The pinned region is bottom-anchored at {@code height - COMMAND_ROWS}, so a LARGER value shrinks the
+     * The pinned region is bottom-anchored at {@code height - commandRows}, so a LARGER value shrinks the
      * region → its top drops → the whole prompt+dashboard construction sits lower and more scrollback rows
      * stay above the prompt (a multi-line `help` no longer scrolls its head off the top of the screen).
+     * Configurable via {@code dashboardReservedRows} in config.json; read once at startup (default 17).
      */
-    private static final int COMMAND_ROWS = 17;
+    private int commandRows = 17;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -90,7 +91,9 @@ public class MasterShell implements ApplicationRunner {
                 + " (agents keep running in tmux).");
         w.flush();
 
-        int refreshSeconds = configService.load().dashboardRefreshSecondsOrDefault();
+        ConfigService.ConfigFile config = configService.load();
+        int refreshSeconds = config.dashboardRefreshSecondsOrDefault();
+        this.commandRows = config.dashboardReservedRowsOrDefault();
         boolean dumb = terminal.getType() == null || terminal.getType().startsWith(Terminal.TYPE_DUMB);
         Status status = refreshSeconds > 0 && !dumb ? Status.getStatus(terminal, true) : null;
         ScheduledExecutorService ticker = null;
@@ -199,7 +202,7 @@ public class MasterShell implements ApplicationRunner {
         if (stopped) {
             return;
         }
-        int region = Math.max(6, terminal.getHeight() - COMMAND_ROWS);
+        int region = Math.max(6, terminal.getHeight() - commandRows);
         String[] rows = dashboard.render().split("\\R");
         List<AttributedString> lines = new ArrayList<>();
         for (int i = 0; i < region; i++) {

@@ -12,7 +12,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -63,7 +62,7 @@ class WatchdogServiceTest {
 
     private static ConfigService configMock() {
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(Map.of(), null, null, null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         return config;
     }
 

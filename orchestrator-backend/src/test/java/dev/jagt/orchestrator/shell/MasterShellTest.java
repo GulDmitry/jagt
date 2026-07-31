@@ -39,9 +39,8 @@ class MasterShellTest {
         OrchestratorTools tools = mock(OrchestratorTools.class);
         MasterAssistant assistant = mock(MasterAssistant.class);
         ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(new ConfigService.ConfigFile(
-                Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of())),
-                null, null, null, null, null, null, null, null, null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
         when(assistant.readTicket("https://tracker.example.com/browse/ABC-123"))
                 .thenReturn(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC", List.of())));
         MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant,
