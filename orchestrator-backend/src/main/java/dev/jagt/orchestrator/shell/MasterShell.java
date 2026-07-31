@@ -284,14 +284,28 @@ public class MasterShell implements ApplicationRunner {
         int outputRows = body - dashRows;                          // output log gets whatever is left on top
         int dashTop = outputRows;
 
-        int from = Math.max(0, outputLog.size() - outputRows);     // last outputRows lines, oldest first
-        for (int i = 0; i < outputRows; i++) {                     // draw EVERY row (blank the empties): with
-            String line = from + i < outputLog.size() ? outputLog.get(from + i) : "";   // no clear(), unwritten
+        // Word-wrap the log so long lines (paths, URLs) show in full instead of truncating. Build bottom-up
+        // and stop once we have enough to fill outputRows — don't wrap the whole 2000-line history each frame.
+        List<Row> rows = new ArrayList<>();
+        for (int e = outputLog.size() - 1; e >= 0 && rows.size() < outputRows; e--) {
+            String entry = outputLog.get(e);
             // A colored command echo ("jagt> …") heads each block — that IS the visual separator; errors red.
-            TextColor c = line.startsWith("jagt> ") ? TextColor.ANSI.CYAN_BRIGHT
-                    : line.startsWith("error:") ? TextColor.ANSI.RED_BRIGHT
-                    : TextColor.ANSI.DEFAULT;
-            put(g, i, line, width, c, line.startsWith("jagt> "));
+            TextColor color = entry.startsWith("jagt> ") ? TextColor.ANSI.CYAN_BRIGHT
+                    : entry.startsWith("error:") ? TextColor.ANSI.RED_BRIGHT : TextColor.ANSI.DEFAULT;
+            boolean bold = entry.startsWith("jagt> ");
+            List<String> segs = wrap(entry, width);
+            for (int s = segs.size() - 1; s >= 0; s--) {           // add segments bottom-up
+                rows.add(new Row(segs.get(s), color, bold));
+            }
+        }
+        for (int y = 0; y < outputRows; y++) {                     // newest at the bottom row, blanks above
+            int fromBottom = outputRows - 1 - y;
+            Row r = fromBottom < rows.size() ? rows.get(fromBottom) : null;
+            if (r != null) {
+                put(g, y, r.text(), width, r.color(), r.bold());
+            } else {
+                put(g, y, "", width, TextColor.ANSI.DEFAULT, false);
+            }
         }
         for (int i = 0; i < dashRows; i++) {
             String text = i < dash.length ? dash[i] : "";
@@ -345,6 +359,36 @@ public class MasterShell implements ApplicationRunner {
             return "";
         }
         return s.length() > width ? s.substring(0, width) : s + " ".repeat(width - s.length());
+    }
+
+    /** One coloured, wrapped output-log display line. */
+    private record Row(String text, TextColor color, boolean bold) { }
+
+    /**
+     * Word-wrap {@code s} to {@code width} columns: break at the last space before the limit, or hard-break
+     * a token (long path/URL) that has no space. Returns the single line unchanged when it already fits.
+     */
+    static List<String> wrap(String s, int width) {
+        if (width <= 0 || s.length() <= width) {
+            return List.of(s);
+        }
+        List<String> out = new ArrayList<>();
+        int i = 0;
+        while (i < s.length()) {
+            int end = Math.min(s.length(), i + width);
+            if (end < s.length()) {
+                int space = s.lastIndexOf(' ', end);
+                if (space > i) {
+                    end = space;                       // break at a word boundary when there is one
+                }
+            }
+            out.add(s.substring(i, end));
+            i = end;
+            while (i < s.length() && s.charAt(i) == ' ') {
+                i++;                                   // drop the space we broke on
+            }
+        }
+        return out;
     }
 
     /**
