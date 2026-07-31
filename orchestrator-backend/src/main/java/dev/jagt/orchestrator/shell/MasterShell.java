@@ -16,6 +16,7 @@ import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
+import com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -91,9 +92,14 @@ public class MasterShell implements ApplicationRunner {
             if (System.console() == null) {
                 runInlineFallback();
             } else {
-                // Force a text terminal: never let Lanterna fall back to a Swing window (it would if a GUI
-                // is present) — the Master is a terminal app.
-                Terminal terminal = new DefaultTerminalFactory().setForceTextTerminal(true).createTerminal();
+                Terminal terminal = new DefaultTerminalFactory()
+                        // Force a text terminal: never let Lanterna fall back to a Swing window (it would if
+                        // a GUI is present) — the Master is a terminal app.
+                        .setForceTextTerminal(true)
+                        // TRAP delivers Ctrl-C to us as a keystroke (abort the input line) instead of killing
+                        // the JVM (Lanterna's default is CTRL_C_KILLS_APPLICATION).
+                        .setUnixTerminalCtrlCBehaviour(UnixLikeTerminal.CtrlCBehaviour.TRAP)
+                        .createTerminal();
                 screen = new TerminalScreen(terminal);
                 screen.startScreen();
                 // 0 (or less) = no periodic refresh: redraw only on input/resize (matches the config doc).
@@ -129,28 +135,27 @@ public class MasterShell implements ApplicationRunner {
     private void runTui(Screen screen, long refreshMillis) throws IOException {
         List<String> outputLog = new ArrayList<>();
         outputLog.add("jagt — type a command ('help'); 'exit' stops the backend (agents keep running).");
-        StringBuilder input = new StringBuilder();
+        LineEditor editor = new LineEditor();
+        List<String> history = new ArrayList<>();
+        int histIdx = 0;                                           // navigation cursor; == size() means "new line"
         long lastRefresh = System.currentTimeMillis();
-        render(screen, outputLog, input.toString(), true);
+        render(screen, outputLog, editor, true);
         while (true) {
             TerminalSize resized = screen.doResizeIfNecessary();   // null unless the terminal size changed
             KeyStroke key = screen.pollInput();
             if (key != null) {
                 KeyType type = key.getKeyType();
+                boolean ctrl = key.isCtrlDown() && type == KeyType.Character;
                 if (type == KeyType.EOF) {
                     return;
-                }
-                if (type == KeyType.Character) {
-                    input.append(key.getCharacter());
-                } else if (type == KeyType.Backspace && input.length() > 0) {
-                    input.deleteCharAt(input.length() - 1);
                 } else if (type == KeyType.Enter) {
-                    String line = input.toString().strip();
-                    input.setLength(0);
+                    String line = editor.text().strip();
+                    editor.clear();
                     if (line.equals("exit") || line.equals("quit")) {
                         return;
                     }
                     if (!line.isEmpty()) {
+                        history.add(line);
                         outputLog.add("jagt> " + line);
                         String out = dispatch(line);
                         if (!out.isBlank()) {
@@ -160,14 +165,26 @@ public class MasterShell implements ApplicationRunner {
                             outputLog.subList(0, outputLog.size() - MAX_LOG_LINES).clear();
                         }
                     }
+                    histIdx = history.size();
+                } else if (type == KeyType.ArrowUp) {
+                    histIdx = recallHistory(editor, history, histIdx, -1);
+                } else if (type == KeyType.ArrowDown) {
+                    histIdx = recallHistory(editor, history, histIdx, +1);
+                } else if (ctrl && Character.toLowerCase(key.getCharacter()) == 'c') {
+                    editor.clear();                               // ^C: abort the current line → fresh prompt
+                    histIdx = history.size();
+                } else if (ctrl && Character.toLowerCase(key.getCharacter()) == 'l') {
+                    outputLog.clear();                            // ^L: clear the screen (scrollback log)
+                } else {
+                    editKey(editor, key);   // arrows L/R, Home, End, Delete, Ctrl-A/E/U/K/W, printable insert
                 }
-                render(screen, outputLog, input.toString(), resized != null);
+                render(screen, outputLog, editor, resized != null);
                 continue;
             }
             long now = System.currentTimeMillis();
             if (resized != null || now - lastRefresh >= refreshMillis) {
                 lastRefresh = now;
-                render(screen, outputLog, input.toString(), resized != null);
+                render(screen, outputLog, editor, resized != null);
             }
             try {
                 Thread.sleep(30);
@@ -186,7 +203,7 @@ public class MasterShell implements ApplicationRunner {
      * {@code refresh(DELTA)} sends only the cells that actually changed; {@code full} (first paint / resize)
      * uses COMPLETE.
      */
-    private void render(Screen screen, List<String> outputLog, String input, boolean full) throws IOException {
+    private void render(Screen screen, List<String> outputLog, LineEditor editor, boolean full) throws IOException {
         TerminalSize size = screen.getTerminalSize();
         int height = size.getRows();
         int width = size.getColumns();
@@ -214,9 +231,14 @@ public class MasterShell implements ApplicationRunner {
             }
             put(g, dashTop + i, text, width, dashColor(text), text.startsWith("jagt orchestrator"));
         }
+        String text = editor.text();
+        int avail = Math.max(1, width - 6);                        // columns available for the typed text
+        int cur = editor.cursor();
+        int start = cur >= avail ? cur - avail + 1 : 0;            // horizontal scroll to keep the cursor visible
+        String visible = text.substring(Math.min(start, text.length()), Math.min(text.length(), start + avail));
         put(g, height - 1, "jagt> ", width, TextColor.ANSI.CYAN_BRIGHT, true);     // input line: prompt…
-        g.putString(6, height - 1, fit(input, Math.max(0, width - 6)));            // …then the typed text
-        screen.setCursorPosition(new TerminalPosition(Math.min(6 + input.length(), Math.max(0, width - 1)), height - 1));
+        g.putString(6, height - 1, fit(visible, avail));                           // …then the (scrolled) text
+        screen.setCursorPosition(new TerminalPosition(6 + (cur - start), height - 1));
         // DELTA writes only changed cells (smooth, no flicker); COMPLETE redraws all on first paint / resize.
         screen.refresh(full ? Screen.RefreshType.COMPLETE : Screen.RefreshType.DELTA);
     }
@@ -249,6 +271,159 @@ public class MasterShell implements ApplicationRunner {
             return "";
         }
         return s.length() > width ? s.substring(0, width) : s + " ".repeat(width - s.length());
+    }
+
+    /**
+     * Apply one non-Enter editing keystroke to the input editor: cursor movement (arrows, Home/End,
+     * Ctrl-Left/Right by word), deletion (Backspace/Delete, Ctrl-U/K to line start/end, Ctrl-W a word),
+     * else a printable character is inserted at the cursor. (Enter, history arrows and Ctrl-C/L are
+     * handled by the loop, which owns the command/history/log state.)
+     */
+    private static void editKey(LineEditor e, KeyStroke k) {
+        switch (k.getKeyType()) {
+            case Backspace -> e.backspace();
+            case Delete -> e.delete();
+            case ArrowLeft -> { if (k.isCtrlDown()) e.wordLeft(); else e.left(); }
+            case ArrowRight -> { if (k.isCtrlDown()) e.wordRight(); else e.right(); }
+            case Home -> e.home();
+            case End -> e.end();
+            case Character -> {
+                char c = k.getCharacter();
+                if (k.isCtrlDown()) {
+                    switch (Character.toLowerCase(c)) {
+                        case 'a' -> e.home();
+                        case 'e' -> e.end();
+                        case 'u' -> e.killToStart();
+                        case 'k' -> e.killToEnd();
+                        case 'w' -> e.deleteWordBack();
+                        default -> { }
+                    }
+                } else {
+                    e.insert(c);
+                }
+            }
+            default -> { }
+        }
+    }
+
+    /** Move {@code dir} (-1 up / +1 down) through {@code history}, loading it into {@code e}; returns the new
+     *  index. Past the newest entry the line goes empty (== {@code history.size()}), like a real shell. */
+    private static int recallHistory(LineEditor e, List<String> history, int idx, int dir) {
+        int n = idx + dir;
+        if (n < 0 || history.isEmpty()) {
+            return idx;
+        }
+        if (n >= history.size()) {
+            e.clear();
+            return history.size();
+        }
+        e.setText(history.get(n));
+        return n;
+    }
+
+    /** A minimal single-line editor: a buffer plus a cursor, with the ops a real prompt supports. Pure
+     *  logic (no terminal), so it is unit-tested directly. */
+    static final class LineEditor {
+        private final StringBuilder buf = new StringBuilder();
+        private int cursor;
+
+        String text() {
+            return buf.toString();
+        }
+
+        int cursor() {
+            return cursor;
+        }
+
+        void insert(char c) {
+            buf.insert(cursor++, c);
+        }
+
+        void setText(String s) {
+            buf.setLength(0);
+            buf.append(s);
+            cursor = buf.length();
+        }
+
+        void clear() {
+            buf.setLength(0);
+            cursor = 0;
+        }
+
+        void backspace() {
+            if (cursor > 0) {
+                buf.deleteCharAt(--cursor);
+            }
+        }
+
+        void delete() {
+            if (cursor < buf.length()) {
+                buf.deleteCharAt(cursor);
+            }
+        }
+
+        void left() {
+            if (cursor > 0) {
+                cursor--;
+            }
+        }
+
+        void right() {
+            if (cursor < buf.length()) {
+                cursor++;
+            }
+        }
+
+        void home() {
+            cursor = 0;
+        }
+
+        void end() {
+            cursor = buf.length();
+        }
+
+        void killToStart() {
+            buf.delete(0, cursor);
+            cursor = 0;
+        }
+
+        void killToEnd() {
+            buf.setLength(cursor);
+        }
+
+        void deleteWordBack() {
+            int i = wordBoundaryBefore(cursor);
+            buf.delete(i, cursor);
+            cursor = i;
+        }
+
+        void wordLeft() {
+            cursor = wordBoundaryBefore(cursor);
+        }
+
+        void wordRight() {
+            int i = cursor;
+            int n = buf.length();
+            while (i < n && Character.isWhitespace(buf.charAt(i))) {
+                i++;
+            }
+            while (i < n && !Character.isWhitespace(buf.charAt(i))) {
+                i++;
+            }
+            cursor = i;
+        }
+
+        /** Start of the word at/just before {@code pos}: skip trailing spaces, then the word. */
+        private int wordBoundaryBefore(int pos) {
+            int i = pos;
+            while (i > 0 && Character.isWhitespace(buf.charAt(i - 1))) {
+                i--;
+            }
+            while (i > 0 && !Character.isWhitespace(buf.charAt(i - 1))) {
+                i--;
+            }
+            return i;
+        }
     }
 
     /**
