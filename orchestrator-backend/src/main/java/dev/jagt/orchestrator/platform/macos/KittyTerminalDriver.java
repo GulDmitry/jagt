@@ -75,14 +75,9 @@ public class KittyTerminalDriver implements TerminalDriver {
             }
             return;
         }
-        // First open: launch a dedicated kitty window already attached to the session. --detach forks
-        // kitty into the background and returns immediately; without it the GUI process runs in the
-        // foreground and ProcessRunner blocks until timeout.
-        var open = processRunner.run(null, TIMEOUT, List.of(kittyCommand, "--detach",
-                "--single-instance", "--instance-group", "jagt-" + tmuxSession,
-                "--listen-on", socket, "-o", "allow_remote_control=yes",
-                "--title", dedicatedTitle, "--directory", tabCwd.toString(),
-                "--", tmux, "attach", "-t", tmuxSession));
+        // First open: launch a dedicated kitty window already attached to the session.
+        var open = processRunner.run(null, TIMEOUT,
+                firstOpenCommand(kittyCommand, socket, dedicatedTitle, tabCwd.toString(), tmux, tmuxSession));
         if (open.exitCode() != 0) {
             log.warn("Could not launch kitty for tmux session '{}': {}. Attach manually: {} attach -t {}",
                     tmuxSession, open.stderr(), tmux, tmuxSession);
@@ -114,6 +109,35 @@ public class KittyTerminalDriver implements TerminalDriver {
         // socket path (no other process carries it) — agents keep running in tmux, this only detaches
         // the viewer. Best-effort per the contract.
         processRunner.run(null, TIMEOUT, List.of("pkill", "-f", socketPath(dedicatedTitle)));
+    }
+
+    /**
+     * kitty matches keyboard shortcuts by the character the key produces, so on a non-Latin input layout
+     * (Russian/Ukrainian ЙЦУКЕН) the physical V key emits {@code м} and physical C emits {@code с} — the
+     * default {@code cmd+v}/{@code cmd+c} no longer match, and NOTHING pastes/copies until the user flips
+     * the OS layout back to Latin. kitty ≥0.36 has an {@code ascii} shortcut fallback, but it does not fire
+     * reliably for {@code cmd} shortcuts on macOS (Cocoa matches the key-equivalent by character). So we add
+     * the Cyrillic aliases explicitly at launch — additive, they do NOT replace the Latin defaults. Bound on
+     * the initial instance; every later tab inherits this instance's config.
+     */
+    static final List<String> CYRILLIC_SHORTCUT_FIXES = List.of(
+            "-o", "map=cmd+м paste_from_clipboard",
+            "-o", "map=cmd+с copy_to_clipboard");
+
+    /**
+     * The argv for the first-open kitty window: a dedicated, remote-controllable instance already attached
+     * to the tmux session. {@code --detach} forks kitty into the background and returns immediately; without
+     * it the GUI process runs in the foreground and ProcessRunner blocks until timeout.
+     */
+    static List<String> firstOpenCommand(String kittyCommand, String socket, String title,
+                                         String directory, String tmux, String tmuxSession) {
+        List<String> cmd = new java.util.ArrayList<>(List.of(kittyCommand, "--detach",
+                "--single-instance", "--instance-group", "jagt-" + tmuxSession,
+                "--listen-on", socket, "-o", "allow_remote_control=yes"));
+        cmd.addAll(CYRILLIC_SHORTCUT_FIXES);
+        cmd.addAll(List.of("--title", title, "--directory", directory,
+                "--", tmux, "attach", "-t", tmuxSession));
+        return List.copyOf(cmd);
     }
 
     private boolean instanceRunning(String socket) {

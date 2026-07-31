@@ -178,3 +178,12 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   falls back to a plain inline line-REPL (dashboard printed after each command). Run the jar directly for
   the full-screen TUI. Java 25, port 8290.
 - Verify: `curl -s localhost:8290/state`.
+- GOTCHA — `NoClassDefFoundError` during a startup FAILURE or on `exit` is NOT a code bug; do NOT "fix" it
+  by preloading classes. The missing class VARIES (`ThrowableProxyUtil`, `STEUtil`,
+  `SpringBootExceptionHandler`, any lazily-loaded class) precisely because the cause is not any one class:
+  `./gradlew build` rewrites the fat jar IN PLACE (same inode — verified), so rebuilding WHILE a JVM runs
+  from that jar corrupts its class loading, and the first not-yet-loaded class fails — which then MASKS the
+  real error (e.g. "Port 8290 already in use") behind a confusing logback/Spring trace. It is expected and
+  harmless: the OLD instance dies, just restart from the freshly built jar. To avoid it entirely, run from a
+  copy the build never touches: `cp build/libs/orchestrator-backend-0.2.0.jar /tmp/jagt.jar && java -jar
+  /tmp/jagt.jar`. (Past sessions burned hours chasing this as a logback/preload bug — it is not.)

@@ -10,23 +10,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ConfigurationPropertiesScan
 public class OrchestratorApplication {
 
+    // NOTE: there is deliberately NO logback "failure-render preload" here. A NoClassDefFoundError during a
+    // startup failure / on exit is a CORRUPTED FAT JAR, not a missing preload — `./gradlew build` rewrites
+    // the jar in place while a JVM runs from it. See the GOTCHA in CLAUDE.md (Build & run). Do not re-add it.
     public static void main(String[] args) {
-        preloadFailureLoggingClasses();
         SpringApplication.run(OrchestratorApplication.class, args);
-    }
-
-    /**
-     * Preload the logback class Spring's failure/shutdown logging renders exceptions with. In a fat jar,
-     * if {@code ThrowableProxy} loads for the FIRST time during a startup FAILURE or JVM shutdown — when
-     * the nested-jar classloader is tearing down or refuses new loads — the load throws NoClassDefFoundError,
-     * which then MASKS the real error (e.g. "Port 8290 was already in use") behind a confusing logback
-     * stack trace. Loading it now, while the classloader is healthy, caches it so the real cause surfaces.
-     */
-    private static void preloadFailureLoggingClasses() {
-        try {
-            Class.forName("ch.qos.logback.classic.spi.ThrowableProxy");
-        } catch (ClassNotFoundException ignored) {
-            // logback not on the classpath (e.g. a slim build) — nothing to preload.
-        }
     }
 }

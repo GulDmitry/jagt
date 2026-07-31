@@ -114,9 +114,9 @@ Tell the Master:
 | `respawn <ticket>` | restart a sub-agent session for an already-registered task |
 | `done <ticket>` | close the task at any stage: full cleanup — window, worktree, state (branch kept) |
 | `focus <ticket>` | jump to the task's agent window — **talk to the agent directly there** (no `feedback` command) |
-| `ide <ticket>` | open the worktree as a project (run the app; **Git → Local Changes** = live diff vs base). `ide <ticket> diff` opens a static snapshot diff — it does **not** auto-refresh (re-run to update) |
+| `ide <ticket>` | open the worktree as a project (run the app; **Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot diff **vs the `deployBranch`** (so after a deploy conflict-merge you review only your change vs dev, not all of dev's drift; falls back to `baseBranch` if no deployBranch) — it does **not** auto-refresh (re-run to update) |
 | `review <ticket>` | full MR sweep (pipeline + comments): agent fixes locally + drafts replies; nothing pushed |
-| `deploy <ticket>` | merge the task branch into the project's `deployBranch` and push (conflicts → you) |
+| `deploy <ticket>` | merge the task branch into the project's `deployBranch` and push (on conflict: the agent resolves it staged-but-uncommitted, you review + commit + `deploy` again) |
 | `ship <ticket>` | review approved: commit as "<id>: <jira title>", push, open MR, watch CI |
 | `help` | command reference + recovery cheatsheet |
 
@@ -148,7 +148,7 @@ flowchart TD
     REVIEW -->|"pipeline + comments → agent fixes locally, drafts replies"| IDE2
     IDE2 -->|"another round"| SHIP
     IDE2 -->|"green + all resolved"| DEPLOY
-    DEPLOY -->|"merged into deployBranch, pushed (conflicts → you)"| DONE
+    DEPLOY -->|"merged into deployBranch, pushed (conflict → agent resolves staged, you commit + deploy again)"| DONE
 
     classDef cmd font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
     class DO,FOCUS,IDE1,SHIP,REVIEW,IDE2,DEPLOY,DONE cmd;
@@ -181,7 +181,7 @@ The system never acts on the MR/CI by itself — three checkpoints are explicitl
 | Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash, or an API 5xx/"Overloaded" 529) before reporting `CI_POLLING` | `ship <ticket>` **again** — jagt sees the dead agent and respawns it to finish the push/MR. (If the agent is still alive, `ship` refuses — `focus` to watch the in-flight ship.) |
 | Agent seems hung / no response, or nothing happens after `ship`/`review` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to open its window and see what it's doing; `respawn <ticket>` restarts a dead session (it re-reads `task_context.md` and resumes); `done <ticket>` abandons it entirely (window + worktree + language server) |
 | `API Error: 529 Overloaded` in an agent | transient Anthropic overload, server-side | wait a moment and re-run the command; the task state is unchanged |
-| `deploy` aborts with `Merge CONFLICT … into <deployBranch>` | the task branch and `deployBranch` (e.g. `dev`) changed the same lines (often `liquibase/master.yaml`); jagt merges in a **throwaway** worktree, so it aborts + discards it — **nothing is pushed** and there is **no** half-merged checkout to fix in place | resolve on the **task branch**, then retry: `ide <ticket>` → in that worktree `git fetch origin && git merge origin/<deployBranch>` → fix the conflicts + commit → `git push origin <ticket>` (a bare `git push` is intentionally disabled) → `deploy <ticket>` again (now conflict-free). Or `focus <ticket>` and have the agent do the merge. |
+| `deploy <ticket>` says `MERGE CONFLICT … — the agent is resolving it` | the task branch and `deployBranch` (e.g. `dev`) changed the same lines (often `liquibase/master.yaml`); jagt merges in a **throwaway** worktree, so it aborts + discards it (nothing pushed) and instead hands the agent a brief to merge `deployBranch` into the task branch and resolve it | wait for the agent, then: `ide <ticket>` → **Git → Local Changes** shows the resolved-but-**uncommitted** merge → review it and **commit yourself** (the agent deliberately doesn't commit) → `deploy <ticket>` again. `focus <ticket>` to watch/steer the agent while it resolves. |
 | Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Setup** |
 
 ## Internals

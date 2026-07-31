@@ -192,9 +192,13 @@ class GitServiceTest {
         GitService git = new GitService(runner);
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(GitService.MergeConflictException.class)
                 .hasMessageContaining("CONFLICT")
-                .hasMessageContaining("nothing was pushed");
+                .hasMessageContaining("nothing was pushed")
+                // the message must point at the ONLY workable recovery — resolve on the task branch, not the
+                // discarded deploy worktree — and name the merge to run, so the human isn't left guessing.
+                .hasMessageContaining("task branch")
+                .hasMessageContaining("git merge origin/dev");
 
         runner.run(repo, timeout, List.of("git", "fetch", "-q"));
         String devAfterConflict = runner.run(repo, timeout, List.of("git", "rev-parse", "origin/dev~0")).stdout().trim();

@@ -198,10 +198,15 @@ public class OrchestratorTools {
             // Refresh does nothing — re-run `ide <ticket> diff`, or use the live project (default) instead.
             ProjectConfig project = configService.project(task.project());
             Path projectPath = Path.of(project.path());
-            Path base = gitService.checkoutBaseForDiff(projectPath, project.baseBranch(), taskId);
-            Path clean = gitService.checkoutWorktreeCleanForDiff(worktree, projectPath, project.baseBranch(), taskId);
+            // Diff against the DEPLOY branch (what the task merges into), not the base it was cut from — so
+            // after a `deploy` conflict-merge you review only your own change vs dev, not all of dev's drift.
+            // Falls back to baseBranch when the project has no deployBranch configured.
+            String diffBase = project.deployBranch() != null && !project.deployBranch().isBlank()
+                    ? "origin/" + project.deployBranch() : project.baseBranch();
+            Path base = gitService.checkoutBaseForDiff(projectPath, diffBase, taskId);
+            Path clean = gitService.checkoutWorktreeCleanForDiff(worktree, projectPath, diffBase, taskId);
             editorDriver.openDiff(base, clean);
-            return "Opened STATIC diff of " + taskId + " (changes vs " + project.baseBranch()
+            return "Opened STATIC diff of " + taskId + " (changes vs " + diffBase
                     + ") — snapshot, does not refresh; re-run for a fresh one";
         }
         if (mode != null && !mode.isBlank() && !"project".equalsIgnoreCase(mode)) {
@@ -262,6 +267,8 @@ public class OrchestratorTools {
         } else {
             log.warn("Project '{}' of task {} no longer in config.json; skipping worktree removal", task.project(), taskId);
         }
+        // Drop the dead worktree from the IDE's recent-projects list so `done` tasks don't pile up there.
+        editorDriver.forgetProject(Path.of(task.worktreePath()));
         stateService.removeTask(taskId);
         // Reserve the viewer by default: keep it open when empty so a manual
         // placement (dragged into a group/window) survives across task cycles.
@@ -348,10 +355,30 @@ public class OrchestratorTools {
                     + "'. jagt must never merge into the branch tasks are created from — point deployBranch"
                     + " at a downstream branch (e.g. dev).");
         }
-        gitService.mergeIntoAndPush(Path.of(project.path()), taskId, project.deployBranch());
+        String deployBranch = project.deployBranch();
+        try {
+            gitService.mergeIntoAndPush(Path.of(project.path()), taskId, deployBranch);
+        } catch (GitService.MergeConflictException e) {
+            // Don't dead-end on a git recipe: hand the resolution to the agent (it already lives in the
+            // worktree). It merges the deploy branch into ITS OWN branch and resolves — but does NOT commit,
+            // so the human reviews the resolution in the IDE and commits it (the deploy safety checkpoint).
+            String brief = "Deploy of your branch " + taskId + " into " + deployBranch + " hit a MERGE CONFLICT."
+                    + " Resolve it so the next deploy is clean. This is YOUR branch — merging " + deployBranch
+                    + " into it is allowed; you are NOT pushing or touching any shared branch.\n"
+                    + "1. In this worktree run: git fetch origin && git merge origin/" + deployBranch + "\n"
+                    + "2. Resolve every conflict, then `git add` the resolved files.\n"
+                    + "3. DO NOT commit and DO NOT push — leave the merge STAGED. The human reviews your"
+                    + " resolution in the IDE and commits it.\n"
+                    + "Conflicts reported by the deploy:\n" + e.details() + "\n"
+                    + "Reply when the resolution is staged and ready for review.";
+            writeTaskContext(taskId, brief);
+            return "deploy " + taskId + ": MERGE CONFLICT with " + deployBranch + " — the agent is resolving it"
+                    + " (staged, NOT committed). Review it in `ide " + taskId + "` (Git → Local Changes) and"
+                    + " COMMIT it yourself, then `deploy " + taskId + "` again.";
+        }
         // deploy IS a state transition — mark it so the dashboard's next move is 'done', not 'review'.
-        stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.DEPLOYED, "deployed to " + project.deployBranch()));
-        return "Merged branch " + taskId + " into " + project.deployBranch() + " and pushed; status -> DEPLOYED";
+        stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.DEPLOYED, "deployed to " + deployBranch));
+        return "Merged branch " + taskId + " into " + deployBranch + " and pushed; status -> DEPLOYED";
     }
 
     public String listTasks() {

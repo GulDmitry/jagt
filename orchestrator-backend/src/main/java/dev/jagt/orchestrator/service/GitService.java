@@ -151,10 +151,9 @@ public class GitService {
                 var merge = processRunner.run(temp, GIT_TIMEOUT, List.of("git", "merge", "--no-edit",
                         "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch, sourceBranch));
                 if (merge.exitCode() != 0) {
+                    String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
                     processRunner.run(temp, GIT_TIMEOUT, List.of("git", "merge", "--abort"));
-                    throw new IllegalStateException("Merge CONFLICT merging " + sourceBranch + " into "
-                            + targetBranch + " — nothing was pushed. Resolve manually and retry. Details: "
-                            + (merge.stderr().isBlank() ? merge.stdout() : merge.stderr()));
+                    throw new MergeConflictException(sourceBranch, targetBranch, details);
                 }
                 processRunner.run(temp, GIT_TIMEOUT, List.of("git", "push", "origin", "HEAD:" + targetBranch))
                         .expectSuccess("git push origin HEAD:" + targetBranch);
@@ -164,6 +163,29 @@ public class GitService {
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", tempBranch));
             }
         });
+    }
+
+    /**
+     * A deploy merge hit conflicts. The throwaway deploy worktree is aborted + removed before this flies, so
+     * NOTHING was pushed and there is no half-merged checkout to fix. {@code deployTask} catches this to hand
+     * the resolution to the agent (merge the deploy branch into the task branch, staged, not committed).
+     * {@link #details} is git's raw conflict output (which files clashed).
+     */
+    public static class MergeConflictException extends IllegalStateException {
+        private final transient String details;
+
+        public MergeConflictException(String sourceBranch, String targetBranch, String details) {
+            super("Merge CONFLICT merging " + sourceBranch + " into " + targetBranch + " — nothing was pushed"
+                    + " (the deploy worktree was discarded, so there is no half-merged checkout to fix)."
+                    + " Resolve on the task branch: in the " + sourceBranch + " worktree run"
+                    + " `git fetch origin && git merge origin/" + targetBranch + "`, fix the conflicts + commit"
+                    + " + push, then deploy again. Details: " + details);
+            this.details = details;
+        }
+
+        public String details() {
+            return details;
+        }
     }
 
     /**

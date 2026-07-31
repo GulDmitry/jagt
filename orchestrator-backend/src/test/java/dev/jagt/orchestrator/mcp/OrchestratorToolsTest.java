@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -459,6 +460,41 @@ class OrchestratorToolsTest {
         tools.deployTask("a1", null);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+    }
+
+    @Test
+    void delegatesConflictResolutionToTheAgentWithoutCommittingAndStaysUndeployed(@TempDir Path root)
+            throws Exception {
+        OrchestratorProperties properties = new OrchestratorProperties(
+                root.toString(), null, root.resolve("state.json").toString(),
+                null, null, null, null, null, null, null, false,
+                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        Path worktree = java.nio.file.Files.createDirectories(root.resolve("wt"));
+        state.putTask("ABC-1", new TaskState("proj", worktree.toString(), TaskStatus.CI_POLLING, 0,
+                "MR: http://x", "a1", null, null, null));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        GitService git = mock(GitService.class);
+        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "Merge conflict in liquibase/master.yaml"))
+                .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
+        TmuxService tmux = mock(TmuxService.class);
+        when(tmux.sessionName(any())).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
+        OrchestratorTools tools = new OrchestratorTools(config, state, git, tmux, mock(EditorDriver.class),
+                mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths, new PromptTemplates());
+
+        String result = tools.deployTask("a1", null);
+
+        // The agent is handed a resolve-but-don't-commit brief; the human keeps the commit + the next deploy.
+        assertThat(java.nio.file.Files.readString(worktree.resolve("task_context.md")))
+                .contains("git merge origin/dev")
+                .contains("DO NOT commit");
+        assertThat(result).contains("ide ABC-1").contains("COMMIT it yourself");
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_POLLING);
     }
 
     @Test

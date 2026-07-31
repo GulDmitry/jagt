@@ -18,4 +18,13 @@ public interface EditorDriver {
 
     /** Opens a diff/compare window between two paths (no project). IntelliJ: `idea diff`. */
     void openDiff(Path left, Path right);
+
+    /**
+     * Forget a just-removed worktree in the editor's own project registry, so a `done` task doesn't leave a
+     * dead entry in the IDE's recent-projects list (they pile up — one per task). Best-effort, default no-op;
+     * only editors with an external project list (JetBrains) implement it. Called AFTER the worktree is gone.
+     */
+    default void forgetProject(Path worktreePath) {
+        // no-op: the generic editor has no external recent-projects list to prune.
+    }
 }
