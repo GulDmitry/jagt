@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.agent.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.platform.TerminalDriver;
@@ -30,14 +31,16 @@ public class TmuxService {
     private final OrchestratorProperties properties;
     private final OrchestratorPaths paths;
     private final TerminalDriver terminalDriver;
+    private final AgentRuntime agentRuntime;
     private final Object lock = new Object();
 
     public TmuxService(ProcessRunner processRunner, OrchestratorProperties properties, OrchestratorPaths paths,
-                       TerminalDriver terminalDriver) {
+                       TerminalDriver terminalDriver, AgentRuntime agentRuntime) {
         this.processRunner = processRunner;
         this.properties = properties;
         this.paths = paths;
         this.terminalDriver = terminalDriver;
+        this.agentRuntime = agentRuntime;
     }
 
     public String sessionName(String configured) {
@@ -53,9 +56,7 @@ public class TmuxService {
             // The agent gets its bootstrap prompt as CLI arg — without it the session idles forever.
             // After the agent exits the window shows the tail briefly, then closes itself
             // (an interactive shell here would linger forever and ignore Ctrl+C).
-            String command = properties.claudeCommand()
-                    + (planMode ? " --permission-mode plan" : "")
-                    + " " + shellQuote(properties.agentPrompt())
+            String command = agentRuntime.launchCommand(planMode)
                     + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
             // -P -F prints the window id (@N): the only target immune to name
             // collisions when the same task is respawned via open_task_tab.
@@ -247,9 +248,5 @@ public class TmuxService {
 
     private String tmux() {
         return properties.tmuxCommand();
-    }
-
-    private static String shellQuote(String value) {
-        return "'" + value.replace("'", "'\\''") + "'";
     }
 }
