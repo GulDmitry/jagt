@@ -1,132 +1,110 @@
-# jagt — Multi-Agent Dev Orchestrator
+# jagt
 
-Delegate Jira tickets to Claude Code agents. A Spring Boot backend manages isolated Git worktrees and
-task state; you talk to one **Master** session, it spawns one sub-agent per ticket. Agents run as tmux
-windows inside a single terminal window (kitty by default, Warp optional) that opens automatically.
+**Turn one ticket into one AI coding agent — and stay in control of every push.**
 
-macOS today — the notifier, editor, and terminal live behind swappable platform strategies, so a Linux
-port is those three impls plus config (see [CLAUDE.md](CLAUDE.md)). Requires IntelliJ IDEA, tmux, and
-the Claude Code CLI. Your Claude Code must already have MCP access to the systems the agents need
-(Jira, GitLab/GitHub).
+jagt takes a ticket from your issue tracker and hands it to an autonomous AI coding agent — any MCP-capable
+CLI ([Claude Code](https://claude.com/claude-code) by default; Codex, Qwen, … via config) — working in its
+own isolated Git worktree. You drive everything from a single **Master** console:
+spin agents up, watch them, review, ship, deploy, tear down. Nothing leaves your machine — no push, merge,
+merge request, or deploy — without a human checkpoint you own.
 
-## Prerequisites
+> **One console. One agent per ticket. Isolated worktrees. You approve every outward move.**
 
-| tool | install |
-|------|---------|
-| Java 25+ | `sdk install java 25-tem` |
-| tmux | `brew install tmux` |
-| terminal-notifier | `brew install terminal-notifier` (reliable macOS notifications; osascript fallback is often silently suppressed) |
-| Node 18+ | `brew install node` |
-| Claude Code CLI | claude.com/claude-code |
-| kitty | `brew install kitty` (default agents terminal; or set `terminal: warp`) |
-| Warp | warp.dev (only if `terminal: warp`) |
-| IntelliJ IDEA | JetBrains Toolbox (see the run-config note below) |
-| git | Xcode CLT / brew |
+---
 
-## Setup
+## How it works
 
-```bash
-cp config.json.dist config.json   # then fill in your projects
-```
+- **Master console** — one terminal you type into (`do PROJ-42`, `ship`, `deploy`, …). It routes and
+  tracks; it never writes code.
+- **Sub-agents** — one agent session per ticket, each in its own Git worktree (a sibling checkout on a task
+  branch). They can't see each other's code and can't touch your base branch — jagt enforces it.
+- **You, the human in the loop** — jagt never commits to a shared branch, opens a merge request, or deploys
+  on its own. Three checkpoints are always yours: **review · CI · close**.
+- **Durable state** — a small backend tracks each task through its lifecycle
+  (`NEW → IN_PROGRESS → REVIEW_PENDING → CI_POLLING → DEPLOYED → DONE`) and guards Git so an agent can only
+  ever act on its own branch.
 
-**UTF-8 locale (kitty):** kitty honors the libc locale, and macOS has no `C.UTF-8` — if the shell
-locale isn't a real UTF-8 one (e.g. `/etc/zprofile` forces `LANG=C.UTF-8`), kitty silently drops
-non-ASCII input (Cyrillic dictation/paste). Fix: `export LANG=en_US.UTF-8` in `~/.zshenv` — it runs
-before `/etc/zprofile`, whose `[ -z "$LANG" ]` guard then skips.
+Agents run as background sessions inside one terminal window that opens for you automatically, so they keep
+working even if you close the viewer. The terminal, editor, and notifier are **swappable strategies** — the
+concept is OS-agnostic; today it ships tuned for macOS.
 
-Agent tabs are opened via Warp Tab Configs (generated into `~/.warp/tab_configs/`, opened with
-`warp://tab_config/<name>`) — no shell hooks needed.
+---
 
-IntelliJ run configs: a worktree opens without the base project's run configs. To carry them over,
-mark a config "Store as project file" (Run → Edit Configurations) — it becomes a file under `.run/`
-(or legacy `.idea/runConfigurations/`), and jagt copies those folders into every new worktree so
-`ide` opens ready to run.
-
-The committed `.claude/settings.json` pre-approves the orchestrator's MCP tools for the Master session
-(so tool calls aren't silently blocked). Keep it — see [CLAUDE.md](CLAUDE.md) for the why and the
-exact keys.
-
-## Configuration
-
-`config.json` (gitignored, yours — re-read on every access, no restart needed):
-
-| key | meaning |
-|-----|---------|
-| `projects.<key>.path` | absolute path to the base repository |
-| `projects.<key>.baseBranch` | branch new task branches start from, e.g. `origin/main` |
-| `projects.<key>.deployBranch` | target of the `deploy` command, e.g. `dev` (omit to disable deploy) |
-| `projects.<key>.labels` | hints for mapping tickets to the project |
-| `tmuxSession` | name of the agents' tmux session (default `jagt`) |
-| `viewMode` | `shared` = all tasks inside one tab; `tab-per-task` = a Warp tab per task |
-| `keepViewer` | keep the agents tab/window open (reserved) after the last task (default `true`) — drag it into a group once and it stays |
-| `mrTitlePattern` | MR/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
-| `postReviewReplies` | on `ship`, auto-post the agent's replies to MR threads (default `true`); `false` keeps them in `review_replies.md` |
-| `reviewReplyAuthors` | when non-empty, auto-post replies ONLY to threads whose author matches one (e.g. `["coderabbit"]`); empty = all authors |
-| `worktreeCopyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
-| `agentOutputStyle` | optional Claude output style pinned into each agent worktree, e.g. `sob-ai:Engineer` (default empty = Claude's own style) |
-| `dashboardRefreshSeconds` | how often the TUI refreshes the dashboard, in seconds (default `10`) |
-| `dashboardReservedRows` | rows reserved for the command output + input below the dashboard, capping the dashboard's height (extra tasks overflow to `… +N`); default `17` |
-| `mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
-
-`orchestrator-backend/src/main/resources/application.yml` (machine/OS level, restart to apply):
-
-| key | meaning |
-|-----|---------|
-| `orchestrator.platform` | notifier strategy, default `macos` (osascript) |
-| `orchestrator.terminal` | agents viewer: `kitty` (default — titled/closable tabs, fast) or `warp`; both run over tmux |
-| `orchestrator.kitty-command` | kitty binary, default `kitty` (only for `terminal: kitty`) |
-| `orchestrator.editor-command` | editor launcher list, default `[open, -a, IntelliJ IDEA]`; e.g. `[code]` |
-| `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff`, default `[.../idea, diff]` (`open -a` can't diff) |
-| `orchestrator.claude-command` | agent CLI, default `claude` |
-| `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits, default `user,project,local` (no MCP path hardcoded) |
-| `orchestrator.assistant.model` | model for the ticket-read (blank = your default; a strong model is more reliable at the tool call) |
-| `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty; opt-in for RAM-constrained setups) |
-| `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
-| `orchestrator.tmux-command` | tmux binary, default `/opt/homebrew/bin/tmux` |
-| `orchestrator.open-warp-window` | auto-open the terminal window (`false` in tests) |
-| `orchestrator.watchdog.stale-after` | silence threshold before an "agent unresponsive" alert, default `5m` |
-| `orchestrator.root` / `ORCHESTRATOR_ROOT` | override the auto-detected root (nearest dir with `mcp_client.js`) |
-
-## Run
-
-The backend process **is** the Master control terminal (a deterministic full-screen TUI — no separate
-Claude session). One screen shows the command output, the dashboard, and the `jagt>` input line
-together. Run it in a real terminal tab (Warp/kitty):
+## Quick start
 
 ```bash
+cp config.json.dist config.json          # add your project(s) — see Configuration
 cd orchestrator-backend
-./gradlew build                                        # once
-java -jar build/libs/orchestrator-backend-0.2.0.jar
+./gradlew build
+java -jar "$(ls build/libs/*.jar | grep -v plain)"
 ```
 
-`./gradlew bootRun` also works, but Gradle captures stdout so the app gets **no TTY** — it then falls
-back to a plain inline line-REPL (dashboard printed after each command) instead of the full-screen TUI.
-Run the **jar directly** for the live dashboard.
+You're now at the `jagt>` console. Type `help`, or `do <ticket>` to start your first agent.
+Check the backend any time: `curl -s localhost:8290/state`.
 
-## Usage`
+> Run the jar in a **real terminal tab** — the console is a full-screen TUI showing your command output, a
+> live task dashboard, and the input line together. (`./gradlew bootRun` also works but Gradle captures
+> stdout, so with no TTY it degrades to a plain line-by-line REPL.)
 
-Tell the Master:
+---
+
+## Installation
+
+Prerequisite for any OS: your agent CLI (Claude Code by default) must already have MCP access to the systems
+the agents use — your issue tracker (Jira, …) and code host (GitLab/GitHub). jagt itself talks to no external
+service.
+
+### macOS
+
+| tool | install | used for |
+|------|---------|----------|
+| Java 25+ | `sdk install java 25-tem` | the backend / Master console |
+| an agent CLI | [Claude Code](https://claude.com/claude-code) — default; swap via `orchestrator.agent` | the agents |
+| tmux | `brew install tmux` | persistent agent sessions |
+| Node 18+ | `brew install node` | the MCP proxy jagt injects into worktrees |
+| git | Xcode CLT or `brew install git` | worktrees |
+| IntelliJ IDEA | JetBrains Toolbox | the `ide` review checkpoint |
+| kitty | `brew install kitty` | default agents terminal (swap it in config) |
+| terminal-notifier | `brew install terminal-notifier` | reliable notifications (osascript fallback is often silently suppressed) |
+
+A few macOS-specific setup notes:
+
+- **IntelliJ run configs** — a fresh worktree opens without the base project's run configs. Mark a config
+  *Store as project file* (Run → Edit Configurations) so it lands under `.run/`; jagt copies those into every
+  worktree, so `ide` opens ready to run.
+- **MCP pre-approval** — the committed `.claude/settings.json` pre-approves jagt's MCP tools for the Master
+  session, so tool calls aren't silently blocked. Keep it.
+- **UTF-8 locale (kitty)** — kitty honors the libc locale, and macOS has no `C.UTF-8`. If your shell locale
+  isn't a real UTF-8 one, kitty drops non-ASCII input (Cyrillic paste/dictation). Fix:
+  `export LANG=en_US.UTF-8` in `~/.zshenv`.
+
+---
+
+## Usage
+
+Talk to the Master console:
 
 | command | effect |
 |---------|--------|
 | `do <ticket> [plan] [notes]` | fetch the ticket, spin up a sub-agent in an isolated worktree; `plan` = plan mode |
-| `status` | dashboard only |
-| `respawn <ticket>` | restart a sub-agent session for an already-registered task |
-| `done <ticket>` | close the task at any stage: full cleanup — window, worktree, state (branch kept) |
-| `focus <ticket>` | jump to the task's agent window — **talk to the agent directly there** (no `feedback` command) |
-| `ide <ticket>` | open the worktree as a project (run the app; **Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot diff **vs the `deployBranch`** (so after a deploy conflict-merge you review only your change vs dev, not all of dev's drift; falls back to `baseBranch` if no deployBranch) — it does **not** auto-refresh (re-run to update) |
-| `review <ticket>` | full MR sweep (pipeline + comments): agent fixes locally + drafts replies; nothing pushed |
-| `deploy <ticket>` | merge the task branch into the project's `deployBranch` and push (on conflict: the agent resolves it staged-but-uncommitted, you review + commit + `deploy` again) |
-| `ship <ticket>` | review approved: commit as "<id>: <jira title>", push, open MR, watch CI |
+| `status` | show the task dashboard |
+| `focus <ticket>` | jump to the agent's session — **talk to the agent directly there** |
+| `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (falls back to `baseBranch`) — does not auto-refresh |
+| `review <ticket>` | pull the MR's pipeline + comments; the agent fixes locally and drafts replies (nothing pushed) |
+| `ship <ticket>` | approved: agent commits, pushes, opens the merge request, watches CI |
+| `deploy <ticket>` | merge the task branch into `deployBranch` and push (on conflict the agent resolves it staged-but-uncommitted; you review, commit, `deploy` again) |
+| `respawn <ticket>` | restart a dead agent session |
+| `done <ticket>` | close the task: full cleanup — session, worktree, state (branch kept) |
 | `help` | command reference + recovery cheatsheet |
 
-Every Master reply ends with the task dashboard. Agents live in one Warp window. Switch between tasks
-with **Shift+←/→**, or click a task name in the status bar (mouse mode is on). Plain-text status any
-time: `curl localhost:8290/status`.
+Every Master reply ends with the task dashboard. Agents live in one terminal window — switch between them
+with **Shift+←/→** or by clicking a task in the status bar. Every task also gets a short alias (`p1`, `s2`)
+you can use in any command instead of the ticket id. Plain-text status any time: `curl -s localhost:8290/status`.
+Closing the terminal window only detaches the viewer — agents keep running; kill them explicitly with `done`.
 
-## The ideal flow (commands in order)
+### The ideal flow
 
-The Master validates the command order against the task status (override with "force"). Dashed = optional.
+The Master validates command order against task status (override with `force`). Dashed = optional.
 
 ```mermaid
 flowchart TD
@@ -142,48 +120,84 @@ flowchart TD
     DO -.->|"watch / talk to the agent live"| FOCUS
     FOCUS -.-> IDE1
     DO -->|"agent works — no commits"| IDE1
-    IDE1 -->|"needs changes: focus + tell the agent in its window"| IDE1
+    IDE1 -->|"needs changes: focus + tell the agent"| IDE1
     IDE1 -->|"approved"| SHIP
-    SHIP -->|"1st time: commit + push + create MR / next: push + post replies"| REVIEW
+    SHIP -->|"commit + push + open MR"| REVIEW
     REVIEW -->|"pipeline + comments → agent fixes locally, drafts replies"| IDE2
     IDE2 -->|"another round"| SHIP
     IDE2 -->|"green + all resolved"| DEPLOY
-    DEPLOY -->|"merged into deployBranch, pushed (conflict → agent resolves staged, you commit + deploy again)"| DONE
+    DEPLOY -->|"merged into deployBranch (conflict → agent resolves staged, you commit + deploy again)"| DONE
 
     classDef cmd font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
     class DO,FOCUS,IDE1,SHIP,REVIEW,IDE2,DEPLOY,DONE cmd;
 ```
 
-The `ship → review → ide → ship` loop repeats once per review round (bot + human comments, CI) until
-CI is green and every thread is resolved — then `deploy`.
+The `ship → review → ide → ship` loop repeats once per review round (bot + human comments, CI) until CI is
+green and every thread is resolved — then `deploy`, then `done`.
 
-Notes: `[plan]` — agent plans first, you approve in its window. Between commands the agent does the
-actual work (arrow labels). Every task gets a short alias (`p1`, `s2`) shown in the dashboard — use it
-in any command instead of the ticket id. Any time: `status`, `focus <ticket>` (respawns the session if
-it died), `respawn <ticket>`, `help`. Closing the Warp window only detaches the viewer — agents keep
-running; kill sessions explicitly with `done`.
+### Your role — the human in the loop
 
-## Your role (the human in the loop)
+jagt never acts on the MR or CI by itself. Three checkpoints are explicitly yours (and the roadmap for
+future automation):
 
-The system never acts on the MR/CI by itself — three checkpoints are explicitly yours
-(also the roadmap for future automation):
+| checkpoint | when | you run |
+|------------|------|---------|
+| **Review** | agent reached `REVIEW_PENDING`, and after every review round | `ide` → then `ship` (or `focus` to iterate live) |
+| **CI / progress** | after `ship` (nothing polls automatically) | `review` |
+| **Close** | CI green, reviewers satisfied | `done` |
 
-| # | role | when | command |
-|---|------|------|---------|
-| A | code review | agent committed (REVIEW_PENDING) and after every review round | `ide` → then `ship` (or `focus` to iterate in-session) |
-| B | CI/CD + review progress | after `ship` (nothing polls automatically) | `review` |
-| C | closing the loop | CI green, reviewers satisfied | `done` (full cleanup) |
+---
+
+## Configuration
+
+`config.json` is yours (gitignored, copied from `config.json.dist`). It's re-read on every access — no
+restart needed.
+
+| key | meaning |
+|-----|---------|
+| `projects.<key>.path` | absolute path to the base repository |
+| `projects.<key>.baseBranch` | branch new task branches start from, e.g. `origin/main` (read-only; jagt never pushes here) |
+| `projects.<key>.deployBranch` | target of `deploy`, e.g. `dev` (omit to disable deploy) |
+| `projects.<key>.labels` | hints for mapping tickets to this project |
+| `tmuxSession` | name of the agents' session (default `jagt`) |
+| `viewMode` | `shared` = all tasks in one tab; `tab-per-task` = one terminal tab per task |
+| `keepViewer` | keep the agents window open after the last task (default `true`) |
+| `mrTitlePattern` | MR/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
+| `postReviewReplies` | on `ship`, auto-post the agent's replies to MR threads (default `true`); `false` keeps them in `review_replies.md` |
+| `reviewReplyAuthors` | non-empty = auto-post replies ONLY to threads whose author matches one (e.g. `["coderabbit"]`); empty = all authors |
+| `worktreeCopyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
+| `agentOutputStyle` | optional output style for the agent (Claude Code), e.g. `acme:engineer` (default empty = the agent's own style) |
+| `dashboardRefreshSeconds` | how often the dashboard refreshes, in seconds (default `10`) |
+| `dashboardReservedRows` | rows reserved for command output + input below the dashboard (default `17`) |
+| `mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
+
+Machine/OS-level settings live in `orchestrator-backend/src/main/resources/application.yml` (restart to apply):
+
+| key | meaning |
+|-----|---------|
+| `orchestrator.platform` | notifier strategy (default `macos`) |
+| `orchestrator.terminal` | agents viewer: `kitty` (default) or `warp`; both run over tmux |
+| `orchestrator.editor-command` | editor launcher list (default `[open, -a, IntelliJ IDEA]`; e.g. `[code]`) |
+| `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` |
+| `orchestrator.agent` | which AI agent runtime — `claude` (default), and future MCP-capable CLIs; the pluggable seam |
+| `orchestrator.claude-command` | binary for the `claude` runtime (default `claude`) |
+| `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits (default `user,project,local`) |
+| `orchestrator.assistant.model` | model for the ticket-read (blank = your default) |
+| `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty) |
+| `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
+| `orchestrator.tmux-command` | tmux binary (default `/opt/homebrew/bin/tmux`) |
+| `orchestrator.open-warp-window` | auto-open the agents terminal window (`false` in tests) |
+| `orchestrator.watchdog.stale-after` | silence threshold before an "agent unresponsive" alert (default `5m`) |
+| `orchestrator.root` / `ORCHESTRATOR_ROOT` | override the auto-detected root (nearest dir with `mcp_client.js`) |
+
+---
 
 ## Troubleshooting
 
 | symptom | what happened | what to do |
 |---------|---------------|------------|
-| Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash, or an API 5xx/"Overloaded" 529) before reporting `CI_POLLING` | `ship <ticket>` **again** — jagt sees the dead agent and respawns it to finish the push/MR. (If the agent is still alive, `ship` refuses — `focus` to watch the in-flight ship.) |
-| Agent seems hung / no response, or nothing happens after `ship`/`review` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to open its window and see what it's doing; `respawn <ticket>` restarts a dead session (it re-reads `task_context.md` and resumes); `done <ticket>` abandons it entirely (window + worktree + language server) |
-| `API Error: 529 Overloaded` in an agent | transient Anthropic overload, server-side | wait a moment and re-run the command; the task state is unchanged |
-| `deploy <ticket>` says `MERGE CONFLICT … — the agent is resolving it` | the task branch and `deployBranch` (e.g. `dev`) changed the same lines (often `liquibase/master.yaml`); jagt merges in a **throwaway** worktree, so it aborts + discards it (nothing pushed) and instead hands the agent a brief to merge `deployBranch` into the task branch and resolve it | wait for the agent, then: `ide <ticket>` → **Git → Local Changes** shows the resolved-but-**uncommitted** merge → review it and **commit yourself** (the agent deliberately doesn't commit) → `deploy <ticket>` again. `focus <ticket>` to watch/steer the agent while it resolves. |
-| Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Setup** |
-
-## Internals
-
-Architecture, fault-tolerance guarantees and engineering constraints: see [CLAUDE.md](CLAUDE.md).
+| Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash / API 5xx / 529 Overloaded) before reaching `CI_POLLING` | `ship <ticket>` **again** — jagt sees the dead agent and respawns it to finish. (If it's still alive, `ship` refuses; `focus` to watch.) |
+| Agent seems hung, or nothing happens after `ship`/`review` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to see what it's doing; `respawn <ticket>` restarts a dead session (re-reads `task_context.md`); `done <ticket>` abandons it entirely |
+| `API Error: 529 Overloaded` | transient model overload, server-side | wait a moment and re-run; task state is unchanged |
+| `deploy` says `MERGE CONFLICT — the agent is resolving it` | task branch and `deployBranch` changed the same lines; jagt merges in a throwaway worktree, so it aborts (nothing pushed) and hands the agent a resolve brief | wait for the agent, then `ide <ticket>` → **Git → Local Changes** shows the resolved-but-**uncommitted** merge → review and **commit yourself** → `deploy <ticket>` again |
+| Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Installation → macOS** |

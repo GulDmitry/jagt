@@ -124,3 +124,37 @@ latency and the tab-control API of each; kitty is the front-runner (simplest con
   rename it. Right now `ci` and `review` do the SAME full MR sweep; two names for one action is the
   confusion. Likely resolution: once auto-poll lands, drop both as manual commands; keep a single
   manual `sweep <ticket>` as the "check now" escape hatch.
+
+## Testing & portability
+
+### Verify the build on Linux
+Confirm `./gradlew build` and the runnable jar work on Linux (Java 25, Node, tmux, git present). The core
+is OS-neutral; the only OS-specific code is behind the platform strategies (`UserNotifier`/`TerminalDriver`/
+`EditorDriver`). First milestone: backend boots + the deterministic tests pass on a Linux runner, even
+before Linux impls of the three drivers exist (they can no-op / fail-soft until then).
+
+### Automated end-to-end test harness across all config combinations, with a deterministic oracle
+Goal: one automated suite that exercises the WHOLE task flow (create worktree → provision → launch →
+talk over MCP → ship/review/deploy/done) across the full matrix of swappable pieces and config flags, and
+asserts a **deterministic expected result** for each combination — so any regression in any combo is caught
+without hand-testing.
+
+The matrix (Cartesian product of the strategy seams + config):
+- `AgentRuntime` (`orchestrator.agent`: claude / codex / … — stub/fake runtime for CI),
+- `TerminalDriver` (`orchestrator.terminal`: kitty / warp),
+- `UserNotifier` (`orchestrator.platform`),
+- `EditorDriver` (`orchestrator.editor-command`),
+- config flags: `viewMode` (shared / tab-per-task), `postReviewReplies`, `reviewReplyAuthors`,
+  branch strategies (fresh / resume), deploy on/off, plan mode, etc.
+
+Design notes:
+- Needs a **deterministic oracle**: fake/record-replay the external, non-deterministic pieces — a stub
+  `AgentRuntime` that emits scripted MCP calls instead of a real LLM, a throwaway local Git origin, a
+  throwaway tmux session, and headless terminal/editor/notifier drivers (no GUI). Then every combo has a
+  fixed expected end state (state.json transitions, branches/worktrees created + cleaned, MR/CI mocked).
+- Assert on OBSERVABLE state, not timing: final `TaskStatus`, git refs/worktrees present-or-gone, files
+  written into the worktree, notifications emitted. Follows the existing smoke-test etiquette (throwaway
+  tmux + `ORCHESTRATOR_ROOT` + `--orchestrator.open-warp-window=false`, leave no trace).
+- Run the SAME matrix on macOS now and on Linux once its drivers exist — the harness is the portability
+  gate: "does combination X behave identically on both OSes?" Think through how to keep the expected-result
+  oracle OS-independent (the flow is OS-neutral; only the driver side effects differ).
