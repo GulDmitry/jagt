@@ -1,24 +1,26 @@
 #!/usr/bin/env node
 /**
- * MCP stdio-to-HTTP proxy bridge.
+ * MCP stdio-to-HTTP proxy bridge — AGENT-AGNOSTIC.
  *
- * Claude Code speaks MCP over stdio (newline-delimited JSON-RPC). This script
- * forwards every message to the Spring Boot orchestrator and injects the
- * caller's working directory as the X-Working-Directory header — that is how
- * the backend knows WHICH agent (worktree/task) is calling it.
+ * Every MCP-capable CLI agent (Claude Code, Codex, Qwen, …) speaks MCP over stdio
+ * (newline-delimited JSON-RPC) — a standard, not a Claude thing. This script forwards
+ * each message to the Spring Boot orchestrator and injects the caller's working
+ * directory as the X-Working-Directory header — that is how the backend knows WHICH
+ * agent (worktree/task) is calling it. Only the per-agent CONFIG that declares this
+ * proxy differs (Claude .mcp.json, Codex config.toml, …); that lives in each
+ * AgentRuntime, not here. Keep this file free of any agent-specific assumptions.
  *
- * This file is symlinked into every task worktree by initialize_task, so
- * process.cwd() is the worktree path for sub-agents and the orchestrator
- * root for the Master session.
+ * It is symlinked into every task worktree during provisioning, so process.cwd() is
+ * the worktree path for sub-agents and the orchestrator root for the Master session.
  */
 const readline = require('node:readline');
 
 const SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:8290/mcp';
 const CWD = process.cwd();
 
-// A backend restart must not kill the session's MCP connection: Claude Code
-// marks the server as failed on the first error, so retry transient
-// connection failures with backoff (~15s total) before giving up.
+// A backend restart must not kill the session's MCP connection: agents tend to
+// mark the server as failed on the first error, so retry transient connection
+// failures with backoff (~15s total) before giving up.
 const RETRY_DELAYS_MS = [500, 1000, 2000, 4000, 8000];
 
 async function postWithRetry(body) {
@@ -57,7 +59,7 @@ rl.on('line', async (line) => {
   }
 
   const answer = (payload) => {
-    // Requests (with id) must get an answer or Claude hangs forever.
+    // Requests (with id) must get an answer or the agent hangs forever.
     if (message.id !== undefined && message.id !== null) {
       process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: message.id, ...payload }) + '\n');
     }

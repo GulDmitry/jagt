@@ -75,10 +75,21 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   whatever is focused). Agent terminals are tmux windows (`TmuxService`); visibility comes from one Warp
   window opened via `open warp://launch/jagt-agents` (launch config generated into
   `~/.warp/launch_configurations/`) whenever `tmux list-clients` shows nobody attached.
-- OS/app-specific code lives behind strategies in `dev.jagt.orchestrator.platform`: `UserNotifier`
-  (selected by `orchestrator.platform`, default macos), `TerminalDriver` (`orchestrator.terminal`,
-  default `kitty`; `warp` still available), `EditorDriver` (`orchestrator.editor-command` list,
-  default `open -a "IntelliJ IDEA"`). A Linux port = new impls of these three interfaces + config.
+- PLUGGABLE BY DESIGN — this is a FIRM architectural invariant, do not erode it. jagt targets Linux +
+  macOS with SWAPPABLE terminals, notifiers, editors, and AI-agent runtimes (Claude Code / Codex / Qwen /
+  … — any MCP-capable CLI). Everything OS- or agent-specific lives behind a STRATEGY INTERFACE, selected by
+  config, so adding a new one is "implement the interface + register a config value" — NEVER a hardcoded
+  `if claude`/`if macos` sprinkled through the flow. The agent-agnostic task flow (create worktree →
+  provision → launch → talk over MCP) must stay free of any single agent's assumptions. The four seams:
+  - `UserNotifier` (`orchestrator.platform`, default macos), `TerminalDriver` (`orchestrator.terminal`,
+    default `kitty`; `warp` too), `EditorDriver` (`orchestrator.editor-command`) — in `…platform`.
+  - `AgentRuntime` (`…agent`, `orchestrator.agent`, default `claude`) — the pluggable AI-agent CLI:
+    `launchCommand` + (worktree provisioning + per-agent MCP config) live here. `mcp_client.js` is a
+    STANDARD, agent-agnostic MCP stdio↔HTTP proxy (keep it that way); only the config that declares it
+    differs per agent (Claude `.mcp.json`, Codex `config.toml`, …) and belongs in each `AgentRuntime`.
+  - The shared system-knowledge file is `AGENTS.md` (the cross-agent convention); Claude reads `CLAUDE.md`,
+    so its runtime symlinks `CLAUDE.md` → `AGENTS.md`. A new agent = one `AgentRuntime` impl; a Linux port
+    = new `UserNotifier`/`TerminalDriver`/`EditorDriver` impls. Nothing else should need to change.
 - `KittyTerminalDriver` drives kitty via its remote-control CLI (`kitty @ --to unix:<per-session
   socket>`): one dedicated instance (`--single-instance --instance-group --listen-on -o
   allow_remote_control=yes`), tabs titled + closable (unlike Warp). Runs OVER tmux (tab execs `tmux
