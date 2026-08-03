@@ -47,7 +47,10 @@ tasks.named('bootRun') {
 }
 
 // So `java -jar` gets the same native-access grant without a command-line flag.
+// Fixed, version-independent archive name so the run command never changes across releases:
+// always `java -jar build/libs/jagt.jar` (the version still lives in `version` above and in the manifest).
 tasks.named('bootJar') {
+    archiveFileName = 'jagt.jar'
     manifest {
         attributes('Enable-Native-Access': 'ALL-UNNAMED')
     }
