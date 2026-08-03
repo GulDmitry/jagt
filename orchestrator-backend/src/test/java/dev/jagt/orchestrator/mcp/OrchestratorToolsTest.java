@@ -662,6 +662,19 @@ class OrchestratorToolsTest {
         assertThat(wt.resolve("node_modules/.env")).doesNotExist();
     }
 
+    @Test
+    void copiesNothingWithoutFailingWhenAGlobsDirectoryIsAbsent(@TempDir Path root) throws Exception {
+        Path base = root.resolve("base");
+        java.nio.file.Files.createDirectories(base.resolve("src"));
+        java.nio.file.Files.writeString(base.resolve("src/Main.java"), "class Main {}");
+        Path wt = root.resolve("wt");
+        java.nio.file.Files.createDirectories(wt);
+
+        OrchestratorTools.copyLocalFiles(base, wt, List.of("vendor/**"));
+
+        assertThat(wt.resolve("vendor")).doesNotExist();
+    }
+
     @ParameterizedTest
     @CsvSource({
         "ABC-42 Widget layout is off, ABC-42, Widget layout is off",
