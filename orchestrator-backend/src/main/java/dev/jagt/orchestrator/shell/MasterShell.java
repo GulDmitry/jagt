@@ -803,7 +803,7 @@ public class MasterShell implements ApplicationRunner {
         // Fast path: a bare key + explicit project needs no read — the key IS the task id.
         if (bareKey && explicit != null) {
             return tools.initializeTask(ref, resolveProject(explicit),
-                    "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null);
+                    "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null, null);
         }
         // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
         // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
@@ -822,14 +822,14 @@ public class MasterShell implements ApplicationRunner {
             String project = explicit != null ? resolveProject(explicit) : resolveByLabels(f);
             String instructions = "Implement " + taskId + " — \"" + f.title()
                     + "\". Read it via your issue-tracker MCP for full details, then work.";
-            return tools.initializeTask(taskId, project, instructions, mode, null, f.title());
+            return tools.initializeTask(taskId, project, instructions, mode, null, f.title(), f.url());
         }
         // Assistant unavailable: only a bare key can proceed — a URL has no derivable task id without it.
         if (!bareKey) {
             return "error: assistant unavailable — pass an issue key (not a URL), or add the project";
         }
         return tools.initializeTask(ref, resolveProject(explicit),
-                "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null);
+                "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null, null);
     }
 
     /**

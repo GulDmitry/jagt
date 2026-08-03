@@ -14,12 +14,13 @@ public record TaskState(
         String alias,
         String remoteUrl,
         String title,
-        String mrUrl
+        String mrUrl,
+        String ticketUrl
 ) {
 
     public TaskState withStatus(TaskStatus status, String message) {
         return new TaskState(project, worktreePath, status, System.currentTimeMillis(), message, alias,
-                remoteUrl, title, mrUrl);
+                remoteUrl, title, mrUrl, ticketUrl);
     }
 
     public TaskState touched() {
@@ -28,6 +29,6 @@ public record TaskState(
 
     public TaskState withMrUrl(String mrUrl) {
         return new TaskState(project, worktreePath, status, lastActiveTimestamp, message, alias,
-                remoteUrl, title, mrUrl);
+                remoteUrl, title, mrUrl, ticketUrl);
     }
 }

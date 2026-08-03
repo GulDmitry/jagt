@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.assistant;
 
+import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -33,8 +33,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "key":{"type":"string"},\
             "title":{"type":"string"},\
             "jiraProject":{"type":"string"},\
-            "labels":{"type":"array","items":{"type":"string"}}},\
-            "required":["exists","key","title","jiraProject","labels"]}""";
+            "labels":{"type":"array","items":{"type":"string"}},\
+            "url":{"type":"string"}},\
+            "required":["exists","key","title","jiraProject","labels","url"]}""";
     private static final String MR_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
@@ -53,17 +54,14 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
 
     private final ProcessRunner processRunner;
     private final OrchestratorProperties properties;
-    private final String settingSources;
-    private final String model;
+    private final AssistantProperties assistant;
     private final JsonMapper mapper = new JsonMapper();
 
     public HeadlessClaudeAssistant(ProcessRunner processRunner, OrchestratorProperties properties,
-                                   @Value("${orchestrator.assistant.setting-sources:user,project,local}") String settingSources,
-                                   @Value("${orchestrator.assistant.model:}") String model) {
+                                   AssistantProperties assistant) {
         this.processRunner = processRunner;
         this.properties = properties;
-        this.settingSources = settingSources;
-        this.model = model;
+        this.assistant = assistant;
     }
 
     @Override
@@ -75,13 +73,15 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " key (e.g. ABC-123) OR a URL to it in some tracker (Jira, GitHub, GitLab, …). Open it"
                 + " with the matching MCP tool: if it is a URL, follow the URL — do NOT try to parse a key"
                 + " out of it. Return exists=true with its canonical issue key as key, its summary as"
-                + " title, its project key as jiraProject, and its labels. If it cannot be read,"
-                + " exists=false with empty strings and array.";
+                + " title, its project key as jiraProject, its labels, and its canonical web URL as url"
+                + " (the human-facing link to the item; empty string if the tracker has none). If it"
+                + " cannot be read, exists=false with empty strings and array.";
         return ask(prompt, TICKET_SCHEMA, ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
             return new TicketFacts(n.path("exists").asBoolean(false), n.path("key").asString(""),
-                    n.path("title").asString(""), n.path("jiraProject").asString(""), labels);
+                    n.path("title").asString(""), n.path("jiraProject").asString(""), labels,
+                    n.path("url").asString(""));
         });
     }
 
@@ -122,10 +122,19 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
 
     private Optional<JsonNode> ask(String prompt, String schema, String label, Duration timeout) {
         List<String> cmd = new ArrayList<>(List.of(properties.claudeCommand(), prompt, "-p",
-                "--setting-sources", settingSources, "--json-schema", schema));
-        if (model != null && !model.isBlank()) {
+                "--setting-sources", assistant.settingSources(), "--json-schema", schema));
+        if (assistant.model() != null && !assistant.model().isBlank()) {
             cmd.add("--model");
-            cmd.add(model);
+            cmd.add(assistant.model());
+        }
+        // Headless `-p` can't answer the permission classifier, which then silently blocks the MCP
+        // calls the read needs; an allow-list or a permission mode lifts that gate.
+        if (!assistant.allowedTools().isEmpty()) {
+            cmd.add("--allowedTools");
+            cmd.addAll(assistant.allowedTools());
+        } else if (assistant.permissionMode() != null && !assistant.permissionMode().isBlank()) {
+            cmd.add("--permission-mode");
+            cmd.add(assistant.permissionMode());
         }
         var result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
         if (result.exitCode() != 0 || result.stdout().isBlank()) {

@@ -76,7 +76,7 @@ class McpProtocolServiceTest {
         StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
                 null, null, null, null, null, null, null, false, null)));
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 1000, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 1000, null, "a1", null, null, null, null));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"), root.toString());
@@ -92,7 +92,7 @@ class McpProtocolServiceTest {
                 null, null, null, null, null, null, null, false, null)));
         long freshTimestamp = System.currentTimeMillis();
         state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS,
-                freshTimestamp, null, "a1", null, null, null));
+                freshTimestamp, null, "a1", null, null, null, null));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"), root.toString());

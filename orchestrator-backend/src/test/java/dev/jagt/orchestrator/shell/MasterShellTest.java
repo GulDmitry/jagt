@@ -27,7 +27,8 @@ class MasterShellTest {
 
     @Test
     void matchesTheProjectWhoseLabelIsAmongTheTicketLabels() {
-        TicketFacts facts = new TicketFacts(true, "ABC-1", "Some ticket title", "ABC", List.of("area-x", "no-test", "backend"));
+        TicketFacts facts = new TicketFacts(true, "ABC-1", "Some ticket title", "ABC",
+                List.of("area-x", "no-test", "backend"), null);
         Map<String, List<String>> projectLabels = Map.of("group-a", List.of("backend"), "group-b", List.of("frontend"));
 
         List<String> matches = MasterShell.projectsMatching(facts, projectLabels);
@@ -43,13 +44,15 @@ class MasterShellTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
         when(assistant.readTicket("https://tracker.example.com/browse/ABC-123"))
-                .thenReturn(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC", List.of())));
+                .thenReturn(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC", List.of(),
+                        "https://tracker.example.com/browse/ABC-123")));
         MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant,
                 mock(ConfigurableApplicationContext.class));
 
         shell.doTask(List.of("do", "https://tracker.example.com/browse/ABC-123", "group-a"));
 
-        verify(tools).initializeTask(eq("ABC-123"), eq("group-a"), anyString(), isNull(), isNull(), eq("Some title"));
+        verify(tools).initializeTask(eq("ABC-123"), eq("group-a"), anyString(), isNull(), isNull(),
+                eq("Some title"), eq("https://tracker.example.com/browse/ABC-123"));
     }
 
     @Test

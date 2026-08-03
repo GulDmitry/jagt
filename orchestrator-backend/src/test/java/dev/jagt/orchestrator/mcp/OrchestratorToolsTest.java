@@ -47,7 +47,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
+        state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
@@ -70,7 +70,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
+        state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("tab-per-task")));
@@ -94,7 +94,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("shared")));
@@ -118,7 +118,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("shared")
@@ -143,7 +143,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -161,7 +161,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
         UserNotifier notifier = mock(UserNotifier.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
@@ -180,7 +180,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
         UserNotifier notifier = mock(UserNotifier.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
@@ -235,7 +235,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         GitService git = mock(GitService.class);
@@ -259,7 +259,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
@@ -278,7 +278,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
@@ -314,7 +314,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -332,7 +332,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -350,7 +350,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("OTHER-1", new TaskState("proj", "/other", TaskStatus.IN_PROGRESS, 0, null, "o1", null, null, null));
+        state.putTask("OTHER-1", new TaskState("proj", "/other", TaskStatus.IN_PROGRESS, 0, null, "o1", null, null, null, null));
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -368,7 +368,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -393,7 +393,7 @@ class OrchestratorToolsTest {
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
 
-        assertThatThrownBy(() -> tools.initializeTask(unsafeTaskId, "proj", null, null, null, null))
+        assertThatThrownBy(() -> tools.initializeTask(unsafeTaskId, "proj", null, null, null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must match");
         verifyNoInteractions(git);
@@ -412,7 +412,7 @@ class OrchestratorToolsTest {
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
 
-        assertThatThrownBy(() -> tools.initializeTask("ABC-1", "proj", null, "bogus", null, null))
+        assertThatThrownBy(() -> tools.initializeTask("ABC-1", "proj", null, "bogus", null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unknown mode");
         verifyNoInteractions(git);
@@ -436,7 +436,7 @@ class OrchestratorToolsTest {
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
 
-        assertThatThrownBy(() -> tools.initializeTask("ABC-9", "proj", null, null, null, null))
+        assertThatThrownBy(() -> tools.initializeTask("ABC-9", "proj", null, null, null, null, null))
                 .isInstanceOf(IllegalStateException.class);
 
         verify(git).removeWorktree(projectPath.toAbsolutePath().normalize(),
@@ -452,7 +452,7 @@ class OrchestratorToolsTest {
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.CI_POLLING, 0,
-                "MR: http://x", "a1", null, null, null));
+                "MR: http://x", "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
@@ -475,7 +475,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         Path worktree = java.nio.file.Files.createDirectories(root.resolve("wt"));
         state.putTask("ABC-1", new TaskState("proj", worktree.toString(), TaskStatus.CI_POLLING, 0,
-                "MR: http://x", "a1", null, null, null));
+                "MR: http://x", "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
@@ -507,7 +507,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.CI_POLLING, 0, "MR: http://x", "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.CI_POLLING, 0, "MR: http://x", "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release/sng", "release/sng", null));
         GitService git = mock(GitService.class);
@@ -529,7 +529,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.CI_POLLING, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.CI_POLLING, 0, null, "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", null, null));
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
@@ -566,7 +566,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
@@ -590,7 +590,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
@@ -615,7 +615,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/first", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/first", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
@@ -629,7 +629,7 @@ class OrchestratorToolsTest {
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties, paths, new PromptTemplates());
 
-        tools.initializeTask("ABC-2", "proj", null, null, null, null);
+        tools.initializeTask("ABC-2", "proj", null, null, null, null, null);
 
         assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
     }

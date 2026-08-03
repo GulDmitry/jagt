@@ -52,6 +52,9 @@ public class DashboardRenderer {
             String active = minutes < 1 ? "just now" : minutes + "m ago";
             out.append(String.format(ROW_FORMAT,
                     t.alias() == null ? "-" : t.alias(), id, t.status(), t.project(), active, oneLineTitle(t.title())));
+            if (t.ticketUrl() != null && !t.ticketUrl().isBlank()) {
+                out.append("                    └ ").append(t.ticketUrl()).append('\n');
+            }
             String detail = DashboardLine.forTask(id, t);
             if (!detail.isBlank()) {
                 out.append("                    └ ").append(detail).append('\n');

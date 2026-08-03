@@ -185,6 +185,8 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.claude-command` | binary for the `claude` runtime (default `claude`) |
 | `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits (default `user,project,local`) |
 | `orchestrator.assistant.model` | model for the ticket-read (blank = your default) |
+| `orchestrator.assistant.permission-mode` | lifts the headless permission gate so the ticket-read can call MCP (default `bypassPermissions`) |
+| `orchestrator.assistant.allowed-tools` | comma-separated `mcp__<server>` allow-list; scopes the bypass, takes precedence over permission-mode |
 | `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
 | `orchestrator.tmux-command` | tmux binary (default `/opt/homebrew/bin/tmux`) |

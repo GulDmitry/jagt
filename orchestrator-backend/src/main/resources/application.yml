@@ -52,6 +52,10 @@ orchestrator:
   assistant:
     setting-sources: user,project,local
     # model:            # e.g. sonnet; blank = your default model
+    # Headless `-p` can't answer the permission classifier, which then silently blocks the MCP calls
+    # the ticket-read needs. bypassPermissions lifts the gate; or blank it and scope to named servers:
+    permission-mode: bypassPermissions
+    # allowed-tools: mcp__your-jira-mcp,mcp__your-gitlab-mcp   # takes precedence over permission-mode
   # Plugins disabled in each agent worktree's settings.local.json. Default EMPTY: agents KEEP their
   # LSP (code intelligence — go-to-def, references, diagnostics; worth the RAM). jagt reaps each
   # worktree's JDT server on `done` so finished tasks don't leave servers behind. Only opt in below

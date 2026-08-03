@@ -61,6 +61,7 @@ public class McpProtocolService {
                     "projectKey": {"type": "string", "description": "Project key from config.json."},
                     "instructions": {"type": "string", "description": "Optional initial instructions, written to task_context.md in the new worktree."},
                     "title": {"type": "string", "description": "The Jira ticket title (shown in the dashboard while the task is in development). Fetch it when delegating."},
+                    "ticketUrl": {"type": "string", "description": "Canonical web link to the ticket (shown as the dashboard's clickable ticket line). Fetch it when delegating."},
                     "mode": {"type": "string", "enum": ["auto", "plan"], "description": "plan = the agent starts in Claude plan mode (plans first, human approves in its tmux window). Default: auto."},
                     "branchStrategy": {"type": "string", "enum": ["fresh", "recreate", "resume"], "description": "For reopened tickets whose branch still exists: recreate = delete it and branch fresh from base (previous MR merged), resume = continue the existing branch and its commits (unmerged work). Default fresh = error if the branch exists."}
                   },
@@ -68,7 +69,8 @@ public class McpProtocolService {
                 }""",
                 (args, caller) -> orchestrator.initializeTask(
                         text(args, "taskId"), text(args, "projectKey"), text(args, "instructions"),
-                        text(args, "mode"), text(args, "branchStrategy"), text(args, "title")));
+                        text(args, "mode"), text(args, "branchStrategy"), text(args, "title"),
+                        text(args, "ticketUrl")));
 
         register("update_agent_status", """
                 {

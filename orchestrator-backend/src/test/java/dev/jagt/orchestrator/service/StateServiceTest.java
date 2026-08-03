@@ -21,7 +21,7 @@ class StateServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
                 null, null, null, null, null, null, null, false, null)));
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.NEW, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.NEW, 0, null, "a1", null, null, null, null));
         String physicalCallerCwd = root.toRealPath().toString();
 
         var found = state.findByWorktree(physicalCallerCwd);
@@ -34,7 +34,7 @@ class StateServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
                 null, null, null, null, null, null, null, false, null)));
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
+        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null, null));
 
         boolean removed = state.removeTask("ABC-1");
 

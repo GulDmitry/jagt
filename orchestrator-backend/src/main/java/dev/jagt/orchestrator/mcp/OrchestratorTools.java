@@ -75,7 +75,7 @@ public class OrchestratorTools {
     }
 
     public String initializeTask(String taskId, String projectKey, String instructions, String mode,
-                                 String branchStrategy, String title) {
+                                 String branchStrategy, String title, String ticketUrl) {
         requireSafeId(taskId, "taskId");
         requireSafeId(projectKey, "projectKey");
         boolean plan = planMode(mode);
@@ -115,7 +115,8 @@ public class OrchestratorTools {
 
         String alias = nextAlias(taskId);
         stateService.putTask(taskId, new TaskState(projectKey, worktreePath.toString(), TaskStatus.NEW,
-                System.currentTimeMillis(), null, alias, remoteUrl, title, null));
+                System.currentTimeMillis(), null, alias, remoteUrl, title, null,
+                ticketUrl == null || ticketUrl.isBlank() ? null : ticketUrl));
 
         String session;
         try {
@@ -301,7 +302,7 @@ public class OrchestratorTools {
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
         // The MR title the assistant read is already ticket-prefixed (the pattern built it); store it bare so
         // the dashboard isn't redundant and a later ship's pattern expansion stays single-prefixed.
-        initializeTask(taskId, projectKey, instructions, null, "resume", stripTicketPrefix(title, taskId));
+        initializeTask(taskId, projectKey, instructions, null, "resume", stripTicketPrefix(title, taskId), null);
         updateAgentStatus("CI_POLLING", "MR: " + mrUrl, taskId, null);
         return "Resumed " + taskId + " on its existing branch; linked MR " + mrUrl
                 + "; status CI_POLLING — run `review` or `deploy`.";

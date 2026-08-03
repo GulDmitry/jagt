@@ -32,7 +32,7 @@ class WatchdogServiceTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.NEW,
-                System.currentTimeMillis() - Duration.ofMinutes(6).toMillis(), null, "a1", null, null, null));
+                System.currentTimeMillis() - Duration.ofMinutes(6).toMillis(), null, "a1", null, null, null, null));
         UserNotifier notifier = mock(UserNotifier.class);
         TmuxService tmux = mock(TmuxService.class);
         ConfigService config = configMock();
@@ -50,7 +50,7 @@ class WatchdogServiceTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS,
-                System.currentTimeMillis() - Duration.ofMinutes(20).toMillis(), null, "a1", null, null, null));
+                System.currentTimeMillis() - Duration.ofMinutes(20).toMillis(), null, "a1", null, null, null, null));
         UserNotifier notifier = mock(UserNotifier.class);
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.lastWindowActivityMillis(any(), anyString())).thenReturn(System.currentTimeMillis());
@@ -74,7 +74,7 @@ class WatchdogServiceTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING,
-                System.currentTimeMillis() - Duration.ofMinutes(60).toMillis(), null, "a1", null, null, null));
+                System.currentTimeMillis() - Duration.ofMinutes(60).toMillis(), null, "a1", null, null, null, null));
         UserNotifier notifier = mock(UserNotifier.class);
 
         new WatchdogService(state, notifier, properties, mock(TmuxService.class), configMock()).scan();

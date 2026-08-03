@@ -9,7 +9,7 @@ class DashboardLineTest {
     @Test
     void showsNoDetailWhileInDevelopment() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.IN_PROGRESS, 0,
-                "some progress note", "a1", null, "Some ticket title", null);
+                "some progress note", "a1", null, "Some ticket title", null, null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEmpty();
     }
@@ -17,7 +17,7 @@ class DashboardLineTest {
     @Test
     void showsMrLinkWhileInReview() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.CI_POLLING, 0,
-                "MR: https://gitlab/x/-/merge_requests/9", "a1", null, "title", "https://gitlab/x/-/merge_requests/9");
+                "MR: https://gitlab/x/-/merge_requests/9", "a1", null, "title", "https://gitlab/x/-/merge_requests/9", null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
@@ -25,7 +25,7 @@ class DashboardLineTest {
     @Test
     void showsMrLinkWhenReviewedAndReadyToDeploy() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEWED, 0,
-                "reviewed", "a1", null, "title", "https://gitlab/x/-/merge_requests/9");
+                "reviewed", "a1", null, "title", "https://gitlab/x/-/merge_requests/9", null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
@@ -33,7 +33,7 @@ class DashboardLineTest {
     @Test
     void shoutsInCapsWhenPipelineFailed() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.CI_FAILED, 0,
-                "trigger_commons failed", "a1", null, "title", "https://mr");
+                "trigger_commons failed", "a1", null, "title", "https://mr", null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).startsWith("PROBLEM: ").contains("trigger_commons");
     }
@@ -41,21 +41,21 @@ class DashboardLineTest {
     @Test
     void shoutsNeedsInputWhenAgentIsBlocked() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.IN_PROGRESS, 0,
-                "awaiting: FE or BE decision", "a1", null, "title", null);
+                "awaiting: FE or BE decision", "a1", null, "title", null, null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
 
     @Test
     void showsNoDetailForAFreshTask() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.NEW, 0, null, "a1", null, null, null);
+        TaskState task = new TaskState("p", "/wt", TaskStatus.NEW, 0, null, "a1", null, null, null, null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEmpty();
     }
 
     @Test
     void showsShippingWhileTheAgentPushes() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.SHIPPING, 0, "shipping", "a1", null, "title", null);
+        TaskState task = new TaskState("p", "/wt", TaskStatus.SHIPPING, 0, "shipping", "a1", null, "title", null, null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).startsWith("SHIPPING");
     }
@@ -63,7 +63,7 @@ class DashboardLineTest {
     @Test
     void showsTheMrLinkWhenReviewPendingHasOne() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEW_PENDING, 0,
-                null, "a1", null, "some title", "https://host/mr/417");
+                null, "a1", null, "some title", "https://host/mr/417", null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/417");
     }
@@ -71,7 +71,7 @@ class DashboardLineTest {
     @Test
     void showsTheMrLinkForAReviewPendingTaskEvenWhenTheAgentLeftAnAwaitingNote() {
         TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEW_PENDING, 0,
-                "awaiting: review comments; branch resumed, MR open", "a1", null, "title", "https://host/mr/425");
+                "awaiting: review comments; branch resumed, MR open", "a1", null, "title", "https://host/mr/425", null);
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/425");
     }
