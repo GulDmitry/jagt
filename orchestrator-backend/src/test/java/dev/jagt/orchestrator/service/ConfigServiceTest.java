@@ -1,14 +1,40 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.DashboardConfig;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ConfigServiceTest {
+
+    @Test
+    void deserializesSectionedConfigAndCoalescesOmittedSections() {
+        String json = """
+                {
+                  "viewer": { "tmuxSession": "alt", "viewMode": "tab-per-task", "keepViewer": false },
+                  "dashboard": { "refreshSeconds": 30 },
+                  "agent": { "outputStyle": "acme:eng" }
+                }
+                """;
+
+        ConfigFile config = new JsonMapper().readValue(json, ConfigFile.class);
+
+        assertThat(config.viewer().tmuxSession()).isEqualTo("alt");
+        assertThat(config.viewer().sharedView()).isFalse();
+        assertThat(config.viewer().keepViewerOrDefault()).isFalse();
+        assertThat(config.dashboard().refreshSecondsOrDefault()).isEqualTo(30);
+        assertThat(config.agent().outputStyleOrNull()).isEqualTo("acme:eng");
+        // codeReview + worktree omitted entirely — accessors coalesce to section defaults.
+        assertThat(config.codeReview().mrTitlePatternOrDefault()).isEqualTo("{ticket} {title}");
+        assertThat(config.worktree().copyGlobsOrDefault()).containsExactly("**/.env");
+    }
 
     static Stream<Arguments> intervals() {
         return Stream.of(
@@ -21,10 +47,9 @@ class ConfigServiceTest {
     @ParameterizedTest
     @MethodSource("intervals")
     void resolvesTheDashboardRefreshInterval(Integer configured, int expected) {
-        ConfigService.ConfigFile config = ConfigService.ConfigFile.defaults()
-                .withDashboardRefreshSeconds(configured);
+        DashboardConfig dashboard = DashboardConfig.defaults().withRefreshSeconds(configured);
 
-        assertThat(config.dashboardRefreshSecondsOrDefault()).isEqualTo(expected);
+        assertThat(dashboard.refreshSecondsOrDefault()).isEqualTo(expected);
     }
 
     static Stream<Arguments> reservedRows() {
@@ -38,9 +63,8 @@ class ConfigServiceTest {
     @ParameterizedTest
     @MethodSource("reservedRows")
     void resolvesTheDashboardReservedRows(Integer configured, int expected) {
-        ConfigService.ConfigFile config = ConfigService.ConfigFile.defaults()
-                .withDashboardReservedRows(configured);
+        DashboardConfig dashboard = DashboardConfig.defaults().withReservedRows(configured);
 
-        assertThat(config.dashboardReservedRowsOrDefault()).isEqualTo(expected);
+        assertThat(dashboard.reservedRowsOrDefault()).isEqualTo(expected);
     }
 }

@@ -36,7 +36,7 @@ concept is OS-agnostic; today it ships tuned for macOS.
 cp config.json.dist config.json          # add your project(s) — see Configuration
 cd orchestrator-backend
 ./gradlew build
-java -jar "$(ls build/libs/*.jar | grep -v plain)"
+java -jar build/libs/jagt.jar
 ```
 
 You're now at the `jagt>` console. Type `help`, or `do <ticket>` to start your first agent.
@@ -153,23 +153,25 @@ future automation):
 `config.json` is yours (gitignored, copied from `config.json.dist`). It's re-read on every access — no
 restart needed.
 
+Keys are grouped into logical sections; a whole section may be omitted (each key falls back to its default).
+
 | key | meaning |
 |-----|---------|
+| `viewer.tmuxSession` | name of the agents' session (default `jagt`) |
+| `viewer.viewMode` | `shared` = all tasks in one tab; `tab-per-task` = one terminal tab per task |
+| `viewer.keepViewer` | keep the agents window open after the last task (default `true`) |
+| `dashboard.refreshSeconds` | how often the dashboard refreshes, in seconds (default `10`) |
+| `dashboard.reservedRows` | rows reserved for command output + input below the dashboard (default `17`) |
+| `codeReview.mrTitlePattern` | MR/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
+| `codeReview.postReviewReplies` | on `ship`, auto-post the agent's replies to MR threads (default `true`); `false` keeps them in `review_replies.md` |
+| `codeReview.reviewReplyAuthors` | non-empty = auto-post replies ONLY to threads whose author matches one (e.g. `["coderabbit"]`); empty = all authors |
+| `codeReview.mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
+| `agent.outputStyle` | optional output style for the agent (Claude Code), e.g. `acme:engineer` (default empty = the agent's own style) |
+| `worktree.copyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
 | `projects.<key>.path` | absolute path to the base repository |
 | `projects.<key>.baseBranch` | branch new task branches start from, e.g. `origin/main` (read-only; jagt never pushes here) |
 | `projects.<key>.deployBranch` | target of `deploy`, e.g. `dev` (omit to disable deploy) |
 | `projects.<key>.labels` | hints for mapping tickets to this project |
-| `tmuxSession` | name of the agents' session (default `jagt`) |
-| `viewMode` | `shared` = all tasks in one tab; `tab-per-task` = one terminal tab per task |
-| `keepViewer` | keep the agents window open after the last task (default `true`) |
-| `mrTitlePattern` | MR/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
-| `postReviewReplies` | on `ship`, auto-post the agent's replies to MR threads (default `true`); `false` keeps them in `review_replies.md` |
-| `reviewReplyAuthors` | non-empty = auto-post replies ONLY to threads whose author matches one (e.g. `["coderabbit"]`); empty = all authors |
-| `worktreeCopyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
-| `agentOutputStyle` | optional output style for the agent (Claude Code), e.g. `acme:engineer` (default empty = the agent's own style) |
-| `dashboardRefreshSeconds` | how often the dashboard refreshes, in seconds (default `10`) |
-| `dashboardReservedRows` | rows reserved for command output + input below the dashboard (default `17`) |
-| `mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
 
 Machine/OS-level settings live in `orchestrator-backend/src/main/resources/application.yml` (restart to apply):
 

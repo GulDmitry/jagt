@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.platform.EditorDriver;
 import dev.jagt.orchestrator.platform.TerminalDriver;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ViewerConfig;
 import dev.jagt.orchestrator.service.GitService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TmuxService;
@@ -72,7 +73,7 @@ class OrchestratorToolsTest {
         state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withTmuxSession("jagt").withViewMode("tab-per-task"));
+                .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("tab-per-task")));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
@@ -96,7 +97,7 @@ class OrchestratorToolsTest {
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withTmuxSession("jagt").withViewMode("shared"));
+                .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("shared")));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         TerminalDriver terminal = mock(TerminalDriver.class);
@@ -120,7 +121,8 @@ class OrchestratorToolsTest {
         state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null));
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withTmuxSession("jagt").withViewMode("shared").withKeepViewer(false));
+                .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("shared")
+                        .withKeepViewer(false)));
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         TerminalDriver terminal = mock(TerminalDriver.class);

@@ -15,16 +15,21 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   so the backend knows which agent is calling. Symlinked into every worktree.
 - `.mcp.json` — Claude Code project MCP config pointing at `mcp_client.js` (spec called it `.claude.json`;
   `.mcp.json` is what Claude Code actually reads). Symlinked into every worktree.
-- `config.json` — user config: projects (path, baseBranch, deployBranch, labels), `tmuxSession`,
-  `viewMode` (shared | window-per-task), `mergeRequestDefaults`. Gitignored; created by copying
-  committed `config.json.dist`. Never commit user-specific paths. ALL config keys are documented
-  in README's Configuration section — keep it in sync.
+- `config.json` — user config, grouped into logical sections: `projects` (path, baseBranch,
+  deployBranch, labels), `viewer` (tmuxSession, viewMode shared|tab-per-task, keepViewer), `dashboard`
+  (refreshSeconds, reservedRows), `codeReview` (mrTitlePattern, postReviewReplies, reviewReplyAuthors,
+  mergeRequestDefaults), `agent` (outputStyle), `worktree` (copyGlobs). Each section is a small value
+  record (`ConfigService.ConfigFile.*Config`) with `defaults()` + `withX` withers + `*OrDefault`
+  accessors; a whole section may be omitted (ConfigFile's accessors coalesce a null section to its
+  defaults, so callers never null-check). Gitignored; created by copying committed `config.json.dist`.
+  Never commit user-specific paths. ALL config keys are documented in README's Configuration section —
+  keep it in sync.
 - Orchestrator root is auto-detected at startup: nearest parent dir containing `mcp_client.js`
   (`OrchestratorPaths`); overridable via `ORCHESTRATOR_ROOT`. No absolute user paths in the repo.
 - `initialize_task` copies the base repo's run configs into the worktree so `ide` opens it ready to
   run — both `.run/` (modern) and `.idea/runConfigurations/` (legacy). Only "Store as project file"
   configs live there; workspace-only ones don't copy. It ALSO copies gitignored local files matching
-  the per-project `worktreeCopyGlobs` (default `["**/.env"]`) from the base repo to the same relative
+  the per-project `worktree.copyGlobs` (default `["**/.env"]`) from the base repo to the same relative
   worktree path (`copyLocalFiles`, heavy dirs skipped) — run configs reference module `.env`, key
   files, SSL certs (e.g. `app/.env`, `**/*.pem`) which are gitignored and otherwise missing, so the
   app wouldn't start. Patterns are config, NOT hardcoded. Best-effort, gitignored, no-op if absent.
@@ -43,10 +48,10 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - MASTER SHELL = FULL-SCREEN TUI (Lanterna), ONE integrated screen. `MasterShell` runs a Lanterna
   `Screen`: command-output log on top, the dashboard table beneath it, the `jagt>` input line pinned to
   the bottom row — all in one back-buffer, redrawn from scratch every frame (`render()`), refreshed every
-  `dashboardRefreshSeconds` (config.json, default 10). Resize is handled by `doResizeIfNecessary()` + the
+  `dashboard.refreshSeconds` (config.json, default 10). Resize is handled by `doResizeIfNecessary()` + the
   full redraw — DO NOT reintroduce a JLine `Status`/scroll-region pinned bar or any absolute-bottom cursor
   anchoring: that could not survive terminal resize (DECSTBM resets on resize → orphaned ghost dashboard +
-  the prompt flying to row 1), which cost many sessions. `dashboardReservedRows` caps the dashboard height
+  the prompt flying to row 1), which cost many sessions. `dashboard.reservedRows` caps the dashboard height
   so ≥ that many rows stay for output+input (overflow → a "… +N" line). Terminal layout IS testable, never
   "fix it blind": `orchestrator-backend/scripts/dashboard-layout-smoke.sh` drives the jar in tmux and
   asserts the invariants (one dashboard header, input pinned to the bottom row, dashboard above it) across
@@ -184,7 +189,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 
 ## Build & run
 - The backend process IS the Master control terminal (Lanterna full-screen TUI); run it in a REAL terminal
-  so the TUI can take over the screen: `./gradlew build` then `java -jar build/libs/orchestrator-backend-0.2.0.jar`.
+  so the TUI can take over the screen: `./gradlew build` then `java -jar build/libs/jagt.jar` (bootJar has a
+  fixed, version-independent archive name, so the run command never changes across releases).
 - `./gradlew bootRun` works but Gradle captures stdout → no TTY (`System.console()` is null) → the TUI
   falls back to a plain inline line-REPL (dashboard printed after each command). Run the jar directly for
   the full-screen TUI. Java 25, port 8290.
@@ -196,5 +202,5 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   from that jar corrupts its class loading, and the first not-yet-loaded class fails — which then MASKS the
   real error (e.g. "Port 8290 already in use") behind a confusing logback/Spring trace. It is expected and
   harmless: the OLD instance dies, just restart from the freshly built jar. To avoid it entirely, run from a
-  copy the build never touches: `cp build/libs/orchestrator-backend-0.2.0.jar /tmp/jagt.jar && java -jar
+  copy the build never touches: `cp build/libs/jagt.jar /tmp/jagt.jar && java -jar
   /tmp/jagt.jar`. (Past sessions burned hours chasing this as a logback/preload bug — it is not.)

@@ -94,8 +94,8 @@ public class MasterShell implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         ConfigService.ConfigFile config = configService.load();
-        int refreshSeconds = config.dashboardRefreshSecondsOrDefault();
-        this.commandRows = config.dashboardReservedRowsOrDefault();
+        int refreshSeconds = config.dashboard().refreshSecondsOrDefault();
+        this.commandRows = config.dashboard().reservedRowsOrDefault();
 
         Screen screen = null;
         try {

@@ -1,17 +1,27 @@
 {
-  "tmuxSession": "jagt",
-  "viewMode": "shared",
-  "keepViewer": true,
-  "mrTitlePattern": "{ticket} {title}",
-  "agentOutputStyle": "",
-  "postReviewReplies": true,
-  "reviewReplyAuthors": [],
-  "worktreeCopyGlobs": ["**/.env", "**/*.pem", "**/*.pub", "**/*.p12", "**/*.jks", "**/*.keystore"],
-  "dashboardRefreshSeconds": 10,
-  "dashboardReservedRows": 17,
-  "mergeRequestDefaults": {
-    "removeSourceBranch": true,
-    "squash": true
+  "viewer": {
+    "tmuxSession": "jagt",
+    "viewMode": "shared",
+    "keepViewer": true
+  },
+  "dashboard": {
+    "refreshSeconds": 10,
+    "reservedRows": 17
+  },
+  "codeReview": {
+    "mrTitlePattern": "{ticket} {title}",
+    "postReviewReplies": true,
+    "reviewReplyAuthors": [],
+    "mergeRequestDefaults": {
+      "removeSourceBranch": true,
+      "squash": true
+    }
+  },
+  "agent": {
+    "outputStyle": ""
+  },
+  "worktree": {
+    "copyGlobs": ["**/.env", "**/*.pem", "**/*.pub", "**/*.p12", "**/*.jks", "**/*.keystore"]
   },
   "projects": {
     "my-project": {

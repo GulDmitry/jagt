@@ -42,7 +42,7 @@ public class WatchdogService {
     public void scan() {
         long staleMs = properties.watchdog().staleAfter().toMillis();
         long now = System.currentTimeMillis();
-        String session = tmuxService.sessionName(configService.load().tmuxSession());
+        String session = tmuxService.sessionName(configService.load().viewer().tmuxSession());
         stateService.tasks().forEach((taskId, task) -> {
             // NEW is watched too: an agent that dies before its first status update
             // (spawn failure, auth prompt) is exactly the silent death to catch.

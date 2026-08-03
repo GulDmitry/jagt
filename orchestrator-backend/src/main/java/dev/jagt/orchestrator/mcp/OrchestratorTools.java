@@ -100,7 +100,7 @@ public class OrchestratorTools {
             excludeOrchestratorFiles(projectPath);
             linkOrchestratorFiles(worktreePath);
             copyRunConfigurations(projectPath, worktreePath);
-            copyLocalFiles(projectPath, worktreePath, configService.load().worktreeCopyGlobsOrDefault());
+            copyLocalFiles(projectPath, worktreePath, configService.load().worktree().copyGlobsOrDefault());
             writeString(worktreePath.resolve("CLAUDE.md"),
                     subAgentContext(taskId, projectKey, project, worktreePath, remoteUrl, config));
             if (instructions != null && !instructions.isBlank()) {
@@ -272,9 +272,9 @@ public class OrchestratorTools {
         stateService.removeTask(taskId);
         // Reserve the viewer by default: keep it open when empty so a manual
         // placement (dragged into a group/window) survives across task cycles.
-        boolean closedViewer = stateService.tasks().isEmpty() && !config.keepViewerOrDefault();
+        boolean closedViewer = stateService.tasks().isEmpty() && !config.viewer().keepViewerOrDefault();
         if (closedViewer) {
-            terminalDriver.closeViewerWindow(tmuxService.sessionName(config.tmuxSession()));
+            terminalDriver.closeViewerWindow(tmuxService.sessionName(config.viewer().tmuxSession()));
         }
         return "Task " + taskId + " removed: worktree deleted, state entry dropped. Branch '" + taskId
                 + "' was kept" + (project == null ? " (worktree left on disk: project missing from config.json)" : "")
@@ -458,21 +458,21 @@ public class OrchestratorTools {
         // Strip any leading ticket from the stored title BEFORE applying the pattern, so the id can never
         // appear twice regardless of flow (a resumed task's title came from the already-prefixed MR title)
         // or how many ships ran — the expansion is idempotent.
-        String title = config.mrTitlePatternOrDefault()
+        String title = config.codeReview().mrTitlePatternOrDefault()
                 .replace("{ticket}", taskId)
                 .replace("{title}", stripTicketPrefix(task.title(), taskId))
                 .trim();
         String repliesStep;
-        if (!config.postReviewRepliesOrDefault()) {
+        if (!config.codeReview().postReviewRepliesOrDefault()) {
             repliesStep = "4. Do NOT post any replies — LEAVE review_replies.md untouched for the human to"
                     + " post; only the code is pushed.\n";
-        } else if (config.reviewReplyAuthorsOrEmpty().isEmpty()) {
+        } else if (config.codeReview().reviewReplyAuthorsOrEmpty().isEmpty()) {
             repliesStep = "4. If review_replies.md exists, post each drafted reply to its MR thread, then"
                     + " delete it.\n";
         } else {
             repliesStep = "4. If review_replies.md exists, post drafted replies ONLY to threads whose comment"
                     + " author matches (case-insensitive) any of: "
-                    + String.join(", ", config.reviewReplyAuthorsOrEmpty())
+                    + String.join(", ", config.codeReview().reviewReplyAuthorsOrEmpty())
                     + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones.\n";
         }
         writeTaskContext(taskId, shipInstruction(firstShip, title, taskId, baseBranch, repliesStep));
@@ -540,7 +540,7 @@ public class OrchestratorTools {
         TaskState task = requireTask(taskId);
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
-        String dedicatedTitle = tmuxService.sessionName(config.tmuxSession());
+        String dedicatedTitle = tmuxService.sessionName(config.viewer().tmuxSession());
         boolean respawned = false;
         Path worktreePath = Path.of(task.worktreePath());
         switch (tmuxService.taskWindowState(session, taskId)) {
@@ -621,7 +621,7 @@ public class OrchestratorTools {
     private String openTab(String taskId, String alias, Path worktreePath, ConfigService.ConfigFile config,
                            boolean planMode) {
         String session = agentSession(config, taskId);
-        tmuxService.openTaskWindow(session, tmuxService.sessionName(config.tmuxSession()), taskId,
+        tmuxService.openTaskWindow(session, tmuxService.sessionName(config.viewer().tmuxSession()), taskId,
                 alias, worktreePath, planMode);
         return session;
     }
@@ -632,8 +632,8 @@ public class OrchestratorTools {
      * session, shown as its own Warp tab in the current window.
      */
     private String agentSession(ConfigService.ConfigFile config, String taskId) {
-        String base = tmuxService.sessionName(config.tmuxSession());
-        return config.viewMode() == null || "shared".equalsIgnoreCase(config.viewMode())
+        String base = tmuxService.sessionName(config.viewer().tmuxSession());
+        return config.viewer().sharedView()
                 ? base
                 : base + "-" + taskId;
     }
@@ -702,7 +702,7 @@ public class OrchestratorTools {
         // agentOutputStyle from config.json is pinned here (a worktree is an untrusted
         // project where the human's global style may not apply); default null → omitted.
         writeString(worktreePath.resolve(".claude").resolve("settings.local.json"),
-                agentSettingsJson(configService.load().agentOutputStyleOrNull(), agentDisabledPlugins));
+                agentSettingsJson(configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
     }
 
     /**
