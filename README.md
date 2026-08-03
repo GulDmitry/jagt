@@ -179,6 +179,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 |-----|---------|
 | `orchestrator.platform` | notifier strategy (default `macos`) |
 | `orchestrator.terminal` | agents viewer: `kitty` (default) or `warp`; both run over tmux |
+| `orchestrator.kitty-font-size` | viewer font size for the kitty terminal (blank keeps kitty.conf's own) |
 | `orchestrator.editor-command` | editor launcher list (default `[open, -a, IntelliJ IDEA]`; e.g. `[code]`) |
 | `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` |
 | `orchestrator.agent` | which AI agent runtime — `claude` (default), and future MCP-capable CLIs; the pluggable seam |

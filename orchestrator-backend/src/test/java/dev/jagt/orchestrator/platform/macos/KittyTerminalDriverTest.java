@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class KittyTerminalDriverTest {
 
     private static final List<String> CMD =
-            KittyTerminalDriver.firstOpenCommand("kitty", "unix:/tmp/jagt-kitty-agents",
+            KittyTerminalDriver.firstOpenCommand("kitty", "", "unix:/tmp/jagt-kitty-agents",
                     "agents", "/work/tree", "tmux", "agents");
 
     @Test
@@ -28,5 +28,18 @@ class KittyTerminalDriverTest {
         assertThat(CMD).startsWith("kitty", "--detach")
                 .containsSequence("-o", "allow_remote_control=yes")
                 .containsSequence("--", "tmux", "attach", "-t", "agents");
+    }
+
+    @Test
+    void appliesTheConfiguredFontSizeToTheViewerInstance() {
+        List<String> cmd = KittyTerminalDriver.firstOpenCommand("kitty", "13", "unix:/tmp/jagt-kitty-agents",
+                "agents", "/work/tree", "tmux", "agents");
+
+        assertThat(cmd).containsSequence("-o", "font_size=13");
+    }
+
+    @Test
+    void leavesTheFontSizeToKittysOwnConfigWhenUnset() {
+        assertThat(CMD).noneMatch(a -> a.startsWith("font_size="));
     }
 }

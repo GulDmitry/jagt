@@ -32,6 +32,7 @@ orchestrator:
   # Both run over tmux, so agents persist regardless. kitty needs `brew install kitty`.
   terminal: kitty
   # kitty-command: kitty   # override the kitty binary if not on PATH
+  # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own (default 11)
   # Editor launcher + args; the worktree path is appended. LaunchServices `open -a`
   # is Toolbox-independent. Alternatives: [code] for VS Code, [subl] for Sublime.
   editor-command: ["open", "-a", "IntelliJ IDEA"]

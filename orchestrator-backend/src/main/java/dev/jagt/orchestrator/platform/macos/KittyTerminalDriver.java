@@ -40,14 +40,17 @@ public class KittyTerminalDriver implements TerminalDriver {
     private final OrchestratorProperties properties;
     private final OsaScript osaScript;
     private final String kittyCommand;
+    private final String kittyFontSize;
     private final ConcurrentHashMap<String, Long> openedAt = new ConcurrentHashMap<>();
 
     public KittyTerminalDriver(ProcessRunner processRunner, OrchestratorProperties properties, OsaScript osaScript,
-                               @Value("${orchestrator.kitty-command:kitty}") String kittyCommand) {
+                               @Value("${orchestrator.kitty-command:kitty}") String kittyCommand,
+                               @Value("${orchestrator.kitty-font-size:}") String kittyFontSize) {
         this.processRunner = processRunner;
         this.properties = properties;
         this.osaScript = osaScript;
         this.kittyCommand = kittyCommand;
+        this.kittyFontSize = kittyFontSize;
     }
 
     @Override
@@ -77,7 +80,7 @@ public class KittyTerminalDriver implements TerminalDriver {
         }
         // First open: launch a dedicated kitty window already attached to the session.
         var open = processRunner.run(null, TIMEOUT,
-                firstOpenCommand(kittyCommand, socket, dedicatedTitle, tabCwd.toString(), tmux, tmuxSession));
+                firstOpenCommand(kittyCommand, kittyFontSize, socket, dedicatedTitle, tabCwd.toString(), tmux, tmuxSession));
         if (open.exitCode() != 0) {
             log.warn("Could not launch kitty for tmux session '{}': {}. Attach manually: {} attach -t {}",
                     tmuxSession, open.stderr(), tmux, tmuxSession);
@@ -129,12 +132,15 @@ public class KittyTerminalDriver implements TerminalDriver {
      * to the tmux session. {@code --detach} forks kitty into the background and returns immediately; without
      * it the GUI process runs in the foreground and ProcessRunner blocks until timeout.
      */
-    static List<String> firstOpenCommand(String kittyCommand, String socket, String title,
+    static List<String> firstOpenCommand(String kittyCommand, String fontSize, String socket, String title,
                                          String directory, String tmux, String tmuxSession) {
         List<String> cmd = new java.util.ArrayList<>(List.of(kittyCommand, "--detach",
                 "--single-instance", "--instance-group", "jagt-" + tmuxSession,
                 "--listen-on", socket, "-o", "allow_remote_control=yes"));
         cmd.addAll(CYRILLIC_SHORTCUT_FIXES);
+        if (fontSize != null && !fontSize.isBlank()) {
+            cmd.addAll(List.of("-o", "font_size=" + fontSize.trim()));
+        }
         cmd.addAll(List.of("--title", title, "--directory", directory,
                 "--", tmux, "attach", "-t", tmuxSession));
         return List.copyOf(cmd);

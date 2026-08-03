@@ -11,6 +11,8 @@ node_modules/
 .settings/
 .factorypath
 config.json
+# Per-user Spring overrides (Spring Boot auto-loads ./config/ next to the run cwd)
+orchestrator-backend/config/
 target/
 
 # Backend runtime log (logback writes to the process cwd — repo root when the jar
