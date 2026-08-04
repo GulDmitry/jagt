@@ -18,7 +18,7 @@ import java.util.Optional;
 /**
  * {@link MasterAssistant} via a one-shot headless Claude. Portable by design: it hardcodes NO MCP
  * server or path — {@code --setting-sources user,project,local} makes the child inherit the human's
- * own MCP config (so whatever Jira/GitLab MCP the human already has, this call gets), and
+ * own MCP config (so whatever issue-tracker / code-host MCP the human already has, this call gets), and
  * {@code --json-schema} forces a deterministic JSON answer. Runs from the temp dir so only the
  * human's user-level MCP loads (no jagt project MCP), keeping the context — and tokens — small.
  */
@@ -32,10 +32,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "exists":{"type":"boolean"},\
             "key":{"type":"string"},\
             "title":{"type":"string"},\
-            "jiraProject":{"type":"string"},\
+            "trackerProject":{"type":"string"},\
             "labels":{"type":"array","items":{"type":"string"}},\
             "url":{"type":"string"}},\
-            "required":["exists","key","title","jiraProject","labels","url"]}""";
+            "required":["exists","key","title","trackerProject","labels","url"]}""";
     private static final String MR_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
@@ -49,7 +49,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "pipelineStatus":{"type":"string"},\
             "comments":{"type":"array","items":{"type":"string"}}},\
             "required":["exists","pipelineStatus","comments"]}""";
-    /** The review sweep makes several GitLab calls; give it much longer than a single lookup. */
+    /** The review sweep makes several code-host calls; give it much longer than a single lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
 
     private final ProcessRunner processRunner;
@@ -73,14 +73,14 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " key (e.g. ABC-123) OR a URL to it in some tracker (Jira, GitHub, GitLab, …). Open it"
                 + " with the matching MCP tool: if it is a URL, follow the URL — do NOT try to parse a key"
                 + " out of it. Return exists=true with its canonical issue key as key, its summary as"
-                + " title, its project key as jiraProject, its labels, and its canonical web URL as url"
+                + " title, its project key as trackerProject, its labels, and its canonical web URL as url"
                 + " (the human-facing link to the item; empty string if the tracker has none). If it"
                 + " cannot be read, exists=false with empty strings and array.";
         return ask(prompt, TICKET_SCHEMA, ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
             return new TicketFacts(n.path("exists").asBoolean(false), n.path("key").asString(""),
-                    n.path("title").asString(""), n.path("jiraProject").asString(""), labels,
+                    n.path("title").asString(""), n.path("trackerProject").asString(""), labels,
                     n.path("url").asString(""));
         });
     }
@@ -90,9 +90,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (mrUrl == null || !mrUrl.startsWith("http")) {
             return Optional.empty();
         }
-        String prompt = "Fetch the GitLab merge request at " + mrUrl + " via your GitLab MCP tools. Return"
-                + " exists=true with its source branch as sourceBranch, its project path (group/project)"
-                + " as projectPath, and its title. If it does not exist, exists=false with empty strings.";
+        String prompt = "Fetch the merge/pull request at " + mrUrl + " via the matching code-host MCP tools"
+                + " (GitLab MR, GitHub PR, Bitbucket PR — whichever the URL points to). Return exists=true"
+                + " with its source branch as sourceBranch, its project path (group/project) as projectPath,"
+                + " and its title. If it does not exist, exists=false with empty strings.";
         return ask(prompt, MR_SCHEMA, mrUrl).map(n -> new MergeRequestFacts(
                 n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
                 n.path("projectPath").asString(""), n.path("title").asString("")));
@@ -103,8 +104,8 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (mrUrl == null || !mrUrl.startsWith("http")) {
             return Optional.empty();
         }
-        String prompt = "Review sweep of the GitLab merge request at " + mrUrl + " via your GitLab MCP"
-                + " tools. Return exists, pipelineStatus (latest pipeline result, e.g. success/failed/none),"
+        String prompt = "Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
+                + " MCP tools. Return exists, pipelineStatus (latest pipeline/checks result, e.g. success/failed/none),"
                 + " and comments — every UNRESOLVED discussion note (bots like CodeRabbit + humans),"
                 + " each as one string \"author (file:line): body\". Empty array if none.";
         return ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT).map(n -> {

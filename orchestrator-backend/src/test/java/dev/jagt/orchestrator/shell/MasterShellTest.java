@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -67,6 +68,37 @@ class MasterShellTest {
         shell.resumeTask(List.of("resume", "https://host/mr/425"));
 
         verify(tools).resumeTask("PROJ-1", "https://host/mr/425", "PROJ-1 Excel export");
+    }
+
+    @Test
+    void treatsFreeTextAfterPlanAsNotesNotAProject() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()),
+                "sobrado", new ProjectConfig("/b", "origin/stage", "dev", List.of()))));
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
+                config, mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+
+        MasterShell.DoArgs args = shell.parseDoArgs(List.of("do", "ABC-2099", "plan", "давай", "разберём", "алгоритм"));
+
+        assertThat(args.project()).isNull();
+        assertThat(args.mode()).isEqualTo("plan");
+        assertThat(args.notes()).isEqualTo("давай разберём алгоритм");
+    }
+
+    @Test
+    void relaysInlineNotesToTheAgentAfterConsumingLeadingPlanAndProject() {
+        OrchestratorTools tools = mock(OrchestratorTools.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
+        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config,
+                mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+
+        shell.doTask(List.of("do", "ABC-1", "plan", "sng", "start", "with", "tests", "only"));
+
+        verify(tools).initializeTask(eq("ABC-1"), eq("sng"), contains("start with tests only"),
+                eq("plan"), isNull(), isNull(), isNull());
     }
 
     @Test

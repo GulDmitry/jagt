@@ -129,26 +129,19 @@ latency and the tab-control API of each; kitty is the front-runner (simplest con
 
 ### Tracker- and VCS-host-agnostic: never hardcode Jira / GitLab
 The backend must assume NOTHING about which issue tracker or code host is in play — the ONLY source of
-truth is whatever MCP the human's session happens to expose. The tracker may not be Jira (could be Linear,
-GitHub Issues, a plain URL to anything); the code host may not be GitLab (could be GitHub PRs, Bitbucket
-PRs, any `http(s)` git URL). This is the external-systems dimension of the existing "PLUGGABLE BY DESIGN"
-invariant: same rule as OS/terminal/agent seams — no `if jira` / `if gitlab`, no host-specific wording that
-narrows what the MCP call will accept. `mcp_client.js` stays a generic proxy; the assistant prompts must
-name the GENERIC concept ("the work item at <url>", "the change/merge/pull request at <url>") and let the
-session's MCP resolve it, never "the GitLab merge request … via your GitLab MCP".
+truth is whatever MCP the human's session exposes. The tracker may not be Jira (Linear, GitHub Issues, a
+plain URL to anything); the code host may not be GitLab (GitHub PRs, Bitbucket PRs, any `http(s)` git URL).
+This is the external-systems dimension of the "PLUGGABLE BY DESIGN" invariant: no `if jira` / `if gitlab`,
+no host-specific wording that narrows what an MCP call will accept.
 
-Current hardcoded debt to neutralize (grep `jira|gitlab`):
-- `TicketFacts.jiraProject` (field name) + `TICKET_SCHEMA` `"jiraProject"` key + prompt "as jiraProject"
-  (`MasterAssistant`, `HeadlessClaudeAssistant`) → rename to a tracker-neutral `projectKey`/`trackerProject`.
-- `HeadlessClaudeAssistant.readMergeRequest` / `readReview` prompts say "GitLab merge request … your GitLab
-  MCP tools" → generalize to "the merge/pull request at <url> via the matching MCP" (GitHub PR, Bitbucket
-  PR, GitLab MR all reachable the same way; `mrUrl.startsWith("http")` is already host-neutral, keep it).
-- `master_prompt.md` + `OrchestratorTools` provisioning text ("your GitLab MCP", "create one via your
-  GitLab MCP") → phrase host-agnostically; the agent uses whatever code-host MCP its session has.
-- Naming: `mrUrl` / "MR" / `CI_POLLING` lean GitLab — acceptable as internal labels, but user-facing prompt
-  text should say "review request" / "pipeline" generically. Low priority vs. the prompt wording above.
-Note the label-based project matching (`projectsMatching`) is already tracker-neutral (it intersects
-whatever labels the item exposes) — leave it. This is prompt/wording + one field rename, not a flow change.
+Done: `trackerProject` field + schema/prompt (was `jiraProject`); `readMergeRequest`/`readReview` prompts
+now say "the merge/pull request at <url> via the matching code-host MCP"; `master_prompt.md` +
+`OrchestratorTools` provisioning text say "your code-host MCP" / "your issue-tracker MCP". Label-based
+routing (`projectsMatching`) was already tracker-neutral.
+
+Remaining (low priority): `mrUrl` / "MR" / `CI_POLLING` are GitLab-leaning INTERNAL labels — fine as-is,
+but user-facing prompt text could say "review request" / "pipeline or checks" generically. Not worth a
+churny rename until a non-GitLab host is actually wired.
 
 ### Verify the build on Linux
 Confirm `./gradlew build` and the runnable jar work on Linux (Java 25, Node, tmux, git present). The core

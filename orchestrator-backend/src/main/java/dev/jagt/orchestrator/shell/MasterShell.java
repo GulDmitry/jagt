@@ -795,15 +795,15 @@ public class MasterShell implements ApplicationRunner {
     private static final Pattern KEY_REF = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
 
     String doTask(List<String> tok) {
-        String ref = arg(tok, 1, "do <ticket|url> [project] [plan]");
-        String mode = tok.contains("plan") ? "plan" : null;
-        String explicit = tok.stream().skip(2).filter(t -> !t.equals("plan")).findFirst().orElse(null);
+        String ref = arg(tok, 1, "do <ticket|url> [project] [plan] [notes…]");
+        DoArgs a = parseDoArgs(tok);
         boolean bareKey = KEY_REF.matcher(ref).matches();
 
         // Fast path: a bare key + explicit project needs no read — the key IS the task id.
-        if (bareKey && explicit != null) {
-            return tools.initializeTask(ref, resolveProject(explicit),
-                    "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null, null);
+        if (bareKey && a.project != null) {
+            return tools.initializeTask(ref, resolveProject(a.project),
+                    withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", a.notes),
+                    a.mode, null, null, null);
         }
         // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
         // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
@@ -819,17 +819,52 @@ public class MasterShell implements ApplicationRunner {
             if (taskId == null) {
                 return "error: read " + ref + " but the assistant returned no issue key to name the task";
             }
-            String project = explicit != null ? resolveProject(explicit) : resolveByLabels(f);
-            String instructions = "Implement " + taskId + " — \"" + f.title()
-                    + "\". Read it via your issue-tracker MCP for full details, then work.";
-            return tools.initializeTask(taskId, project, instructions, mode, null, f.title(), f.url());
+            String project = a.project != null ? resolveProject(a.project) : resolveByLabels(f);
+            String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
+                    + "\". Read it via your issue-tracker MCP for full details, then work.", a.notes);
+            return tools.initializeTask(taskId, project, instructions, a.mode, null, f.title(), f.url());
         }
         // Assistant unavailable: only a bare key can proceed — a URL has no derivable task id without it.
         if (!bareKey) {
             return "error: assistant unavailable — pass an issue key (not a URL), or add the project";
         }
-        return tools.initializeTask(ref, resolveProject(explicit),
-                "Read " + ref + " via your issue-tracker MCP and implement it.", mode, null, null, null);
+        return tools.initializeTask(ref, resolveProject(a.project),
+                withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", a.notes),
+                a.mode, null, null, null);
+    }
+
+    record DoArgs(String project, String mode, String notes) {
+    }
+
+    /**
+     * Splits {@code do <ticket> …} after the ticket: leading {@code plan} and a known project key (in
+     * either order) are consumed as modifiers; everything after them is free-text notes relayed to the
+     * agent verbatim. So a project name is recognised only as a leading token, never mid-sentence, and a
+     * note may contain the word "plan".
+     */
+    DoArgs parseDoArgs(List<String> tok) {
+        List<String> rest = new ArrayList<>(tok.subList(Math.min(2, tok.size()), tok.size()));
+        Set<String> projectKeys = configService.load().projects().keySet();
+        String mode = null;
+        String project = null;
+        while (!rest.isEmpty()) {
+            String head = rest.get(0);
+            if (mode == null && head.equals("plan")) {
+                mode = "plan";
+            } else if (project == null && projectKeys.contains(head)) {
+                project = head;
+            } else {
+                break;
+            }
+            rest.remove(0);
+        }
+        return new DoArgs(project, mode, String.join(" ", rest).strip());
+    }
+
+    private static String withNotes(String instructions, String notes) {
+        return notes == null || notes.isBlank()
+                ? instructions
+                : instructions + "\n\nAdditional instructions from the human:\n" + notes;
     }
 
     /**
@@ -896,7 +931,7 @@ public class MasterShell implements ApplicationRunner {
                 + r.pipelineStatus() + " -> agent";
     }
 
-    /** Picks the jagt project whose configured labels intersect the ticket's labels (or Jira key). */
+    /** Picks the jagt project whose configured labels intersect the ticket's labels (or tracker project key). */
     private String resolveByLabels(TicketFacts f) {
         Map<String, List<String>> projectLabels = new java.util.LinkedHashMap<>();
         configService.load().projects().forEach((k, v) -> projectLabels.put(k, v.labels()));
@@ -912,10 +947,10 @@ public class MasterShell implements ApplicationRunner {
                 + " — specify: do <ticket> <project>");
     }
 
-    /** Pure: the project keys whose labels intersect the ticket's labels or its Jira project key. */
+    /** Pure: the project keys whose labels intersect the ticket's labels or its tracker project key. */
     static List<String> projectsMatching(TicketFacts f, Map<String, List<String>> projectLabels) {
         Set<String> tokens = new HashSet<>(f.labels());
-        tokens.add(f.jiraProject());
+        tokens.add(f.trackerProject());
         return projectLabels.entrySet().stream()
                 .filter(e -> e.getValue() != null && e.getValue().stream().anyMatch(tokens::contains))
                 .map(Map.Entry::getKey)

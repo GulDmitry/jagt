@@ -291,19 +291,22 @@ class OrchestratorToolsTest {
 
     @ParameterizedTest
     @CsvSource({
-            "IN_PROGRESS,    true,  PROCEED",
-            "IN_PROGRESS,    false, PROCEED",
-            "REVIEW_PENDING, true,  PROCEED",
-            "SHIPPING,       false, PROCEED",
-            "SHIPPING,       true,  REFUSE",
-            "CI_POLLING,     false, REFUSE",
-            "DEPLOYED,       false, REFUSE",
-            "NEW,            true,  REFUSE",
-            "DONE,           false, REFUSE"
+            "IN_PROGRESS,    true,  false, PROCEED",
+            "IN_PROGRESS,    false, false, PROCEED",
+            "REVIEW_PENDING, true,  false, PROCEED",
+            "SHIPPING,       false, false, PROCEED",
+            "SHIPPING,       true,  false, REFUSE",
+            "CI_POLLING,     false, true,  PROCEED",
+            "CI_FAILED,      false, true,  PROCEED",
+            "DEPLOYED,       false, true,  PROCEED",
+            "CI_POLLING,     false, false, REFUSE",
+            "DEPLOYED,       false, false, REFUSE",
+            "NEW,            true,  false, REFUSE",
+            "DONE,           false, true,  REFUSE"
     })
     void shipGateProceedsOrRefusesByStatusAndAgentLiveness(
-            TaskStatus status, boolean agentLive, OrchestratorTools.ShipGate expected) {
-        assertThat(OrchestratorTools.shipGate(status, agentLive)).isEqualTo(expected);
+            TaskStatus status, boolean agentLive, boolean hasMr, OrchestratorTools.ShipGate expected) {
+        assertThat(OrchestratorTools.shipGate(status, agentLive, hasMr)).isEqualTo(expected);
     }
 
     @Test
@@ -693,16 +696,16 @@ class OrchestratorToolsTest {
 
         assertThat(instruction)
                 .contains("EXACTLY this message: \"ABC-42 Widget layout is off\"")
-                .contains("create one via your GitLab MCP");
+                .contains("create one via your code-host MCP");
     }
 
     @Test
-    void reviewRoundShipCommitsAConciseSummaryNotTheTicketTitle() {
+    void reviewRoundShipCommitLeadsWithTheTaskIdButNotTheFullTitle() {
         String instruction = OrchestratorTools.shipInstruction(false, "ABC-42 Widget layout is off",
                 "ABC-42", "dev", "");
 
         assertThat(instruction)
-                .contains("CONCISE one-line message")
+                .contains("STARTS with \"ABC-42\"")
                 .doesNotContain("EXACTLY this message")
                 .doesNotContain("ABC-42 Widget layout is off");
     }

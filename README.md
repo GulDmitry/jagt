@@ -30,6 +30,25 @@ concept is OS-agnostic; today it ships tuned for macOS.
 
 ---
 
+## What jagt works with
+
+jagt orchestrates four kinds of tool. Each is an **abstraction, not a brand** — jagt hardcodes none of
+them; it relies only on whatever MCP your session exposes, so the concrete vendor is yours to pick.
+
+- **Issue tracker** — where tickets live. Jira, Linear, GitHub Issues, or a plain URL to anything: a ticket
+  is just an id, a title, and (maybe) a link to open.
+- **Version-control host** — where branches, pushes, and review requests live. GitLab, GitHub, Bitbucket —
+  any `http(s)` git remote and its merge/pull requests.
+- **AI coding agent** — the per-ticket worker session. Claude Code (default), Codex, Qwen — any MCP-capable
+  CLI.
+- **Terminal** — the window your agents run in, and where you drive the Master console. kitty or Warp.
+
+Plus an **editor** (IntelliJ IDEA today) and a **desktop notifier** for the human checkpoints. Every one of
+these is a swappable strategy: add a vendor by implementing an interface and naming it in config — never by
+editing the task flow.
+
+---
+
 ## Quick start
 
 ```bash
@@ -127,6 +146,7 @@ flowchart TD
     IDE2 -->|"another round"| SHIP
     IDE2 -->|"green + all resolved"| DEPLOY
     DEPLOY -->|"merged into deployBranch (conflict → agent resolves staged, you commit + deploy again)"| DONE
+    DEPLOY -.->|"more changes: ship again (same MR) → deploy again — deploy is a dev step, not the end"| SHIP
 
     classDef cmd font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
     class DO,FOCUS,IDE1,SHIP,REVIEW,IDE2,DEPLOY,DONE cmd;

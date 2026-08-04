@@ -44,8 +44,9 @@ orchestrator:
   agent-prompt: >-
     You are the sub-agent for this worktree. Read task_context.md, set your status to IN_PROGRESS
     via update_agent_status, and start working on the task. Follow the rules in CLAUDE.md. Work
-    autonomously: when done and verified, commit to your task branch WITHOUT asking for permission
-    and set status REVIEW_PENDING.
+    autonomously, but do NOT commit, push, or open a merge request on your own — leave ALL changes
+    UNCOMMITTED so the human reviews your working tree; committing happens ONLY when task_context.md
+    later instructs it (that is the human's `ship`). When done and verified, set status REVIEW_PENDING.
   # Master assistant: a one-shot headless Claude for `do <ticket>` — reads the Jira ticket to resolve
   # the project (matching the ticket's labels to your projects' `labels`) and grab the title. It
   # inherits YOUR MCP servers via --setting-sources (jagt hardcodes NO server or path); --json-schema

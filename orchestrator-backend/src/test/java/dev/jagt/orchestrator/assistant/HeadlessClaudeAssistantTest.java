@@ -24,7 +24,7 @@ class HeadlessClaudeAssistantTest {
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
         when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
-                .thenReturn(new ProcessRunner.ProcessResult(0, "{\"exists\":false,\"key\":\"\",\"title\":\"\",\"jiraProject\":\"\",\"labels\":[]}", ""));
+                .thenReturn(new ProcessRunner.ProcessResult(0, "{\"exists\":false,\"key\":\"\",\"title\":\"\",\"trackerProject\":\"\",\"labels\":[]}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
                 new AssistantProperties("user,project,local", null, "bypassPermissions", List.of()));
 
@@ -41,7 +41,7 @@ class HeadlessClaudeAssistantTest {
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
         when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
-                .thenReturn(new ProcessRunner.ProcessResult(0, "{\"exists\":false,\"key\":\"\",\"title\":\"\",\"jiraProject\":\"\",\"labels\":[]}", ""));
+                .thenReturn(new ProcessRunner.ProcessResult(0, "{\"exists\":false,\"key\":\"\",\"title\":\"\",\"trackerProject\":\"\",\"labels\":[]}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
                 new AssistantProperties("user,project,local", null, "bypassPermissions", List.of("mcp__acme_jira", "mcp__acme_gitlab")));
 

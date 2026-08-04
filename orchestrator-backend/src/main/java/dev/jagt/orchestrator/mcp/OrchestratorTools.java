@@ -418,17 +418,21 @@ public class OrchestratorTools {
      * Pure ship gate. ship IS the human's approval, so IN_PROGRESS and REVIEW_PENDING both PROCEED (agents
      * often finish without self-reporting REVIEW_PENDING); a task stuck at SHIPPING whose agent has DIED
      * mid-ship also PROCEEDs (recovery). While a SHIPPING agent is still live the ship is in flight →
-     * REFUSE (no double-ship). Everything past the MR (CI_POLLING/CI_FAILED/DEPLOYED) and NEW/DONE REFUSE.
+     * REFUSE (no double-ship). Once an MR exists, CI_POLLING/CI_FAILED/DEPLOYED PROCEED too — deploy is a
+     * dev/pre-release step, not an end state, so the human iterates and re-ships another round onto the
+     * same MR. Only NEW (no MR to ship onto) and DONE (closed) REFUSE.
      */
-    static ShipGate shipGate(TaskStatus status, boolean agentLive) {
+    static ShipGate shipGate(TaskStatus status, boolean agentLive, boolean hasMr) {
+        boolean reshipRound = hasMr && (status == TaskStatus.CI_POLLING || status == TaskStatus.CI_FAILED
+                || status == TaskStatus.DEPLOYED);
         boolean allowed = status == TaskStatus.REVIEW_PENDING || status == TaskStatus.IN_PROGRESS
-                || (status == TaskStatus.SHIPPING && !agentLive);
+                || (status == TaskStatus.SHIPPING && !agentLive) || reshipRound;
         return allowed ? ShipGate.PROCEED : ShipGate.REFUSE;
     }
 
     /**
      * The human approved the current uncommitted changes. Ship is the ONLY commit point: it relays the
-     * approval to the agent (which owns the GitLab MCP) via task_context.md — commit with the pattern
+     * approval to the agent (which owns the code-host MCP) via task_context.md — commit with the pattern
      * title, push, create the MR if absent (target = baseBranch), post any drafted review replies, and
      * report back CI_POLLING with the MR url. jagt itself never touches the remote.
      */
@@ -441,15 +445,15 @@ public class OrchestratorTools {
         // ship IS the human's explicit approval → accept IN_PROGRESS too (agents often finish without
         // self-reporting REVIEW_PENDING). Also recover a task stuck at SHIPPING whose agent died mid-ship
         // (crash / API 529) — but only when the agent is NOT live, so an in-flight ship is never doubled.
-        // Past the MR (CI_POLLING/CI_FAILED/DEPLOYED) and NEW/DONE: refuse. writeTaskContext respawns the
-        // agent if it's down, so a killed session is no dead-end.
+        // Once an MR exists, re-ship a follow-up round onto it (deploy is a dev step, not the end). writeTaskContext
+        // respawns the agent if it's down, so a killed session is no dead-end.
         TaskStatus st = task.status();
-        if (shipGate(st, agentLive) == ShipGate.REFUSE) {
+        if (shipGate(st, agentLive, task.mrUrl() != null) == ShipGate.REFUSE) {
             throw new IllegalStateException("ship: " + taskId + " is " + st
                     + (st == TaskStatus.SHIPPING
                             ? " with its agent still shipping — a ship is in flight; `focus` to watch it."
-                            : " — ship only from IN_PROGRESS or REVIEW_PENDING (CI_POLLING/CI_FAILED/DEPLOYED"
-                                    + " are past the MR; NEW/DONE have nothing to ship)."));
+                            : " — ship needs a task still in progress (IN_PROGRESS/REVIEW_PENDING) or an"
+                                    + " existing MR to re-ship onto; this one has neither."));
         }
         ProjectConfig project = configService.project(task.project());
         String baseBranch = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
@@ -487,18 +491,19 @@ public class OrchestratorTools {
 
     /**
      * The ship instruction relayed to the agent. First ship: commit the exact pattern title and open the
-     * MR. Review round (MR already exists): commit a concise, meaningful one-liner describing the fixes —
-     * repeating the ticket title on every round is noise — and leave the existing MR's title alone.
+     * MR. Review round (MR already exists): commit a concise one-liner that LEADS with the task id, then a
+     * short summary — the identifier always comes first, but the full ticket title is not repeated — and
+     * leave the existing MR's title alone.
      */
     static String shipInstruction(boolean firstShip, String title, String taskId, String baseBranch,
                                   String repliesStep) {
         String commitStep = firstShip
                 ? "1. Commit ALL current changes with EXACTLY this message: \"" + title + "\".\n"
-                : "1. Commit ALL current changes with a CONCISE one-line message — max ~10 words, imperative"
-                        + " mood, NO ticket id — summarizing ONLY the review fixes you just made"
-                        + " (e.g. \"Guard null sort key, fix header toggle\").\n";
+                : "1. Commit ALL current changes with a CONCISE one-line message that STARTS with \"" + taskId
+                        + "\" followed by a short imperative summary (max ~10 words) of ONLY the changes you"
+                        + " just made (e.g. \"" + taskId + " Guard null sort key, fix header toggle\").\n";
         String mrStep = firstShip
-                ? "3. No merge request exists yet — create one via your GitLab MCP: source " + taskId
+                ? "3. No merge request exists yet — create one via your code-host MCP: source " + taskId
                         + " -> target " + baseBranch + ", title \"" + title + "\".\n"
                 : "3. The merge request already exists — do NOT create a new one or retitle it.\n";
         return "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"

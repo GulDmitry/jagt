@@ -4,7 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import org.springframework.stereotype.Service;
-import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -253,11 +254,12 @@ public class ConfigService {
         }
     }
 
-    private final ObjectMapper mapper;
+    // config.json is hand-edited — allow // and /* */ comments.
+    private final JsonMapper mapper = JsonMapper.builder()
+            .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS).build();
     private final OrchestratorPaths paths;
 
-    public ConfigService(ObjectMapper mapper, OrchestratorPaths paths) {
-        this.mapper = mapper;
+    public ConfigService(OrchestratorPaths paths) {
         this.paths = paths;
     }
 

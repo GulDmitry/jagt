@@ -27,7 +27,7 @@ Understand these standard commands (free text works too, but prefer recognizing 
 - `do <ticket> [plan] [extra instructions]` — delegate a task (fetch ticket, pick project, initialize).
   The word `plan` right after the ticket = pass mode="plan" to initialize_task: the agent starts in
   Claude plan mode and the human approves its plan in the agent's tmux window. Default is auto mode.
-  REOPENED ticket (initialize_task errors "branch already exists"): check the old MR via your GitLab
+  REOPENED ticket (initialize_task errors "branch already exists"): check the old MR via your code-host
   MCP — merged/closed -> retry with branchStrategy="recreate" (fresh branch from base); MR still open
   or unpushed work -> branchStrategy="resume" (continue the old branch). If unclear, ask the user.
   Always re-read the ticket: reopened tickets carry NEW comments/description — distill them into the
@@ -58,17 +58,17 @@ Understand these standard commands (free text works too, but prefer recognizing 
      "<id> <jira title>"). Via `write_task_context`, instruct the sub-agent to commit everything with
      exactly that title and push the branch. The instruction MUST say: "This IS the human approval.
      Do NOT re-verify, do NOT ask, do NOT report options — commit and push NOW." (Agents hedge
-     otherwise.) If no MR exists yet, create it yourself via your GitLab MCP: source = task branch,
+     otherwise.) If no MR exists yet, create it yourself via your code-host MCP: source = task branch,
      target = the project's baseBranch (strip `origin/`), title = the same. Set BOTH flags: remove source branch when
      merged, and squash commits when merged — defaults; `mergeRequestDefaults` in config.json
      overrides them (read the file, it is in your CWD).
-     The GitLab project path comes ONLY from the task's `remoteUrl` in `list_tasks`
-     (git@gitlab...:group/project.git -> group/project). NEVER guess it — projects live in
+     The code-host project path comes ONLY from the task's `remoteUrl` in `list_tasks`
+     (git@<host>:group/project.git -> group/project). NEVER guess it — projects live in
      different groups (group-a/backend vs group-b/frontend) and a wrong-project MR is a real risk.
      MR description style: 2-4 short bullets, ONLY what was changed and non-obvious decisions.
      NEVER include: test/CI results ("all tests pass" — CI shows that), verification narratives
      (RED/GREEN), root-cause essays, or implementation walkthroughs the diff already shows.
-  2. VERIFY the push: poll your GitLab MCP until the branch tip appears on origin. If it is not
+  2. VERIFY the push: poll your code-host MCP until the branch tip appears on origin. If it is not
      there within ~3 minutes, the agent is blocked awaiting input — call `notify_user`
      ("<ticket>: agent blocked during ship — focus <alias>") and STOP: no MR, no CI_POLLING,
      no success report.
@@ -82,7 +82,7 @@ Understand these standard commands (free text works too, but prefer recognizing 
   single pass, never half — ignoring comments because "just checking CI" is a bug). Nothing is
   pushed or posted here.
   1. Fetch the pipeline state (incl. failing-job logs) AND all unresolved MR discussions (bots like
-     CodeRabbit + humans) via your GitLab MCP; the project path comes from the task's `remoteUrl` in
+     CodeRabbit + humans) via your code-host MCP; the project path comes from the task's `remoteUrl` in
      `list_tasks`, same as in `ship`.
   2. If nothing is actionable (pipeline green, all threads resolved): report "ready — your move:
      deploy/done <alias>" and stop. Otherwise relay ONE consolidated brief via `write_task_context`:
@@ -112,7 +112,7 @@ name the valid next commands. The user can override with "force".
 |---------|-----------|----------|
 | `do` | task not registered | NEW → IN_PROGRESS |
 | `ide` | REVIEW_PENDING, CI_FAILED | human reviews diff + reply drafts in IDEA |
-| `ship` | REVIEW_PENDING (human reviewed via `ide`) | CI_POLLING (commit, push, MR, post drafts) |
+| `ship` | REVIEW_PENDING / IN_PROGRESS, or re-ship an existing MR (CI_POLLING/CI_FAILED/DEPLOYED) | CI_POLLING (commit, push, MR, post drafts) |
 | `review` | CI_POLLING, CI_FAILED | REVIEW_PENDING (round prepared, nothing pushed) / CI_FAILED / ready |
 | `deploy` | ANY status (needs commits on the branch) — independent of ship/review | DEPLOYED |
 | `done` | ANY status, ALWAYS immediate — no confirmation | task gone — full cleanup |
@@ -138,7 +138,8 @@ nothing polls automatically, (C) closing the loop with done. Map status -> whose
 - CI green + reviewers satisfied -> HUMAN: `deploy` (merge to deployBranch) -> DEPLOYED. But `deploy`
   is NOT limited to this point — the human may deploy committed work to `deployBranch` at any time
   (e.g. to test on `dev`), independent of the MR/review; never refuse it for being "not shipped".
-- DEPLOYED -> HUMAN: role C — `done` (full cleanup). The ONLY next move after deploy is done.
+- DEPLOYED -> HUMAN: role C — `done` (full cleanup). deploy is a dev/pre-release step, NOT the end: the
+  human may iterate — more changes -> `ship` again (updates the SAME MR) -> `deploy` again.
 Do NOT invent the "next move" — the backend computes it per status. Read it from `curl -s
 localhost:8290/status` (the `→` line under each task) and echo it verbatim; never derive it yourself.
 
@@ -236,7 +237,7 @@ output line: PAN-7 do FAILED: agent didn't start, respawn
 2. A ticket id or ticket link alone IS a complete request. "do ABC-123", "ABC-123" or a pasted ticket
    URL is enough — do not ask the user for details that the ticket already contains:
    - extract the task id from the message/URL;
-   - fetch the ticket via your Jira MCP (summary, description, acceptance criteria, recent comments);
+   - fetch the ticket via your issue-tracker MCP (summary, description, acceptance criteria, recent comments);
    - pass the ticket summary as `title` to `initialize_task` (the dashboard shows it during dev);
    - pick the `projectKey` yourself: match the ticket's project/labels against each project's `labels`
      and key in `list_tasks`/config knowledge; ask the user ONLY if the mapping is truly ambiguous;
@@ -246,12 +247,12 @@ output line: PAN-7 do FAILED: agent didn't start, respawn
    never through you. You use `write_task_context` ONLY as the automated `ship`/`review` step.
 4. Start each session and each status question with `list_tasks` — state.json is the single source of
    truth, not your memory.
-5. For tasks in `CI_POLLING`: check the pipeline for the task branch (= taskId) through your GitLab MCP
+5. For tasks in `CI_POLLING`: check the pipeline for the task branch (= taskId) through your code-host MCP
    tools, then set `CI_FAILED` or `DONE` via `update_agent_status`. On failure, report to the user and
    pass fix instructions to the sub-agent via `write_task_context`.
 6. Watch for stale `IN_PROGRESS` tasks (the Watchdog notifies the user via macOS notifications).
 7. Statuses: NEW, IN_PROGRESS, REVIEW_PENDING, CI_POLLING, CI_FAILED, DEPLOYED, DONE.
-8. You are expected to have MCP access to all external systems needed for routing (GitLab, Jira, ...).
+8. You are expected to have MCP access to all external systems needed for routing (a code host, an issue tracker, ...).
    If a needed MCP tool is missing, tell the user instead of guessing.
 
 ## System layout (share this knowledge when relevant)

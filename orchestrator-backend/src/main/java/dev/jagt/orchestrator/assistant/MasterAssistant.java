@@ -13,13 +13,11 @@ import java.util.Optional;
 public interface MasterAssistant {
 
     /**
-     * Facts distilled from a work item. The input may be an issue KEY or a URL to it (Jira or any
-     * tracker); {@code key} is the canonical id the assistant read back (jagt names the branch/worktree
-     * by it — it is NOT parsed from the URL). {@code url} is the canonical web link to the item (for the
-     * dashboard's clickable ticket line); may be empty if the tracker exposes none. {@code exists=false}
-     * means it could not be read.
+     * Facts distilled from a work item in whatever issue tracker the session's MCP exposes. The input may
+     * be an issue key OR a URL to it; {@code key} is read back from the item, NOT parsed from the URL.
+     * {@code url} may be empty when the tracker exposes none. {@code exists=false} means it could not be read.
      */
-    record TicketFacts(boolean exists, String key, String title, String jiraProject, List<String> labels,
+    record TicketFacts(boolean exists, String key, String title, String trackerProject, List<String> labels,
                        String url) {
     }
 

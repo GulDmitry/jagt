@@ -76,6 +76,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   non-idempotent tool.
 - `state.json` writes are atomic (temp file + `Files.move` ATOMIC_MOVE) in `StateService`.
 - Every MCP tool call from a registered worktree bumps `lastActiveTimestamp` (Watchdog keep-alive).
+- NO GIT HOOKS, EVER — never propose, add, or rely on any git hook anywhere; enforce invariants in code + prompts.
 - NO GUI/keystroke automation, ever: System Events keystrokes race with the human typing (they land in
   whatever is focused). Agent terminals are tmux windows (`TmuxService`); visibility comes from one Warp
   window opened via `open warp://launch/jagt-agents` (launch config generated into

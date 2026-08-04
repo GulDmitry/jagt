@@ -1,13 +1,18 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.DashboardConfig;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +39,24 @@ class ConfigServiceTest {
         // codeReview + worktree omitted entirely — accessors coalesce to section defaults.
         assertThat(config.codeReview().mrTitlePatternOrDefault()).isEqualTo("{ticket} {title}");
         assertThat(config.worktree().copyGlobsOrDefault()).containsExactly("**/.env");
+    }
+
+    @Test
+    void loadsAConfigFileThatContainsComments(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("config.json");
+        Files.writeString(configFile, """
+                {
+                  // secrets
+                  "worktree": { "copyGlobs": ["**/.env"] },
+                  "projects": {} // none yet
+                }
+                """);
+        OrchestratorProperties properties = new OrchestratorProperties(
+                root.toString(), configFile.toString(), root.resolve("state.json").toString(),
+                null, null, null, null, null, null, null, false, null);
+        ConfigService service = new ConfigService(new OrchestratorPaths(properties));
+
+        assertThat(service.load().worktree().copyGlobsOrDefault()).containsExactly("**/.env");
     }
 
     static Stream<Arguments> intervals() {

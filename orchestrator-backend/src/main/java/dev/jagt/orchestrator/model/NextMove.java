@@ -19,7 +19,7 @@ public final class NextMove {
             case CI_POLLING -> "your move: `review`";
             case CI_FAILED -> "your move: `review` (relays the failure)";
             case REVIEWED -> "your move: `deploy` or `done`";
-            case DEPLOYED -> "your move: `done`";
+            case DEPLOYED -> "your move: `done` — or ship more changes, then deploy again";
             case DONE -> "done";
         };
     }
