@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.model.TaskState;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -37,7 +38,12 @@ public class StateService {
     private final Object lock = new Object();
 
     public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
-        this.mapper = mapper;
+        // Tolerate state.json files written before a new primitive field existed: a missing/null primitive
+        // must default to 0/false, not blow up the whole load (which would strand every task). Without this,
+        // adding a `long`/`boolean` to TaskState makes older state.json unreadable ("Cannot map null into long").
+        this.mapper = mapper.rebuild()
+                .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+                .build();
         this.stateFile = paths.stateFile();
     }
 

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.service.ReviewSweepService;
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
@@ -60,14 +61,17 @@ public class MasterShell implements ApplicationRunner {
     private final DashboardRenderer dashboard;
     private final ConfigService configService;
     private final MasterAssistant assistant;
+    private final ReviewSweepService reviewSweep;
     private final ConfigurableApplicationContext context;
 
     public MasterShell(OrchestratorTools tools, DashboardRenderer dashboard, ConfigService configService,
-                       MasterAssistant assistant, ConfigurableApplicationContext context) {
+                       MasterAssistant assistant, ReviewSweepService reviewSweep,
+                       ConfigurableApplicationContext context) {
         this.tools = tools;
         this.dashboard = dashboard;
         this.configService = configService;
         this.assistant = assistant;
+        this.reviewSweep = reviewSweep;
         this.context = context;
     }
 
@@ -415,6 +419,16 @@ public class MasterShell implements ApplicationRunner {
                 for (int p = 1; p < parts.size(); p++) {
                     drows.add(new DashRow(indent + parts.get(p), RowKind.TITLE_CONT));
                 }
+            } else if (!isTaskRow(line) && line.length() > width) {
+                // A detail (└) or next-move (→) line longer than the screen would otherwise be CLIPPED,
+                // hiding its tail. Wrap it with a hanging indent so the whole line is visible at any width,
+                // continuations aligned under the text after the marker (and kept yellow for a "your move").
+                RowKind cont = dashColor(line) == TextColor.ANSI.YELLOW_BRIGHT ? RowKind.MOVE_CONT : RowKind.PLAIN;
+                List<String> parts = wrapHanging(line, width);
+                drows.add(new DashRow(parts.get(0), RowKind.PLAIN));
+                for (int p = 1; p < parts.size(); p++) {
+                    drows.add(new DashRow(parts.get(p), cont));
+                }
             } else {
                 drows.add(new DashRow(line, isTaskRow(line) ? RowKind.TASK : RowKind.PLAIN));
             }
@@ -465,6 +479,7 @@ public class MasterShell implements ApplicationRunner {
                     colorSpan(g, y, dr.text(), DashboardRenderer.COL_TITLE, width, idColor, width);
                 }
                 case TITLE_CONT -> put(g, y, dr.text(), width, idColor, true);
+                case MOVE_CONT -> put(g, y, dr.text(), width, TextColor.ANSI.YELLOW_BRIGHT, false);
                 case PLAIN -> put(g, y, dr.text(), width, dashColor(dr.text()), dr.text().startsWith("jagt orchestrator"));
             }
         }
@@ -540,8 +555,9 @@ public class MasterShell implements ApplicationRunner {
     /** One coloured, wrapped output-log display line. */
     private record Row(String text, TextColor color, boolean bold) { }
 
-    /** How a dashboard display row is coloured: a header/detail line, a task row, or a wrapped-title tail. */
-    private enum RowKind { PLAIN, TASK, TITLE_CONT }
+    /** How a dashboard display row is coloured: header/detail line, task row, wrapped-title tail, or a
+     *  wrapped next-move tail (kept yellow so a "your move" reads as one highlighted unit across wraps). */
+    private enum RowKind { PLAIN, TASK, TITLE_CONT, MOVE_CONT }
 
     private record DashRow(String text, RowKind kind) { }
 
@@ -570,6 +586,45 @@ public class MasterShell implements ApplicationRunner {
             }
         }
         return out;
+    }
+
+    /**
+     * Word-wrap a dashboard detail line ({@code   └ <url>} / {@code   → <move>}) to {@code width}, HANGING
+     * the continuations under the text (past the leading indent + {@code └}/{@code →} marker) so a wrapped
+     * line still reads as one indented item. Only the first visual line carries the marker.
+     */
+    static List<String> wrapHanging(String line, int width) {
+        if (width <= 0 || line.length() <= width) {
+            return List.of(line);
+        }
+        int hang = hangingIndent(line);
+        if (hang >= width) {
+            hang = 0;                                  // pathologically narrow terminal: fall back to a plain wrap
+        }
+        List<String> pieces = wrap(line.substring(hang), width - hang);
+        List<String> out = new ArrayList<>();
+        out.add(line.substring(0, hang) + pieces.get(0));
+        String pad = " ".repeat(hang);
+        for (int p = 1; p < pieces.size(); p++) {
+            out.add(pad + pieces.get(p));
+        }
+        return out;
+    }
+
+    /** Columns to indent a wrapped detail line's continuations: its leading spaces, plus the {@code └}/{@code →}
+     *  marker and the space after it when present, so continuations align under the text, not the marker. */
+    static int hangingIndent(String line) {
+        int i = 0;
+        while (i < line.length() && line.charAt(i) == ' ') {
+            i++;
+        }
+        if (i < line.length() && (line.charAt(i) == '└' || line.charAt(i) == '→')) {
+            i++;
+            if (i < line.length() && line.charAt(i) == ' ') {
+                i++;
+            }
+        }
+        return i;
     }
 
     /**
@@ -799,11 +854,22 @@ public class MasterShell implements ApplicationRunner {
         DoArgs a = parseDoArgs(tok);
         boolean bareKey = KEY_REF.matcher(ref).matches();
 
+        // Warn before spending a ticket read on a task that would only collide later; a chosen strategy
+        // means the collision is intended, so let it through.
+        if (bareKey && a.strategy == null) {
+            String existing = tools.existingBranchProject(ref, a.project);
+            if (existing != null) {
+                return "branch '" + ref + "' already exists in " + existing + " (previous run of this"
+                        + " ticket). Retry with `do " + ref + " recreate` (discard old work, start fresh)"
+                        + " or `do " + ref + " resume` (continue its commits).";
+            }
+        }
+
         // Fast path: a bare key + explicit project needs no read — the key IS the task id.
         if (bareKey && a.project != null) {
             return tools.initializeTask(ref, resolveProject(a.project),
                     withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", a.notes),
-                    a.mode, null, null, null);
+                    a.mode, a.strategy, null, null);
         }
         // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
         // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
@@ -822,7 +888,7 @@ public class MasterShell implements ApplicationRunner {
             String project = a.project != null ? resolveProject(a.project) : resolveByLabels(f);
             String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
                     + "\". Read it via your issue-tracker MCP for full details, then work.", a.notes);
-            return tools.initializeTask(taskId, project, instructions, a.mode, null, f.title(), f.url());
+            return tools.initializeTask(taskId, project, instructions, a.mode, a.strategy, f.title(), f.url());
         }
         // Assistant unavailable: only a bare key can proceed — a URL has no derivable task id without it.
         if (!bareKey) {
@@ -830,35 +896,39 @@ public class MasterShell implements ApplicationRunner {
         }
         return tools.initializeTask(ref, resolveProject(a.project),
                 withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", a.notes),
-                a.mode, null, null, null);
+                a.mode, a.strategy, null, null);
     }
 
-    record DoArgs(String project, String mode, String notes) {
+    record DoArgs(String project, String mode, String strategy, String notes) {
     }
+
+    private static final Set<String> BRANCH_STRATEGIES = Set.of("recreate", "resume", "fresh");
 
     /**
-     * Splits {@code do <ticket> …} after the ticket: leading {@code plan} and a known project key (in
-     * either order) are consumed as modifiers; everything after them is free-text notes relayed to the
-     * agent verbatim. So a project name is recognised only as a leading token, never mid-sentence, and a
-     * note may contain the word "plan".
+     * Splits {@code do <ticket> …} after the ticket: leading {@code plan}, a known project key, and a branch
+     * strategy — in any order — are consumed as modifiers; everything after them is free-text notes. Each
+     * modifier is recognised only as a leading token, so a note may contain the word "plan".
      */
     DoArgs parseDoArgs(List<String> tok) {
         List<String> rest = new ArrayList<>(tok.subList(Math.min(2, tok.size()), tok.size()));
         Set<String> projectKeys = configService.load().projects().keySet();
         String mode = null;
         String project = null;
+        String strategy = null;
         while (!rest.isEmpty()) {
             String head = rest.get(0);
             if (mode == null && head.equals("plan")) {
                 mode = "plan";
             } else if (project == null && projectKeys.contains(head)) {
                 project = head;
+            } else if (strategy == null && BRANCH_STRATEGIES.contains(head)) {
+                strategy = head;
             } else {
                 break;
             }
             rest.remove(0);
         }
-        return new DoArgs(project, mode, String.join(" ", rest).strip());
+        return new DoArgs(project, mode, strategy, String.join(" ", rest).strip());
     }
 
     private static String withNotes(String instructions, String notes) {
@@ -896,39 +966,7 @@ public class MasterShell implements ApplicationRunner {
      * agent via task_context.md, which fixes locally and drafts replies. Nothing is pushed/posted.
      */
     private String reviewTask(List<String> tok) {
-        String ticket = arg(tok, 1, "review <ticket>");
-        String mrUrl = tools.taskMrUrl(ticket);
-        if (mrUrl == null || mrUrl.isBlank()) {
-            return "error: no MR linked to " + ticket + " — `ship` or `resume <mr-url>` first";
-        }
-        var sweep = assistant.readReview(mrUrl);
-        if (sweep.isEmpty() || !sweep.get().exists()) {
-            return "error: could not read the MR review for " + mrUrl;
-        }
-        var r = sweep.get();
-        String pipeline = r.pipelineStatus() == null ? "" : r.pipelineStatus().toLowerCase();
-        boolean pipelineFailed = pipeline.contains("fail");
-        if (r.comments().isEmpty() && !pipelineFailed) {
-            if (pipeline.contains("success")) {   // only advance when CI is GREEN, not merely still running
-                tools.markReviewed(ticket);       // → dashboard next move becomes deploy/done
-            }
-            return "review " + ticket + ": pipeline " + r.pipelineStatus()
-                    + ", no unresolved comments — your move: `deploy` or `done`";
-        }
-        StringBuilder brief = new StringBuilder("Review round for MR ").append(mrUrl).append(".\n");
-        if (pipelineFailed) {
-            brief.append("Pipeline: ").append(r.pipelineStatus()).append(" — fix the failing build.\n");
-        }
-        if (!r.comments().isEmpty()) {
-            brief.append("Unresolved comments — fix the valid ones LOCALLY (no commit/push). For EACH"
-                    + " comment write a block in review_replies.md: the original comment (with its thread"
-                    + " link if available) followed by the reply you intend to post:\n");
-            r.comments().forEach(c -> brief.append("- ").append(c).append('\n'));
-        }
-        brief.append("When done, set status REVIEW_PENDING. Do NOT push or post anything yourself.");
-        tools.writeTaskContext(ticket, brief.toString());
-        return "review " + ticket + ": relayed " + r.comments().size() + " comment(s), pipeline "
-                + r.pipelineStatus() + " -> agent";
+        return reviewSweep.sweep(arg(tok, 1, "review <ticket>")).message();
     }
 
     /** Picks the jagt project whose configured labels intersect the ticket's labels (or tracker project key). */

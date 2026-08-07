@@ -74,6 +74,18 @@ public class OrchestratorTools {
         this.prompts = prompts;
     }
 
+    /** The configured project whose repo already has a branch named taskId, or null if none. */
+    public String existingBranchProject(String taskId, String projectKey) {
+        ConfigService.ConfigFile config = configService.load();
+        Set<String> keys = projectKey != null && !projectKey.isBlank()
+                ? Set.of(projectKey) : config.projects().keySet();
+        return keys.stream()
+                .filter(config.projects()::containsKey)
+                .filter(k -> gitService.branchExists(
+                        Path.of(config.projects().get(k).path()).toAbsolutePath().normalize(), taskId))
+                .findFirst().orElse(null);
+    }
+
     public String initializeTask(String taskId, String projectKey, String instructions, String mode,
                                  String branchStrategy, String title, String ticketUrl) {
         requireSafeId(taskId, "taskId");
@@ -99,7 +111,7 @@ public class OrchestratorTools {
             remoteUrl = gitService.remoteUrl(projectPath);
             excludeOrchestratorFiles(projectPath);
             linkOrchestratorFiles(worktreePath);
-            copyRunConfigurations(projectPath, worktreePath);
+            copyIdeProjectFiles(projectPath, worktreePath);
             copyLocalFiles(projectPath, worktreePath, configService.load().worktree().copyGlobsOrDefault());
             writeString(worktreePath.resolve("CLAUDE.md"),
                     subAgentContext(taskId, projectKey, project, worktreePath, remoteUrl, config));
@@ -114,9 +126,11 @@ public class OrchestratorTools {
         }
 
         String alias = nextAlias(taskId);
-        stateService.putTask(taskId, new TaskState(projectKey, worktreePath.toString(), TaskStatus.NEW,
-                System.currentTimeMillis(), null, alias, remoteUrl, title, null,
-                ticketUrl == null || ticketUrl.isBlank() ? null : ticketUrl));
+        stateService.putTask(taskId, TaskState.builder(projectKey, worktreePath.toString(), TaskStatus.NEW)
+                .lastActiveTimestamp(System.currentTimeMillis()).alias(alias).remoteUrl(remoteUrl).title(title)
+                .ticketUrl(ticketUrl == null || ticketUrl.isBlank() ? null : ticketUrl)
+                .autoReview(config.autoReview().enabledOrDefault())
+                .build());
 
         String session;
         try {
@@ -160,7 +174,14 @@ public class OrchestratorTools {
         String url = extractUrl(shortMessage);
         boolean updated = stateService.updateTask(taskId, t -> {
             TaskState next = t.withStatus(newStatus, shortMessage);
-            return url != null ? next.withMrUrl(url) : next;
+            if (url != null) {
+                next = next.withMrUrl(url);
+                // First time an MR is linked = the auto-review window start; never reset it on later rounds.
+                if (t.mrCreatedAt() == 0) {
+                    next = next.withMrCreatedAt(System.currentTimeMillis());
+                }
+            }
+            return next;
         });
         if (!updated) {
             throw new IllegalArgumentException("Task " + taskId + " not found in state.json");
@@ -213,6 +234,18 @@ public class OrchestratorTools {
         if (mode != null && !mode.isBlank() && !"project".equalsIgnoreCase(mode)) {
             throw new IllegalArgumentException("Unknown ide mode '" + mode + "'. Allowed: project, diff");
         }
+        // A DEPLOY_CONFLICT lives on the DEPLOY side, not in the task's own (clean) worktree — so `ide` opens
+        // the deploy worktree, the ONLY place the merge can be resolved (fix the files, `git add`, then
+        // `deploy` again). Opening the task worktree here would show nothing to resolve — the reported symptom.
+        if (task.status() == TaskStatus.DEPLOY_CONFLICT) {
+            Path deployWorktree = GitService.deployWorktreePath(Path.of(configService.project(task.project()).path()), taskId);
+            if (Files.isDirectory(deployWorktree)) {
+                editorDriver.open(deployWorktree);
+                return "Opened the DEPLOY worktree " + deployWorktree + " — resolve the conflict there (fix the"
+                        + " files, `git add` them), then `deploy " + taskId + "` again. Your task branch and its MR"
+                        + " are untouched.";
+            }
+        }
         // Default: open the worktree as a project. Its live Git view (Local Changes) is the review surface —
         // auto-refreshing and .gitignore-aware, unlike the static `diff` snapshot.
         editorDriver.open(worktree);
@@ -264,7 +297,12 @@ public class OrchestratorTools {
         tmuxService.killTaskWindows(agentSession(config, taskId), taskId);
         ProjectConfig project = config.projects().get(task.project());
         if (project != null) {
-            gitService.removeWorktree(Path.of(project.path()), Path.of(task.worktreePath()), null);
+            Path projectPath = Path.of(project.path());
+            gitService.removeWorktree(projectPath, Path.of(task.worktreePath()), null);
+            // An abandoned deploy conflict leaves a jagt-deploy-* worktree + branch — clear both so nothing
+            // lingers on disk or as a dead IntelliJ project.
+            gitService.removeDeployWorktreeIfPresent(projectPath, taskId);
+            editorDriver.forgetProject(GitService.deployWorktreePath(projectPath, taskId));
         } else {
             log.warn("Project '{}' of task {} no longer in config.json; skipping worktree removal", task.project(), taskId);
         }
@@ -360,23 +398,20 @@ public class OrchestratorTools {
         try {
             gitService.mergeIntoAndPush(Path.of(project.path()), taskId, deployBranch);
         } catch (GitService.MergeConflictException e) {
-            // Don't dead-end on a git recipe: hand the resolution to the agent (it already lives in the
-            // worktree). It merges the deploy branch into ITS OWN branch and resolves — but does NOT commit,
-            // so the human reviews the resolution in the IDE and commits it (the deploy safety checkpoint).
-            String brief = "Deploy of your branch " + taskId + " into " + deployBranch + " hit a MERGE CONFLICT."
-                    + " Resolve it so the next deploy is clean. This is YOUR branch — merging " + deployBranch
-                    + " into it is allowed; you are NOT pushing or touching any shared branch.\n"
-                    + "1. In this worktree run: git fetch origin && git merge origin/" + deployBranch + "\n"
-                    + "2. Resolve every conflict, then `git add` the resolved files.\n"
-                    + "3. DO NOT commit and DO NOT push — leave the merge STAGED. The human reviews your"
-                    + " resolution in the IDE and commits it.\n"
-                    + "Conflicts reported by the deploy:\n" + e.details() + "\n"
-                    + "Reply when the resolution is staged and ready for review.";
-            writeTaskContext(taskId, brief);
-            return "deploy " + taskId + ": MERGE CONFLICT with " + deployBranch + " — the agent is resolving it"
-                    + " (staged, NOT committed). Review it in `ide " + taskId + "` (Git → Local Changes) and"
-                    + " COMMIT it yourself, then `deploy " + taskId + "` again.";
+            // Resolve on the DEPLOY side, never in the task branch: the MR targets the base branch, so merging
+            // the deploy branch into the task branch would balloon its diff with everything the deploy branch
+            // carries. jagt does NOT auto-open an editor — the dashboard flags DEPLOY_CONFLICT, the human opens
+            // the worktree and resolves it, then deploys again (the backend does the push).
+            stateService.updateTask(taskId,
+                    t -> t.withStatus(TaskStatus.DEPLOY_CONFLICT, "resolve conflict in " + e.deployWorktree()));
+            return "deploy " + taskId + ": MERGE CONFLICT merging into " + deployBranch + ". Open the deploy"
+                    + " worktree yourself and resolve it: " + e.deployWorktree() + " — fix the conflicts,"
+                    + " `git add` them, then `deploy " + taskId + "` again to finish. Your task branch and its"
+                    + " MR are untouched.";
         }
+        // The deploy worktree is gone once pushed; drop it from the editor's recent-projects list too, so a
+        // human who opened it to resolve a conflict isn't left with a dead jagt-deploy entry.
+        editorDriver.forgetProject(GitService.deployWorktreePath(Path.of(project.path()), taskId));
         // deploy IS a state transition — mark it so the dashboard's next move is 'done', not 'review'.
         stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.DEPLOYED, "deployed to " + deployBranch));
         return "Merged branch " + taskId + " into " + deployBranch + " and pushed; status -> DEPLOYED";
@@ -407,8 +442,27 @@ public class OrchestratorTools {
      * the dashboard's next move becomes `deploy`/`done` instead of looping back to `review`. Master-only.
      */
     public void markReviewed(String taskId) {
-        stateService.updateTask(canonicalTaskId(taskId),
-                t -> t.withStatus(TaskStatus.REVIEWED, "reviewed — CI green, no unresolved comments"));
+        markReviewOutcome(taskId, TaskStatus.REVIEWED, "reviewed — CI green, no unresolved comments");
+    }
+
+    /**
+     * The MR was APPROVED by a human (green + no unresolved). Distinct from REVIEWED: a real approval, not
+     * merely "nothing left to address". The auto-review poller lands here; the human's move is deploy/done.
+     */
+    public void markApproved(String taskId) {
+        markReviewOutcome(taskId, TaskStatus.APPROVED, "approved — CI green, MR approved");
+    }
+
+    /** Sets a review-outcome status and pings the human ONCE on the transition (auto-poll runs unattended). */
+    private void markReviewOutcome(String taskId, TaskStatus status, String message) {
+        String id = canonicalTaskId(taskId);
+        TaskStatus previous = stateService.task(id).map(TaskState::status).orElse(null);
+        boolean updated = stateService.updateTask(id, t -> t.withStatus(status, message));
+        // Only ping on a real transition of an existing task — never for a no-op (task gone) or a re-poll
+        // that lands on the same status the human already saw.
+        if (updated && status != previous) {
+            userNotifier.notify("jagt · " + id, dev.jagt.orchestrator.model.NextMove.forStatus(status));
+        }
     }
 
     /** Whether a ship may proceed at all (delivery + respawning a dead agent is writeTaskContext's job). */
@@ -564,7 +618,7 @@ public class OrchestratorTools {
             case AGENT_RUNNING -> {
             }
         }
-        tmuxService.focusTaskWindow(session, dedicatedTitle, taskId, worktreePath);
+        tmuxService.focusTaskWindow(session, dedicatedTitle, taskId);
         boolean raised = terminalDriver.reveal(dedicatedTitle);
         return "Focused tmux window '" + taskId + "'"
                 + (raised
@@ -702,18 +756,19 @@ public class OrchestratorTools {
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot create .claude dir in " + worktreePath, e);
         }
-        // Server approval alone is not enough: Claude's auto-mode classifier still
-        // gates individual MCP calls, silently freezing agents on invisible prompts
-        // (even notify_user gets blocked) — pre-allow every jagt tool. The optional
-        // agentOutputStyle from config.json is pinned here (a worktree is an untrusted
-        // project where the human's global style may not apply); default null → omitted.
+        // Server approval alone is not enough: Claude's auto-mode classifier still gates
+        // individual tool calls, silently freezing agents on invisible prompts nobody in the
+        // tmux window answers — MCP calls (even notify_user) and the agent's own git commit/push
+        // on ship. Pre-allow the jagt tools and the worktree's git. The optional agentOutputStyle
+        // from config.json is pinned here (a worktree is an untrusted project where the human's
+        // global style may not apply); default null → omitted.
         writeString(worktreePath.resolve(".claude").resolve("settings.local.json"),
                 agentSettingsJson(configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
     }
 
     /**
-     * The generated worktree {@code .claude/settings.local.json}: pre-approves the jagt MCP tools,
-     * optionally pins {@code agentOutputStyle}, and disables the given plugins for the agent (heavy
+     * The generated worktree {@code .claude/settings.local.json}: pre-approves the jagt MCP tools and
+     * the agent's own git, optionally pins {@code agentOutputStyle}, and disables the given plugins (heavy
      * LSP plugins spawn a JDT server per worktree — agents don't need them). Valid JSON in all cases.
      */
     static String agentSettingsJson(String outputStyle, List<String> disabledPlugins) {
@@ -733,7 +788,7 @@ public class OrchestratorTools {
                 {%s%s
                   "enableAllProjectMcpServers": true,
                   "permissions": {
-                    "allow": ["mcp__jagt-orchestrator"]
+                    "allow": ["mcp__jagt-orchestrator", "Bash(git:*)"]
                   }
                 }
                 """.formatted(styleLine, pluginsLine);
@@ -777,15 +832,15 @@ public class OrchestratorTools {
     }
 
     /**
-     * A worktree opens in IntelliJ without the base project's run configurations
-     * (they are gitignored in the base repo). Copy the "Store as project file"
-     * ones over so `ide <ticket>` opens ready to run. IntelliJ keeps them in
-     * `.run/` (modern default) and/or legacy `.idea/runConfigurations/` — copy
-     * both, each relative to the project root. Best-effort; absent dir = no-op.
+     * Copies the base project's IDE files (run configurations, database connections) into the worktree so
+     * {@code ide <ticket>} opens ready to run and query. They are gitignored in the base repo, so a fresh
+     * checkout of the task branch lacks them. Best-effort; absent path = no-op.
      */
-    static void copyRunConfigurations(Path projectPath, Path worktreePath) {
-        for (String dir : List.of(".run", ".idea/runConfigurations")) {
-            copyTree(projectPath.resolve(dir), worktreePath.resolve(dir), worktreePath);
+    static void copyIdeProjectFiles(Path projectPath, Path worktreePath) {
+        List<String> ideFiles = List.of(".run", ".idea/runConfigurations",
+                ".idea/dataSources.xml", ".idea/dataSources.local.xml", ".idea/dataSources");
+        for (String path : ideFiles) {
+            copyTree(projectPath.resolve(path), worktreePath.resolve(path), worktreePath);
         }
     }
 
@@ -820,13 +875,7 @@ public class OrchestratorTools {
                 public FileVisitResult visitFile(Path f, BasicFileAttributes a) {
                     Path rel = projectPath.relativize(f);
                     if (matchers.stream().anyMatch(m -> m.matches(rel))) {
-                        Path to = worktreePath.resolve(rel);
-                        try {
-                            Files.createDirectories(to.getParent());
-                            Files.copy(f, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                        } catch (IOException e) {
-                            log.warn("Could not copy local file {} -> {}: {}", f, to, e.getMessage());
-                        }
+                        copyFile(f, worktreePath.resolve(rel));
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -837,25 +886,41 @@ public class OrchestratorTools {
     }
 
     private static void copyTree(Path source, Path target, Path worktreePath) {
+        if (Files.isRegularFile(source)) {
+            copyFile(source, target);
+            return;
+        }
         if (!Files.isDirectory(source)) {
             return;
         }
         try (var files = Files.walk(source)) {
             files.forEach(from -> {
                 Path to = target.resolve(source.relativize(from));
-                try {
-                    if (Files.isDirectory(from)) {
-                        Files.createDirectories(to);
-                    } else {
-                        Files.createDirectories(to.getParent());
-                        Files.copy(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                    }
-                } catch (IOException e) {
-                    throw new UncheckedIOException("Cannot copy run configuration " + from, e);
+                if (Files.isDirectory(from)) {
+                    mkdirs(to);
+                } else {
+                    copyFile(from, to);
                 }
             });
         } catch (IOException e) {
             log.warn("Could not copy {} into {}: {}", source, worktreePath, e.getMessage());
+        }
+    }
+
+    private static void copyFile(Path from, Path to) {
+        try {
+            Files.createDirectories(to.getParent());
+            Files.copy(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.warn("Could not copy {} -> {}: {}", from, to, e.getMessage());
+        }
+    }
+
+    private static void mkdirs(Path dir) {
+        try {
+            Files.createDirectories(dir);
+        } catch (IOException e) {
+            log.warn("Could not create {}: {}", dir, e.getMessage());
         }
     }
 

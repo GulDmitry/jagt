@@ -33,9 +33,11 @@ orchestrator:
   terminal: kitty
   # kitty-command: kitty   # override the kitty binary if not on PATH
   # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own (default 11)
-  # Editor launcher + args; the worktree path is appended. LaunchServices `open -a`
-  # is Toolbox-independent. Alternatives: [code] for VS Code, [subl] for Sublime.
-  editor-command: ["open", "-a", "IntelliJ IDEA"]
+  # Editor launcher + args; the worktree path is appended. The idea binary opens the given
+  # directory as a project reliably; `open -a "IntelliJ IDEA" <dir>` only ACTIVATES the app —
+  # with another project already open it shows that window instead of the passed worktree.
+  # Alternatives: [code] for VS Code, [subl] for Sublime.
+  editor-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"]
   # `ide <ticket> diff` opens a diff window (task changes vs base) — needs the idea binary,
   # `open -a` can't diff. Paths are appended: <left> <right>.
   editor-diff-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea", "diff"]

@@ -46,9 +46,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private static final String REVIEW_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
+            "approved":{"type":"boolean"},\
             "pipelineStatus":{"type":"string"},\
             "comments":{"type":"array","items":{"type":"string"}}},\
-            "required":["exists","pipelineStatus","comments"]}""";
+            "required":["exists","approved","pipelineStatus","comments"]}""";
     /** The review sweep makes several code-host calls; give it much longer than a single lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
 
@@ -105,13 +106,14 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             return Optional.empty();
         }
         String prompt = "Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
-                + " MCP tools. Return exists, pipelineStatus (latest pipeline/checks result, e.g. success/failed/none),"
-                + " and comments — every UNRESOLVED discussion note (bots like CodeRabbit + humans),"
-                + " each as one string \"author (file:line): body\". Empty array if none.";
+                + " MCP tools. Return exists, approved (true only if the MR is actually APPROVED by a human"
+                + " reviewer — not merely mergeable), pipelineStatus (latest pipeline/checks result, e.g."
+                + " success/failed/none), and comments — every UNRESOLVED discussion note (bots like"
+                + " CodeRabbit + humans), each as one string \"author (file:line): body\". Empty array if none.";
         return ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT).map(n -> {
             List<String> comments = new ArrayList<>();
             n.path("comments").forEach(c -> comments.add(c.asString("")));
-            return new ReviewFacts(n.path("exists").asBoolean(false),
+            return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
                     n.path("pipelineStatus").asString(""), comments);
         });
     }

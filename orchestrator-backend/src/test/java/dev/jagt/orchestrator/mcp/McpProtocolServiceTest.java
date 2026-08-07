@@ -35,7 +35,7 @@ class McpProtocolServiceTest {
                 .path("inputSchema").path("properties").path("status").path("enum");
         assertThat(statusEnum).extracting(JsonNode::asText).containsExactly(
                 "NEW", "IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "CI_POLLING", "CI_FAILED", "REVIEWED",
-                "DEPLOYED", "DONE");
+                "APPROVED", "DEPLOY_CONFLICT", "DEPLOYED", "DONE");
     }
 
     @Test
@@ -76,7 +76,7 @@ class McpProtocolServiceTest {
         StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
                 null, null, null, null, null, null, null, false, null)));
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 1000, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).lastActiveTimestamp(1000).alias("a1").build());
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"), root.toString());
@@ -91,8 +91,8 @@ class McpProtocolServiceTest {
                 root.toString(), null, root.resolve("state.json").toString(),
                 null, null, null, null, null, null, null, false, null)));
         long freshTimestamp = System.currentTimeMillis();
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS,
-                freshTimestamp, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(freshTimestamp).alias("a1").build());
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"), root.toString());

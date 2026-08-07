@@ -28,7 +28,8 @@ public class ConfigService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ConfigFile(Map<String, ProjectConfig> projects, ViewerConfig viewer, DashboardConfig dashboard,
-                             CodeReviewConfig codeReview, AgentConfig agent, WorktreeConfig worktree) {
+                             CodeReviewConfig codeReview, AgentConfig agent, WorktreeConfig worktree,
+                             AutoReviewConfig autoReview) {
 
         /** Agent viewer window/tabs + the tmux session everything attaches to. */
         @JsonIgnoreProperties(ignoreUnknown = true)
@@ -173,6 +174,60 @@ public class ConfigService {
             }
         }
 
+        /**
+         * Auto-review poller: after `ship`, jagt watches the MR on its own within a bounded time window,
+         * escalating the poll interval from {@code minIntervalMinutes} to {@code maxIntervalMinutes} across
+         * the window (linear). See {@code AutoReviewScheduler} + {@code AutoReviewCadence}.
+         */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        public record AutoReviewConfig(Boolean enabled, Integer windowHours, Integer minIntervalMinutes,
+                                       Integer maxIntervalMinutes) {
+
+            public static AutoReviewConfig defaults() {
+                return new AutoReviewConfig(null, null, null, null);
+            }
+
+            public AutoReviewConfig withEnabled(Boolean value) {
+                return new AutoReviewConfig(value, windowHours, minIntervalMinutes, maxIntervalMinutes);
+            }
+
+            public AutoReviewConfig withWindowHours(Integer value) {
+                return new AutoReviewConfig(enabled, value, minIntervalMinutes, maxIntervalMinutes);
+            }
+
+            public AutoReviewConfig withMinIntervalMinutes(Integer value) {
+                return new AutoReviewConfig(enabled, windowHours, value, maxIntervalMinutes);
+            }
+
+            public AutoReviewConfig withMaxIntervalMinutes(Integer value) {
+                return new AutoReviewConfig(enabled, windowHours, minIntervalMinutes, value);
+            }
+
+            /** Default false: auto-review is opt-in — nothing polls until the human turns it on. */
+            public boolean enabledOrDefault() {
+                return enabled != null && enabled;
+            }
+
+            /** The window (hours) over which the poll interval escalates, then polling stops. Default 24. */
+            public int windowHoursOrDefault() {
+                return windowHours == null || windowHours <= 0 ? 24 : windowHours;
+            }
+
+            /** Poll interval (minutes) at the START of the window — the tightest cadence. Default 10. */
+            public int minIntervalMinutesOrDefault() {
+                return minIntervalMinutes == null || minIntervalMinutes <= 0 ? 10 : minIntervalMinutes;
+            }
+
+            /** Poll interval (minutes) reached at the END of the window — the cap (= hourly). Default 60. */
+            public int maxIntervalMinutesOrDefault() {
+                int min = minIntervalMinutesOrDefault();
+                if (maxIntervalMinutes == null || maxIntervalMinutes < min) {
+                    return Math.max(60, min);
+                }
+                return maxIntervalMinutes;
+            }
+        }
+
         /** Which gitignored local files get copied from the base repo into each new worktree. */
         @JsonIgnoreProperties(ignoreUnknown = true)
         public record WorktreeConfig(List<String> copyGlobs) {
@@ -198,7 +253,7 @@ public class ConfigService {
 
         /** All-optional baseline: every section null, so each accessor coalesces to its section defaults. */
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null);
         }
 
         // Section accessors coalesce a missing (null) section to its all-default instance, so callers
@@ -229,28 +284,37 @@ public class ConfigService {
             return worktree == null ? WorktreeConfig.defaults() : worktree;
         }
 
+        @Override
+        public AutoReviewConfig autoReview() {
+            return autoReview == null ? AutoReviewConfig.defaults() : autoReview;
+        }
+
         public ConfigFile withProjects(Map<String, ProjectConfig> newProjects) {
-            return new ConfigFile(newProjects, viewer, dashboard, codeReview, agent, worktree);
+            return new ConfigFile(newProjects, viewer, dashboard, codeReview, agent, worktree, autoReview);
         }
 
         public ConfigFile withViewer(ViewerConfig newViewer) {
-            return new ConfigFile(projects, newViewer, dashboard, codeReview, agent, worktree);
+            return new ConfigFile(projects, newViewer, dashboard, codeReview, agent, worktree, autoReview);
         }
 
         public ConfigFile withDashboard(DashboardConfig newDashboard) {
-            return new ConfigFile(projects, viewer, newDashboard, codeReview, agent, worktree);
+            return new ConfigFile(projects, viewer, newDashboard, codeReview, agent, worktree, autoReview);
         }
 
         public ConfigFile withCodeReview(CodeReviewConfig newCodeReview) {
-            return new ConfigFile(projects, viewer, dashboard, newCodeReview, agent, worktree);
+            return new ConfigFile(projects, viewer, dashboard, newCodeReview, agent, worktree, autoReview);
         }
 
         public ConfigFile withAgent(AgentConfig newAgent) {
-            return new ConfigFile(projects, viewer, dashboard, codeReview, newAgent, worktree);
+            return new ConfigFile(projects, viewer, dashboard, codeReview, newAgent, worktree, autoReview);
         }
 
         public ConfigFile withWorktree(WorktreeConfig newWorktree) {
-            return new ConfigFile(projects, viewer, dashboard, codeReview, agent, newWorktree);
+            return new ConfigFile(projects, viewer, dashboard, codeReview, agent, newWorktree, autoReview);
+        }
+
+        public ConfigFile withAutoReview(AutoReviewConfig newAutoReview) {
+            return new ConfigFile(projects, viewer, dashboard, codeReview, agent, worktree, newAutoReview);
         }
     }
 

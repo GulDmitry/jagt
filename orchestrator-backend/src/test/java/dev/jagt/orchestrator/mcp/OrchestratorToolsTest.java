@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -33,6 +34,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -47,7 +49,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null, null));
+        state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
@@ -70,7 +72,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("TEST-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "t1", null, null, null, null));
+        state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("tab-per-task")));
@@ -94,7 +96,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("shared")));
@@ -118,7 +120,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.DONE, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("shared")
@@ -136,6 +138,34 @@ class OrchestratorToolsTest {
     }
 
     @Test
+    void ideOpensTheDeployWorktreeForATaskStuckInDeployConflict(@TempDir Path root) throws Exception {
+        Path repo = Files.createDirectories(root.resolve("repo"));
+        Path deployWorktree = Files.createDirectories(root.resolve("ABC-1-deploy"));   // sibling of the repo
+        Path taskWorktree = Files.createDirectories(root.resolve("ABC-1-sng"));
+        OrchestratorProperties properties = new OrchestratorProperties(
+                root.toString(), null, root.resolve("state.json").toString(),
+                null, null, null, null, null, null, null, false,
+                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", TaskState.builder("proj", taskWorktree.toString(), TaskStatus.DEPLOY_CONFLICT)
+                .alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()));
+        EditorDriver editor = mock(EditorDriver.class);
+        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
+                mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
+                properties, paths, new PromptTemplates());
+
+        String out = tools.openInIde("a1", null, null);
+
+        // The conflict lives on the deploy side — `ide` must open THAT, never the (clean) task worktree.
+        verify(editor).open(deployWorktree);
+        verify(editor, never()).open(taskWorktree);
+        assertThat(out).contains("DEPLOY worktree");
+    }
+
+    @Test
     void storesTheMrLinkFromTheStatusMessageForTheDashboard(@TempDir Path root) {
         OrchestratorProperties properties = new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
@@ -143,7 +173,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -161,7 +191,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         UserNotifier notifier = mock(UserNotifier.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
@@ -180,7 +210,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         UserNotifier notifier = mock(UserNotifier.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
@@ -199,10 +229,26 @@ class OrchestratorToolsTest {
                 "<configuration/>");
         Path worktree = root.resolve("PAN-1-repo");
 
-        OrchestratorTools.copyRunConfigurations(project, worktree);
+        OrchestratorTools.copyIdeProjectFiles(project, worktree);
 
         assertThat(worktree.resolve(".idea").resolve("runConfigurations").resolve("App.xml"))
                 .exists().hasContent("<configuration/>");
+    }
+
+    @Test
+    void copiesDatabaseConnectionsIntoTheWorktree(@TempDir Path root) throws Exception {
+        Path project = root.resolve("repo");
+        java.nio.file.Files.createDirectories(project.resolve(".idea").resolve("dataSources"));
+        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources.xml"), "<dataSource/>");
+        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources.local.xml"), "<local/>");
+        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources").resolve("pg.xml"), "<db/>");
+        Path worktree = root.resolve("PAN-1-repo");
+
+        OrchestratorTools.copyIdeProjectFiles(project, worktree);
+
+        assertThat(worktree.resolve(".idea").resolve("dataSources.xml")).exists().hasContent("<dataSource/>");
+        assertThat(worktree.resolve(".idea").resolve("dataSources.local.xml")).exists().hasContent("<local/>");
+        assertThat(worktree.resolve(".idea").resolve("dataSources").resolve("pg.xml")).exists().hasContent("<db/>");
     }
 
     @Test
@@ -212,7 +258,7 @@ class OrchestratorToolsTest {
         java.nio.file.Files.writeString(project.resolve(".run").resolve("App.run.xml"), "<configuration/>");
         Path worktree = root.resolve("PAN-1-repo");
 
-        OrchestratorTools.copyRunConfigurations(project, worktree);
+        OrchestratorTools.copyIdeProjectFiles(project, worktree);
 
         assertThat(worktree.resolve(".run").resolve("App.run.xml")).exists().hasContent("<configuration/>");
     }
@@ -222,7 +268,7 @@ class OrchestratorToolsTest {
         Path project = root.resolve("repo");
         Path worktree = root.resolve("PAN-1-repo");
 
-        OrchestratorTools.copyRunConfigurations(project, worktree);
+        OrchestratorTools.copyIdeProjectFiles(project, worktree);
 
         assertThat(worktree.resolve(".idea")).doesNotExist();
     }
@@ -235,7 +281,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         GitService git = mock(GitService.class);
@@ -259,7 +305,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
@@ -278,7 +324,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
@@ -317,7 +363,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -335,7 +381,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -353,7 +399,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("OTHER-1", new TaskState("proj", "/other", TaskStatus.IN_PROGRESS, 0, null, "o1", null, null, null, null));
+        state.putTask("OTHER-1", TaskState.builder("proj", "/other", TaskStatus.IN_PROGRESS).alias("o1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -371,7 +417,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
                 mock(UserNotifier.class), properties, paths, new PromptTemplates());
@@ -454,8 +500,8 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.CI_POLLING, 0,
-                "MR: http://x", "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
@@ -468,7 +514,7 @@ class OrchestratorToolsTest {
     }
 
     @Test
-    void delegatesConflictResolutionToTheAgentWithoutCommittingAndStaysUndeployed(@TempDir Path root)
+    void flagsDeployConflictOnTheDashboardWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
             throws Exception {
         OrchestratorProperties properties = new OrchestratorProperties(
                 root.toString(), null, root.resolve("state.json").toString(),
@@ -477,29 +523,28 @@ class OrchestratorToolsTest {
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         Path worktree = java.nio.file.Files.createDirectories(root.resolve("wt"));
-        state.putTask("ABC-1", new TaskState("proj", worktree.toString(), TaskStatus.CI_POLLING, 0,
-                "MR: http://x", "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", worktree.toString(), TaskStatus.CI_POLLING)
+                .message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         GitService git = mock(GitService.class);
-        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "Merge conflict in liquibase/master.yaml"))
+        Path deployWorktree = root.resolve("ABC-1-deploy");
+        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict in liquibase/master.yaml", deployWorktree))
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
-        TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(any())).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
-        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
-        OrchestratorTools tools = new OrchestratorTools(config, state, git, tmux, mock(EditorDriver.class),
+        EditorDriver editor = mock(EditorDriver.class);
+        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class), editor,
                 mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths, new PromptTemplates());
 
         String result = tools.deployTask("a1", null);
 
-        // The agent is handed a resolve-but-don't-commit brief; the human keeps the commit + the next deploy.
-        assertThat(java.nio.file.Files.readString(worktree.resolve("task_context.md")))
-                .contains("git merge origin/dev")
-                .contains("DO NOT commit");
-        assertThat(result).contains("ide ABC-1").contains("COMMIT it yourself");
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_POLLING);
+        // The human resolves it himself — jagt opens no editor, briefs no agent, and never touches the task branch.
+        verifyNoInteractions(editor);
+        assertThat(worktree.resolve("task_context.md")).doesNotExist();
+        assertThat(result).contains(deployWorktree.toString()).contains("untouched").contains("deploy ABC-1");
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(after.message()).contains(deployWorktree.toString());
     }
 
     @Test
@@ -510,7 +555,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.CI_POLLING, 0, "MR: http://x", "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release/sng", "release/sng", null));
         GitService git = mock(GitService.class);
@@ -532,7 +577,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/wt", TaskStatus.CI_POLLING, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", null, null));
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
@@ -569,7 +614,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
@@ -593,7 +638,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", root.toString(), TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         TmuxService tmux = mock(TmuxService.class);
@@ -618,7 +663,7 @@ class OrchestratorToolsTest {
                 new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", new TaskState("proj", "/first", TaskStatus.IN_PROGRESS, 0, null, "a1", null, null, null, null));
+        state.putTask("ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
@@ -644,6 +689,16 @@ class OrchestratorToolsTest {
         String style = new JsonMapper().readTree(json).path("outputStyle").asText(null);
 
         assertThat(style).isEqualTo("sob-ai:Engineer");
+    }
+
+    @Test
+    void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
+        String json = OrchestratorTools.agentSettingsJson(null, null);
+
+        List<String> allow = new java.util.ArrayList<>();
+        new JsonMapper().readTree(json).path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
+
+        assertThat(allow).contains("mcp__jagt-orchestrator", "Bash(git:*)");
     }
 
     @Test

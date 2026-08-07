@@ -186,6 +186,10 @@ Keys are grouped into logical sections; a whole section may be omitted (each key
 | `codeReview.postReviewReplies` | on `ship`, auto-post the agent's replies to MR threads (default `true`); `false` keeps them in `review_replies.md` |
 | `codeReview.reviewReplyAuthors` | non-empty = auto-post replies ONLY to threads whose author matches one (e.g. `["coderabbit"]`); empty = all authors |
 | `codeReview.mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
+| `autoReview.enabled` | after `ship`, poll the MR automatically (approval → `APPROVED`; comments → drafted for you, never posted). Default `false` (opt-in) |
+| `autoReview.windowHours` | how long auto-polling runs after the MR opens; then it stops and pings you to `review` manually (default `24`) |
+| `autoReview.minIntervalMinutes` | poll interval at the window START — tightest cadence (default `10`) |
+| `autoReview.maxIntervalMinutes` | poll interval at the window END — the cap, ≈ hourly; interval ramps linearly min→max (default `60`) |
 | `agent.outputStyle` | optional output style for the agent (Claude Code), e.g. `acme:engineer` (default empty = the agent's own style) |
 | `worktree.copyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
 | `projects.<key>.path` | absolute path to the base repository |
@@ -200,7 +204,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.platform` | notifier strategy (default `macos`) |
 | `orchestrator.terminal` | agents viewer: `kitty` (default) or `warp`; both run over tmux |
 | `orchestrator.kitty-font-size` | viewer font size for the kitty terminal (blank keeps kitty.conf's own) |
-| `orchestrator.editor-command` | editor launcher list (default `[open, -a, IntelliJ IDEA]`; e.g. `[code]`) |
+| `orchestrator.editor-command` | editor launcher list (default `[/Applications/IntelliJ IDEA.app/Contents/MacOS/idea]`; e.g. `[code]`) |
 | `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` |
 | `orchestrator.agent` | which AI agent runtime — `claude` (default), and future MCP-capable CLIs; the pluggable seam |
 | `orchestrator.claude-command` | binary for the `claude` runtime (default `claude`) |

@@ -8,70 +8,78 @@ class DashboardLineTest {
 
     @Test
     void showsNoDetailWhileInDevelopment() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.IN_PROGRESS, 0,
-                "some progress note", "a1", null, "Some ticket title", null, null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
+                .message("some progress note").alias("a1").title("Some ticket title").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEmpty();
     }
 
     @Test
     void showsMrLinkWhileInReview() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.CI_POLLING, 0,
-                "MR: https://gitlab/x/-/merge_requests/9", "a1", null, "title", "https://gitlab/x/-/merge_requests/9", null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
+                .message("MR: https://gitlab/x/-/merge_requests/9").alias("a1").title("title").mrUrl("https://gitlab/x/-/merge_requests/9").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
 
     @Test
     void showsMrLinkWhenReviewedAndReadyToDeploy() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEWED, 0,
-                "reviewed", "a1", null, "title", "https://gitlab/x/-/merge_requests/9", null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEWED)
+                .message("reviewed").alias("a1").title("title").mrUrl("https://gitlab/x/-/merge_requests/9").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
 
     @Test
     void shoutsInCapsWhenPipelineFailed() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.CI_FAILED, 0,
-                "trigger_commons failed", "a1", null, "title", "https://mr", null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_FAILED)
+                .message("trigger_commons failed").alias("a1").title("title").mrUrl("https://mr").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).startsWith("PROBLEM: ").contains("trigger_commons");
     }
 
     @Test
+    void flagsThatADeployConflictNeedsTheHuman() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT)
+                .message("resolve conflict in /repos/ABC-1-deploy").alias("a1").title("title").build();
+
+        assertThat(DashboardLine.forTask("ABC-1", task)).startsWith("NEEDS YOU: ").contains("ABC-1-deploy");
+    }
+
+    @Test
     void shoutsNeedsInputWhenAgentIsBlocked() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.IN_PROGRESS, 0,
-                "awaiting: FE or BE decision", "a1", null, "title", null, null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
+                .message("awaiting: FE or BE decision").alias("a1").title("title").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
 
     @Test
     void showsNoDetailForAFreshTask() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.NEW, 0, null, "a1", null, null, null, null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).alias("a1").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEmpty();
     }
 
     @Test
     void showsShippingWhileTheAgentPushes() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.SHIPPING, 0, "shipping", "a1", null, "title", null, null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.SHIPPING).message("shipping").alias("a1").title("title").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).startsWith("SHIPPING");
     }
 
     @Test
     void showsTheMrLinkWhenReviewPendingHasOne() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEW_PENDING, 0,
-                null, "a1", null, "some title", "https://host/mr/417", null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("some title").mrUrl("https://host/mr/417").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/417");
     }
 
     @Test
     void showsTheMrLinkForAReviewPendingTaskEvenWhenTheAgentLeftAnAwaitingNote() {
-        TaskState task = new TaskState("p", "/wt", TaskStatus.REVIEW_PENDING, 0,
-                "awaiting: review comments; branch resumed, MR open", "a1", null, "title", "https://host/mr/425", null);
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
+                .message("awaiting: review comments; branch resumed, MR open").alias("a1").title("title").mrUrl("https://host/mr/425").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/425");
     }

@@ -37,6 +37,12 @@ public class GitService {
 
     public void createWorktree(Path projectPath, Path worktreePath, String branch, String baseBranch,
                                BranchStrategy strategy) {
+        // Always cut from the REMOTE-TRACKING ref, never a local branch: `git fetch` below refreshes
+        // origin/<base> but never fast-forwards a checkout-less local branch, so cutting from a local
+        // `main` would inherit STALE history. Normalizing here (not trusting the config to spell it
+        // `origin/...`) guarantees the subtree is always based on freshly fetched upstream — matching
+        // what deploy already hardcodes for its target branch (see mergeIntoAndPush).
+        String base = "origin/" + baseBranch.replaceFirst("^origin/", "");
         withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
@@ -56,7 +62,7 @@ public class GitService {
                     case FRESH -> throw new IllegalArgumentException("Branch '" + branch
                             + "' already exists (previous run of this ticket). Decide what to do and retry with"
                             + " branchStrategy: 'recreate' (old work merged/obsolete -> delete branch, start fresh"
-                            + " from " + baseBranch + ") or 'resume' (continue the existing branch and its commits).");
+                            + " from " + base + ") or 'resume' (continue the existing branch and its commits).");
                     case RECREATE -> processRunner.run(projectPath, GIT_TIMEOUT,
                                     List.of("git", "branch", "-D", branch))
                             .expectSuccess("git branch -D " + branch);
@@ -70,10 +76,15 @@ public class GitService {
                 }
             }
             processRunner.run(projectPath, GIT_TIMEOUT,
-                            List.of("git", "worktree", "add", "-b", branch, worktreePath.toString(), baseBranch))
+                            List.of("git", "worktree", "add", "-b", branch, worktreePath.toString(), base))
                     .expectSuccess("git worktree add " + worktreePath);
             detachUpstream(projectPath, branch);
         });
+    }
+
+    public boolean branchExists(Path projectPath, String branch) {
+        return withRepoLock(projectPath, () -> processRunner.run(projectPath, GIT_TIMEOUT,
+                List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0);
     }
 
     /**
@@ -117,14 +128,26 @@ public class GitService {
     }
 
     /**
-     * Merges sourceBranch into targetBranch and pushes — via a throwaway worktree,
-     * because the target branch may not be checked out anywhere. On conflict the
-     * merge is aborted cleanly and the human resolves it manually.
+     * Merges sourceBranch (the task branch) into targetBranch (the deploy branch) and pushes — always in a
+     * dedicated deploy-side worktree cut from {@code origin/<target>}, so the merge and any conflict
+     * resolution happen on the deploy side and the task branch is NEVER modified (its MR targets the base
+     * branch, so touching it would balloon the diff with everything the deploy branch carries).
+     *
+     * <p>On conflict the deploy worktree is LEFT on disk with the conflict markers instead of aborted; the
+     * human resolves it there and calls deploy again, which detects the resolved worktree and finishes the
+     * push. Only this method (the backend) ever writes the shared deploy branch.
      */
     public void mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
         withRepoLock(projectPath, () -> {
+            Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+            String deployBranch = "jagt-deploy-" + sourceBranch;
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
+            // A prior deploy left a conflicted worktree — the human has since resolved it, so finish the push.
+            if (Files.isDirectory(deployWorktree)) {
+                finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
+                return;
+            }
             // Nothing-to-deploy guard: refuse when the source branch has no commits beyond the
             // target (empty branch, or already deployed) — deploy is decoupled from review state,
             // its ONLY precondition is that there is committed work to ship downstream.
@@ -135,56 +158,102 @@ public class GitService {
                 throw new IllegalStateException("Nothing to deploy: branch '" + sourceBranch
                         + "' has no commits beyond " + targetBranch + " (commit work first, or it is already deployed).");
             }
-            Path temp;
-            try {
-                temp = Files.createTempDirectory("jagt-deploy-");
-            } catch (IOException e) {
-                throw new UncheckedIOException("Cannot create temp dir for deploy worktree", e);
-            }
-            String tempBranch = "jagt-deploy-" + sourceBranch;
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "add",
-                            "-B", tempBranch, temp.toString(), "origin/" + targetBranch))
+                            "-B", deployBranch, deployWorktree.toString(), "origin/" + targetBranch))
                     .expectSuccess("git worktree add (deploy) " + targetBranch);
-            try {
-                // Explicit message: the merge runs on a temp branch (jagt-deploy-*), and git's
-                // default "into <current branch>" would leak that name instead of the real target.
-                var merge = processRunner.run(temp, GIT_TIMEOUT, List.of("git", "merge", "--no-edit",
-                        "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch, sourceBranch));
-                if (merge.exitCode() != 0) {
-                    String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
-                    processRunner.run(temp, GIT_TIMEOUT, List.of("git", "merge", "--abort"));
-                    throw new MergeConflictException(sourceBranch, targetBranch, details);
-                }
-                processRunner.run(temp, GIT_TIMEOUT, List.of("git", "push", "origin", "HEAD:" + targetBranch))
-                        .expectSuccess("git push origin HEAD:" + targetBranch);
-            } finally {
-                processRunner.run(projectPath, GIT_TIMEOUT,
-                        List.of("git", "worktree", "remove", "--force", temp.toString()));
-                processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", tempBranch));
+            // Explicit message: the merge runs on a temp branch (jagt-deploy-*), and git's
+            // default "into <current branch>" would leak that name instead of the real target.
+            var merge = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "merge", "--no-edit",
+                    "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch, sourceBranch));
+            if (merge.exitCode() != 0) {
+                String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
+                throw new MergeConflictException(sourceBranch, targetBranch, details, deployWorktree);
             }
+            pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
+        });
+    }
+
+    /** Finishes a deploy whose conflicted worktree the human has resolved: commits the merge, pushes, cleans up. */
+    private void finishDeploy(Path projectPath, Path deployWorktree, String deployBranch,
+                              String sourceBranch, String targetBranch) {
+        String unmerged = processRunner.run(deployWorktree, GIT_TIMEOUT,
+                        List.of("git", "diff", "--name-only", "--diff-filter=U"))
+                .expectSuccess("git unmerged paths in " + deployWorktree).stdout().trim();
+        if (!unmerged.isBlank()) {
+            throw new MergeConflictException(sourceBranch, targetBranch,
+                    "still unresolved (git add them):\n" + unmerged, deployWorktree);
+        }
+        boolean mergeInProgress = processRunner.run(deployWorktree, GIT_TIMEOUT,
+                List.of("git", "rev-parse", "-q", "--verify", "MERGE_HEAD")).exitCode() == 0;
+        if (mergeInProgress) {
+            processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "commit", "--no-edit"))
+                    .expectSuccess("git commit (deploy resolution) " + deployWorktree);
+        }
+        pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
+    }
+
+    /** Pushes the resolved deploy branch to the shared target, then removes the worktree — but KEEPS it on a
+     *  rejected push (deploy branch moved) so the resolution isn't lost. */
+    private void pushAndRemoveDeploy(Path projectPath, Path deployWorktree, String deployBranch, String targetBranch) {
+        var push = processRunner.run(deployWorktree, GIT_TIMEOUT,
+                List.of("git", "push", "origin", "HEAD:" + targetBranch));
+        if (push.exitCode() != 0) {
+            String d = push.stderr().isBlank() ? push.stdout() : push.stderr();
+            throw new IllegalStateException("Deploy push to " + targetBranch + " was rejected — it moved under"
+                    + " the merge. In " + deployWorktree + " run `git merge origin/" + targetBranch
+                    + "`, resolve, then deploy again. Details: " + d);
+        }
+        processRunner.run(projectPath, GIT_TIMEOUT,
+                List.of("git", "worktree", "remove", "--force", deployWorktree.toString()));
+        processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", deployBranch));
+    }
+
+    /** The deploy-side worktree for a task: a sibling of the repo, named after the task branch. */
+    public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
+        return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-deploy");
+    }
+
+    /** Removes a lingering deploy worktree and its {@code jagt-deploy-*} branch, if any (an abandoned
+     *  conflict). Best-effort; no-op when absent. The caller prunes the editor's project list separately. */
+    public void removeDeployWorktreeIfPresent(Path projectPath, String sourceBranch) {
+        Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+        if (!Files.isDirectory(deployWorktree)) {
+            return;
+        }
+        withRepoLock(projectPath, () -> {
+            processRunner.run(projectPath, GIT_TIMEOUT,
+                    List.of("git", "worktree", "remove", "--force", deployWorktree.toString()));
+            processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
+            processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", "jagt-deploy-" + sourceBranch));
         });
     }
 
     /**
-     * A deploy merge hit conflicts. The throwaway deploy worktree is aborted + removed before this flies, so
-     * NOTHING was pushed and there is no half-merged checkout to fix. {@code deployTask} catches this to hand
-     * the resolution to the agent (merge the deploy branch into the task branch, staged, not committed).
+     * A deploy merge hit conflicts. The conflicted checkout is LEFT on disk at {@link #deployWorktree} — a
+     * dev-side worktree with the task branch merged into it — for the human to resolve there and deploy
+     * again. The resolution stays on the deploy side; the task branch is never touched, so its MR (which
+     * targets the base branch, not the deploy branch) keeps only the task's own change.
      * {@link #details} is git's raw conflict output (which files clashed).
      */
     public static class MergeConflictException extends IllegalStateException {
         private final transient String details;
+        private final transient Path deployWorktree;
 
-        public MergeConflictException(String sourceBranch, String targetBranch, String details) {
-            super("Merge CONFLICT merging " + sourceBranch + " into " + targetBranch + " — nothing was pushed"
-                    + " (the deploy worktree was discarded, so there is no half-merged checkout to fix)."
-                    + " Resolve on the task branch: in the " + sourceBranch + " worktree run"
-                    + " `git fetch origin && git merge origin/" + targetBranch + "`, fix the conflicts + commit"
-                    + " + push, then deploy again. Details: " + details);
+        public MergeConflictException(String sourceBranch, String targetBranch, String details, Path deployWorktree) {
+            super("Merge CONFLICT merging " + sourceBranch + " into " + targetBranch + " — nothing was pushed."
+                    + " Resolve it in the deploy worktree " + deployWorktree + " (this is the " + targetBranch
+                    + " side; the " + sourceBranch + " branch and its MR are untouched): fix the conflicts,"
+                    + " `git add` them, then deploy again to finish. Details: " + details);
             this.details = details;
+            this.deployWorktree = deployWorktree;
         }
 
         public String details() {
             return details;
+        }
+
+        public Path deployWorktree() {
+            return deployWorktree;
         }
     }
 
@@ -268,7 +337,7 @@ public class GitService {
         // worktree leaked. jagt assumes nothing about which process/plugin — cwd-under-worktree is the
         // generic, precise selector (only the task's own procs), so this handles any of them.
         var lsof = processRunner.run(null, GIT_TIMEOUT,
-                List.of("lsof", "-d", "cwd", "-Fpn"));
+                List.of("lsof", "-d", "cwd", "-Fpcn"));
         // lsof reports the REAL path (symlinks resolved, e.g. macOS /var -> /private/var), so canonicalize
         // the worktree path too or the cwd comparison silently misses. Falls back to the plain absolute
         // path once the dir is already gone (a later delete pass) — nothing to reap there anyway.
@@ -278,19 +347,50 @@ public class GitService {
         } catch (IOException e) {
             target = worktree.toAbsolutePath().normalize().toString();
         }
+        for (Reapable r : reapable(lsof.stdout(), target)) {
+            processRunner.run(null, GIT_TIMEOUT, List.of("kill", "-9", r.pid()));
+            log.info("Reaped worktree-rooted process {} ({}, {})", r.pid(), r.command(), r.cwd());
+        }
+    }
+
+    /** Command NEVER reaped: see {@link #reapable}. */
+    private static final String VIEWER_COMMAND = "tmux";
+
+    /** A worktree-rooted process the reap will kill — carried so the reap can log WHAT it killed. */
+    record Reapable(String pid, String command, String cwd) {}
+
+    /**
+     * Picks the processes to reap from {@code lsof -d cwd -Fpcn} output: those whose cwd is at or under
+     * {@code target}, EXCLUDING {@code tmux}. Field order per process set is {@code p<pid>},
+     * {@code c<command>}, then {@code n<cwd>} (verified), so the command is known by the time we see
+     * the cwd.
+     *
+     * <p>tmux is spared because every terminal driver's viewer window runs {@code tmux attach} as its
+     * foreground program, so that process's cwd sits under a worktree (kitty was even launched with
+     * {@code --directory <worktree>}), and the ONE shared tmux server hosts every agent. A {@code kill -9}
+     * on either closes the whole viewer window / kills all agents at once — and tmux is jagt's session
+     * plumbing, never a worktree-repopulating daemon (jdtls, node MCP hooks) that the reap exists to kill.
+     */
+    static List<Reapable> reapable(String lsofOutput, String target) {
+        List<Reapable> reapable = new java.util.ArrayList<>();
         String pid = null;
-        for (String line : lsof.stdout().lines().toList()) {
+        String command = null;
+        for (String line : lsofOutput.lines().toList()) {
             if (line.startsWith("p")) {
                 pid = line.substring(1);
+                command = null;
+            } else if (line.startsWith("c")) {
+                command = line.substring(1);
             } else if (line.startsWith("n") && pid != null) {
                 String cwd = line.substring(1);
-                if (cwd.equals(target) || cwd.startsWith(target + "/")) {
-                    processRunner.run(null, GIT_TIMEOUT, List.of("kill", "-9", pid));
-                    log.info("Reaped worktree-rooted process {} ({})", pid, cwd);
+                boolean underWorktree = cwd.equals(target) || cwd.startsWith(target + "/");
+                if (underWorktree && !VIEWER_COMMAND.equals(command)) {
+                    reapable.add(new Reapable(pid, command, cwd));
                     pid = null;
                 }
             }
         }
+        return reapable;
     }
 
     private void clearWorktreePath(Path projectPath, Path temp) {

@@ -76,7 +76,7 @@ public class TmuxService {
                 processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
                         "-w", "-t", windowId, "@jagt_alias", alias));
             }
-            ensureViewer(session, dedicatedTitle, worktreePath);
+            ensureViewer(session, dedicatedTitle);
         }
     }
 
@@ -84,7 +84,7 @@ public class TmuxService {
      * Switches the session's current window to the task's window (the attached
      * terminal client follows). Returns false when no window with that name exists.
      */
-    public boolean focusTaskWindow(String session, String dedicatedTitle, String taskId, Path worktreePath) {
+    public boolean focusTaskWindow(String session, String dedicatedTitle, String taskId) {
         synchronized (lock) {
             var windowId = findWindowId(session, taskId);
             if (windowId.isEmpty()) {
@@ -92,7 +92,7 @@ public class TmuxService {
             }
             processRunner.run(null, TIMEOUT, List.of(tmux(), "select-window", "-t", windowId.get()))
                     .expectSuccess("tmux select-window " + windowId.get());
-            ensureViewer(session, dedicatedTitle, worktreePath);
+            ensureViewer(session, dedicatedTitle);
             return true;
         }
     }
@@ -238,12 +238,17 @@ public class TmuxService {
     }
 
     /** If no terminal client is attached to the session, ask the terminal driver for a tab. */
-    private void ensureViewer(String session, String dedicatedTitle, Path tabCwd) {
+    /** The viewer must NOT open inside a worktree: `done`/`remove` reap every process whose cwd is under
+     *  the removed worktree, which would kill-9 the viewer that first opened there — closing all agents'
+     *  tabs. A stable home dir is never a reap target. */
+    private static final Path VIEWER_CWD = Path.of(System.getProperty("user.home"));
+
+    private void ensureViewer(String session, String dedicatedTitle) {
         var clients = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-clients", "-t", "=" + session));
         if (clients.exitCode() == 0 && !clients.stdout().isBlank()) {
             return;
         }
-        terminalDriver.openViewer(session, dedicatedTitle, tabCwd);
+        terminalDriver.openViewer(session, dedicatedTitle, VIEWER_CWD);
     }
 
     private String tmux() {

@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.service.ReviewSweepService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -16,12 +17,15 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class MasterShellTest {
@@ -48,7 +52,7 @@ class MasterShellTest {
                 .thenReturn(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC", List.of(),
                         "https://tracker.example.com/browse/ABC-123")));
         MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant,
-                mock(ConfigurableApplicationContext.class));
+                mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         shell.doTask(List.of("do", "https://tracker.example.com/browse/ABC-123", "group-a"));
 
@@ -63,7 +67,7 @@ class MasterShellTest {
         when(assistant.readMergeRequest("https://host/mr/425"))
                 .thenReturn(Optional.of(new MergeRequestFacts(true, "PROJ-1", "group/proj", "PROJ-1 Excel export")));
         MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class), assistant,
-                mock(ConfigurableApplicationContext.class));
+                mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         shell.resumeTask(List.of("resume", "https://host/mr/425"));
 
@@ -77,7 +81,7 @@ class MasterShellTest {
                 "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()),
                 "sobrado", new ProjectConfig("/b", "origin/stage", "dev", List.of()))));
         MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
-                config, mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+                config, mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         MasterShell.DoArgs args = shell.parseDoArgs(List.of("do", "ABC-2099", "plan", "давай", "разберём", "алгоритм"));
 
@@ -93,7 +97,7 @@ class MasterShellTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
         MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config,
-                mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+                mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         shell.doTask(List.of("do", "ABC-1", "plan", "sng", "start", "with", "tests", "only"));
 
@@ -102,10 +106,43 @@ class MasterShellTest {
     }
 
     @Test
+    void warnsAboutALeftoverBranchWithoutReadingTheTicket() {
+        OrchestratorTools tools = mock(OrchestratorTools.class);
+        MasterAssistant assistant = mock(MasterAssistant.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        when(tools.existingBranchProject("ABC-9", null)).thenReturn("group-a");
+        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant,
+                mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+
+        String out = shell.doTask(List.of("do", "ABC-9"));
+
+        assertThat(out).contains("already exists in group-a", "do ABC-9 recreate", "do ABC-9 resume");
+        verifyNoInteractions(assistant);
+        verify(tools, never()).initializeTask(anyString(), anyString(), anyString(), any(), any(), any(), any());
+    }
+
+    @Test
+    void threadsTheChosenBranchStrategyIntoInitialize() {
+        OrchestratorTools tools = mock(OrchestratorTools.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("sng", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
+        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config,
+                mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+
+        shell.doTask(List.of("do", "ABC-1", "sng", "recreate"));
+
+        verify(tools).initializeTask(eq("ABC-1"), eq("sng"), anyString(), isNull(), eq("recreate"),
+                isNull(), isNull());
+    }
+
+    @Test
     void exitClosesTheSpringContextInsteadOfLeavingItToTheShutdownHook() {
         ConfigurableApplicationContext context = mock(ConfigurableApplicationContext.class);
         MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
-                mock(ConfigService.class), mock(MasterAssistant.class), context);
+                mock(ConfigService.class), mock(MasterAssistant.class), mock(ReviewSweepService.class), context);
 
         shell.stopBackend();
 
@@ -115,7 +152,7 @@ class MasterShellTest {
     @Test
     void tabCompletesAUniqueCommand() {
         MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
-                mock(ConfigService.class), mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+                mock(ConfigService.class), mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("sh");
 
@@ -129,7 +166,7 @@ class MasterShellTest {
         OrchestratorTools tools = mock(OrchestratorTools.class);
         when(tools.taskChoices()).thenReturn(List.of(new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel")));
         MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class),
-                mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+                mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("ship p1");
 
@@ -145,7 +182,7 @@ class MasterShellTest {
                 new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel export flag"),
                 new OrchestratorTools.TaskChoice("p2", "PAN-2540", "Login rate limit")));
         MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class),
-                mock(MasterAssistant.class), mock(ConfigurableApplicationContext.class));
+                mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("ship p");
         List<String> log = new ArrayList<>();
@@ -165,5 +202,42 @@ class MasterShellTest {
     @Test
     void showsTheDashboardAloneForABlankResult() {
         assertThat(MasterShell.withDashboard("", "DASH")).isEqualTo("DASH");
+    }
+
+    @Test
+    void wrapsALongNextMoveLineSoItsClippedTailBecomesVisible() {
+        String line = " ".repeat(20) + "→ your move: resolve the deploy conflict in the deploy worktree, "
+                + "then `deploy` again";
+
+        List<String> out = MasterShell.wrapHanging(line, 60);
+
+        assertThat(out).hasSizeGreaterThan(1);
+        assertThat(out).allSatisfy(seg -> assertThat(seg.length()).isLessThanOrEqualTo(60));
+        // The tail that `fit()` used to clip is now spread across continuation lines — nothing is lost.
+        String rejoined = out.stream().map(String::strip).reduce((a, b) -> a + " " + b).orElse("");
+        assertThat(rejoined).contains("then `deploy` again");
+    }
+
+    @Test
+    void hangsWrappedContinuationsUnderTheTextPastTheMarker() {
+        String line = " ".repeat(20) + "→ " + "x".repeat(80);
+
+        List<String> out = MasterShell.wrapHanging(line, 40);
+
+        assertThat(out.get(0)).contains("→");
+        assertThat(out.get(1)).startsWith(" ".repeat(22)).doesNotContain("→");   // 20 indent + "→ "
+    }
+
+    @Test
+    void hangingIndentCountsLeadingSpacesPlusTheMarker() {
+        assertThat(MasterShell.hangingIndent(" ".repeat(20) + "→ your move")).isEqualTo(22);
+        assertThat(MasterShell.hangingIndent(" ".repeat(20) + "└ http://x")).isEqualTo(22);
+        assertThat(MasterShell.hangingIndent("plain header, no indent")).isZero();
+    }
+
+    @Test
+    void leavesADetailLineThatFitsUnwrapped() {
+        String line = " ".repeat(20) + "└ http://mr/1";
+        assertThat(MasterShell.wrapHanging(line, 80)).containsExactly(line);
     }
 }

@@ -19,6 +19,8 @@ public final class NextMove {
             case CI_POLLING -> "your move: `review`";
             case CI_FAILED -> "your move: `review` (relays the failure)";
             case REVIEWED -> "your move: `deploy` or `done`";
+            case APPROVED -> "approved — your move: `deploy` or `done`";
+            case DEPLOY_CONFLICT -> "your move: `ide` opens the deploy worktree — resolve + `git add`, then `deploy` again";
             case DEPLOYED -> "your move: `done` — or ship more changes, then deploy again";
             case DONE -> "done";
         };

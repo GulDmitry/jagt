@@ -26,15 +26,19 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   keep it in sync.
 - Orchestrator root is auto-detected at startup: nearest parent dir containing `mcp_client.js`
   (`OrchestratorPaths`); overridable via `ORCHESTRATOR_ROOT`. No absolute user paths in the repo.
-- `initialize_task` copies the base repo's run configs into the worktree so `ide` opens it ready to
-  run — both `.run/` (modern) and `.idea/runConfigurations/` (legacy). Only "Store as project file"
-  configs live there; workspace-only ones don't copy. It ALSO copies gitignored local files matching
+- `initialize_task` copies the base repo's IDE files into the worktree so `ide` opens it ready to run
+  and query (`copyIdeProjectFiles`): run configs — both `.run/` (modern) and `.idea/runConfigurations/`
+  (legacy; only "Store as project file" ones, workspace-only don't copy) — plus the DB connections
+  (`.idea/dataSources.xml`, `.idea/dataSources.local.xml`, `.idea/dataSources/`; passwords stay in the
+  OS keychain keyed by the source UUID, so they carry over). All are gitignored, hence absent from a
+  fresh branch checkout. It ALSO copies gitignored local files matching
   the per-project `worktree.copyGlobs` (default `["**/.env"]`) from the base repo to the same relative
   worktree path (`copyLocalFiles`, heavy dirs skipped) — run configs reference module `.env`, key
   files, SSL certs (e.g. `app/.env`, `**/*.pem`) which are gitignored and otherwise missing, so the
   app wouldn't start. Patterns are config, NOT hardcoded. Best-effort, gitignored, no-op if absent.
 - `state.json` — SSOT for tasks (gitignored, auto-created).
-  Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, CI_POLLING, CI_FAILED, DEPLOYED, DONE.
+  Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED, REVIEWED,
+  DEPLOY_CONFLICT (deploy hit a merge conflict — human resolves it in the deploy worktree), DEPLOYED, DONE.
 - `master_prompt.md` — system prompt for the Master session (router, never writes code).
 
 ## Session roles
@@ -120,11 +124,16 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   the human to close.
 - Every new install requirement (e.g. tmux via brew) MUST be documented in README's Prerequisites table —
   never install things silently.
-- MCP permission gating: Claude Code's auto-mode classifier silently blocks MCP tool calls unless
+- MCP permission gating: Claude Code's auto-mode classifier silently blocks tool calls unless
   pre-approved. Both the Master (committed root `.claude/settings.json`) and every sub-agent worktree
   (generated `.claude/settings.local.json`) need `enableAllProjectMcpServers: true` +
-  `permissions.allow: ["mcp__jagt-orchestrator"]`. Miss it → `ship`/`feedback` stall on an invisible
-  prompt.
+  `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` — the MCP tools AND the agent's own
+  git (commit/push its task branch on `ship`), which nobody in the tmux window is watching to approve.
+  Miss the MCP entry → `ship`/`feedback` stall on an invisible prompt; miss the git entry → the agent
+  freezes on `git commit`/`git push`. Safety on shared branches is NOT this allow-list — it is the
+  detached upstream (`GitService.detachUpstream`) + prompt rules; the worktree is the agent's sandbox.
+  Regenerated only by `initialize_task`, so an EXISTING worktree keeps its old file — patch it in place
+  or re-create the task to pick up a changed allow-list.
 
 ## Master assistant (headless one-shot)
 - The backend talks to no external systems, but `do <ticket>` needs the Jira ticket read BEFORE a

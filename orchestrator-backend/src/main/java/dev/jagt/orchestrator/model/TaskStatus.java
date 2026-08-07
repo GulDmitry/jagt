@@ -8,6 +8,8 @@ public enum TaskStatus {
     CI_POLLING,
     CI_FAILED,
     REVIEWED,
+    APPROVED,
+    DEPLOY_CONFLICT,
     DEPLOYED,
     DONE
 }

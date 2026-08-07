@@ -17,8 +17,9 @@ public final class DashboardLine {
         boolean awaiting = message != null && message.toLowerCase().startsWith("awaiting");
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "pipeline/build failed");
+            case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict — resolve in the deploy worktree");
             case SHIPPING -> "SHIPPING: agent committing & pushing… (focus to watch)";
-            case CI_POLLING, REVIEWED, DEPLOYED -> orDefault(task.mrUrl(), "MR link missing");
+            case CI_POLLING, REVIEWED, APPROVED, DEPLOYED -> orDefault(task.mrUrl(), "MR link missing");
             // A live MR is the clickable next step — show it even if the agent also left an "awaiting"
             // note; only fall back to NEEDS INPUT / blank when there is no MR yet. (The title lives in
             // its own dashboard column, so this line stays contextual.)

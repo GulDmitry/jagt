@@ -17,6 +17,12 @@
       "squash": true
     }
   },
+  "autoReview": {
+    "enabled": false,
+    "windowHours": 24,
+    "minIntervalMinutes": 10,
+    "maxIntervalMinutes": 60
+  },
   "agent": {
     "outputStyle": ""
   },

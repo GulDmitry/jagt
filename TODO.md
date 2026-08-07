@@ -59,28 +59,65 @@ the flags above.
 
 ## Automation
 
-### Auto-poll GitLab after `ship` (remove the manual `ci`/`review` step)
+### Auto-poll the review request after `ship` — DECIDED (auto-review, windowed, escalating cadence)
 Today the human must run `ci`/`review` to pull pipeline status + MR comments. Goal: after `ship`, the
-system watches the MR on its own and only pings the human when human input is actually needed.
+system watches the MR on its own within a bounded time window and only pings the human when input is
+actually needed. `ci`/`review` stop being manual commands — they become the poller's internal steps
+(keep a single manual `sweep <ticket>` as the "check now" escape hatch, see Docs/clarity below).
 
-Desired loop (per task in CI_POLLING):
-1. Poll the MR: pipeline status + unresolved review threads (bots like CodeRabbit + humans).
-2. Pipeline failed OR new actionable comments → relay ONE consolidated brief to the agent, which fixes
-   locally and drafts replies (no push) → set REVIEW_PENDING → `notify_user` "your move: ide <alias>".
-3. Pipeline green AND all threads resolved → `notify_user` "ready: deploy/done <alias>".
-4. The human's only jobs become: review in IDE, approve (`ship` posts the round), decide deploy/done.
-   `ci`/`review` disappear as manual commands — they become the poller's internal steps.
+Where it lives (decided — TODO option (b), keeps the backend integration-free): a new
+`AutoReviewScheduler` (`@Scheduled(fixedRate=60_000)`, modelled on `WatchdogService`). The backend
+still talks to NO external system — the scheduler orchestrates and delegates the outside read to
+`MasterAssistant` (headless `claude -p`, inherits the human's own code-host MCP). Each poll spawns one
+headless process (tokens); the cadence backoff below is the direct cost lever.
 
-Open questions / design:
-- Where does polling live? The backend deliberately talks to NO external systems (no tokens). Options:
-  (a) reintroduce a scheduled poller in the backend behind a token (reverses an earlier decision),
-  (b) a headless `claude -p` cron job that runs the same GitLab-MCP sweep the Master does now,
-  (c) the Master session self-schedules (Monitor/loop) while it stays open.
-  Leaning (b): keeps the backend integration-free, reuses the agent's own GitLab MCP, survives Master
-  restarts.
-- Debounce notifications: one ping per state change, not per poll. Track last-seen pipeline id +
-  resolved-thread count per task in state.json.
-- Cadence: pipelines take minutes — poll ~60-90s; back off when idle.
+HARD RULE — code review is never fully automated. Auto-review only READS and DRAFTS; posting is always
+human-gated. Every auto-round hands the human two artifacts: the local diff (agent's fixes) and
+`review_replies.md` (what the LLM intends to reply to each thread). The human does `ide <alias>`,
+inspects BOTH the code and the drafted replies, edits, and only an explicit `ship` posts the round. The
+auto-loop never `ship`/`deploy`/pushes/posts on its own. This is the "human in the loop" invariant —
+already enforced in `reviewTask()` (relay brief → agent fixes locally + drafts, no push) — do not erode.
+
+State (per-task, in `state.json` — NOT config; it is per-MR data):
+- `mrCreatedAt` — set on `ship`/`resume`; the start of the auto-review window.
+- `lastPolledAt` — to decide "is it time to poll" against the computed interval.
+- `autoReview` — per-task on/off, defaulting from config (lets one task opt out).
+
+Config (new `autoReview` section, same value-record shape as the others — `defaults()`/`withX`/
+`*OrDefault`; document every key in README's Configuration table):
+```
+"autoReview": { "enabled": true, "windowHours": 24, "minIntervalMinutes": 10, "maxIntervalMinutes": 60 }
+```
+
+Cadence — a PURE function `pollInterval(elapsed)` (no attempt counter stored; interval derived from
+`now - mrCreatedAt`). DECIDED: LINEAR ramp min→max across the window, capped at max (= hourly). After the
+window: return null → STOP polling + one `notify_user` "auto-review window elapsed — sweep manually".
+Pure fn ⇒ unit-test monotonicity + bounds + null-after-window trivially.
+```java
+Duration pollInterval(Duration elapsed) {                       // null = stop
+    if (elapsed.compareTo(window) > 0) return null;
+    double f = (double) elapsed.toMinutes() / window.toMinutes();          // 0..1
+    long m = Math.round(minMinutes + (maxMinutes - minMinutes) * f);       // linear 10→60
+    return Duration.ofMinutes(Math.min(maxMinutes, m));
+}
+```
+Scheduler tick: for each task in CI_POLLING with `autoReview` + `mrUrl`, if
+`now - lastPolledAt >= pollInterval(now - mrCreatedAt)` → poll (skip if a poll is already in-flight for
+that task; `readReview` runs up to 6 min, must not overlap the 60s tick — run on a bounded executor,
+one in-flight per task).
+
+Per-poll flow (extend `ReviewFacts` with `boolean approved` + add `approved` to `REVIEW_SCHEMA`):
+1. `assistant.readReview(mrUrl)`.
+2. approved && pipeline green && no unresolved → status **APPROVED** (new enum value) +
+   `notify_user` "ready: deploy/done <alias>".
+3. unresolved comments (or pipeline failed) → run the existing `reviewTask()` logic: relay ONE
+   consolidated brief via `task_context.md`, agent fixes LOCALLY + drafts replies in `review_replies.md`,
+   nothing pushed/posted → status REVIEW_PENDING + `notify_user` "your move: ide <alias>".
+4. Debounce: one ping per STATE CHANGE, not per poll — track last-notified state per task (like
+   `WatchdogService.lastAlertAt`).
+
+New status APPROVED (decided): distinct from REVIEWED — APPROVED means a human actually approved the MR,
+REVIEWED just means "no unresolved + green". Touches the enum, `DashboardRenderer`, `NextMove`, tests.
 
 ## UX
 

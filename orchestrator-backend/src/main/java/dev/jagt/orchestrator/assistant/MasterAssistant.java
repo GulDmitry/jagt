@@ -26,10 +26,10 @@ public interface MasterAssistant {
     }
 
     /**
-     * A review sweep of an MR: latest pipeline result and every UNRESOLVED discussion note (bots +
-     * humans), each pre-formatted as one line for relaying to the agent.
+     * A review sweep of an MR: whether it is APPROVED, its latest pipeline result, and every UNRESOLVED
+     * discussion note (bots + humans), each pre-formatted as one line for relaying to the agent.
      */
-    record ReviewFacts(boolean exists, String pipelineStatus, List<String> comments) {
+    record ReviewFacts(boolean exists, boolean approved, String pipelineStatus, List<String> comments) {
     }
 
     /** Reads a work item given an issue KEY or a URL to it (any tracker); returns its canonical key + facts. */

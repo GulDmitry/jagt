@@ -37,6 +37,130 @@ class GitServiceTest {
     }
 
     @Test
+    void cutsTheWorktreeFromFreshlyFetchedUpstreamEvenWhenBaseBranchIsSpelledLocally(@TempDir Path dir)
+            throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        // A teammate advances origin/main. `repo`'s LOCAL main stays at "base" — git fetch refreshes
+        // origin/main but never fast-forwards a checkout-less local branch. Cutting the subtree from the
+        // local "main" would inherit the stale "base"; it must inherit the freshly fetched "moved on".
+        Path other = dir.resolve("other");
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), other.toString()));
+        Files.writeString(other.resolve("f.txt"), "moved on");
+        runner.run(other, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "ahead"));
+        runner.run(other, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitService git = new GitService(runner);
+
+        // baseBranch spelled as a plain local name, NOT "origin/main".
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", GitService.BranchStrategy.FRESH);
+
+        assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("moved on");
+    }
+
+    @Test
+    void deployMergesTheTaskBranchIntoDevAndLeavesTheTaskBranchByteIdentical(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("g.txt"), "task");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+        String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
+
+        new GitService(runner).mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
+        assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout()).contains("task");
+        assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    }
+
+    @Test
+    void deployConflictLeavesADeployWorktreeAndNeverModifiesTheTaskBranch(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("f.txt"), "dev change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "dev"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
+        Files.writeString(repo.resolve("f.txt"), "task change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
+        String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
+        GitService git = new GitService(runner);
+
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitService.MergeConflictException.class);
+
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
+        assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
+    }
+
+    @Test
+    void deployingAgainAfterResolvingTheDeployWorktreePushesDevAndCleansUp(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("f.txt"), "dev change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "dev"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
+        Files.writeString(repo.resolve("f.txt"), "task change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
+        String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
+        GitService git = new GitService(runner);
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitService.MergeConflictException.class);
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        Files.writeString(deployWorktree.resolve("f.txt"), "resolved");
+        runner.run(deployWorktree, t, List.of("git", "add", "f.txt"));
+
+        git.mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:f.txt")).stdout()).contains("resolved");
+        assertThat(deployWorktree).doesNotExist();
+        assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
+    }
+
+    @Test
     void removeWorktreeReapsEveryWorktreeRootedProcessNotJustJava(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
@@ -64,6 +188,23 @@ class GitServiceTest {
         } finally {
             rooted.destroyForcibly();
         }
+    }
+
+    @Test
+    void reapSparesTheTmuxViewerButTakesAgentDaemonsUnderTheWorktree() {
+        // `done`/`remove` reap every process whose cwd sits under the removed worktree. The viewer window
+        // runs `tmux attach` as its foreground program, so its cwd is that worktree — but reaping it kill-9s
+        // the viewer, closing the whole terminal window while every OTHER agent keeps running in the shared
+        // tmux server. tmux must be spared; the agent's own leftover daemons (jdtls, node) must not.
+        String target = "/Users/x/www/wt";
+        String lsof = String.join("\n",
+                "p100", "cjava", "fcwd", "n" + target,               // jdtls rooted in the worktree
+                "p200", "cnode", "fcwd", "n" + target + "/app",      // an MCP daemon deeper in the worktree
+                "p300", "ctmux", "fcwd", "n" + target,               // the viewer's `tmux attach`
+                "p400", "cjava", "fcwd", "n/Users/x/www/other");     // jdtls of a DIFFERENT worktree
+
+        assertThat(GitService.reapable(lsof, target)).extracting(GitService.Reapable::pid)
+                .containsExactly("100", "200");
     }
 
     @Test
@@ -167,7 +308,8 @@ class GitServiceTest {
     }
 
     @Test
-    void abortsDeployCleanlyWhenMergeConflicts(@TempDir Path dir) throws Exception {
+    void deployConflictPushesNothingToDevAndLeavesTheDeployWorktreeWithTaskBranchUntouched(@TempDir Path dir)
+            throws Exception {
         ProcessRunner runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
@@ -185,9 +327,11 @@ class GitServiceTest {
         Files.writeString(repo.resolve("f.txt"), "dev change");
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "dev"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "dev"));
+        String devWithOnlyDevCommit = runner.run(repo, timeout, List.of("git", "rev-parse", "dev")).stdout().trim();
         runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1", "main"));
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
+        String taskTip = runner.run(repo, timeout, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
         GitService git = new GitService(runner);
 
@@ -195,16 +339,15 @@ class GitServiceTest {
                 .isInstanceOf(GitService.MergeConflictException.class)
                 .hasMessageContaining("CONFLICT")
                 .hasMessageContaining("nothing was pushed")
-                // the message must point at the ONLY workable recovery — resolve on the task branch, not the
-                // discarded deploy worktree — and name the merge to run, so the human isn't left guessing.
-                .hasMessageContaining("task branch")
-                .hasMessageContaining("git merge origin/dev");
+                .hasMessageContaining("ABC-1-deploy");
 
+        // dev was NOT advanced by a partial merge, the task branch is byte-identical, and the deploy-side
+        // worktree is LEFT for the human to resolve there.
         runner.run(repo, timeout, List.of("git", "fetch", "-q"));
-        String devAfterConflict = runner.run(repo, timeout, List.of("git", "rev-parse", "origin/dev~0")).stdout().trim();
-        String devTipWithOnlyDevCommit = runner.run(repo, timeout, List.of("git", "rev-parse", "dev")).stdout().trim();
-        assertThat(devAfterConflict).isEqualTo(devTipWithOnlyDevCommit).isNotEqualTo(devBefore);
-        assertThat(runner.run(repo, timeout, List.of("git", "branch", "--list", "jagt-deploy*")).stdout()).isBlank();
+        assertThat(runner.run(repo, timeout, List.of("git", "rev-parse", "origin/dev")).stdout().trim())
+                .isEqualTo(devWithOnlyDevCommit).isNotEqualTo(devBefore);
+        assertThat(runner.run(repo, timeout, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
+        assertThat(dir.resolve("ABC-1-deploy")).isDirectory();
     }
 
     @Test

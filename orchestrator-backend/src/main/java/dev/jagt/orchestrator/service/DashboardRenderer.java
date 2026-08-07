@@ -5,8 +5,11 @@ import dev.jagt.orchestrator.model.NextMove;
 import dev.jagt.orchestrator.model.TaskState;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.Map;
 
 /**
@@ -19,6 +22,8 @@ import java.util.Map;
 public class DashboardRenderer {
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm:ss");
+    /** Last-active stamp: day-month hour:minute, no year/seconds — the ACTIVE column the table sorts on. */
+    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("dd-MM HH:mm");
 
     // Column widths, defined ONCE and shared by the header + every task row. The Master TUI colors the
     // ALIAS / TASK / TITLE columns by the offsets below, so this is the single source of truth for the layout.
@@ -26,7 +31,7 @@ public class DashboardRenderer {
     public static final int TASK_W = 11;
     private static final int STATUS_W = 14;
     private static final int PROJECT_W = 8;
-    private static final int ACTIVE_W = 9;
+    private static final int ACTIVE_W = 11;
     private static final String ROW_FORMAT = "%-" + ALIAS_W + "s %-" + TASK_W + "s %-" + STATUS_W
             + "s %-" + PROJECT_W + "s %-" + ACTIVE_W + "s %s%n";
     /** Start column of the ALIAS / TASK / TITLE fields in a rendered row (for per-column coloring). */
@@ -45,13 +50,15 @@ public class DashboardRenderer {
         StringBuilder out = new StringBuilder();
         out.append("jagt orchestrator — ").append(tasks.size()).append(" task(s)   updated ")
                 .append(LocalTime.now().format(CLOCK)).append('\n').append('\n');
-        out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE", "TITLE"));
-        long now = System.currentTimeMillis();
-        tasks.forEach((id, t) -> {
-            long minutes = (now - t.lastActiveTimestamp()) / 60_000;
-            String active = minutes < 1 ? "just now" : minutes + "m ago";
-            out.append(String.format(ROW_FORMAT,
-                    t.alias() == null ? "-" : t.alias(), id, t.status(), t.project(), active, oneLineTitle(t.title())));
+        out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE ▼", "TITLE"));
+        tasks.entrySet().stream()
+                .sorted(Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
+                        e.getValue().lastActiveTimestamp()).reversed())
+                .forEach(e -> {
+            String id = e.getKey();
+            TaskState t = e.getValue();
+            out.append(String.format(ROW_FORMAT, t.alias() == null ? "-" : t.alias(), id, t.status(),
+                    t.project(), stamp(t.lastActiveTimestamp()), oneLineTitle(t.title())));
             if (t.ticketUrl() != null && !t.ticketUrl().isBlank()) {
                 out.append("                    └ ").append(t.ticketUrl()).append('\n');
             }
@@ -65,6 +72,10 @@ public class DashboardRenderer {
             out.append("(no tasks)\n");
         }
         return out.toString();
+    }
+
+    static String stamp(long epochMillis) {
+        return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).format(STAMP);
     }
 
     /** The ticket title on one line (whitespace collapsed), shown in FULL — it's the last column, so the
