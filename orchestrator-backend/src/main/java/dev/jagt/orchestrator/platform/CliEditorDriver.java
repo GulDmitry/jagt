@@ -11,7 +11,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -51,13 +55,34 @@ public class CliEditorDriver implements EditorDriver {
 
     /**
      * Drop the worktree from every JetBrains IDE's recent-projects list (macOS config location), so a
-     * `done` task doesn't leave a dead "project" on the Welcome screen. Best-effort: JetBrains owns the
-     * file and rewrites it from memory, so this reliably takes effect after the IDE restarts. No-op when
-     * the JetBrains config dir is absent (a non-JetBrains editor) — the path simply isn't in any file.
+     * `done` task doesn't leave a dead "project" on the Welcome screen. Best-effort and IMMEDIATE only:
+     * while the IDE is live it holds the list in memory and flushes it back on its next save/exit, which
+     * resurrects the entry — even across a restart (the entry is re-written on the way down). The scheduled
+     * {@link #forgetDeadWorktrees} GC is what actually makes the removal stick once the IDE is next closed.
      */
     @Override
     public void forgetProject(Path worktreePath) {
         String userHome = System.getProperty("user.home");
+        rewriteRecentProjects(userHome, xml -> pruneRecentProjects(xml, userHome, worktreePath));
+    }
+
+    @Override
+    public void forgetDeadWorktrees(List<WorktreeLocation> locations) {
+        if (locations.isEmpty()) {
+            return;
+        }
+        String userHome = System.getProperty("user.home");
+        rewriteRecentProjects(userHome,
+                xml -> removeEntries(xml, deadWorktreeKeys(xml, userHome, locations, Files::isDirectory)));
+    }
+
+    /**
+     * Apply {@code prune} to every JetBrains IDE's recentProjects.xml (macOS config location), atomically
+     * writing back only files it actually changed. Best-effort: JetBrains owns the file and rewrites it from
+     * memory while running, so a write reliably sticks only once that IDE is next closed. No-op when the
+     * JetBrains config dir is absent (a non-JetBrains editor).
+     */
+    private void rewriteRecentProjects(String userHome, Function<String, String> prune) {
         Path jetBrains = Path.of(userHome, "Library", "Application Support", "JetBrains");
         if (!Files.isDirectory(jetBrains)) {
             return;
@@ -70,14 +95,12 @@ public class CliEditorDriver implements EditorDriver {
                 }
                 try {
                     String xml = Files.readString(recent);
-                    // Remove ONLY the worktree this `done` deleted — one entry, one-to-one. It does NOT
-                    // garbage-collect other dead entries: `done` cleans up after itself, nothing else.
-                    String pruned = pruneRecentProjects(xml, userHome, worktreePath);
+                    String pruned = prune.apply(xml);
                     if (!pruned.equals(xml)) {
                         Path tmp = recent.resolveSibling(recent.getFileName() + ".jagt.tmp");
                         Files.writeString(tmp, pruned);
                         Files.move(tmp, recent, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                        log.info("Removed {} from {}", worktreePath, recent);
+                        log.info("Pruned dead worktree entries from {}", recent);
                     }
                 } catch (IOException e) {
                     log.debug("Could not prune {}: {}", recent, e.getMessage());
@@ -87,6 +110,8 @@ public class CliEditorDriver implements EditorDriver {
             log.debug("Could not scan JetBrains config: {}", e.getMessage());
         }
     }
+
+    private static final Pattern ENTRY_KEY = Pattern.compile("<entry key=\"([^\"]*)\"");
 
     /**
      * Remove the {@code <entry key="…">…</entry>} block for {@code worktree} from a recentProjects.xml body.
@@ -99,8 +124,45 @@ public class CliEditorDriver implements EditorDriver {
         if (abs.startsWith(userHome)) {
             keys.add("$USER_HOME$" + abs.substring(userHome.length()));
         }
+        return removeEntries(xml, keys);
+    }
+
+    /**
+     * The raw entry keys in {@code xml} whose directory no longer exists AND that name a jagt worktree
+     * ({@code <taskId>-<projectKey>} or {@code <taskId>-deploy} sibling of a configured project). Live
+     * projects — and any dead entry outside a jagt worktree location — are left alone. Pure (existence
+     * injected via {@code dirExists}) + package-private for tests.
+     */
+    static List<String> deadWorktreeKeys(String xml, String userHome,
+                                         List<WorktreeLocation> locations, Predicate<Path> dirExists) {
+        List<String> keys = new ArrayList<>();
+        Matcher m = ENTRY_KEY.matcher(xml);
+        while (m.find()) {
+            String rawKey = m.group(1);
+            Path path = Path.of(rawKey.replace("$USER_HOME$", userHome)).toAbsolutePath().normalize();
+            if (!dirExists.test(path) && isJagtWorktree(path, locations)) {
+                keys.add(rawKey);
+            }
+        }
+        return keys;
+    }
+
+    private static boolean isJagtWorktree(Path path, List<WorktreeLocation> locations) {
+        Path parent = path.getParent();
+        String name = path.getFileName().toString();
+        for (WorktreeLocation loc : locations) {
+            if (loc.parentDir().equals(parent)
+                    && (name.endsWith("-" + loc.projectKey()) || name.endsWith("-deploy"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Strip each named {@code <entry key="…">…</entry>} block from a recentProjects.xml body. Pure. */
+    static String removeEntries(String xml, Collection<String> rawKeys) {
         String out = xml;
-        for (String key : keys) {
+        for (String key : rawKeys) {
             out = out.replaceAll("(?s)\\s*<entry key=\"" + Pattern.quote(key) + "\"[^>]*>.*?</entry>", "");
         }
         return out;
