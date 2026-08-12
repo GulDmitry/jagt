@@ -15,7 +15,8 @@ merge request, or deploy — without a human checkpoint you own.
 ## How it works
 
 - **Master console** — one terminal you type into (`do PROJ-42`, `ship`, `deploy`, …). It routes and
-  tracks; it never writes code.
+  tracks; it never writes code. It is plain Java, not an AI session: commands are parsed by a fixed
+  grammar and executed in-process — instant, no tokens, no drift.
 - **Sub-agents** — one agent session per ticket, each in its own Git worktree (a sibling checkout on a task
   branch). They can't see each other's code and can't touch your base branch — jagt enforces it.
 - **You, the human in the loop** — jagt never commits to a shared branch, opens a merge request, or deploys
@@ -91,8 +92,10 @@ A few macOS-specific setup notes:
 - **IntelliJ run configs** — a fresh worktree opens without the base project's run configs. Mark a config
   *Store as project file* (Run → Edit Configurations) so it lands under `.run/`; jagt copies those into every
   worktree, so `ide` opens ready to run.
-- **MCP pre-approval** — the committed `.claude/settings.json` pre-approves jagt's MCP tools for the Master
-  session, so tool calls aren't silently blocked. Keep it.
+- **MCP pre-approval** — every agent worktree gets a generated `.claude/settings.local.json` pre-approving
+  jagt's MCP tools and the agent's own git, so nothing stalls on an invisible permission prompt nobody is
+  watching. (The committed root `.claude/settings.json` does the same for a Claude session working *on*
+  jagt itself; the Master console needs no permissions — it's Java.)
 - **UTF-8 locale (kitty)** — kitty honors the libc locale, and macOS has no `C.UTF-8`. If your shell locale
   isn't a real UTF-8 one, kitty drops non-ASCII input (Cyrillic paste/dictation). Fix:
   `export LANG=en_US.UTF-8` in `~/.zshenv`.
@@ -110,20 +113,22 @@ Talk to the Master console:
 | `focus <ticket>` | jump to the agent's session — **talk to the agent directly there** |
 | `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (falls back to `baseBranch`) — does not auto-refresh |
 | `review <ticket>` | pull the MR's pipeline + comments; the agent fixes locally and drafts replies (nothing pushed) |
-| `ship <ticket>` | approved: agent commits, pushes, opens the merge request, watches CI |
-| `deploy <ticket>` | merge the task branch into `deployBranch` and push (on conflict the agent resolves it staged-but-uncommitted; you review, commit, `deploy` again) |
+| `ship <ticket>` | approved: the agent commits (title from `mrTitlePattern`), pushes, opens the merge request on the first ship (updates it on later rounds), posts drafted replies, then reports `CI_POLLING` with the link |
+| `resume <mr-url>` | reopened merge request: resume its branch with existing commits and link that MR → `CI_POLLING` (no new MR) |
+| `deploy <ticket>` | merge the task branch into `deployBranch` and push. On conflict nothing is pushed: the task goes `DEPLOY_CONFLICT`, `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, then `deploy` again |
 | `respawn <ticket>` | restart a dead agent session |
 | `done <ticket>` | close the task: full cleanup — session, worktree, state (branch kept) |
 | `help` | command reference + recovery cheatsheet |
 
-Every Master reply ends with the task dashboard. Agents live in one terminal window — switch between them
+The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
 with **Shift+←/→** or by clicking a task in the status bar. Every task also gets a short alias (`p1`, `s2`)
 you can use in any command instead of the ticket id. Plain-text status any time: `curl -s localhost:8290/status`.
 Closing the terminal window only detaches the viewer — agents keep running; kill them explicitly with `done`.
 
 ### The ideal flow
 
-The Master validates command order against task status (override with `force`). Dashed = optional.
+jagt validates command order against task status and refuses a move that makes no sense (e.g. `ship` on a
+task that has neither work in progress nor an existing merge request). Dashed = optional.
 
 ```mermaid
 flowchart TD
@@ -145,7 +150,7 @@ flowchart TD
     REVIEW -->|"pipeline + comments → agent fixes locally, drafts replies"| IDE2
     IDE2 -->|"another round"| SHIP
     IDE2 -->|"green + all resolved"| DEPLOY
-    DEPLOY -->|"merged into deployBranch (conflict → agent resolves staged, you commit + deploy again)"| DONE
+    DEPLOY -->|"merged into deployBranch (conflict → you resolve it in the deploy worktree, deploy again)"| DONE
     DEPLOY -.->|"more changes: ship again (same MR) → deploy again — deploy is a dev step, not the end"| SHIP
 
     classDef cmd font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
@@ -163,7 +168,7 @@ future automation):
 | checkpoint | when | you run |
 |------------|------|---------|
 | **Review** | agent reached `REVIEW_PENDING`, and after every review round | `ide` → then `ship` (or `focus` to iterate live) |
-| **CI / progress** | after `ship` (nothing polls automatically) | `review` |
+| **CI / progress** | after `ship` | `review` — or set `autoReview.enabled` and jagt polls for you within a bounded window (it only READS and DRAFTS; it never posts, pushes or deploys) |
 | **Close** | CI green, reviewers satisfied | `done` |
 
 ---
@@ -228,5 +233,5 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash / API 5xx / 529 Overloaded) before reaching `CI_POLLING` | `ship <ticket>` **again** — jagt sees the dead agent and respawns it to finish. (If it's still alive, `ship` refuses; `focus` to watch.) |
 | Agent seems hung, or nothing happens after `ship`/`review` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to see what it's doing; `respawn <ticket>` restarts a dead session (re-reads `task_context.md`); `done <ticket>` abandons it entirely |
 | `API Error: 529 Overloaded` | transient model overload, server-side | wait a moment and re-run; task state is unchanged |
-| `deploy` says `MERGE CONFLICT — the agent is resolving it` | task branch and `deployBranch` changed the same lines; jagt merges in a throwaway worktree, so it aborts (nothing pushed) and hands the agent a resolve brief | wait for the agent, then `ide <ticket>` → **Git → Local Changes** shows the resolved-but-**uncommitted** merge → review and **commit yourself** → `deploy <ticket>` again |
+| `deploy` says `MERGE CONFLICT` | task branch and `deployBranch` changed the same lines; jagt merges in a throwaway worktree, so nothing is pushed and the task goes `DEPLOY_CONFLICT` | `ide <ticket>` opens that **deploy** worktree (not the task's) — resolve the conflicts, `git add` them, then `deploy <ticket>` again; jagt finishes the commit + push. Your task branch and its MR are untouched |
 | Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Installation → macOS** |

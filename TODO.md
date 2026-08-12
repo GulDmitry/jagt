@@ -2,183 +2,221 @@
 
 Backlog of ideas, not commitments. Newest thinking at the top of each section.
 
+## Roadmap — decided order (review of 2026-08-12)
+
+In dependency order; each step is detailed in its section below.
+
+| # | step | why it earns its place | est. |
+|---|------|------------------------|------|
+| 1 | Lean headless-assistant context (`assistant.mcpServers` + `--strict-mcp-config`) | ~10x fewer tokens on every `do`/sweep, no design risk | 0.5 d |
+| 2 | Per-task token accounting in `state.json` + dashboard | an unmeasured cost cannot be optimized | 0.5 d |
+| 3 | `Move`/`Phase`/`Owner`/`Action` instead of the next-move String | fundament for BOTH the UI and gate validation | 1 d |
+| 4 | `CodeHost` REST — review sweep first, then MR create/update | kills the dominant token spend + the "is it approved?" judgement flake | 2-3 d |
+| 5 | `ship` = backend commit + push | kills the permission-classifier stall class; `SHIPPING` stops hanging | 1-2 d |
+| 6 | Local web UI (SSE + `/api` + static kanban) | mouse-driven, phase-legible, cost visible | 3-5 d |
+| 7 | Status-transition history in `state.json` | "which steps happened, how long did review take" | 0.5 d |
+| 8 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path | 1-2 d |
+
+Steps 1-3 are independent and pay off immediately. 4 and 5 are what move the remaining mechanics out of the
+LLM; 3 is a prerequisite for 6.
+
 ## Architecture
 
-### Replace the persistent Master Claude session with a deterministic in-process REPL
-The Master does two separable jobs: (1) routing + dashboard — parse terse commands, call tools, render
-state; already ~fully deterministic in Java (`NextMove`, `DashboardLine`, status validation, aliases),
-the LLM adds nothing here; (2) language + external systems — read the Jira ticket, distill instructions,
-GitLab MR/CI ops. Only (2) actually needs Claude (it's the Jira/GitLab bridge; the backend holds no
-tokens by design).
+### Cost: the headless assistant inherits the human's ENTIRE MCP surface — the measured hot-spot
+`HeadlessClaudeAssistant` runs with `--setting-sources user,project,local` (the default in
+`AssistantProperties`), so the child loads EVERY user-level MCP server and plugin the human has installed.
+On a realistic setup that is 300-400 tool schemas (code host ~130, tracker ~80, IDE ~90, plus plugin packs)
+— order-of-magnitude 30-80k input tokens per call before the prompt even starts. It is paid on:
+- `readTicket` — once per `do`,
+- `readMergeRequest` — once per `resume`,
+- `readReview` — once per auto-review POLL. `AutoReviewCadence` ramps 10→60 min across a 24 h window ⇒
+  ~40 polls per review request ⇒ ~2M input tokens per MR, for "what is the pipeline status and are there
+  unresolved comments". This dwarfs everything else on the master side.
 
-Plan: kill the persistent Master chat. Add a **Spring Shell** command layer INSIDE the backend (same
-JVM) — commands (`do/ship/review/focus/deploy/done/status`) parse via grammar and call `OrchestratorTools`
-directly: no MCP round-trip, no tokens, no drift, instant. NOT JShell (separate process, Java syntax, no
-Spring context). Sub-agents keep the MCP server + `mcp_client.js`; only the Master's MCP path collapses
-into direct calls.
+Fix: pass ONLY the servers the read actually needs:
+`claude -p --strict-mcp-config --mcp-config <generated file> --setting-sources project --model haiku`.
+The server names CANNOT be guessed — jagt does not know whether the tracker is Jira or Linear, the host
+GitLab or GitHub, or what the human named them. So they are CONFIG: a new `assistant.mcpServers: ["…"]`
+key listing the MCP server names to pass through, and jagt writes the minimal `--mcp-config` file at call
+time by copying those entries out of the human's own MCP config. Empty list = today's behaviour (inherit
+everything), so an unconfigured install keeps working; document the key in README's Configuration table.
+`--setting-sources project` additionally drops the global CLAUDE.md, skills and output styles the read has
+no use for.
 
-Fork for job (2) — where external ops live once the Master isn't Claude:
-- (A) delegate to sub-agents — they already have Jira/GitLab MCP; `do PAN-123` spawns the agent with the
-  ticket id, it reads Jira + plans itself (distillation step disappears); MR/CI during ship/review is the
-  agent's own work. Master-REPL never touches the outside. Most aligned with "backend talks to nothing".
-- (B) headless `claude -p` for master-scoped ops — stateless subprocess instead of a drifting chat.
-- (C) backend gets its own Jira/GitLab clients + tokens — reverses an earlier decision; rejected.
+Side benefit beyond cost: the assistant's context becomes a CONFIGURED contract instead of "whatever the
+human happens to have installed this week" — same call, same tools tomorrow. That is a determinism win too,
+and it makes the token number from step 2 comparable across runs.
 
-Leaning (A): then the Master side needs ZERO LLM calls. A local "vectorization-class" model does NOT fit
-here — command parsing needs no model (grammar), and ticket distillation / agentic tool-calling need a
-capable model, not embeddings.
+### Cost: per-task token accounting (measure before optimizing)
+Spend is invisible today, so every cost decision is a guess. `claude -p --output-format json` returns a
+`usage` block next to the result — `HeadlessClaudeAssistant.ask` should read it and accumulate per task in
+`state.json`, surfaced as a dashboard column plus a session total in the header. Verify first how
+`--output-format json` composes with `--json-schema` (the answer likely moves into `.result`, which then
+needs one more parse step) — that check IS the first task.
+Caveat to state in the UI rather than paper over: sub-agent spend lives in the agent's own session and is
+NOT visible to jagt, so the number is master-side cost, not a task total.
 
-**Decided direction — two-tier dispatch (balance of speed / flexibility / cost).** Keep NL flexibility
-but off the hot path, so a plain command never waits on a model:
-1. Parse input as a grammar command → execute deterministically via `OrchestratorTools` (instant, 0
-   tokens, 0 network). This is ~95% of interactions (`ship p1`, `focus s2`, `status`, `done`).
-2. No grammar match / free text ("залей ту задачу с логином") → hand the raw text to a LEAN headless
-   Claude that maps it to a grammar command → VALIDATE (`SAFE_ID`, project mapping) → execute. Tokens +
-   latency only here, only when flexibility is actually used. The LLM never executes directly — it only
-   proposes; deterministic code executes after the gate (asymmetric-failure-cost rule).
+### Cut cost + raise determinism: mechanical host/tracker ops as backend code, not an LLM tool-loop
+The master side is already LLM-free for routing (see the DONE entry below) — what remains in a model is the
+mechanical outside work: the auto-review poll (`AutoReviewScheduler` → headless `claude -p` → code-host MCP)
+and, on the agent side, the whole ship sequence (commit with an exact title, push, create the MR, post
+replies, report back the URL) that jagt already fully specifies in prose.
 
-Lean headless Claude recipe (kills the token/latency bloat from the user's global MCPs + rules):
-```
-claude -p --model haiku \
-  --strict-mcp-config --mcp-config /dev/null \   # ignore ALL global MCP servers (their schemas = tokens)
-  --setting-sources project \                    # skip global CLAUDE.md / plugins / rules
-  --append-system-prompt "<grammar + current task list>"
-```
-Prefer headless Haiku over a resident local model: a 3-7B local model adds 4-8 GB RAM (the machine
-already swaps — see the jdtls incident); headless `-p` holds nothing resident, needs no infra, and with a
-stripped context is nearly as cheap. Revisit a local model only if API cost ever dominates.
+Lever: pull the DETERMINISTIC, mechanical outside ops into the backend behind a `CodeHost` strategy
+(GitLab / GitHub / … — sibling to the existing seams `AgentRuntime`/`TerminalDriver`/`UserNotifier`) and a
+`Tracker` strategy (Jira / Linear / …). Highest value first:
+- **Review sweep → code.** `MasterAssistant.readReview` → `ReviewFacts` is already a narrow, unit-tested
+  seam and `ReviewSweepService` needs NO change: implement `CodeHost.readReview(mrUrl)` as a REST call and
+  inject it in place of the headless read. 0 tokens, 0 model latency, no drift — and it removes the
+  judgement call jagt currently delegates to a model ("approved=true only if actually approved by a human,
+  not merely mergeable"), which is a field in the API, not an opinion.
+- **MR create/update → code.** jagt already owns the title pattern + merge-request defaults in config;
+  creating/updating the request is a REST call, not a judgement. Removes a class of flake (mis-formatted
+  title, agent forgets to report the URL).
+- **`ship` commit + push → code.** See the dedicated entry below.
+- Leave the JUDGEMENT work in the agents: ticket distillation, the code itself, review replies. Those
+  aren't mechanical.
 
-External ops (Jira/GitLab): tokens-in-backend is now allowed (env vars), so do these as deterministic
-REST clients in the backend (0 model) — or leave them in the sub-agent. The NL fallback only maps
-text→command; it never reaches outside. Ticket distillation moves INTO the sub-agent (pass the raw ticket
-to `task_context.md`; the agent reads + plans itself).
+This is opt-in and behind a strategy interface, so "pluggable by design" holds. It DOES lean on
+tokens-in-backend (env vars) — already sanctioned in the two-tier-dispatch decision, and consistent with
+the tracker/VCS-host-agnostic note (the strategy IS the abstraction that keeps `if gitlab` out).
 
-Tech: **Spring Shell** in the backend (same JVM, direct calls) — NOT JShell (separate process, Java
-syntax, no Spring context). Next step: skeleton = Spring Shell parser + a `HeadlessClaude` wrapper around
-the flags above.
+embabel (investigated) is the WRONG tool for this and for orchestrating the CLI sessions: it's a framework
+for building an agent that makes LLM calls in-process (Spring AI + GOAP planner over typed `@Action`/`@Goal`),
+not for controlling external Claude Code processes. GOAP is overkill for jagt's ~11-state near-linear FSM
+(already an explicit `TaskStatus`), and it drags in Spring AI + an LLM key + a Boot-4 compatibility question
+into a backend that currently has ZERO AI deps. The only slot it could fill is an in-process LLM call
+(`MasterAssistant` ticket→JSON), where bare Spring AI would already do — GOAP adds nothing. Revisit only if
+jagt ever needs its OWN reasoning (LLM-judge review, summarization), and even then prefer plain Spring AI.
+
+First experiment: `CodeHost.readReview(mrUrl)` REST impl wired into `ReviewSweepService` in place of the
+headless read; measure the token drop with step 2's counter — that validates the whole "thicker app →
+thinner, cheaper sessions" hypothesis on one slice before committing to the full seam.
+
+### `ship` should commit and push from the backend, not by instructing the agent
+`OrchestratorTools.ship` writes the agent a five-step prose instruction: commit with EXACTLY this title,
+push branch, create the MR, post drafted replies, report `CI_POLLING` with the URL. Every step of that is
+deterministic and already belongs to the backend — `GitService` holds the per-repo lock, `mrTitlePattern`
+lives in config, MR create is a REST call (previous entry). Leaving it to the agent buys three failure
+modes: the permission classifier can silently stall `git commit`/`git push` in a window nobody is watching,
+the title can come back reworded, and the status/URL report can simply not happen (hence the defensive
+"CI_POLLING requires the MR link in the message" validation).
+
+Target shape: `ship` = (1) `GitService.commitAll(worktree, title)`, (2) push the task branch,
+(3) `CodeHost.createOrUpdateMergeRequest(...)`, (4) status → `CI_POLLING` with the URL, all in-process.
+`SHIPPING` stops being a state you can hang in (it becomes momentary), the whole "ship again to recover a
+dead agent mid-ship" recovery path and its `shipGate(SHIPPING, !agentLive)` special case disappear, and the
+`update_agent_status` URL validation becomes unnecessary.
+Safety is unaffected: pushing the task branch from the backend is what `deploy` already does, shared
+branches stay untouched, the detached upstream still guards a bare `git push`, and `ship` remains the
+human's explicit approval gate. The agent keeps exactly the work that needs judgement: writing the code and
+drafting review replies (`postReviewReplies` / `reviewReplyAuthors` still route those).
+
+### NL fallback — tier 2 of the two-tier dispatch
+Tier 1 (grammar → direct `OrchestratorTools` call) is what `MasterShell` already does. Tier 2 makes free
+text work without ever putting a model on the hot path:
+1. Parse input as a grammar command → execute deterministically (today's behaviour, ~95% of interactions).
+2. No grammar match / free text ("залей ту задачу с логином") → hand the raw text to a LEAN headless Claude
+   that maps it to a grammar command → VALIDATE (`SAFE_ID`, project mapping, the same gates the command
+   would hit) → execute. Tokens + latency only here, only when flexibility is actually used. The LLM never
+   executes: it only PROPOSES, deterministic code executes after the gate (asymmetric-failure-cost rule).
+   Use the same stripped invocation as the assistant fix above (`--strict-mcp-config` with an EMPTY server
+   list — text→command mapping needs no MCP at all, plus `--append-system-prompt "<grammar + task list>"`).
+   In the web UI this is the Cmd-K command palette; in the TUI it is just what happens on an unknown command.
+Prefer headless haiku over a resident local model: a 3-7B local model adds 4-8 GB RAM (the machine already
+swaps — see the jdtls incident); headless `-p` holds nothing resident and, with a stripped context, is
+nearly as cheap. Revisit a local model only if API cost ever dominates.
 
 ## Automation
 
-### Auto-poll the review request after `ship` — DECIDED (auto-review, windowed, escalating cadence)
-Today the human must run `ci`/`review` to pull pipeline status + MR comments. Goal: after `ship`, the
-system watches the MR on its own within a bounded time window and only pings the human when input is
-actually needed. `ci`/`review` stop being manual commands — they become the poller's internal steps
-(keep a single manual `sweep <ticket>` as the "check now" escape hatch, see Docs/clarity below).
-
-Where it lives (decided — TODO option (b), keeps the backend integration-free): a new
-`AutoReviewScheduler` (`@Scheduled(fixedRate=60_000)`, modelled on `WatchdogService`). The backend
-still talks to NO external system — the scheduler orchestrates and delegates the outside read to
-`MasterAssistant` (headless `claude -p`, inherits the human's own code-host MCP). Each poll spawns one
-headless process (tokens); the cadence backoff below is the direct cost lever.
-
-HARD RULE — code review is never fully automated. Auto-review only READS and DRAFTS; posting is always
-human-gated. Every auto-round hands the human two artifacts: the local diff (agent's fixes) and
-`review_replies.md` (what the LLM intends to reply to each thread). The human does `ide <alias>`,
-inspects BOTH the code and the drafted replies, edits, and only an explicit `ship` posts the round. The
-auto-loop never `ship`/`deploy`/pushes/posts on its own. This is the "human in the loop" invariant —
-already enforced in `reviewTask()` (relay brief → agent fixes locally + drafts, no push) — do not erode.
-
-State (per-task, in `state.json` — NOT config; it is per-MR data):
-- `mrCreatedAt` — set on `ship`/`resume`; the start of the auto-review window.
-- `lastPolledAt` — to decide "is it time to poll" against the computed interval.
-- `autoReview` — per-task on/off, defaulting from config (lets one task opt out).
-
-Config (new `autoReview` section, same value-record shape as the others — `defaults()`/`withX`/
-`*OrDefault`; document every key in README's Configuration table):
-```
-"autoReview": { "enabled": true, "windowHours": 24, "minIntervalMinutes": 10, "maxIntervalMinutes": 60 }
-```
-
-Cadence — a PURE function `pollInterval(elapsed)` (no attempt counter stored; interval derived from
-`now - mrCreatedAt`). DECIDED: LINEAR ramp min→max across the window, capped at max (= hourly). After the
-window: return null → STOP polling + one `notify_user` "auto-review window elapsed — sweep manually".
-Pure fn ⇒ unit-test monotonicity + bounds + null-after-window trivially.
-```java
-Duration pollInterval(Duration elapsed) {                       // null = stop
-    if (elapsed.compareTo(window) > 0) return null;
-    double f = (double) elapsed.toMinutes() / window.toMinutes();          // 0..1
-    long m = Math.round(minMinutes + (maxMinutes - minMinutes) * f);       // linear 10→60
-    return Duration.ofMinutes(Math.min(maxMinutes, m));
-}
-```
-Scheduler tick: for each task in CI_POLLING with `autoReview` + `mrUrl`, if
-`now - lastPolledAt >= pollInterval(now - mrCreatedAt)` → poll (skip if a poll is already in-flight for
-that task; `readReview` runs up to 6 min, must not overlap the 60s tick — run on a bounded executor,
-one in-flight per task).
-
-Per-poll flow (extend `ReviewFacts` with `boolean approved` + add `approved` to `REVIEW_SCHEMA`):
-1. `assistant.readReview(mrUrl)`.
-2. approved && pipeline green && no unresolved → status **APPROVED** (new enum value) +
-   `notify_user` "ready: deploy/done <alias>".
-3. unresolved comments (or pipeline failed) → run the existing `reviewTask()` logic: relay ONE
-   consolidated brief via `task_context.md`, agent fixes LOCALLY + drafts replies in `review_replies.md`,
-   nothing pushed/posted → status REVIEW_PENDING + `notify_user` "your move: ide <alias>".
-4. Debounce: one ping per STATE CHANGE, not per poll — track last-notified state per task (like
-   `WatchdogService.lastAlertAt`).
-
-New status APPROVED (decided): distinct from REVIEWED — APPROVED means a human actually approved the MR,
-REVIEWED just means "no unresolved + green". Touches the enum, `DashboardRenderer`, `NextMove`, tests.
+### Make the auto-review poll free
+Every auto-review tick spends a headless `claude -p` (the dominant cost measured above) on a mechanical
+read. That is exactly what the `CodeHost` REST sweep removes; until it lands, `autoReview.enabled`
+defaulting to `false` is the cost guard.
 
 ## UX
 
-### Live-refresh the dashboard in place (don't scroll a new copy each time)
-Today the dashboard only redraws after a command. Want it to refresh on its own (~10s, or on state
-change) so "ACTIVE 5m ago" and statuses stay current without typing `status` — and crucially redraw IN
-PLACE (fixed region, terminal doesn't scroll down), not append a fresh copy each tick.
+### The dashboard shows an enum, not a process — model the phase, then render it
+This is the root of "ревью/шип/деплой непонятно". Eleven `TaskStatus` values, of which `REVIEW_PENDING` /
+`CI_POLLING` / `REVIEWED` / `APPROVED` all read to a human as the single word "review". And the next-step
+hint is PROSE: `NextMove.forStatus` returns a `String`, so it can be neither turned into a button nor
+validated — `ship`'s real legality lives in `OrchestratorTools.shipGate`, and the dashboard advises
+independently of it. Two sources of truth for "what can I do now".
 
-Design:
-- The shell blocks on JLine `reader.readLine("jagt> ")`, so a background repaint must not disturb the
-  typed buffer. `reader.printAbove(...)` does that but SCROLLS (each tick appends above the prompt) — not
-  what we want.
-- True in-place: JLine has a `Status` region (`Status.getStatus(terminal)`, multi-line, redrawn in a
-  fixed block at the bottom) — render the dashboard into that instead of the scrollback. Alternative:
-  reserve a block + ANSI cursor save/restore + clear-to-EOL. Prefer `Status` (handles resize/wrap).
-- Trigger: prefer EVENT-DRIVEN over a 10s poll — local dashboard state is `state.json`, mutated in-process
-  by `StateService` (agent MCP calls land in the backend). A `StateService` change listener can signal the
-  shell to repaint immediately (0 latency, no busy poll); keep a slow ~10s tick only to refresh the
-  relative "ACTIVE Xm ago" clock. Debounce coalesced writes.
-- Keep command output in the scrollback (normal `println`); only the dashboard block lives in the fixed
-  region. Ctrl-D / no-TTY path must degrade to the current print-once behavior.
+Fundament (do this before any UI work): `NextMove.forStatus(status)` →
+`Move(Phase phase, Owner owner, List<Action> actions, String hint)` where `Owner ∈ {AGENT, YOU, CI}` and
+`Action = (id, label, primary)`, with legality computed by the SAME code as the command gates. Then:
+- the TUI renders phase + owner + actions instead of a sentence;
+- a UI can offer exactly the actions the server declared legal — an illegal move becomes unrepresentable;
+- the eleven statuses collapse into five rail steps a human reads at a glance:
 
-### Move off Warp — persistent typing lag + no tab/split control API
-Typing in a tmux window through Warp is sluggish ("like jelly", noticeable input delay), and Warp has no
-programmatic surface for tabs/splits/windows (URI scheme only — verified). Both point to a different host
-terminal. Candidates with a REAL remote-control API AND fast GPU rendering:
-- **kitty** — `kitty @ launch --type=tab|window`, splits, focus, close; fully scriptable; very fast.
-- **WezTerm** — `wezterm cli spawn / split-pane / list`, Lua config; GPU render.
-- **iTerm2** — Python + AppleScript API; full session/tab/split control.
-A terminal that multiplexes natively (kitty/WezTerm) could let us DROP tmux for the viewer entirely — that
-removes the Warp→tmux double-render which is the actual source of the lag, and gives closable tabs (Warp's
-big limitation). Fits the `TerminalDriver` strategy: a new impl + config, no core changes. Evaluate render
-latency and the tab-control API of each; kitty is the front-runner (simplest control protocol).
+```
+BUILD ──▶ CHECK ──▶ REVIEW ──▶ READY ──▶ DEPLOY ──▶ DONE
+NEW          REVIEW_   SHIPPING    REVIEWED   DEPLOYED
+IN_PROGRESS  PENDING   CI_POLLING  APPROVED   DEPLOY_CONFLICT
+                       CI_FAILED
+🤖 agent     👤 you     🤖/⚙️ CI     👤 you     👤 you
+```
 
-- tmux status bar styled as clickable job "tabs" (alias + status, active highlighted) so `shared`
-  viewMode reads like native tabs without Warp's unclosable-tab limitation.
+Keep `TaskStatus` as the persisted SSOT — `Phase` is a projection for humans, not a second state machine.
+
+### Local web UI (mouse-driven), TUI stays as the fallback
+The CLI dashboard is fine as a monitor and bad as a control surface: no clicking, no per-task actions, no
+timeline, no cost. The backend is already Spring Boot Web on 8290 with `/state` + `/status`
+(`McpController`), so a local UI is a small addition, not a new stack:
+- `GET /api/tasks` — the dashboard projection plus `phase`/`owner`/`actions` from the entry above;
+- `GET /api/events` — SSE. `StateService` already funnels every mutation through one lock, so a listener
+  list fired from `putTask`/`updateTask`/`removeTask` is ~15 lines and gives push instead of polling
+  (the same trigger the TUI could use to repaint on change rather than on a timer);
+- `POST /api/tasks/{id}/actions/{action}` — executes ONLY what the server itself listed as legal;
+- `src/main/resources/static/` — vanilla JS/CSS, no build step and no CDN (must work offline; a strict
+  no-external-assets page also keeps the jar self-contained). Served by the same jar, opened at
+  `localhost:8290`.
+
+Card per task in a column per phase: alias + ticket + title, owner badge, time-in-current-state, the MR
+link, the drafted-replies indicator, and buttons = the legal actions (`ide`, `ship`, `sweep`, `deploy`,
+`done`, `focus`). Header: how many tasks are waiting on YOU, and today's master-side token cost (step 2).
+
+Phase 2, only if the basic UI proves itself: embed the agent terminal instead of switching windows —
+`ttyd -W tmux attach -t jagt` in an iframe makes `focus` a click in the browser. That is a new install
+requirement, so it goes into README's Prerequisites table (never install silently).
+
+Do NOT fork the rendering logic: extract one `TaskView` projection consumed by the TUI, the `/status` text
+and the JSON alike. And keep the TUI — it is covered by the layout smoke test and is the fallback when
+there is no browser.
+Rejected alternatives: an IntelliJ plugin (months of work, and it would bind the UI to one editor against
+the pluggable-by-design invariant); Electron/native (same cost, more of it); Lanterna mouse support (it
+does have `MouseAction`, but clicking inside an ASCII table treats the symptom, not the diagnosis above).
+
+### Status-transition history in `state.json`
+"Which steps has this task actually been through, and how long did it sit in review?" is unanswerable today
+— `TaskState` keeps only the current status plus `lastActiveTimestamp`. Add an append-only
+`history: [{status, at}]` (capped, e.g. last ~50 entries so the file stays small) written by the same
+`withStatus` path that already stamps the timestamp. That single field powers the card timeline in the UI,
+"time in current state" in both surfaces, and later any cycle-time statistics ("this ticket spent 6 h
+waiting on me").
+
+### Repaint the TUI on state change, not only on the timer
+The dashboard currently refreshes every `dashboard.refreshSeconds`. A `StateService` change listener would
+repaint the moment an agent's MCP call lands (0 latency, no busy poll), keeping the slow tick only for the
+relative "ACTIVE" clock. It is the SAME listener the web UI's SSE stream needs — build it once, use it twice.
+
+- tmux status bar styled as clickable job "tabs" (alias + status, active highlighted) so `shared` viewMode
+  reads like native tabs. Largely superseded by the web UI entry above; keep only if the TUI stays primary.
 
 ## Docs / clarity
 
-- The `review` command is confusing (see below) — either merge it into the auto-poll loop above or
-  rename it. Right now `ci` and `review` do the SAME full MR sweep; two names for one action is the
-  confusion. Likely resolution: once auto-poll lands, drop both as manual commands; keep a single
-  manual `sweep <ticket>` as the "check now" escape hatch.
+- `review` is a confusing name: it does a full sweep of the review request (pipeline + comments) and relays
+  a brief — it does not "review" anything itself, and now that `autoReview` polls automatically, a manual
+  trigger is an escape hatch, not a workflow step. Rename to `sweep <ticket>` ("check it now") and keep
+  `review` as a hidden alias for muscle memory.
 
 ## Testing & portability
 
-### Tracker- and VCS-host-agnostic: never hardcode Jira / GitLab
-The backend must assume NOTHING about which issue tracker or code host is in play — the ONLY source of
-truth is whatever MCP the human's session exposes. The tracker may not be Jira (Linear, GitHub Issues, a
-plain URL to anything); the code host may not be GitLab (GitHub PRs, Bitbucket PRs, any `http(s)` git URL).
-This is the external-systems dimension of the "PLUGGABLE BY DESIGN" invariant: no `if jira` / `if gitlab`,
-no host-specific wording that narrows what an MCP call will accept.
-
-Done: `trackerProject` field + schema/prompt (was `jiraProject`); `readMergeRequest`/`readReview` prompts
-now say "the merge/pull request at <url> via the matching code-host MCP"; `master_prompt.md` +
-`OrchestratorTools` provisioning text say "your code-host MCP" / "your issue-tracker MCP". Label-based
-routing (`projectsMatching`) was already tracker-neutral.
-
-Remaining (low priority): `mrUrl` / "MR" / `CI_POLLING` are GitLab-leaning INTERNAL labels — fine as-is,
-but user-facing prompt text could say "review request" / "pipeline or checks" generically. Not worth a
-churny rename until a non-GitLab host is actually wired.
+### Generic wording for the GitLab-leaning internal labels (low priority)
+`mrUrl` / "MR" / `CI_POLLING` are GitLab-flavoured INTERNAL names — fine as-is, but user-facing text could
+say "review request" / "pipeline or checks" generically. Not worth a churny rename until a non-GitLab host
+is actually wired. (The invariant itself — never hardcode a tracker or code host — lives in CLAUDE.md.)
 
 ### Verify the build on Linux
 Confirm `./gradlew build` and the runnable jar work on Linux (Java 25, Node, tmux, git present). The core
@@ -198,13 +236,15 @@ The matrix (Cartesian product of the strategy seams + config):
 - `UserNotifier` (`orchestrator.platform`),
 - `EditorDriver` (`orchestrator.editor-command`),
 - config flags: `viewMode` (shared / tab-per-task), `postReviewReplies`, `reviewReplyAuthors`,
-  branch strategies (fresh / resume), deploy on/off, plan mode, etc.
+  branch strategies (fresh / resume), deploy on/off, plan mode, `autoReview` on/off, etc.
 
 Design notes:
 - Needs a **deterministic oracle**: fake/record-replay the external, non-deterministic pieces — a stub
   `AgentRuntime` that emits scripted MCP calls instead of a real LLM, a throwaway local Git origin, a
   throwaway tmux session, and headless terminal/editor/notifier drivers (no GUI). Then every combo has a
   fixed expected end state (state.json transitions, branches/worktrees created + cleaned, MR/CI mocked).
+  A `CodeHost` seam makes this dramatically easier — a fake `CodeHost` replaces "mock an LLM reading a
+  merge request", which is the least testable thing in the system today.
 - Assert on OBSERVABLE state, not timing: final `TaskStatus`, git refs/worktrees present-or-gone, files
   written into the worktree, notifications emitted. Follows the existing smoke-test etiquette (throwaway
   tmux + `ORCHESTRATOR_ROOT` + `--orchestrator.open-warp-window=false`, leave no trace).

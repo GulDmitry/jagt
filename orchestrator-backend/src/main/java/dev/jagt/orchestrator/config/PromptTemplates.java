@@ -9,9 +9,8 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * All prompt texts live as resources under src/main/resources/prompts/ —
- * one place to edit wording, no prose inside Java code. (The Master prompt
- * is user-facing config and stays at the repo root as master_prompt.md;
- * the agent bootstrap prompt is one line and lives in application.yml.)
+ * one place to edit wording, no prose inside Java code. (The agent bootstrap
+ * prompt is one line and lives in application.yml.)
  */
 @Component
 public class PromptTemplates {

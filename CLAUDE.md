@@ -1,16 +1,18 @@
 # jagt — Stateful Multi-Agent Dev Orchestrator
 
-Local, macOS-only orchestration of Claude Code CLI sessions across isolated Git worktrees.
-NOT cross-platform by design: macOS + Warp + IntelliJ IDEA (`idea` CLI) + Java 25 / Spring Boot 4.x only.
+Local orchestration of AI coding-agent CLI sessions across isolated Git worktrees. macOS-first (kitty +
+IntelliJ IDEA via the `idea` CLI), Java 25 / Spring Boot 4.x — but every OS- and agent-specific piece sits
+behind a strategy interface (see PLUGGABLE BY DESIGN), so a Linux port is new driver impls, not a fork.
 Jackson is v3 (`tools.jackson.*` packages, unchecked exceptions); annotations stay `com.fasterxml.jackson.annotation`.
 Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven or Kotlin (incl. `.kts`).
 
 ## Components
-- `orchestrator-backend/` — Spring Boot app ("The Brain"): state manager, Git lock, MCP HTTP server
-  (`POST /mcp`), Watchdog, macOS automation (osascript).
-  Runs in a visible foreground Warp tab: `cd orchestrator-backend && ./gradlew bootRun`.
-  The backend talks to NO external systems (no GitLab/Jira API clients, no tokens): agents use their
-  own Claude MCP integrations for that; `CI_POLLING` is handled by the Master via its GitLab MCP.
+- `orchestrator-backend/` — Spring Boot app ("The Brain") AND the Master console itself: state manager,
+  Git lock, MCP HTTP server (`POST /mcp`), Watchdog, auto-review scheduler, macOS automation (osascript).
+  Run the jar in a real terminal (see Build & run) — the process IS the Master TUI.
+  The backend talks to NO external systems (no GitLab/Jira API clients, no tokens): the outside is READ
+  through a one-shot headless agent that inherits the human's own MCP (see Master assistant), and every
+  outside WRITE (push, merge request, review replies) is done by the task's sub-agent via its own MCP.
 - `mcp_client.js` — Node.js stdio→HTTP MCP proxy. Injects `process.cwd()` as `X-Working-Directory` header
   so the backend knows which agent is calling. Symlinked into every worktree.
 - `.mcp.json` — Claude Code project MCP config pointing at `mcp_client.js` (spec called it `.claude.json`;
@@ -37,13 +39,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   files, SSL certs (e.g. `app/.env`, `**/*.pem`) which are gitignored and otherwise missing, so the
   app wouldn't start. Patterns are config, NOT hardcoded. Best-effort, gitignored, no-op if absent.
 - `state.json` — SSOT for tasks (gitignored, auto-created).
-  Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED, REVIEWED,
+  Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED,
+  REVIEWED (nothing unresolved + CI green), APPROVED (a human actually approved the review request),
   DEPLOY_CONFLICT (deploy hit a merge conflict — human resolves it in the deploy worktree), DEPLOYED, DONE.
-- `master_prompt.md` — system prompt for the Master session (router, never writes code).
 
 ## Session roles
-- Master session: Claude in THIS directory (`claude --append-system-prompt "$(cat master_prompt.md)"`),
-  delegates via `initialize_task`.
+- Master = the backend process itself. `MasterShell` parses a fixed grammar and calls `OrchestratorTools`
+  in-process: no LLM, no MCP round-trip, no tokens, no drift. There is NO Master Claude session — the
+  deterministic REPL/TUI replaced it, and `master_prompt.md` went with it (see git history). The only LLM
+  call on the master side is the headless one-shot assistant below.
 - Sub-agents: Claude in worktrees `<taskId>-<projectKey>` (sibling of the base repo). Their generated
   `CLAUDE.md` carries full system knowledge (orchestrator root, all projects, active tasks) plus per-task
   rules; instructions arrive via `task_context.md`.
@@ -80,6 +84,12 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   non-idempotent tool.
 - `state.json` writes are atomic (temp file + `Files.move` ATOMIC_MOVE) in `StateService`.
 - Every MCP tool call from a registered worktree bumps `lastActiveTimestamp` (Watchdog keep-alive).
+- CODE REVIEW IS NEVER FULLY AUTOMATED. The auto-review poll (`AutoReviewScheduler` → `ReviewSweepService`)
+  only READS and DRAFTS: an approval may advance status, but comments are merely RELAYED to the agent, which
+  fixes LOCALLY and writes its intended answers to `review_replies.md`. Nothing is pushed or posted without
+  an explicit human `ship`; the loop never ships, deploys, pushes or posts on its own. Every round hands the
+  human two artifacts to inspect via `ide <alias>` — the local diff and the drafted replies. Do not erode
+  this: the human-in-the-loop gate lives in the OUTCOME, not in who triggered the sweep.
 - NO GIT HOOKS, EVER — never propose, add, or rely on any git hook anywhere; enforce invariants in code + prompts.
 - NO GUI/keystroke automation, ever: System Events keystrokes race with the human typing (they land in
   whatever is focused). Agent terminals are tmux windows (`TmuxService`); visibility comes from one Warp
@@ -125,8 +135,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - Every new install requirement (e.g. tmux via brew) MUST be documented in README's Prerequisites table —
   never install things silently.
 - MCP permission gating: Claude Code's auto-mode classifier silently blocks tool calls unless
-  pre-approved. Both the Master (committed root `.claude/settings.json`) and every sub-agent worktree
-  (generated `.claude/settings.local.json`) need `enableAllProjectMcpServers: true` +
+  pre-approved. The Master needs no permissions at all (it is Java; the committed root
+  `.claude/settings.json` exists for a DEV Claude session working ON jagt, which does call the jagt MCP).
+  Every sub-agent worktree (generated `.claude/settings.local.json`) needs `enableAllProjectMcpServers: true` +
   `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` — the MCP tools AND the agent's own
   git (commit/push its task branch on `ship`), which nobody in the tmux window is watching to approve.
   Miss the MCP entry → `ship`/`feedback` stall on an invisible prompt; miss the git entry → the agent
@@ -136,8 +147,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   or re-create the task to pick up a changed allow-list.
 
 ## Master assistant (headless one-shot)
-- The backend talks to no external systems, but `do <ticket>` needs the Jira ticket read BEFORE a
-  worktree/agent exists. `HeadlessClaudeAssistant` (`MasterAssistant`) spawns a one-shot
+- The backend talks to no external systems, but `do <ticket>` needs the ticket read BEFORE a
+  worktree/agent exists (and `review`/the auto-review poll need the review request read).
+  `HeadlessClaudeAssistant` (`MasterAssistant`) spawns a one-shot
   `claude "<prompt>" -p --setting-sources user,project,local --json-schema '<schema>'` (stdin
   `/dev/null` via `ProcessRunner`). It hardcodes NO MCP server or path — `--setting-sources` makes the
   child inherit the human's OWN MCP (portable, OS-independent); `--json-schema` forces deterministic
@@ -162,11 +174,13 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   project. Always invent obviously fictional placeholders (e.g. `ABC-42`, "Widget layout is off"); the
   existing tests already use `ABC-N` ids — follow that.
 - Markdown and docs: aim for ~120-character lines, hard max 150; don't force awkward wrapping.
-- Prompt structure (per Anthropic prompt-engineering guidance): wrap concerns in named XML sections
-  (`<role>`, `<rules>`, `<output_format>`, `<examples>`); the Master emits fixed-grammar terse lines,
-  NOT JSON (no constrained decoding from a CLI system prompt — JSON is cost without guarantee). Forbid
-  preamble explicitly; damp deliberation with "respond directly", never "do not think" (that leaks
-  `<thinking>` tags). JSON is only for persisted state (`state.json`).
+- Prompt structure (per Anthropic prompt-engineering guidance) — applies to every prompt jagt WRITES: the
+  sub-agent context, the ship/review briefs, the headless assistant prompts. Wrap concerns in named XML
+  sections (`<role>`, `<rules>`, `<output_format>`, `<examples>`). Forbid preamble explicitly; damp
+  deliberation with "respond directly", never "do not think" (that leaks `<thinking>` tags). Never ask a
+  CLI system prompt for JSON by wording alone (cost without guarantee) — the ONE place jagt takes JSON
+  from a model is the headless assistant, where `--json-schema` actually constrains decoding. Otherwise
+  JSON is only for persisted state (`state.json`).
 
 ## Testing etiquette
 - Smoke tests MUST leave no trace: pass `--orchestrator.open-warp-window=false` (otherwise every test
