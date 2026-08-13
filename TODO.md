@@ -11,7 +11,7 @@ order:
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
 | 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
-| 2 | Run the build and the jar on a real Linux box | the drivers exist and the wiring is tested from macOS; `notify-send` under a session bus, `kitty @ focus-window` under a WM and the `pkill` viewer close are not | 0.5 d + access |
+| 2 | Linux: MOSTLY ANSWERED 2026-08-13 in a container (`scripts/linux-suite.sh`) — unit + e2e matrix + the drivers against real notify-send/kitty. Left for a real box: a window manager (`reveal` above other apps) and the viewer close, which the container run left open | 0.5 d + access |
 | 3 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
 | 4 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
 | 5 | A second `CodeHost` (GitHub) and a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the only remaining per-task model cost | 2-3 d |

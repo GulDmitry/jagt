@@ -45,6 +45,34 @@ sourceSets {
     }
 }
 
+// The Linux DRIVERS against the real binaries (notify-send over a session bus, kitty on an X display).
+// Its own source set because it needs an environment no developer machine has by default and macOS cannot
+// have at all — `scripts/linux-suite.sh` provides it in a container. NOT in `check`.
+sourceSets {
+    linuxTest {
+        java.srcDirs = ['src/linuxTest/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+tasks.register('linuxDriverTest', Test) {
+    description = 'Exercises the Linux platform drivers against real notify-send/kitty (container only).'
+    group = 'verification'
+    testClassesDirs = sourceSets.linuxTest.output.classesDirs
+    classpath = sourceSets.linuxTest.runtimeClasspath
+    useJUnitPlatform()
+    // A bare `./gradlew linuxDriverTest` on a dev machine would fail for the environment, not for the code.
+    onlyIf {
+        boolean inContainer = System.getenv('JAGT_IN_CONTAINER') != null
+        if (!inContainer) {
+            logger.lifecycle('Skipping linuxDriverTest: run it via scripts/linux-suite.sh (needs Linux + Xvfb + dbus).')
+        }
+        inContainer
+    }
+    shouldRunAfter tasks.named('test')
+}
+
 tasks.register('e2eTest', Test) {
     description = 'Runs the end-to-end task-flow matrix (needs git + tmux; creates and removes throwaway worktrees).'
     group = 'verification'

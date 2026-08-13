@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import dev.jagt.orchestrator.platform.Executables;
+
 import java.time.Duration;
 import java.util.List;
 
@@ -28,6 +30,19 @@ public record OrchestratorProperties(
         boolean openWarpWindow,
         Watchdog watchdog
 ) {
+
+    /**
+     * tmux is resolved ONCE, here: the configured bare name (the default) is looked up on PATH and then in the
+     * known install locations. Its old default was an absolute Homebrew path, so the whole task flow died on
+     * Linux with "Failed to start command" before the agent ever started — see {@link Executables}.
+     *
+     * <p>The AGENT command is deliberately NOT resolved: it is not spawned by the backend but written into a
+     * shell command that runs inside the agent's tmux window, where the human's own PATH applies — and that
+     * string is what they read on screen, so an absolute path would only make it noisier.
+     */
+    public OrchestratorProperties {
+        tmuxCommand = Executables.resolve(tmuxCommand);
+    }
 
     public record Watchdog(Duration staleAfter) {
     }

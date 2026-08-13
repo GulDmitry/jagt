@@ -28,8 +28,11 @@ class LinuxKittyTerminalDriverTest {
         when(runner.run(any(), any(Duration.class), any()))
                 .thenReturn(new ProcessRunner.ProcessResult(1, "", ""))        // no instance yet
                 .thenReturn(new ProcessRunner.ProcessResult(0, "", ""));
-        var driver = new LinuxKittyTerminalDriver(runner, OrchestratorProperties.defaults()
-                .withOpenWarpWindow(true).withTmuxCommand("tmux"), "kitty", "");
+        // The tmux command is RESOLVED by the properties (PATH, then the known install dirs), so the argv
+        // carries whatever this machine has — asserting the literal "tmux" would pass only where it is absent.
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withOpenWarpWindow(true).withTmuxCommand("tmux");
+        var driver = new LinuxKittyTerminalDriver(runner, properties, "kitty", "");
 
         driver.openViewer("jagt", "jagt", Path.of("/tmp/wt"));
 
@@ -38,7 +41,7 @@ class LinuxKittyTerminalDriverTest {
         List<String> launch = command.getAllValues().getLast();
         assertThat(launch).startsWith("kitty", "--detach")
                 .containsSequence("-o", "allow_remote_control=yes")
-                .containsSequence("--", "tmux", "attach", "-t", "jagt");
+                .containsSequence("--", properties.tmuxCommand(), "attach", "-t", "jagt");
         assertThat(launch).noneMatch(argument -> argument.startsWith("map=cmd+"));
     }
 

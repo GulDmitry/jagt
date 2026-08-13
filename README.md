@@ -150,13 +150,14 @@ status, and points at drafted review replies when the agent has written any. Tal
 | command | effect |
 |---------|--------|
 | `do <ticket> [plan] [notes]` | fetch the ticket, spin up a sub-agent in an isolated worktree; `plan` = plan mode |
+| `do <ticket> from <branch>` | same, but the worktree is cut from `<branch>` and its merge request targets `<branch>` instead of the project's `baseBranch` — for stacking a task on a parent feature branch. The branch must already exist on `origin`; `deploy` is unaffected (it still merges into `deployBranch`) |
 | `status` | show the task dashboard |
 | `stats` | token spend of jagt's **own** model calls, per task (a sub-agent's session is invisible to jagt) |
 | `focus <ticket>` | jump to the agent's session — **talk to the agent directly there** |
-| `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (falls back to `baseBranch`) — does not auto-refresh |
+| `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (a task started `from <branch>` diffs against that branch instead; falls back to `baseBranch`) — does not auto-refresh |
 | `review <ticket>` | pull the MR's pipeline + comments; the agent fixes locally and drafts replies (nothing pushed) |
 | `ship <ticket>` | approved: jagt itself commits (title from `mrTitlePattern`), pushes the task branch and opens or updates the review request over the code host's API — no model involved, so nothing can stall or reword it. Only the drafted replies stay with the agent, as a follow-up. Without `orchestrator.code-host` configured it falls back to instructing the agent, as before |
-| `resume <mr-url>` | reopened merge request: resume its branch with existing commits and link that MR → `CI_POLLING` (no new MR) |
+| `resume <mr-url>` | reopened merge request: resume its branch with existing commits and link that MR → `CI_POLLING` (no new MR). The MR's own target branch is remembered, so the next `ship` updates that request instead of opening a second one |
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push — always as a merge commit (`--no-ff`), which is what lets `revert` take the whole task back out in one go. On conflict nothing is pushed: the task goes `DEPLOY_CONFLICT`, `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, then `deploy` again |
 | `revert <ticket>` | undo that deploy: revert the merge commit it created on `deployBranch` and push the revert → `REVERTED`. Only adds a commit (no history rewrite, no force-push) and leaves your branch and its commits intact, so the normal follow-up is fix + `ship` again. Refused, with nothing written, when the commit is already reverted, is not on the branch, or the revert conflicts with later work there |
 | `respawn <ticket>` | restart a dead agent session |
@@ -164,6 +165,21 @@ status, and points at drafted review replies when the agent has written any. Tal
 | `prune [all]` | list the LOCAL branches already merged into `deployBranch` (a dry run); `prune all` deletes them. Never touches a remote branch, a live task's branch, or your base/deploy branch. A **squash**-merged branch looks unmerged to git, so it is never listed — jagt cannot prove the work survived. The list is every merged local branch, not only the ones jagt created: read it before typing `all` |
 | anything else (free text) | tier 2 of the dispatch: a model maps your words onto ONE of the commands above and jagt executes it through the same gate a button uses — it answers with what it understood ("understood as `ship a1` — …"). In the board this is the **Ask** button / **⌘K**. Costs one small model call, and only here; a single mistyped word is treated as a typo and costs nothing |
 | `help` | command reference + recovery cheatsheet |
+
+### Testing on Linux from a Mac (containers)
+
+`orchestrator-backend/scripts/linux-suite.sh` runs the suites on a REAL Linux without a second machine — the
+container is one. Three tasks, in order: the unit suite on a Linux JVM, the `e2eTest` task-flow matrix with
+real git + real tmux, and `linuxDriverTest` — the Linux drivers against the real binaries (`notify-send` over
+a session D-Bus with a notification daemon, kitty on an Xvfb display answering remote control). Needs Docker,
+nothing else; it leaves only an image and a Gradle cache volume behind.
+
+It earns its keep: the first run found that `tmux-command` shipped as `/opt/homebrew/bin/tmux`, so every task
+on Linux died with "Failed to start command" before its agent started.
+
+What a container CANNOT answer, and is therefore not pretended to be covered: IntelliJ (`idea`), the macOS
+AppleScript window raise, the Warp URI scheme, the real `claude` CLI, and a live code host or tracker.
+
 
 The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
 with **Shift+←/→** or by clicking a task in the status bar. Every task also gets a short alias (`p1`, `s2`)
@@ -245,7 +261,7 @@ Keys are grouped into logical sections; a whole section may be omitted (each key
 | `agent.maxConcurrentTasks` | how many tasks may exist at once — each agent is a session + language server (1-2 GB) + worktree (default `3`; `0` = no cap). A `do` beyond it is refused, naming the tasks that hold the slots; the header shows `2/3 task(s)` so you see the limit before you hit it. A slot frees on `done`, not when an agent exits |
 | `worktree.copyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
 | `projects.<key>.path` | absolute path to the base repository |
-| `projects.<key>.baseBranch` | branch new task branches start from, e.g. `origin/main` (read-only; jagt never pushes here) |
+| `projects.<key>.baseBranch` | default branch new task branches start from, e.g. `origin/main` (read-only; jagt never pushes here). Per task, `do <ticket> from <branch>` overrides it |
 | `projects.<key>.deployBranch` | target of `deploy`, e.g. `dev` (omit to disable deploy) |
 | `projects.<key>.labels` | hints for mapping tickets to this project |
 

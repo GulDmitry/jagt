@@ -95,7 +95,9 @@ orchestrator:
   #   - jdtls-lsp@claude-plugins-official
   #   - php-lsp@claude-plugins-official
   #   - oh-my-claudecode@omc
-  tmux-command: /opt/homebrew/bin/tmux
+  # Bare name on purpose: resolved on PATH, then in the known install dirs (Homebrew, /usr/bin, …).
+  # An absolute path here was a macOS-only default that broke every Linux run — see Executables.
+  tmux-command: tmux
   # Auto-open a Warp window attached to the agents' tmux session. Disable in
   # smoke tests (--orchestrator.open-warp-window=false) so tests leave no windows behind.
   open-warp-window: true

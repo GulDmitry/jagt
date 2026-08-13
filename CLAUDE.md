@@ -145,7 +145,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   not on the branch, it was already reverted, or the revert conflicts (aborted + cleaned up; unlike a deploy
   conflict there is no half-state worth keeping). `ship` creates/updates a merge REQUEST only —
   never merges. The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
-  pushes/merges to it. `deployTask` REFUSES when `deployBranch` == `baseBranch`. Sub-agents are
+  pushes/merges to it — and that holds for a PER-TASK base too (`do <ticket> from <branch>`, persisted as
+  `TaskState.baseBranch`): it moves what the worktree is cut from and what the merge request TARGETS, never
+  what anything merges into. `deploy` stays on `deployBranch` whatever a task's base is; read the effective
+  base through `TaskState.baseBranchOr(project.baseBranch())` so the worktree, the MR target and `ide … diff`
+  cannot drift apart. `deployTask` REFUSES when `deployBranch` == `baseBranch`. Sub-agents are
   forbidden (prompt rule) from pushing/merging anywhere but their own task branch. A worktree branch
   is cut FROM `origin/<baseBranch>` and inherits it as upstream, so `GitService.detachUpstream` unsets
   it right after creation — a bare `git push` then errors ("no upstream") instead of pushing the task
@@ -317,6 +321,17 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - Smoke tests MUST leave no trace: pass `--orchestrator.open-warp-window=false` (otherwise every test
   run opens a Warp window that stays behind), use a throwaway tmux session + `ORCHESTRATOR_ROOT`, and
   kill the session / remove worktrees + branches afterwards.
+- NO ABSOLUTE macOS PATHS IN DEFAULTS: an external binary is configured by BARE NAME and resolved by
+  `platform/Executables` (PATH first, then the known install dirs — Homebrew included, because a GUI-launched
+  process has neither prefix on PATH). `tmux-command` used to default to `/opt/homebrew/bin/tmux`, which made
+  every task on Linux fail at "Failed to start command"; the agent CLI is deliberately NOT resolved (it runs
+  inside the agent's tmux window under the human's own PATH, and the string is what they read on screen).
+- LINUX IS TESTABLE FROM A MAC: `scripts/linux-suite.sh` runs `test` + `e2eTest` + `linuxDriverTest` inside a
+  container (`docker/linux-suite.Dockerfile`). `linuxDriverTest` (source set `src/linuxTest/java`, NOT in
+  `check`, guarded by `JAGT_IN_CONTAINER`) is the only place the Linux drivers meet real binaries: the
+  notifier's message is asserted off the session bus via `dbus-monitor`, kitty is driven under Xvfb. Anything
+  a container cannot host — IntelliJ, the AppleScript raise, the Warp URI scheme, the real `claude` — stays
+  NAMED as uncovered rather than faked.
 - Unit tests: `cd orchestrator-backend && ./gradlew test`. EVERY fixed bug gets a regression unit test
   (sob-ai:unit-testing rules), verified RED by actually reverting the fix and running the test.
 - E2E matrix: `./gradlew e2eTest` (own source set `src/e2e/java`, NOT in `test`/`check` — it needs git + tmux
