@@ -13,6 +13,8 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DashboardRendererTest {
 
@@ -27,7 +29,7 @@ class DashboardRendererTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").title("title").mrUrl("https://gitlab/x/-/merge_requests/9").ticketUrl("https://jira/browse/ABC-1").build());
 
-        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
+        String out = rendererFor(state).render();
 
         assertThat(out).contains("└ https://jira/browse/ABC-1");
         assertThat(out.indexOf("https://jira/browse/ABC-1"))
@@ -41,7 +43,7 @@ class DashboardRendererTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").title("title").build());
 
-        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
+        String out = rendererFor(state).render();
 
         assertThat(out).contains("└ drafted review replies in review_replies.md — `ide a1` before you ship");
     }
@@ -55,7 +57,7 @@ class DashboardRendererTest {
                         TaskStatus.REVIEW_PENDING, System.currentTimeMillis() - 7_200_000)))
                 .build());
 
-        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
+        String out = rendererFor(state).render();
 
         assertThat(out).contains("(2h in REVIEW_PENDING)");
     }
@@ -70,7 +72,7 @@ class DashboardRendererTest {
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW)
                 .lastActiveTimestamp(newer).alias("a2").title("newer task").build());
 
-        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
+        String out = rendererFor(state).render();
 
         assertThat(out).contains("ACTIVE ▼");
         assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
@@ -86,7 +88,7 @@ class DashboardRendererTest {
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(63_500, 0, 500, 0.12));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(63_500, 0, 500, 0.12));
 
-        String out = new DashboardRenderer(new TaskViews(state), tracker).render();
+        String out = rendererFor(state, tracker).render();
 
         assertThat(out).contains("TOKENS");
         assertThat(out).contains("64k");                      // the task's own column
@@ -98,7 +100,7 @@ class DashboardRendererTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
-        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
+        String out = rendererFor(state).render();
 
         assertThat(out).doesNotContain("spend");
         assertThat(out.lines().filter(l -> l.startsWith("a1")).findFirst().orElseThrow())
@@ -111,6 +113,47 @@ class DashboardRendererTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .alias("a1").title("title").build());
 
-        assertThat(new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render()).doesNotContain("└");
+        assertThat(rendererFor(state).render()).doesNotContain("└");
+    }
+
+    /** The cap is only useful if it is legible before it is hit, so the header carries it. */
+    @Test
+    void showsHowManyOfTheConfiguredTaskSlotsAreInUse(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        String out = rendererFor(state, new UsageTracker(state), ConfigService.ConfigFile.defaults()
+                .withAgent(ConfigService.ConfigFile.AgentConfig.defaults().withMaxConcurrentTasks(2)))
+                .render();
+
+        assertThat(out).contains("jagt orchestrator — 1/2 task(s)");
+    }
+
+    @Test
+    void dropsTheSlotCountFromTheHeaderWhenTheHumanOptedOutOfACap(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        String out = rendererFor(state, new UsageTracker(state), ConfigService.ConfigFile.defaults()
+                .withAgent(ConfigService.ConfigFile.AgentConfig.defaults().withMaxConcurrentTasks(0)))
+                .render();
+
+        assertThat(out).contains("jagt orchestrator — 1 task(s)");
+    }
+
+    /** Config is a collaborator only for the task cap in the header; defaults are what the tests care about. */
+    private static DashboardRenderer rendererFor(StateService state) {
+        return rendererFor(state, new UsageTracker(state));
+    }
+
+    private static DashboardRenderer rendererFor(StateService state, UsageTracker tracker) {
+        return rendererFor(state, tracker, ConfigService.ConfigFile.defaults());
+    }
+
+    private static DashboardRenderer rendererFor(StateService state, UsageTracker tracker,
+                                                 ConfigService.ConfigFile configFile) {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(configFile);
+        return new DashboardRenderer(new TaskViews(state), tracker, config);
     }
 }

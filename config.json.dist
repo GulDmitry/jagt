@@ -24,7 +24,8 @@
     "maxIntervalMinutes": 60
   },
   "agent": {
-    "outputStyle": ""
+    "outputStyle": "",
+    "maxConcurrentTasks": 3
   },
   "worktree": {
     "copyGlobs": ["**/.env", "**/*.pem", "**/*.pub", "**/*.p12", "**/*.jks", "**/*.keystore"]

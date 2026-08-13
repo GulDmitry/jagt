@@ -25,7 +25,7 @@ class ConfigServiceTest {
                 {
                   "viewer": { "tmuxSession": "alt", "viewMode": "tab-per-task", "keepViewer": false },
                   "dashboard": { "refreshSeconds": 30 },
-                  "agent": { "outputStyle": "acme:eng" }
+                  "agent": { "outputStyle": "acme:eng", "maxConcurrentTasks": 5 }
                 }
                 """;
 
@@ -36,6 +36,9 @@ class ConfigServiceTest {
         assertThat(config.viewer().keepViewerOrDefault()).isFalse();
         assertThat(config.dashboard().refreshSecondsOrDefault()).isEqualTo(30);
         assertThat(config.agent().outputStyleOrNull()).isEqualTo("acme:eng");
+        assertThat(config.agent().maxConcurrentTasksOrDefault()).isEqualTo(5);
+        // An omitted cap is three, not "unlimited": the default has to protect a machine nobody configured.
+        assertThat(ConfigFile.defaults().agent().maxConcurrentTasksOrDefault()).isEqualTo(3);
         // codeReview + worktree omitted entirely — accessors coalesce to section defaults.
         assertThat(config.codeReview().mrTitlePatternOrDefault()).isEqualTo("{ticket} {title}");
         assertThat(config.worktree().copyGlobsOrDefault()).containsExactly("**/.env");

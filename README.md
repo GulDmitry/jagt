@@ -240,6 +240,7 @@ Keys are grouped into logical sections; a whole section may be omitted (each key
 | `autoReview.minIntervalMinutes` | poll interval at the window START — tightest cadence (default `10`) |
 | `autoReview.maxIntervalMinutes` | poll interval at the window END — the cap, ≈ hourly; interval ramps linearly min→max (default `60`) |
 | `agent.outputStyle` | optional output style for the agent (Claude Code), e.g. `acme:engineer` (default empty = the agent's own style) |
+| `agent.maxConcurrentTasks` | how many tasks may exist at once — each agent is a session + language server (1-2 GB) + worktree (default `3`; `0` = no cap). A `do` beyond it is refused, naming the tasks that hold the slots; the header shows `2/3 task(s)` so you see the limit before you hit it. A slot frees on `done`, not when an agent exits |
 | `worktree.copyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
 | `projects.<key>.path` | absolute path to the base repository |
 | `projects.<key>.baseBranch` | branch new task branches start from, e.g. `origin/main` (read-only; jagt never pushes here) |

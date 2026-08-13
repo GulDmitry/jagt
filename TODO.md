@@ -12,10 +12,9 @@ order:
 |---|------|------------------------|------|
 | 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
 | 2 | Run the build and the jar on a real Linux box | the drivers exist and the wiring is tested from macOS; `notify-send` under a session bus, `kitty @ focus-window` under a WM and the `pkill` viewer close are not | 0.5 d + access |
-| 3 | `maxConcurrentTasks` | nothing stops a fifth agent from taking the machine down; each is 1-2 GB | 0.5 d |
-| 4 | `revert <ticket>` | `deploy` is the one outward write and has no way back through jagt | 1 d |
-| 5 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path — in the board this is Cmd-K | 1-2 d |
-| 6 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
+| 3 | `revert <ticket>` | `deploy` is the one outward write and has no way back through jagt | 1 d |
+| 4 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path — in the board this is Cmd-K | 1-2 d |
+| 5 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
 
 Steps 1 and 2 need access I do not have (a host token, a Linux machine) — they are the two places where what
 we believe is still ahead of what we have shown.
@@ -327,11 +326,18 @@ deleting the listener).
 language server (~1-2 GB for a Java worktree, per CLAUDE.md's resource-hygiene note — the machine already
 swapped once because of it), plus a worktree checkout on disk. Five tasks is a different machine than two,
 and the human finds out by watching everything crawl.
-Worth a `maxConcurrentTasks` (config, default something honest like 3): `do` beyond it either refuses with
-"finish or `done` one first" or QUEUES the task as a new pre-NEW status that the scheduler starts when a slot
-frees. Queueing is the nicer behaviour but adds a state; refusing is one `if` and already an improvement over
-silently thrashing. Either way the dashboard should show the cap, because the limit only helps if it is
+DONE 2026-08-13: `agent.maxConcurrentTasks` (default 3, `0` = opt out), policy in `TaskAdmission` (statics,
+no collaborators), enforced in `TaskProvisioning.initializeTask` — the choke point every surface reaches a new
+task through, so no front-end can walk around it. It REFUSES rather than queues (queueing needs a pre-NEW
+status and a scheduler; the refusal names the tasks holding the slots and how to free one). A slot is held by
+a REGISTERED task whatever its status, because the worktree and its 1-2 GB language server live until `done`.
+`TaskLauncher` runs the same check EARLY, before the ticket read: the enforcement point is provisioning, but
+reading a ticket is a paid model call and refusing after paying for it charges for nothing. Both headers show
+`n/cap` (`2/3 task(s)` in the console, red `2/3 slots` on the board) because a cap only helps if it is
 visible before it is hit.
+
+What was NOT built: queueing. If it ever is, the new status is pre-NEW and the scheduler starts a queued task
+when `done` frees a slot — and `TaskAdmission` is where the decision already lives.
 
 ### One task = one repository
 A ticket that touches two repos (backend + frontend) has no representation: it becomes two unrelated tasks,

@@ -89,6 +89,26 @@ class TaskProvisioningTest {
                 root.resolve("ABC-9-proj"), "ABC-9");
     }
 
+    /**
+     * The cap is enforced HERE because every surface reaches a new task through this method — a board that
+     * forgot to check, or an MCP {@code initialize_task}, must not be able to out-run the machine's RAM.
+     */
+    @Test
+    void refusesANewTaskBeyondTheConfiguredCapBeforeTouchingGit() {
+        Path projectPath = root.resolve("repo");
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null,
+                        List.of())))
+                .withAgent(ConfigService.ConfigFile.AgentConfig.defaults().withMaxConcurrentTasks(1)));
+        state.putTask("ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
+
+        assertThatThrownBy(() -> provisioning().initializeTask("ABC-2", "proj", null, null, null, null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("task slots are in use");
+        verifyNoInteractions(git);
+        assertThat(state.task("ABC-2")).isEmpty();
+    }
+
     @Test
     void assignsNextFreeAliasWhenTicketLetterAlreadyInUse() throws Exception {
         Files.createDirectories(root.resolve("ABC-2-proj"));

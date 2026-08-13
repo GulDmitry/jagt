@@ -83,6 +83,9 @@ public class TaskProvisioning {
                     + "Use open_task_tab to respawn its agent or remove_task to retire it first.");
         }
         ConfigService.ConfigFile config = configService.load();
+        // The one choke point for admission: every surface (typed `do`, the board's New task, `resume`, an MCP
+        // initialize_task) reaches a new task through here, so the cap cannot be walked around by a front-end.
+        TaskAdmission.requireSlot(taskId, config.agent().maxConcurrentTasksOrDefault(), stateService.tasks());
         ProjectConfig project = config.projects().get(projectKey);
         if (project == null) {
             throw new IllegalArgumentException(

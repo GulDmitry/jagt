@@ -26,6 +26,8 @@ h1 { font-size: 15px; margin: 0; letter-spacing: .12em; text-transform: uppercas
 .grow { flex: 1; }
 .muted { color: var(--muted); font-variant-numeric: tabular-nums; }
 .waiting { background: var(--you-bg); color: var(--you); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+/* Slots full: the next New task WILL be refused, so say it in the header rather than in the error. */
+#slots.full { color: var(--danger); font-weight: 600; }
 .control { color: var(--muted); font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
 .checkbox { cursor: pointer; }
 select, input[type=text], input:not([type]) {

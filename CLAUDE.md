@@ -24,7 +24,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - `config.json` — user config, grouped into logical sections: `projects` (path, baseBranch,
   deployBranch, labels), `viewer` (tmuxSession, viewMode shared|tab-per-task, keepViewer), `dashboard`
   (refreshSeconds, reservedRows), `codeReview` (mrTitlePattern, postReviewReplies, reviewReplyAuthors,
-  mergeRequestDefaults), `agent` (outputStyle), `worktree` (copyGlobs). Each section is a small value
+  mergeRequestDefaults), `agent` (outputStyle, maxConcurrentTasks), `worktree` (copyGlobs). Each section is a small value
   record (`ConfigService.ConfigFile.*Config`) with `defaults()` + `withX` withers + `*OrDefault`
   accessors; a whole section may be omitted (ConfigFile's accessors coalesce a null section to its
   defaults, so callers never null-check). Gitignored; created by copying committed `config.json.dist`.
@@ -80,6 +80,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   871 lines and eleven collaborators. Note the lesson (TODO.md keeps the long version): a delegating facade
   KEEPS every collaborator it does not shed, so only a group of methods that monopolises dependencies is worth
   extracting; splitting off `deploy`/`prune` was tried and reverted because it ADDED one.
+- ADMISSION CONTROL is `service/TaskAdmission` (statics, no collaborators) enforced in
+  `TaskProvisioning.initializeTask` — the choke point every surface reaches a new task through, so no
+  front-end can out-run it. A slot is held by a REGISTERED task whatever its status (the worktree + language
+  server live until `done`), NOT by a live agent. It refuses, it does not queue (queueing needs a pre-NEW
+  status); both headers show `n/cap` because a cap only helps if it is visible before it is hit.
 - `Phase`/`Owner` are a PROJECTION for humans, never persisted and never a second state machine: `TaskStatus`
   stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
 - Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at

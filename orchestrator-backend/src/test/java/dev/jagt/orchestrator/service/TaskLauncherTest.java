@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TokenUsage;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -30,7 +32,14 @@ class TaskLauncherTest {
     private final OrchestratorTools tools = mock(OrchestratorTools.class);
     private final MeteredAssistant assistant = mock(MeteredAssistant.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final TaskLauncher launcher = new TaskLauncher(tools, assistant, configService);
+    private final StateService stateService = mock(StateService.class);
+    private final TaskLauncher launcher = new TaskLauncher(tools, assistant, configService, stateService);
+
+    @BeforeEach
+    void noTasksYet() {
+        when(stateService.tasks()).thenReturn(Map.of());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+    }
 
     @Test
     void namesTheTaskByTheCanonicalKeyTheAssistantReadWhenGivenAUrl() {
@@ -125,6 +134,25 @@ class TaskLauncherTest {
                 Map.of("group-a", List.of("backend"), "group-b", List.of("frontend")));
 
         assertThat(matches).containsExactly("group-a");
+    }
+
+    /**
+     * Reading the ticket is a paid model call, so a launch that the cap will refuse must be refused BEFORE it:
+     * the enforcement point is in provisioning, but by then the money is gone.
+     */
+    @Test
+    void refusesALaunchOverTheCapWithoutPayingForTheTicketRead() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of())))
+                .withAgent(ConfigService.ConfigFile.AgentConfig.defaults().withMaxConcurrentTasks(1)));
+        when(stateService.tasks()).thenReturn(Map.of("ABC-1",
+                dev.jagt.orchestrator.model.TaskState.builder("group-a", "/wt",
+                        dev.jagt.orchestrator.model.TaskStatus.IN_PROGRESS).alias("a1").build()));
+
+        assertThatThrownBy(() -> launcher.launch("https://tracker/ABC-9", "group-a", null, null, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("task slots are in use");
+        verifyNoInteractions(assistant, tools);
     }
 
     private void oneProject(String key) {
