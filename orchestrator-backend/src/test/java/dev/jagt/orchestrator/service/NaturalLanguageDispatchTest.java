@@ -110,6 +110,27 @@ class NaturalLanguageDispatchTest {
         assertThat(result).isEqualTo("understood as `do ABC-42` — Task ABC-42 initialized");
     }
 
+    /** Taking over a review request is a third way in, and the palette had no way to express it. */
+    @Test
+    void resumesAReviewRequestWhenTheRequestIsAUrlToOne(@TempDir Path root) {
+        StateService state = stateWithOneTask(root);
+        proposes("resume", "", "https://host/mr/42", "an existing merge request");
+        when(launcher.resume("https://host/mr/42", null)).thenReturn("Resumed PROJ-1");
+
+        assertThat(dispatchWith(state).interpret("перехвати вот этот MR https://host/mr/42"))
+                .isEqualTo("understood as `resume https://host/mr/42` — Resumed PROJ-1");
+    }
+
+    @Test
+    void refusesToResumeWithoutAUrlBecauseThereIsNothingToTakeOver(@TempDir Path root) {
+        StateService state = stateWithOneTask(root);
+        proposes("resume", "", "ABC-1", "no url given");
+
+        assertThat(dispatchWith(state).interpret("resume that thing"))
+                .contains("no review-request URL was named");
+        verifyNoInteractions(launcher);
+    }
+
     @Test
     void asksForTheTicketWhenADoArrivesWithoutOne(@TempDir Path root) {
         StateService state = stateWithOneTask(root);

@@ -29,6 +29,8 @@ public class NaturalLanguageDispatch {
 
     /** Not a TaskAction: `do` creates a task rather than acting on one, and it is the commonest request. */
     private static final String DO = "do";
+    /** Also not a TaskAction: `resume` takes over an EXISTING review request instead of starting anything. */
+    private static final String RESUME = "resume";
 
     private final MeteredAssistant assistant;
     private final StateService stateService;
@@ -74,6 +76,9 @@ public class NaturalLanguageDispatch {
         if (command.equals(DO)) {
             return runDo(mapped);
         }
+        if (command.equals(RESUME)) {
+            return runResume(mapped);
+        }
         Optional<TaskAction> action = TaskAction.byId(command);
         if (action.isEmpty()) {
             return "Mapped \"" + text.strip() + "\" to an unknown command '" + command + "' — refused."
@@ -96,6 +101,19 @@ public class NaturalLanguageDispatch {
                     + ") — say it explicitly: `do <ticket|url> [project]`.";
         }
         return "understood as `do " + ticket + "` — " + launcher.launch(LaunchRequest.of(ticket));
+    }
+
+    /**
+     * Taking over an existing review request. The URL is carried in the same field a ticket would be, and it
+     * must BE a URL: there is nothing to resume from a key, and inventing one is not on the table.
+     */
+    private String runResume(CommandProposal mapped) {
+        String url = mapped.ticket() == null ? "" : mapped.ticket().strip();
+        if (!url.startsWith("http")) {
+            return "Understood as `resume` but no review-request URL was named (" + reasonOf(mapped)
+                    + ") — say it explicitly: `resume <mr-url>`.";
+        }
+        return "understood as `resume " + url + "` — " + launcher.resume(url, null);
     }
 
     /** Only a task that EXISTS may be acted on; an id the model invented resolves to nothing and is refused. */
@@ -125,7 +143,9 @@ public class NaturalLanguageDispatch {
                 .map(NaturalLanguageDispatch::taskLine)
                 .collect(Collectors.joining("\n"));
         return "COMMANDS (one of these words, or \"none\"):\n" + commandList
-                + "\n- " + DO + ": start a NEW task from a ticket key or URL (the `ticket` field carries it)\n\n"
+                + "\n- " + DO + ": start a NEW task from a ticket key or URL (the `ticket` field carries it)"
+                + "\n- " + RESUME + ": take over an EXISTING review request / merge request — its branch and its"
+                + " commits — when the human gives such a URL (the `ticket` field carries the URL)\n\n"
                 + "TASKS currently registered"
                 + (tasks.isEmpty() ? " — NONE, so only `do` or `none` can apply:\n(none)"
                         : " (use the id or alias verbatim):\n" + taskList);

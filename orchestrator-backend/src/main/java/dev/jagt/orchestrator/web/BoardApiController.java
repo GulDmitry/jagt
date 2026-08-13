@@ -4,7 +4,11 @@ import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.service.BackendShutdown;
+import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.TaskViews;
@@ -46,8 +50,20 @@ public class BoardApiController {
     public record ActionResult(String message) {
     }
 
+    /** {@code delete=false} lists what WOULD go (the console's bare `prune`); true is the console's `prune all`. */
+    public record PruneRequest(boolean delete) {
+    }
+
     /** Free text from the command palette (Cmd-K) — tier 2 of the dispatch, not a command. */
     public record InterpretRequest(String text) {
+    }
+
+    /**
+     * Taking over a review request that already exists: its branch is resumed with the commits already on it
+     * (someone else's, or your own from before), the request is linked, and no second one is opened. The ticket
+     * is optional — the read supplies it — and giving it skips that read.
+     */
+    public record ResumeRequest(String reviewRequestUrl, String ticket) {
     }
 
     private final TaskViews taskViews;
@@ -57,10 +73,14 @@ public class BoardApiController {
     private final UsageTracker usageTracker;
     private final TaskEventStream events;
     private final NaturalLanguageDispatch naturalLanguage;
+    private final OrchestratorTools tools;
+    private final StateViews views;
+    private final BackendShutdown shutdown;
 
     public BoardApiController(TaskViews taskViews, CommandService commands, TaskLauncher launcher,
                               ConfigService configService, UsageTracker usageTracker, TaskEventStream events,
-                              NaturalLanguageDispatch naturalLanguage) {
+                              NaturalLanguageDispatch naturalLanguage, OrchestratorTools tools,
+                              StateViews views, BackendShutdown shutdown) {
         this.taskViews = taskViews;
         this.commands = commands;
         this.launcher = launcher;
@@ -68,6 +88,9 @@ public class BoardApiController {
         this.usageTracker = usageTracker;
         this.events = events;
         this.naturalLanguage = naturalLanguage;
+        this.tools = tools;
+        this.views = views;
+        this.shutdown = shutdown;
     }
 
     @GetMapping("/tasks")
@@ -98,6 +121,21 @@ public class BoardApiController {
     }
 
     /**
+     * Resumes a task from an existing review request — the board's half of the console's `resume <mr-url>`.
+     * Deliberately its own endpoint rather than a smarter {@code /api/tasks}: a ticket URL and a review-request
+     * URL look alike, and jagt guessing which one you meant would create the wrong thing half the time.
+     */
+    @PostMapping("/tasks/resume")
+    public ActionResult resume(@RequestBody ResumeRequest request) {
+        String url = request.reviewRequestUrl() == null ? "" : request.reviewRequestUrl().strip();
+        if (!url.startsWith("http")) {
+            throw new IllegalArgumentException("A review-request URL is required (http…)");
+        }
+        String ticket = request.ticket() == null || request.ticket().isBlank() ? null : request.ticket().strip();
+        return new ActionResult(launcher.resume(url, ticket));
+    }
+
+    /**
      * The command palette: free text in, one executed grammar command out (or an explanation). The model that
      * reads the text cannot execute anything — {@link NaturalLanguageDispatch} validates its proposal against
      * the same gate the buttons use, so the palette can never do more than a button could.
@@ -105,6 +143,38 @@ public class BoardApiController {
     @PostMapping("/interpret")
     public ActionResult interpret(@RequestBody InterpretRequest request) {
         return new ActionResult(naturalLanguage.interpret(request.text()));
+    }
+
+    /**
+     * Branch cleanup, the board's half of `prune [all]`. {@code delete=false} is the dry run — the same rule the
+     * console has, where a bare `prune` lists and only `prune all` deletes, so the destructive form is never
+     * one click away from the harmless one.
+     */
+    @PostMapping("/prune")
+    public ActionResult prune(@RequestBody PruneRequest request) {
+        return new ActionResult(tools.pruneBranches(request != null && request.delete()));
+    }
+
+    /** The command grammar — the same text the console prints for `help` (see {@link CommandReference}). */
+    @GetMapping(value = "/help", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String help() {
+        return CommandReference.text();
+    }
+
+    /** Token spend, the same text `stats` prints, so the board does not need a second renderer for it. */
+    @GetMapping(value = "/stats", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String stats() {
+        return views.usageStats();
+    }
+
+    /**
+     * The console's `quit`: stops the BACKEND. Agents keep running in tmux — that is the whole point of them
+     * living there — so this detaches the orchestrator, it does not end any work.
+     */
+    @PostMapping("/shutdown")
+    public ActionResult shutdown() {
+        shutdown.stopAfterResponding();
+        return new ActionResult("Stopping the backend — agents keep running in tmux; start it again to reattach.");
     }
 
     /** "Something moved" — the browser re-fetches the board. See {@link TaskEventStream}. */

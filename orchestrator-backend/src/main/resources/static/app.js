@@ -314,3 +314,111 @@ palette.onsubmit = async (event) => {
     await load();
   }
 };
+
+// ---- everything the console can do that is not a per-task button ----
+// Parity is the rule, not a nice-to-have: a capability that exists in one surface only is the bug this section
+// closes (resume, prune, stats, help, stop). Per-task verbs — ship, review, ide (incl. the DEPLOY_CONFLICT
+// worktree), deploy, revert, respawn, focus, done — are already the card's own buttons, because the server
+// lists them per task and the board renders exactly that list.
+
+const panel = document.getElementById('panel');
+
+function showPanel(text) {
+  panel.hidden = false;
+  panel.textContent = text;
+}
+
+async function text(path, options) {
+  const response = await fetch(path, options);
+  const body = await response.text();
+  if (!response.ok) throw new Error(body || `${response.status} ${response.statusText}`);
+  return body;
+}
+
+// `resume`: take over a review request that already exists (reopened, or someone else's work).
+const resumeForm = document.getElementById('resume');
+document.getElementById('resume-task').onclick = () => {
+  resumeForm.hidden = !resumeForm.hidden;
+  if (!resumeForm.hidden) document.getElementById('resume-url').focus();
+};
+document.getElementById('cancel-resume').onclick = () => { resumeForm.hidden = true; };
+resumeForm.onsubmit = async (event) => {
+  event.preventDefault();
+  const state = document.getElementById('resume-state');
+  const button = resumeForm.querySelector('button[type=submit]');
+  button.disabled = true;
+  state.textContent = 'reading the review request…';        // a model call unless a CodeHost is configured
+  try {
+    const result = await api('/api/tasks/resume', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        reviewRequestUrl: document.getElementById('resume-url').value,
+        ticket: document.getElementById('resume-ticket').value,
+      }),
+    });
+    toast(result.message);
+    resumeForm.reset();
+    resumeForm.hidden = true;
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    button.disabled = false;
+    state.textContent = '';
+    await load();
+  }
+};
+
+// `prune`: the dry run first, exactly as the console makes you type `prune` before `prune all`.
+document.getElementById('show-prune').onclick = async () => {
+  try {
+    const dryRun = await api('/api/prune', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({delete: false}),
+    });
+    showPanel(dryRun.message);
+    if (!confirm(`${dryRun.message}\n\nDelete these local branches now?`)) return;
+    const deleted = await api('/api/prune', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({delete: true}),
+    });
+    showPanel(deleted.message);
+    toast('prune: done');
+  } catch (e) {
+    toast(e.message, true);
+  }
+};
+
+document.getElementById('show-stats').onclick = async () => {
+  try {
+    showPanel(await text('/api/stats'));
+  } catch (e) {
+    toast(e.message, true);
+  }
+};
+
+document.getElementById('show-help').onclick = async () => {
+  try {
+    showPanel(await text('/api/help'));
+  } catch (e) {
+    toast(e.message, true);
+  }
+};
+
+// `quit`: stops the BACKEND. Agents keep running in tmux, which is why this is offered at all.
+document.getElementById('stop-backend').onclick = async () => {
+  if (!confirm('Stop the jagt backend?\n\nAgents keep running in tmux; start the jar again to reattach.')) return;
+  try {
+    const result = await api('/api/shutdown', {method: 'POST'});
+    showPanel(result.message);
+  } catch (e) {
+    toast(e.message, true);
+  }
+};
+
+// Escape closes whatever text panel is open — it is a reading surface, not a mode.
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !panel.hidden) panel.hidden = true;
+});

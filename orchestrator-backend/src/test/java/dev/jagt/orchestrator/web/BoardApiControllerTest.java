@@ -2,7 +2,10 @@ package dev.jagt.orchestrator.web;
 
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
+import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.service.BackendShutdown;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TaskLauncher;
@@ -27,8 +30,11 @@ class BoardApiControllerTest {
     private final ConfigService configService = mock(ConfigService.class);
     private final UsageTracker usageTracker = mock(UsageTracker.class);
     private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
+    private final OrchestratorTools tools = mock(OrchestratorTools.class);
+    private final StateViews views = mock(StateViews.class);
+    private final BackendShutdown shutdown = mock(BackendShutdown.class);
     private final BoardApiController api = new BoardApiController(taskViews, commands, launcher, configService,
-            usageTracker, mock(TaskEventStream.class), naturalLanguage);
+            usageTracker, mock(TaskEventStream.class), naturalLanguage, tools, views, shutdown);
 
     @Test
     void executesAnActionByTheSameNameTheConsoleTakes() {
@@ -46,6 +52,57 @@ class BoardApiControllerTest {
         assertThat(api.interpret(new BoardApiController.InterpretRequest("ship the login task")).message())
                 .isEqualTo("understood as `ship a2` — ship a2: pushed");
         verifyNoInteractions(commands, launcher);
+    }
+
+    /**
+     * PARITY is the rule for the two surfaces, and these are the verbs the board had no way to reach at all —
+     * `resume` above all: a reopened review request, or taking over someone else's, was console-only.
+     */
+    @Test
+    void resumesAnExistingReviewRequestLikeTheConsoleDoes() {
+        when(launcher.resume("https://host/mr/42", null)).thenReturn("Resumed PROJ-1 on its existing branch");
+
+        assertThat(api.resume(new BoardApiController.ResumeRequest("  https://host/mr/42  ", "  ")).message())
+                .isEqualTo("Resumed PROJ-1 on its existing branch");
+    }
+
+    /** A ticket key is not a review request: there is nothing to resume from it, so it is refused, not guessed. */
+    @Test
+    void refusesToResumeWithoutAReviewRequestUrl() {
+        assertThatThrownBy(() -> api.resume(new BoardApiController.ResumeRequest("ABC-1", null)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("URL is required");
+        verifyNoInteractions(launcher);
+    }
+
+    /** The console makes you type `prune` before `prune all`; the board must not collapse that into one click. */
+    @Test
+    void prunesAsADryRunUnlessDeletionIsAsked() {
+        when(tools.pruneBranches(false)).thenReturn("would delete ABC-40 (dry run)");
+        when(tools.pruneBranches(true)).thenReturn("deleted 1 of 1");
+
+        assertThat(api.prune(new BoardApiController.PruneRequest(false)).message()).contains("dry run");
+        assertThat(api.prune(new BoardApiController.PruneRequest(true)).message()).contains("deleted");
+    }
+
+    @Test
+    void servesTheSameCommandReferenceTheConsolePrints() {
+        assertThat(api.help()).isEqualTo(dev.jagt.orchestrator.service.CommandReference.text());
+    }
+
+    @Test
+    void servesTheSameSpendTextTheConsolePrints() {
+        when(views.usageStats()).thenReturn("assistant token spend …");
+
+        assertThat(api.stats()).isEqualTo("assistant token spend …");
+    }
+
+    /** `quit` in the console. Stopping must answer FIRST — closing the context inline kills the response. */
+    @Test
+    void stopsTheBackendOnlyAfterTellingTheCallerSo() {
+        assertThat(api.shutdown().message()).contains("agents keep running");
+
+        verify(shutdown).stopAfterResponding();
     }
 
     @Test

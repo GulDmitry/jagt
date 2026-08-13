@@ -26,9 +26,13 @@
   </label>
   <label class="control checkbox"><input type="checkbox" id="mine"> waiting on me</label>
   <button id="new-task" class="primary">New task</button>
+  <button id="resume-task" title="take over an existing review request: resume its branch and link it">Resume</button>
   <button id="open-palette" title="⌘K / Ctrl-K — say what you want in words">Ask</button>
-  <a class="control" href="/stats" target="_blank" rel="noreferrer">stats</a>
+  <button id="show-prune" title="list LOCAL branches already merged into deployBranch (then delete them)">Prune</button>
+  <button id="show-stats" title="token spend of jagt's own model calls, per task">Stats</button>
+  <button id="show-help" title="the command grammar — the same reference the console prints">Help</button>
   <a class="control" href="/orphans" target="_blank" rel="noreferrer">orphans</a>
+  <button id="stop-backend" title="stop the backend — agents keep running in tmux">Stop</button>
   <span id="live" class="dot" title="live updates"></span>
 </header>
 
@@ -43,6 +47,15 @@
   <span id="launch-state" class="muted"></span>
 </form>
 
+<form id="resume" hidden>
+  <input id="resume-url" placeholder="review-request URL (…/merge_requests/42 or …/pull/42)" autocomplete="off" required>
+  <input id="resume-ticket" placeholder="ticket (optional — skips the read)" autocomplete="off">
+  <button type="submit" class="primary">Resume</button>
+  <button type="button" id="cancel-resume">Cancel</button>
+  <span id="resume-state" class="muted">its branch is resumed with the commits already on it — yours or
+    someone else's — and the request is linked, not reopened</span>
+</form>
+
 <form id="palette" hidden>
   <input id="ask" placeholder="say it in words — e.g. “ship the login task”" autocomplete="off" required>
   <button type="submit" class="primary">Run</button>
@@ -50,6 +63,8 @@
   <span id="palette-state" class="muted">a model maps this to ONE command, then the same gate as the buttons
     runs it — nothing here can do more than a button can</span>
 </form>
+
+<pre id="panel" hidden></pre>
 
 <main id="board"></main>
 <p id="empty" class="empty" hidden>No tasks. <strong>New task</strong> starts one — the same thing

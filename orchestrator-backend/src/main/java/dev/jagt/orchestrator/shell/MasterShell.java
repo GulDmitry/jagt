@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
+import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.TaskLauncher;
@@ -950,23 +951,6 @@ public class MasterShell {
     }
 
     private static String help() {
-        List<String> lines = new ArrayList<>();
-        lines.add("commands (task = ticket id or alias):");
-        lines.add("  status                       show the dashboard");
-        lines.add("  stats                        token spend of jagt's own model calls, per task");
-        lines.add("  do <ticket> [project] [plan] spin up a sub-agent in a worktree");
-        lines.add("    … [from <branch>]          cut the worktree from <branch> and target its MR at it");
-        lines.add("  resume <mr-url>              reopened MR: resume its branch + link it -> CI_POLLING");
-        lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
-        lines.add("  ship <ticket>                approve: agent commits (pattern title), pushes, MR, posts replies");
-        lines.add("  review <ticket>              pull the MR's pipeline + comments, relay them to the agent");
-        lines.add("  ide <ticket> [diff]          open worktree project (live Git diff); `diff` = static snapshot vs base");
-        lines.add("  deploy <ticket>              merge task branch into deployBranch + push");
-        lines.add("  revert <ticket>              undo that deploy: revert its merge on deployBranch + push");
-        lines.add("  respawn <ticket>             restart a dead agent session");
-        lines.add("  done <ticket>                full cleanup (window, worktree, state; branch kept)");
-        lines.add("  prune [all]                  list LOCAL branches merged into deployBranch; `all` deletes them");
-        lines.add("  help | quit                  this reference | detach (agents keep running)");
-        return String.join("\n", lines);
+        return CommandReference.text();
     }
 }
