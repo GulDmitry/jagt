@@ -12,11 +12,10 @@ order:
 |---|------|------------------------|------|
 | 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
 | 2 | Run the build and the jar on a real Linux box | the drivers exist and the wiring is tested from macOS; `notify-send` under a session bus, `kitty @ focus-window` under a WM and the `pkill` viewer close are not | 0.5 d + access |
-| 3 | Finish the `OrchestratorTools` split in ONE move | `initializeTask` + the agent-session methods leave together, because those six pull in six of the eleven collaborators (see the entry below) | 1 d |
-| 4 | `maxConcurrentTasks` | nothing stops a fifth agent from taking the machine down; each is 1-2 GB | 0.5 d |
-| 5 | `revert <ticket>` | `deploy` is the one outward write and has no way back through jagt | 1 d |
-| 6 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path — in the board this is Cmd-K | 1-2 d |
-| 7 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
+| 3 | `maxConcurrentTasks` | nothing stops a fifth agent from taking the machine down; each is 1-2 GB | 0.5 d |
+| 4 | `revert <ticket>` | `deploy` is the one outward write and has no way back through jagt | 1 d |
+| 5 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path — in the board this is Cmd-K | 1-2 d |
+| 6 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
 
 Steps 1 and 2 need access I do not have (a host token, a Linux machine) — they are the two places where what
 we believe is still ahead of what we have shown.
@@ -173,26 +172,33 @@ servers (its `CODEX_HOME` points at the worktree, so `~/.codex/config.toml` is n
 but such an agent cannot post review replies itself — which stops mattering once `ship` moves into the
 backend (step 3).
 
-### `OrchestratorTools` — part 1 landed, and the rest needs one big move, not three small ones
-DONE 2026-08-13: `ship` left (into `ShipService`) and the worktree file work left (into `WorktreeFiles`,
-statics with zero collaborators — its eight tests lost a ten-argument setup each). 871 → 744 lines.
+### `OrchestratorTools` — DONE 2026-08-13, and the finding that decided how
+DONE, in three passes: `ship` left (into `ShipService`), the worktree file work left (into `WorktreeFiles`,
+statics with zero collaborators), and finally the one big move below: `AgentSessions` (tmux window, focus,
+kill, relay) + `TaskProvisioning` (worktree creation, alias, sub-agent context). **871 → 478 lines, 11 → 7
+collaborators**, and the shrinkage showed up where the entry predicted it would — in the tests: the twelve
+moved tests now build ONE service with four or five collaborators instead of the facade with eleven
+(`AgentSessionsTest`, `TaskProvisioningTest`), and the facade's own tests wire the two services through a
+single factory. The `SAFE_ID` pattern is no longer duplicated: `resume` calls
+`TaskProvisioning.requireSafeId`, which is the class that owns task creation (regression test: an unusable
+ticket id is refused before a single git call).
 
-Then part 2 was ATTEMPTED and reverted, and the reason is the useful finding: extracting `deploy`/`prune` into
+Part 2 was ATTEMPTED and reverted first, and the reason is the useful finding: extracting `deploy`/`prune` into
 a `RepositoryOps` makes the facade WORSE, not better. It would delegate, so it keeps the reference, and none of
 its eleven collaborators becomes unused — `GitService` and `EditorDriver` are still needed by `initializeTask`,
 `removeTask`, `openInIde` and `existingBranchProject`. Net effect: twelve dependencies instead of eleven, for
 the sake of a tidier-looking file. A refactor that raises the number it exists to lower is not one.
 
-What ACTUALLY shrinks the facade is one move, not a series: `initializeTask` + the agent-session methods
+What ACTUALLY shrank the facade was one move, not a series: `initializeTask` + the agent-session methods
 (`openTaskTab`/`closeTaskTab`/`focusTask`/`writeTaskContext`/`openTab`/`agentSession`) leave TOGETHER, because
 they are what pull in `TmuxService`, `TerminalDriver`, `AgentRuntime`, `PromptTemplates`, `OrchestratorPaths`
 and `OrchestratorProperties` — six of the eleven. After that the facade holds state + config + git + editor +
-notifier + two services, `deploy`/`prune` can leave in the same pass without adding anything, and `resumeTask`
-belongs with `TaskLauncher` (it IS a launch). That is a single coherent change touching every caller and the
-heaviest test file in the suite — worth doing deliberately, NOT squeezed in next to two other active lanes,
-which is why it stopped here.
+notifier + two services — which is exactly what it holds now. Two smaller ideas from that plan were NOT taken
+and stay open: `deploy`/`prune` could still leave (they add nothing to the facade either way), and `resumeTask`
+arguably belongs with `TaskLauncher` (it IS a launch). Neither is worth a pass on its own; do them if a new
+command lands next to them.
 
-### The original argument (unchanged)
+### The original argument (kept as the record of what the smell looked like)
 ~1000 lines and ELEVEN injected collaborators (the `AgentRuntime` arrived with the Codex runtime): task
 lifecycle (`initializeTask`/`removeTask`/`resumeTask`), worktree file copying (IDE files, local files), git
 operations (`deployTask`, `pruneBranches`), agent plumbing (tmux windows, status updates) and the MCP-facing

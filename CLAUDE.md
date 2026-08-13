@@ -73,6 +73,13 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   - "how is an action executed" is `service/CommandService` (validates against `Move` first, so a stale board
     tab is refused with a sentence, not with a git error three layers down), and "how is a task started" is
     `service/TaskLauncher`. The console parses a command line, the controller parses JSON; neither owns rules.
+- `OrchestratorTools` is the MCP-FACING FACADE ONLY (~480 lines, 7 collaborators) — the work lives in
+  `service/AgentSessions` (tmux window, focus, kill, relay to `task_context.md`), `service/TaskProvisioning`
+  (worktree creation, alias, sub-agent context), `service/ShipService` and `service/WorktreeFiles`. Do NOT put
+  a new concern here just because the dependency it needs is already injected — that is exactly how it grew to
+  871 lines and eleven collaborators. Note the lesson (TODO.md keeps the long version): a delegating facade
+  KEEPS every collaborator it does not shed, so only a group of methods that monopolises dependencies is worth
+  extracting; splitting off `deploy`/`prune` was tried and reverted because it ADDED one.
 - `Phase`/`Owner` are a PROJECTION for humans, never persisted and never a second state machine: `TaskStatus`
   stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
 - Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at

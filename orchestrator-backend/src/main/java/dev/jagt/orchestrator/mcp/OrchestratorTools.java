@@ -1,10 +1,5 @@
 package dev.jagt.orchestrator.mcp;
 
-import dev.jagt.orchestrator.agent.AgentRuntime;
-import dev.jagt.orchestrator.agent.AgentWorktree;
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.model.GitRemote;
 import dev.jagt.orchestrator.model.Move;
 import dev.jagt.orchestrator.model.ReviewRequestTitle;
@@ -12,161 +7,85 @@ import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
-import dev.jagt.orchestrator.platform.TerminalDriver;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.TmuxService;
-import dev.jagt.orchestrator.service.WorktreeFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
- * Implements the MCP tools exposed to the Master and to the sub-agent sessions (whichever
- * {@link AgentRuntime} is active). The callerTaskId (resolved from the X-Working-Directory header) scopes
+ * Implements the MCP tools exposed to the Master and to the sub-agent sessions (whichever agent
+ * runtime is active). The callerTaskId (resolved from the X-Working-Directory header) scopes
  * tool execution: a sub-agent may only act on its own task.
  */
 @Service
 public class OrchestratorTools {
 
     private static final Logger log = LoggerFactory.getLogger(OrchestratorTools.class);
-    /** Task ids become git branches, directory names and tmux window names/targets. */
-    private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_-]{0,63}");
-    /** Per-task relay monitors; a handful of entries, one per task ever relayed to in this session. */
-    private final java.util.concurrent.ConcurrentHashMap<String, Object> relayLocks =
-            new java.util.concurrent.ConcurrentHashMap<>();
-
     private final ConfigService configService;
     private final StateService stateService;
     private final GitService gitService;
-    private final TmuxService tmuxService;
     private final EditorDriver editorDriver;
-    private final TerminalDriver terminalDriver;
     private final UserNotifier userNotifier;
-    private final OrchestratorProperties properties;
-    private final OrchestratorPaths paths;
-    private final PromptTemplates prompts;
-    private final AgentRuntime agentRuntime;
-    /** Plugins the agent sessions should NOT load — heavy LSP plugins spawn a ~1-2GB JDT server per
-     *  worktree and agents don't need them (they have file tools). Field-injected so the many test
-     *  constructors need no change; null in tests = disable nothing. */
-    @Value("${orchestrator.agent-disabled-plugins:}")
-    private List<String> agentDisabledPlugins;
+    private final AgentSessions sessions;
+    private final TaskProvisioning provisioning;
 
     public OrchestratorTools(ConfigService configService, StateService stateService, GitService gitService,
-                             TmuxService tmuxService, EditorDriver editorDriver, TerminalDriver terminalDriver,
-                             UserNotifier userNotifier, OrchestratorProperties properties, OrchestratorPaths paths,
-                             PromptTemplates prompts, AgentRuntime agentRuntime) {
-        this.agentRuntime = agentRuntime;
+                             EditorDriver editorDriver, UserNotifier userNotifier, AgentSessions sessions,
+                             TaskProvisioning provisioning) {
         this.configService = configService;
         this.stateService = stateService;
         this.gitService = gitService;
-        this.tmuxService = tmuxService;
         this.editorDriver = editorDriver;
-        this.terminalDriver = terminalDriver;
         this.userNotifier = userNotifier;
-        this.properties = properties;
-        this.paths = paths;
-        this.prompts = prompts;
+        this.sessions = sessions;
+        this.provisioning = provisioning;
     }
+
+    // ---- delegation: the MCP surface stays here, the work lives in the two services the split created ----
 
     /** The configured project whose repo already has a branch named taskId, or null if none. */
     public String existingBranchProject(String taskId, String projectKey) {
-        ConfigService.ConfigFile config = configService.load();
-        Set<String> keys = projectKey != null && !projectKey.isBlank()
-                ? Set.of(projectKey) : config.projects().keySet();
-        return keys.stream()
-                .filter(config.projects()::containsKey)
-                .filter(k -> gitService.branchExists(
-                        Path.of(config.projects().get(k).path()).toAbsolutePath().normalize(), taskId))
-                .findFirst().orElse(null);
+        return provisioning.existingBranchProject(taskId, projectKey);
     }
 
     public String initializeTask(String taskId, String projectKey, String instructions, String mode,
                                  String branchStrategy, String title, String ticketUrl) {
-        requireSafeId(taskId, "taskId");
-        requireSafeId(projectKey, "projectKey");
-        boolean plan = planMode(mode);
-        GitService.BranchStrategy strategy = parseBranchStrategy(branchStrategy);
-        if (stateService.task(taskId).isPresent()) {
-            throw new IllegalArgumentException("Task " + taskId + " is already registered in state.json. "
-                    + "Use open_task_tab to respawn its agent or remove_task to retire it first.");
-        }
-        ConfigService.ConfigFile config = configService.load();
-        ProjectConfig project = config.projects().get(projectKey);
-        if (project == null) {
-            throw new IllegalArgumentException(
-                    "Unknown project '" + projectKey + "'. Known projects: " + config.projects().keySet());
-        }
-        Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
-        Path worktreePath = projectPath.getParent().resolve(taskId + "-" + projectKey);
+        return provisioning.initializeTask(taskId, projectKey, instructions, mode, branchStrategy, title,
+                ticketUrl);
+    }
 
-        gitService.createWorktree(projectPath, worktreePath, taskId, project.baseBranch(), strategy);
-        String remoteUrl;
-        try {
-            remoteUrl = gitService.remoteUrl(projectPath);
-            WorktreeFiles.excludeOrchestratorPlumbing(gitService.gitCommonDir(projectPath));
-            provisionForAgent(worktreePath);
-            WorktreeFiles.copyIdeProjectFiles(projectPath, worktreePath);
-            WorktreeFiles.copyLocalFiles(projectPath, worktreePath,
-                    configService.load().worktree().copyGlobsOrDefault());
-            WorktreeFiles.write(worktreePath.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE),
-                    subAgentContext(taskId, projectKey, project, worktreePath, remoteUrl, config));
-            if (instructions != null && !instructions.isBlank()) {
-                WorktreeFiles.write(worktreePath.resolve("task_context.md"), instructions);
-            }
-        } catch (RuntimeException e) {
-            // Compensate: without this, the taskId is burned (branch + worktree exist,
-            // nothing registered) and a retry hits "branch already exists".
-            gitService.removeWorktree(projectPath, worktreePath, taskId);
-            throw e;
-        }
+    /** Recovery path: the worktree and state entry exist but the agent's window is gone. Spawns a fresh one. */
+    public String openTaskTab(String taskId, String mode) {
+        return sessions.openTaskTab(taskId, mode);
+    }
 
-        String alias = nextAlias(taskId);
-        stateService.putTask(taskId, TaskState.builder(projectKey, worktreePath.toString(), TaskStatus.NEW)
-                .lastActiveTimestamp(System.currentTimeMillis()).alias(alias).remoteUrl(remoteUrl).title(title)
-                .ticketUrl(ticketUrl == null || ticketUrl.isBlank() ? null : ticketUrl)
-                .autoReview(config.autoReview().enabledOrDefault())
-                .build());
+    /** Closes the task's window(s), killing the agent session; worktree and state stay. */
+    public String closeTaskTab(String taskId, String callerTaskId) {
+        return sessions.closeTaskTab(resolveTaskId(taskId, callerTaskId));
+    }
 
-        String session;
-        try {
-            session = openTab(taskId, alias, worktreePath, config, plan);
-        } catch (RuntimeException e) {
-            return "Task " + taskId + " registered and worktree created at " + worktreePath
-                    + ", but the agent session failed to start: " + e.getMessage()
-                    + " Fix the cause and call open_task_tab(\"" + taskId + "\") — do NOT call initialize_task again.";
-        }
+    public String focusTask(String taskId) {
+        return sessions.focusTask(taskId);
+    }
 
-        return "Task " + taskId + " initialized (alias: " + alias + ").\n"
-                + "- worktree: " + worktreePath + " (branch " + taskId
-                + (strategy == GitService.BranchStrategy.RESUME
-                        ? ", RESUMED with its existing commits"
-                        : " from " + project.baseBranch()) + ")\n"
-                + "- " + agentRuntime.displayName() + " sub-agent started in tmux window '" + taskId
-                + "' of session '" + session
-                + "' (a Warp window attaches automatically; manual: tmux attach -t " + session + ")\n"
-                + (plan
-                        ? "- PLAN MODE: the agent plans first; the human approves the plan in its tmux window\n"
-                        : "")
-                + "- sub-agent context written to " + AgentRuntime.SYSTEM_KNOWLEDGE_FILE
-                + (instructions != null && !instructions.isBlank() ? ", instructions to task_context.md" : "");
+    public String writeTaskContext(String taskId, String instructions) {
+        return sessions.writeTaskContext(taskId, instructions);
+    }
+
+    public String appendTaskContext(String taskId, String instructions) {
+        return sessions.appendTaskContext(taskId, instructions);
     }
 
     public String updateAgentStatus(String status, String message, String explicitTaskId, String callerTaskId) {
@@ -207,20 +126,6 @@ public class OrchestratorTools {
             userNotifier.notify("jagt · " + taskId, Move.forTask(newStatus, true).hint());
         }
         return "Task " + taskId + " -> " + newStatus + (shortMessage == null ? "" : " (" + shortMessage + ")");
-    }
-
-    /**
-     * Recovery path: the worktree and state entry exist, but the agent's tmux
-     * window is gone (closed, crashed, or the agent died). Spawns a fresh one.
-     */
-    public String openTaskTab(String taskId, String mode) {
-        taskId = canonicalTaskId(taskId);
-        TaskState task = requireTask(taskId);
-        String session = openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(),
-                planMode(mode));
-        return "New " + agentRuntime.displayName() + " session started for " + taskId + " in tmux window '" + taskId + "' of session '"
-                + session + "' (worktree " + task.worktreePath() + ")"
-                + (planMode(mode) ? " in PLAN MODE" : "");
     }
 
     public String openInIde(String explicitTaskId, String mode, String callerTaskId) {
@@ -267,60 +172,6 @@ public class OrchestratorTools {
                 + " (use Git → Local Changes for a live diff vs base)";
     }
 
-    public String writeTaskContext(String taskId, String instructions) {
-        return relay(taskId, instructions, false);
-    }
-
-    /**
-     * Adds to whatever the agent has not read yet instead of replacing it. Two independent flows relay to the
-     * same file — a review sweep's brief and ship's "post your drafted replies" — and truncating lost one of
-     * them outright: a sweep that had just handed over four unresolved comments, overwritten a second later by
-     * a ship, left the agent with no idea the comments existed and the task sitting at CI_POLLING as if the
-     * review were clean. Supplementary instructions append; a NEW round of work still replaces (see the sweep).
-     */
-    public String appendTaskContext(String taskId, String instructions) {
-        return relay(taskId, instructions, true);
-    }
-
-    private String relay(String taskId, String instructions, boolean append) {
-        taskId = canonicalTaskId(taskId);
-        TaskState task = requireTask(taskId);
-        Path contextFile = Path.of(task.worktreePath()).resolve("task_context.md");
-        // One relay at a time per task: the sweep runs unattended every 60s while a human can ship at any
-        // moment, and interleaving two writes to one file is how an instruction disappears.
-        synchronized (relayLock(taskId)) {
-            WorktreeFiles.write(contextFile, append
-                    ? WorktreeFiles.read(contextFile).map(existing -> existing + "\n\n" + instructions)
-                            .orElse(instructions)
-                    : instructions);
-        }
-        // A file on disk doesn't wake a running Claude session — nudge it directly.
-        String session = agentSession(configService.load(), taskId);
-        if (tmuxService.taskWindowState(session, taskId) == TmuxService.WindowState.AGENT_RUNNING
-                && tmuxService.nudgeTaskWindow(session, taskId,
-                        "The Master updated task_context.md — re-read it now and follow the new instructions.")) {
-            return "Instructions written to task_context.md and the agent was nudged to re-read them.";
-        }
-        // Session not running (killed / crashed / never started): respawn it — a fresh Claude session
-        // reads task_context.md on start and acts on the relayed instruction, so ship/review can't
-        // dead-end against a dead agent.
-        openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), false);
-        return "Instructions written to task_context.md; the agent session was down, so it was respawned"
-                + " to read and follow them.";
-    }
-
-    /** Closes the task's tmux window(s), killing the Claude session; worktree and state stay. */
-    public String closeTaskTab(String taskId, String callerTaskId) {
-        taskId = resolveTaskId(taskId, callerTaskId);
-        TaskState task = requireTask(taskId);
-        int killed = tmuxService.killTaskWindows(
-                agentSession(configService.load(), taskId), taskId);
-        return killed == 0
-                ? "No tmux window named '" + taskId + "' found — the session was already closed."
-                : "Closed " + killed + " tmux window(s) for " + taskId + "; the " + agentRuntime.displayName() + " session is terminated. "
-                        + "Worktree kept: " + task.worktreePath();
-    }
-
     /** Retires a task: session killed, worktree and state entry removed; the branch survives. */
     public String removeTask(String taskId, String callerTaskId) {
         if (callerTaskId != null) {
@@ -331,7 +182,7 @@ public class OrchestratorTools {
         ConfigService.ConfigFile config = configService.load();
         // Kill the session first: removing a worktree under a live process's cwd
         // leaves a zombie agent grinding in a deleted directory.
-        tmuxService.killTaskWindows(agentSession(config, taskId), taskId);
+        sessions.killWindows(taskId);
         ProjectConfig project = config.projects().get(task.project());
         if (project != null) {
             Path projectPath = Path.of(project.path());
@@ -348,10 +199,7 @@ public class OrchestratorTools {
         stateService.removeTask(taskId);
         // Reserve the viewer by default: keep it open when empty so a manual
         // placement (dragged into a group/window) survives across task cycles.
-        boolean closedViewer = stateService.tasks().isEmpty() && !config.viewer().keepViewerOrDefault();
-        if (closedViewer) {
-            terminalDriver.closeViewerWindow(tmuxService.sessionName(config.viewer().tmuxSession()));
-        }
+        boolean closedViewer = sessions.closeViewerIfNoTasksLeft();
         return "Task " + taskId + " removed: worktree deleted, state entry dropped. Branch '" + taskId
                 + "' was kept" + (project == null ? " (worktree left on disk: project missing from config.json)" : "")
                 + (closedViewer ? ". Last task gone — the agents window was closed." : "");
@@ -367,9 +215,7 @@ public class OrchestratorTools {
         if (mrUrl == null || !mrUrl.contains("http")) {
             throw new IllegalArgumentException("resume needs the MR url: resume <ticket> <mr-url>");
         }
-        if (!SAFE_ID.matcher(taskId).matches()) {
-            throw new IllegalArgumentException("Invalid ticket id '" + taskId + "'");
-        }
+        TaskProvisioning.requireSafeId(taskId, "taskId");
         String projectKey = projectForMrUrl(mrUrl);
         String instructions = "Reopened for review. Your branch is resumed with its existing commits and MR "
                 + mrUrl + " is open — there is NOTHING to build or commit right now. Do NOT re-implement, and"
@@ -584,44 +430,6 @@ public class OrchestratorTools {
         return "Notification sent";
     }
 
-    /**
-     * Brings the task's agent window to the user's screen. If the session was
-     * closed (window gone), a fresh Claude session is started first — focus
-     * must always land somewhere.
-     */
-    public String focusTask(String taskId) {
-        taskId = canonicalTaskId(taskId);
-        TaskState task = requireTask(taskId);
-        ConfigService.ConfigFile config = configService.load();
-        String session = agentSession(config, taskId);
-        String dedicatedTitle = tmuxService.sessionName(config.viewer().tmuxSession());
-        boolean respawned = false;
-        Path worktreePath = Path.of(task.worktreePath());
-        switch (tmuxService.taskWindowState(session, taskId)) {
-            case MISSING -> {
-                tmuxService.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
-                respawned = true;
-            }
-            case DEAD_SHELL -> {
-                // The window survived only for post-mortem inspection; focusing it
-                // must hand the user a live agent, not a dead prompt.
-                tmuxService.killTaskWindows(session, taskId);
-                tmuxService.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
-                respawned = true;
-            }
-            case AGENT_RUNNING -> {
-            }
-        }
-        tmuxService.focusTaskWindow(session, dedicatedTitle, taskId);
-        boolean raised = terminalDriver.reveal(dedicatedTitle);
-        return "Focused tmux window '" + taskId + "'"
-                + (raised
-                        ? " and raised the agents window"
-                        : " — but the agents viewer is a TAB, not a window: the terminal has no API to"
-                                + " switch tabs, so click the agents tab yourself (or keep it as its own window)")
-                + (respawned ? "; the session was dead, started a fresh " + agentRuntime.displayName() + " session" : "");
-    }
-
     private String resolveTaskId(String explicitTaskId, String callerTaskId) {
         if (explicitTaskId == null || explicitTaskId.isBlank()) {
             if (callerTaskId == null) {
@@ -644,107 +452,9 @@ public class OrchestratorTools {
                 .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
     }
 
-    /** One monitor per task id, so relays to one task serialise while different tasks never wait on each other. */
-    private Object relayLock(String taskId) {
-        return relayLocks.computeIfAbsent(taskId, id -> new Object());
-    }
-
     /** Every taskId argument also accepts the task's short alias (p1, s2, ...). */
     private String canonicalTaskId(String idOrAlias) {
         return stateService.canonicalTaskId(idOrAlias);
-    }
-
-    /** First letter of the ticket + smallest free ordinal: ABC-123 -> a1, next ABC task -> a2. */
-    private String nextAlias(String taskId) {
-        String letter = taskId.substring(0, 1).toLowerCase();
-        var used = stateService.tasks().values().stream()
-                .map(TaskState::alias)
-                .filter(a -> a != null)
-                .collect(Collectors.toSet());
-        for (int i = 1; ; i++) {
-            String candidate = letter + i;
-            if (!used.contains(candidate)) {
-                return candidate;
-            }
-        }
-    }
-
-    /** Starts the agent in a tmux window and returns its session name. */
-    private String openTab(String taskId, String alias, Path worktreePath, ConfigService.ConfigFile config,
-                           boolean planMode) {
-        String session = agentSession(config, taskId);
-        tmuxService.openTaskWindow(session, tmuxService.sessionName(config.viewer().tmuxSession()), taskId,
-                alias, worktreePath, planMode);
-        return session;
-    }
-
-    /**
-     * viewMode "shared" (default): every task is a tmux window in ONE session,
-     * one terminal tab total. viewMode "tab-per-task": each task gets its own
-     * session, shown as its own Warp tab in the current window.
-     */
-    private String agentSession(ConfigService.ConfigFile config, String taskId) {
-        String base = tmuxService.sessionName(config.viewer().tmuxSession());
-        return config.viewer().sharedView()
-                ? base
-                : base + "-" + taskId;
-    }
-
-    private static GitService.BranchStrategy parseBranchStrategy(String value) {
-        if (value == null || value.isBlank()) {
-            return GitService.BranchStrategy.FRESH;
-        }
-        try {
-            return GitService.BranchStrategy.valueOf(value.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                    "Unknown branchStrategy '" + value + "'. Allowed: fresh, recreate, resume");
-        }
-    }
-
-    private static boolean planMode(String mode) {
-        if (mode == null || mode.equalsIgnoreCase("auto")) {
-            return false;
-        }
-        if (mode.equalsIgnoreCase("plan")) {
-            return true;
-        }
-        throw new IllegalArgumentException("Unknown mode '" + mode + "'. Allowed: auto, plan");
-    }
-
-    /**
-     * Every Claude session spawned by the orchestrator must know the whole system:
-     * the master root, the backend, all configured projects and the other active
-     * tasks — not only its own worktree.
-     */
-    private String subAgentContext(String taskId, String projectKey, ProjectConfig project, Path worktreePath,
-                                   String remoteUrl, ConfigService.ConfigFile config) {
-        String projectsTable = config.projects().entrySet().stream()
-                .map(e -> "| " + e.getKey() + " | " + e.getValue().path() + " | " + e.getValue().baseBranch() + " |")
-                .collect(Collectors.joining("\n"));
-        String activeTasks = stateService.tasks().entrySet().stream()
-                .map(e -> "- " + e.getKey() + " [" + e.getValue().status() + "] " + e.getValue().worktreePath())
-                .collect(Collectors.joining("\n"));
-        return prompts.subAgentContext().formatted(
-                taskId,
-                taskId, projectKey, project.path(), project.baseBranch(), remoteUrl, worktreePath,
-                properties.watchdog().staleAfter().toMinutes() + " minutes",
-                taskId,
-                taskId, project.baseBranch(),
-                paths.root(),
-                paths.stateFile(),
-                paths.configFile(),
-                projectsTable.isBlank() ? "| (none) | | |" : projectsTable,
-                activeTasks.isBlank() ? "- (none)" : activeTasks);
-    }
-
-    /**
-     * Everything the AGENT needs in its fresh worktree — which of those files exist, and what is in them,
-     * belongs to the runtime, not here: this method must never learn what a given agent's MCP config is called.
-     */
-    private void provisionForAgent(Path worktreePath) {
-        agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
-                configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
     }
 
     private static final Pattern URL = Pattern.compile("https?://\\S+");
@@ -764,12 +474,5 @@ public class OrchestratorTools {
         }
         String flat = message.replaceAll("\\s+", " ").trim();
         return flat.length() <= 100 ? flat : flat.substring(0, 97) + "...";
-    }
-
-    private static void requireSafeId(String value, String name) {
-        if (value == null || !SAFE_ID.matcher(value).matches()) {
-            throw new IllegalArgumentException("Argument '" + name + "' must match " + SAFE_ID.pattern()
-                    + " (it becomes a branch, directory and tmux window name); got: " + value);
-        }
     }
 }

@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.mcp;
 
+import dev.jagt.orchestrator.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.agent.ClaudeAgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -85,9 +88,24 @@ class OrchestratorToolsAutoReviewTest {
             this.state = new StateService(new JsonMapper(), paths);
             ConfigService config = mock(ConfigService.class);
             when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-            this.tools = new OrchestratorTools(config, state, mock(GitService.class), mock(TmuxService.class),
-                    mock(EditorDriver.class), mock(TerminalDriver.class), notifier, properties, paths,
-                    new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+            this.tools = facade(config, state, mock(GitService.class), mock(TmuxService.class),
+                    mock(EditorDriver.class), mock(TerminalDriver.class), notifier, properties);
         }
+    }
+
+    /**
+     * The facade no longer takes the tmux/terminal/provisioning collaborators — it takes the two services the
+     * split extracted. This wires them the way the Spring context does, so a facade test keeps saying what it
+     * always said; a test of the extracted concerns builds only that concern (see AgentSessionsTest,
+     * TaskProvisioningTest) and needs a fraction of this.
+     */
+    private static OrchestratorTools facade(ConfigService config, StateService state, GitService git,
+                                            TmuxService tmux, EditorDriver editor, TerminalDriver terminal,
+                                            UserNotifier notifier, OrchestratorProperties properties) {
+        AgentRuntime runtime = new ClaudeAgentRuntime(properties);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, runtime);
+        return new OrchestratorTools(config, state, git, editor, notifier, sessions,
+                new TaskProvisioning(config, state, git, sessions, runtime, properties,
+                        new OrchestratorPaths(properties), new PromptTemplates()));
     }
 }

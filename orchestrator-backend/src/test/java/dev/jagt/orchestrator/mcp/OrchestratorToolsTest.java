@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.mcp;
 
+import dev.jagt.orchestrator.agent.AgentRuntime;
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.agent.ClaudeAgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -55,9 +58,9 @@ class OrchestratorToolsTest {    @Test
         when(git.branchesMergedInto(any(Path.class), eq("origin/dev")))
                 .thenReturn(List.of("ABC-40", "ABC-41", "ABC-99", "dev", "main"));
         when(git.currentBranch(any(Path.class))).thenReturn("main");
-        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
         String result = tools.pruneBranches(false);
 
@@ -84,9 +87,9 @@ class OrchestratorToolsTest {    @Test
         when(git.deleteLocalBranch(any(Path.class), eq("ABC-40"))).thenReturn(Optional.empty());
         when(git.deleteLocalBranch(any(Path.class), eq("ABC-41")))
                 .thenReturn(Optional.of("error: branch is checked out at /wt"));
-        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
         String result = tools.pruneBranches(true);
 
@@ -123,9 +126,9 @@ class OrchestratorToolsTest {    @Test
                 .thenThrow(new IllegalStateException("git branch --merged origin/release failed: no such ref"));
         when(git.currentBranch(any(Path.class))).thenReturn("main");
         when(git.deleteLocalBranch(any(Path.class), eq("ABC-40"))).thenReturn(Optional.empty());
-        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
         String result = tools.pruneBranches(true);
 
@@ -145,56 +148,13 @@ class OrchestratorToolsTest {    @Test
         GitService git = mock(GitService.class);
         when(git.branchesMergedInto(any(Path.class), eq("origin/dev")))
                 .thenThrow(new IllegalStateException("git branch --merged origin/dev failed: no such ref"));
-        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
         String result = tools.pruneBranches(false);
 
         assertThat(result).contains("no project could be examined").doesNotContain("nothing to prune");
-    }
-
-    @Test
-    void closesTaskWindowWhenCalledWithItsAlias(@TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.killTaskWindows("jagt", "TEST-1")).thenReturn(1);
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
-                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        String result = tools.closeTaskTab("t1", null);
-
-        assertThat(result).contains("Closed 1 tmux window(s) for TEST-1");
-    }
-
-    @Test
-    void givesEachTaskItsOwnSessionWhenViewModeIsTabPerTask(@TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("tab-per-task")));
-        TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName("jagt")).thenReturn("jagt");
-        when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
-                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        tools.closeTaskTab("t1", null);
-
-        verify(tmux).killTaskWindows("jagt-TEST-1", "TEST-1");
     }
 
     @Test
@@ -210,9 +170,8 @@ class OrchestratorToolsTest {    @Test
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         TerminalDriver terminal = mock(TerminalDriver.class);
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
-                mock(EditorDriver.class), terminal, mock(UserNotifier.class), properties, paths,
-                new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+        OrchestratorTools tools = facade(config, state, mock(GitService.class), tmux,
+                mock(EditorDriver.class), terminal, mock(UserNotifier.class), properties);
 
         tools.removeTask("a1", null);
 
@@ -233,9 +192,8 @@ class OrchestratorToolsTest {    @Test
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         TerminalDriver terminal = mock(TerminalDriver.class);
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
-                mock(EditorDriver.class), terminal, mock(UserNotifier.class), properties, paths,
-                new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+        OrchestratorTools tools = facade(config, state, mock(GitService.class), tmux,
+                mock(EditorDriver.class), terminal, mock(UserNotifier.class), properties);
 
         tools.removeTask("a1", null);
 
@@ -256,9 +214,9 @@ class OrchestratorToolsTest {    @Test
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()));
         EditorDriver editor = mock(EditorDriver.class);
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
+        OrchestratorTools tools = facade(config, state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
         String out = tools.openInIde("a1", null, null);
 
@@ -275,9 +233,9 @@ class OrchestratorToolsTest {    @Test
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                mock(UserNotifier.class), properties);
 
         tools.updateAgentStatus("CI_POLLING", "MR: https://gitlab/x/-/merge_requests/9", "ABC-1", null);
 
@@ -292,9 +250,9 @@ class OrchestratorToolsTest {    @Test
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         UserNotifier notifier = mock(UserNotifier.class);
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                notifier, properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                notifier, properties);
 
         tools.updateAgentStatus("REVIEW_PENDING", "done", "ABC-1", "ABC-1");
 
@@ -309,9 +267,9 @@ class OrchestratorToolsTest {    @Test
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         UserNotifier notifier = mock(UserNotifier.class);
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                notifier, properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                notifier, properties);
 
         tools.updateAgentStatus("IN_PROGRESS", "step 2", "ABC-1", "ABC-1");
 
@@ -331,9 +289,8 @@ class OrchestratorToolsTest {    @Test
         when(git.checkoutBaseForDiff(any(), any(), any())).thenReturn(java.nio.file.Path.of("/tmp/base"));
         when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any())).thenReturn(java.nio.file.Path.of("/tmp/clean"));
         EditorDriver editor = mock(EditorDriver.class);
-        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
-                editor, mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths,
-                new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class),
+                editor, mock(TerminalDriver.class), mock(UserNotifier.class), properties);
 
         tools.openInIde("a1", "diff", null);
 
@@ -348,9 +305,9 @@ class OrchestratorToolsTest {    @Test
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         EditorDriver editor = mock(EditorDriver.class);
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
         tools.openInIde("a1", null, null);
 
@@ -365,9 +322,9 @@ class OrchestratorToolsTest {    @Test
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         EditorDriver editor = mock(EditorDriver.class);
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
         tools.openInIde("a1", "project", null);
 
@@ -381,9 +338,9 @@ class OrchestratorToolsTest {    @Test
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                mock(UserNotifier.class), properties);
 
         assertThatThrownBy(() -> tools.updateAgentStatus("CI_POLLING", "branch pushed", "ABC-1", null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -397,9 +354,9 @@ class OrchestratorToolsTest {    @Test
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                mock(UserNotifier.class), properties);
 
         tools.updateAgentStatus("CI_POLLING", "MR: https://gitlab.example/g/p/-/merge_requests/1", "ABC-1", null);
 
@@ -413,9 +370,9 @@ class OrchestratorToolsTest {    @Test
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("OTHER-1", TaskState.builder("proj", "/other", TaskStatus.IN_PROGRESS).alias("o1").build());
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                mock(UserNotifier.class), properties);
 
         assertThatThrownBy(() -> tools.updateAgentStatus("DONE", null, "OTHER-1", "MINE-1"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -429,72 +386,14 @@ class OrchestratorToolsTest {    @Test
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                mock(UserNotifier.class), properties);
 
         tools.updateAgentStatus("IN_PROGRESS", "root cause\nanalysis ".repeat(20), "ABC-1", null);
 
         String stored = state.task("ABC-1").orElseThrow().message();
         assertThat(stored).hasSizeLessThanOrEqualTo(100).doesNotContain("\n").endsWith("...");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"feature/X", "../escape", "a b"})
-    void rejectsTaskIdBeforeTouchingGitWhenItCannotBeABranchName(String unsafeTaskId, @TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        GitService git = mock(GitService.class);
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
-                new StateService(new JsonMapper(), paths), git, mock(TmuxService.class),
-                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        assertThatThrownBy(() -> tools.initializeTask(unsafeTaskId, "proj", null, null, null, null, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("must match");
-        verifyNoInteractions(git);
-    }
-
-    @Test
-    void rejectsUnknownModeBeforeTouchingGit(@TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        GitService git = mock(GitService.class);
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
-                new StateService(new JsonMapper(), paths), git, mock(TmuxService.class),
-                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        assertThatThrownBy(() -> tools.initializeTask("ABC-1", "proj", null, "bogus", null, null, null))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown mode");
-        verifyNoInteractions(git);
-    }
-
-    @Test
-    void removesFreshWorktreeAndBranchWhenContextSetupFailsAfterCheckout(@TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        Path projectPath = root.resolve("repo");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
-                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null))));
-        GitService git = mock(GitService.class);
-        when(git.remoteUrl(any())).thenThrow(new IllegalStateException("remote lookup failed"));
-        OrchestratorTools tools = new OrchestratorTools(config,
-                new StateService(new JsonMapper(), paths), git, mock(TmuxService.class),
-                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        assertThatThrownBy(() -> tools.initializeTask("ABC-9", "proj", null, null, null, null, null))
-                .isInstanceOf(IllegalStateException.class);
-
-        verify(git).removeWorktree(projectPath.toAbsolutePath().normalize(),
-                root.resolve("ABC-9-proj"), "ABC-9");
     }
 
     @Test
@@ -507,9 +406,9 @@ class OrchestratorToolsTest {    @Test
                 .message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
+        OrchestratorTools tools = facade(config, state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                mock(UserNotifier.class), properties);
 
         tools.deployTask("a1", null);
 
@@ -534,8 +433,8 @@ class OrchestratorToolsTest {    @Test
         doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict in liquibase/master.yaml", deployWorktree))
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
         EditorDriver editor = mock(EditorDriver.class);
-        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class), editor,
-                mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class), editor,
+                mock(TerminalDriver.class), mock(UserNotifier.class), properties);
 
         String result = tools.deployTask("a1", null);
 
@@ -558,9 +457,9 @@ class OrchestratorToolsTest {    @Test
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release/sng", "release/sng", null));
         GitService git = mock(GitService.class);
-        OrchestratorTools tools = new OrchestratorTools(config, state, git,
+        OrchestratorTools tools = facade(config, state, git,
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                mock(UserNotifier.class), properties);
 
         assertThatThrownBy(() -> tools.deployTask("a1", null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -577,9 +476,9 @@ class OrchestratorToolsTest {    @Test
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", null, null));
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
+        OrchestratorTools tools = facade(config, state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                mock(UserNotifier.class), properties);
 
         assertThatThrownBy(() -> tools.deployTask("ABC-1", null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -591,130 +490,50 @@ class OrchestratorToolsTest {    @Test
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
+        OrchestratorTools tools = facade(mock(ConfigService.class),
                 new StateService(new JsonMapper(), paths), mock(GitService.class), mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
         assertThatThrownBy(() -> tools.deployTask("ABC-1", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Master-only");
     }
 
+    /**
+     * `resume` validates the ticket id up front, BEFORE it matches the MR url against every project's git
+     * remote — otherwise an unusable id costs a remote lookup per configured project just to be rejected.
+     */
     @Test
-    void nudgesRunningAgentWhenTaskContextIsUpdated(@TempDir Path root) {
+    void refusesAnUnusableTicketIdBeforeResolvingTheProjectFromTheMrUrl(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
-        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
-                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        String result = tools.writeTaskContext("a1", "new instructions");
-
-        assertThat(result).contains("nudged");
-    }
-
-    @Test
-    void respawnsADownSessionWhenWriteTaskContextTargetsIt(@TempDir Path root) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.MISSING);
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
-                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        String result = tools.writeTaskContext("a1", "new instructions");
-
-        assertThat(result).contains("respawned");
-        verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false));
-    }
-
-    @Test
-    void assignsNextFreeAliasWhenTicketLetterAlreadyInUse(@TempDir Path root) throws Exception {
-        java.nio.file.Files.createDirectories(root.resolve("ABC-2-proj"));
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())
-                .withAgentPrompt("prompt");
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
-        Path projectPath = root.resolve("repo");
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
-                Map.of("proj", new ProjectConfig(projectPath.toString(), "origin/main", null, null))));
         GitService git = mock(GitService.class);
-        when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
-        when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
-        TmuxService tmux = mock(TmuxService.class);
-        when(tmux.sessionName(null)).thenReturn("jagt");
-        OrchestratorTools tools = new OrchestratorTools(config, state, git, tmux,
+        OrchestratorTools tools = facade(mock(ConfigService.class),
+                new StateService(new JsonMapper(), paths), git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+                properties);
 
-        tools.initializeTask("ABC-2", "proj", null, null, null, null, null);
-
-        assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
+        assertThatThrownBy(() -> tools.resumeTask("feature/X", "https://host/mr/1", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("must match");
+        verifyNoInteractions(git);
     }
 
-    @Test
-    void addsToAnUnreadRelayInsteadOfWipingIt(@TempDir Path root) throws Exception {
-        // Two flows relay to one file: a sweep's brief with unresolved comments, and ship's "post your drafted
-        // replies". Truncating meant the agent never saw whichever arrived first — the review looked clean.
-        Path worktree = java.nio.file.Files.createDirectories(root.resolve("ABC-1-demo"));
-        java.nio.file.Files.writeString(worktree.resolve("task_context.md"), "BRIEF: four unresolved comments");
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING)
-                .alias("a1").build());
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
-                mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        tools.appendTaskContext("ABC-1", "ALSO: post your drafted replies");
-
-        assertThat(java.nio.file.Files.readString(worktree.resolve("task_context.md")))
-                .contains("BRIEF: four unresolved comments", "ALSO: post your drafted replies");
-    }
-
-    @Test
-    void replacesTheRelayForANewRoundOfWork(@TempDir Path root) throws Exception {
-        Path worktree = java.nio.file.Files.createDirectories(root.resolve("ABC-1-demo"));
-        java.nio.file.Files.writeString(worktree.resolve("task_context.md"), "STALE: last round");
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING)
-                .alias("a1").build());
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
-                mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
-
-        tools.writeTaskContext("ABC-1", "NEW ROUND: fix the pipeline");
-
-        assertThat(java.nio.file.Files.readString(worktree.resolve("task_context.md")))
-                .isEqualTo("NEW ROUND: fix the pipeline").doesNotContain("STALE");
+    /**
+     * The facade no longer takes the tmux/terminal/provisioning collaborators — it takes the two services the
+     * split extracted. This wires them the way the Spring context does, so a facade test keeps saying what it
+     * always said; a test of the extracted concerns builds only that concern (see AgentSessionsTest,
+     * TaskProvisioningTest) and needs a fraction of this.
+     */
+    private static OrchestratorTools facade(ConfigService config, StateService state, GitService git,
+                                            TmuxService tmux, EditorDriver editor, TerminalDriver terminal,
+                                            UserNotifier notifier, OrchestratorProperties properties) {
+        AgentRuntime runtime = new ClaudeAgentRuntime(properties);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, runtime);
+        return new OrchestratorTools(config, state, git, editor, notifier, sessions,
+                new TaskProvisioning(config, state, git, sessions, runtime, properties,
+                        new OrchestratorPaths(properties), new PromptTemplates()));
     }
 }
