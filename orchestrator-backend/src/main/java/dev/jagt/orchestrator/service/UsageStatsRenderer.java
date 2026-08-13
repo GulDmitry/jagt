@@ -1,0 +1,73 @@
+package dev.jagt.orchestrator.service;
+
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TokenUsage;
+import org.springframework.stereotype.Component;
+
+import java.util.Comparator;
+import java.util.Map;
+
+/**
+ * The {@code stats} view: what jagt's own model calls have consumed, per task and in total, in TOKENS —
+ * the unit that is actually comparable across models and over time.
+ *
+ * <p>Deliberately two bottom lines, because they answer different questions and are NOT the same number:
+ * "current tasks" sums the tasks still in state.json, while "this session" counts every call since the
+ * backend started — including tasks already retired with {@code done} and reads that never became a task.
+ */
+@Component
+public class UsageStatsRenderer {
+
+    private static final String ROW = "%-14s %6s %9s %9s %9s %9s%n";
+
+    private final StateService stateService;
+    private final UsageTracker usageTracker;
+
+    public UsageStatsRenderer(StateService stateService, UsageTracker usageTracker) {
+        this.stateService = stateService;
+        this.usageTracker = usageTracker;
+    }
+
+    public String render() {
+        Map<String, TaskState> tasks = stateService.tasks();
+        StringBuilder out = new StringBuilder("assistant token spend — jagt's own calls only"
+                + " (a sub-agent's own session is invisible to jagt)\n\n");
+        out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL"));
+
+        TokenUsage tasksTotal = TokenUsage.NONE;
+        var billed = tasks.entrySet().stream()
+                .filter(e -> !e.getValue().usageOrNone().isNone())
+                .sorted(Comparator.comparingLong(
+                        (Map.Entry<String, TaskState> e) -> e.getValue().usageOrNone().total()).reversed())
+                .toList();
+        for (var entry : billed) {
+            TokenUsage usage = entry.getValue().usageOrNone();
+            tasksTotal = tasksTotal.plus(usage);
+            out.append(row(entry.getKey(), usage));
+        }
+        if (billed.isEmpty()) {
+            out.append("(nothing spent on the current tasks)\n");
+        }
+        TokenUsage session = usageTracker.session();
+        out.append("\n").append(row("current tasks", tasksTotal)).append(row("this session", session));
+
+        if (session.isNone()) {
+            out.append("\nno calls since this backend started — the per-task numbers above were"
+                    + " restored from state.json.\n");
+        } else {
+            out.append("\naverage per call: ")
+                    .append(TokenFormat.compact(session.total() / session.calls()))
+                    .append(" tokens — most of that is fixed per-process overhead, so making FEWER calls"
+                            + " beats shortening a prompt.\n");
+        }
+        return out.toString();
+    }
+
+    private static String row(String label, TokenUsage usage) {
+        return String.format(ROW, label, usage.calls(),
+                TokenFormat.compact(usage.inputTokens()),
+                TokenFormat.compact(usage.cachedInputTokens()),
+                TokenFormat.compact(usage.outputTokens()),
+                TokenFormat.compact(usage.total()));
+    }
+}

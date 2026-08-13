@@ -1,8 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant;
+import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
 import dev.jagt.orchestrator.assistant.MasterAssistant.ReviewFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.model.TokenUsage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,15 +18,15 @@ import static org.mockito.Mockito.when;
 
 class ReviewSweepServiceTest {
 
-    private final MasterAssistant assistant = mock(MasterAssistant.class);
+    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
     private final OrchestratorTools tools = mock(OrchestratorTools.class);
     private final ReviewSweepService sweep = new ReviewSweepService(assistant, tools);
 
     @Test
     void advancesToApprovedWhenTheMrIsApprovedAndClean() {
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
+        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(
+                Optional.of(new ReviewFacts(true, true, "success", List.of())), TokenUsage.NONE));
 
         var result = sweep.sweep("ABC-1");
 
@@ -37,8 +38,8 @@ class ReviewSweepServiceTest {
     @Test
     void marksReviewedWhenGreenAndCleanButNotYetApproved() {
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
+        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(
+                Optional.of(new ReviewFacts(true, false, "success", List.of())), TokenUsage.NONE));
 
         var result = sweep.sweep("ABC-1");
 
@@ -50,8 +51,9 @@ class ReviewSweepServiceTest {
     @Test
     void relaysCommentsAsDraftsAndNeverAutoAdvancesEvenWhenApproved() {
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenReturn(Optional.of(
-                new ReviewFacts(true, true, "success", List.of("coderabbit (a.java:3): rename x"))));
+        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(
+                Optional.of(new ReviewFacts(true, true, "success",
+                        List.of("coderabbit (a.java:3): rename x"))), TokenUsage.NONE));
 
         var result = sweep.sweep("ABC-1");
 
@@ -60,6 +62,18 @@ class ReviewSweepServiceTest {
                 org.mockito.ArgumentMatchers.contains("review_replies.md"));
         verify(tools, never()).markApproved("ABC-1");
         verify(tools, never()).markReviewed("ABC-1");
+    }
+
+    @Test
+    void chargesThePollToTheTaskEvenWhenTheReviewCouldNotBeRead() {
+        TokenUsage spent = TokenUsage.ofCall(26_000, 0, 120, 0.06);
+        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
+        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(Optional.empty(), spent));
+
+        var result = sweep.sweep("ABC-1");
+
+        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE);
+        verify(assistant).chargeTask("ABC-1", spent);
     }
 
     @Test

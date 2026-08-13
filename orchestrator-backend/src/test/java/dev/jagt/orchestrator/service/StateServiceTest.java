@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.model.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -16,6 +17,23 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class StateServiceTest {
+
+    @Test
+    void writesOnlyRealStateForATaskThatHasSpentTokens(@TempDir Path root) throws IOException {
+        // state.json is the SSOT: a derived accessor on TokenUsage must not become a persisted field. It did
+        // once — Jackson picked up isNone() and wrote "none":false into every task's usage block.
+        Path stateFile = root.resolve("state.json");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(new OrchestratorProperties(
+                root.toString(), null, stateFile.toString(),
+                null, null, null, null, null, null, null, false, null)));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .usage(TokenUsage.ofCall(25_000, 100, 170, 0.05)).build());
+
+        String written = Files.readString(stateFile);
+
+        assertThat(written).contains("\"inputTokens\" : 25000", "\"outputTokens\" : 170");
+        assertThat(written).doesNotContain("none");
+    }
 
     @Test
     void loadsAStateFileWrittenBeforeTheAutoReviewFieldsExisted(@TempDir Path root) throws IOException {

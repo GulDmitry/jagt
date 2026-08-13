@@ -652,14 +652,7 @@ public class OrchestratorTools {
 
     /** Every taskId argument also accepts the task's short alias (p1, s2, ...). */
     private String canonicalTaskId(String idOrAlias) {
-        if (idOrAlias == null || stateService.task(idOrAlias).isPresent()) {
-            return idOrAlias;
-        }
-        return stateService.tasks().entrySet().stream()
-                .filter(e -> idOrAlias.equalsIgnoreCase(e.getValue().alias()))
-                .map(java.util.Map.Entry::getKey)
-                .findFirst()
-                .orElse(idOrAlias);
+        return stateService.canonicalTaskId(idOrAlias);
     }
 
     /** First letter of the ticket + smallest free ordinal: ABC-123 -> a1, next ABC task -> a2. */

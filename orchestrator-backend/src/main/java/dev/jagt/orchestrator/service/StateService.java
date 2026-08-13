@@ -61,6 +61,22 @@ public class StateService {
         return Optional.ofNullable(tasks().get(taskId));
     }
 
+    /**
+     * The task id behind an id OR its short alias (p1, s2, …) — aliases are state, so resolving them
+     * belongs here and every caller that accepts human input goes through this one place. An unknown
+     * value is returned unchanged, so callers still produce their own "not found" error.
+     */
+    public String canonicalTaskId(String idOrAlias) {
+        if (idOrAlias == null || task(idOrAlias).isPresent()) {
+            return idOrAlias;
+        }
+        return tasks().entrySet().stream()
+                .filter(e -> idOrAlias.equalsIgnoreCase(e.getValue().alias()))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(idOrAlias);
+    }
+
     public void putTask(String taskId, TaskState state) {
         mutate(file -> {
             file.tasks().put(taskId, state);

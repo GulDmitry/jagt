@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.assistant;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.model.TokenUsage;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,9 +67,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     @Override
-    public Optional<TicketFacts> readTicket(String ticketRef) {
+    public Answer<TicketFacts> readTicket(String ticketRef) {
         if (ticketRef == null || ticketRef.isBlank()) {
-            return Optional.empty();
+            return Answer.unavailable();
         }
         String prompt = "Read the work item identified by \"" + ticketRef + "\" — this is EITHER an issue"
                 + " key (e.g. ABC-123) OR a URL to it in some tracker (Jira, GitHub, GitLab, …). Open it"
@@ -87,9 +88,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     @Override
-    public Optional<MergeRequestFacts> readMergeRequest(String mrUrl) {
+    public Answer<MergeRequestFacts> readMergeRequest(String mrUrl) {
         if (mrUrl == null || !mrUrl.startsWith("http")) {
-            return Optional.empty();
+            return Answer.unavailable();
         }
         String prompt = "Fetch the merge/pull request at " + mrUrl + " via the matching code-host MCP tools"
                 + " (GitLab MR, GitHub PR, Bitbucket PR — whichever the URL points to). Return exists=true"
@@ -101,9 +102,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     @Override
-    public Optional<ReviewFacts> readReview(String mrUrl) {
+    public Answer<ReviewFacts> readReview(String mrUrl) {
         if (mrUrl == null || !mrUrl.startsWith("http")) {
-            return Optional.empty();
+            return Answer.unavailable();
         }
         String prompt = "Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
                 + " MCP tools. Return exists, approved (true only if the MR is actually APPROVED by a human"
@@ -118,14 +119,17 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         });
     }
 
-    /** Runs one stripped, schema-forced headless Claude call; empty on any failure. */
-    private Optional<JsonNode> ask(String prompt, String schema, String label) {
+    /** Runs one stripped, schema-forced headless Claude call; empty facts on any failure, cost always. */
+    private Answer<JsonNode> ask(String prompt, String schema, String label) {
         return ask(prompt, schema, label, TIMEOUT);
     }
 
-    private Optional<JsonNode> ask(String prompt, String schema, String label, Duration timeout) {
+    private Answer<JsonNode> ask(String prompt, String schema, String label, Duration timeout) {
         List<String> cmd = new ArrayList<>(List.of(properties.claudeCommand(), prompt, "-p",
-                "--setting-sources", assistant.settingSources(), "--json-schema", schema));
+                "--setting-sources", assistant.settingSources(), "--json-schema", schema,
+                // The JSON envelope wraps the answer together with the call's token usage and cost, so the
+                // spend is measurable. Plain text output would hide the price of every read.
+                "--output-format", "json"));
         if (assistant.model() != null && !assistant.model().isBlank()) {
             cmd.add("--model");
             cmd.add(assistant.model());
@@ -139,17 +143,85 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             cmd.add("--permission-mode");
             cmd.add(assistant.permissionMode());
         }
-        var result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
-        if (result.exitCode() != 0 || result.stdout().isBlank()) {
+        ProcessRunner.ProcessResult result;
+        try {
+            result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
+        } catch (RuntimeException e) {
+            // A timeout kills the CLI, so there is no envelope and no number: the tokens it already burned
+            // are unknowable, not zero. Say so in the log — silently returning would understate the spend —
+            // and degrade to an empty answer so the caller reports an error instead of throwing at the human.
+            log.warn("Headless assistant call for {} never returned ({}) — it was killed after {}, so its"
+                    + " token cost is UNMEASURED and missing from the totals", label, e.getMessage(), timeout);
+            return new Answer<>(Optional.empty(), TokenUsage.NONE);
+        }
+        JsonNode envelope = parseEnvelope(result.stdout(), label);
+        // The cost is reported whatever the outcome: a call that errored or came back unusable was still
+        // paid for, and dropping it would make the setup that fails most look like the cheapest.
+        TokenUsage usage = usageOf(envelope);
+        if (usage.isNone()) {
+            log.warn("Headless assistant call for {} produced no usage data — its cost is not accounted"
+                    + " for (the CLI aborted before reaching a model, or reported nothing)", label);
+        }
+        if (result.exitCode() != 0 || envelope == null) {
             log.warn("Headless assistant failed for {} (exit {}): {}", label, result.exitCode(),
                     result.stderr().isBlank() ? result.stdout() : result.stderr());
-            return Optional.empty();
+            return new Answer<>(Optional.empty(), usage);
+        }
+        if (envelope.path("is_error").asBoolean(false)) {
+            log.warn("Headless assistant reported an error for {}: {}", label,
+                    envelope.path("result").asString(""));
+            return new Answer<>(Optional.empty(), usage);
+        }
+        return new Answer<>(answerOf(envelope, label), usage);
+    }
+
+    private JsonNode parseEnvelope(String stdout, String label) {
+        if (stdout == null || stdout.isBlank()) {
+            return null;
         }
         try {
-            return Optional.of(mapper.readTree(result.stdout()));
+            return mapper.readTree(stdout);
         } catch (RuntimeException e) {
             log.warn("Headless assistant returned unparseable JSON for {}: {}", label, e.toString());
+            return null;
+        }
+    }
+
+    /**
+     * The schema-validated answer: {@code structured_output} when the CLI already parsed it, else the
+     * {@code result} string, which then holds the same JSON verbatim.
+     */
+    private Optional<JsonNode> answerOf(JsonNode envelope, String label) {
+        JsonNode structured = envelope.path("structured_output");
+        if (structured.isObject()) {
+            return Optional.of(structured);
+        }
+        String raw = envelope.path("result").asString("");
+        if (raw.isBlank()) {
+            log.warn("Headless assistant returned no answer for {}", label);
             return Optional.empty();
         }
+        JsonNode answer = parseEnvelope(raw, label);
+        return Optional.ofNullable(answer);
+    }
+
+    /**
+     * One call's cost out of the envelope. Fresh input = prompt + cache WRITES (both billed at input
+     * rates); cache reads are counted apart because they are far cheaper. A missing usage block (older CLI,
+     * unparseable output) yields {@link TokenUsage#NONE} rather than a fabricated number.
+     */
+    static TokenUsage usageOf(JsonNode envelope) {
+        if (envelope == null) {
+            return TokenUsage.NONE;
+        }
+        JsonNode usage = envelope.path("usage");
+        if (usage.isMissingNode() || !usage.isObject()) {
+            return TokenUsage.NONE;
+        }
+        return TokenUsage.ofCall(
+                usage.path("input_tokens").asLong(0) + usage.path("cache_creation_input_tokens").asLong(0),
+                usage.path("cache_read_input_tokens").asLong(0),
+                usage.path("output_tokens").asLong(0),
+                envelope.path("total_cost_usd").asDouble(0));
     }
 }

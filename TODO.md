@@ -8,53 +8,57 @@ In dependency order; each step is detailed in its section below.
 
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
-| 1 | Lean headless-assistant context (`assistant.mcpServers` + `--strict-mcp-config`) | ~10x fewer tokens on every `do`/sweep, no design risk | 0.5 d |
-| 2 | Per-task token accounting in `state.json` + dashboard | an unmeasured cost cannot be optimized | 0.5 d |
-| 3 | `Move`/`Phase`/`Owner`/`Action` instead of the next-move String | fundament for BOTH the UI and gate validation | 1 d |
-| 4 | `CodeHost` REST — review sweep first, then MR create/update | kills the dominant token spend + the "is it approved?" judgement flake | 2-3 d |
-| 5 | `ship` = backend commit + push | kills the permission-classifier stall class; `SHIPPING` stops hanging | 1-2 d |
-| 6 | Local web UI (SSE + `/api` + static kanban) | mouse-driven, phase-legible, cost visible | 3-5 d |
-| 7 | Status-transition history in `state.json` | "which steps happened, how long did review take" | 0.5 d |
-| 8 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path | 1-2 d |
+| 1 | `assistant.model: haiku` as the shipped default, plus `--setting-sources project` | measured 8x cheaper on every `do`/`resume`/poll; config only, no code | 1 h |
+| 2 | `Move`/`Phase`/`Owner`/`Action` instead of the next-move String | fundament for BOTH the UI and gate validation | 1 d |
+| 3 | `CodeHost` REST — review sweep first, then MR create/update | kills the dominant token spend + the "is it approved?" judgement flake | 2-3 d |
+| 4 | `ship` = backend commit + push | kills the permission-classifier stall class; `SHIPPING` stops hanging | 1-2 d |
+| 5 | Local web UI (SSE + `/api` + static kanban) | mouse-driven, phase-legible, spend visible | 3-5 d |
+| 6 | Status-transition history in `state.json` | "which steps happened, how long did review take" | 0.5 d |
+| 7 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path | 1-2 d |
 
-Steps 1-3 are independent and pay off immediately. 4 and 5 are what move the remaining mechanics out of the
-LLM; 3 is a prerequisite for 6.
+Steps 1-2 are independent and pay off immediately. 3 and 4 are what move the remaining mechanics out of the
+LLM; 2 is a prerequisite for 5.
+
+Token accounting is already in (`stats` + `/stats`, the `TOKENS` dashboard column, per-task totals in
+state.json) — the numbers it measured are what re-ordered this table.
 
 ## Architecture
 
-### Cost: the headless assistant inherits the human's ENTIRE MCP surface — the measured hot-spot
-`HeadlessClaudeAssistant` runs with `--setting-sources user,project,local` (the default in
-`AssistantProperties`), so the child loads EVERY user-level MCP server and plugin the human has installed.
-On a realistic setup that is 300-400 tool schemas (code host ~130, tracker ~80, IDE ~90, plus plugin packs)
-— order-of-magnitude 30-80k input tokens per call before the prompt even starts. It is paid on:
-- `readTicket` — once per `do`,
-- `readMergeRequest` — once per `resume`,
-- `readReview` — once per auto-review POLL. `AutoReviewCadence` ramps 10→60 min across a 24 h window ⇒
-  ~40 polls per review request ⇒ ~2M input tokens per MR, for "what is the pipeline status and are there
-  unresolved comments". This dwarfs everything else on the master side.
+### Cost: what a headless assistant call actually costs — MEASURED, not guessed
+Measured 2026-08-12 with an identical trivial prompt (`Return the greeting hi`) run from a temp dir, so the
+numbers are the per-call FLOOR, before any real ticket/MR content:
 
-Fix: pass ONLY the servers the read actually needs:
-`claude -p --strict-mcp-config --mcp-config <generated file> --setting-sources project --model haiku`.
-The server names CANNOT be guessed — jagt does not know whether the tracker is Jira or Linear, the host
-GitLab or GitHub, or what the human named them. So they are CONFIG: a new `assistant.mcpServers: ["…"]`
-key listing the MCP server names to pass through, and jagt writes the minimal `--mcp-config` file at call
-time by copying those entries out of the human's own MCP config. Empty list = today's behaviour (inherit
-everything), so an unconfigured install keeps working; document the key in README's Configuration table.
-`--setting-sources project` additionally drops the global CLAUDE.md, skills and output styles the read has
-no use for.
+| invocation | input (cache-create) | output | cost |
+|---|---|---|---|
+| default model (opus), `--setting-sources project` | 38 441 | 60 | **$0.41** |
+| `--model haiku`, `--setting-sources project` | 24 869 | 178 | $0.051 |
+| `--model haiku`, `--setting-sources user,project,local` (today's default) | 31 719 | 155 | $0.064 |
 
-Side benefit beyond cost: the assistant's context becomes a CONFIGURED contract instead of "whatever the
-human happens to have installed this week" — same call, same tools tomorrow. That is a determinism win too,
-and it makes the token number from step 2 comparable across runs.
+Conclusions, in order of leverage — note the first one contradicts the assumption this entry started from:
+1. **The model dominates, not the MCP surface.** ~8x between the inherited default (opus) and haiku, on the
+   very same call. `orchestrator.assistant.model` already exists and is BLANK by default, meaning every
+   `do`, `resume` and auto-review poll runs on the human's default model. Setting it to haiku is a config
+   change, not code — do it first and make haiku the shipped default (these are mechanical extraction
+   tasks: read a field, return JSON under a schema).
+2. **~25k tokens is the irreducible baseline** of any `claude -p` process (CLI system prompt + built-in
+   tools). It cannot be optimized away — only AVOIDED, by not spawning a process at all. That is the real
+   argument for the `CodeHost` REST sweep: 40 polls per MR × ~$0.40 ≈ **$16 per merge request** on opus, ≈$2
+   on haiku, $0 over REST. Note each poll pays full cache-CREATION, not a cache read: the 10-60 min cadence
+   is far outside the prompt-cache TTL, so there is no warm-cache discount to hope for.
+3. **The MCP surface costs ~7k tokens (+27%), not the 10x this entry originally assumed.** Modern Claude
+   Code DEFERS MCP tool schemas (they are fetched on demand), so hundreds of installed tools do not land in
+   context. Still worth taking with `--setting-sources project` — it also drops the human's global
+   CLAUDE.md, skills and output styles, which the read has no use for and which drift between machines.
 
-### Cost: per-task token accounting (measure before optimizing)
-Spend is invisible today, so every cost decision is a guess. `claude -p --output-format json` returns a
-`usage` block next to the result — `HeadlessClaudeAssistant.ask` should read it and accumulate per task in
-`state.json`, surfaced as a dashboard column plus a session total in the header. Verify first how
-`--output-format json` composes with `--json-schema` (the answer likely moves into `.result`, which then
-needs one more parse step) — that check IS the first task.
-Caveat to state in the UI rather than paper over: sub-agent spend lives in the agent's own session and is
-NOT visible to jagt, so the number is master-side cost, not a task total.
+If a minimal MCP config is ever wanted anyway (`--strict-mcp-config --mcp-config <file>`), the server names
+CANNOT be guessed — jagt does not know whether the tracker is Jira or Linear, the host GitLab or GitHub, or
+what the human named them. They would have to be CONFIG: an `assistant.mcpServers: ["…"]` key that jagt
+copies out of the human's own MCP config at call time, empty = inherit everything. Given the measured 7k,
+this is a determinism nicety (a configured contract instead of "whatever is installed this week"), NOT a
+cost lever — do not spend the complexity on it before steps 1 and 2 above.
+
+Verified while measuring: `--output-format json` composes with `--json-schema`, and `--strict-mcp-config`
+works with no `--mcp-config` at all (= a no-MCP call, which is what the tier-2 text→command mapper wants).
 
 ### Cut cost + raise determinism: mechanical host/tracker ops as backend code, not an LLM tool-loop
 The master side is already LLM-free for routing (see the DONE entry below) — what remains in a model is the

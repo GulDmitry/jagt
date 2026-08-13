@@ -1,12 +1,14 @@
 package dev.jagt.orchestrator.shell;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant;
+import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
 import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
 import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.service.MeteredAssistant;
+import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -44,14 +46,14 @@ class MasterShellTest {
     @Test
     void namesTheTaskByTheAssistantsCanonicalKeyWhenGivenAUrl() {
         OrchestratorTools tools = mock(OrchestratorTools.class);
-        MasterAssistant assistant = mock(MasterAssistant.class);
+        MeteredAssistant assistant = mock(MeteredAssistant.class);
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
         when(assistant.readTicket("https://tracker.example.com/browse/ABC-123"))
-                .thenReturn(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC", List.of(),
-                        "https://tracker.example.com/browse/ABC-123")));
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant,
+                .thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC",
+                        List.of(), "https://tracker.example.com/browse/ABC-123")), TokenUsage.NONE));
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), config, assistant,
                 mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         shell.doTask(List.of("do", "https://tracker.example.com/browse/ABC-123", "group-a"));
@@ -61,12 +63,56 @@ class MasterShellTest {
     }
 
     @Test
+    void chargesTheTicketReadToTheTaskItJustNamed() {
+        TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
+        OrchestratorTools tools = mock(OrchestratorTools.class);
+        MeteredAssistant assistant = mock(MeteredAssistant.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        when(assistant.readTicket("https://tracker.example.com/browse/ABC-123"))
+                .thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC",
+                        List.of(), "https://tracker.example.com/browse/ABC-123")), spent));
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), config, assistant,
+                mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+
+        shell.doTask(List.of("do", "https://tracker.example.com/browse/ABC-123", "group-a"));
+
+        // The read happens BEFORE the task exists, so it can only be charged after initializeTask created it.
+        var order = org.mockito.Mockito.inOrder(tools, assistant);
+        order.verify(tools).initializeTask(eq("ABC-123"), eq("group-a"), anyString(), isNull(), isNull(),
+                eq("Some title"), eq("https://tracker.example.com/browse/ABC-123"));
+        order.verify(assistant).chargeTask("ABC-123", spent);
+    }
+
+    @Test
+    void chargesAFailedTicketReadToTheTaskTheBareKeyStillCreated() {
+        TokenUsage spent = TokenUsage.ofCall(38_000, 0, 60, 0.41);
+        OrchestratorTools tools = mock(OrchestratorTools.class);
+        MeteredAssistant assistant = mock(MeteredAssistant.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        // The read burned tokens and came back unusable; a bare key needs no read, so the task is created anyway.
+        when(assistant.readTicket("ABC-42")).thenReturn(new Answer<>(Optional.empty(), spent));
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), config, assistant,
+                mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+
+        shell.doTask(List.of("do", "ABC-42"));
+
+        verify(tools).initializeTask(eq("ABC-42"), eq("group-a"), anyString(), isNull(), isNull(),
+                isNull(), isNull());
+        verify(assistant).chargeTask("ABC-42", spent);
+    }
+
+    @Test
     void resumeCarriesTheMrTitleIntoTheTask() {
         OrchestratorTools tools = mock(OrchestratorTools.class);
-        MasterAssistant assistant = mock(MasterAssistant.class);
-        when(assistant.readMergeRequest("https://host/mr/425"))
-                .thenReturn(Optional.of(new MergeRequestFacts(true, "PROJ-1", "group/proj", "PROJ-1 Excel export")));
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class), assistant,
+        MeteredAssistant assistant = mock(MeteredAssistant.class);
+        when(assistant.readMergeRequest("https://host/mr/425")).thenReturn(new Answer<>(
+                Optional.of(new MergeRequestFacts(true, "PROJ-1", "group/proj", "PROJ-1 Excel export")),
+                TokenUsage.NONE));
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), mock(ConfigService.class), assistant,
                 mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         shell.resumeTask(List.of("resume", "https://host/mr/425"));
@@ -80,8 +126,8 @@ class MasterShellTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()),
                 "sobrado", new ProjectConfig("/b", "origin/stage", "dev", List.of()))));
-        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
-                config, mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
+                config, mock(MeteredAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         MasterShell.DoArgs args = shell.parseDoArgs(List.of("do", "ABC-2099", "plan", "давай", "разберём", "алгоритм"));
 
@@ -96,8 +142,8 @@ class MasterShellTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config,
-                mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), config,
+                mock(MeteredAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         shell.doTask(List.of("do", "ABC-1", "plan", "sng", "start", "with", "tests", "only"));
 
@@ -108,12 +154,12 @@ class MasterShellTest {
     @Test
     void warnsAboutALeftoverBranchWithoutReadingTheTicket() {
         OrchestratorTools tools = mock(OrchestratorTools.class);
-        MasterAssistant assistant = mock(MasterAssistant.class);
+        MeteredAssistant assistant = mock(MeteredAssistant.class);
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
         when(tools.existingBranchProject("ABC-9", null)).thenReturn("group-a");
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config, assistant,
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), config, assistant,
                 mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         String out = shell.doTask(List.of("do", "ABC-9"));
@@ -129,8 +175,8 @@ class MasterShellTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("sng", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), config,
-                mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), config,
+                mock(MeteredAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
 
         shell.doTask(List.of("do", "ABC-1", "sng", "recreate"));
 
@@ -141,8 +187,8 @@ class MasterShellTest {
     @Test
     void exitClosesTheSpringContextInsteadOfLeavingItToTheShutdownHook() {
         ConfigurableApplicationContext context = mock(ConfigurableApplicationContext.class);
-        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
-                mock(ConfigService.class), mock(MasterAssistant.class), mock(ReviewSweepService.class), context);
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
+                mock(ConfigService.class), mock(MeteredAssistant.class), mock(ReviewSweepService.class), context);
 
         shell.stopBackend();
 
@@ -151,8 +197,8 @@ class MasterShellTest {
 
     @Test
     void tabCompletesAUniqueCommand() {
-        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(DashboardRenderer.class),
-                mock(ConfigService.class), mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
+                mock(ConfigService.class), mock(MeteredAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("sh");
 
@@ -165,8 +211,8 @@ class MasterShellTest {
     void tabCompletesATaskAliasFromTheLiveTasks() {
         OrchestratorTools tools = mock(OrchestratorTools.class);
         when(tools.taskChoices()).thenReturn(List.of(new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel")));
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class),
-                mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), mock(ConfigService.class),
+                mock(MeteredAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("ship p1");
 
@@ -181,8 +227,8 @@ class MasterShellTest {
         when(tools.taskChoices()).thenReturn(List.of(
                 new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel export flag"),
                 new OrchestratorTools.TaskChoice("p2", "PAN-2540", "Login rate limit")));
-        MasterShell shell = new MasterShell(tools, mock(DashboardRenderer.class), mock(ConfigService.class),
-                mock(MasterAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
+        MasterShell shell = new MasterShell(tools, mock(StateViews.class), mock(ConfigService.class),
+                mock(MeteredAssistant.class), mock(ReviewSweepService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("ship p");
         List<String> log = new ArrayList<>();

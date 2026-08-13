@@ -1,7 +1,10 @@
 package dev.jagt.orchestrator.assistant;
 
+import dev.jagt.orchestrator.model.TokenUsage;
+
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * A one-shot, hard-formatted headless Claude call for the Master side: spin up a stripped session
@@ -32,12 +35,31 @@ public interface MasterAssistant {
     record ReviewFacts(boolean exists, boolean approved, String pipelineStatus, List<String> comments) {
     }
 
+    /**
+     * One answer plus what it cost. The usage is reported even when {@code facts} is empty — a call that
+     * failed or came back unusable was paid for all the same, and the caller books it either way. Keeping
+     * the cost in the RETURN keeps this port about reading: no implementation can forget to meter, and the
+     * caller (the only one who knows whether a task exists yet) decides what the spend is attributed to.
+     */
+    record Answer<T>(Optional<T> facts, TokenUsage usage) {
+
+        /** Never happened, so it cost nothing (a blank ref, a non-http url — no process was spawned). */
+        static <T> Answer<T> unavailable() {
+            return new Answer<>(Optional.empty(), TokenUsage.NONE);
+        }
+
+        /** Shapes the facts while carrying the cost through untouched. */
+        <R> Answer<R> map(Function<? super T, ? extends R> mapper) {
+            return new Answer<>(facts.map(mapper), usage);
+        }
+    }
+
     /** Reads a work item given an issue KEY or a URL to it (any tracker); returns its canonical key + facts. */
-    Optional<TicketFacts> readTicket(String ticketRef);
+    Answer<TicketFacts> readTicket(String ticketRef);
 
     /** Reads an MR by URL so `resume` can recover its source branch (= the task) and project. */
-    Optional<MergeRequestFacts> readMergeRequest(String mrUrl);
+    Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
 
     /** The `review` sweep: pipeline state + unresolved comments of an MR (a slow, multi-call read). */
-    Optional<ReviewFacts> readReview(String mrUrl);
+    Answer<ReviewFacts> readReview(String mrUrl);
 }

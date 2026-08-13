@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant;
 import dev.jagt.orchestrator.assistant.MasterAssistant.ReviewFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import org.springframework.stereotype.Service;
@@ -20,10 +19,10 @@ public class ReviewSweepService {
         public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED }
     }
 
-    private final MasterAssistant assistant;
+    private final MeteredAssistant assistant;
     private final OrchestratorTools tools;
 
-    public ReviewSweepService(MasterAssistant assistant, OrchestratorTools tools) {
+    public ReviewSweepService(MeteredAssistant assistant, OrchestratorTools tools) {
         this.assistant = assistant;
         this.tools = tools;
     }
@@ -35,11 +34,14 @@ public class ReviewSweepService {
                     "error: no MR linked to " + taskId + " — `ship` or `resume <mr-url>` first");
         }
         var sweep = assistant.readReview(mrUrl);
-        if (sweep.isEmpty() || !sweep.get().exists()) {
+        // The task exists (it has an MR), so the poll is charged right away — this is the call that repeats
+        // up to hourly for a day and therefore dominates what a task costs jagt.
+        assistant.chargeTask(taskId, sweep.usage());
+        if (sweep.facts().isEmpty() || !sweep.facts().get().exists()) {
             return new SweepResult(SweepResult.Kind.UNREADABLE,
                     "error: could not read the MR review for " + mrUrl);
         }
-        ReviewFacts r = sweep.get();
+        ReviewFacts r = sweep.facts().get();
         String pipeline = r.pipelineStatus() == null ? "" : r.pipelineStatus().toLowerCase();
         boolean pipelineFailed = pipeline.contains("fail");
         if (r.comments().isEmpty() && !pipelineFailed) {

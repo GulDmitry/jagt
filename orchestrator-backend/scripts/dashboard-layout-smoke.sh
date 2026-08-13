@@ -14,11 +14,11 @@
 # Bugs this pins (must never recur): the dashboard/prompt separated by a huge blank gap on full-screen,
 # and the prompt "flying" away from the dashboard after the terminal is resized.
 #
-# Usage: dashboard-layout-smoke.sh [/path/to/orchestrator-backend-0.2.0.jar]
+# Usage: dashboard-layout-smoke.sh [/path/to/jagt.jar]
 # Exits 0 if every invariant holds in every scenario, 1 otherwise. Leaves no trace (throwaway tmux + root).
 set -u
 
-JAR="${1:-$(cd "$(dirname "$0")/.." && pwd)/build/libs/orchestrator-backend-0.2.0.jar}"
+JAR="${1:-$(cd "$(dirname "$0")/.." && pwd)/build/libs/jagt.jar}"
 if [[ ! -f "$JAR" ]]; then echo "jar not found: $JAR (run ./gradlew bootJar)"; exit 2; fi
 command -v tmux >/dev/null || { echo "tmux required"; exit 2; }
 command -v python3 >/dev/null || { echo "python3 required"; exit 2; }

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.mcp;
 
-import dev.jagt.orchestrator.service.DashboardRenderer;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.StateViews;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,14 +17,14 @@ public class McpController {
 
     private final McpProtocolService protocolService;
     private final StateService stateService;
-    private final DashboardRenderer dashboardRenderer;
+    private final StateViews views;
     private final ObjectMapper mapper;
 
     public McpController(McpProtocolService protocolService, StateService stateService,
-                         DashboardRenderer dashboardRenderer, ObjectMapper mapper) {
+                         StateViews views, ObjectMapper mapper) {
         this.protocolService = protocolService;
         this.stateService = stateService;
-        this.dashboardRenderer = dashboardRenderer;
+        this.views = views;
         this.mapper = mapper;
     }
 
@@ -53,6 +53,12 @@ public class McpController {
     /** Plain-text dashboard (same view the Master shell prints). */
     @GetMapping(value = "/status", produces = MediaType.TEXT_PLAIN_VALUE)
     public String status() {
-        return dashboardRenderer.render();
+        return views.dashboard();
+    }
+
+    /** Plain-text token spend of jagt's own model calls, per task (same view as the `stats` command). */
+    @GetMapping(value = "/stats", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String stats() {
+        return views.usageStats();
     }
 }

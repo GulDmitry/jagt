@@ -110,6 +110,7 @@ Talk to the Master console:
 |---------|--------|
 | `do <ticket> [plan] [notes]` | fetch the ticket, spin up a sub-agent in an isolated worktree; `plan` = plan mode |
 | `status` | show the task dashboard |
+| `stats` | token spend of jagt's **own** model calls, per task (a sub-agent's session is invisible to jagt) |
 | `focus <ticket>` | jump to the agent's session — **talk to the agent directly there** |
 | `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (falls back to `baseBranch`) — does not auto-refresh |
 | `review <ticket>` | pull the MR's pipeline + comments; the agent fixes locally and drafts replies (nothing pushed) |
@@ -122,7 +123,8 @@ Talk to the Master console:
 
 The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
 with **Shift+←/→** or by clicking a task in the status bar. Every task also gets a short alias (`p1`, `s2`)
-you can use in any command instead of the ticket id. Plain-text status any time: `curl -s localhost:8290/status`.
+you can use in any command instead of the ticket id. Plain text any time: `curl -s localhost:8290/status`,
+`curl -s localhost:8290/stats`.
 Closing the terminal window only detaches the viewer — agents keep running; kill them explicitly with `done`.
 
 ### The ideal flow

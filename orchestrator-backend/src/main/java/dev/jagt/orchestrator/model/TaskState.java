@@ -20,7 +20,9 @@ public record TaskState(
         // per-task on/off (null = follow the config default). Zero = unset.
         long mrCreatedAt,
         long lastPolledAt,
-        Boolean autoReview
+        Boolean autoReview,
+        // Master-side model spend on this task (headless assistant calls); null until the first one.
+        TokenUsage usage
 ) {
 
     public TaskState withStatus(TaskStatus status, String message) {
@@ -49,6 +51,16 @@ public record TaskState(
         return autoReview == null ? configDefault : autoReview;
     }
 
+    /** Spend so far, never null — an untouched (or legacy) task has cost nothing. */
+    public TokenUsage usageOrNone() {
+        return usage == null ? TokenUsage.NONE : usage;
+    }
+
+    /** Adds one call's cost. Does NOT touch lastActiveTimestamp: metering is not agent activity. */
+    public TaskState withUsageAdded(TokenUsage added) {
+        return toBuilder().usage(usageOrNone().plus(added)).build();
+    }
+
     /** A required-fields entry point; optional fields default to unset and are layered on with setters. */
     public static Builder builder(String project, String worktreePath, TaskStatus status) {
         return new Builder(project, worktreePath, status);
@@ -58,11 +70,12 @@ public record TaskState(
         return new Builder(project, worktreePath, status)
                 .lastActiveTimestamp(lastActiveTimestamp).message(message).alias(alias)
                 .remoteUrl(remoteUrl).title(title).mrUrl(mrUrl).ticketUrl(ticketUrl)
-                .mrCreatedAt(mrCreatedAt).lastPolledAt(lastPolledAt).autoReview(autoReview);
+                .mrCreatedAt(mrCreatedAt).lastPolledAt(lastPolledAt).autoReview(autoReview)
+                .usage(usage);
     }
 
     /**
-     * Mutable builder so callers set only the fields they care about — the record has thirteen fields and
+     * Mutable builder so callers set only the fields they care about — the record has fourteen fields and
      * a row of positional nulls is exactly the null-soup jagt's config records avoid. Missing fields stay
      * unset (null / 0). project + worktreePath + status are required (the constructor args).
      */
@@ -80,6 +93,7 @@ public record TaskState(
         private long mrCreatedAt;
         private long lastPolledAt;
         private Boolean autoReview;
+        private TokenUsage usage;
 
         private Builder(String project, String worktreePath, TaskStatus status) {
             this.project = project;
@@ -142,9 +156,14 @@ public record TaskState(
             return this;
         }
 
+        public Builder usage(TokenUsage usage) {
+            this.usage = usage;
+            return this;
+        }
+
         public TaskState build() {
             return new TaskState(project, worktreePath, status, lastActiveTimestamp, message, alias,
-                    remoteUrl, title, mrUrl, ticketUrl, mrCreatedAt, lastPolledAt, autoReview);
+                    remoteUrl, title, mrUrl, ticketUrl, mrCreatedAt, lastPolledAt, autoReview, usage);
         }
     }
 }

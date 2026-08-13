@@ -1,11 +1,12 @@
 package dev.jagt.orchestrator.shell;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant;
 import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.service.MeteredAssistant;
 import dev.jagt.orchestrator.service.ReviewSweepService;
+import dev.jagt.orchestrator.service.StateViews;
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
@@ -58,17 +59,17 @@ public class MasterShell implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(MasterShell.class);
 
     private final OrchestratorTools tools;
-    private final DashboardRenderer dashboard;
+    private final StateViews views;
     private final ConfigService configService;
-    private final MasterAssistant assistant;
+    private final MeteredAssistant assistant;
     private final ReviewSweepService reviewSweep;
     private final ConfigurableApplicationContext context;
 
-    public MasterShell(OrchestratorTools tools, DashboardRenderer dashboard, ConfigService configService,
-                       MasterAssistant assistant, ReviewSweepService reviewSweep,
+    public MasterShell(OrchestratorTools tools, StateViews views, ConfigService configService,
+                       MeteredAssistant assistant, ReviewSweepService reviewSweep,
                        ConfigurableApplicationContext context) {
         this.tools = tools;
-        this.dashboard = dashboard;
+        this.views = views;
         this.configService = configService;
         this.assistant = assistant;
         this.reviewSweep = reviewSweep;
@@ -88,7 +89,7 @@ public class MasterShell implements ApplicationRunner {
     private static final int MAX_LOG_LINES = 2000;
 
     /** Every command, for Tab-completion of the first word. */
-    private static final List<String> COMMANDS = List.of("status", "do", "resume", "review", "ship",
+    private static final List<String> COMMANDS = List.of("status", "stats", "do", "resume", "review", "ship",
             "focus", "ide", "deploy", "respawn", "done", "help", "quit", "exit");
     /** Commands whose first argument is an EXISTING task (so Tab completes its alias/id); `do`/`resume`
      *  take a new ticket/URL, not a current task. */
@@ -403,7 +404,7 @@ public class MasterShell implements ApplicationRunner {
         int width = size.getColumns();
         TextGraphics g = screen.newTextGraphics();
 
-        String[] dash = dashboard.render().split("\\R");
+        String[] dash = views.dashboard().split("\\R");
         int body = Math.max(1, height - 1);                       // rows above the input line
 
         // Expand the dashboard: wrap a long task title onto continuation lines indented under the TITLE
@@ -787,7 +788,7 @@ public class MasterShell implements ApplicationRunner {
     private void runInlineFallback() {
         log.info("No interactive terminal — Master shell running inline (dashboard after each command).");
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-        System.out.println(withDashboard("", dashboard.render()));
+        System.out.println(withDashboard("", views.dashboard()));
         try {
             String line;
             while ((line = in.readLine()) != null) {
@@ -798,7 +799,7 @@ public class MasterShell implements ApplicationRunner {
                 if (cmd.equals("exit") || cmd.equals("quit")) {
                     break;
                 }
-                System.out.println(withDashboard(dispatch(cmd), dashboard.render()));
+                System.out.println(withDashboard(dispatch(cmd), views.dashboard()));
             }
         } catch (IOException e) {
             log.warn("inline shell input closed: {}", e.getMessage());
@@ -822,6 +823,7 @@ public class MasterShell implements ApplicationRunner {
         try {
             String result = switch (cmd) {
                 case "status" -> "";
+                case "stats" -> views.usageStats();
                 case "help" -> help();
                 case "do" -> doTask(tok);
                 case "resume" -> resumeTask(tok);
@@ -873,7 +875,8 @@ public class MasterShell implements ApplicationRunner {
         }
         // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
         // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
-        var facts = assistant.readTicket(ref);
+        var read = assistant.readTicket(ref);       // the session total is booked by the meter itself
+        var facts = read.facts();
         if (facts.isPresent() && !facts.get().exists()) {
             return "error: could not read " + ref + " (bad/inaccessible URL or unknown key?)";
         }
@@ -888,15 +891,24 @@ public class MasterShell implements ApplicationRunner {
             String project = a.project != null ? resolveProject(a.project) : resolveByLabels(f);
             String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
                     + "\". Read it via your issue-tracker MCP for full details, then work.", a.notes);
-            return tools.initializeTask(taskId, project, instructions, a.mode, a.strategy, f.title(), f.url());
+            String result = tools.initializeTask(taskId, project, instructions, a.mode, a.strategy,
+                    f.title(), f.url());
+            // Only NOW does the task exist, so only now can the read that named it be charged to it —
+            // charging earlier silently dropped the most expensive call in a task's life.
+            assistant.chargeTask(taskId, read.usage());
+            return result;
         }
         // Assistant unavailable: only a bare key can proceed — a URL has no derivable task id without it.
         if (!bareKey) {
             return "error: assistant unavailable — pass an issue key (not a URL), or add the project";
         }
-        return tools.initializeTask(ref, resolveProject(a.project),
+        String result = tools.initializeTask(ref, resolveProject(a.project),
                 withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", a.notes),
                 a.mode, a.strategy, null, null);
+        // The read FAILED but was still paid for, and the key alone was enough to create the task — so the
+        // one case where money bought nothing must not be the one case the task reports as free.
+        assistant.chargeTask(ref, read.usage());
+        return result;
     }
 
     record DoArgs(String project, String mode, String strategy, String notes) {
@@ -949,7 +961,8 @@ public class MasterShell implements ApplicationRunner {
         // Read the MR (one MCP call jagt already needs for the branch) — it also carries the title, so a
         // resumed task shows one on the dashboard just like a `do` task, not a blank.
         String title = null;
-        var mr = assistant.readMergeRequest(mrUrl);
+        var read = assistant.readMergeRequest(mrUrl);
+        var mr = read.facts();
         if (mr.isPresent() && mr.get().exists()) {
             title = mr.get().title();
             if (ticket == null) {
@@ -958,7 +971,9 @@ public class MasterShell implements ApplicationRunner {
         } else if (ticket == null) {
             return "error: could not read MR (or not found): " + mrUrl;
         }
-        return tools.resumeTask(ticket, mrUrl, title);
+        String result = tools.resumeTask(ticket, mrUrl, title);
+        assistant.chargeTask(ticket, read.usage());       // the task exists only after resumeTask
+        return result;
     }
 
     /**
@@ -1020,6 +1035,7 @@ public class MasterShell implements ApplicationRunner {
         List<String> lines = new ArrayList<>();
         lines.add("commands (task = ticket id or alias):");
         lines.add("  status                       show the dashboard");
+        lines.add("  stats                        token spend of jagt's own model calls, per task");
         lines.add("  do <ticket> [project] [plan] spin up a sub-agent in a worktree");
         lines.add("  resume <mr-url>              reopened MR: resume its branch + link it -> CI_POLLING");
         lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
