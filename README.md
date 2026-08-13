@@ -177,6 +177,13 @@ nothing else; it leaves only an image and a Gradle cache volume behind.
 It earns its keep: the first run found that `tmux-command` shipped as `/opt/homebrew/bin/tmux`, so every task
 on Linux died with "Failed to start command" before its agent started.
 
+**CI runs the same thing.** `.github/workflows/ci.yml` and `.gitlab-ci.yml` call the SAME scripts — no
+CI-only code path, so a green pipeline and a green laptop mean the same: `unit` (hermetic), `linux`
+(`scripts/linux-test-deps.sh` → `scripts/with-linux-desktop.sh ./gradlew e2eTest linuxDriverTest`) and
+`smoke` (the two real-PTY tmux scripts against the built jar). GitHub additionally runs the unit suite and the
+layout smoke on macOS, the platform jagt is developed on. Neither pipeline needs Docker or a privileged runner
+— the container image exists for developers on a Mac, and installs its packages from that same deps script.
+
 What a container CANNOT answer, and is therefore not pretended to be covered: IntelliJ (`idea`), the macOS
 AppleScript window raise, the Warp URI scheme, the real `claude` CLI, and a live code host or tracker.
 

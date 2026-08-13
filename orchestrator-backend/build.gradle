@@ -62,13 +62,28 @@ tasks.register('linuxDriverTest', Test) {
     testClassesDirs = sourceSets.linuxTest.output.classesDirs
     classpath = sourceSets.linuxTest.runtimeClasspath
     useJUnitPlatform()
-    // A bare `./gradlew linuxDriverTest` on a dev machine would fail for the environment, not for the code.
+    // Guarded by CAPABILITY, never by "which harness am I in": the same task has to run inside our container,
+    // on a GitHub/GitLab Linux runner and on a Linux developer's box, and skip on macOS — where the binaries it
+    // drives do not exist. It names what is missing instead of failing for the environment.
     onlyIf {
-        boolean inContainer = System.getenv('JAGT_IN_CONTAINER') != null
-        if (!inContainer) {
-            logger.lifecycle('Skipping linuxDriverTest: run it via scripts/linux-suite.sh (needs Linux + Xvfb + dbus).')
+        List<String> missing = []
+        if (!System.getProperty('os.name').toLowerCase().contains('linux')) {
+            missing << 'Linux'
         }
-        inContainer
+        ['notify-send', 'kitty', 'dbus-monitor', 'pgrep'].each { binary ->
+            if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
+                    .any { dir -> dir && new File(dir, binary).canExecute() }) {
+                missing << binary
+            }
+        }
+        if (!System.getenv('DISPLAY')) {
+            missing << 'DISPLAY (start it with scripts/with-linux-desktop.sh)'
+        }
+        if (missing) {
+            logger.lifecycle("Skipping linuxDriverTest — missing: ${missing.join(', ')}."
+                    + " On a Mac: scripts/linux-suite.sh runs it in a container.")
+        }
+        missing.isEmpty()
     }
     shouldRunAfter tasks.named('test')
 }

@@ -1,0 +1,58 @@
+# The same suites as .github/workflows/ci.yml, because jagt is host-agnostic by design and its pipeline has no
+# business being an exception. Both files call the SAME scripts (scripts/linux-test-deps.sh,
+# scripts/with-linux-desktop.sh, the two smoke scripts), so a step can only exist in one of them by mistake.
+#
+# No Docker-in-Docker and no privileged runner: the jobs run IN a Java image and apt-install what they need,
+# which is also what the container harness does for macOS developers.
+stages:
+  - test
+
+default:
+  image: eclipse-temurin:25-jdk
+  before_script:
+    - cd orchestrator-backend
+    # Gradle's home inside the project so the cache below can carry it between jobs.
+    - export GRADLE_USER_HOME="$CI_PROJECT_DIR/.gradle-home"
+  cache:
+    # Keyed by the wrapper: a Gradle upgrade gets a fresh cache instead of a corrupted one.
+    key:
+      files:
+        - orchestrator-backend/gradle/wrapper/gradle-wrapper.properties
+    paths:
+      - .gradle-home/caches
+      - .gradle-home/wrapper
+
+# Runs everywhere, needs nothing: this is the gate that must stay fast.
+unit:
+  stage: test
+  script:
+    - ./gradlew --no-daemon test
+  artifacts:
+    when: on_failure
+    expire_in: 1 week
+    paths:
+      - orchestrator-backend/build/reports/tests/test
+
+# Real git worktrees, real tmux windows, and the Linux drivers against the real binaries.
+linux:
+  stage: test
+  script:
+    - sh scripts/linux-test-deps.sh
+    - git config --global user.email "ci@example.com"
+    - git config --global user.name "jagt ci"
+    - scripts/with-linux-desktop.sh ./gradlew --no-daemon e2eTest linuxDriverTest
+  artifacts:
+    when: on_failure
+    expire_in: 1 week
+    paths:
+      - orchestrator-backend/build/reports/tests/e2eTest
+      - orchestrator-backend/build/reports/tests/linuxDriverTest
+
+# The layout of a full-screen TUI can only be asserted through a real PTY — hence tmux, not a virtual terminal.
+smoke:
+  stage: test
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends tmux python3 curl
+    - ./gradlew --no-daemon bootJar
+    - scripts/dashboard-layout-smoke.sh build/libs/jagt.jar
+    - scripts/tui-push-repaint-smoke.sh build/libs/jagt.jar

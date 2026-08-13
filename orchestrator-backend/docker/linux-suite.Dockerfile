@@ -9,22 +9,10 @@
 # Use:    scripts/linux-suite.sh   (mounts the repo, runs the suites inside)
 FROM eclipse-temurin:25-jdk
 
-# git + tmux: what the task flow itself runs. node: the MCP proxy every worktree symlinks.
-# kitty + xvfb + dbus + dunst + libnotify: the two Linux DRIVERS, tested against the real binaries.
-# procps/lsof: liveness probing and the language-server reaping both read the process table.
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        git \
-        tmux \
-        nodejs \
-        kitty \
-        xvfb \
-        dbus-x11 \
-        dunst \
-        libnotify-bin \
-        procps \
-        lsof \
-        ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# The package list lives in scripts/linux-test-deps.sh — the SAME list every CI runner installs, so the
+# container and the pipeline cannot drift apart.
+COPY scripts/linux-test-deps.sh /tmp/linux-test-deps.sh
+RUN sh /tmp/linux-test-deps.sh && rm /tmp/linux-test-deps.sh
 
 # A committer identity: the deploy/revert flows make real commits, and git refuses without one.
 RUN git config --global user.email "linux-suite@example.com" \

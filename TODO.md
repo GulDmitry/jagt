@@ -11,13 +11,15 @@ order:
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
 | 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
-| 2 | Linux: MOSTLY ANSWERED 2026-08-13 in a container (`scripts/linux-suite.sh`) — unit + e2e matrix + the drivers against real notify-send/kitty. Left for a real box: a window manager (`reveal` above other apps) and the viewer close, which the container run left open | 0.5 d + access |
-| 3 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
-| 4 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
-| 5 | A second `CodeHost` (GitHub) and a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the only remaining per-task model cost | 2-3 d |
+| 2 | Linux: MOSTLY ANSWERED 2026-08-13 — a container for developers (`scripts/linux-suite.sh`) and the same steps in CI (`.github/workflows/ci.yml`, `.gitlab-ci.yml`), both running unit + e2e matrix + the drivers against real notify-send/kitty. Left for a real desktop: a window manager (`reveal` above other apps) and the viewer close, which the container run left open (see the @Disabled test) | 0.5 d + access |
+| 3 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are verified by hand today. A runner already has chromium, so this is the same steps in both pipelines | 1 d |
+| 4 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
+| 5 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
+| 6 | A second `CodeHost` (GitHub) and a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the only remaining per-task model cost | 2-3 d |
 
-Steps 1 and 2 need access I do not have (a host token, a Linux machine) — they are the two places where what
-we believe is still ahead of what we have shown.
+Step 1 needs access I do not have (a token for a real code host). Step 2 no longer does, except for the last
+mile: a container and a CI runner are real Linux, but neither has a window manager, so `reveal` raising the
+viewer above other applications stays unproven until someone runs it on a desktop.
 
 ## Architecture
 

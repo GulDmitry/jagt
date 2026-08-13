@@ -33,21 +33,11 @@ echo "==> building $IMAGE"
 docker build -q -f "$BACKEND_DIR/docker/linux-suite.Dockerfile" -t "$IMAGE" "$BACKEND_DIR" >/dev/null
 docker volume create "$CACHE_VOLUME" >/dev/null
 
-# The display + session bus + notification daemon the driver tests need, started INSIDE the container so the
-# suite is one command. Xvfb because kitty is a GUI application even when nobody is looking at it; dunst
-# because `notify-send` exits non-zero when no daemon owns org.freedesktop.Notifications.
+# The display, the session bus and the notification daemon come from with-linux-desktop.sh — the same script
+# a CI job runs, so what is verified here is what CI verifies.
 echo "==> running: ${TASKS[*]}"
 docker run --rm \
     -v "$REPO_ROOT:/jagt" \
     -v "$CACHE_VOLUME:/gradle-home" \
-    "$IMAGE" sh -lc '
-        set -e
-        export DISPLAY=:99
-        Xvfb :99 -screen 0 1280x800x24 >/tmp/xvfb.log 2>&1 &
-        for _ in $(seq 1 40); do [ -e /tmp/.X11-unix/X99 ] && break; sleep 0.25; done
-        eval "$(dbus-launch --sh-syntax)"
-        dunst >/tmp/dunst.log 2>&1 &
-        sleep 1
-        ./gradlew --no-daemon '"${TASKS[*]}"'
-    '
+    "$IMAGE" scripts/with-linux-desktop.sh ./gradlew --no-daemon "${TASKS[@]}"
 echo "==> done"

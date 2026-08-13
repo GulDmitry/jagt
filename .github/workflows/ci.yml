@@ -1,0 +1,103 @@
+# Every suite jagt has, on hosted runners. The jobs mirror what a developer runs locally, on purpose:
+# `./gradlew test`, `scripts/linux-suite.sh` (which is this pipeline's Linux job without the container), and the
+# two tmux smoke scripts. Nothing here is a CI-only code path — a green pipeline and a green laptop mean the same.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A new push supersedes the previous run of the same ref: these jobs take minutes and nobody reads the old one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: orchestrator-backend
+
+jobs:
+  unit:
+    name: unit tests (hermetic)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: gradle
+      - run: ./gradlew --no-daemon test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: unit-test-report
+          path: orchestrator-backend/build/reports/tests/test
+
+  linux:
+    name: e2e matrix + Linux drivers
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: gradle
+      # The same list the container image installs — see scripts/linux-test-deps.sh.
+      - name: install what the suites shell out to
+        run: sudo scripts/linux-test-deps.sh
+      # e2eTest drives real git worktrees, so git needs an identity here as it does on a laptop.
+      - name: give git an identity
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "jagt ci"
+      # linuxDriverTest needs a display, a session bus and a notification daemon: one script provides all three.
+      - name: run the matrix and the drivers
+        run: scripts/with-linux-desktop.sh ./gradlew --no-daemon e2eTest linuxDriverTest
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: linux-test-reports
+          path: |
+            orchestrator-backend/build/reports/tests/e2eTest
+            orchestrator-backend/build/reports/tests/linuxDriverTest
+            /tmp/jagt-xvfb.log
+            /tmp/jagt-dunst.log
+
+  smoke:
+    name: TUI layout + push-repaint (real PTY)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: gradle
+      - name: install tmux (the scripts drive the jar inside it)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tmux
+      - run: ./gradlew --no-daemon bootJar
+      # Both scripts are real-PTY tests: only tmux can produce the resize/redraw they assert on. They pass
+      # --orchestrator.open-warp-window=false themselves, so a runner is left with nothing behind.
+      - run: scripts/dashboard-layout-smoke.sh build/libs/jagt.jar
+      - run: scripts/tui-push-repaint-smoke.sh build/libs/jagt.jar
+
+  # The macOS half of the matrix: the platform jagt is developed on, where the drivers it cannot test on Linux
+  # live (AppleScript raise, the Warp URI scheme). Only the OS-neutral suites run — the GUI drivers stay
+  # untested here too, and that is named rather than papered over.
+  macos:
+    name: unit + smoke on macOS
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: gradle
+      - run: brew list tmux >/dev/null 2>&1 || brew install tmux
+      - run: ./gradlew --no-daemon test bootJar
+      - run: scripts/dashboard-layout-smoke.sh build/libs/jagt.jar
