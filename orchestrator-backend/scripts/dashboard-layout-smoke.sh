@@ -33,8 +33,6 @@ else
     echo "java not found (set JAVA_HOME or put java on PATH)"; exit 2
 fi
 
-command -v python3 >/dev/null || { echo "python3 required"; exit 2; }
-
 SESSION="jagt-layout-smoke-$$"
 PORT=8298
 ROOT="$(mktemp -d)"
@@ -43,16 +41,27 @@ FAILS=0
 cleanup() { tmux kill-session -t "$SESSION" 2>/dev/null; rm -rf "$ROOT"; }
 trap cleanup EXIT
 
+# The fixture is a handful of flat objects, so printf writes it. jagt's own tools are java, git, tmux and node;
+# a test harness has no business adding a language runtime to that list just to emit ten lines of JSON.
 gen_state() { # $1 = number of tasks
-  python3 - "$1" "$ROOT/state.json" <<'PY'
-import json,sys,time
-n=int(sys.argv[1]); now=int(time.time()*1000); t={}
-for i in range(1,n+1):
-    t[f"ABC-{1000+i}"]={"project":"demo","worktreePath":f"/tmp/wt/{i}","status":"IN_PROGRESS",
-        "lastActiveTimestamp":now-i*60000,"message":"x","alias":f"p{i}",
-        "remoteUrl":"git@example.com:demo/demo.git","title":f"Fictional task {i}","mrUrl":None}
-json.dump({"tasks":t},open(sys.argv[2],"w"))
-PY
+  local count="$1" now entries="" separator="" i
+  now=$(( $(date +%s) * 1000 ))
+  for (( i = 1; i <= count; i++ )); do
+    entries="$entries$separator$(printf '
+    "ABC-%d": {
+      "project": "demo",
+      "worktreePath": "/tmp/wt/%d",
+      "status": "IN_PROGRESS",
+      "lastActiveTimestamp": %d,
+      "message": "x",
+      "alias": "p%d",
+      "remoteUrl": "git@example.com:demo/demo.git",
+      "title": "Fictional task %d",
+      "mrUrl": null
+    }' "$(( 1000 + i ))" "$i" "$(( now - i * 60000 ))" "$i" "$i")"
+    separator=","
+  done
+  printf '{ "tasks": {%s\n} }\n' "$entries" > "$ROOT/state.json"
 }
 
 assert_layout() { # $1 = scenario label

@@ -30,8 +30,6 @@ else
     echo "java not found (set JAVA_HOME or put java on PATH)"; exit 2
 fi
 
-command -v python3 >/dev/null || { echo "python3 required"; exit 2; }
-
 SESSION="jagt-push-smoke-$$"
 PORT=8299
 ROOT="$(mktemp -d)"
@@ -43,13 +41,21 @@ trap cleanup EXIT
 # refreshSeconds 60: far longer than this test runs, so the timer cannot be what repaints the screen.
 echo "{\"dashboard\":{\"refreshSeconds\":60,\"reservedRows\":8},\"viewer\":{\"tmuxSession\":\"$SESSION\"},\"projects\":{}}" > "$ROOT/config.json"
 : > "$ROOT/mcp_client.js"
-python3 - "$ROOT/state.json" "$TASK" <<'PY'
-import json,sys,time
-now=int(time.time()*1000)
-json.dump({"tasks":{sys.argv[2]:{"project":"demo","worktreePath":"/tmp/wt/1","status":"IN_PROGRESS",
-    "lastActiveTimestamp":now,"message":"working","alias":"p1",
-    "remoteUrl":"git@example.com:demo/demo.git","title":"Fictional task 1"}}},open(sys.argv[1],"w"))
-PY
+# printf, not a JSON library: the only tools this harness may assume are the ones jagt itself needs.
+printf '{
+  "tasks": {
+    "%s": {
+      "project": "demo",
+      "worktreePath": "/tmp/wt/1",
+      "status": "IN_PROGRESS",
+      "lastActiveTimestamp": %d,
+      "message": "working",
+      "alias": "p1",
+      "remoteUrl": "git@example.com:demo/demo.git",
+      "title": "Fictional task 1"
+    }
+  }
+}\n' "$TASK" "$(( $(date +%s) * 1000 ))" > "$ROOT/state.json"
 
 tmux kill-session -t "$SESSION" 2>/dev/null
 tmux new-session -d -s "$SESSION" -x 120 -y 30

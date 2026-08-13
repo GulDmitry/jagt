@@ -52,7 +52,9 @@ linux:
 smoke:
   stage: test
   script:
-    - apt-get update && apt-get install -y --no-install-recommends tmux python3 curl
+    # tmux gives the scripts a real PTY, curl waits for the backend to answer. Nothing else: the fixtures are
+    # written with printf, so no language runtime is needed to test a Java program.
+    - apt-get update && apt-get install -y --no-install-recommends tmux curl
     - ./gradlew --no-daemon bootJar
     - scripts/dashboard-layout-smoke.sh build/libs/jagt.jar
     - scripts/tui-push-repaint-smoke.sh build/libs/jagt.jar
