@@ -42,7 +42,12 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   worktree path (`copyLocalFiles`, heavy dirs skipped) — run configs reference module `.env`, key
   files, SSL certs (e.g. `app/.env`, `**/*.pem`) which are gitignored and otherwise missing, so the
   app wouldn't start. Patterns are config, NOT hardcoded. Best-effort, gitignored, no-op if absent.
-- `state.json` — SSOT for tasks (gitignored, auto-created).
+- `state.json` — SSOT for tasks (gitignored, auto-created). Each task also keeps `history` — every status it
+  moved TO, with when, oldest first, capped at 50 (the file is rewritten on every MCP call). A KEEP-ALIVE adds
+  nothing (same status = no entry, else four real transitions drown in hundreds of identical rows), and a task
+  starts its history at the status it was created with. Read "since when in this status" from
+  `TaskState.statusSince()`, NEVER from `lastActiveTimestamp` — a keep-alive bumps that one, so an hour-old
+  status would look fresh.
   Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED,
   REVIEWED (nothing unresolved + CI green), APPROVED (a human actually approved the review request),
   DEPLOY_CONFLICT (deploy hit a merge conflict — human resolves it in the deploy worktree), DEPLOYED, DONE.
@@ -74,11 +79,20 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   SHIPPING is therefore offered SHIP and the gate refuses at execution time if its agent is alive.
 - The board is vanilla HTML/CSS/JS under `src/main/resources/static` — NO build step, NO CDN, no external
   asset of any kind (it must work with the machine offline and stay inside the one jar).
-- The web UI never polls: `TaskEventStream` forwards `StateService.onChange` as SSE and the page re-fetches.
-  The event carries no payload on purpose — a payload would be a second serialization that could disagree
-  with `/api/tasks`.
+- NEITHER surface polls for state: `StateService.onChange` is the one event both use — `TaskEventStream`
+  forwards it as SSE, and `MasterShell` sets a dirty FLAG its render loop consumes (Lanterna's screen belongs
+  to the UI thread; the listener runs on whichever thread served the agent's MCP call — never paint from
+  there). The SSE event carries no payload on purpose: a payload would be a second serialization that could
+  disagree with `/api/tasks`. The periodic tick survives in both only for the relative "ACTIVE" clock.
+- Drafted review replies are a FILE, not state: `TaskViews` stats `review_replies.md` in the worktree and puts
+  a boolean on the projection (presence, not a count — the agent's brief prescribes no per-comment marker, so
+  a number would be a guess). Both surfaces announce it, because a human who does not know the convention
+  ships a round and posts replies they never read.
 - `dashboard-layout-smoke.sh` drives the CONSOLE, so it must pass `--orchestrator.ui=tui` now that the board
-  is the default. Run it after ANY change to `MasterShell` rendering.
+  is the default. Run it after ANY change to `MasterShell` rendering. `tui-push-repaint-smoke.sh` is its
+  sibling for the event-driven repaint: refresh 60s + a status pushed through `POST /mcp`, so only the listener
+  can explain the redraw. Writing `state.json` directly fires NO listener — a test that mutates the file is
+  testing the timer.
 
 ## Engineering constraints (do not regress)
 - MASTER SHELL = FULL-SCREEN TUI (Lanterna), ONE integrated screen. `MasterShell` runs a Lanterna

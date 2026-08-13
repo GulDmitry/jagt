@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.DashboardRenderer;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StateViews;
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalPosition;
@@ -34,6 +35,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -61,16 +63,18 @@ public class MasterShell {
     private final ConfigService configService;
     private final CommandService commands;
     private final TaskLauncher launcher;
+    private final StateService stateService;
     private final ConfigurableApplicationContext context;
 
     public MasterShell(OrchestratorTools tools, StateViews views, ConfigService configService,
-                       CommandService commands, TaskLauncher launcher,
+                       CommandService commands, TaskLauncher launcher, StateService stateService,
                        ConfigurableApplicationContext context) {
         this.tools = tools;
         this.views = views;
         this.configService = configService;
         this.commands = commands;
         this.launcher = launcher;
+        this.stateService = stateService;
         this.context = context;
     }
 
@@ -82,6 +86,9 @@ public class MasterShell {
      * Configurable via {@code dashboardReservedRows} in config.json; read at startup (default 17).
      */
     private int commandRows = 17;
+
+    /** Set by the state-change listener, consumed by the render loop: one repaint per batch of changes. */
+    private final AtomicBoolean stateDirty = new AtomicBoolean();
 
     /** Cap the in-memory output log so a long-running session can't grow it without bound. */
     private static final int MAX_LOG_LINES = 2000;
@@ -98,6 +105,10 @@ public class MasterShell {
         ConfigService.ConfigFile config = configService.load();
         int refreshSeconds = config.dashboard().refreshSecondsOrDefault();
         this.commandRows = config.dashboard().reservedRowsOrDefault();
+        // Push, not poll: an agent's status change repaints the dashboard the moment it lands instead of up to
+        // refreshSeconds later. The listener only RAISES A FLAG — Lanterna's screen belongs to the UI thread,
+        // and this runs on whichever thread served the agent's MCP call. Same event the board's SSE uses.
+        stateService.onChange(state -> stateDirty.set(true));
 
         Screen screen = null;
         try {
@@ -256,7 +267,8 @@ public class MasterShell {
 
                 long now = System.currentTimeMillis();
                 long interval = pending != null ? 120 : refreshMillis;   // animate the spinner while busy
-                if (key != null || resized != null || drained || now - lastRender >= interval) {
+                boolean stateChanged = stateDirty.getAndSet(false);      // an agent moved: repaint now
+                if (key != null || resized != null || drained || stateChanged || now - lastRender >= interval) {
                     lastRender = now;
                     String busy = pending == null ? null : spinner(now) + " running " + runningLabel
                             + " … " + ((now - runningSince) / 1000) + "s   (Ctrl-C to cancel)";

@@ -25,6 +25,13 @@ public record TaskView(
         String ticketUrl,
         String reviewRequestUrl,
         long lastActiveAt,
+        // Since when it has been in THIS status (not the activity stamp a keep-alive bumps) plus every step it
+        // took, so a surface can say "waiting on you for 6h" and show the timeline instead of one word.
+        long statusSince,
+        List<StatusChange> history,
+        // Drafted review replies are sitting in the worktree's review_replies.md. Nothing else announces them:
+        // a human who does not know the convention ships a round and posts (or drops) replies they never read.
+        boolean draftedReplies,
         long tokens
 ) {
 
@@ -32,7 +39,7 @@ public record TaskView(
     public record ActionView(String id, String label, String hint, boolean primary) {
     }
 
-    public static TaskView of(String id, TaskState task) {
+    public static TaskView of(String id, TaskState task, boolean draftedReplies) {
         Move move = Move.forTask(task.status(), task.mrUrl() != null && !task.mrUrl().isBlank());
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
@@ -42,6 +49,6 @@ public record TaskView(
                 move.owner(), move.hint(), actions,
                 move.primary() == null ? null : move.primary().id(),
                 DashboardLine.forTask(id, task), task.ticketUrl(), task.mrUrl(), task.lastActiveTimestamp(),
-                task.usageOrNone().total());
+                task.statusSince(), task.history(), draftedReplies, task.usageOrNone().total());
     }
 }

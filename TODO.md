@@ -12,7 +12,7 @@ In dependency order; each step is detailed in its section below.
 | 2 | ~~`CodeHost` REST — review sweep + MR create/update~~ DONE in the seam; the create call is UNWIRED (step 3 wires it) | kills the dominant token spend + the "is it approved?" judgement flake | done |
 
 
-| 5 | Status-transition history in `state.json` | "which steps happened, how long did review take" | 0.5 d |
+| 5 | ~~Status-transition history in `state.json`~~ DONE — `TaskState.history` + `statusSince()`, shown on both surfaces | "which steps happened, how long did review take" | done |
 | 6 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path | 1-2 d |
 
 Steps 2 and 3 are what move the remaining mechanics out of the LLM; 1 is a prerequisite for 4.
@@ -288,29 +288,32 @@ Rejected alternatives: an IntelliJ plugin (months of work, and it would bind the
 the pluggable-by-design invariant); Electron/native (same cost, more of it); Lanterna mouse support (it
 does have `MouseAction`, but clicking inside an ASCII table treats the symptom, not the diagnosis above).
 
-### Status-transition history in `state.json`
-"Which steps has this task actually been through, and how long did it sit in review?" is unanswerable today
-— `TaskState` keeps only the current status plus `lastActiveTimestamp`. Add an append-only
-`history: [{status, at}]` (capped, e.g. last ~50 entries so the file stays small) written by the same
-`withStatus` path that already stamps the timestamp. That single field powers the card timeline in the UI,
-"time in current state" in both surfaces, and later any cycle-time statistics ("this ticket spent 6 h
-waiting on me").
+### ~~Status-transition history in `state.json`~~ DONE 2026-08-13
+`TaskState.history` is an append-only `[{status, at}]` written by the same `withStatus` path that stamps the
+timestamp, capped at the last 50 (the file is rewritten on every MCP call). Two rules make it useful rather
+than noisy: a KEEP-ALIVE records nothing (same status → no entry, or four real transitions would drown in
+hundreds of identical rows), and a task starts its history at the status it was CREATED with, so "how long did
+it sit in NEW" has an answer. `TaskState.statusSince()` is what both surfaces show — NOT
+`lastActiveTimestamp`, which a keep-alive bumps, making an hour-old status look fresh.
+Still open, and now cheap: cycle-time statistics over the history ("this ticket spent 6 h waiting on me",
+"review rounds average 3"), which is a `stats`-shaped question, not a card-shaped one.
 
-### The drafted review replies are invisible until you go looking for them
-The human-in-the-loop contract says every auto-review round hands the human two artifacts: the local diff and
-`review_replies.md`. The diff is one `ide` away — but nothing anywhere SIGNALS that drafted replies exist.
-The file is written inside the worktree by the agent; `state.json` does not know about it, so neither the
-dashboard, the `→` next-move line, nor the notification mentions it. A human who does not already know the
-convention will `ship` a round and silently post (or not post) replies they never read.
-Fix: have the backend check for `review_replies.md` in the worktree when it renders a task (it already reads
-the worktree path) and surface "N drafted replies" as a dashboard detail line plus part of the REVIEW_PENDING
-next-move. That single signal is also the web UI's drafted-replies indicator, and it makes the
-`postReviewReplies` / `reviewReplyAuthors` config comprehensible — right now their effect is invisible.
+### ~~The drafted review replies are invisible until you go looking for them~~ DONE 2026-08-13
+`TaskViews` stats the worktree for `review_replies.md` and puts a `draftedReplies` flag on the projection, so
+both surfaces announce it: a console detail line that names the file and the `ide <alias>` that opens it, and a
+card badge on the board. Presence, deliberately not a COUNT — the agent's brief prescribes no per-comment
+marker, so any number would be a guess dressed as a fact.
+Still open: the NOTIFICATION path says nothing about drafts (`UserNotifier` fires on the REVIEW_PENDING
+transition, which is exactly when they appear), and `postReviewReplies`/`reviewReplyAuthors` remain invisible
+until a `ship` acts on them.
 
-### Repaint the TUI on state change, not only on the timer
-The dashboard currently refreshes every `dashboard.refreshSeconds`. A `StateService` change listener would
-repaint the moment an agent's MCP call lands (0 latency, no busy poll), keeping the slow tick only for the
-relative "ACTIVE" clock. It is the SAME listener the web UI's SSE stream needs — build it once, use it twice.
+### ~~Repaint the TUI on state change, not only on the timer~~ DONE 2026-08-13
+`MasterShell` subscribes to `StateService.onChange` — the SAME event the board's SSE uses — and the listener
+only raises a flag the render loop consumes (Lanterna's screen belongs to the UI thread; the listener runs on
+whichever thread served the agent's MCP call). The periodic tick stays for the relative "ACTIVE" clock.
+Pinned by `scripts/tui-push-repaint-smoke.sh`: refresh set to 60s, a status pushed through `POST /mcp`, and the
+screen asserted to show it within seconds — so only the event can explain the repaint (verified RED by
+deleting the listener).
 
 - tmux status bar styled as clickable job "tabs" (alias + status, active highlighted) so `shared` viewMode
   reads like native tabs. Largely superseded by the web UI entry above; keep only if the TUI stays primary.

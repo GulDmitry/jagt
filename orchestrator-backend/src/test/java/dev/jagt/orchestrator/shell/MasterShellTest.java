@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StateViews;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,7 +38,7 @@ class MasterShellTest {
                 "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()),
                 "sobrado", new ProjectConfig("/b", "origin/stage", "dev", List.of()))));
         MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
-                config, mock(CommandService.class), mock(TaskLauncher.class), mock(ConfigurableApplicationContext.class));
+                config, mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class), mock(ConfigurableApplicationContext.class));
 
         MasterShell.DoArgs args = shell.parseDoArgs(List.of("do", "ABC-2099", "plan", "давай", "разберём", "алгоритм"));
 
@@ -50,7 +51,7 @@ class MasterShellTest {
     void exitClosesTheSpringContextInsteadOfLeavingItToTheShutdownHook() {
         ConfigurableApplicationContext context = mock(ConfigurableApplicationContext.class);
         MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
-                mock(ConfigService.class), mock(CommandService.class), mock(TaskLauncher.class), context);
+                mock(ConfigService.class), mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class), context);
 
         shell.stopBackend();
 
@@ -60,7 +61,7 @@ class MasterShellTest {
     @Test
     void tabCompletesAUniqueCommand() {
         MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
-                mock(ConfigService.class), mock(CommandService.class), mock(TaskLauncher.class), mock(ConfigurableApplicationContext.class));
+                mock(ConfigService.class), mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("sh");
 
@@ -74,7 +75,7 @@ class MasterShellTest {
         OrchestratorTools tools = mock(OrchestratorTools.class);
         when(tools.taskChoices()).thenReturn(List.of(new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel")));
         MasterShell shell = new MasterShell(tools, mock(StateViews.class), mock(ConfigService.class),
-                mock(CommandService.class), mock(TaskLauncher.class), mock(ConfigurableApplicationContext.class));
+                mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("ship p1");
 
@@ -90,7 +91,7 @@ class MasterShellTest {
                 new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel export flag"),
                 new OrchestratorTools.TaskChoice("p2", "PAN-2540", "Login rate limit")));
         MasterShell shell = new MasterShell(tools, mock(StateViews.class), mock(ConfigService.class),
-                mock(CommandService.class), mock(TaskLauncher.class), mock(ConfigurableApplicationContext.class));
+                mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class), mock(ConfigurableApplicationContext.class));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("ship p");
         List<String> log = new ArrayList<>();

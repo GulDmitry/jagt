@@ -35,6 +35,32 @@ class DashboardRendererTest {
     }
 
     @Test
+    void pointsAtTheDraftedRepliesWaitingInTheWorktree(@TempDir Path root) throws Exception {
+        java.nio.file.Files.writeString(root.resolve("review_replies.md"), "> rename x\n\nRenamed it.\n");
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("title").build());
+
+        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
+
+        assertThat(out).contains("└ drafted review replies in review_replies.md — `ide a1` before you ship");
+    }
+
+    @Test
+    void saysHowLongTheTaskHasBeenInItsCurrentStatus(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("title")
+                .history(java.util.List.of(new dev.jagt.orchestrator.model.StatusChange(
+                        TaskStatus.REVIEW_PENDING, System.currentTimeMillis() - 7_200_000)))
+                .build());
+
+        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
+
+        assertThat(out).contains("(2h in REVIEW_PENDING)");
+    }
+
+    @Test
     void ordersRowsByLastActiveDescendingUnderTheSortedActiveColumn(@TempDir Path root) {
         StateService state = stateIn(root);
         long older = 1_700_000_000_000L;

@@ -63,14 +63,33 @@ public class DashboardRenderer {
             if (task.detail() != null && !task.detail().isBlank()) {
                 out.append("                    └ ").append(task.detail()).append('\n');
             }
-            // Lead with WHOSE move it is: on a board of five tasks that is the fact a human scans for.
+            // The one artifact of a review round nothing else announces: the agent's intended answers, sitting
+            // in the worktree. A human who does not know the convention ships them unread.
+            if (task.draftedReplies()) {
+                out.append("                    └ drafted review replies in review_replies.md — `ide ")
+                        .append(task.alias() == null ? task.id() : task.alias())
+                        .append("` before you ship\n");
+            }
+            // Lead with WHOSE move it is: on a board of five tasks that is the fact a human scans for. The
+            // duration is time in THIS status, not since the last activity — a keep-alive resets that stamp.
             out.append("                    → ").append(task.owner().label()).append(" · ")
-                    .append(task.hint()).append('\n');
+                    .append(task.hint()).append("  (")
+                    .append(compactDuration(System.currentTimeMillis() - task.statusSince()))
+                    .append(" in ").append(task.status()).append(")\n");
         }
         if (tasks.isEmpty()) {
             out.append("(no tasks)\n");
         }
         return out.toString();
+    }
+
+    /** Coarse on purpose: one glance should say "minutes" or "days", and a second column of digits would not. */
+    static String compactDuration(long millis) {
+        long minutes = Math.max(0, millis) / 60_000;
+        if (minutes < 60) {
+            return minutes + "m";
+        }
+        return minutes < 60 * 24 ? minutes / 60 + "h" : minutes / (60 * 24) + "d";
     }
 
     static String stamp(long epochMillis) {

@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Real-PTY regression test for ONE behaviour: the console repaints when STATE CHANGES, not only when its
+# timer fires.
+#
+# WHY it cannot be a JUnit test: the thing under test is a Lanterna screen redrawn from a background thread's
+# event, observed through a real PTY. And why the timing is not flaky: the periodic refresh is configured to
+# 60s here, so a dashboard that shows the new status within seconds can ONLY have been repainted by the
+# StateService change event. Delete the listener and this fails; make the interval the trigger again and it
+# fails.
+#
+# The mutation goes through `POST /mcp` on purpose — writing state.json directly (as the layout smoke test
+# does) fires no listener, because nothing changed through StateService.
+#
+# Usage: tui-push-repaint-smoke.sh [/path/to/jagt.jar]
+# Exits 0 if the repaint happened within the window, 1 otherwise. Leaves no trace (throwaway tmux + root).
+set -u
+
+JAR="${1:-$(cd "$(dirname "$0")/.." && pwd)/build/libs/jagt.jar}"
+if [[ ! -f "$JAR" ]]; then echo "jar not found: $JAR (run ./gradlew bootJar)"; exit 2; fi
+command -v tmux >/dev/null || { echo "tmux required"; exit 2; }
+command -v python3 >/dev/null || { echo "python3 required"; exit 2; }
+
+SESSION="jagt-push-smoke-$$"
+PORT=8299
+ROOT="$(mktemp -d)"
+TASK="ABC-1001"
+
+cleanup() { tmux kill-session -t "$SESSION" 2>/dev/null; rm -rf "$ROOT"; }
+trap cleanup EXIT
+
+# refreshSeconds 60: far longer than this test runs, so the timer cannot be what repaints the screen.
+echo "{\"dashboard\":{\"refreshSeconds\":60,\"reservedRows\":8},\"viewer\":{\"tmuxSession\":\"$SESSION\"},\"projects\":{}}" > "$ROOT/config.json"
+: > "$ROOT/mcp_client.js"
+python3 - "$ROOT/state.json" "$TASK" <<'PY'
+import json,sys,time
+now=int(time.time()*1000)
+json.dump({"tasks":{sys.argv[2]:{"project":"demo","worktreePath":"/tmp/wt/1","status":"IN_PROGRESS",
+    "lastActiveTimestamp":now,"message":"working","alias":"p1",
+    "remoteUrl":"git@example.com:demo/demo.git","title":"Fictional task 1"}}},open(sys.argv[1],"w"))
+PY
+
+tmux kill-session -t "$SESSION" 2>/dev/null
+tmux new-session -d -s "$SESSION" -x 120 -y 30
+tmux send-keys -t "$SESSION" "ORCHESTRATOR_ROOT=$ROOT java -jar $JAR --server.port=$PORT --orchestrator.ui=tui --orchestrator.open-warp-window=false" Enter
+for _ in $(seq 1 40); do curl -s "localhost:$PORT/state" >/dev/null 2>&1 && break; sleep 1; done
+sleep 3
+
+if ! tmux capture-pane -p -t "$SESSION" | grep -q 'IN_PROGRESS'; then
+  echo "FAIL: the dashboard never showed the initial IN_PROGRESS row — the console did not start"
+  exit 1
+fi
+
+# SHIPPING on purpose: the statuses that notify the human (REVIEW_PENDING, CI_FAILED) would pop a desktop
+# notification on the machine running the test.
+curl -s -X POST "localhost:$PORT/mcp" -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\
+\"method\":\"tools/call\",\"params\":{\"name\":\"update_agent_status\",\"arguments\":{\"status\":\"SHIPPING\",\
+\"message\":\"shipping\",\"taskId\":\"$TASK\"}}}" >/dev/null
+
+for _ in $(seq 1 6); do
+  sleep 1
+  if tmux capture-pane -p -t "$SESSION" | grep -q 'SHIPPING'; then
+    echo "PASS: the dashboard showed the new status without waiting for the 60s refresh"
+    exit 0
+  fi
+done
+
+echo "FAIL: the status change never reached the screen — the console is still waiting for its timer"
+tmux capture-pane -p -t "$SESSION" | tail -12
+exit 1

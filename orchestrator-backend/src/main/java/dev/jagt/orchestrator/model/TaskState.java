@@ -3,6 +3,9 @@ package dev.jagt.orchestrator.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record TaskState(
@@ -22,12 +25,50 @@ public record TaskState(
         long lastPolledAt,
         Boolean autoReview,
         // Master-side model spend on this task (headless assistant calls); null until the first one.
-        TokenUsage usage
+        TokenUsage usage,
+        // Append-only, oldest first: every status this task actually moved TO, with when. Capped, see below.
+        List<StatusChange> history
 ) {
 
+    /**
+     * Enough to answer "which steps happened and how long did each take" while keeping `state.json` small — the
+     * file is read and rewritten on every single MCP call, so an unbounded log would grow into that hot path.
+     * A task that changes status fifty times is pathological, and the OLDEST entries are the ones nobody asks
+     * about, so those are what a full history drops.
+     */
+    private static final int MAX_HISTORY = 50;
+
+    public TaskState {
+        history = history == null ? List.of() : List.copyOf(history);
+    }
+
+    /**
+     * A status move — the ONE place history grows. Records an entry only when the status actually CHANGED: the
+     * agent's keep-alive goes through here with its current status (see {@link #touched()}), and logging those
+     * would bury the four real transitions of a task under hundreds of identical rows.
+     */
     public TaskState withStatus(TaskStatus status, String message) {
-        return toBuilder().status(status).lastActiveTimestamp(System.currentTimeMillis())
-                .message(message).build();
+        long now = System.currentTimeMillis();
+        return toBuilder().status(status).lastActiveTimestamp(now).message(message)
+                .history(status == this.status ? history : appended(history, new StatusChange(status, now)))
+                .build();
+    }
+
+    private static List<StatusChange> appended(List<StatusChange> history, StatusChange change) {
+        List<StatusChange> grown = new ArrayList<>(history);
+        grown.add(change);
+        return grown.size() <= MAX_HISTORY
+                ? List.copyOf(grown)
+                : List.copyOf(grown.subList(grown.size() - MAX_HISTORY, grown.size()));
+    }
+
+    /**
+     * Since when the task has been in its CURRENT status — which is NOT {@code lastActiveTimestamp}: a
+     * keep-alive bumps that stamp, so an agent that has been working for an hour looks like it just moved.
+     * Falls back to the activity stamp for a task written before history existed.
+     */
+    public long statusSince() {
+        return history.isEmpty() ? lastActiveTimestamp : history.get(history.size() - 1).at();
     }
 
     public TaskState touched() {
@@ -71,7 +112,7 @@ public record TaskState(
                 .lastActiveTimestamp(lastActiveTimestamp).message(message).alias(alias)
                 .remoteUrl(remoteUrl).title(title).mrUrl(mrUrl).ticketUrl(ticketUrl)
                 .mrCreatedAt(mrCreatedAt).lastPolledAt(lastPolledAt).autoReview(autoReview)
-                .usage(usage);
+                .usage(usage).history(history);
     }
 
     /**
@@ -94,6 +135,8 @@ public record TaskState(
         private long lastPolledAt;
         private Boolean autoReview;
         private TokenUsage usage;
+        /** Null means "a brand-new task" — {@link #build()} then seeds it with the initial status. */
+        private List<StatusChange> history;
 
         private Builder(String project, String worktreePath, TaskStatus status) {
             this.project = project;
@@ -161,9 +204,21 @@ public record TaskState(
             return this;
         }
 
+        public Builder history(List<StatusChange> history) {
+            this.history = history;
+            return this;
+        }
+
+        /**
+         * A task built from scratch starts its history AT its initial status — otherwise the first entry would
+         * be the second thing that ever happened to it, and "how long did it sit in NEW" would need a
+         * timestamp nobody kept. A task rebuilt from an existing one carries its own history through.
+         */
         public TaskState build() {
+            List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
+                    lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis()));
             return new TaskState(project, worktreePath, status, lastActiveTimestamp, message, alias,
-                    remoteUrl, title, mrUrl, ticketUrl, mrCreatedAt, lastPolledAt, autoReview, usage);
+                    remoteUrl, title, mrUrl, ticketUrl, mrCreatedAt, lastPolledAt, autoReview, usage, log);
         }
     }
 }

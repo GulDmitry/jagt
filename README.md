@@ -131,8 +131,10 @@ place, so the two can never tell you different things.
 ### The board (default)
 
 Open `http://localhost:8290`. Tasks sit in columns by phase — **build → review → check → ready → deploy** —
-each card showing whose move it is, the status, how long since it moved, what jagt has spent on it, and links
-to the ticket and the review request. Every card carries exactly the actions that are legal for it right now,
+each card showing whose move it is, the status **and how long it has been in it** (hover for the full timeline
+of steps the task took), what jagt has spent on it, and links to the ticket and the review request. A card also
+says when the agent has left **drafted review replies** in its worktree — read them before you ship, because
+`ship` is what posts them. Every card carries exactly the actions that are legal for it right now,
 the obvious one highlighted: open the IDE, focus the agent's terminal, ship, check the review, deploy, close.
 `New task` does what `do ABC-42` does. Sort within columns by last activity, tokens, alias or title, and tick
 *waiting on me* to see only the tasks that are actually yours. It updates itself — the backend pushes a change
@@ -141,7 +143,9 @@ branch and the other deletes a worktree.
 
 ### The console
 
-`orchestrator.ui=tui` gives the full-screen terminal UI instead. Talk to it:
+`orchestrator.ui=tui` gives the full-screen terminal UI instead. Its dashboard repaints the moment an agent
+reports in (the timer only refreshes the relative clock), tells you how long each task has been in its current
+status, and points at drafted review replies when the agent has written any. Talk to it:
 
 | command | effect |
 |---------|--------|

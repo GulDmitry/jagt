@@ -27,6 +27,19 @@ const relative = (millis) => {
   return `${Math.round(seconds / 86400)}d ago`;
 };
 
+const duration = (millis) => {
+  const minutes = Math.max(0, Math.round(millis / 60000));
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1440) return `${Math.round(minutes / 60)}h`;
+  return `${Math.round(minutes / 1440)}d`;
+};
+
+// The transitions the task actually went through, as a tooltip: the card stays one line, the record is one
+// hover away. Server-sent, so it is the same history state.json holds.
+const timeline = (task) => (task.history || [])
+  .map((step) => `${new Date(step.at).toLocaleString()}  ${step.status}`)
+  .join('\n');
+
 const compactTokens = (n) => {
   if (!n) return '';
   if (n < 1000) return `${n} tok`;
@@ -109,9 +122,16 @@ function card(task) {
 
   const meta = document.createElement('div');
   meta.className = 'meta';
-  meta.innerHTML = `<span class="status">${task.status}</span><span>${task.project}</span>`
+  // Two different clocks, on purpose: how long it has been in THIS status (what you want when a task is
+  // waiting on you) and when it was last active at all (a keep-alive bumps only the second one).
+  const status = document.createElement('span');
+  status.className = 'status';
+  status.textContent = `${task.status} · ${duration(Date.now() - task.statusSince)}`;
+  status.title = timeline(task);
+  meta.append(status);
+  meta.insertAdjacentHTML('beforeend', `<span>${task.project}</span>`
     + `<span>${relative(task.lastActiveAt)}</span>`
-    + (task.tokens ? `<span>${compactTokens(task.tokens)}</span>` : '');
+    + (task.tokens ? `<span>${compactTokens(task.tokens)}</span>` : ''));
 
   const hint = document.createElement('div');
   hint.className = 'hint';
@@ -126,6 +146,16 @@ function card(task) {
     detail.textContent = task.detail;
     if (!problem && /^https?:/.test(task.detail)) detail.textContent = '';
     article_children.push(detail);
+  }
+
+  // The agent's intended answers to the review comments, sitting unread in the worktree. Nothing else on the
+  // page would tell you they exist, and `ship` posts them.
+  if (task.draftedReplies) {
+    const drafts = document.createElement('div');
+    drafts.className = 'drafts';
+    drafts.textContent = 'drafted review replies — read them before you ship';
+    drafts.title = 'review_replies.md in the worktree; open it with the IDE action';
+    article_children.push(drafts);
   }
 
   const links = document.createElement('div');
