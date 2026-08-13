@@ -1,31 +1,82 @@
 # jagt — TODO / future ideas
 
-Backlog of ideas, not commitments. Newest thinking at the top of each section.
+Backlog of ideas, not commitments. Structure: what is OPEN first, then the questions nobody has answered yet,
+then a compact record of what shipped — kept only where the DECISION is worth re-reading. Invariants live in
+CLAUDE.md, not here; if an entry below has hardened into a rule, it belongs there instead.
 
 ## Roadmap — what is left (reviewed 2026-08-13)
-
-Steps 1-5 of the original roadmap have shipped: the phase/action projection, `CodeHost` over REST (read AND
-create), `ship` in the backend, the web board, and the status-transition history. What remains, in dependency
-order:
 
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
 | 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
-| 2 | Linux: MOSTLY ANSWERED 2026-08-13 — a container for developers (`scripts/linux-suite.sh`) and the same steps in CI (`.github/workflows/ci.yml`, `.gitlab-ci.yml`), both running unit + e2e matrix + the drivers against real notify-send/kitty. Left for a real desktop: a window manager (`reveal` above other apps) and the viewer close, which the container run left open (see the @Disabled test) | 0.5 d + access |
-| 3 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are verified by hand today. A runner already has chromium, so this is the same steps in both pipelines | 1 d |
-| 4 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
-| 5 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
-| 6 | A second `CodeHost` (GitHub) and a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the only remaining per-task model cost | 2-3 d |
+| 2 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are checked by hand today. A runner already has chromium, so it is the same steps in both pipelines | 1 d |
+| 3 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; a new install requirement, so it goes in README's Prerequisites | 1 d |
+| 4 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
+| 5 | A second `CodeHost` (GitHub) + a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the last per-task model cost | 2-3 d |
+| 6 | Extend the e2e matrix over `ship`/`review`/`deploy`/`resume` | the matrix covers CREATE→PROVISION→LAUNCH→TEARDOWN; the interesting oracle (status transitions, history, the replies relay) needs a fake `CodeHost` bean and a stub script that reports back over `POST /mcp` | 1-2 d |
 
-Step 1 needs access I do not have (a token for a real code host). Step 2 no longer does, except for the last
-mile: a container and a CI runner are real Linux, but neither has a window manager, so `reveal` raising the
-viewer above other applications stays unproven until someone runs it on a desktop.
+Step 1 needs access nobody has handed over yet (a token for a real code host). Everything else is unblocked.
 
-## Architecture
+Linux is answered as far as a container and a CI runner can answer it (see the record below); what remains is
+one desktop-only question — `reveal` raising the viewer above other applications, and the viewer close that
+the container run left open (the `@Disabled` test in `LinuxKittyTerminalDriverLinuxTest` names the lead).
 
-### Cost: what a headless assistant call actually costs — MEASURED, not guessed
-Measured 2026-08-12 with an identical trivial prompt (`Return the greeting hi`) run from a temp dir, so the
-numbers are the per-call FLOOR, before any real ticket/MR content:
+## Open questions
+
+### One task = one repository
+A ticket that touches two repos (backend + frontend) has no representation: it becomes two unrelated tasks,
+each with its own branch, review request, review cycle and alias, and nothing ties them together — not the
+board, not `ship`, not `deploy`. The human keeps the relationship in their head.
+A shape question, not a feature: does a task grow a LIST of (project, worktree, branch) tuples, or does jagt
+gain a "change set" that groups tasks? The first breaks the "one worktree = one agent" assumption that
+`X-Working-Directory` scoping rests on; the second keeps every current invariant and adds a grouping layer,
+which is probably the answer — a group's state is then a function of its members' `Move`s.
+
+### Secrets are copied into every worktree and only the happy path cleans them up
+`worktree.copyGlobs` deliberately copies gitignored local files — `.env`, `*.pem`, keystores — into each
+worktree so the app can actually run there. It means N copies of production-ish credentials in sibling
+directories, readable by every agent process, removed only when `done` succeeds in deleting the worktree.
+`WorktreeOrphanScanner` REPORTS the leftovers with a count of copied secrets per orphan (startup ping +
+`GET /orphans`) and deletes nothing, since an orphan can hold uncommitted work. Two questions still open,
+both about the copying itself:
+- should the default set be narrower than "any `*.pem`"? One key covers .env, keys, certs and keystores for
+  every project.
+- `**/.env` does NOT match a root-level `.env` (Java's glob needs a directory component), so a repo whose
+  `.env` sits at the top gets nothing copied and the app fails to start for a reason that looks like anything
+  but a glob. Either document it in `config.json.dist` or ship `["**/.env", ".env"]`.
+
+### Cycle-time statistics over the status history
+`TaskState.history` now holds every transition, so "this ticket spent 6 h waiting on me" and "review rounds
+average 3" are cheap to compute. It is a `stats`-shaped question, not a card-shaped one.
+
+### The notification path says nothing about drafted replies
+`UserNotifier` fires on the REVIEW_PENDING transition — exactly when `review_replies.md` appears — but the
+banner does not mention it, and `postReviewReplies`/`reviewReplyAuthors` stay invisible until a `ship` acts on
+them. Both surfaces DO announce the file; only the push notification is silent about it.
+
+### A killed model call is unmeasurable
+`ProcessRunner` destroys the process on timeout and throws, so there is no envelope and no usage: the tokens
+already burned are unknown, not zero (logged as UNMEASURED rather than guessed). Capturing them needs
+`--output-format stream-json` with usage accumulated from the message stream — worth it only if timeouts turn
+out to be common, and the 6-minute review sweep is the candidate.
+
+### Generic wording for the GitLab-leaning internal names (low priority)
+`mrUrl` / "MR" / `CI_POLLING` are GitLab-flavoured INTERNAL names. Fine as-is; user-facing text could say
+"review request" / "pipeline or checks". Not worth a churny rename until a non-GitLab host is wired.
+
+### A minimal MCP config for the assistant, if determinism ever beats convenience
+`--strict-mcp-config --mcp-config <file>` works, but the server names CANNOT be guessed — jagt does not know
+whether the tracker is Jira or Linear or what the human named it. It would have to be config
+(`assistant.mcpServers: ["…"]`, empty = inherit everything). Given the measured ~7k tokens the MCP surface
+costs, this is a determinism nicety, NOT a cost lever.
+
+## The record — what shipped, and the finding worth keeping
+
+Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
+themselves are in CLAUDE.md.
+
+### Cost of a headless assistant call — MEASURED 2026-08-12, not guessed
+Identical trivial prompt from a temp dir, so these are the per-call FLOOR:
 
 | invocation | input (cache-create) | output | cost |
 |---|---|---|---|
@@ -33,440 +84,156 @@ numbers are the per-call FLOOR, before any real ticket/MR content:
 | `--model haiku`, `--setting-sources project` | 24 869 | 178 | $0.051 |
 | `--model haiku`, `--setting-sources user,project,local` (today's default) | 31 719 | 155 | $0.064 |
 
-Conclusions, in order of leverage — note the first one contradicts the assumption this entry started from:
-1. **The model dominates, not the MCP surface.** 6-8x between the inherited default (opus) and haiku on the
-   same prompt — the ratio bundles the price with a smaller baseline context, the rows are not equal-sized.
-   DONE 2026-08-13: `orchestrator.assistant.model: haiku` is the shipped default in
-   `application.yml` (blank it to go back to your own default model); these are mechanical extraction
-   tasks — read a field, return JSON under a schema.
-2. **~25k tokens is the irreducible baseline** of any `claude -p` process (CLI system prompt + built-in
-   tools). It cannot be optimized away — only AVOIDED, by not spawning a process at all. That is the real
-   argument for the `CodeHost` REST sweep: 40 polls per MR × ~$0.40 ≈ **$16 per merge request** on opus, ≈$2
-   on haiku, $0 over REST. Note each poll pays full cache-CREATION, not a cache read: the 10-60 min cadence
-   is far outside the prompt-cache TTL, so there is no warm-cache discount to hope for.
-3. **The MCP surface costs ~7k tokens (+27%), and it is NOT optional — do not narrow `--setting-sources`.**
-   Modern Claude Code DEFERS MCP tool schemas (fetched on demand), so hundreds of installed tools do not
-   land in context; the 7k is the price of having any at all. Verified 2026-08-13 by asking the CLI to name
-   its own `mcp__*` tools from the temp dir: `--setting-sources project` answers `NONE` (the call runs from
-   `java.io.tmpdir`, which has no project scope), `user,project,local` lists the full set. Narrowing it
-   would save 7k tokens and break every read — the tracker/code-host tools live in USER scope. If the
-   human's global CLAUDE.md / skills / output styles are ever worth dropping, that needs a flag that keeps
-   `user` MCP, not this one.
+1. **The model dominates, not the MCP surface** — 6-8x between the inherited default and haiku. Hence
+   `orchestrator.assistant.model: haiku` as the shipped default; these are extraction tasks (read a field,
+   return JSON under a schema).
+2. **~25k tokens is the irreducible baseline** of any `claude -p` process. It cannot be optimized away, only
+   AVOIDED by not spawning one — the whole argument for the REST `CodeHost` sweep: 40 polls per request
+   × ~$0.40 ≈ $16 per merge request on opus, ≈$2 on haiku, $0 over REST. Each poll pays full cache CREATION;
+   the 10-60 min cadence is far outside the prompt-cache TTL, so there is no warm-cache discount to hope for.
+3. **The MCP surface costs ~7k (+27%) and is NOT optional** — modern Claude Code defers tool schemas, so the
+   7k is the price of having any MCP at all. Narrowing `--setting-sources` saves it and breaks every read:
+   the tracker/code-host tools live in USER scope (verified by asking the CLI to name its own `mcp__*` tools
+   from the temp dir — `project` alone answers NONE).
 
-If a minimal MCP config is ever wanted anyway (`--strict-mcp-config --mcp-config <file>`), the server names
-CANNOT be guessed — jagt does not know whether the tracker is Jira or Linear, the host GitLab or GitHub, or
-what the human named them. They would have to be CONFIG: an `assistant.mcpServers: ["…"]` key that jagt
-copies out of the human's own MCP config at call time, empty = inherit everything. Given the measured 7k,
-this is a determinism nicety (a configured contract instead of "whatever is installed this week"), NOT a
-cost lever — do not spend the complexity on it before steps 1 and 2 of the roadmap above.
+`stats` splits the session by `AssistantCallKind` (TICKET_READ / MR_READ / REVIEW_SWEEP / COMMAND_MAP), which
+is also how the REST payoff becomes visible per category.
 
-Verified while measuring: `--output-format json` composes with `--json-schema`, and `--strict-mcp-config`
-works with no `--mcp-config` at all (= a no-MCP call, which is what the tier-2 text→command mapper wants).
+### Mechanical outside ops belong in the backend, not in an LLM tool-loop
+Done: the review sweep reads over REST (`CodeHost.readReview` + `GitLabCodeHost`, routed by `ReviewReader`,
+which deliberately does NOT fall back to the paid read when a configured host fails — that would spend money
+invisibly), the merge request is created/updated in-process, and `ship` commits + pushes itself
+(`ShipService`). What stays with the agent is judgement: the code, the ticket distillation, the review replies.
+Two deliberate limits: a review-round commit message is mechanical (`<task> address review comments`) because
+the backend cannot describe a fix it did not make, and posting the drafted replies needs the thread ids that
+`ReviewFacts` does not carry — extending the sweep to carry them is what would finish it.
 
-One hole left in the accounting: **a killed call is unmeasurable.** `ProcessRunner` destroys the process on
-timeout and throws, so there is no envelope and therefore no usage — the tokens it already burned are unknown,
-not zero. It is logged as UNMEASURED rather than guessed. The only way to actually capture it is
-`--output-format stream-json`, accumulating usage from the message stream as it arrives; worth doing only if
-timeouts turn out to be common (the 6-minute review sweep is the candidate).
-(The other hole is closed: `stats` now splits the session by `AssistantCallKind` — TICKET_READ / MR_READ /
-REVIEW_SWEEP — biggest first, which is also how the REST payoff becomes visible per category.)
+embabel was investigated and REJECTED for this: it builds an agent that makes in-process LLM calls (Spring AI
++ a GOAP planner), not a controller of external CLI sessions. GOAP is overkill for a ~12-state near-linear
+FSM, and it would drag Spring AI + a key into a backend with zero AI dependencies. Revisit only if jagt ever
+needs its own reasoning, and even then prefer bare Spring AI.
 
-### Cut cost + raise determinism: mechanical host/tracker ops as backend code, not an LLM tool-loop
-The master side is already LLM-free for routing (see the DONE entry below) — what remains in a model is the
-mechanical outside work: the auto-review poll (`AutoReviewScheduler` → headless `claude -p` → code-host MCP)
-and, on the agent side, the whole ship sequence (commit with an exact title, push, create the MR, post
-replies, report back the URL) that jagt already fully specifies in prose.
+### Two-tier dispatch — tier 2 is `NaturalLanguageDispatch`
+An unknown console line or the board's ⌘K palette goes to a stripped headless call (`--strict-mcp-config` with
+an EMPTY server map — text→command needs no tools) that returns `{command, task, ticket, reason}` under a
+schema; the dispatcher validates the verb and that the task EXISTS, then executes through `CommandService`, the
+same gate the buttons use. Measured at 940 tokens per mapping (stubbed CLI), booked under `COMMAND_MAP`.
+Three decisions: the answer leads with the interpretation ("understood as `ship ABC-1` — …") because an
+invisible mapping teaches nobody the grammar; ambiguity comes back as a reason rather than a guess between two
+tasks; and a single unknown word never reaches the model, because a typo must not cost a call. The model is
+handed the projection's own task list with each task's LEGAL actions, so it cannot propose a refused action.
+A resident local model was rejected: 4-8 GB for a 3-7B model on a machine that already swaps, versus a
+headless call that holds nothing.
 
-Lever: pull the DETERMINISTIC, mechanical outside ops into the backend behind a `CodeHost` strategy
-(GitLab / GitHub / … — sibling to the existing seams `AgentRuntime`/`TerminalDriver`/`UserNotifier`) and a
-`Tracker` strategy (Jira / Linear / …). Highest value first:
-- ~~**Review sweep → code.**~~ DONE (2026-08-13): `CodeHost.readReview(mrUrl)` + `GitLabCodeHost`, routed by
-  `ReviewReader`; `ReviewFacts` moved to `model` since it is no longer an assistant-shaped thing. 0 tokens, 0
-  model latency, and the "approved by a human, not merely mergeable" judgement is now the approvals endpoint.
-  Still open on the read side: a second host (GitHub) — the seam has one implementation, same critique as
-  below — and `Tracker` for the ticket read, which is still the only reason `do` spawns a model at all.
-- ~~**MR create/update → code.**~~ DONE in the seam (2026-08-13): `CodeHost.createOrUpdateMergeRequest` +
-  `hostsRepository` + `GitLabCodeHost`, idempotent per (source, target) and never retitling an open request.
-  `codeReview.mergeRequestDefaults` stopped being fiction while I was there — README documented
-  `removeSourceBranch`/`squash`, `CodeReviewConfig` had no such field, and the flags now feed the create call.
-  NOT WIRED: `ship` still relays the MR step to the agent in prose. Wiring it is step 3's job, and it is what
-  finally removes the "agent forgets to report the URL" flake — the capability alone removes nothing.
-- **`ship` commit + push → code.** See the dedicated entry below.
-- Leave the JUDGEMENT work in the agents: ticket distillation, the code itself, review replies. Those
-  aren't mechanical.
+### `OrchestratorTools` split — 871 → ~500 lines, 11 → 7 collaborators
+Three passes: `ship` → `ShipService`, the worktree file work → `WorktreeFiles` (statics, zero collaborators),
+then the one big move — `AgentSessions` (tmux window, focus, kill, relay) + `TaskProvisioning` (worktree
+creation, alias, sub-agent context). The shrinkage showed up in the tests, as predicted: the twelve moved
+tests build ONE service with four or five collaborators instead of the facade with eleven.
 
-This is opt-in and behind a strategy interface, so "pluggable by design" holds. It DOES lean on
-tokens-in-backend (env vars) — already sanctioned in the two-tier-dispatch decision, and consistent with
-the tracker/VCS-host-agnostic note (the strategy IS the abstraction that keeps `if gitlab` out).
+The finding that decided HOW: extracting `deploy`/`prune` into a `RepositoryOps` was tried and reverted
+because a delegating facade KEEPS every collaborator it does not shed — that split would have made it twelve
+dependencies instead of eleven. Only a group of methods that MONOPOLISES dependencies is worth moving.
+Two ideas from that plan stay open and are not worth a pass on their own: `deploy`/`prune` could still leave,
+and `resumeTask` arguably belongs with `TaskLauncher` (it IS a launch).
 
-embabel (investigated) is the WRONG tool for this and for orchestrating the CLI sessions: it's a framework
-for building an agent that makes LLM calls in-process (Spring AI + GOAP planner over typed `@Action`/`@Goal`),
-not for controlling external Claude Code processes. GOAP is overkill for jagt's ~11-state near-linear FSM
-(already an explicit `TaskStatus`), and it drags in Spring AI + an LLM key + a Boot-4 compatibility question
-into a backend that currently has ZERO AI deps. The only slot it could fill is an in-process LLM call
-(`MasterAssistant` ticket→JSON), where bare Spring AI would already do — GOAP adds nothing. Revisit only if
-jagt ever needs its OWN reasoning (LLM-judge review, summarization), and even then prefer plain Spring AI.
+### `deploy` has an undo — `revert <ticket>`
+Reverts the merge commit deploy created on `deployBranch` and pushes the revert; `DEPLOYED` → `REVERTED`, so
+no surface keeps claiming the change is live. It only ADDS a commit, and the task branch keeps its commits —
+which is why `REVERTED`'s primary move is SHIP (fix and go again), not DONE.
+The decision worth keeping: `deploy` merges `--no-ff` and RECORDS the commit (`TaskState.deployCommit`,
+including the conflict-resolution path). Without both, "the deploy" is a range of loose commits and reverting
+it would undo a fraction of the task. Every ambiguous case is refused with the by-hand `git revert -m 1`
+recipe rather than guessed: no recorded commit, not on the branch, not a merge, already reverted (a second
+revert would silently re-apply the change), or conflicting with later work there.
+NOT offered: re-deploying a REVERTED task — its commits are still in history, so deploy's "nothing to deploy"
+guard would refuse anyway. The honest path is a new commit, then ship + deploy.
 
-First experiment DONE (2026-08-13): `GitLabCodeHost.readReview` is wired in behind `ReviewReader`. What is
-still MISSING is the measurement it was supposed to produce — point the config at a real host, run a task
-through a review round, and compare `stats` against the pre-REST numbers above. Until somebody does that, the
-token drop is arithmetic (a poll that spawns no process costs nothing), not evidence.
+### Admission control — `agent.maxConcurrentTasks` (default 3, `0` = off)
+Policy in `TaskAdmission` (statics, no collaborators), enforced in `TaskProvisioning.initializeTask` — the
+choke point every surface reaches a new task through, so no front-end can walk around it. It REFUSES rather
+than queues, naming the tasks that hold the slots. A slot is held by a REGISTERED task whatever its status,
+because the worktree and its 1-2 GB language server live until `done`. `TaskLauncher` runs the same check
+before the ticket read: the enforcement point is provisioning, but a refusal after a paid read charges for
+nothing. Both headers show `n/cap`, because a cap only helps if it is visible before it is hit.
+If queueing ever arrives, the new status is pre-NEW and a scheduler starts a queued task when `done` frees a
+slot — `TaskAdmission` is where that decision already lives.
 
-### DONE 2026-08-13 — `ship` commits and pushes from the backend
-`ShipService` does it in-process when a `CodeHost` owns the repository (commit → push → create/update the
-request → CI_POLLING with the link), and `OrchestratorTools` lost `ship` entirely — the split has started.
-`Move.shippable` is the single gate, `stripTicketPrefix` became `model/ReviewRequestTitle`, and a per-task
-in-flight guard stops a double click from pushing twice.
-Two deliberate limits, both worth keeping in mind before "improving" them:
-- a review-round commit message is mechanical (`<task> address review comments`); the backend cannot describe
-  a fix it did not make, and inventing prose is worse than being plain;
-- posting the drafted replies is still the agent's, because a reply needs the thread it answers and
-  `ReviewFacts.comments` carries formatted strings, not discussion ids. Extending the sweep to carry ids is
-  what would finish this — then `CodeHost` could post them and the agent would be out of `ship` completely.
+### Per-task base branch — `do <ticket> from <branch>` (in flight, uncommitted as of 2026-08-13)
+A task can be cut from another feature branch, and its review request then targets that branch instead of the
+project's `baseBranch` (`deploy` is unaffected — it still merges into `deployBranch`). `TaskState.baseBranch`
+stays null when the human named none, so a config change still reaches those tasks. Built by a parallel
+session together with the `NewTask`/`LaunchRequest` parameter objects that replace the eight positional Strings
+a `do` used to be carried by through four hops. Documented here and in README because the docs went in with an
+adjacent commit; the CODE is still in the working tree, so treat this entry as a promise until it lands.
 
-### Superseded — the original argument for moving ship into the backend
-`OrchestratorTools.ship` writes the agent a five-step prose instruction: commit with EXACTLY this title,
-push branch, create the MR, post drafted replies, report `CI_POLLING` with the URL. Every step of that is
-deterministic and already belongs to the backend — `GitService` holds the per-repo lock, `mrTitlePattern`
-lives in config, MR create is a REST call (previous entry). Leaving it to the agent buys three failure
-modes: the permission classifier can silently stall `git commit`/`git push` in a window nobody is watching,
-the title can come back reworded, and the status/URL report can simply not happen (hence the defensive
-"CI_POLLING requires the MR link in the message" validation).
-
-Target shape: `ship` = (1) `GitService.commitAll(worktree, title)`, (2) push the task branch,
-(3) `CodeHost.createOrUpdateMergeRequest(...)`, (4) status → `CI_POLLING` with the URL, all in-process.
-`SHIPPING` stops being a state you can hang in (it becomes momentary), the whole "ship again to recover a
-dead agent mid-ship" recovery path and its `shipGate(SHIPPING, !agentLive)` special case disappear, and the
-`update_agent_status` URL validation becomes unnecessary.
-Safety is unaffected: pushing the task branch from the backend is what `deploy` already does, shared
-branches stay untouched, the detached upstream still guards a bare `git push`, and `ship` remains the
-human's explicit approval gate. The agent keeps exactly the work that needs judgement: writing the code and
-drafting review replies (`postReviewReplies` / `reviewReplyAuthors` still route those).
-
-### NL fallback — tier 2 of the two-tier dispatch — DONE 2026-08-13
-`NaturalLanguageDispatch`: an unknown console line or the board's ⌘K palette (`POST /api/interpret`) goes to a
-stripped headless call (`--strict-mcp-config` with an EMPTY server map, no `--setting-sources`) that returns
-`{command, task, ticket, reason}` under a schema. The dispatcher then validates — the verb must be a real
-`TaskAction` (or `do`), the task must EXIST — and executes through `CommandService`, the same gate the buttons
-use, so a model's guess cannot widen what is legal. Measured with a stubbed CLI: 940 tokens for one mapping,
-booked under the new `COMMAND_MAP` kind, so `stats` shows what the flexibility costs.
-Three decisions worth keeping: the answer leads with the interpretation ("understood as `ship ABC-1` — …")
-because an invisible mapping teaches nobody the grammar; ambiguity is a `none` with a reason rather than a
-guess between two tasks; and a SINGLE unknown word never reaches the model (it is a typo, and a typo must not
-cost a call). The model is handed only the projection's own task list with each task's LEGAL actions, so it
-does not propose something the gate would refuse.
-
-The original plan, for the record:
-1. Parse input as a grammar command → execute deterministically (today's behaviour, ~95% of interactions).
-2. No grammar match / free text ("залей ту задачу с логином") → hand the raw text to a LEAN headless Claude
-   that maps it to a grammar command → VALIDATE (`SAFE_ID`, project mapping, the same gates the command
-   would hit) → execute. Tokens + latency only here, only when flexibility is actually used. The LLM never
-   executes: it only PROPOSES, deterministic code executes after the gate (asymmetric-failure-cost rule).
-   Use the same stripped invocation as the assistant fix above (`--strict-mcp-config` with an EMPTY server
-   list — text→command mapping needs no MCP at all, plus `--append-system-prompt "<grammar + task list>"`).
-   In the web UI this is the Cmd-K command palette; in the TUI it is just what happens on an unknown command.
-Prefer headless haiku over a resident local model: a 3-7B local model adds 4-8 GB RAM (the machine already
-swaps — see the jdtls incident); headless `-p` holds nothing resident and, with a stripped context, is
-nearly as cheap. Revisit a local model only if API cost ever dominates.
-
-### Prove the pluggable seams with a second implementation each
-`AgentRuntime` and `TerminalDriver` now have two implementations each (claude + codex, kitty + warp). Adding
-Codex is what MOVED provisioning into the seam — proof the critique below was right: an interface with one
-implementation had quietly left `.mcp.json`, `.claude/settings.local.json` and the word "Claude" sitting in
-`OrchestratorTools`.
-Still single-implementation, so still unproven: `UserNotifier` (macos only), `EditorDriver` (one CLI driver),
-`CodeHost` (GitLab only). The Linux port below is the natural second implementation for the first two.
-There is now a THIRD implementation, `StubAgentRuntime` (`orchestrator.agent=stub`), which the e2e matrix runs
-on: `launchCommand` runs a configured script (or `true`), `wireAgent` writes nothing — and that emptiness is an
-assertion, since a Claude-shaped file in a stub worktree means something outside the runtime put it there.
-One follow-up the Codex runtime left behind: a Codex worktree gets jagt's MCP proxy but NOT the human's own
-servers (its `CODEX_HOME` points at the worktree, so `~/.codex/config.toml` is not read). Fine for the code,
-but such an agent cannot post review replies itself — which stops mattering once `ship` moves into the
-backend (step 3).
-
-### `OrchestratorTools` — DONE 2026-08-13, and the finding that decided how
-DONE, in three passes: `ship` left (into `ShipService`), the worktree file work left (into `WorktreeFiles`,
-statics with zero collaborators), and finally the one big move below: `AgentSessions` (tmux window, focus,
-kill, relay) + `TaskProvisioning` (worktree creation, alias, sub-agent context). **871 → 478 lines, 11 → 7
-collaborators**, and the shrinkage showed up where the entry predicted it would — in the tests: the twelve
-moved tests now build ONE service with four or five collaborators instead of the facade with eleven
-(`AgentSessionsTest`, `TaskProvisioningTest`), and the facade's own tests wire the two services through a
-single factory. The `SAFE_ID` pattern is no longer duplicated: `resume` calls
-`TaskProvisioning.requireSafeId`, which is the class that owns task creation (regression test: an unusable
-ticket id is refused before a single git call).
-
-Part 2 was ATTEMPTED and reverted first, and the reason is the useful finding: extracting `deploy`/`prune` into
-a `RepositoryOps` makes the facade WORSE, not better. It would delegate, so it keeps the reference, and none of
-its eleven collaborators becomes unused — `GitService` and `EditorDriver` are still needed by `initializeTask`,
-`removeTask`, `openInIde` and `existingBranchProject`. Net effect: twelve dependencies instead of eleven, for
-the sake of a tidier-looking file. A refactor that raises the number it exists to lower is not one.
-
-What ACTUALLY shrank the facade was one move, not a series: `initializeTask` + the agent-session methods
-(`openTaskTab`/`closeTaskTab`/`focusTask`/`writeTaskContext`/`openTab`/`agentSession`) leave TOGETHER, because
-they are what pull in `TmuxService`, `TerminalDriver`, `AgentRuntime`, `PromptTemplates`, `OrchestratorPaths`
-and `OrchestratorProperties` — six of the eleven. After that the facade holds state + config + git + editor +
-notifier + two services — which is exactly what it holds now. Two smaller ideas from that plan were NOT taken
-and stay open: `deploy`/`prune` could still leave (they add nothing to the facade either way), and `resumeTask`
-arguably belongs with `TaskLauncher` (it IS a launch). Neither is worth a pass on its own; do them if a new
-command lands next to them.
-
-### The original argument (kept as the record of what the smell looked like)
-~1000 lines and ELEVEN injected collaborators (the `AgentRuntime` arrived with the Codex runtime): task
-lifecycle (`initializeTask`/`removeTask`/`resumeTask`), worktree file copying (IDE files, local files), git
-operations (`deployTask`, `pruneBranches`), agent plumbing (tmux windows, status updates) and the MCP-facing
-surface. Every new command lands here because it already has every dependency — `prune` did exactly that.
-The agent-specific half of provisioning has left (it lives in `AgentRuntime` now), and the class did not
-shrink much: the concerns are additive, so this entry is unaffected.
-The tell is in the tests: each one constructs it with eleven arguments, so `OrchestratorToolsTest` is the
-heaviest file in the suite — and adding that eleventh argument meant a mechanical edit of 31 call sites, which
-is the cost of not having split it yet. Split by concern (task lifecycle / worktree provisioning / repo ops), keep
-`OrchestratorTools` as the thin MCP-facing facade that delegates. Do it BEFORE the next command is added, and
-expect the test setups to shrink to two or three collaborators each — that shrinkage is the proof it worked.
-
-### `deploy` has an undo — DONE 2026-08-13
-`revert <ticket>` (console, board button, `revert_task` over MCP): reverts the merge commit deploy created on
-`deployBranch` and pushes the revert; `DEPLOYED` → `REVERTED`, so the board stops claiming the change is live.
-It only ADDS a commit — no history rewrite, no force-push — and the task branch keeps its commits, which is
-why `REVERTED`'s primary move is SHIP (fix and go again), not DONE.
-
-The design decision worth keeping: `deploy` now RECORDS the merge commit it created (`TaskState.deployCommit`,
-returned by `mergeIntoAndPush`, including the conflict-resolution path). Without it, revert would have to find
-the merge by grepping the log for the branch name — and reverting the wrong merge on a shared branch is the one
-mistake here with no cheap undo. So a task deployed BEFORE this exists is refused with the by-hand `git revert
--m 1` recipe rather than guessed at. Same refuse-don't-guess rule for the other three ambiguous cases: the
-commit is not on the branch, it was already reverted (idempotence on a shared branch — a second revert would
-silently re-apply the change), or the revert conflicts with later work there (aborted and cleaned up, unlike a
-deploy conflict: what a human needs to decide there is whether reverting is still the right move at all).
-
-NOT offered: re-deploying a REVERTED task. Its commits are still in the branch's history, so `deploy`'s
-"nothing to deploy" guard would refuse anyway — the honest path is a new commit, then ship + deploy.
-
-### Per-task base branch — LANDING NOW (a second session, uncommitted as of 2026-08-13)
-A task could only ever be cut from the project's configured `baseBranch`, so work that belongs on top of
-another feature branch had no representation. In flight: `do <ticket> from <branch>` (console), the same field
-on the board's New task form, `NewTask`/`LaunchRequest` parameter objects replacing the eight positional
-Strings that carried a `do` through four hops, `TaskState.baseBranch` (null = follow the project config, so a
-config change still reaches old tasks) and `ShipService` targeting that branch with the review request.
-Not yet committed; the working tree is mid-refactor. Nothing in this file above assumes the old signature.
-
-## Automation
-
-### Make the auto-review poll free
-DONE for a configured host (2026-08-13, see the roadmap notes): with `orchestrator.code-host.type` set, a tick
-spends no model call at all. Without one it still spends a headless `claude -p` per tick, which is why
-`autoReview.enabled` keeps defaulting to `false` — the guard belongs to the expensive path, not to polling
-itself, so it can be flipped once a host is wired.
-
-## UX
-
-### The dashboard shows an enum, not a process — DONE 2026-08-13 (`Move`/`Phase`/`Owner` + `TaskView`)
-Delivered as specified below and rendered by BOTH surfaces; `Move.shippable` is the single gate the
-ship path calls too. The original argument is kept as the record of why the projection exists.
-
-This is the root of "ревью/шип/деплой непонятно". Eleven `TaskStatus` values, of which `REVIEW_PENDING` /
-`CI_POLLING` / `REVIEWED` / `APPROVED` all read to a human as the single word "review". And the next-step
-hint is PROSE: `NextMove.forStatus` returns a `String`, so it can be neither turned into a button nor
-validated — `ship`'s real legality lives in `OrchestratorTools.shipGate`, and the dashboard advises
-independently of it. Two sources of truth for "what can I do now".
-
-Fundament (do this before any UI work): `NextMove.forStatus(status)` →
-`Move(Phase phase, Owner owner, List<Action> actions, String hint)` where `Owner ∈ {AGENT, YOU, CI}` and
-`Action = (id, label, primary)`, with legality computed by the SAME code as the command gates. Then:
-- the TUI renders phase + owner + actions instead of a sentence;
-- a UI can offer exactly the actions the server declared legal — an illegal move becomes unrepresentable;
-- the eleven statuses collapse into six rail steps a human reads at a glance (REVIEW = the human reading the
-  diff, which happens BEFORE `ship`; CHECK = the pipeline on the pushed branch):
+### The projection: `Move` / `Phase` / `Owner` / `TaskView`
+The root of "ревью/шип/деплой непонятно" was that four statuses all read as the word "review" and the next-step
+hint was PROSE, so it could be neither turned into a button nor validated — while `ship`'s real legality lived
+somewhere else entirely. Now `Move.forTask(status, hasReviewRequest)` answers phase + owner + legal actions +
+the obvious one, `TaskView` carries it to every surface, and `Move.shippable` is the same predicate the ship
+gate calls. Twelve statuses collapse into six phases a human reads at a glance:
 
 ```
 BUILD ──▶    REVIEW ──▶ CHECK ──▶    READY ──▶  DEPLOY ──▶        DONE
 NEW          REVIEW_    SHIPPING     REVIEWED   DEPLOYED          DONE
 IN_PROGRESS  PENDING    CI_POLLING   APPROVED   DEPLOY_CONFLICT
-                        CI_FAILED
+                        CI_FAILED               REVERTED
 🤖 agent     👤 you     🤖/⚙️ CI     👤 you     👤 you            —
 ```
 
-Keep `TaskStatus` as the persisted SSOT — `Phase` is a projection for humans, not a second state machine.
+`TaskStatus` stays the persisted SSOT; `Phase` is a projection, never a second state machine.
 
-### Local web UI (mouse-driven), TUI stays as the fallback — DONE 2026-08-13, except phase 2 (ttyd)
-Shipped: the board is the DEFAULT surface (`orchestrator.ui: web` in `application.yml`, `tui`/`both`
-still selectable), vanilla HTML/CSS/JS in `static/`, no build step and no external asset; SSE push;
-`/api/tasks`, `/api/tasks/{id}/actions/{action}`, `/api/interpret` (⌘K). The one part NOT built is
-phase 2 — the embedded terminal (ttyd), which is roadmap step 3 below.
+### The board — default surface, no build step
+Vanilla HTML/CSS/JS in `static/`, no CDN and no external asset of any kind (it must work offline and stay
+inside the one jar). SSE push instead of polling — `StateService.onChange` is the single event both surfaces
+consume, and the event carries NO payload on purpose, so it cannot disagree with `/api/tasks`. Rejected
+alternatives: an IntelliJ plugin (months, and it would bind the UI to one editor against pluggable-by-design),
+Electron/native (same cost, more of it), Lanterna mouse support (clicking inside an ASCII table treats the
+symptom, not the diagnosis above).
 
-The CLI dashboard is fine as a monitor and bad as a control surface: no clicking, no per-task actions, no
-timeline, no cost. The backend is already Spring Boot Web on 8290 with `/state`, `/status` and `/stats`
-(`McpController`), so a local UI is a small addition, not a new stack:
-- `GET /api/tasks` — the dashboard projection plus `phase`/`owner`/`actions` from the entry above;
-- `GET /api/events` — SSE. `StateService` already funnels every mutation through one lock, so a listener
-  list fired from `putTask`/`updateTask`/`removeTask` is ~15 lines and gives push instead of polling
-  (the same trigger the TUI could use to repaint on change rather than on a timer);
-- `POST /api/tasks/{id}/actions/{action}` — executes ONLY what the server itself listed as legal;
-- `src/main/resources/static/` — vanilla JS/CSS, no build step and no CDN (must work offline; a strict
-  no-external-assets page also keeps the jar self-contained). Served by the same jar, opened at
-  `localhost:8290`.
+### Status history in `state.json`
+`TaskState.history` is append-only `[{status, at}]`, capped at 50 (the file is rewritten on every MCP call).
+Two rules make it useful rather than noisy: a keep-alive records nothing (same status → no entry, or four real
+transitions would drown in hundreds of identical rows), and a task starts its history at the status it was
+CREATED with. `statusSince()` is what the surfaces show — never `lastActiveTimestamp`, which a keep-alive
+bumps, making an hour-old status look fresh.
 
-Card per task in a column per phase: alias + ticket + title, owner badge, time-in-current-state, the MR
-link, the drafted-replies indicator, and buttons = the legal actions (`ide`, `ship`, `review` — `sweep`
-after the rename below, `deploy`, `done`, `focus`). Header: how many tasks are waiting on YOU, and today's master-side token cost (`stats`).
+### TUI repaints on state change, not on the timer
+`MasterShell` subscribes to the same `StateService.onChange` the board's SSE uses, and the listener only raises
+a flag the render loop consumes (Lanterna's screen belongs to the UI thread; the listener runs on whichever
+thread served the agent's MCP call). Pinned by `scripts/tui-push-repaint-smoke.sh`: refresh set to 60s, a
+status pushed through `POST /mcp`, the screen asserted to show it within seconds — verified RED by deleting
+the listener.
 
-Phase 2, only if the basic UI proves itself: embed the agent terminal instead of switching windows —
-`ttyd -W tmux attach -t jagt` in an iframe makes `focus` a click in the browser. That is a new install
-requirement, so it goes into README's Prerequisites table (never install silently).
+### Linux, and testing it from a Mac
+The drivers: `LibNotifyNotifier` (`notify-send`), `LinuxKittyTerminalDriver`, and the JetBrains config path no
+longer macOS-only. Two findings: driving kitty needed NO Linux-specific code at all (one shared
+`AbstractKittyTerminalDriver`, two hooks — `bringToFront` and `platformOptions`, both empty on Linux), and the
+editor needed no new class, only the config path fixed.
+Then the runner question was answered without a Linux box: `scripts/linux-suite.sh` runs the suites in a
+container, and `.github/workflows/ci.yml` / `.gitlab-ci.yml` run the same steps by calling the same scripts.
+`linuxDriverTest` is where the drivers meet real binaries — the notification is asserted off the session bus
+with `dbus-monitor`, kitty is driven under Xvfb.
+That first run paid for itself immediately: `tmux-command` shipped as `/opt/homebrew/bin/tmux`, so EVERY task
+on Linux died at "Failed to start command" before its agent started. Binaries are now bare names resolved by
+`platform/Executables`.
 
-Do NOT fork the rendering logic: extract one `TaskView` projection consumed by the TUI, the `/status` text
-and the JSON alike. And keep the TUI — it is covered by the layout smoke test and is the fallback when
-there is no browser.
-Rejected alternatives: an IntelliJ plugin (months of work, and it would bind the UI to one editor against
-the pluggable-by-design invariant); Electron/native (same cost, more of it); Lanterna mouse support (it
-does have `MouseAction`, but clicking inside an ASCII table treats the symptom, not the diagnosis above).
+### The e2e matrix
+`./gradlew e2eTest` (own source set, out of `test`/`check`): `TaskFlowCase.matrix()` × `TaskFlowMatrixTest`
+runs CREATE→PROVISION→LAUNCH→TEARDOWN over real git/tmux with `orchestrator.agent=stub`, asserting worktree
+contents, the per-agent provisioning ABSENCE (a Claude-shaped file in a stub worktree means something outside
+the runtime put it there), `TaskStatus`, and that `done` removes the worktree while KEEPING the branch.
+Design rules it lives by: assert OBSERVABLE state, never timing; widening coverage is adding a ROW; and a
+combination that is not covered is NAMED with the reason. What is still missing is roadmap step 6, plus the
+real driver combinations — a GUI cannot be asserted, which is what `linuxDriverTest` exists for instead.
 
-### ~~Status-transition history in `state.json`~~ DONE 2026-08-13
-`TaskState.history` is an append-only `[{status, at}]` written by the same `withStatus` path that stamps the
-timestamp, capped at the last 50 (the file is rewritten on every MCP call). Two rules make it useful rather
-than noisy: a KEEP-ALIVE records nothing (same status → no entry, or four real transitions would drown in
-hundreds of identical rows), and a task starts its history at the status it was CREATED with, so "how long did
-it sit in NEW" has an answer. `TaskState.statusSince()` is what both surfaces show — NOT
-`lastActiveTimestamp`, which a keep-alive bumps, making an hour-old status look fresh.
-Still open, and now cheap: cycle-time statistics over the history ("this ticket spent 6 h waiting on me",
-"review rounds average 3"), which is a `stats`-shaped question, not a card-shaped one.
-
-### ~~The drafted review replies are invisible until you go looking for them~~ DONE 2026-08-13
-`TaskViews` stats the worktree for `review_replies.md` and puts a `draftedReplies` flag on the projection, so
-both surfaces announce it: a console detail line that names the file and the `ide <alias>` that opens it, and a
-card badge on the board. Presence, deliberately not a COUNT — the agent's brief prescribes no per-comment
-marker, so any number would be a guess dressed as a fact.
-Still open: the NOTIFICATION path says nothing about drafts (`UserNotifier` fires on the REVIEW_PENDING
-transition, which is exactly when they appear), and `postReviewReplies`/`reviewReplyAuthors` remain invisible
-until a `ship` acts on them.
-
-### ~~Repaint the TUI on state change, not only on the timer~~ DONE 2026-08-13
-`MasterShell` subscribes to `StateService.onChange` — the SAME event the board's SSE uses — and the listener
-only raises a flag the render loop consumes (Lanterna's screen belongs to the UI thread; the listener runs on
-whichever thread served the agent's MCP call). The periodic tick stays for the relative "ACTIVE" clock.
-Pinned by `scripts/tui-push-repaint-smoke.sh`: refresh set to 60s, a status pushed through `POST /mcp`, and the
-screen asserted to show it within seconds — so only the event can explain the repaint (verified RED by
-deleting the listener).
-
-- tmux status bar styled as clickable job "tabs" (alias + status, active highlighted) so `shared` viewMode
-  reads like native tabs. Largely superseded by the web UI entry above; keep only if the TUI stays primary.
-
-## Docs / clarity
-
-- `review` is a confusing name: it does a full sweep of the review request (pipeline + comments) and relays
-  a brief — it does not "review" anything itself, and now that `autoReview` polls automatically, a manual
-  trigger is an escape hatch, not a workflow step. Rename to `sweep <ticket>` ("check it now") and keep
-  `review` as a hidden alias for muscle memory.
-
-## Product shape — bigger questions, unscheduled
-
-### Nothing limits how many agents you start — DONE 2026-08-13 (`agent.maxConcurrentTasks`)
-`do` spawns an agent per ticket with no admission control. Each is a full Claude Code session with its own
-language server (~1-2 GB for a Java worktree, per CLAUDE.md's resource-hygiene note — the machine already
-swapped once because of it), plus a worktree checkout on disk. Five tasks is a different machine than two,
-and the human finds out by watching everything crawl.
-DONE 2026-08-13: `agent.maxConcurrentTasks` (default 3, `0` = opt out), policy in `TaskAdmission` (statics,
-no collaborators), enforced in `TaskProvisioning.initializeTask` — the choke point every surface reaches a new
-task through, so no front-end can walk around it. It REFUSES rather than queues (queueing needs a pre-NEW
-status and a scheduler; the refusal names the tasks holding the slots and how to free one). A slot is held by
-a REGISTERED task whatever its status, because the worktree and its 1-2 GB language server live until `done`.
-`TaskLauncher` runs the same check EARLY, before the ticket read: the enforcement point is provisioning, but
-reading a ticket is a paid model call and refusing after paying for it charges for nothing. Both headers show
-`n/cap` (`2/3 task(s)` in the console, red `2/3 slots` on the board) because a cap only helps if it is
-visible before it is hit.
-
-What was NOT built: queueing. If it ever is, the new status is pre-NEW and the scheduler starts a queued task
-when `done` frees a slot — and `TaskAdmission` is where the decision already lives.
-
-### One task = one repository
-A ticket that touches two repos (backend + frontend) has no representation: it becomes two unrelated tasks,
-each with its own branch, MR, review cycle and alias, and nothing ties them together — not the dashboard, not
-`ship`, not `deploy`. The human keeps the relationship in their head and has to remember to ship both.
-This is a real shape question, not a small feature: does a task grow a LIST of (project, worktree, branch)
-tuples, or does jagt gain a "change set" that groups tasks? The first breaks the "one worktree = one agent"
-assumption that `X-Working-Directory` scoping rests on; the second keeps every current invariant and adds a
-grouping layer on top, which is probably the answer. Do not start it before the phase/action model (roadmap
-step 1) exists — a group's state is a function of its members' states, and that needs the projection first.
-
-### Secrets are copied into every worktree and only the happy path cleans them up
-`worktree.copyGlobs` deliberately copies gitignored local files — `.env`, `*.pem`, `*.p12`, keystores — into
-each worktree so the app can actually run there. That is the right call and it is documented, but it means N
-copies of production-ish credentials live in sibling directories of the repo, readable by every agent
-process, and they are removed only when `done` succeeds in deleting the worktree. `removeWorktree` is
-best-effort and logs-and-continues in places, and a crashed/abandoned run leaves the copies behind
-indefinitely.
-DONE 2026-08-13: `WorktreeOrphanScanner` reports the leftovers (`<task>-<projectKey>` and an abandoned
-`<task>-deploy`) with the number of copied secret files still in each — one startup ping, details at
-`GET /orphans`. It deletes nothing: an orphan can hold uncommitted work.
-Two decisions still open, both about the copying itself:
-- should the default set be narrower than "any `*.pem`"? Today one config key covers .env, keys, certs and
-  keystores for every project.
-- `**/.env` does NOT match a root-level `.env` — Java's glob needs a directory component. A repo whose `.env`
-  sits at the top level silently gets nothing copied, and the app then fails to start in the worktree for a
-  reason that looks like anything but a glob. Either document it in `config.json.dist` or ship
-  `["**/.env", ".env"]` as the default.
-
-## Testing & portability
-
-### Generic wording for the GitLab-leaning internal labels (low priority)
-`mrUrl` / "MR" / `CI_POLLING` are GitLab-flavoured INTERNAL names — fine as-is, but user-facing text could
-say "review request" / "pipeline or checks" generically. Not worth a churny rename until a non-GitLab host
-is actually wired. (The invariant itself — never hardcode a tracker or code host — lives in CLAUDE.md.)
-
-### Run the build on Linux — the drivers are in, the RUNNER is not
-DONE 2026-08-13, the driver half: `LibNotifyNotifier` (`notify-send`), `LinuxKittyTerminalDriver`, and the
-JetBrains config path is no longer macOS-only (`~/.config/JetBrains` is probed too, which is what would have
-left a dead recent-projects entry per task on Linux). Selection is `orchestrator.platform=linux`, and
-`LinuxProfileContextTest` boots that profile so a condition typo fails in CI rather than on a desktop.
-Two findings worth keeping: driving kitty needed NO Linux-specific code at all (one shared
-`AbstractKittyTerminalDriver`, two hooks), and the editor needed no new class — only the config path fixed and
-`orchestrator.editor-command` pointed at `idea`/`code`.
-
-What is still missing is the part that cannot be faked from macOS: nobody has run `./gradlew build` or the jar
-on a real Linux box, so "it wires" is all that is proven. Do that on a Linux runner (Java 25, Node, tmux, git,
-kitty, libnotify), then check the three things a unit test cannot see — does `notify-send` actually raise a
-banner under the session bus, does `kitty @ focus-window` reach the window with the WM in charge of stacking,
-and does the `pkill -f <socket>` viewer close behave the same. `WarpTerminalDriver` remains macOS-only (URI
-scheme + AppleScript) and is not part of this.
-
-### Automated end-to-end test harness across all config combinations, with a deterministic oracle
-Goal: one automated suite that exercises the WHOLE task flow (create worktree → provision → launch →
-talk over MCP → ship/review/deploy/done) across the full matrix of swappable pieces and config flags, and
-asserts a **deterministic expected result** for each combination — so any regression in any combo is caught
-without hand-testing.
-
-SKELETON LANDED 2026-08-13 — `./gradlew e2eTest` (own source set `src/e2e/java`, out of `test`/`check`):
-`TaskFlowCase.matrix()` × `TaskFlowMatrixTest` runs the CREATE→PROVISION→LAUNCH→TEARDOWN half over the real
-git/tmux stack with `orchestrator.agent=stub`, 4 combinations (viewMode × autoReview), asserting worktree
-contents, the per-agent provisioning absence, `TaskStatus`, the autoReview flag, and that `done` removes the
-worktree while KEEPING the branch. `E2eWorkspace` is the throwaway world (bare origin + clone + config.json +
-prefix-killed tmux sessions).
-What the skeleton does NOT cover yet, in the order it is worth adding:
-1. `ship`/`review`/`deploy`/`resume` — each needs a fake `CodeHost` bean (now trivial: the seam exists) plus a
-   stub script that reports statuses back over `POST /mcp`. That is where the oracle gets interesting: status
-   transitions, `state.json` history, the drafted-replies relay.
-2. the remaining config flags (`postReviewReplies`, `reviewReplyAuthors`, branch strategy fresh/resume, plan
-   mode) — data rows once the flow above is scripted.
-3. the real driver combinations (`terminal`, `platform`, `editor-command`), which today are Mockito doubles: a
-   GUI cannot be asserted, so those need the Linux/macOS driver comparison below, not more rows here.
-
-The matrix (Cartesian product of the strategy seams + config):
-- `AgentRuntime` (`orchestrator.agent`: claude / codex / … — stub/fake runtime for CI),
-- `TerminalDriver` (`orchestrator.terminal`: kitty / warp),
-- `UserNotifier` (`orchestrator.platform`),
-- `EditorDriver` (`orchestrator.editor-command`),
-- config flags: `viewMode` (shared / tab-per-task), `postReviewReplies`, `reviewReplyAuthors`,
-  branch strategies (fresh / resume), deploy on/off, plan mode, `autoReview` on/off, etc.
-
-Design notes:
-- Needs a **deterministic oracle**: fake/record-replay the external, non-deterministic pieces — a stub
-  `AgentRuntime` that emits scripted MCP calls instead of a real LLM, a throwaway local Git origin, a
-  throwaway tmux session, and headless terminal/editor/notifier drivers (no GUI). Then every combo has a
-  fixed expected end state (state.json transitions, branches/worktrees created + cleaned, MR/CI mocked).
-  A `CodeHost` seam makes this dramatically easier — a fake `CodeHost` replaces "mock an LLM reading a
-  merge request", which is the least testable thing in the system today.
-- Assert on OBSERVABLE state, not timing: final `TaskStatus`, git refs/worktrees present-or-gone, files
-  written into the worktree, notifications emitted. Follows the existing smoke-test etiquette (throwaway
-  tmux + `ORCHESTRATOR_ROOT` + `--orchestrator.open-warp-window=false`, leave no trace).
-- Run the SAME matrix on macOS now and on Linux once its drivers exist — the harness is the portability
-  gate: "does combination X behave identically on both OSes?" Think through how to keep the expected-result
-  oracle OS-independent (the flow is OS-neutral; only the driver side effects differ).
+### Seams and their second implementations
+`AgentRuntime` (claude / codex / stub) and `TerminalDriver` (kitty / warp) have more than one, and adding
+Codex is what MOVED provisioning into the seam — proof that an interface with one implementation had quietly
+left `.mcp.json` and the word "Claude" sitting in `OrchestratorTools`. Still single-implementation, so still
+unproven: `EditorDriver` (one CLI driver) and `CodeHost` (GitLab only — roadmap step 5). `UserNotifier` got
+its second with Linux.
+One follow-up Codex left: its worktree gets jagt's MCP proxy but NOT the human's own servers (`CODEX_HOME`
+points at the worktree), so such an agent cannot post review replies itself — which stopped mattering when
+`ship` moved into the backend.

@@ -4,30 +4,32 @@
 
 jagt takes a ticket from your issue tracker and hands it to an autonomous AI coding agent — any MCP-capable
 CLI ([Claude Code](https://claude.com/claude-code) by default; Codex, Qwen, … via config) — working in its
-own isolated Git worktree. You drive everything from a single **Master** console:
-spin agents up, watch them, review, ship, deploy, tear down. Nothing leaves your machine — no push, merge,
-merge request, or deploy — without a human checkpoint you own.
+own isolated Git worktree. You drive everything from one place — a local **board** in the browser (default)
+or the **Master** console in a terminal: spin agents up, watch them, review, ship, deploy, tear down. Nothing
+leaves your machine — no push, merge, merge request, or deploy — without a human checkpoint you own.
 
-> **One console. One agent per ticket. Isolated worktrees. You approve every outward move.**
+> **One control surface. One agent per ticket. Isolated worktrees. You approve every outward move.**
 
 ---
 
 ## How it works
 
-- **Master console** — one terminal you type into (`do PROJ-42`, `ship`, `deploy`, …). It routes and
-  tracks; it never writes code. It is plain Java, not an AI session: commands are parsed by a fixed
-  grammar and executed in-process — instant, no tokens, no drift.
+- **The Master** — the board's buttons and the console's commands (`do PROJ-42`, `ship`, `deploy`, …) are the
+  same core: it routes and tracks, and never writes code. Plain Java, not an AI session — a command is parsed
+  by a fixed grammar and executed in-process, so it is instant, costs no tokens and cannot drift. Free text is
+  the one exception, and it only ever PROPOSES a command (see the dispatch note under Usage).
 - **Sub-agents** — one agent session per ticket, each in its own Git worktree (a sibling checkout on a task
   branch). They can't see each other's code and can't touch your base branch — jagt enforces it.
 - **You, the human in the loop** — jagt never commits to a shared branch, opens a merge request, or deploys
   on its own. Three checkpoints are always yours: **review · CI · close**.
 - **Durable state** — a small backend tracks each task through its lifecycle
-  (`NEW → IN_PROGRESS → REVIEW_PENDING → CI_POLLING → DEPLOYED → DONE`) and guards Git so an agent can only
+  (`NEW → IN_PROGRESS → REVIEW_PENDING → CI_POLLING → DEPLOYED → DONE`, plus `REVERTED` when a deploy is taken back out) and guards Git so an agent can only
   ever act on its own branch.
 
 Agents run as background sessions inside one terminal window that opens for you automatically, so they keep
-working even if you close the viewer. The terminal, editor, and notifier are **swappable strategies** — the
-concept is OS-agnostic; today it ships tuned for macOS.
+working even if you close the viewer. The terminal, editor, notifier and agent CLI are **swappable
+strategies**: macOS is what jagt is developed on, and the Linux drivers ship with it — CI runs the task-flow
+matrix and those drivers against real `notify-send`/kitty on every push (see Development).
 
 ---
 
@@ -61,12 +63,14 @@ cd orchestrator-backend
 java -jar build/libs/jagt.jar
 ```
 
-You're now at the `jagt>` console. Type `help`, or `do <ticket>` to start your first agent.
-Check the backend any time: `curl -s localhost:8290/state`.
+That serves the **board** at `http://localhost:8290` — the default surface. Open it and press `New task`
+(or `⌘K` and say what you want). Plain text any time: `curl -s localhost:8290/state`.
 
-> Run the jar in a **real terminal tab** — the console is a full-screen TUI showing your command output, a
-> live task dashboard, and the input line together. (`./gradlew bootRun` also works but Gradle captures
-> stdout, so with no TTY it degrades to a plain line-by-line REPL.)
+Prefer typing? `java -jar build/libs/jagt.jar --orchestrator.ui=tui` gives the full-screen console instead
+(`=both` serves the board and then hands the terminal to the console). Run the jar in a **real terminal tab**
+for that: the console draws your command output, the live dashboard and the input line into one screen.
+(`./gradlew bootRun` works too, but Gradle captures stdout, so with no TTY the console degrades to a plain
+line-by-line REPL.)
 
 ---
 
@@ -166,28 +170,6 @@ status, and points at drafted review replies when the agent has written any. Tal
 | anything else (free text) | tier 2 of the dispatch: a model maps your words onto ONE of the commands above and jagt executes it through the same gate a button uses — it answers with what it understood ("understood as `ship a1` — …"). In the board this is the **Ask** button / **⌘K**. Costs one small model call, and only here; a single mistyped word is treated as a typo and costs nothing |
 | `help` | command reference + recovery cheatsheet |
 
-### Testing on Linux from a Mac (containers)
-
-`orchestrator-backend/scripts/linux-suite.sh` runs the suites on a REAL Linux without a second machine — the
-container is one. Three tasks, in order: the unit suite on a Linux JVM, the `e2eTest` task-flow matrix with
-real git + real tmux, and `linuxDriverTest` — the Linux drivers against the real binaries (`notify-send` over
-a session D-Bus with a notification daemon, kitty on an Xvfb display answering remote control). Needs Docker,
-nothing else; it leaves only an image and a Gradle cache volume behind.
-
-It earns its keep: the first run found that `tmux-command` shipped as `/opt/homebrew/bin/tmux`, so every task
-on Linux died with "Failed to start command" before its agent started.
-
-**CI runs the same thing.** `.github/workflows/ci.yml` and `.gitlab-ci.yml` call the SAME scripts — no
-CI-only code path, so a green pipeline and a green laptop mean the same: `unit` (hermetic), `linux`
-(`scripts/linux-test-deps.sh` → `scripts/with-linux-desktop.sh ./gradlew e2eTest linuxDriverTest`) and
-`smoke` (the two real-PTY tmux scripts against the built jar). GitHub additionally runs the unit suite and the
-layout smoke on macOS, the platform jagt is developed on. Neither pipeline needs Docker or a privileged runner
-— the container image exists for developers on a Mac, and installs its packages from that same deps script.
-
-What a container CANNOT answer, and is therefore not pretended to be covered: IntelliJ (`idea`), the macOS
-AppleScript window raise, the Warp URI scheme, the real `claude` CLI, and a live code host or tracker.
-
-
 The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
 with **Shift+←/→** or by clicking a task in the status bar. Every task also gets a short alias (`p1`, `s2`)
 you can use in any command instead of the ticket id. Plain text any time: `curl -s localhost:8290/status`,
@@ -239,6 +221,31 @@ future automation):
 | **Review** | agent reached `REVIEW_PENDING`, and after every review round | `ide` → then `ship` (or `focus` to iterate live) |
 | **CI / progress** | after `ship` | `review` — or set `autoReview.enabled` and jagt polls for you within a bounded window (it only READS and DRAFTS; it never posts, pushes or deploys) |
 | **Close** | CI green, reviewers satisfied | `done` |
+
+---
+
+## Development
+
+### Testing on Linux from a Mac (containers)
+
+`orchestrator-backend/scripts/linux-suite.sh` runs the suites on a REAL Linux without a second machine — the
+container is one. Three tasks, in order: the unit suite on a Linux JVM, the `e2eTest` task-flow matrix with
+real git + real tmux, and `linuxDriverTest` — the Linux drivers against the real binaries (`notify-send` over
+a session D-Bus with a notification daemon, kitty on an Xvfb display answering remote control). Needs Docker,
+nothing else; it leaves only an image and a Gradle cache volume behind.
+
+It earns its keep: the first run found that `tmux-command` shipped as `/opt/homebrew/bin/tmux`, so every task
+on Linux died with "Failed to start command" before its agent started.
+
+**CI runs the same thing.** `.github/workflows/ci.yml` and `.gitlab-ci.yml` call the SAME scripts — no
+CI-only code path, so a green pipeline and a green laptop mean the same: `unit` (hermetic), `linux`
+(`scripts/linux-test-deps.sh` → `scripts/with-linux-desktop.sh ./gradlew e2eTest linuxDriverTest`) and
+`smoke` (the two real-PTY tmux scripts against the built jar). GitHub additionally runs the unit suite and the
+layout smoke on macOS, the platform jagt is developed on. Neither pipeline needs Docker or a privileged runner
+— the container image exists for developers on a Mac, and installs its packages from that same deps script.
+
+What a container CANNOT answer, and is therefore not pretended to be covered: IntelliJ (`idea`), the macOS
+AppleScript window raise, the Warp URI scheme, the real `claude` CLI, and a live code host or tracker.
 
 ---
 
@@ -296,7 +303,9 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.stub.script` | only for `orchestrator.agent=stub` (the scripted runtime used by `./gradlew e2eTest`): executable run instead of an agent |
 | `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
-| `orchestrator.tmux-command` | tmux binary (default `/opt/homebrew/bin/tmux`) |
+| `orchestrator.kitty-command` | the kitty binary for the viewer (default `kitty`) |
+| `orchestrator.tmux-command` | tmux binary (default `tmux`) — a bare name is resolved on PATH and then in the usual install dirs (Homebrew included, since a GUI-launched process has neither on PATH); give an absolute path to pin one |
+| `orchestrator.config-file` / `orchestrator.state-file` | where `config.json` and `state.json` live (default: inside the orchestrator root) |
 | `orchestrator.open-warp-window` | auto-open the agents terminal window (`false` in tests) |
 | `orchestrator.watchdog.stale-after` | silence threshold before an "agent unresponsive" alert (default `5m`) |
 | `orchestrator.root` / `ORCHESTRATOR_ROOT` | override the auto-detected root (nearest dir with `mcp_client.js`) |
