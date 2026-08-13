@@ -31,12 +31,10 @@ class TaskLauncherTest {
     private final OrchestratorTools tools = mock(OrchestratorTools.class);
     private final MeteredAssistant assistant = mock(MeteredAssistant.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final StateService stateService = mock(StateService.class);
-    private final TaskLauncher launcher = new TaskLauncher(tools, assistant, configService, stateService);
+    private final TaskLauncher launcher = new TaskLauncher(tools, assistant, configService);
 
     @BeforeEach
-    void noTasksYet() {
-        when(stateService.tasks()).thenReturn(Map.of());
+    void configIsReadable() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
     }
 
@@ -155,26 +153,6 @@ class TaskLauncherTest {
                 Map.of("group-a", List.of("backend"), "group-b", List.of("frontend")));
 
         assertThat(matches).containsExactly("group-a");
-    }
-
-    /**
-     * Reading the ticket is a paid model call, so a launch that the cap will refuse must be refused BEFORE it:
-     * the enforcement point is in provisioning, but by then the money is gone.
-     */
-    @Test
-    void refusesALaunchOverTheCapWithoutPayingForTheTicketRead() {
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of())))
-                .withAgent(ConfigService.ConfigFile.AgentConfig.defaults().withMaxConcurrentTasks(1)));
-        when(stateService.tasks()).thenReturn(Map.of("ABC-1",
-                dev.jagt.orchestrator.model.TaskState.builder("group-a", "/wt",
-                        dev.jagt.orchestrator.model.TaskStatus.IN_PROGRESS).alias("a1").build()));
-
-        assertThatThrownBy(() -> launcher.launch(
-                new LaunchRequest("https://tracker/ABC-9", "group-a", null, null, null, null)))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("task slots are in use");
-        verifyNoInteractions(assistant, tools);
     }
 
     private void oneProject(String key) {

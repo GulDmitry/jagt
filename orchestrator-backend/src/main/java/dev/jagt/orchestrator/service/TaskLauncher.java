@@ -28,24 +28,11 @@ public class TaskLauncher {
     private final OrchestratorTools tools;
     private final MeteredAssistant assistant;
     private final ConfigService configService;
-    private final StateService stateService;
 
-    public TaskLauncher(OrchestratorTools tools, MeteredAssistant assistant, ConfigService configService,
-                        StateService stateService) {
+    public TaskLauncher(OrchestratorTools tools, MeteredAssistant assistant, ConfigService configService) {
         this.tools = tools;
         this.assistant = assistant;
         this.configService = configService;
-        this.stateService = stateService;
-    }
-
-    /**
-     * The task cap is ENFORCED in {@code TaskProvisioning} — this is the same check run early, because
-     * launching reads the ticket first and a read is a paid model call. Refusing after paying for it would
-     * charge the human for a task jagt was never going to create.
-     */
-    private void requireSlot(String ref) {
-        TaskAdmission.requireSlot(ref, configService.load().agent().maxConcurrentTasksOrDefault(),
-                stateService.tasks());
     }
 
     /**
@@ -57,7 +44,6 @@ public class TaskLauncher {
         String ref = request.ref();
         String project = request.project();
         String strategy = request.strategy();
-        requireSlot(ref);
         boolean bareKey = KEY_REF.matcher(ref).matches();
 
         // Warn before spending a ticket read on a task that would only collide later; a chosen strategy
@@ -119,7 +105,6 @@ public class TaskLauncher {
      * explicit ticket may be given to skip the lookup.
      */
     public String resume(String reviewRequestUrl, String ticket) {
-        requireSlot(ticket == null ? reviewRequestUrl : ticket);
         // The read also carries the title, so a resumed task shows one on the board just like a `do` task.
         String title = null;
         String targetBranch = null;

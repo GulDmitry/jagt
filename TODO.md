@@ -194,15 +194,13 @@ revert would silently re-apply the change), or conflicting with later work there
 NOT offered: re-deploying a REVERTED task — its commits are still in history, so deploy's "nothing to deploy"
 guard would refuse anyway. The honest path is a new commit, then ship + deploy.
 
-### Admission control — `agent.maxConcurrentTasks` (default 3, `0` = off)
-Policy in `TaskAdmission` (statics, no collaborators), enforced in `TaskProvisioning.initializeTask` — the
-choke point every surface reaches a new task through, so no front-end can walk around it. It REFUSES rather
-than queues, naming the tasks that hold the slots. A slot is held by a REGISTERED task whatever its status,
-because the worktree and its 1-2 GB language server live until `done`. `TaskLauncher` runs the same check
-before the ticket read: the enforcement point is provisioning, but a refusal after a paid read charges for
-nothing. Both headers show `n/cap`, because a cap only helps if it is visible before it is hit.
-If queueing ever arrives, the new status is pre-NEW and a scheduler starts a queued task when `done` frees a
-slot — `TaskAdmission` is where that decision already lives.
+### Concurrency cap — BUILT, THEN REMOVED 2026-08-13 (do not bring it back)
+`agent.maxConcurrentTasks` + `TaskAdmission` capped how many tasks could exist at once, defaulting to 3, on the
+strength of a TODO entry about this machine having swapped once. That was the wrong basis: jagt is installed on
+other people's machines, and someone with 100 GB of RAM has no business being told three is enough. A limit
+jagt cannot derive is a limit jagt should not enforce, so the whole thing is gone — config key, policy class,
+the early check in `TaskLauncher`, and the `n/cap` indicator both surfaces showed.
+If a bound is ever wanted again it belongs to the human's own tooling, not to a default in this repo.
 
 ### Per-task base branch — `do <ticket> from <branch>` (in flight, uncommitted as of 2026-08-13)
 A task can be cut from another feature branch, and its review request then targets that branch instead of the

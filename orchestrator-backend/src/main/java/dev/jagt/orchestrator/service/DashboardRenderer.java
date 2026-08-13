@@ -40,18 +40,16 @@ public class DashboardRenderer {
 
     private final TaskViews taskViews;
     private final UsageTracker usageTracker;
-    private final ConfigService configService;
 
-    public DashboardRenderer(TaskViews taskViews, UsageTracker usageTracker, ConfigService configService) {
+    public DashboardRenderer(TaskViews taskViews, UsageTracker usageTracker) {
         this.taskViews = taskViews;
         this.usageTracker = usageTracker;
-        this.configService = configService;
     }
 
     public String render() {
         List<TaskView> tasks = taskViews.all();
         StringBuilder out = new StringBuilder();
-        out.append("jagt orchestrator — ").append(occupancy(tasks.size())).append(" task(s)   updated ")
+        out.append("jagt orchestrator — ").append(tasks.size()).append(" task(s)   updated ")
                 .append(LocalTime.now().format(CLOCK)).append(sessionSpend()).append('\n').append('\n');
         out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE ▼", "TOKENS",
                 "TITLE"));
@@ -83,15 +81,6 @@ public class DashboardRenderer {
             out.append("(no tasks)\n");
         }
         return out.toString();
-    }
-
-    /**
-     * "2/3" while a cap is configured, plain "2" when the human opted out — the cap has to be readable BEFORE
-     * a `do` is refused for hitting it, which is the whole point of enforcing one.
-     */
-    private String occupancy(int tasks) {
-        int capacity = configService.load().agent().maxConcurrentTasksOrDefault();
-        return capacity > 0 ? tasks + "/" + capacity : String.valueOf(tasks);
     }
 
     /** Coarse on purpose: one glance should say "minutes" or "days", and a second column of digits would not. */

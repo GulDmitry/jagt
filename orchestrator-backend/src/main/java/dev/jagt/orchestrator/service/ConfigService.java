@@ -189,28 +189,16 @@ public class ConfigService {
             }
         }
 
-        /** Per-agent settings written into each worktree, plus how many agents may exist at once. */
+        /** Per-agent settings written into each worktree. */
         @JsonIgnoreProperties(ignoreUnknown = true)
-        public record AgentConfig(String outputStyle, Integer maxConcurrentTasks) {
-
-            /** Three: an agent is 1-2 GB of language server plus a worktree, so this is a RAM budget. */
-            private static final int DEFAULT_MAX_CONCURRENT_TASKS = 3;
+        public record AgentConfig(String outputStyle) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null, null);
+                return new AgentConfig(null);
             }
 
             public AgentConfig withOutputStyle(String style) {
-                return new AgentConfig(style, maxConcurrentTasks);
-            }
-
-            public AgentConfig withMaxConcurrentTasks(Integer max) {
-                return new AgentConfig(outputStyle, max);
-            }
-
-            /** How many tasks may be registered at once; {@code 0} or negative = no cap (opt out). */
-            public int maxConcurrentTasksOrDefault() {
-                return maxConcurrentTasks == null ? DEFAULT_MAX_CONCURRENT_TASKS : maxConcurrentTasks;
+                return new AgentConfig(style);
             }
 
             /**

@@ -17,7 +17,6 @@ const onlyMine = document.getElementById('mine');
 const live = document.getElementById('live');
 let tasks = [];
 let projects = [];
-let capacity = 0;
 let busy = new Set();
 
 const relative = (millis) => {
@@ -71,7 +70,6 @@ async function load() {
     const data = await api('/api/tasks');
     tasks = data.tasks;
     projects = data.projects;
-    capacity = data.capacity;
     document.getElementById('spend').textContent =
       data.spend.calls ? `${data.spend.calls} calls · ${compactTokens(data.spend.tokens)}` : '';
     render();
@@ -97,21 +95,17 @@ function render() {
   waitingLabel.hidden = waiting === 0;
   waitingLabel.textContent = `${waiting} waiting on you`;
   document.getElementById('empty').hidden = tasks.length > 0;
-  // The cap is only useful BEFORE a New task is refused for hitting it, so it sits in the header, not in the
-  // error. `full` is what turns it red — the same threshold the backend enforces.
-  const slots = document.getElementById('slots');
-  slots.hidden = capacity === 0;
-  slots.textContent = `${tasks.length}/${capacity} slots`;
-  slots.classList.toggle('full', capacity > 0 && tasks.length >= capacity);
-
+  // Only phases that HAVE tasks get a column. `done` deletes the task outright, so a DONE column could never
+  // hold anything — it just sat there reading "done 0" — and five empty columns are noise on a board of two.
   board.replaceChildren(...PHASES.map(([phase, label]) => {
     const inPhase = sorted(shown.filter((task) => task.phase === phase));
+    if (!inPhase.length) return null;
     const section = document.createElement('section');
     const heading = document.createElement('h2');
     heading.innerHTML = `${label} <span class="count">${inPhase.length}</span>`;
     section.append(heading, ...inPhase.map(card));
     return section;
-  }));
+  }).filter(Boolean));
 }
 
 function card(task) {

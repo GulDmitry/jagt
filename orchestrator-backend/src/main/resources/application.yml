@@ -6,14 +6,13 @@ server:
 spring:
   application:
     name: jagt-orchestrator
-  # The backend process IS the Master control terminal (JLine REPL). Keep the console clean:
-  # no Spring banner, logs go to a file (tail it separately), only the shell prints to the console.
   main:
     banner-mode: "off"
 
 logging:
-  threshold:
-    console: "off"
+  # There is deliberately no console threshold here: it depends on which surface owns the terminal, and
+  # `ui/ConsoleLogging` sets it (off for tui|both, Boot's default for the board). Setting it here would
+  # outrank that, and the board would go silent again.
   file:
     name: ${LOG_FILE:jagt-backend.log}
 

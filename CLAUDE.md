@@ -30,7 +30,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - `config.json` — user config, grouped into logical sections: `projects` (path, baseBranch,
   deployBranch, labels), `viewer` (tmuxSession, viewMode shared|tab-per-task, keepViewer), `dashboard`
   (refreshSeconds, reservedRows), `codeReview` (mrTitlePattern, postReviewReplies, reviewReplyAuthors,
-  mergeRequestDefaults), `agent` (outputStyle, maxConcurrentTasks), `worktree` (copyGlobs). Each section is a small value
+  mergeRequestDefaults), `agent` (outputStyle), `worktree` (copyGlobs). Each section is a small value
   record (`ConfigService.ConfigFile.*Config`) with `defaults()` + `withX` withers + `*OrDefault`
   accessors; a whole section may be omitted (ConfigFile's accessors coalesce a null section to its
   defaults, so callers never null-check). Gitignored; created by copying committed `config.json.dist`.
@@ -97,11 +97,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `--setting-sources`): text→command needs no tools, and a loaded MCP server would be paid for in context.
   It answers with the interpretation FIRST ("understood as `ship a1` — …"), and a single unknown word is a
   typo, not a request — it never reaches the model.
-- ADMISSION CONTROL is `service/TaskAdmission` (statics, no collaborators) enforced in
-  `TaskProvisioning.initializeTask` — the choke point every surface reaches a new task through, so no
-  front-end can out-run it. A slot is held by a REGISTERED task whatever its status (the worktree + language
-  server live until `done`), NOT by a live agent. It refuses, it does not queue (queueing needs a pre-NEW
-  status); both headers show `n/cap` because a cap only helps if it is visible before it is hit.
+- NO LIMIT ON CONCURRENT TASKS, and this is a DECISION, not an omission. A cap (`agent.maxConcurrentTasks`
+  + `TaskAdmission`) was built and then REMOVED on the owner's instruction: jagt runs on other people's
+  machines, one of which has 100 GB of RAM, so a number picked here is wrong for almost everyone and refusing
+  a `do` on that basis is jagt deciding something it cannot know. Whoever wants a bound has the machine's own
+  tools for it. Do not reintroduce a cap, a queue, or a "slots" indicator.
 - `Phase`/`Owner` are a PROJECTION for humans, never persisted and never a second state machine: `TaskStatus`
   stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
 - Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at

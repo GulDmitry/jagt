@@ -116,44 +116,11 @@ class DashboardRendererTest {
         assertThat(rendererFor(state).render()).doesNotContain("└");
     }
 
-    /** The cap is only useful if it is legible before it is hit, so the header carries it. */
-    @Test
-    void showsHowManyOfTheConfiguredTaskSlotsAreInUse(@TempDir Path root) {
-        StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
-
-        String out = rendererFor(state, new UsageTracker(state), ConfigService.ConfigFile.defaults()
-                .withAgent(ConfigService.ConfigFile.AgentConfig.defaults().withMaxConcurrentTasks(2)))
-                .render();
-
-        assertThat(out).contains("jagt orchestrator — 1/2 task(s)");
-    }
-
-    @Test
-    void dropsTheSlotCountFromTheHeaderWhenTheHumanOptedOutOfACap(@TempDir Path root) {
-        StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
-
-        String out = rendererFor(state, new UsageTracker(state), ConfigService.ConfigFile.defaults()
-                .withAgent(ConfigService.ConfigFile.AgentConfig.defaults().withMaxConcurrentTasks(0)))
-                .render();
-
-        assertThat(out).contains("jagt orchestrator — 1 task(s)");
-    }
-
-    /** Config is a collaborator only for the task cap in the header; defaults are what the tests care about. */
     private static DashboardRenderer rendererFor(StateService state) {
         return rendererFor(state, new UsageTracker(state));
     }
 
     private static DashboardRenderer rendererFor(StateService state, UsageTracker tracker) {
-        return rendererFor(state, tracker, ConfigService.ConfigFile.defaults());
-    }
-
-    private static DashboardRenderer rendererFor(StateService state, UsageTracker tracker,
-                                                 ConfigService.ConfigFile configFile) {
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(configFile);
-        return new DashboardRenderer(new TaskViews(state), tracker, config);
+        return new DashboardRenderer(new TaskViews(state), tracker);
     }
 }

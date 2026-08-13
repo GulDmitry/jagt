@@ -35,12 +35,8 @@ import java.util.Map;
 @RequestMapping("/api")
 public class BoardApiController {
 
-    /**
-     * Everything one board render needs, in one round trip. {@code capacity} is the task cap
-     * ({@code agent.maxConcurrentTasks}, 0 = none) — the same number `do` is refused against, so the board
-     * shows the limit before a human hits it.
-     */
-    public record Board(List<TaskView> tasks, Spend spend, List<String> projects, int capacity) {
+    /** Everything one board render needs, in one round trip. */
+    public record Board(List<TaskView> tasks, Spend spend, List<String> projects) {
     }
 
     /** What jagt's own model calls have cost this session — the number the console shows in its header. */
@@ -77,10 +73,8 @@ public class BoardApiController {
     @GetMapping("/tasks")
     public Board tasks() {
         var session = usageTracker.session();
-        var config = configService.load();
         return new Board(taskViews.all(), new Spend(session.calls(), session.total()),
-                List.copyOf(config.projects().keySet()),
-                Math.max(0, config.agent().maxConcurrentTasksOrDefault()));
+                List.copyOf(configService.load().projects().keySet()));
     }
 
     /**
