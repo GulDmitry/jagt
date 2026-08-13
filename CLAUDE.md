@@ -398,5 +398,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   that looks nothing like it: a jagt that keeps RUNNING while you rebuild answers 500 on whatever it had not
   loaded yet (`/status`, `/stats`, `/orphans` first, while the board still renders) — diagnosed twice as an
   endpoint bug before the inode was checked. Avoid both by running the staged copy (`./gradlew stageJar`,
-  then `build/libs/jagt-run.jar`); `service/RunningJarWatch` reports it when it happens anyway. (Past sessions
+  then `build/libs/jagt-run.jar` — a symlink to a per-build `jagt-run-<stamp>.jar`, so re-staging while an
+  instance runs cannot touch the inode it holds; a fixed staged name had the same bug and reproduced it once);
+  `service/RunningJarWatch` reports it when it happens anyway. (Past sessions
   burned hours chasing this as a logback/preload bug — it is not.)

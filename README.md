@@ -66,7 +66,9 @@ java -jar build/libs/jagt-run.jar
 > Why `jagt-run.jar` and not `jagt.jar`: `./gradlew build` rewrites `jagt.jar` **in place**, so a jagt started
 > from that path keeps reading a file whose content has changed — already-loaded classes work, everything
 > loaded afterwards fails with `NoClassDefFoundError` and parts of the board start answering 500. `stageJar`
-> copies it to a name no build writes. (If it happens anyway, jagt notices and tells you to restart.)
+> writes a NEW `jagt-run-<stamp>.jar` each time and points `jagt-run.jar` at it, so the copy a running instance
+> holds is never overwritten — rebuild and re-stage as often as you like; the running one keeps working until
+> you restart it. (If something rewrites a jar anyway, jagt notices within a minute and says so.)
 
 That serves the **board** at `http://localhost:8290` — the default surface. Open it and press `New task`
 (or `⌘K` and say what you want). Plain text any time: `curl -s localhost:8290/state`.

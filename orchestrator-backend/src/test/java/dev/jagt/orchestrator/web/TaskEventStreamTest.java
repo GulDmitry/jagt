@@ -53,4 +53,17 @@ class TaskEventStreamTest {
 
         assertThatIllegalStateException().isThrownBy(() -> browser.send("late"));
     }
+
+    /**
+     * The servlet keeps answering until the web server actually stops, and the board's {@code EventSource}
+     * reconnects as soon as its stream ends — so a tab can ask for a new one mid-shutdown. Handing it a live
+     * endless stream would restore the hang the sweep just cleared.
+     */
+    @Test
+    void handsBackAnAlreadyEndedStreamToATabThatReconnectsDuringShutdown() {
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class));
+        stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
+
+        assertThatIllegalStateException().isThrownBy(() -> stream.open().send("reconnected"));
+    }
 }

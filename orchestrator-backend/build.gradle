@@ -44,15 +44,33 @@ tasks.withType(Test).configureEach {
 
 // `./gradlew build` rewrites build/libs/jagt.jar IN PLACE (same inode), so a jagt started from that path keeps
 // reading a file whose content changed: already-loaded classes work, every class loaded afterwards dies with
-// NoClassDefFoundError (the board renders, /status and /stats answer 500). This task stages a COPY under a name
-// no build writes, which is what the run command in README uses. RunningJarWatch reports it if it happens anyway.
-tasks.register('stageJar', Copy) {
-    description = 'Copies the built jar to build/libs/jagt-run.jar — run THAT, so a rebuild cannot corrupt it.'
+// NoClassDefFoundError (the board renders, /status and /stats answer 500). This task stages a copy — and stages
+// a NEW FILE every time, with jagt-run.jar as a symlink to the latest, because a fixed staged name has exactly
+// the same problem the moment you re-stage while an instance is running (which is how this was found the second
+// time). A running JVM holds the inode it started from, so a new build cannot touch it. RunningJarWatch reports
+// the situation if something rewrites a jar anyway.
+tasks.register('stageJar') {
+    description = 'Stages build/libs/jagt-run-<stamp>.jar and points jagt-run.jar at it — run THAT.'
     group = 'application'
     dependsOn tasks.named('bootJar')
-    from(layout.buildDirectory.file('libs/jagt.jar'))
-    into(layout.buildDirectory.dir('libs'))
-    rename { 'jagt-run.jar' }
+    doLast {
+        def libs = layout.buildDirectory.dir('libs').get().asFile.toPath()
+        def built = libs.resolve('jagt.jar')
+        def stamp = new java.text.SimpleDateFormat('yyyyMMdd-HHmmss').format(new Date())
+        def staged = libs.resolve("jagt-run-${stamp}.jar")
+        java.nio.file.Files.copy(built, staged, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        def link = libs.resolve('jagt-run.jar')
+        java.nio.file.Files.deleteIfExists(link)
+        java.nio.file.Files.createSymbolicLink(link, staged.fileName)
+        // Keep the last few: deleting a staged jar a JVM still runs from is harmless (the inode outlives the
+        // name), but an unbounded pile of 20 MB jars is not.
+        libs.toFile().listFiles({ f -> f.name ==~ /jagt-run-.*\.jar/ } as java.io.FileFilter)
+                .sort { it.name }
+                .reverse()
+                .drop(3)
+                .each { it.delete() }
+        logger.lifecycle("staged ${staged.fileName} — run: java -jar build/libs/jagt-run.jar")
+    }
 }
 
 // The end-to-end matrix lives in its own source set, NOT in `test`: it drives real git worktrees and real

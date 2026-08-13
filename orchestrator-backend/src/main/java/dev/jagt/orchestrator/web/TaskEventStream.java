@@ -29,6 +29,7 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
 
     private final StateService stateService;
     private final List<SseEmitter> browsers = new CopyOnWriteArrayList<>();
+    private volatile boolean closing;
 
     public TaskEventStream(StateService stateService) {
         this.stateService = stateService;
@@ -45,7 +46,16 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
         browser.onCompletion(() -> browsers.remove(browser));
         browser.onTimeout(() -> browsers.remove(browser));
         browser.onError(error -> browsers.remove(browser));
-        browsers.add(browser);
+        synchronized (this) {
+            // A shutdown that has already swept the list must not gain a new endless connection: the servlet
+            // still answers until the web server actually stops, and the board's EventSource reconnects the
+            // moment we complete it.
+            if (closing) {
+                browser.complete();
+                return browser;
+            }
+            browsers.add(browser);
+        }
         send(browser, "open");
         return browser;
     }
@@ -61,14 +71,19 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
      */
     @Override
     public void onApplicationEvent(ContextClosedEvent event) {
-        browsers.forEach(browser -> {
+        List<SseEmitter> open;
+        synchronized (this) {
+            closing = true;
+            open = List.copyOf(browsers);
+            browsers.clear();
+        }
+        open.forEach(browser -> {
             try {
                 browser.complete();
             } catch (RuntimeException e) {
                 log.debug("A board connection was already gone at shutdown: {}", e.toString());
             }
         });
-        browsers.clear();
     }
 
     private void broadcast() {
