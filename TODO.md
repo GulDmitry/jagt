@@ -28,7 +28,8 @@ below). None of them blocks another, so they fit between the big steps:
 | `OrchestratorProperties.defaults()` + withers | a 12-field config record with no builder; every test writes 9 positional `null`s, which is exactly the null-soup CLAUDE.md bans (its sibling `ConfigFile` already has defaults + withers) | 0.5 d |
 | `prune` for stale task branches | `done` keeps the branch BY DESIGN and no path removes a finished one, so branches pile up forever and a repeated ticket trips "branch already exists" (the `git branch -D` plumbing already exists) | 0.5 d |
 
-Done: `assistant.model: haiku` is the shipped default (2026-08-13) — 8x cheaper on every `do`/`resume`/poll.
+Done: `assistant.model: haiku` is the shipped default (2026-08-13) — ~6x cheaper on every `do`/`resume`/poll
+($0.064 vs $0.41 a call, both with the MCP the reads actually need).
 The other half of that step, `--setting-sources project`, was DROPPED as a trap, see the cost entry below.
 
 Token accounting is already in (`stats` + `/stats`, the `TOKENS` dashboard column, per-task totals in
@@ -47,8 +48,9 @@ numbers are the per-call FLOOR, before any real ticket/MR content:
 | `--model haiku`, `--setting-sources user,project,local` (today's default) | 31 719 | 155 | $0.064 |
 
 Conclusions, in order of leverage — note the first one contradicts the assumption this entry started from:
-1. **The model dominates, not the MCP surface.** ~8x between the inherited default (opus) and haiku, on the
-   very same call. DONE 2026-08-13: `orchestrator.assistant.model: haiku` is the shipped default in
+1. **The model dominates, not the MCP surface.** 6-8x between the inherited default (opus) and haiku on the
+   same prompt — the ratio bundles the price with a smaller baseline context, the rows are not equal-sized.
+   DONE 2026-08-13: `orchestrator.assistant.model: haiku` is the shipped default in
    `application.yml` (blank it to go back to your own default model); these are mechanical extraction
    tasks — read a field, return JSON under a schema.
 2. **~25k tokens is the irreducible baseline** of any `claude -p` process (CLI system prompt + built-in

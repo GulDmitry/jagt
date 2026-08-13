@@ -157,7 +157,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   Project is resolved by intersecting the ticket's labels with each project's `labels`
   (`MasterShell.projectsMatching`); the title is cached for the commit. Any failure → empty → `do`
   falls back to an explicit project. Headless `-p` does NOT auto-load plugin MCP without
-  `--setting-sources` (verified: default `-p` sees zero Jira tools).
+  `--setting-sources` (verified: default `-p` sees zero Jira tools), and narrowing it to `project` is
+  equally fatal — the call runs from the temp dir, where project scope alone resolves to ZERO MCP servers
+  (verified 2026-08-13). Keep `user` in the list; the ~7k tokens it costs are what buys the tracker tools.
 - EVERY assistant call is METERED, because it is the only place jagt spends model money. `--output-format
   json` wraps the schema-validated answer (`structured_output`, or `result` as a string) together with
   `usage` + `total_cost_usd`; `UsageTracker` books it to the task that triggered it (persisted in
@@ -166,7 +168,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   and `GET /stats`. Sub-agent spend is NOT visible here (it lives in the agent's own session) — never
   present these numbers as a task's total cost.
   Measured floor per call (2026-08): ~25k input tokens of CLI baseline context, ~$0.41 on the inherited
-  default model vs ~$0.05 on haiku. The lever is FEWER CALLS (deterministic REST reads), not shorter prompts.
+  default model vs ~$0.06 on haiku — which is why `orchestrator.assistant.model` SHIPS as `haiku` (blank it
+  to inherit the human's own model). The lever is FEWER CALLS (deterministic REST reads), not shorter prompts.
 
 ## Agent resource hygiene
 - Each sub-agent is a Claude Code session in a worktree, so each spawns its OWN language server

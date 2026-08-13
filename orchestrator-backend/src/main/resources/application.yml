@@ -57,9 +57,9 @@ orchestrator:
     # Do NOT narrow this to `project`: the call runs from the temp dir, so project scope alone loads
     # ZERO MCP servers (verified) and every read fails — the ~7k tokens it saves buy nothing.
     setting-sources: user,project,local
-    # These reads are mechanical extraction (open an item, return fields under a schema), so the
-    # cheapest capable model wins: measured $0.05 on haiku vs $0.41 on the inherited default, same
-    # call. Blank it to use your own default model instead.
+    # Mostly mechanical extraction (open an item, return fields under a schema), so the cheapest
+    # capable model wins: measured $0.06 a call against $0.41 on the inherited default. The review
+    # sweep is the one judgement-heavy read ("approved by a human?") — raise this if you distrust it.
     model: haiku
     # Headless `-p` can't answer the permission classifier, which then silently blocks the MCP calls
     # the ticket-read needs. bypassPermissions lifts the gate; or blank it and scope to named servers:

@@ -57,6 +57,40 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void runsTheConfiguredModelInsteadOfWhateverTheHumansDefaultCostsToday() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        OrchestratorProperties properties = mock(OrchestratorProperties.class);
+        when(properties.claudeCommand()).thenReturn("claude");
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, properties,
+                new AssistantProperties("user,project,local", "haiku", null, List.of()));
+
+        assistant.readTicket("ABC-42");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--model", "haiku");
+    }
+
+    @Test
+    void inheritsTheHumansOwnModelWhenNoneIsConfigured() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        OrchestratorProperties properties = mock(OrchestratorProperties.class);
+        when(properties.claudeCommand()).thenReturn("claude");
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, properties,
+                new AssistantProperties("user,project,local", "", null, List.of()));
+
+        assistant.readTicket("ABC-42");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).doesNotContain("--model");
+    }
+
+    @Test
     void asksForTheJsonEnvelopeSoEveryCallCarriesItsOwnCost() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);

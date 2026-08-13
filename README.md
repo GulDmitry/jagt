@@ -216,7 +216,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.agent` | which AI agent runtime — `claude` (default), and future MCP-capable CLIs; the pluggable seam |
 | `orchestrator.claude-command` | binary for the `claude` runtime (default `claude`) |
 | `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits (default `user,project,local`) |
-| `orchestrator.assistant.model` | model for the ticket-read (blank = your default) |
+| `orchestrator.assistant.model` | model for every master-assistant read — ticket, MR, review sweep (default `haiku`: ~$0.06 a call vs ~$0.41 on the inherited default; blank = your default) |
 | `orchestrator.assistant.permission-mode` | lifts the headless permission gate so the ticket-read can call MCP (default `bypassPermissions`) |
 | `orchestrator.assistant.allowed-tools` | comma-separated `mcp__<server>` allow-list; scopes the bypass, takes precedence over permission-mode |
 | `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty) |
