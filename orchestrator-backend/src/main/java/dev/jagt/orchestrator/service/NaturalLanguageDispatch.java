@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant.CommandProposal;
+import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskView;
@@ -94,7 +95,7 @@ public class NaturalLanguageDispatch {
             return "Understood as `do` but no ticket was named (" + reasonOf(mapped)
                     + ") — say it explicitly: `do <ticket|url> [project]`.";
         }
-        return "understood as `do " + ticket + "` — " + launcher.launch(ticket, null, null, null, null);
+        return "understood as `do " + ticket + "` — " + launcher.launch(LaunchRequest.of(ticket));
     }
 
     /** Only a task that EXISTS may be acted on; an id the model invented resolves to nothing and is refused. */

@@ -75,8 +75,10 @@ public class ShipService {
         requireShippable(taskId, task.status(), hasRequest, agentLive(config, taskId));
 
         ProjectConfig project = configService.project(task.project());
-        String targetBranch = project.baseBranch() == null ? ""
-                : project.baseBranch().replaceFirst("^origin/", "");
+        // The task's own base when the human named one at `do` time — a task cut from a parent feature branch
+        // must merge back into it, not into the project's release branch.
+        String base = task.baseBranchOr(project.baseBranch());
+        String targetBranch = base == null ? "" : base.replaceFirst("^origin/", "");
         String title = ReviewRequestTitle.expand(config.codeReview().mrTitlePatternOrDefault(), taskId,
                 task.title());
 

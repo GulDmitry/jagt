@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.web;
 
+import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.service.CommandService;
@@ -47,10 +48,6 @@ public class BoardApiController {
     }
 
     public record ActionResult(String message) {
-    }
-
-    /** A `do` from the browser: the same modifiers the command grammar accepts, as fields. */
-    public record LaunchRequest(String ref, String project, String mode, String strategy, String notes) {
     }
 
     /** Free text from the command palette (Cmd-K) — tier 2 of the dispatch, not a command. */
@@ -103,8 +100,7 @@ public class BoardApiController {
         if (request.ref() == null || request.ref().isBlank()) {
             throw new IllegalArgumentException("A ticket key or a URL is required");
         }
-        return new ActionResult(launcher.launch(request.ref().strip(), blankToNull(request.project()),
-                blankToNull(request.mode()), blankToNull(request.strategy()), request.notes()));
+        return new ActionResult(launcher.launch(request.normalized()));
     }
 
     /**
@@ -130,9 +126,5 @@ public class BoardApiController {
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public ResponseEntity<Map<String, String>> refused(RuntimeException e) {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() == null ? "refused" : e.getMessage()));
-    }
-
-    private static String blankToNull(String value) {
-        return value == null || value.isBlank() ? null : value;
     }
 }

@@ -610,7 +610,7 @@ class OrchestratorToolsTest {    @Test
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
                 properties);
 
-        assertThatThrownBy(() -> tools.resumeTask("feature/X", "https://host/mr/1", null))
+        assertThatThrownBy(() -> tools.resumeTask("feature/X", "https://host/mr/1", null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("must match");
         verifyNoInteractions(git);

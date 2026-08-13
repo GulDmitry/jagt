@@ -109,7 +109,7 @@ class TaskStateTest {
      */
     private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
                                         List<StatusChange> history) {
-        return new TaskState("proj", "/wt", status, lastActive, message, "a1", null, null, null, null,
+        return new TaskState("proj", "/wt", status, lastActive, message, "a1", null, null, null, null, null,
                 0, 0, null, null, null, history);
     }
 }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.web;
 
+import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
@@ -13,8 +14,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -59,27 +58,25 @@ class BoardApiControllerTest {
 
     @Test
     void startsATaskThroughTheSameLauncherTheTypedCommandUses() {
-        when(launcher.launch(eq("ABC-42"), eq("demo"), eq("plan"), any(), eq("with tests")))
-                .thenReturn("Task ABC-42 initialized");
+        LaunchRequest posted = new LaunchRequest("ABC-42", "demo", "plan", null, "feature/parent",
+                "with tests");
+        when(launcher.launch(posted)).thenReturn("Task ABC-42 initialized");
 
-        var result = api.launch(new BoardApiController.LaunchRequest("ABC-42", "demo", "plan", null,
-                "with tests"));
+        var result = api.launch(posted);
 
         assertThat(result.message()).isEqualTo("Task ABC-42 initialized");
     }
 
     @Test
     void treatsBlankModifiersAsAbsentSoAnEmptyFormFieldIsNotAProjectNamedEmptyString() {
-        when(launcher.launch(eq("ABC-42"), eq(null), eq(null), eq(null), any())).thenReturn("ok");
+        api.launch(new LaunchRequest("  ABC-42 ", "", "", "", "", ""));
 
-        api.launch(new BoardApiController.LaunchRequest("  ABC-42 ", "", "", "", ""));
-
-        verify(launcher).launch("ABC-42", null, null, null, "");
+        verify(launcher).launch(new LaunchRequest("ABC-42", null, null, null, null, null));
     }
 
     @Test
     void refusesALaunchWithNothingToLookUp() {
-        assertThatThrownBy(() -> api.launch(new BoardApiController.LaunchRequest(" ", null, null, null, null)))
+        assertThatThrownBy(() -> api.launch(new LaunchRequest(" ", null, null, null, null, null)))
                 .hasMessageContaining("ticket key or a URL is required");
         verifyNoInteractions(launcher);
     }

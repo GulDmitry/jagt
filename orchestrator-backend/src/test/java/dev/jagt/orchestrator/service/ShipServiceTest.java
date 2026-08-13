@@ -72,6 +72,21 @@ class ShipServiceTest {
     }
 
     @Test
+    void targetsTheReviewRequestAtTheTasksOwnBaseBranchWhenItHasOne() {
+        when(stateService.task("ABC-7")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).mrUrl(null).remoteUrl("git@host:demo/demo.git").title("t")
+                .baseBranch("feature/parent").build()));
+        when(host.createOrUpdateMergeRequest(any()))
+                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/12", true)));
+
+        ship().ship("ABC-7");
+
+        ArgumentCaptor<MergeRequestSpec> spec = ArgumentCaptor.captor();
+        verify(host).createOrUpdateMergeRequest(spec.capture());
+        assertThat(spec.getValue().targetBranch()).isEqualTo("feature/parent");
+    }
+
+    @Test
     void commitsAReviewRoundWithAMechanicalMessageBecauseTheBackendCannotDescribeTheFix() {
         havingTask("ABC-42", TaskStatus.CI_FAILED, "https://host/mr/9", "Widget layout is off");
         when(host.createOrUpdateMergeRequest(any()))

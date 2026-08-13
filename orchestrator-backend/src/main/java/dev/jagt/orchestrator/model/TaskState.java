@@ -19,6 +19,9 @@ public record TaskState(
         String title,
         String mrUrl,
         String ticketUrl,
+        // The branch this task was cut from and whose review request it targets, when the human named one at
+        // `do` time. Null = the project's configured baseBranch, so a config change still reaches the task.
+        String baseBranch,
         // Auto-review window: when the MR was first linked (window start), the last auto-poll, and the
         // per-task on/off (null = follow the config default). Zero = unset.
         long mrCreatedAt,
@@ -128,6 +131,15 @@ public record TaskState(
         return toBuilder().lastPolledAt(lastPolledAt).build();
     }
 
+    /**
+     * The branch this task branched off and merges back into — its own override if the human named one at
+     * {@code do} time, else the project default the caller passes in. ONE answer for the worktree's base, the
+     * review request's target and the {@code ide … diff} snapshot; they cannot drift apart.
+     */
+    public String baseBranchOr(String projectDefault) {
+        return baseBranch == null || baseBranch.isBlank() ? projectDefault : baseBranch;
+    }
+
     /** True unless the task explicitly opted out; a null (legacy/unset) follows the config default. */
     public boolean autoReviewEnabled(boolean configDefault) {
         return autoReview == null ? configDefault : autoReview;
@@ -151,7 +163,7 @@ public record TaskState(
     private Builder toBuilder() {
         return new Builder(project, worktreePath, status)
                 .lastActiveTimestamp(lastActiveTimestamp).message(message).alias(alias)
-                .remoteUrl(remoteUrl).title(title).mrUrl(mrUrl).ticketUrl(ticketUrl)
+                .remoteUrl(remoteUrl).title(title).mrUrl(mrUrl).ticketUrl(ticketUrl).baseBranch(baseBranch)
                 .mrCreatedAt(mrCreatedAt).lastPolledAt(lastPolledAt).autoReview(autoReview)
                 .usage(usage).deployCommit(deployCommit).history(history);
     }
@@ -172,6 +184,7 @@ public record TaskState(
         private String title;
         private String mrUrl;
         private String ticketUrl;
+        private String baseBranch;
         private long mrCreatedAt;
         private long lastPolledAt;
         private Boolean autoReview;
@@ -226,6 +239,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder baseBranch(String baseBranch) {
+            this.baseBranch = baseBranch;
+            return this;
+        }
+
         public Builder mrCreatedAt(long mrCreatedAt) {
             this.mrCreatedAt = mrCreatedAt;
             return this;
@@ -265,8 +283,8 @@ public record TaskState(
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis()));
             return new TaskState(project, worktreePath, status, lastActiveTimestamp, message, alias,
-                    remoteUrl, title, mrUrl, ticketUrl, mrCreatedAt, lastPolledAt, autoReview, usage,
-                    deployCommit, log);
+                    remoteUrl, title, mrUrl, ticketUrl, baseBranch, mrCreatedAt, lastPolledAt, autoReview,
+                    usage, deployCommit, log);
         }
     }
 }

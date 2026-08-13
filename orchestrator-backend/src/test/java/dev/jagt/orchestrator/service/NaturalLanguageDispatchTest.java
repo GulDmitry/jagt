@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
 import dev.jagt.orchestrator.assistant.MasterAssistant.CommandProposal;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
@@ -102,7 +103,7 @@ class NaturalLanguageDispatchTest {
     void startsANewTaskWhenTheRequestIsADoAndCarriesTheTicketThrough(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
         proposes("do", "", "ABC-42", "a new ticket");
-        when(launcher.launch("ABC-42", null, null, null, null)).thenReturn("Task ABC-42 initialized");
+        when(launcher.launch(LaunchRequest.of("ABC-42"))).thenReturn("Task ABC-42 initialized");
 
         String result = dispatchWith(state).interpret("возьми ABC-42 в работу");
 

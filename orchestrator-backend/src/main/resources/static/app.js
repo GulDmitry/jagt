@@ -243,6 +243,7 @@ launchForm.onsubmit = async (event) => {
         ref: document.getElementById('ref').value,
         project: document.getElementById('project').value,
         mode: document.getElementById('plan').checked ? 'plan' : null,
+        baseBranch: document.getElementById('base-branch').value,
         notes: document.getElementById('notes').value,
       }),
     });

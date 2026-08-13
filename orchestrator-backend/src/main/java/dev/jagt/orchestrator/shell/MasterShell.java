@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.shell;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
@@ -337,7 +338,7 @@ public class MasterShell {
         } else if (cmd.equals("prune") && idx == 1) {
             pool = List.of("all");
         } else if (cmd.equals("do") && idx >= 2) {
-            pool = List.of("plan");
+            pool = List.of("plan", "from");
         } else {
             return;
         }
@@ -876,9 +877,7 @@ public class MasterShell {
 
 
     String doTask(List<String> tok) {
-        DoArgs args = parseDoArgs(tok);
-        return launcher.launch(arg(tok, 1, "do <ticket|url> [project] [plan] [notes…]"),
-                args.project(), args.mode(), args.strategy(), args.notes());
+        return launcher.launch(parseDoArgs(tok));
     }
 
     String resumeTask(List<String> tok) {
@@ -901,22 +900,25 @@ public class MasterShell {
                 + " (there is no per-project or per-branch form yet)");
     }
 
-    record DoArgs(String project, String mode, String strategy, String notes) {
-    }
-
     private static final Set<String> BRANCH_STRATEGIES = Set.of("recreate", "resume", "fresh");
 
+    private static final String DO_USAGE = "do <ticket|url> [project] [plan] [from <branch>] [notes…]";
+
     /**
-     * Splits {@code do <ticket> …} after the ticket: leading {@code plan}, a known project key, and a branch
-     * strategy — in any order — are consumed as modifiers; everything after them is free-text notes. Each
-     * modifier is recognised only as a leading token, so a note may contain the word "plan".
+     * Splits {@code do <ticket> …} after the ticket: leading {@code plan}, a known project key, a branch
+     * strategy and {@code from <branch>} — in any order — are consumed as modifiers; everything after them is
+     * free-text notes. Each modifier is recognised only as a leading token, so a note may contain the word
+     * "plan"; {@code from} takes the token after it, which is why a note may start with "from" only once the
+     * branch has been given.
      */
-    DoArgs parseDoArgs(List<String> tok) {
+    LaunchRequest parseDoArgs(List<String> tok) {
+        String ref = arg(tok, 1, DO_USAGE);
         List<String> rest = new ArrayList<>(tok.subList(Math.min(2, tok.size()), tok.size()));
         Set<String> projectKeys = configService.load().projects().keySet();
         String mode = null;
         String project = null;
         String strategy = null;
+        String baseBranch = null;
         while (!rest.isEmpty()) {
             String head = rest.get(0);
             if (mode == null && head.equals("plan")) {
@@ -925,12 +927,19 @@ public class MasterShell {
                 project = head;
             } else if (strategy == null && BRANCH_STRATEGIES.contains(head)) {
                 strategy = head;
+            } else if (baseBranch == null && head.equals("from")) {
+                if (rest.size() < 2 || rest.get(1).isBlank()) {
+                    throw new IllegalArgumentException("usage: " + DO_USAGE
+                            + " — `from` needs the branch to start from");
+                }
+                baseBranch = rest.remove(1);
             } else {
                 break;
             }
             rest.remove(0);
         }
-        return new DoArgs(project, mode, strategy, String.join(" ", rest).strip());
+        return new LaunchRequest(ref, project, mode, strategy, baseBranch,
+                String.join(" ", rest).strip()).normalized();
     }
 
     private static String arg(List<String> tok, int i, String usage) {
@@ -946,6 +955,7 @@ public class MasterShell {
         lines.add("  status                       show the dashboard");
         lines.add("  stats                        token spend of jagt's own model calls, per task");
         lines.add("  do <ticket> [project] [plan] spin up a sub-agent in a worktree");
+        lines.add("    … [from <branch>]          cut the worktree from <branch> and target its MR at it");
         lines.add("  resume <mr-url>              reopened MR: resume its branch + link it -> CI_POLLING");
         lines.add("  focus <ticket>               jump to the agent's window (talk to it there)");
         lines.add("  ship <ticket>                approve: agent commits (pattern title), pushes, MR, posts replies");

@@ -190,6 +190,16 @@ public class GitService {
     }
 
     /**
+     * Does {@code origin} carry this branch? Asked over the network rather than of {@code refs/remotes}: a
+     * branch pushed a minute ago is absent locally until the next fetch, and refusing to start a task on it
+     * would be wrong. Only the caller of a HUMAN-TYPED branch name needs this; the configured base is trusted.
+     */
+    public boolean remoteBranchExists(Path projectPath, String branch) {
+        return withRepoLock(projectPath, () -> processRunner.run(projectPath, GIT_TIMEOUT,
+                List.of("git", "ls-remote", "--exit-code", "--heads", "origin", branch)).exitCode() == 0);
+    }
+
+    /**
      * CRITICAL SAFETY: a branch created from origin/release/sng inherits it as
      * upstream, so a bare `git push` from an agent would target the RELEASE
      * branch. Unset the upstream — now a bare push errors ("no upstream"), and

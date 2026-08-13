@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.mcp;
 
 import dev.jagt.orchestrator.model.GitRemote;
 import dev.jagt.orchestrator.model.Move;
+import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ReviewRequestTitle;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
@@ -60,10 +61,8 @@ public class OrchestratorTools {
         return provisioning.existingBranchProject(taskId, projectKey);
     }
 
-    public String initializeTask(String taskId, String projectKey, String instructions, String mode,
-                                 String branchStrategy, String title, String ticketUrl) {
-        return provisioning.initializeTask(taskId, projectKey, instructions, mode, branchStrategy, title,
-                ticketUrl);
+    public String initializeTask(NewTask request) {
+        return provisioning.initializeTask(request);
     }
 
     /** Recovery path: the worktree and state entry exist but the agent's window is gone. Spawns a fresh one. */
@@ -141,9 +140,13 @@ public class OrchestratorTools {
             Path projectPath = Path.of(project.path());
             // Diff against the DEPLOY branch (what the task merges into), not the base it was cut from — so
             // after a `deploy` conflict-merge you review only your own change vs dev, not all of dev's drift.
-            // Falls back to baseBranch when the project has no deployBranch configured.
-            String diffBase = project.deployBranch() != null && !project.deployBranch().isBlank()
-                    ? "origin/" + project.deployBranch() : project.baseBranch();
+            // Falls back to baseBranch when the project has no deployBranch configured. A task with its OWN
+            // base (a parent feature branch) diffs against THAT: dev does not contain it, so every commit of
+            // the parent would read as this task's change.
+            String diffBase = task.baseBranch() != null && !task.baseBranch().isBlank()
+                    ? "origin/" + task.baseBranch()
+                    : (project.deployBranch() != null && !project.deployBranch().isBlank()
+                            ? "origin/" + project.deployBranch() : project.baseBranch());
             Path base = gitService.checkoutBaseForDiff(projectPath, diffBase, taskId);
             Path clean = gitService.checkoutWorktreeCleanForDiff(worktree, projectPath, diffBase, taskId);
             editorDriver.openDiff(base, clean);
@@ -211,7 +214,7 @@ public class OrchestratorTools {
      * The project is derived from the MR url (matched against each project's git remote). The branch
      * is resumed with its commits; the agent starts in review mode (does not re-implement).
      */
-    public String resumeTask(String taskId, String mrUrl, String title) {
+    public String resumeTask(String taskId, String mrUrl, String title, String targetBranch) {
         if (mrUrl == null || !mrUrl.contains("http")) {
             throw new IllegalArgumentException("resume needs the MR url: resume <ticket> <mr-url>");
         }
@@ -223,8 +226,13 @@ public class OrchestratorTools {
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
         // The MR title the assistant read is already ticket-prefixed (the pattern built it); store it bare so
         // the dashboard isn't redundant and a later ship's pattern expansion stays single-prefixed.
-        initializeTask(taskId, projectKey, instructions, null, "resume",
-                ReviewRequestTitle.stripTicketPrefix(title, taskId), null);
+        initializeTask(NewTask.builder(taskId, projectKey)
+                .instructions(instructions).branchStrategy("resume")
+                .title(ReviewRequestTitle.stripTicketPrefix(title, taskId))
+                // The open request's OWN target, so the next ship updates that request instead of opening a
+                // second one against the project default (the host matches source AND target).
+                .baseBranch(targetBranch)
+                .build());
         updateAgentStatus("CI_POLLING", "MR: " + mrUrl, taskId, null);
         return "Resumed " + taskId + " on its existing branch; linked MR " + mrUrl
                 + "; status CI_POLLING — run `review` or `deploy`.";

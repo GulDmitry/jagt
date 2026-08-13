@@ -39,7 +39,7 @@ class MeteredAssistantTest {
     void booksAMergeRequestReadUnderItsOwnKind() {
         TokenUsage spent = TokenUsage.ofCall(24_000, 0, 150, 0.05);
         when(port.readMergeRequest("http://mr/1")).thenReturn(new Answer<>(
-                Optional.of(new MergeRequestFacts(true, "ABC-1", "group/proj", "title")), spent));
+                Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "group/proj", "title")), spent));
 
         metered.readMergeRequest("http://mr/1");
 

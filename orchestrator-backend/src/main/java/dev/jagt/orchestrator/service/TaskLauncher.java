@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.model.LaunchRequest;
+import dev.jagt.orchestrator.model.NewTask;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -51,7 +53,10 @@ public class TaskLauncher {
      * show the human; throws {@link IllegalArgumentException} when the request itself is unusable (unknown
      * project, ambiguous labels).
      */
-    public String launch(String ref, String project, String mode, String strategy, String notes) {
+    public String launch(LaunchRequest request) {
+        String ref = request.ref();
+        String project = request.project();
+        String strategy = request.strategy();
         requireSlot(ref);
         boolean bareKey = KEY_REF.matcher(ref).matches();
 
@@ -68,9 +73,8 @@ public class TaskLauncher {
 
         // Fast path: a bare key + explicit project needs no read — the key IS the task id.
         if (bareKey && project != null) {
-            return tools.initializeTask(ref, resolveProject(project),
-                    withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", notes),
-                    mode, strategy, null, null);
+            return tools.initializeTask(newTask(ref, resolveProject(project), readAndImplement(ref, request),
+                    request).build());
         }
         // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
         // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
@@ -89,9 +93,9 @@ public class TaskLauncher {
             }
             String resolved = project != null ? resolveProject(project) : resolveByLabels(f);
             String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
-                    + "\". Read it via your issue-tracker MCP for full details, then work.", notes);
-            String result = tools.initializeTask(taskId, resolved, instructions, mode, strategy,
-                    f.title(), f.url());
+                    + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
+            String result = tools.initializeTask(newTask(taskId, resolved, instructions, request)
+                    .title(f.title()).ticketUrl(f.url()).build());
             // Only NOW does the task exist, so only now can the read that named it be charged to it —
             // charging earlier silently dropped the most expensive call in a task's life.
             assistant.chargeTask(taskId, read.usage());
@@ -101,9 +105,8 @@ public class TaskLauncher {
         if (!bareKey) {
             return "error: assistant unavailable — pass an issue key (not a URL), or add the project";
         }
-        String result = tools.initializeTask(ref, resolveProject(project),
-                withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", notes),
-                mode, strategy, null, null);
+        String result = tools.initializeTask(newTask(ref, resolveProject(project),
+                readAndImplement(ref, request), request).build());
         // The read FAILED but was still paid for, and the key alone was enough to create the task — so the
         // one case where money bought nothing must not be the one case the task reports as free.
         assistant.chargeTask(ref, read.usage());
@@ -119,17 +122,19 @@ public class TaskLauncher {
         requireSlot(ticket == null ? reviewRequestUrl : ticket);
         // The read also carries the title, so a resumed task shows one on the board just like a `do` task.
         String title = null;
+        String targetBranch = null;
         var read = assistant.readMergeRequest(reviewRequestUrl);
         var request = read.facts();
         if (request.isPresent() && request.get().exists()) {
             title = request.get().title();
+            targetBranch = request.get().targetBranch();
             if (ticket == null) {
                 ticket = request.get().sourceBranch();
             }
         } else if (ticket == null) {
             return "error: could not read the review request (or not found): " + reviewRequestUrl;
         }
-        String result = tools.resumeTask(ticket, reviewRequestUrl, title);
+        String result = tools.resumeTask(ticket, reviewRequestUrl, title, targetBranch);
         assistant.chargeTask(ticket, read.usage());       // the task exists only after resumeTask
         return result;
     }
@@ -174,6 +179,21 @@ public class TaskLauncher {
             return keys.iterator().next();
         }
         throw new IllegalArgumentException("multiple projects " + keys + " — specify one");
+    }
+
+    /** The modifiers that come from the human, threaded into every creation path from one place. */
+    private static NewTask.Builder newTask(String taskId, String projectKey, String instructions,
+                                           LaunchRequest request) {
+        return NewTask.builder(taskId, projectKey)
+                .instructions(instructions)
+                .mode(request.mode())
+                .branchStrategy(request.strategy())
+                .baseBranch(request.baseBranch());
+    }
+
+    /** The brief for a task jagt could not read the ticket for: the agent reads it itself. */
+    private static String readAndImplement(String ref, LaunchRequest request) {
+        return withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", request.notes());
     }
 
     private static String withNotes(String instructions, String notes) {

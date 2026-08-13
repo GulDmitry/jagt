@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.shell;
 
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.CommandService;
@@ -42,11 +43,41 @@ class MasterShellTest {
                 config, mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class),
                 mock(NaturalLanguageDispatch.class), mock(ConfigurableApplicationContext.class));
 
-        MasterShell.DoArgs args = shell.parseDoArgs(List.of("do", "ABC-2099", "plan", "давай", "разберём", "алгоритм"));
+        LaunchRequest args = shell.parseDoArgs(List.of("do", "ABC-2099", "plan", "давай", "разберём", "алгоритм"));
 
         assertThat(args.project()).isNull();
         assertThat(args.mode()).isEqualTo("plan");
         assertThat(args.notes()).isEqualTo("давай разберём алгоритм");
+    }
+
+    @Test
+    void readsTheBaseBranchAfterFromAndKeepsTheRestAsNotes() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
+                config, mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class),
+                mock(NaturalLanguageDispatch.class), mock(ConfigurableApplicationContext.class));
+
+        LaunchRequest args = shell.parseDoArgs(
+                List.of("do", "ABC-1", "from", "feature/parent", "sng", "keep the API stable"));
+
+        assertThat(args.baseBranch()).isEqualTo("feature/parent");
+        assertThat(args.project()).isEqualTo("sng");
+        assertThat(args.notes()).isEqualTo("keep the API stable");
+    }
+
+    @Test
+    void refusesFromWithoutABranchInsteadOfSwallowingTheNextWord() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
+                config, mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class),
+                mock(NaturalLanguageDispatch.class), mock(ConfigurableApplicationContext.class));
+
+        assertThatThrownBy(() -> shell.parseDoArgs(List.of("do", "ABC-1", "from")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("`from` needs the branch");
     }
 
     @Test

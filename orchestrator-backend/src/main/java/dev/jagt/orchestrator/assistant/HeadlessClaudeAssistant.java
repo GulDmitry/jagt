@@ -42,9 +42,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
             "sourceBranch":{"type":"string"},\
+            "targetBranch":{"type":"string"},\
             "projectPath":{"type":"string"},\
             "title":{"type":"string"}},\
-            "required":["exists","sourceBranch","projectPath","title"]}""";
+            "required":["exists","sourceBranch","targetBranch","projectPath","title"]}""";
     private static final String REVIEW_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
@@ -104,11 +105,13 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
         String prompt = "Fetch the merge/pull request at " + mrUrl + " via the matching code-host MCP tools"
                 + " (GitLab MR, GitHub PR, Bitbucket PR — whichever the URL points to). Return exists=true"
-                + " with its source branch as sourceBranch, its project path (group/project) as projectPath,"
-                + " and its title. If it does not exist, exists=false with empty strings.";
+                + " with its source branch as sourceBranch, the branch it merges INTO as targetBranch, its"
+                + " project path (group/project) as projectPath, and its title. If it does not exist,"
+                + " exists=false with empty strings.";
         return ask(prompt, MR_SCHEMA, mrUrl).map(n -> new MergeRequestFacts(
                 n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
-                n.path("projectPath").asString(""), n.path("title").asString("")));
+                n.path("targetBranch").asString(""), n.path("projectPath").asString(""),
+                n.path("title").asString("")));
     }
 
     @Override

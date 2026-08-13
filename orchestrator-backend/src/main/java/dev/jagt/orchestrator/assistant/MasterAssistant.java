@@ -34,7 +34,8 @@ public interface MasterAssistant {
     }
 
     /** Facts about an existing merge request. {@code exists=false} means the URL resolved to nothing. */
-    record MergeRequestFacts(boolean exists, String sourceBranch, String projectPath, String title) {
+    record MergeRequestFacts(boolean exists, String sourceBranch, String targetBranch,
+                             String projectPath, String title) {
     }
 
     /**
@@ -59,7 +60,7 @@ public interface MasterAssistant {
     /** Reads a work item given an issue KEY or a URL to it (any tracker); returns its canonical key + facts. */
     Answer<TicketFacts> readTicket(String ticketRef);
 
-    /** Reads an MR by URL so `resume` can recover its source branch (= the task) and project. */
+    /** Reads an MR by URL so `resume` can recover its source branch (= the task), its target and project. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
 
     /** The `review` sweep: pipeline state + unresolved comments of an MR (a slow, multi-call read). */

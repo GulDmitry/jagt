@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.agent.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
 import dev.jagt.orchestrator.platform.TerminalDriver;
@@ -94,8 +95,8 @@ class TaskFlowMatrixTest {
         E2eWorkspace.writeConfig(paths.configFile(), workspace.resolve("proj"), flowCase);
         Path worktree = workspace.resolve("ABC-1-proj");
 
-        String created = tools.initializeTask("ABC-1", "proj", "Fix the widget", null, null,
-                "Widget layout is off", null);
+        String created = tools.initializeTask(NewTask.builder("ABC-1", "proj")
+                .instructions("Fix the widget").title("Widget layout is off").build());
 
         assertThat(created).contains("Stub sub-agent started");
         assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();

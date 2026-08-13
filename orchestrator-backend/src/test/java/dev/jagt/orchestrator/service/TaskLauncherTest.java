@@ -4,10 +4,13 @@ import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
 import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
 import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.model.LaunchRequest;
+import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.Map;
@@ -16,10 +19,6 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -48,10 +47,15 @@ class TaskLauncherTest {
                 .thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC",
                         List.of(), "https://tracker.example.com/browse/ABC-123")), TokenUsage.NONE));
 
-        launcher.launch("https://tracker.example.com/browse/ABC-123", "group-a", null, null, null);
+        launcher.launch(new LaunchRequest("https://tracker.example.com/browse/ABC-123", "group-a", null, null,
+                null, null));
 
-        verify(tools).initializeTask(eq("ABC-123"), eq("group-a"), anyString(), isNull(), isNull(),
-                eq("Some title"), eq("https://tracker.example.com/browse/ABC-123"));
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(tools).initializeTask(created.capture());
+        assertThat(created.getValue())
+                .extracting(NewTask::taskId, NewTask::projectKey, NewTask::title, NewTask::ticketUrl)
+                .containsExactly("ABC-123", "group-a", "Some title",
+                        "https://tracker.example.com/browse/ABC-123");
     }
 
     @Test
@@ -61,11 +65,11 @@ class TaskLauncherTest {
         when(assistant.readTicket("https://tracker/ABC-123")).thenReturn(new Answer<>(
                 Optional.of(new TicketFacts(true, "ABC-123", "t", "ABC", List.of(), "")), spent));
 
-        launcher.launch("https://tracker/ABC-123", "group-a", null, null, null);
+        launcher.launch(new LaunchRequest("https://tracker/ABC-123", "group-a", null, null, null, null));
 
         // The read happens BEFORE the task exists, so it can only be charged after initializeTask created it.
         var order = inOrder(tools, assistant);
-        order.verify(tools).initializeTask(eq("ABC-123"), anyString(), anyString(), any(), any(), any(), any());
+        order.verify(tools).initializeTask(any());
         order.verify(assistant).chargeTask("ABC-123", spent);
     }
 
@@ -75,10 +79,12 @@ class TaskLauncherTest {
         oneProject("group-a");
         when(assistant.readTicket("ABC-42")).thenReturn(new Answer<>(Optional.empty(), spent));
 
-        launcher.launch("ABC-42", null, null, null, null);
+        launcher.launch(LaunchRequest.of("ABC-42"));
 
-        verify(tools).initializeTask(eq("ABC-42"), eq("group-a"), anyString(), isNull(), isNull(), isNull(),
-                isNull());
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(tools).initializeTask(created.capture());
+        assertThat(created.getValue()).extracting(NewTask::taskId, NewTask::projectKey)
+                .containsExactly("ABC-42", "group-a");
         verify(assistant).chargeTask("ABC-42", spent);
     }
 
@@ -87,42 +93,57 @@ class TaskLauncherTest {
         oneProject("group-a");
         when(tools.existingBranchProject("ABC-9", null)).thenReturn("group-a");
 
-        String out = launcher.launch("ABC-9", null, null, null, null);
+        String out = launcher.launch(LaunchRequest.of("ABC-9"));
 
         assertThat(out).contains("already exists in group-a", "do ABC-9 recreate", "do ABC-9 resume");
         verifyNoInteractions(assistant);
-        verify(tools, never()).initializeTask(anyString(), anyString(), anyString(), any(), any(), any(), any());
+        verify(tools, never()).initializeTask(any());
     }
 
     @Test
     void relaysTheHumansNotesToTheAgentAlongsideTheTicket() {
         oneProject("sng");
 
-        launcher.launch("ABC-1", "sng", "plan", null, "start with tests only");
+        launcher.launch(new LaunchRequest("ABC-1", "sng", "plan", null, null, "start with tests only"));
 
-        verify(tools).initializeTask(eq("ABC-1"), eq("sng"), contains("start with tests only"), eq("plan"),
-                isNull(), isNull(), isNull());
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(tools).initializeTask(created.capture());
+        assertThat(created.getValue().instructions()).contains("start with tests only");
+        assertThat(created.getValue().mode()).isEqualTo("plan");
     }
 
     @Test
     void threadsTheChosenBranchStrategyIntoInitialize() {
         oneProject("sng");
 
-        launcher.launch("ABC-1", "sng", null, "recreate", null);
+        launcher.launch(new LaunchRequest("ABC-1", "sng", null, "recreate", null, null));
 
-        verify(tools).initializeTask(eq("ABC-1"), eq("sng"), anyString(), isNull(), eq("recreate"), isNull(),
-                isNull());
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(tools).initializeTask(created.capture());
+        assertThat(created.getValue().branchStrategy()).isEqualTo("recreate");
     }
 
     @Test
-    void carriesTheReviewRequestTitleIntoAResumedTask() {
+    void threadsTheChosenBaseBranchIntoInitialize() {
+        oneProject("sng");
+
+        launcher.launch(new LaunchRequest("ABC-1", "sng", null, null, "feature/parent", null));
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(tools).initializeTask(created.capture());
+        assertThat(created.getValue().baseBranch()).isEqualTo("feature/parent");
+    }
+
+    @Test
+    void carriesTheReviewRequestTitleAndItsTargetBranchIntoAResumedTask() {
         when(assistant.readMergeRequest("https://host/mr/425")).thenReturn(new Answer<>(
-                Optional.of(new MergeRequestFacts(true, "PROJ-1", "group/proj", "PROJ-1 Excel export")),
+                Optional.of(new MergeRequestFacts(true, "PROJ-1", "release/2", "group/proj",
+                        "PROJ-1 Excel export")),
                 TokenUsage.NONE));
 
         launcher.resume("https://host/mr/425", null);
 
-        verify(tools).resumeTask("PROJ-1", "https://host/mr/425", "PROJ-1 Excel export");
+        verify(tools).resumeTask("PROJ-1", "https://host/mr/425", "PROJ-1 Excel export", "release/2");
     }
 
     @Test
@@ -149,7 +170,8 @@ class TaskLauncherTest {
                 dev.jagt.orchestrator.model.TaskState.builder("group-a", "/wt",
                         dev.jagt.orchestrator.model.TaskStatus.IN_PROGRESS).alias("a1").build()));
 
-        assertThatThrownBy(() -> launcher.launch("https://tracker/ABC-9", "group-a", null, null, null))
+        assertThatThrownBy(() -> launcher.launch(
+                new LaunchRequest("https://tracker/ABC-9", "group-a", null, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("task slots are in use");
         verifyNoInteractions(assistant, tools);

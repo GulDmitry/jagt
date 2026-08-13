@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.agent.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
@@ -72,12 +73,14 @@ public class TaskProvisioning {
                 .findFirst().orElse(null);
     }
 
-    public String initializeTask(String taskId, String projectKey, String instructions, String mode,
-                                 String branchStrategy, String title, String ticketUrl) {
+    public String initializeTask(NewTask request) {
+        String taskId = request.taskId();
+        String projectKey = request.projectKey();
+        String instructions = request.instructions();
         requireSafeId(taskId, "taskId");
         requireSafeId(projectKey, "projectKey");
-        boolean plan = AgentSessions.planMode(mode);
-        GitService.BranchStrategy strategy = parseBranchStrategy(branchStrategy);
+        boolean plan = AgentSessions.planMode(request.mode());
+        GitService.BranchStrategy strategy = parseBranchStrategy(request.branchStrategy());
         if (stateService.task(taskId).isPresent()) {
             throw new IllegalArgumentException("Task " + taskId + " is already registered in state.json. "
                     + "Use open_task_tab to respawn its agent or remove_task to retire it first.");
@@ -93,8 +96,10 @@ public class TaskProvisioning {
         }
         Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
         Path worktreePath = projectPath.getParent().resolve(taskId + "-" + projectKey);
+        String override = branchOverride(request.baseBranch(), projectPath, strategy);
+        String baseBranch = override != null ? override : project.baseBranch();
 
-        gitService.createWorktree(projectPath, worktreePath, taskId, project.baseBranch(), strategy);
+        gitService.createWorktree(projectPath, worktreePath, taskId, baseBranch, strategy);
         String remoteUrl;
         try {
             remoteUrl = gitService.remoteUrl(projectPath);
@@ -104,7 +109,7 @@ public class TaskProvisioning {
             WorktreeFiles.copyLocalFiles(projectPath, worktreePath,
                     configService.load().worktree().copyGlobsOrDefault());
             WorktreeFiles.write(worktreePath.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE),
-                    subAgentContext(taskId, projectKey, project, worktreePath, remoteUrl, config));
+                    subAgentContext(request, project, baseBranch, worktreePath, remoteUrl, config));
             if (instructions != null && !instructions.isBlank()) {
                 WorktreeFiles.write(worktreePath.resolve("task_context.md"), instructions);
             }
@@ -117,8 +122,11 @@ public class TaskProvisioning {
 
         String alias = nextAlias(taskId);
         stateService.putTask(taskId, TaskState.builder(projectKey, worktreePath.toString(), TaskStatus.NEW)
-                .lastActiveTimestamp(System.currentTimeMillis()).alias(alias).remoteUrl(remoteUrl).title(title)
-                .ticketUrl(ticketUrl == null || ticketUrl.isBlank() ? null : ticketUrl)
+                .lastActiveTimestamp(System.currentTimeMillis()).alias(alias).remoteUrl(remoteUrl)
+                .title(request.title())
+                .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank() ? null : request.ticketUrl())
+                // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
+                .baseBranch(override)
                 .autoReview(config.autoReview().enabledOrDefault())
                 .build());
 
@@ -135,7 +143,7 @@ public class TaskProvisioning {
                 + "- worktree: " + worktreePath + " (branch " + taskId
                 + (strategy == GitService.BranchStrategy.RESUME
                         ? ", RESUMED with its existing commits"
-                        : " from " + project.baseBranch()) + ")\n"
+                        : " from " + baseBranch) + ")\n"
                 + "- " + agentRuntime.displayName() + " sub-agent started in tmux window '" + taskId
                 + "' of session '" + session
                 + "' (the viewer window attaches automatically; manual: tmux attach -t " + session + ")\n"
@@ -144,6 +152,25 @@ public class TaskProvisioning {
                         : "")
                 + "- sub-agent context written to " + AgentRuntime.SYSTEM_KNOWLEDGE_FILE
                 + (instructions != null && !instructions.isBlank() ? ", instructions to task_context.md" : "");
+    }
+
+    /**
+     * The human's chosen base branch, normalized to a bare name, or null when they named none. Checked against
+     * the REMOTE before anything is created: the worktree is cut from {@code origin/<base>}, so a typo would
+     * otherwise surface as a raw git failure after the branch and directory already exist.
+     */
+    private String branchOverride(String requested, Path projectPath, GitService.BranchStrategy strategy) {
+        if (requested == null || requested.isBlank()) {
+            return null;
+        }
+        String branch = requested.strip().replaceFirst("^origin/", "");
+        // A RESUMED task is not cut from anything — the branch is only remembered as its review target, and
+        // refusing the resume over it would strand a task whose request is open on this very branch.
+        if (strategy != GitService.BranchStrategy.RESUME && !gitService.remoteBranchExists(projectPath, branch)) {
+            throw new IllegalArgumentException("Base branch '" + branch + "' does not exist on origin — the"
+                    + " worktree is cut from origin/" + branch + ", so check the name (or push it first).");
+        }
+        return branch;
     }
 
     /** First letter of the ticket + smallest free ordinal: ABC-123 -> a1, next ABC task -> a2. */
@@ -178,8 +205,9 @@ public class TaskProvisioning {
      * the master root, the backend, all configured projects and the other active
      * tasks — not only its own worktree.
      */
-    private String subAgentContext(String taskId, String projectKey, ProjectConfig project, Path worktreePath,
-                                   String remoteUrl, ConfigService.ConfigFile config) {
+    private String subAgentContext(NewTask request, ProjectConfig project, String baseBranch,
+                                   Path worktreePath, String remoteUrl, ConfigService.ConfigFile config) {
+        String taskId = request.taskId();
         String projectsTable = config.projects().entrySet().stream()
                 .map(e -> "| " + e.getKey() + " | " + e.getValue().path() + " | " + e.getValue().baseBranch() + " |")
                 .collect(Collectors.joining("\n"));
@@ -188,10 +216,10 @@ public class TaskProvisioning {
                 .collect(Collectors.joining("\n"));
         return prompts.subAgentContext().formatted(
                 taskId,
-                taskId, projectKey, project.path(), project.baseBranch(), remoteUrl, worktreePath,
+                taskId, request.projectKey(), project.path(), baseBranch, remoteUrl, worktreePath,
                 properties.watchdog().staleAfter().toMinutes() + " minutes",
                 taskId,
-                taskId, project.baseBranch(),
+                taskId, baseBranch,
                 paths.root(),
                 paths.stateFile(),
                 paths.configFile(),
