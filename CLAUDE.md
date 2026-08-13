@@ -379,8 +379,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   enforced here as a workflow rule, not in settings.json.)
 
 ## Build & run
-- Default run is the WEB BOARD: `./gradlew build` then `java -jar build/libs/jagt.jar` serves it on 8290 and
-  prints the URL. For the console instead, add `--orchestrator.ui=tui` (or `=both`) — and note the layout
+- Default run is the WEB BOARD: `./gradlew build stageJar` then `java -jar build/libs/jagt-run.jar` serves it
+  on 8290 and prints the URL. Run the STAGED copy — `bootJar` rewrites `jagt.jar` in place (see the gotcha at
+  the end of this section), and `RunningJarWatch` exists because that symptom cost two debugging sessions. For the console instead, add `--orchestrator.ui=tui` (or `=both`) — and note the layout
   smoke script must pass that flag too, since it drives the TUI (bootJar has a
   fixed, version-independent archive name, so the run command never changes across releases).
 - `./gradlew bootRun` works but Gradle captures stdout → no TTY (`System.console()` is null) → the TUI
@@ -393,6 +394,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `./gradlew build` rewrites the fat jar IN PLACE (same inode — verified), so rebuilding WHILE a JVM runs
   from that jar corrupts its class loading, and the first not-yet-loaded class fails — which then MASKS the
   real error (e.g. "Port 8290 already in use") behind a confusing logback/Spring trace. It is expected and
-  harmless: the OLD instance dies, just restart from the freshly built jar. To avoid it entirely, run from a
-  copy the build never touches: `cp build/libs/jagt.jar /tmp/jagt.jar && java -jar
-  /tmp/jagt.jar`. (Past sessions burned hours chasing this as a logback/preload bug — it is not.)
+  harmless: the OLD instance dies, just restart from the freshly built jar. The SAME cause has a second face
+  that looks nothing like it: a jagt that keeps RUNNING while you rebuild answers 500 on whatever it had not
+  loaded yet (`/status`, `/stats`, `/orphans` first, while the board still renders) — diagnosed twice as an
+  endpoint bug before the inode was checked. Avoid both by running the staged copy (`./gradlew stageJar`,
+  then `build/libs/jagt-run.jar`); `service/RunningJarWatch` reports it when it happens anyway. (Past sessions
+  burned hours chasing this as a logback/preload bug — it is not.)

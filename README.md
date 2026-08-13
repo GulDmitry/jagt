@@ -59,9 +59,14 @@ editing the task flow.
 ```bash
 cp config.json.dist config.json          # add your project(s) — see Configuration
 cd orchestrator-backend
-./gradlew build
-java -jar build/libs/jagt.jar
+./gradlew build stageJar
+java -jar build/libs/jagt-run.jar
 ```
+
+> Why `jagt-run.jar` and not `jagt.jar`: `./gradlew build` rewrites `jagt.jar` **in place**, so a jagt started
+> from that path keeps reading a file whose content has changed — already-loaded classes work, everything
+> loaded afterwards fails with `NoClassDefFoundError` and parts of the board start answering 500. `stageJar`
+> copies it to a name no build writes. (If it happens anyway, jagt notices and tells you to restart.)
 
 That serves the **board** at `http://localhost:8290` — the default surface. Open it and press `New task`
 (or `⌘K` and say what you want). Plain text any time: `curl -s localhost:8290/state`.
@@ -323,6 +328,8 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `deploy` says `MERGE CONFLICT` | task branch and `deployBranch` changed the same lines; jagt merges in a throwaway worktree, so nothing is pushed and the task goes `DEPLOY_CONFLICT` | `ide <ticket>` opens that **deploy** worktree (not the task's) — resolve the conflicts, `git add` them, then `deploy <ticket>` again; jagt finishes the commit + push. Your task branch and its MR are untouched |
 | `revert` says it has no record of the merge commit | the task was deployed before jagt stored it (`deployCommit`) | jagt will not guess which merge to revert on a shared branch. Find it — `git log --merges --grep <ticket> origin/<deployBranch>` — then `git revert -m 1 <sha>` and push. Deploys made from now on are revertible with one command |
 | `revert` says the revert conflicts | someone changed the same lines on `deployBranch` after the deploy | jagt aborts and pushes nothing (the revert worktree is cleaned up, unlike a deploy conflict — what needs deciding is whether reverting is still right). Do it by hand: `git revert -m 1 <sha>`, resolve, push |
+| Parts of the board answer HTTP 500 (`/status`, `/stats`, `/orphans`) while `/` and `/state` still work | you rebuilt while jagt was running: `./gradlew build` rewrites `jagt.jar` in place, so the JVM keeps reading a file that changed — anything not yet loaded dies with `NoClassDefFoundError` | restart it, and run the staged copy so it cannot happen again: `./gradlew stageJar && java -jar build/libs/jagt-run.jar`. jagt also notices this itself within a minute and says so |
+| You cannot find the backend's log | the console is deliberately quiet — only the shell prints there — and logs go to a FILE: `jagt-backend.log` next to where you started the jar (override with `LOG_FILE`) | `tail -f jagt-backend.log` |
 | Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Installation → macOS** |
 | `state.json` got corrupted (bad hand edit, half-written by another tool) | every write keeps the previous version as `state.json.bak` | jagt recovers the tasks from the backup by itself, moves the bad file to `state.json.corrupt` and says so in the log. If the backup is gone too it REFUSES to start with an empty task list — fix or move the file yourself, nothing is silently overwritten |
 | A worktree directory nobody is using is still on disk | a crashed or abandoned task, or a `done` that could not delete it | jagt pings you once at startup and lists them with `curl -s localhost:8290/orphans`, including how many copied secret files (`worktree.copyGlobs`) are still inside. It never deletes them — they can hold uncommitted work, so that call is yours |

@@ -3,11 +3,15 @@ package dev.jagt.orchestrator.web;
 import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.support.StaticApplicationContext;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -34,5 +38,19 @@ class TaskEventStreamTest {
         TaskEventStream stream = new TaskEventStream(mock(StateService.class));
 
         assertThat(stream.open()).isNotSameAs(stream.open());
+    }
+
+    /**
+     * An open board tab is an async request with no timeout, and Tomcat's stop waits for those: leave them
+     * open and Ctrl-C never ends the process. A completed emitter refuses further sends — that is the proof.
+     */
+    @Test
+    void endsEveryBoardConnectionWhenTheBackendShutsDown() {
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class));
+        SseEmitter browser = stream.open();
+
+        stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
+
+        assertThatIllegalStateException().isThrownBy(() -> browser.send("late"));
     }
 }
