@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- One base branch forking into parallel task branches: the whole product in three nodes.
+       Chunky on purpose — strokes thinner than 3 turn to mush at 16px.
+       This file is the source; regenerate the fallbacks after editing it (no build step, they are committed):
+         for s in 16 32 48; do rsvg-convert -w $s -h $s favicon.svg -o /tmp/f$s.png; done
+         magick /tmp/f16.png /tmp/f32.png /tmp/f48.png favicon.ico
+         sed 's/ rx="7"//' favicon.svg | rsvg-convert -w 180 -h 180 -o apple-touch-icon.png  # iOS masks its own corners
+    -->
+  <style>
+    .badge { fill: #1d4ed8 }
+    .mark { fill: none; stroke: #fff; stroke-width: 3.2; stroke-linecap: round }
+    .node { fill: #fff; stroke: none }
+    @media (prefers-color-scheme: dark) { .badge { fill: #3b6cf0 } }
+  </style>
+  <rect class="badge" width="32" height="32" rx="7"/>
+  <path class="mark" d="M16 25.5v-7M16 18.5 9 10.5M16 18.5 23 10.5"/>
+  <circle class="node" cx="16" cy="25.5" r="3.1"/>
+  <circle class="node" cx="9" cy="10.5" r="3.1"/>
+  <circle class="node" cx="23" cy="10.5" r="3.1"/>
+</svg>
