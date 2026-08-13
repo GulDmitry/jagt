@@ -16,8 +16,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 /**
@@ -49,6 +52,12 @@ public class StateService {
     private final Path backupFile;
     private final Path corruptFile;
     private final Object lock = new Object();
+    /**
+     * Fired after a mutation has been WRITTEN. Two consumers want exactly this signal — the web UI's SSE
+     * stream and a TUI that repaints when state changes instead of on a timer — so it is published once here
+     * rather than invented twice. Copy-on-write: listeners are registered at startup and read on every write.
+     */
+    private final List<Consumer<StateFile>> changeListeners = new CopyOnWriteArrayList<>();
 
     public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
         // Tolerate state.json files written before a new primitive field existed: a missing/null primitive
@@ -64,6 +73,19 @@ public class StateService {
 
     private static Path sibling(Path file, String suffix) {
         return file.resolveSibling(file.getFileName() + suffix);
+    }
+
+    /**
+     * Registers a listener for "state changed", called with the state as it was just written.
+     *
+     * <p>Guarantees, because both consumers depend on them: it fires AFTER the file is on disk (so a listener
+     * that re-reads sees the same thing), it fires OUTSIDE the write lock (a slow listener must not block the
+     * agents' MCP calls), it does NOT fire when a mutation changed nothing, and one listener throwing neither
+     * fails the mutation nor stops the others. Coalescing rapid changes is the LISTENER's business — this
+     * publisher reports every change it makes.
+     */
+    public void onChange(Consumer<StateFile> listener) {
+        changeListeners.add(listener);
     }
 
     public StateFile read() {
@@ -158,8 +180,29 @@ public class StateService {
     }
 
     private void mutate(UnaryOperator<StateFile> mutation) {
+        StateFile written;
         synchronized (lock) {
-            writeUnlocked(mutation.apply(readUnlocked()));
+            StateFile before = readUnlocked();
+            // The map is mutated in place by the callers' operators, so snapshot BEFORE applying it —
+            // otherwise "did anything change?" compares the new state with itself.
+            StateFile unchanged = new StateFile(before.tasks());
+            written = mutation.apply(before);
+            if (unchanged.equals(written)) {
+                return;                       // e.g. updateTask for an id that is not there: nothing to say
+            }
+            writeUnlocked(written);
+        }
+        publish(written);                      // outside the lock: a listener must never block a tool call
+    }
+
+    private void publish(StateFile written) {
+        StateFile snapshot = new StateFile(written.tasks());   // listeners cannot disturb each other
+        for (Consumer<StateFile> listener : changeListeners) {
+            try {
+                listener.accept(snapshot);
+            } catch (RuntimeException e) {
+                log.warn("A state-change listener failed (the write itself is done): {}", e.toString());
+            }
         }
     }
 

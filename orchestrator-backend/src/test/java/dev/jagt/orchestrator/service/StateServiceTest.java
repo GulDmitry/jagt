@@ -13,7 +13,10 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -25,6 +28,62 @@ class StateServiceTest {
                 .withRoot(root.toString()).withStateFile(stateFile.toString())));
     }
 
+
+    @Test
+    void tellsListenersAboutAChangeOnlyAfterItIsOnDisk(@TempDir Path root) {
+        // The guarantee both consumers need (SSE, TUI repaint): a listener that re-reads must see the change,
+        // so it fires AFTER the write, not before it.
+        Path stateFile = root.resolve("state.json");
+        StateService state = stateIn(root, stateFile);
+        List<String> seenByListener = new ArrayList<>();
+        state.onChange(written -> seenByListener.add(
+                written.tasks().keySet() + " on disk: " + state.tasks().keySet()));
+
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        assertThat(seenByListener).containsExactly("[ABC-1] on disk: [ABC-1]");
+    }
+
+    @Test
+    void staysQuietWhenAMutationChangedNothing(@TempDir Path root) {
+        StateService state = stateIn(root, root.resolve("state.json"));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+        AtomicInteger changes = new AtomicInteger();
+        state.onChange(written -> changes.incrementAndGet());
+
+        boolean found = state.updateTask("NOPE-1", TaskState::touched);
+
+        assertThat(found).isFalse();
+        assertThat(changes).hasValue(0);       // a repaint per no-op update is noise, not information
+    }
+
+    @Test
+    void reportsEveryKindOfChangeIncludingARemoval(@TempDir Path root) {
+        StateService state = stateIn(root, root.resolve("state.json"));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+        AtomicInteger changes = new AtomicInteger();
+        state.onChange(written -> changes.incrementAndGet());
+
+        state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.IN_PROGRESS, "working"));
+        state.removeTask("ABC-1");
+
+        assertThat(changes).hasValue(2);
+    }
+
+    @Test
+    void keepsWritingAndKeepsNotifyingWhenOneListenerThrows(@TempDir Path root) {
+        StateService state = stateIn(root, root.resolve("state.json"));
+        AtomicInteger secondListener = new AtomicInteger();
+        state.onChange(written -> {
+            throw new IllegalStateException("this listener is broken");
+        });
+        state.onChange(written -> secondListener.incrementAndGet());
+
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        assertThat(state.task("ABC-1")).isPresent();     // the mutation is what matters; listeners are not
+        assertThat(secondListener).hasValue(1);
+    }
 
     @Test
     void keepsThePreviousVersionBesideTheStateFileOnEveryWrite(@TempDir Path root) throws IOException {
