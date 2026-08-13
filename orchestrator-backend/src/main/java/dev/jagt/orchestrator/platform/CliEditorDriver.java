@@ -77,16 +77,30 @@ public class CliEditorDriver implements EditorDriver {
     }
 
     /**
-     * Apply {@code prune} to every JetBrains IDE's recentProjects.xml (macOS config location), atomically
-     * writing back only files it actually changed. Best-effort: JetBrains owns the file and rewrites it from
-     * memory while running, so a write reliably sticks only once that IDE is next closed. No-op when the
-     * JetBrains config dir is absent (a non-JetBrains editor).
+     * Apply {@code prune} to every JetBrains IDE's recentProjects.xml, atomically writing back only files it
+     * actually changed. Best-effort: JetBrains owns the file and rewrites it from memory while running, so a
+     * write reliably sticks only once that IDE is next closed. No-op when no JetBrains config dir is present
+     * (a non-JetBrains editor).
      */
     private void rewriteRecentProjects(String userHome, Function<String, String> prune) {
-        Path jetBrains = Path.of(userHome, "Library", "Application Support", "JetBrains");
-        if (!Files.isDirectory(jetBrains)) {
-            return;
+        for (Path jetBrains : jetBrainsConfigDirs(userHome)) {
+            if (Files.isDirectory(jetBrains)) {
+                rewriteRecentProjectsIn(jetBrains, prune);
+            }
         }
+    }
+
+    /**
+     * Where JetBrains keeps per-IDE config, per platform: {@code ~/Library/Application Support/JetBrains} on
+     * macOS, {@code ~/.config/JetBrains} on Linux (XDG). Both are probed rather than switched on an OS flag —
+     * only one of them exists on a given machine, and probing keeps this free of an `if macos`.
+     */
+    static List<Path> jetBrainsConfigDirs(String userHome) {
+        return List.of(Path.of(userHome, "Library", "Application Support", "JetBrains"),
+                Path.of(userHome, ".config", "JetBrains"));
+    }
+
+    private void rewriteRecentProjectsIn(Path jetBrains, Function<String, String> prune) {
         try (var ideDirs = Files.newDirectoryStream(jetBrains)) {
             for (Path ideDir : ideDirs) {
                 Path recent = ideDir.resolve("options").resolve("recentProjects.xml");

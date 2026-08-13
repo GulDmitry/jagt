@@ -81,4 +81,14 @@ class CliEditorDriverTest {
 
         assertThat(dead).isEmpty();
     }
+
+    @Test
+    void looksForJetBrainsConfigWhereEachPlatformKeepsIt() {
+        // The Linux port predicted this leak and found it: the prune only ever looked in the macOS location,
+        // so on Linux every `done` task would leave a dead entry in the IDE's recent-projects list forever.
+        var dirs = CliEditorDriver.jetBrainsConfigDirs("/home/dev").stream().map(Path::toString).toList();
+
+        assertThat(dirs).containsExactly("/home/dev/Library/Application Support/JetBrains",
+                "/home/dev/.config/JetBrains");
+    }
 }

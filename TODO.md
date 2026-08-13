@@ -347,16 +347,21 @@ Two decisions still open, both about the copying itself:
 say "review request" / "pipeline or checks" generically. Not worth a churny rename until a non-GitLab host
 is actually wired. (The invariant itself — never hardcode a tracker or code host — lives in CLAUDE.md.)
 
-### Verify the build on Linux, then actually implement its drivers
-Confirm `./gradlew build` and the runnable jar work on Linux (Java 25, Node, tmux, git present). The core
-is OS-neutral; the only OS-specific code is behind the platform strategies (`UserNotifier`/`TerminalDriver`/
-`EditorDriver`). First milestone: backend boots + the deterministic tests pass on a Linux runner, even
-before Linux impls of the three drivers exist (they can no-op / fail-soft until then).
-Second milestone, the one that makes Linux a supported target rather than a compiling one: a `libnotify`
-(`notify-send`) `UserNotifier`, a Linux `TerminalDriver` (kitty already exists there — the existing impl may
-port with only the socket path changing), and an `EditorDriver` for the `idea`/`code` CLIs. Nothing else
-should need to change; if something does, that is the pluggable-by-design invariant leaking and worth fixing
-rather than working around.
+### Run the build on Linux — the drivers are in, the RUNNER is not
+DONE 2026-08-13, the driver half: `LibNotifyNotifier` (`notify-send`), `LinuxKittyTerminalDriver`, and the
+JetBrains config path is no longer macOS-only (`~/.config/JetBrains` is probed too, which is what would have
+left a dead recent-projects entry per task on Linux). Selection is `orchestrator.platform=linux`, and
+`LinuxProfileContextTest` boots that profile so a condition typo fails in CI rather than on a desktop.
+Two findings worth keeping: driving kitty needed NO Linux-specific code at all (one shared
+`AbstractKittyTerminalDriver`, two hooks), and the editor needed no new class — only the config path fixed and
+`orchestrator.editor-command` pointed at `idea`/`code`.
+
+What is still missing is the part that cannot be faked from macOS: nobody has run `./gradlew build` or the jar
+on a real Linux box, so "it wires" is all that is proven. Do that on a Linux runner (Java 25, Node, tmux, git,
+kitty, libnotify), then check the three things a unit test cannot see — does `notify-send` actually raise a
+banner under the session bus, does `kitty @ focus-window` reach the window with the WM in charge of stacking,
+and does the `pkill -f <socket>` viewer close behave the same. `WarpTerminalDriver` remains macOS-only (URI
+scheme + AppleScript) and is not part of this.
 
 ### Automated end-to-end test harness across all config combinations, with a deterministic oracle
 Goal: one automated suite that exercises the WHOLE task flow (create worktree → provision → launch →

@@ -89,6 +89,23 @@ service.
 | kitty | `brew install kitty` | default agents terminal (swap it in config) |
 | terminal-notifier | `brew install terminal-notifier` | reliable notifications (osascript fallback is often silently suppressed) |
 
+### Linux
+
+| tool | install | used for |
+|------|---------|----------|
+| Java 25+ | `sdk install java 25-tem` | the backend / Master console |
+| an agent CLI | [Claude Code](https://claude.com/claude-code) — default; swap via `orchestrator.agent` | the agents |
+| tmux | `apt install tmux` | persistent agent sessions |
+| Node 18+ | `apt install nodejs` | the MCP proxy jagt injects into worktrees |
+| git | `apt install git` | worktrees |
+| kitty | `apt install kitty` | agents terminal |
+| libnotify | `apt install libnotify-bin` | desktop notifications (`notify-send`) |
+| an editor CLI | IntelliJ `idea` or VS Code `code` on PATH | the `ide` review checkpoint |
+
+Then set `orchestrator.platform: linux` in `application.yml` (it selects the notifier and the terminal
+driver) and point `orchestrator.editor-command` at your editor, e.g. `[idea]` or `[code]`. Everything else is
+shared with macOS — kitty is driven by the same remote-control protocol on both.
+
 A few macOS-specific setup notes:
 
 - **IntelliJ run configs** — a fresh worktree opens without the base project's run configs. Mark a config
@@ -211,7 +228,8 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 
 | key | meaning |
 |-----|---------|
-| `orchestrator.platform` | notifier strategy (default `macos`) |
+| `orchestrator.platform` | platform strategies — `macos` (default) or `linux`; selects the notifier and which kitty driver is used |
+| `orchestrator.notify-send-command` | Linux only: the `notify-send` binary (default `notify-send`) |
 | `orchestrator.terminal` | agents viewer: `kitty` (default) or `warp`; both run over tmux |
 | `orchestrator.kitty-font-size` | viewer font size for the kitty terminal (blank keeps kitty.conf's own) |
 | `orchestrator.editor-command` | editor launcher list (default `[/Applications/IntelliJ IDEA.app/Contents/MacOS/idea]`; e.g. `[code]`) |

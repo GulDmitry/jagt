@@ -141,6 +141,13 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     .SYSTEM_KNOWLEDGE_FILE`); Claude reads `CLAUDE.md`, so its runtime symlinks `CLAUDE.md` → `AGENTS.md` —
     one file, never two copies to drift. A new agent = one `AgentRuntime` impl; a Linux port = new
     `UserNotifier`/`TerminalDriver`/`EditorDriver` impls. Nothing else should need to change.
+- kitty is ONE driver, not one per OS: `AbstractKittyTerminalDriver` (in `…platform`) holds everything —
+  remote control, the per-session socket, tabs, reveal, close — and each platform subclass supplies exactly two
+  things, `bringToFront()` and `platformOptions()`. macOS needs AppleScript to raise the app (Cocoa) and the
+  Cyrillic `cmd+` keymap workaround; Linux needs NEITHER (the WM owns stacking, and kitty's own `ascii`
+  shortcut fallback handles a non-Latin layout), so `LinuxKittyTerminalDriver` overrides both with nothing and
+  says why. Selection is `orchestrator.platform` × `orchestrator.terminal` via `@ConditionalOnExpression`, and
+  `LinuxProfileContextTest` boots the linux profile so a condition typo fails in CI, not on someone's desktop.
 - `KittyTerminalDriver` drives kitty via its remote-control CLI (`kitty @ --to unix:<per-session
   socket>`): one dedicated instance (`--single-instance --instance-group --listen-on -o
   allow_remote_control=yes`), tabs titled + closable (unlike Warp). Runs OVER tmux (tab execs `tmux
