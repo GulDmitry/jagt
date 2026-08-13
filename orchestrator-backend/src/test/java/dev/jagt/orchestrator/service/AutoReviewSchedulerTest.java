@@ -126,6 +126,29 @@ class AutoReviewSchedulerTest {
         verify(notifier, org.mockito.Mockito.times(2)).notify(eq("jagt · ABC-1"), contains("window elapsed"));
     }
 
+    /**
+     * A task retired with `done` while still CI_POLLING never LEAVES that status, so the per-window marker had
+     * nothing to clear it: the set grew by one string per such task for the life of the process. Asserted the
+     * only way it is observable from outside — a task that comes back under the same id and window gets its
+     * reminder again instead of being silently treated as already-notified.
+     */
+    @Test
+    void forgetsTheRemindersOfATaskThatWasRetiredWhileStillPolling(@TempDir Path root) {
+        long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
+        StateService state = stateWith(root, polling().mrCreatedAt(window).build());
+        UserNotifier notifier = mock(UserNotifier.class);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(),
+                mock(ReviewSweepService.class), notifier, Runnable::run);
+        scheduler.scan();
+
+        state.removeTask("ABC-1");
+        scheduler.scan();                                        // nothing to notify, and the marker is dropped
+        state.putTask("ABC-1", polling().mrCreatedAt(window).build());
+        scheduler.scan();
+
+        verify(notifier, org.mockito.Mockito.times(2)).notify(eq("jagt · ABC-1"), contains("window elapsed"));
+    }
+
     @Test
     void scanDoesNothingWhenAutoReviewIsDisabled(@TempDir Path root) {
         StateService state = stateWith(root, polling()

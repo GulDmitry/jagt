@@ -74,7 +74,11 @@ public class AutoReviewScheduler {
         }
         AutoReviewCadence cadence = AutoReviewCadence.from(cfg);
         long now = System.currentTimeMillis();
-        stateService.tasks().forEach((taskId, task) -> {
+        var tasks = stateService.tasks();
+        // A task RETIRED while still CI_POLLING never leaves that status, so the branch below would keep its
+        // marker for the life of the process. Forget markers whose task is gone.
+        windowElapsedNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
+        tasks.forEach((taskId, task) -> {
             // A task that left CI_POLLING (deployed, done) re-arms its window-elapsed ping.
             if (task.status() != TaskStatus.CI_POLLING) {
                 windowElapsedNotified.removeIf(marker -> marker.startsWith(taskId + "@"));

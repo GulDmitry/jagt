@@ -48,7 +48,26 @@ public record TaskView(
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(), move.phase(),
                 move.owner(), move.hint(), actions,
                 move.primary() == null ? null : move.primary().id(),
-                DashboardLine.forTask(id, task), task.ticketUrl(), task.mrUrl(), task.lastActiveTimestamp(),
+                DashboardLine.forTask(id, task), webLink(task.ticketUrl()), webLink(task.mrUrl()),
+                task.lastActiveTimestamp(),
                 task.statusSince(), task.history(), draftedReplies, task.usageOrNone().total());
+    }
+
+    /**
+     * A link the board can put in an {@code href}, or nothing. Neither URL is jagt's own: the ticket link comes
+     * back from a MODEL reading a tracker and the request link from an agent's status message, and both are
+     * stored verbatim in a {@code state.json} the human may also hand-edit. The board renders them as clickable
+     * anchors in a page that can POST {@code deploy} to the local API, so a {@code javascript:} or {@code data:}
+     * URL arriving from any of those sources would run there. Guaranteeing it HERE covers every surface at once:
+     * a link that is not http(s) is dropped, not escaped, because there is nothing useful to show.
+     */
+    private static String webLink(String url) {
+        if (url == null) {
+            return null;
+        }
+        String trimmed = url.strip();
+        boolean web = trimmed.regionMatches(true, 0, "http://", 0, 7)
+                || trimmed.regionMatches(true, 0, "https://", 0, 8);
+        return web ? trimmed : null;
     }
 }

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -92,10 +91,5 @@ class LibNotifyNotifierLinuxTest {
             Thread.sleep(250);
         }
         return Files.exists(capture) ? Files.readString(capture) : "";
-    }
-
-    /** Documented for the reader: this is what the harness must have running for the above to mean anything. */
-    static List<String> harnessRequirements() {
-        return List.of("Xvfb display", "dbus session bus", "a notification daemon (dunst)", "notify-send");
     }
 }

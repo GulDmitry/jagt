@@ -60,6 +60,25 @@ already burned are unknown, not zero (logged as UNMEASURED rather than guessed).
 `--output-format stream-json` with usage accumulated from the message stream — worth it only if timeouts turn
 out to be common, and the 6-minute review sweep is the candidate.
 
+### Review findings not yet fixed (from the full-codebase pass, 2026-08-13)
+Ranked; the two that were fixed in that pass (a non-http link reaching the board's `href`, and the
+window-elapsed markers leaking one string per task retired while CI_POLLING) are not listed.
+- **The board builds three fragments with `innerHTML`/`insertAdjacentHTML`** — the alias/id pair, and the
+  project + relative-time + tokens row. Safe only because ids, aliases and project keys are `SAFE_ID`-shaped
+  everywhere they enter, which is a coupling invisible at the interpolation site — and `state.json` is
+  documented as hand-editable. Build them with `textContent` like the rest of the card. (Left alone because
+  `app.js` was mid-edit in another session.)
+- **`StateService` re-reads and re-parses the file on every accessor**, so one user action costs several reads
+  and a decision can straddle two versions of it (`canonicalTaskId` → `task()` → `tasks()` are three separate
+  reads). Writes are atomic and every gate re-checks at execution, so the impact today is a stale MESSAGE, not
+  a wrong write. A read cached on (mtime, size) inside the existing lock fixes both, and keeps a hand edit
+  visible.
+- **The SSE broadcast runs on the caller's thread** — the one serving an agent's MCP call — and sends to every
+  browser synchronously, so a stuck tab can add latency to a tool call. A single-thread executor for the
+  broadcast decouples them.
+- Cosmetic: the board pushes an EMPTY detail `div` when the detail is just the request link (the link is
+  rendered separately); `McpProtocolService` can answer `-32603` with a null message when the cause had none.
+
 ### Generic wording for the GitLab-leaning internal names (low priority)
 `mrUrl` / "MR" / `CI_POLLING` are GitLab-flavoured INTERNAL names. Fine as-is; user-facing text could say
 "review request" / "pipeline or checks". Not worth a churny rename until a non-GitLab host is wired.
