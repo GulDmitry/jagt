@@ -415,6 +415,101 @@ class OrchestratorToolsTest {    @Test
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
     }
 
+    /** Without the commit stored, `revert` has nothing exact to undo and can only send the human to git. */
+    @Test
+    void recordsTheMergeCommitTheDeployCreatedSoItCanBeReverted(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("cafebabe1234");
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class), properties);
+
+        String result = tools.deployTask("a1", null);
+
+        assertThat(state.task("ABC-1").orElseThrow().deployCommit()).isEqualTo("cafebabe1234");
+        assertThat(result).contains("cafebabe");
+    }
+
+    @Test
+    void revertsTheDeployedMergeAndMovesTheTaskToReverted(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .deployCommit("cafebabe1234").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234")))
+                .thenReturn("f00dfeed5678");
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class), properties);
+
+        String result = tools.revertTask("a1", null);
+
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVERTED);
+        assertThat(result).contains("f00dfeed");
+    }
+
+    /**
+     * A task deployed before jagt stored the commit: the message must be the by-hand recipe, because guessing
+     * which merge to revert on a SHARED branch is the one mistake here with no cheap undo.
+     */
+    @Test
+    void refusesToGuessTheMergeCommitOfADeployItDidNotRecord(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        OrchestratorTools tools = facade(config, state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class), properties);
+
+        assertThatThrownBy(() -> tools.revertTask("a1", null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("git revert -m 1");
+        verify(git, never()).revertMergeAndPush(any(), anyString(), anyString(), anyString());
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+    }
+
+    @Test
+    void refusesToRevertATaskThatWasNeverDeployed(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        GitService git = mock(GitService.class);
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class), properties);
+
+        assertThatThrownBy(() -> tools.revertTask("a1", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("only a DEPLOYED task");
+        verifyNoInteractions(git);
+    }
+
+    @Test
+    void refusesRevertWhenCalledBySubAgent(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
+        GitService git = mock(GitService.class);
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class), properties);
+
+        assertThatThrownBy(() -> tools.revertTask("ABC-1", "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Master-only");
+        verifyNoInteractions(git);
+    }
+
     @Test
     void flagsDeployConflictOnTheDashboardWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
             throws Exception {

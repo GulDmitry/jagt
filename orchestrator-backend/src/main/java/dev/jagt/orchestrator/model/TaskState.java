@@ -26,6 +26,9 @@ public record TaskState(
         Boolean autoReview,
         // Master-side model spend on this task (headless assistant calls); null until the first one.
         TokenUsage usage,
+        // The merge commit `deploy` created on the deploy branch — what `revert` reverts. Null until a
+        // deploy lands (and for tasks deployed before jagt recorded it, which `revert` then refuses).
+        String deployCommit,
         // Append-only, oldest first: every status this task actually moved TO, with when. Capped, see below.
         List<StatusChange> history
 ) {
@@ -108,6 +111,11 @@ public record TaskState(
         return withStatus(status, message);
     }
 
+    /** Records the merge commit a deploy just created; the status move is a separate, explicit step. */
+    public TaskState withDeployCommit(String deployCommit) {
+        return toBuilder().deployCommit(deployCommit).build();
+    }
+
     public TaskState withMrUrl(String mrUrl) {
         return toBuilder().mrUrl(mrUrl).build();
     }
@@ -145,7 +153,7 @@ public record TaskState(
                 .lastActiveTimestamp(lastActiveTimestamp).message(message).alias(alias)
                 .remoteUrl(remoteUrl).title(title).mrUrl(mrUrl).ticketUrl(ticketUrl)
                 .mrCreatedAt(mrCreatedAt).lastPolledAt(lastPolledAt).autoReview(autoReview)
-                .usage(usage).history(history);
+                .usage(usage).deployCommit(deployCommit).history(history);
     }
 
     /**
@@ -168,6 +176,7 @@ public record TaskState(
         private long lastPolledAt;
         private Boolean autoReview;
         private TokenUsage usage;
+        private String deployCommit;
         /** Null means "a brand-new task" — {@link #build()} then seeds it with the initial status. */
         private List<StatusChange> history;
 
@@ -237,6 +246,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder deployCommit(String deployCommit) {
+            this.deployCommit = deployCommit;
+            return this;
+        }
+
         public Builder history(List<StatusChange> history) {
             this.history = history;
             return this;
@@ -251,7 +265,8 @@ public record TaskState(
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis()));
             return new TaskState(project, worktreePath, status, lastActiveTimestamp, message, alias,
-                    remoteUrl, title, mrUrl, ticketUrl, mrCreatedAt, lastPolledAt, autoReview, usage, log);
+                    remoteUrl, title, mrUrl, ticketUrl, mrCreatedAt, lastPolledAt, autoReview, usage,
+                    deployCommit, log);
         }
     }
 }

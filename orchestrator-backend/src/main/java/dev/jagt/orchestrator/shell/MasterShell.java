@@ -95,11 +95,11 @@ public class MasterShell {
 
     /** Every command, for Tab-completion of the first word. */
     private static final List<String> COMMANDS = List.of("status", "stats", "do", "resume", "review", "ship",
-            "focus", "ide", "deploy", "respawn", "done", "prune", "help", "quit", "exit");
+            "focus", "ide", "deploy", "revert", "respawn", "done", "prune", "help", "quit", "exit");
     /** Commands whose first argument is an EXISTING task (so Tab completes its alias/id); `do`/`resume`
      *  take a new ticket/URL, not a current task. */
     private static final Set<String> TASK_ARG_COMMANDS = Set.of(
-            "review", "ship", "focus", "ide", "deploy", "respawn", "done");
+            "review", "ship", "focus", "ide", "deploy", "revert", "respawn", "done");
 
     public void run() {
         ConfigService.ConfigFile config = configService.load();
@@ -844,6 +844,7 @@ public class MasterShell {
                 case "focus" -> act(tok, TaskAction.FOCUS);
                 case "ide" -> act(tok, tok.contains("diff") ? TaskAction.DIFF : TaskAction.IDE);
                 case "deploy" -> act(tok, TaskAction.DEPLOY);
+                case "revert" -> act(tok, TaskAction.REVERT);
                 case "respawn" -> act(tok, TaskAction.RESPAWN);
                 case "done" -> act(tok, TaskAction.DONE);
                 default -> "unknown command '" + cmd + "' — try 'help'";
@@ -946,6 +947,7 @@ public class MasterShell {
         lines.add("  review <ticket>              pull the MR's pipeline + comments, relay them to the agent");
         lines.add("  ide <ticket> [diff]          open worktree project (live Git diff); `diff` = static snapshot vs base");
         lines.add("  deploy <ticket>              merge task branch into deployBranch + push");
+        lines.add("  revert <ticket>              undo that deploy: revert its merge on deployBranch + push");
         lines.add("  respawn <ticket>             restart a dead agent session");
         lines.add("  done <ticket>                full cleanup (window, worktree, state; branch kept)");
         lines.add("  prune [all]                  list LOCAL branches merged into deployBranch; `all` deletes them");

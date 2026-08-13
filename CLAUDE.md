@@ -50,7 +50,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   status would look fresh.
   Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED,
   REVIEWED (nothing unresolved + CI green), APPROVED (a human actually approved the review request),
-  DEPLOY_CONFLICT (deploy hit a merge conflict — human resolves it in the deploy worktree), DEPLOYED, DONE.
+  DEPLOY_CONFLICT (deploy hit a merge conflict — human resolves it in the deploy worktree), DEPLOYED,
+  REVERTED (its deploy was taken back out; the branch and commits survive, so the next move is a fix), DONE.
 
 ## Session roles
 - Master = the backend process itself. `MasterShell` parses a fixed grammar and calls `OrchestratorTools`
@@ -127,8 +128,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   and posting the drafted `review_replies.md` is still relayed to the agent — a reply needs the thread it
   answers, which `ReviewFacts` does not carry — but as a FOLLOW-UP, never on the critical path. With no host
   configured the old prose relay is kept verbatim: an unconfigured setup must behave as it always did.
-- CRITICAL git safety: the ONLY write to a shared branch anywhere is `deploy` (task branch ->
-  `deployBranch`, via `GitService.mergeIntoAndPush`). `ship` creates/updates a merge REQUEST only —
+- CRITICAL git safety: the ONLY writes to a shared branch anywhere are `deploy` (task branch ->
+  `deployBranch`, via `GitService.mergeIntoAndPush`) and its undo `revert` (`revertMergeAndPush`: reverts the
+  merge commit deploy recorded, ADDS a commit, never rewrites history, never force-pushes). Both are
+  Master-only and both go through `deployTarget`, so they share one deployBranch guard. `revert` refuses
+  rather than guess in every ambiguous case: no recorded merge commit (a deploy from before `deployCommit`
+  existed — the human gets the by-hand `git revert -m 1` recipe, jagt will NOT search the log), the commit is
+  not on the branch, it was already reverted, or the revert conflicts (aborted + cleaned up; unlike a deploy
+  conflict there is no half-state worth keeping). `ship` creates/updates a merge REQUEST only —
   never merges. The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
   pushes/merges to it. `deployTask` REFUSES when `deployBranch` == `baseBranch`. Sub-agents are
   forbidden (prompt rule) from pushing/merging anywhere but their own task branch. A worktree branch

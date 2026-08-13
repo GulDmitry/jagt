@@ -467,8 +467,144 @@ class GitServiceTest {
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, timeout, List.of("git", "fetch", "-q"));
-        String originDevTip = runner.run(repo, timeout, List.of("git", "rev-parse", "origin/dev")).stdout().trim();
-        assertThat(originDevTip).isEqualTo(taskTip);
+        // The work is published, and as a MERGE commit even though dev had not moved and git could have
+        // fast-forwarded: one commit per deploy is what makes `revert` able to undo the whole task at once.
+        assertThat(runner.run(repo, timeout, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
+                .contains("task feature");
+        String parents = runner.run(repo, timeout,
+                List.of("git", "rev-list", "--parents", "-n", "1", "origin/dev")).stdout().trim();
+        assertThat(parents.split("\\s+")).hasSize(3).contains(taskTip);
+    }
+
+    // ---- revert: the second (and only other) write to a shared branch ----
+
+    /**
+     * A cloned repo with origin/main + origin/dev and one committed task branch — the exact shape a deploy
+     * needs. Extracted because every revert case starts from it, and ten lines of `git` per test is how a
+     * suite stops being read.
+     */
+    private record Repo(ProcessRunner runner, Path dir, Path path) {
+
+        private static final Duration T = Duration.ofSeconds(30);
+
+        static Repo withTaskBranch(Path dir, String taskBranch) throws Exception {
+            ProcessRunner runner = new ProcessRunner();
+            Path origin = dir.resolve("o.git");
+            Path repo = dir.resolve("repo");
+            runner.run(dir, T, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+            runner.run(dir, T, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+            Repo fixture = new Repo(runner, dir, repo);
+            Files.writeString(repo.resolve("base.txt"), "base");
+            fixture.commitAll("base");
+            runner.run(repo, T, List.of("git", "push", "-q", "origin", "main"));
+            runner.run(repo, T, List.of("git", "push", "-q", "origin", "main:dev"));
+            runner.run(repo, T, List.of("git", "checkout", "-q", "-b", taskBranch));
+            Files.writeString(repo.resolve("feature.txt"), "the feature");
+            fixture.commitAll("feature");
+            runner.run(repo, T, List.of("git", "checkout", "-q", "main"));
+            return fixture;
+        }
+
+        void commitAll(String message) {
+            runner.run(path, T, List.of("git", "add", "-A"));
+            runner.run(path, T, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                    "commit", "-qm", message));
+        }
+
+        /** Commits a change straight onto the shared dev branch — what "the branch moved on" means here. */
+        void commitOnDev(String file, String content) throws Exception {
+            runner.run(path, T, List.of("git", "fetch", "-q"));
+            runner.run(path, T, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
+            Files.writeString(path.resolve(file), content);
+            commitAll("dev change");
+            runner.run(path, T, List.of("git", "push", "-q", "origin", "_dev:dev"));
+            runner.run(path, T, List.of("git", "checkout", "-q", "main"));
+        }
+
+        String sha(String rev) {
+            runner.run(path, T, List.of("git", "fetch", "-q"));
+            return runner.run(path, T, List.of("git", "rev-parse", rev)).stdout().trim();
+        }
+
+        boolean existsOnDev(String file) {
+            runner.run(path, T, List.of("git", "fetch", "-q"));
+            return runner.run(path, T, List.of("git", "cat-file", "-e", "origin/dev:" + file)).exitCode() == 0;
+        }
+    }
+
+    @Test
+    void revertTakesTheDeployedChangeBackOutOfDevAndLeavesTheTaskBranchIntact(@TempDir Path dir) throws Exception {
+        Repo repo = Repo.withTaskBranch(dir, "ABC-1");
+        GitService git = new GitService(repo.runner());
+        String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
+        String taskTip = repo.sha("ABC-1");
+
+        String revert = git.revertMergeAndPush(repo.path(), "ABC-1", "dev", merge);
+
+        assertThat(repo.existsOnDev("feature.txt")).isFalse();
+        assertThat(repo.sha("origin/dev")).isEqualTo(revert);
+        // The commits survive the revert — that is what makes "fix and ship again" possible.
+        assertThat(repo.sha("ABC-1")).isEqualTo(taskTip);
+        assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
+    }
+
+    @Test
+    void refusesToRevertACommitThatIsNotOnTheDeployBranch(@TempDir Path dir) throws Exception {
+        Repo repo = Repo.withTaskBranch(dir, "ABC-1");
+        GitService git = new GitService(repo.runner());
+        String neverDeployed = repo.sha("ABC-1");
+
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo.path(), "ABC-1", "dev", neverDeployed))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("is not on dev");
+
+        assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
+    }
+
+    /** Idempotence on a shared branch: a second revert would silently RE-APPLY the change. */
+    @Test
+    void refusesASecondRevertOfTheSameDeploy(@TempDir Path dir) throws Exception {
+        Repo repo = Repo.withTaskBranch(dir, "ABC-1");
+        GitService git = new GitService(repo.runner());
+        String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
+        String firstRevert = git.revertMergeAndPush(repo.path(), "ABC-1", "dev", merge);
+
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo.path(), "ABC-1", "dev", merge))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("was already reverted");
+
+        assertThat(repo.sha("origin/dev")).isEqualTo(firstRevert);
+    }
+
+    /** Every jagt deploy is a merge (--no-ff); a plain commit means reverting would undo part of a task. */
+    @Test
+    void refusesToRevertACommitThatIsNotAMerge(@TempDir Path dir) throws Exception {
+        Repo repo = Repo.withTaskBranch(dir, "ABC-1");
+        GitService git = new GitService(repo.runner());
+        repo.commitOnDev("unrelated.txt", "someone else's commit");
+        String plainCommit = repo.sha("origin/dev");
+
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo.path(), "ABC-1", "dev", plainCommit))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("is not a merge");
+
+        assertThat(repo.sha("origin/dev")).isEqualTo(plainCommit);
+    }
+
+    @Test
+    void abortsAndPushesNothingWhenTheRevertConflictsWithLaterWorkOnDev(@TempDir Path dir) throws Exception {
+        Repo repo = Repo.withTaskBranch(dir, "ABC-1");
+        GitService git = new GitService(repo.runner());
+        String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
+        repo.commitOnDev("feature.txt", "someone edited the deployed feature");
+        String devTip = repo.sha("origin/dev");
+
+        assertThatThrownBy(() -> git.revertMergeAndPush(repo.path(), "ABC-1", "dev", merge))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("conflicts with work done there since the deploy");
+
+        assertThat(repo.sha("origin/dev")).isEqualTo(devTip);
+        assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
     }
 
     @Test

@@ -16,6 +16,7 @@ public enum TaskAction {
     SHIP("ship", "Ship", "approve: commit, push, open or update the review request"),
     SWEEP("review", "Check review", "pull the pipeline + unresolved comments and relay them to the agent"),
     DEPLOY("deploy", "Deploy", "merge the task branch into the deploy branch and push"),
+    REVERT("revert", "Revert", "undo this task's deploy: revert its merge commit on the deploy branch and push"),
     RESPAWN("respawn", "Respawn", "restart a dead agent session"),
     DONE("done", "Done", "close the task: session, worktree and state (the branch is kept)");
 

@@ -66,8 +66,7 @@ class TaskStateTest {
 
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
-        TaskState legacy = new TaskState("proj", "/wt", TaskStatus.REVIEW_PENDING, 5_000, null, "a1", null,
-                null, null, null, 0, 0, null, null, null);
+        TaskState legacy = legacyTask(TaskStatus.REVIEW_PENDING, 5_000, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -95,12 +94,22 @@ class TaskStateTest {
         // A task from a state.json written before history existed: statusSince used to fall back to
         // lastActiveTimestamp, which the keep-alive bumps, so an hour-old status read as "0m" forever.
         long anHourAgo = System.currentTimeMillis() - 3_600_000L;
-        TaskState legacy = new TaskState("proj", "/wt", TaskStatus.IN_PROGRESS, anHourAgo, "working", "a1",
-                null, null, null, null, 0, 0, null, null, List.of());
+        TaskState legacy = legacyTask(TaskStatus.IN_PROGRESS, anHourAgo, "working", List.of());
 
         TaskState afterKeepAlive = legacy.touched();
 
         assertThat(afterKeepAlive.statusSince()).isEqualTo(anHourAgo);
         assertThat(afterKeepAlive.lastActiveTimestamp()).isGreaterThan(anHourAgo);
+    }
+
+    /**
+     * A task as an OLD state.json holds it: no history at all. The builder cannot express that (a null history
+     * means "brand new", so it seeds one), which leaves the canonical constructor — and that is a row of
+     * positional nulls that breaks on every new field, so it lives in exactly one place.
+     */
+    private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
+                                        List<StatusChange> history) {
+        return new TaskState("proj", "/wt", status, lastActive, message, "a1", null, null, null, null,
+                0, 0, null, null, null, history);
     }
 }

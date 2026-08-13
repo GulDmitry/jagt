@@ -12,9 +12,8 @@ order:
 |---|------|------------------------|------|
 | 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
 | 2 | Run the build and the jar on a real Linux box | the drivers exist and the wiring is tested from macOS; `notify-send` under a session bus, `kitty @ focus-window` under a WM and the `pkill` viewer close are not | 0.5 d + access |
-| 3 | `revert <ticket>` | `deploy` is the one outward write and has no way back through jagt | 1 d |
-| 4 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path — in the board this is Cmd-K | 1-2 d |
-| 5 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
+| 3 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path — in the board this is Cmd-K | 1-2 d |
+| 4 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
 
 Steps 1 and 2 need access I do not have (a host token, a Linux machine) — they are the two places where what
 we believe is still ahead of what we have shown.
@@ -210,14 +209,23 @@ is the cost of not having split it yet. Split by concern (task lifecycle / workt
 `OrchestratorTools` as the thin MCP-facing facade that delegates. Do it BEFORE the next command is added, and
 expect the test setups to shrink to two or three collaborators each — that shrinkage is the proof it worked.
 
-### `deploy` has no undo
-`deploy` is the one outward write in the whole system (task branch → `deployBranch`, pushed), and there is no
-way back through jagt: if the merge breaks the deploy branch, the human leaves the tool and fixes it in git
-by hand — at the exact moment they are under pressure. A `revert <ticket>` that creates a REVERT commit for
-that task's merge on `deployBranch` and pushes it (human-gated like everything else, never a force-push, and
-refused when the branch has moved on in a way that makes the revert ambiguous) would close the loop that
-`deploy` opens. It also needs a status: `DEPLOYED` → `REVERTED`, so the dashboard stops claiming the change
-is live.
+### `deploy` has an undo — DONE 2026-08-13
+`revert <ticket>` (console, board button, `revert_task` over MCP): reverts the merge commit deploy created on
+`deployBranch` and pushes the revert; `DEPLOYED` → `REVERTED`, so the board stops claiming the change is live.
+It only ADDS a commit — no history rewrite, no force-push — and the task branch keeps its commits, which is
+why `REVERTED`'s primary move is SHIP (fix and go again), not DONE.
+
+The design decision worth keeping: `deploy` now RECORDS the merge commit it created (`TaskState.deployCommit`,
+returned by `mergeIntoAndPush`, including the conflict-resolution path). Without it, revert would have to find
+the merge by grepping the log for the branch name — and reverting the wrong merge on a shared branch is the one
+mistake here with no cheap undo. So a task deployed BEFORE this exists is refused with the by-hand `git revert
+-m 1` recipe rather than guessed at. Same refuse-don't-guess rule for the other three ambiguous cases: the
+commit is not on the branch, it was already reverted (idempotence on a shared branch — a second revert would
+silently re-apply the change), or the revert conflicts with later work there (aborted and cleaned up, unlike a
+deploy conflict: what a human needs to decide there is whether reverting is still the right move at all).
+
+NOT offered: re-deploying a REVERTED task. Its commits are still in the branch's history, so `deploy`'s
+"nothing to deploy" guard would refuse anyway — the honest path is a new commit, then ship + deploy.
 
 ## Automation
 

@@ -35,6 +35,12 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         if (deployable(status)) {
             actions.add(TaskAction.DEPLOY);
         }
+        // Offered whenever a deploy is the last thing that happened. Whether jagt KNOWS the merge commit is
+        // not asked here (that would be a second input to the projection for one button); the gate refuses a
+        // task deployed before jagt recorded it, with the by-hand command.
+        if (status == TaskStatus.DEPLOYED) {
+            actions.add(TaskAction.REVERT);
+        }
         actions.addAll(ALWAYS);
         return new Move(phaseOf(status), ownerOf(status), List.copyOf(actions), primaryOf(status, hasReviewRequest),
                 hint(status));
@@ -50,7 +56,10 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
      */
     public static boolean shippable(TaskStatus status, boolean agentLive, boolean hasReviewRequest) {
         boolean anotherRound = hasReviewRequest && (status == TaskStatus.CI_POLLING
-                || status == TaskStatus.CI_FAILED || status == TaskStatus.DEPLOYED);
+                || status == TaskStatus.CI_FAILED || status == TaskStatus.DEPLOYED
+                // A reverted deploy is the one case where shipping again is the POINT: the change came back
+                // out, the fix goes onto the same review request.
+                || status == TaskStatus.REVERTED);
         return status == TaskStatus.REVIEW_PENDING || status == TaskStatus.IN_PROGRESS
                 || (status == TaskStatus.SHIPPING && !agentLive) || anotherRound;
     }
@@ -66,7 +75,7 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
             case REVIEW_PENDING -> Phase.REVIEW;
             case SHIPPING, CI_POLLING, CI_FAILED -> Phase.CHECK;
             case REVIEWED, APPROVED -> Phase.READY;
-            case DEPLOYED, DEPLOY_CONFLICT -> Phase.DEPLOY;
+            case DEPLOYED, DEPLOY_CONFLICT, REVERTED -> Phase.DEPLOY;
             case DONE -> Phase.DONE;
         };
     }
@@ -75,7 +84,8 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         return switch (status) {
             case NEW, IN_PROGRESS, SHIPPING -> Owner.AGENT;
             case CI_POLLING -> Owner.CI;
-            case REVIEW_PENDING, CI_FAILED, REVIEWED, APPROVED, DEPLOYED, DEPLOY_CONFLICT -> Owner.YOU;
+            case REVIEW_PENDING, CI_FAILED, REVIEWED, APPROVED, DEPLOYED, DEPLOY_CONFLICT,
+                 REVERTED -> Owner.YOU;
             case DONE -> Owner.NOBODY;
         };
     }
@@ -87,6 +97,8 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
             case CI_POLLING, CI_FAILED -> hasReviewRequest ? TaskAction.SWEEP : TaskAction.FOCUS;
             case REVIEWED, APPROVED, DEPLOY_CONFLICT -> TaskAction.DEPLOY;
             case DEPLOYED -> TaskAction.DONE;
+            // Not DONE: something was rolled back, so the expected next move is a fix, not a close.
+            case REVERTED -> hasReviewRequest ? TaskAction.SHIP : TaskAction.FOCUS;
             case DONE -> null;
         };
     }
@@ -103,6 +115,7 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
             case APPROVED -> "approved — your move: deploy or done";
             case DEPLOY_CONFLICT -> "your move: ide opens the deploy worktree — resolve + git add, then deploy again";
             case DEPLOYED -> "your move: done — or ship more changes, then deploy again";
+            case REVERTED -> "deploy reverted on the deploy branch — your move: fix and ship again, or done";
             case DONE -> "done";
         };
     }

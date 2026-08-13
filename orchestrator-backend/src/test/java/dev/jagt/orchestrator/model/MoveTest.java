@@ -28,7 +28,8 @@ class MoveTest {
                 .filter(status -> Move.forTask(status, false).owner() == Owner.YOU).toList();
 
         assertThat(waitingOnYou).containsExactly(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED,
-                TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.DEPLOYED);
+                TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.DEPLOYED,
+                TaskStatus.REVERTED);
     }
 
     @Test
@@ -83,5 +84,24 @@ class MoveTest {
         assertThat(Move.forTask(TaskStatus.SHIPPING, false).actions()).contains(TaskAction.SHIP);
         assertThat(Move.shippable(TaskStatus.SHIPPING, true, false)).isFalse();
         assertThat(Move.shippable(TaskStatus.SHIPPING, false, false)).isTrue();
+    }
+
+    @Test
+    void offersRevertOnlyForATaskWhoseDeployActuallyLanded() {
+        assertThat(Move.forTask(TaskStatus.DEPLOYED, true).actions()).contains(TaskAction.REVERT);
+        // A conflicted deploy never merged, and a reverted one has nothing left to take back out.
+        assertThat(Move.forTask(TaskStatus.DEPLOY_CONFLICT, true).actions()).doesNotContain(TaskAction.REVERT);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true).actions()).doesNotContain(TaskAction.REVERT);
+        assertThat(Move.forTask(TaskStatus.REVIEWED, true).actions()).doesNotContain(TaskAction.REVERT);
+    }
+
+    @Test
+    void treatsAReversionAsWorkToRedoRatherThanATaskToClose() {
+        // The change came back out, so the expected next move is a fix onto the same review request — not DONE,
+        // which is what a DEPLOYED task gets.
+        assertThat(Move.forTask(TaskStatus.REVERTED, true).primary()).isEqualTo(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true).actions()).contains(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.REVERTED, false).primary()).isEqualTo(TaskAction.FOCUS);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true).phase()).isEqualTo(Phase.DEPLOY);
     }
 }

@@ -247,22 +247,11 @@ public class OrchestratorTools {
         }
         taskId = canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        ProjectConfig project = configService.project(task.project());
-        if (project.deployBranch() == null || project.deployBranch().isBlank()) {
-            throw new IllegalArgumentException("Project '" + task.project()
-                    + "' has no deployBranch in config.json — set it to enable deploy");
-        }
-        // HARD SAFETY: deploy is the ONLY merge in the whole system, and it must NEVER
-        // target the base/release branch that tasks are cut from. jagt never writes there.
-        String base = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
-        if (project.deployBranch().equals(base)) {
-            throw new IllegalArgumentException("REFUSED: deployBranch equals the base branch '" + base
-                    + "'. jagt must never merge into the branch tasks are created from — point deployBranch"
-                    + " at a downstream branch (e.g. dev).");
-        }
+        ProjectConfig project = deployTarget(task);
         String deployBranch = project.deployBranch();
+        String merged;
         try {
-            gitService.mergeIntoAndPush(Path.of(project.path()), taskId, deployBranch);
+            merged = gitService.mergeIntoAndPush(Path.of(project.path()), taskId, deployBranch);
         } catch (GitService.MergeConflictException e) {
             // Resolve on the DEPLOY side, never in the task branch: the MR targets the base branch, so merging
             // the deploy branch into the task branch would balloon its diff with everything the deploy branch
@@ -279,8 +268,73 @@ public class OrchestratorTools {
         // human who opened it to resolve a conflict isn't left with a dead jagt-deploy entry.
         editorDriver.forgetProject(GitService.deployWorktreePath(Path.of(project.path()), taskId));
         // deploy IS a state transition — mark it so the dashboard's next move is 'done', not 'review'.
-        stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.DEPLOYED, "deployed to " + deployBranch));
-        return "Merged branch " + taskId + " into " + deployBranch + " and pushed; status -> DEPLOYED";
+        stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.DEPLOYED, "deployed to " + deployBranch)
+                // Recorded in the SAME update as the status: a deploy whose commit went missing is a deploy
+                // `revert` can only send to the by-hand path, and these two facts are one event.
+                .withDeployCommit(merged));
+        return "Merged branch " + taskId + " into " + deployBranch + " and pushed " + shortSha(merged)
+                + "; status -> DEPLOYED";
+    }
+
+    /**
+     * Undoes one deploy: reverts the merge commit it created on the deploy branch and pushes the revert.
+     * Master-only for the same reason deploy is — it writes a SHARED branch, the one thing no sub-agent may
+     * ever do. The task branch keeps all its commits, so the normal follow-up is "fix and ship again".
+     */
+    public String revertTask(String taskId, String callerTaskId) {
+        if (callerTaskId != null) {
+            throw new IllegalArgumentException("revert_task is Master-only: a sub-agent cannot revert a deploy");
+        }
+        taskId = canonicalTaskId(taskId);
+        TaskState task = requireTask(taskId);
+        if (task.status() != TaskStatus.DEPLOYED) {
+            throw new IllegalArgumentException("revert " + taskId + ": only a DEPLOYED task can be reverted"
+                    + " (this one is " + task.status() + "). A deploy that conflicted never landed, and a task"
+                    + " reverted once has nothing left to undo.");
+        }
+        ProjectConfig project = deployTarget(task);
+        String deployBranch = project.deployBranch();
+        String mergeCommit = task.deployCommit();
+        if (mergeCommit == null || mergeCommit.isBlank()) {
+            // Deployed before jagt started recording the commit. Guessing it (search the log by branch name)
+            // would risk reverting the WRONG merge on a shared branch — the one mistake with no cheap undo.
+            throw new IllegalStateException("revert " + taskId + ": jagt has no record of which commit this"
+                    + " deploy created (it predates that being stored), and guessing on a shared branch is not"
+                    + " something it will do. Revert by hand: `git log --merges --grep " + taskId + " origin/"
+                    + deployBranch + "` to find the merge, then `git revert -m 1 <sha>` and push.");
+        }
+        String revertCommit = gitService.revertMergeAndPush(Path.of(project.path()), taskId, deployBranch,
+                mergeCommit);
+        stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.REVERTED,
+                "reverted on " + deployBranch + " (" + shortSha(revertCommit) + ")"));
+        return "Reverted " + taskId + "'s deploy on " + deployBranch + ": pushed " + shortSha(revertCommit)
+                + "; status -> REVERTED. The task branch and its commits are untouched — fix and ship again,"
+                + " or `done " + taskId + "`.";
+    }
+
+    /**
+     * The project a task deploys to, with the guard both deploy and revert need. HARD SAFETY: the deploy
+     * branch must NEVER be the base/release branch tasks are cut from — jagt writes to exactly one shared
+     * branch and it is not that one.
+     */
+    private ProjectConfig deployTarget(TaskState task) {
+        ProjectConfig project = configService.project(task.project());
+        if (project.deployBranch() == null || project.deployBranch().isBlank()) {
+            throw new IllegalArgumentException("Project '" + task.project()
+                    + "' has no deployBranch in config.json — set it to enable deploy");
+        }
+        String base = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
+        if (project.deployBranch().equals(base)) {
+            throw new IllegalArgumentException("REFUSED: deployBranch equals the base branch '" + base
+                    + "'. jagt must never merge into the branch tasks are created from — point deployBranch"
+                    + " at a downstream branch (e.g. dev).");
+        }
+        return project;
+    }
+
+    /** Commits are shown short everywhere a human reads one: eight characters identify it and fit a line. */
+    private static String shortSha(String sha) {
+        return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
     }
 
     public String listTasks() {

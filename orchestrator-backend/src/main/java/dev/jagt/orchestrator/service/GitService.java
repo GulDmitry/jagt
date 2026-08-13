@@ -237,18 +237,18 @@ public class GitService {
      *
      * <p>On conflict the deploy worktree is LEFT on disk with the conflict markers instead of aborted; the
      * human resolves it there and calls deploy again, which detects the resolved worktree and finishes the
-     * push. Only this method (the backend) ever writes the shared deploy branch.
+     * push. Only this method and {@link #revertMergeAndPush} (its undo) ever write the shared deploy
+     * branch, and both are Master-only.
      */
-    public void mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
-        withRepoLock(projectPath, () -> {
+    public String mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
+        return withRepoLock(projectPath, () -> {
             Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
             String deployBranch = "jagt-deploy-" + sourceBranch;
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
             // A prior deploy left a conflicted worktree — the human has since resolved it, so finish the push.
             if (Files.isDirectory(deployWorktree)) {
-                finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
-                return;
+                return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
             }
             // Nothing-to-deploy guard: refuse when the source branch has no commits beyond the
             // target (empty branch, or already deployed) — deploy is decoupled from review state,
@@ -265,19 +265,24 @@ public class GitService {
                     .expectSuccess("git worktree add (deploy) " + targetBranch);
             // Explicit message: the merge runs on a temp branch (jagt-deploy-*), and git's
             // default "into <current branch>" would leak that name instead of the real target.
-            var merge = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "merge", "--no-edit",
-                    "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch, sourceBranch));
+            // --no-ff: ALWAYS a merge commit, even when the target has not moved and git could fast-forward.
+            // That single commit is what `revert` undoes — a fast-forward would leave the task's commits
+            // sitting loose on the deploy branch, and reverting "the deploy" would then mean reverting a
+            // RANGE, so a task with three commits would come back out only one third of the way.
+            var merge = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "merge", "--no-ff",
+                    "--no-edit", "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch,
+                    sourceBranch));
             if (merge.exitCode() != 0) {
                 String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
                 throw new MergeConflictException(sourceBranch, targetBranch, details, deployWorktree);
             }
-            pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
+            return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
         });
     }
 
     /** Finishes a deploy whose conflicted worktree the human has resolved: commits the merge, pushes, cleans up. */
-    private void finishDeploy(Path projectPath, Path deployWorktree, String deployBranch,
-                              String sourceBranch, String targetBranch) {
+    private String finishDeploy(Path projectPath, Path deployWorktree, String deployBranch,
+                                String sourceBranch, String targetBranch) {
         String unmerged = processRunner.run(deployWorktree, GIT_TIMEOUT,
                         List.of("git", "diff", "--name-only", "--diff-filter=U"))
                 .expectSuccess("git unmerged paths in " + deployWorktree).stdout().trim();
@@ -291,12 +296,13 @@ public class GitService {
             processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "commit", "--no-edit"))
                     .expectSuccess("git commit (deploy resolution) " + deployWorktree);
         }
-        pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
+        return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
     }
 
     /** Pushes the resolved deploy branch to the shared target, then removes the worktree — but KEEPS it on a
-     *  rejected push (deploy branch moved) so the resolution isn't lost. */
-    private void pushAndRemoveDeploy(Path projectPath, Path deployWorktree, String deployBranch, String targetBranch) {
+     *  rejected push (deploy branch moved) so the resolution isn't lost. Returns the commit that was pushed:
+     *  the merge `revert` will have to undo, which is knowable only here, before the worktree is gone. */
+    private String pushAndRemoveDeploy(Path projectPath, Path deployWorktree, String deployBranch, String targetBranch) {
         var push = processRunner.run(deployWorktree, GIT_TIMEOUT,
                 List.of("git", "push", "origin", "HEAD:" + targetBranch));
         if (push.exitCode() != 0) {
@@ -305,14 +311,122 @@ public class GitService {
                     + " the merge. In " + deployWorktree + " run `git merge origin/" + targetBranch
                     + "`, resolve, then deploy again. Details: " + d);
         }
+        String merged = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
+                .expectSuccess("git rev-parse HEAD in " + deployWorktree).stdout().trim();
         processRunner.run(projectPath, GIT_TIMEOUT,
                 List.of("git", "worktree", "remove", "--force", deployWorktree.toString()));
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", deployBranch));
+        return merged;
+    }
+
+    /**
+     * Undoes ONE deploy: reverts {@code mergeCommit} on {@code targetBranch} and pushes the revert commit.
+     * The second outward write in the system, and it is built to be the safe kind — it only ever ADDS a
+     * commit, so history is never rewritten and nothing is force-pushed. The task branch is not touched: its
+     * commits still exist, which is what makes "fix and ship again" possible after a revert.
+     *
+     * <p>Refuses instead of guessing whenever the situation is not the one the caller thinks: the commit is
+     * not on the target branch (history rewritten, or it was never deployed there), it is not a merge (so
+     * reverting it would undo part of a task), it has already been reverted, or the revert itself conflicts
+     * because later work touched the same lines. That last one is aborted and cleaned up — unlike a deploy
+     * conflict, a half-reverted worktree is not something a human can usefully finish, since what they
+     * actually need to decide is whether reverting is still the right move at all.
+     *
+     * @return the revert commit pushed to {@code targetBranch}
+     */
+    public String revertMergeAndPush(Path projectPath, String sourceBranch, String targetBranch,
+                                     String mergeCommit) {
+        return withRepoLock(projectPath, () -> {
+            Path revertWorktree = revertWorktreePath(projectPath, sourceBranch);
+            String revertBranch = "jagt-revert-" + sourceBranch;
+            processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
+                    .expectSuccess("git fetch in " + projectPath);
+            if (Files.exists(revertWorktree)) {
+                clearWorktreePath(projectPath, revertWorktree);
+            }
+            processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "add",
+                            "-B", revertBranch, revertWorktree.toString(), "origin/" + targetBranch))
+                    .expectSuccess("git worktree add (revert) " + targetBranch);
+            try {
+                requireRevertable(revertWorktree, targetBranch, mergeCommit);
+                requireMergeCommit(revertWorktree, mergeCommit, targetBranch);
+                // -m 1: a merge has two parents, and reverting it means "undo what the SECOND parent brought
+                // in", i.e. keep the target branch's own line of history. Without it git refuses outright.
+                var revert = processRunner.run(revertWorktree, GIT_TIMEOUT, List.of("git", "revert",
+                        "-m", "1", "--no-edit", mergeCommit));
+                if (revert.exitCode() != 0) {
+                    processRunner.run(revertWorktree, GIT_TIMEOUT, List.of("git", "revert", "--abort"));
+                    String details = revert.stderr().isBlank() ? revert.stdout() : revert.stderr();
+                    throw new IllegalStateException("Cannot revert " + shortSha(mergeCommit) + " on "
+                            + targetBranch + ": the revert conflicts with work done there since the deploy."
+                            + " Decide what should survive and revert by hand: `git revert -m 1 "
+                            + shortSha(mergeCommit) + "`. Details: " + details);
+                }
+                var push = processRunner.run(revertWorktree, GIT_TIMEOUT,
+                        List.of("git", "push", "origin", "HEAD:" + targetBranch));
+                if (push.exitCode() != 0) {
+                    String details = push.stderr().isBlank() ? push.stdout() : push.stderr();
+                    throw new IllegalStateException("Revert push to " + targetBranch + " was rejected — it"
+                            + " moved while the revert was being made. Try revert again. Details: " + details);
+                }
+                return processRunner.run(revertWorktree, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
+                        .expectSuccess("git rev-parse HEAD in " + revertWorktree).stdout().trim();
+            } finally {
+                // Always: a revert worktree holds no human decision worth keeping (unlike a conflicted
+                // deploy), so leaving one behind would only make the NEXT revert start from stale state.
+                processRunner.run(projectPath, GIT_TIMEOUT,
+                        List.of("git", "worktree", "remove", "--force", revertWorktree.toString()));
+                processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", revertBranch));
+            }
+        });
+    }
+
+    /**
+     * Every jagt deploy is a merge commit (see {@code --no-ff}), and only a merge can be reverted as ONE unit.
+     * A non-merge here means the commit was not made by a jagt deploy, so reverting it would undo one commit
+     * of a task rather than the deploy — a partial rollback nobody asked for.
+     */
+    private void requireMergeCommit(Path revertWorktree, String mergeCommit, String targetBranch) {
+        String parents = processRunner.run(revertWorktree, GIT_TIMEOUT,
+                        List.of("git", "rev-list", "--parents", "-n", "1", mergeCommit))
+                .expectSuccess("git rev-list --parents " + mergeCommit).stdout().trim();
+        if (parents.split("\\s+").length < 3) {
+            throw new IllegalStateException("Commit " + shortSha(mergeCommit) + " on " + targetBranch
+                    + " is not a merge, so reverting it would undo only part of what was deployed. Revert by"
+                    + " hand after deciding what should come out. Nothing was reverted.");
+        }
+    }
+
+    /** The two "this is not the situation you think it is" checks, refused before anything is written. */
+    private void requireRevertable(Path revertWorktree, String targetBranch, String mergeCommit) {
+        boolean onBranch = processRunner.run(revertWorktree, GIT_TIMEOUT,
+                List.of("git", "merge-base", "--is-ancestor", mergeCommit, "HEAD")).exitCode() == 0;
+        if (!onBranch) {
+            throw new IllegalStateException("Commit " + shortSha(mergeCommit) + " is not on " + targetBranch
+                    + " — it was never deployed there, or that history was rewritten. Nothing was reverted.");
+        }
+        // git's own revert message is the marker, so a revert made by hand counts too.
+        String existing = processRunner.run(revertWorktree, GIT_TIMEOUT, List.of("git", "log",
+                        "--fixed-strings", "--grep=This reverts commit " + mergeCommit, "--format=%H", "-1"))
+                .expectSuccess("git log (revert search) in " + revertWorktree).stdout().trim();
+        if (!existing.isBlank()) {
+            throw new IllegalStateException("Commit " + shortSha(mergeCommit) + " was already reverted on "
+                    + targetBranch + " by " + shortSha(existing) + ". Nothing to do.");
+        }
+    }
+
+    private static String shortSha(String sha) {
+        return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
     }
 
     /** The deploy-side worktree for a task: a sibling of the repo, named after the task branch. */
     public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
         return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-deploy");
+    }
+
+    /** Where a revert is staged — separate from the deploy worktree, which may be sitting in a conflict. */
+    public static Path revertWorktreePath(Path projectPath, String sourceBranch) {
+        return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-revert");
     }
 
     /** Removes a lingering deploy worktree and its {@code jagt-deploy-*} branch, if any (an abandoned

@@ -51,6 +51,7 @@ public class CommandService {
             case SHIP -> shipService.ship(taskId);
             case SWEEP -> reviewSweep.sweep(taskId).message();
             case DEPLOY -> tools.deployTask(taskId, null);
+            case REVERT -> tools.revertTask(taskId, null);
             case RESPAWN -> tools.openTaskTab(taskId, null);
             case DONE -> tools.removeTask(taskId, null);
         };

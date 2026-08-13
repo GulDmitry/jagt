@@ -11,5 +11,6 @@ public enum TaskStatus {
     APPROVED,
     DEPLOY_CONFLICT,
     DEPLOYED,
+    REVERTED,
     DONE
 }

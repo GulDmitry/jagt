@@ -155,6 +155,17 @@ public class McpProtocolService {
                 }""",
                 (args, caller) -> orchestrator.deployTask(text(args, "taskId"), caller));
 
+        register("revert_task", """
+                {
+                  "description": "Undo a task's deploy: revert the merge commit it created on the deployBranch and push the revert. Only for a DEPLOYED task; refuses (nothing is written) when the commit is unknown, already reverted, or the revert conflicts. Master-only.",
+                  "type": "object",
+                  "properties": {
+                    "taskId": {"type": "string", "description": "Task id or its short alias."}
+                  },
+                  "required": ["taskId"]
+                }""",
+                (args, caller) -> orchestrator.revertTask(text(args, "taskId"), caller));
+
         register("focus_task", """
                 {
                   "description": "Bring the task's agent window to the user's screen: switch tmux to its window and bring Warp to the foreground. If the session was closed, a fresh Claude session is started first.",
