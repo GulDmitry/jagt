@@ -13,6 +13,8 @@ order:
 | 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
 | 2 | Run the build and the jar on a real Linux box | the drivers exist and the wiring is tested from macOS; `notify-send` under a session bus, `kitty @ focus-window` under a WM and the `pkill` viewer close are not | 0.5 d + access |
 | 3 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
+| 4 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
+| 5 | A second `CodeHost` (GitHub) and a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the only remaining per-task model cost | 2-3 d |
 
 Steps 1 and 2 need access I do not have (a host token, a Linux machine) — they are the two places where what
 we believe is still ahead of what we have shown.
@@ -237,6 +239,14 @@ deploy conflict: what a human needs to decide there is whether reverting is stil
 NOT offered: re-deploying a REVERTED task. Its commits are still in the branch's history, so `deploy`'s
 "nothing to deploy" guard would refuse anyway — the honest path is a new commit, then ship + deploy.
 
+### Per-task base branch — LANDING NOW (a second session, uncommitted as of 2026-08-13)
+A task could only ever be cut from the project's configured `baseBranch`, so work that belongs on top of
+another feature branch had no representation. In flight: `do <ticket> from <branch>` (console), the same field
+on the board's New task form, `NewTask`/`LaunchRequest` parameter objects replacing the eight positional
+Strings that carried a `do` through four hops, `TaskState.baseBranch` (null = follow the project config, so a
+config change still reaches old tasks) and `ShipService` targeting that branch with the review request.
+Not yet committed; the working tree is mid-refactor. Nothing in this file above assumes the old signature.
+
 ## Automation
 
 ### Make the auto-review poll free
@@ -247,7 +257,10 @@ itself, so it can be flipped once a host is wired.
 
 ## UX
 
-### The dashboard shows an enum, not a process — model the phase, then render it
+### The dashboard shows an enum, not a process — DONE 2026-08-13 (`Move`/`Phase`/`Owner` + `TaskView`)
+Delivered as specified below and rendered by BOTH surfaces; `Move.shippable` is the single gate the
+ship path calls too. The original argument is kept as the record of why the projection exists.
+
 This is the root of "ревью/шип/деплой непонятно". Eleven `TaskStatus` values, of which `REVIEW_PENDING` /
 `CI_POLLING` / `REVIEWED` / `APPROVED` all read to a human as the single word "review". And the next-step
 hint is PROSE: `NextMove.forStatus` returns a `String`, so it can be neither turned into a button nor
@@ -272,7 +285,12 @@ IN_PROGRESS  PENDING    CI_POLLING   APPROVED   DEPLOY_CONFLICT
 
 Keep `TaskStatus` as the persisted SSOT — `Phase` is a projection for humans, not a second state machine.
 
-### Local web UI (mouse-driven), TUI stays as the fallback
+### Local web UI (mouse-driven), TUI stays as the fallback — DONE 2026-08-13, except phase 2 (ttyd)
+Shipped: the board is the DEFAULT surface (`orchestrator.ui: web` in `application.yml`, `tui`/`both`
+still selectable), vanilla HTML/CSS/JS in `static/`, no build step and no external asset; SSE push;
+`/api/tasks`, `/api/tasks/{id}/actions/{action}`, `/api/interpret` (⌘K). The one part NOT built is
+phase 2 — the embedded terminal (ttyd), which is roadmap step 3 below.
+
 The CLI dashboard is fine as a monitor and bad as a control surface: no clicking, no per-task actions, no
 timeline, no cost. The backend is already Spring Boot Web on 8290 with `/state`, `/status` and `/stats`
 (`McpController`), so a local UI is a small addition, not a new stack:
@@ -339,7 +357,7 @@ deleting the listener).
 
 ## Product shape — bigger questions, unscheduled
 
-### Nothing limits how many agents you start, and each one costs GBs
+### Nothing limits how many agents you start — DONE 2026-08-13 (`agent.maxConcurrentTasks`)
 `do` spawns an agent per ticket with no admission control. Each is a full Claude Code session with its own
 language server (~1-2 GB for a Java worktree, per CLAUDE.md's resource-hygiene note — the machine already
 swapped once because of it), plus a worktree checkout on disk. Five tasks is a different machine than two,
