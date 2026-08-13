@@ -8,10 +8,10 @@ In dependency order; each step is detailed in its section below.
 
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
-| 1 | `Move`/`Phase`/`Owner`/`Action` instead of the next-move String | fundament for BOTH the UI and gate validation | 1 d |
+
 | 2 | ~~`CodeHost` REST — review sweep + MR create/update~~ DONE in the seam; the create call is UNWIRED (step 3 wires it) | kills the dominant token spend + the "is it approved?" judgement flake | done |
 | 3 | `ship` = backend commit + push | kills the permission-classifier stall class; `SHIPPING` stops hanging | 1-2 d |
-| 4 | Local web UI (SSE + `/api` + static kanban) | mouse-driven, phase-legible, spend visible | 3-5 d |
+
 | 5 | Status-transition history in `state.json` | "which steps happened, how long did review take" | 0.5 d |
 | 6 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path | 1-2 d |
 
@@ -22,6 +22,13 @@ Done: `assistant.model: haiku` is the shipped default (2026-08-13) — 8x cheape
 `user,project,local` MCP the reads actually need, so its real figure is $0.064 a call — ~6x under the opus
 row, but that pair is NOT apples-to-apples: opus was never re-measured with the full MCP.
 The other half of that step, `--setting-sources project`, was DROPPED as a trap, see the cost entry below.
+
+Done 2026-08-13, the phase model and the web board (roadmap steps 1 and 4): `Move`/`Phase`/`Owner`/`TaskAction`
++ `TaskView` are the one projection every surface renders, `CommandService`/`TaskLauncher` the one way an action
+runs or a task starts, and `OperatorUi` (`orchestrator.ui`) is the seam that makes the board the default and the
+console a switch. The board is vanilla static assets + `/api/tasks`, `/api/tasks/{id}/actions/{action}` and an
+SSE stream fed by `StateService.onChange`. Left for later: embedding the agent terminal (ttyd, phase 2) and the
+drafted-replies indicator below, which now only needs a field on the projection.
 
 Token accounting is already in (`stats` + `/stats`, the `TOKENS` dashboard column, per-task totals in
 state.json) — the numbers it measured are what re-ordered this table.

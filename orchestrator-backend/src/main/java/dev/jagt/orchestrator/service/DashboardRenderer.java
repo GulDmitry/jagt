@@ -1,8 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.DashboardLine;
-import dev.jagt.orchestrator.model.NextMove;
-import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.springframework.stereotype.Component;
 
@@ -10,14 +8,12 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.Map;
+import java.util.List;
 
 /**
- * Renders the plain-text task dashboard. Shared by the {@code /status} HTTP endpoint
- * and the Master shell so both show the exact same, backend-computed view (the
- * {@code └} detail and {@code →} next-move come from {@link DashboardLine}/{@link NextMove},
- * never improvised).
+ * Renders the plain-text task dashboard for the console and the {@code /status} endpoint. It renders the
+ * SHARED {@link TaskView} projection — the same one the web board consumes — so a phase, an owner and a
+ * next move cannot mean one thing here and another there.
  */
 @Component
 public class DashboardRenderer {
@@ -42,39 +38,35 @@ public class DashboardRenderer {
     public static final int COL_TITLE =
             ALIAS_W + 1 + TASK_W + 1 + STATUS_W + 1 + PROJECT_W + 1 + ACTIVE_W + 1 + TOKENS_W + 1;
 
-    private final StateService stateService;
+    private final TaskViews taskViews;
     private final UsageTracker usageTracker;
 
-    public DashboardRenderer(StateService stateService, UsageTracker usageTracker) {
-        this.stateService = stateService;
+    public DashboardRenderer(TaskViews taskViews, UsageTracker usageTracker) {
+        this.taskViews = taskViews;
         this.usageTracker = usageTracker;
     }
 
     public String render() {
-        Map<String, TaskState> tasks = stateService.tasks();
+        List<TaskView> tasks = taskViews.all();
         StringBuilder out = new StringBuilder();
         out.append("jagt orchestrator — ").append(tasks.size()).append(" task(s)   updated ")
                 .append(LocalTime.now().format(CLOCK)).append(sessionSpend()).append('\n').append('\n');
         out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE ▼", "TOKENS",
                 "TITLE"));
-        tasks.entrySet().stream()
-                .sorted(Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
-                        e.getValue().lastActiveTimestamp()).reversed())
-                .forEach(e -> {
-            String id = e.getKey();
-            TaskState t = e.getValue();
-            out.append(String.format(ROW_FORMAT, t.alias() == null ? "-" : t.alias(), id, t.status(),
-                    t.project(), stamp(t.lastActiveTimestamp()), tokens(t.usageOrNone()),
-                    oneLineTitle(t.title())));
-            if (t.ticketUrl() != null && !t.ticketUrl().isBlank()) {
-                out.append("                    └ ").append(t.ticketUrl()).append('\n');
+        for (TaskView task : tasks) {
+            out.append(String.format(ROW_FORMAT, task.alias() == null ? "-" : task.alias(), task.id(),
+                    task.status(), task.project(), stamp(task.lastActiveAt()), tokens(task.tokens()),
+                    oneLineTitle(task.title())));
+            if (task.ticketUrl() != null && !task.ticketUrl().isBlank()) {
+                out.append("                    └ ").append(task.ticketUrl()).append('\n');
             }
-            String detail = DashboardLine.forTask(id, t);
-            if (!detail.isBlank()) {
-                out.append("                    └ ").append(detail).append('\n');
+            if (task.detail() != null && !task.detail().isBlank()) {
+                out.append("                    └ ").append(task.detail()).append('\n');
             }
-            out.append("                    → ").append(NextMove.forStatus(t.status())).append('\n');
-        });
+            // Lead with WHOSE move it is: on a board of five tasks that is the fact a human scans for.
+            out.append("                    → ").append(task.owner().label()).append(" · ")
+                    .append(task.hint()).append('\n');
+        }
         if (tasks.isEmpty()) {
             out.append("(no tasks)\n");
         }
@@ -86,8 +78,8 @@ public class DashboardRenderer {
     }
 
     /** The task's own column: total tokens jagt spent on it, or a dash when it has cost nothing yet. */
-    private static String tokens(TokenUsage usage) {
-        return usage.isNone() ? "-" : TokenFormat.compact(usage.total());
+    private static String tokens(long tokens) {
+        return tokens == 0 ? "-" : TokenFormat.compact(tokens);
     }
 
     /** Session total in the header — omitted until something has been spent, and kept short enough that

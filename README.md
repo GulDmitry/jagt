@@ -123,7 +123,25 @@ A few macOS-specific setup notes:
 
 ## Usage
 
-Talk to the Master console:
+jagt has two control surfaces over the same core, chosen with `orchestrator.ui`: the **board** (`web`, the
+default) and the **console** (`tui`) — or `both`, which serves the board and then hands the terminal to the
+console. Whatever you use, a task's phase, whose move it is and which actions are legal are computed in ONE
+place, so the two can never tell you different things.
+
+### The board (default)
+
+Open `http://localhost:8290`. Tasks sit in columns by phase — **build → review → check → ready → deploy** —
+each card showing whose move it is, the status, how long since it moved, what jagt has spent on it, and links
+to the ticket and the review request. Every card carries exactly the actions that are legal for it right now,
+the obvious one highlighted: open the IDE, focus the agent's terminal, ship, check the review, deploy, close.
+`New task` does what `do ABC-42` does. Sort within columns by last activity, tokens, alias or title, and tick
+*waiting on me* to see only the tasks that are actually yours. It updates itself — the backend pushes a change
+event, the page does not poll — and `deploy`/`done` ask for confirmation, because one writes to a shared
+branch and the other deletes a worktree.
+
+### The console
+
+`orchestrator.ui=tui` gives the full-screen terminal UI instead. Talk to it:
 
 | command | effect |
 |---------|--------|
@@ -228,6 +246,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 
 | key | meaning |
 |-----|---------|
+| `orchestrator.ui` | control surface: `web` (default, board at `localhost:<port>`), `tui` (full-screen console) or `both` |
 | `orchestrator.platform` | platform strategies — `macos` (default) or `linux`; selects the notifier and which kitty driver is used |
 | `orchestrator.notify-send-command` | Linux only: the `notify-send` binary (default `notify-send`) |
 | `orchestrator.terminal` | agents viewer: `kitty` (default) or `warp`; both run over tmux |

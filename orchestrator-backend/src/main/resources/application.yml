@@ -18,6 +18,10 @@ logging:
     name: ${LOG_FILE:jagt-backend.log}
 
 orchestrator:
+  # Which control surface the human drives (OperatorUi strategy): web | tui | both.
+  # web (default) serves the board at localhost:${server.port}; tui is the full-screen console; both runs the
+  # board and then hands the terminal to the console.
+  ui: web
   # Root is auto-detected by walking up from the launch dir to the folder
   # containing mcp_client.js; set ORCHESTRATOR_ROOT only to override it.
   # config.json / state.json live in the root unless overridden here.

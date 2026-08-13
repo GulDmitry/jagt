@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.model.GitRemote;
+import dev.jagt.orchestrator.model.Move;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
@@ -197,7 +198,7 @@ public class OrchestratorTools {
         // control back (finished review / broke CI). Only on the transition, never on
         // the agent's frequent IN_PROGRESS keep-alives.
         if (newStatus != previous && (newStatus == TaskStatus.REVIEW_PENDING || newStatus == TaskStatus.CI_FAILED)) {
-            userNotifier.notify("jagt · " + taskId, dev.jagt.orchestrator.model.NextMove.forStatus(newStatus));
+            userNotifier.notify("jagt · " + taskId, Move.forTask(newStatus, true).hint());
         }
         return "Task " + taskId + " -> " + newStatus + (shortMessage == null ? "" : " (" + shortMessage + ")");
     }
@@ -544,7 +545,7 @@ public class OrchestratorTools {
         // Only ping on a real transition of an existing task — never for a no-op (task gone) or a re-poll
         // that lands on the same status the human already saw.
         if (updated && status != previous) {
-            userNotifier.notify("jagt · " + id, dev.jagt.orchestrator.model.NextMove.forStatus(status));
+            userNotifier.notify("jagt · " + id, Move.forTask(status, true).hint());
         }
     }
 
@@ -560,11 +561,9 @@ public class OrchestratorTools {
      * same MR. Only NEW (no MR to ship onto) and DONE (closed) REFUSE.
      */
     static ShipGate shipGate(TaskStatus status, boolean agentLive, boolean hasMr) {
-        boolean reshipRound = hasMr && (status == TaskStatus.CI_POLLING || status == TaskStatus.CI_FAILED
-                || status == TaskStatus.DEPLOYED);
-        boolean allowed = status == TaskStatus.REVIEW_PENDING || status == TaskStatus.IN_PROGRESS
-                || (status == TaskStatus.SHIPPING && !agentLive) || reshipRound;
-        return allowed ? ShipGate.PROCEED : ShipGate.REFUSE;
+        // ONE rule, shared with the projection that decides whether to OFFER ship at all (Move.shippable) —
+        // the dashboard used to advise independently of this gate, which is how they drifted apart.
+        return Move.shippable(status, agentLive, hasMr) ? ShipGate.PROCEED : ShipGate.REFUSE;
     }
 
     /**

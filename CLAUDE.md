@@ -56,6 +56,30 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `CLAUDE.md` carries full system knowledge (orchestrator root, all projects, active tasks) plus per-task
   rules; instructions arrive via `task_context.md`.
 
+## Control surfaces (web board + console)
+- TWO front-ends, ONE core, and the seam is `OperatorUi` (`…ui`, selected by `orchestrator.ui`: web | tui |
+  both — default WEB). `OperatorUiRunner` is the only `ApplicationRunner`; a blocking surface (the TUI, which
+  owns the terminal) starts last so the board is already serving. Adding a surface must not add a second
+  answer to any question the others already answer:
+  - "what is this task and what can I do with it" is `model/Move` + `model/TaskView`, built by
+    `service/TaskViews`. The TUI, `/status` and `/api/tasks` all render THAT. `Move.shippable` is also what
+    `OrchestratorTools.shipGate` calls — the dashboard used to advise independently of the gate, which is
+    exactly how they drifted.
+  - "how is an action executed" is `service/CommandService` (validates against `Move` first, so a stale board
+    tab is refused with a sentence, not with a git error three layers down), and "how is a task started" is
+    `service/TaskLauncher`. The console parses a command line, the controller parses JSON; neither owns rules.
+- `Phase`/`Owner` are a PROJECTION for humans, never persisted and never a second state machine: `TaskStatus`
+  stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
+- Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at
+  SHIPPING is therefore offered SHIP and the gate refuses at execution time if its agent is alive.
+- The board is vanilla HTML/CSS/JS under `src/main/resources/static` — NO build step, NO CDN, no external
+  asset of any kind (it must work with the machine offline and stay inside the one jar).
+- The web UI never polls: `TaskEventStream` forwards `StateService.onChange` as SSE and the page re-fetches.
+  The event carries no payload on purpose — a payload would be a second serialization that could disagree
+  with `/api/tasks`.
+- `dashboard-layout-smoke.sh` drives the CONSOLE, so it must pass `--orchestrator.ui=tui` now that the board
+  is the default. Run it after ANY change to `MasterShell` rendering.
+
 ## Engineering constraints (do not regress)
 - MASTER SHELL = FULL-SCREEN TUI (Lanterna), ONE integrated screen. `MasterShell` runs a Lanterna
   `Screen`: command-output log on top, the dashboard table beneath it, the `jagt>` input line pinned to

@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.shell;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
-import dev.jagt.orchestrator.service.MeteredAssistant;
-import dev.jagt.orchestrator.service.ReviewSweepService;
+import dev.jagt.orchestrator.model.TaskAction;
+import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.StateViews;
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalPosition;
@@ -21,10 +21,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -32,9 +29,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,7 +38,11 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * The Master control terminal: a deterministic JLine REPL running in the backend process. It parses a
+ * The console control surface: a deterministic full-screen TUI running in the backend process. One of the
+ * {@code OperatorUi} implementations drives it (see {@code orchestrator.ui}); the web board is the other, and
+ * both go through the same projection and the same {@link CommandService}.
+ *
+ * <p>A deterministic REPL: It parses a
  * fixed grammar and calls {@link OrchestratorTools} directly (same JVM — no LLM, no MCP round-trip, no
  * drift). Every command prints its result then the dashboard, so the terminal always ends on current
  * state. Callers here are the Master (never a sub-agent), so the {@code callerTaskId} scoping arg is
@@ -53,26 +52,25 @@ import java.util.regex.Pattern;
  * (its own MCP) via {@code write_task_context}; that lands with the delegation layer.
  */
 @Component
-@Order(Integer.MAX_VALUE)
-public class MasterShell implements ApplicationRunner {
+public class MasterShell {
 
     private static final Logger log = LoggerFactory.getLogger(MasterShell.class);
 
     private final OrchestratorTools tools;
     private final StateViews views;
     private final ConfigService configService;
-    private final MeteredAssistant assistant;
-    private final ReviewSweepService reviewSweep;
+    private final CommandService commands;
+    private final TaskLauncher launcher;
     private final ConfigurableApplicationContext context;
 
     public MasterShell(OrchestratorTools tools, StateViews views, ConfigService configService,
-                       MeteredAssistant assistant, ReviewSweepService reviewSweep,
+                       CommandService commands, TaskLauncher launcher,
                        ConfigurableApplicationContext context) {
         this.tools = tools;
         this.views = views;
         this.configService = configService;
-        this.assistant = assistant;
-        this.reviewSweep = reviewSweep;
+        this.commands = commands;
+        this.launcher = launcher;
         this.context = context;
     }
 
@@ -96,8 +94,7 @@ public class MasterShell implements ApplicationRunner {
     private static final Set<String> TASK_ARG_COMMANDS = Set.of(
             "review", "ship", "focus", "ide", "deploy", "respawn", "done");
 
-    @Override
-    public void run(ApplicationArguments args) {
+    public void run() {
         ConfigService.ConfigFile config = configService.load();
         int refreshSeconds = config.dashboard().refreshSecondsOrDefault();
         this.commandRows = config.dashboard().reservedRowsOrDefault();
@@ -830,14 +827,13 @@ public class MasterShell implements ApplicationRunner {
                 case "help" -> help();
                 case "do" -> doTask(tok);
                 case "resume" -> resumeTask(tok);
-                case "review" -> reviewTask(tok);
-                case "ship" -> tools.ship(arg(tok, 1, "ship <ticket>"));
-                case "focus" -> tools.focusTask(arg(tok, 1, "focus <ticket>"));
-                case "ide" -> tools.openInIde(arg(tok, 1, "ide <ticket> [diff]"),
-                        tok.contains("diff") ? "diff" : "project", null);
-                case "deploy" -> tools.deployTask(arg(tok, 1, "deploy <ticket>"), null);
-                case "respawn" -> tools.openTaskTab(arg(tok, 1, "respawn <ticket>"), null);
-                case "done" -> tools.removeTask(arg(tok, 1, "done <ticket>"), null);
+                case "review" -> act(tok, TaskAction.SWEEP);
+                case "ship" -> act(tok, TaskAction.SHIP);
+                case "focus" -> act(tok, TaskAction.FOCUS);
+                case "ide" -> act(tok, tok.contains("diff") ? TaskAction.DIFF : TaskAction.IDE);
+                case "deploy" -> act(tok, TaskAction.DEPLOY);
+                case "respawn" -> act(tok, TaskAction.RESPAWN);
+                case "done" -> act(tok, TaskAction.DONE);
                 default -> "unknown command '" + cmd + "' — try 'help'";
             };
             return result;
@@ -846,72 +842,32 @@ public class MasterShell implements ApplicationRunner {
         }
     }
 
+    /**
+     * Every per-task verb is the SAME action the web board's button posts — routed through
+     * {@link CommandService}, which also refuses a move that is not legal for the task's status instead of
+     * letting git or tmux fail further down.
+     */
+    private String act(List<String> tok, TaskAction action) {
+        return commands.execute(arg(tok, 1, action.id() + " <ticket>"), action);
+    }
+
     /** Inline-fallback formatting (no pinned region): the command result then the dashboard (blank result = dashboard alone). */
     static String withDashboard(String result, String dashboardText) {
         return result.isBlank() ? dashboardText : result + "\n\n" + dashboardText;
     }
 
-    /** A bare issue key like {@code ABC-123} — used only to skip the read on the fast path, never parsed out of a URL. */
-    private static final Pattern KEY_REF = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
 
     String doTask(List<String> tok) {
-        String ref = arg(tok, 1, "do <ticket|url> [project] [plan] [notes…]");
-        DoArgs a = parseDoArgs(tok);
-        boolean bareKey = KEY_REF.matcher(ref).matches();
+        DoArgs args = parseDoArgs(tok);
+        return launcher.launch(arg(tok, 1, "do <ticket|url> [project] [plan] [notes…]"),
+                args.project(), args.mode(), args.strategy(), args.notes());
+    }
 
-        // Warn before spending a ticket read on a task that would only collide later; a chosen strategy
-        // means the collision is intended, so let it through.
-        if (bareKey && a.strategy == null) {
-            String existing = tools.existingBranchProject(ref, a.project);
-            if (existing != null) {
-                return "branch '" + ref + "' already exists in " + existing + " (previous run of this"
-                        + " ticket). Retry with `do " + ref + " recreate` (discard old work, start fresh)"
-                        + " or `do " + ref + " resume` (continue its commits).";
-            }
-        }
-
-        // Fast path: a bare key + explicit project needs no read — the key IS the task id.
-        if (bareKey && a.project != null) {
-            return tools.initializeTask(ref, resolveProject(a.project),
-                    withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", a.notes),
-                    a.mode, a.strategy, null, null);
-        }
-        // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
-        // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
-        var read = assistant.readTicket(ref);       // the session total is booked by the meter itself
-        var facts = read.facts();
-        if (facts.isPresent() && !facts.get().exists()) {
-            return "error: could not read " + ref + " (bad/inaccessible URL or unknown key?)";
-        }
-        if (facts.isPresent()) {
-            TicketFacts f = facts.get();
-            // Name the task by the canonical key the assistant read back; if it returned none but the
-            // caller already gave a bare key, that key is a fine task id (a URL has no such fallback).
-            String taskId = f.key() != null && !f.key().isBlank() ? f.key() : (bareKey ? ref : null);
-            if (taskId == null) {
-                return "error: read " + ref + " but the assistant returned no issue key to name the task";
-            }
-            String project = a.project != null ? resolveProject(a.project) : resolveByLabels(f);
-            String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
-                    + "\". Read it via your issue-tracker MCP for full details, then work.", a.notes);
-            String result = tools.initializeTask(taskId, project, instructions, a.mode, a.strategy,
-                    f.title(), f.url());
-            // Only NOW does the task exist, so only now can the read that named it be charged to it —
-            // charging earlier silently dropped the most expensive call in a task's life.
-            assistant.chargeTask(taskId, read.usage());
-            return result;
-        }
-        // Assistant unavailable: only a bare key can proceed — a URL has no derivable task id without it.
-        if (!bareKey) {
-            return "error: assistant unavailable — pass an issue key (not a URL), or add the project";
-        }
-        String result = tools.initializeTask(ref, resolveProject(a.project),
-                withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", a.notes),
-                a.mode, a.strategy, null, null);
-        // The read FAILED but was still paid for, and the key alone was enough to create the task — so the
-        // one case where money bought nothing must not be the one case the task reports as free.
-        assistant.chargeTask(ref, read.usage());
-        return result;
+    String resumeTask(List<String> tok) {
+        String url = tok.stream().skip(1).filter(token -> token.startsWith("http")).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("usage: resume <mr-url>"));
+        String ticket = tok.stream().skip(1).filter(token -> !token.startsWith("http")).findFirst().orElse(null);
+        return launcher.resume(url, ticket);
     }
 
     /** {@code prune} is a dry run, {@code prune all} deletes; anything else is refused rather than guessed —
@@ -957,87 +913,6 @@ public class MasterShell implements ApplicationRunner {
             rest.remove(0);
         }
         return new DoArgs(project, mode, strategy, String.join(" ", rest).strip());
-    }
-
-    private static String withNotes(String instructions, String notes) {
-        return notes == null || notes.isBlank()
-                ? instructions
-                : instructions + "\n\nAdditional instructions from the human:\n" + notes;
-    }
-
-    /**
-     * Reopened MR: `resume <mr-url>` — the MR is enough. The assistant reads it for the source branch
-     * (= the task) and project; jagt resumes that branch + links the MR at CI_POLLING (no new MR). An
-     * explicit ticket token may be given to skip the lookup.
-     */
-    String resumeTask(List<String> tok) {
-        String mrUrl = tok.stream().skip(1).filter(t -> t.startsWith("http")).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("usage: resume <mr-url>"));
-        String ticket = tok.stream().skip(1).filter(t -> !t.startsWith("http")).findFirst().orElse(null);
-        // Read the MR (one MCP call jagt already needs for the branch) — it also carries the title, so a
-        // resumed task shows one on the dashboard just like a `do` task, not a blank.
-        String title = null;
-        var read = assistant.readMergeRequest(mrUrl);
-        var mr = read.facts();
-        if (mr.isPresent() && mr.get().exists()) {
-            title = mr.get().title();
-            if (ticket == null) {
-                ticket = mr.get().sourceBranch();
-            }
-        } else if (ticket == null) {
-            return "error: could not read MR (or not found): " + mrUrl;
-        }
-        String result = tools.resumeTask(ticket, mrUrl, title);
-        assistant.chargeTask(ticket, read.usage());       // the task exists only after resumeTask
-        return result;
-    }
-
-    /**
-     * MR sweep: pull the MR's pipeline + unresolved comments (headless) and relay ONE brief to the
-     * agent via task_context.md, which fixes locally and drafts replies. Nothing is pushed/posted.
-     */
-    private String reviewTask(List<String> tok) {
-        return reviewSweep.sweep(arg(tok, 1, "review <ticket>")).message();
-    }
-
-    /** Picks the jagt project whose configured labels intersect the ticket's labels (or tracker project key). */
-    private String resolveByLabels(TicketFacts f) {
-        Map<String, List<String>> projectLabels = new java.util.LinkedHashMap<>();
-        configService.load().projects().forEach((k, v) -> projectLabels.put(k, v.labels()));
-        List<String> matches = projectsMatching(f, projectLabels);
-        if (matches.size() == 1) {
-            return matches.get(0);
-        }
-        if (matches.isEmpty()) {
-            throw new IllegalArgumentException("no project matches ticket labels " + f.labels()
-                    + " — specify: do <ticket> <project>");
-        }
-        throw new IllegalArgumentException("ticket labels match multiple projects " + matches
-                + " — specify: do <ticket> <project>");
-    }
-
-    /** Pure: the project keys whose labels intersect the ticket's labels or its tracker project key. */
-    static List<String> projectsMatching(TicketFacts f, Map<String, List<String>> projectLabels) {
-        Set<String> tokens = new HashSet<>(f.labels());
-        tokens.add(f.trackerProject());
-        return projectLabels.entrySet().stream()
-                .filter(e -> e.getValue() != null && e.getValue().stream().anyMatch(tokens::contains))
-                .map(Map.Entry::getKey)
-                .toList();
-    }
-
-    private String resolveProject(String project) {
-        Set<String> keys = configService.load().projects().keySet();
-        if (project != null && !project.isBlank()) {
-            if (!keys.contains(project)) {
-                throw new IllegalArgumentException("unknown project '" + project + "'. Configured: " + keys);
-            }
-            return project;
-        }
-        if (keys.size() == 1) {
-            return keys.iterator().next();
-        }
-        throw new IllegalArgumentException("multiple projects " + keys + " — specify one: do <ticket> <project>");
     }
 
     private static String arg(List<String> tok, int i, String usage) {

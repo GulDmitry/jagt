@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jagt</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>jagt</h1>
+  <span id="waiting" class="waiting" hidden></span>
+  <span id="spend" class="muted"></span>
+  <span class="grow"></span>
+  <label class="control">sort
+    <select id="sort">
+      <option value="active">last active</option>
+      <option value="tokens">tokens</option>
+      <option value="alias">alias</option>
+      <option value="title">title</option>
+    </select>
+  </label>
+  <label class="control checkbox"><input type="checkbox" id="mine"> waiting on me</label>
+  <button id="new-task" class="primary">New task</button>
+  <a class="control" href="/stats" target="_blank" rel="noreferrer">stats</a>
+  <a class="control" href="/orphans" target="_blank" rel="noreferrer">orphans</a>
+  <span id="live" class="dot" title="live updates"></span>
+</header>
+
+<form id="launch" hidden>
+  <input id="ref" name="ref" placeholder="ABC-42 or a ticket URL" autocomplete="off" required>
+  <select id="project" name="project"><option value="">project…</option></select>
+  <label class="checkbox"><input type="checkbox" id="plan"> plan first</label>
+  <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
+  <button type="submit" class="primary">Start</button>
+  <button type="button" id="cancel-launch">Cancel</button>
+  <span id="launch-state" class="muted"></span>
+</form>
+
+<main id="board"></main>
+<p id="empty" class="empty" hidden>No tasks. <strong>New task</strong> starts one — the same thing
+  <code>do ABC-42</code> does in the console.</p>
+<div id="toasts"></div>
+<script src="app.js"></script>
+</body>
+</html>

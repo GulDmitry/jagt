@@ -27,7 +27,7 @@ class DashboardRendererTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").title("title").mrUrl("https://gitlab/x/-/merge_requests/9").ticketUrl("https://jira/browse/ABC-1").build());
 
-        String out = new DashboardRenderer(state, new UsageTracker(state)).render();
+        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
 
         assertThat(out).contains("└ https://jira/browse/ABC-1");
         assertThat(out.indexOf("https://jira/browse/ABC-1"))
@@ -44,7 +44,7 @@ class DashboardRendererTest {
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW)
                 .lastActiveTimestamp(newer).alias("a2").title("newer task").build());
 
-        String out = new DashboardRenderer(state, new UsageTracker(state)).render();
+        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
 
         assertThat(out).contains("ACTIVE ▼");
         assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
@@ -60,7 +60,7 @@ class DashboardRendererTest {
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(63_500, 0, 500, 0.12));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(63_500, 0, 500, 0.12));
 
-        String out = new DashboardRenderer(state, tracker).render();
+        String out = new DashboardRenderer(new TaskViews(state), tracker).render();
 
         assertThat(out).contains("TOKENS");
         assertThat(out).contains("64k");                      // the task's own column
@@ -72,7 +72,7 @@ class DashboardRendererTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
-        String out = new DashboardRenderer(state, new UsageTracker(state)).render();
+        String out = new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render();
 
         assertThat(out).doesNotContain("spend");
         assertThat(out.lines().filter(l -> l.startsWith("a1")).findFirst().orElseThrow())
@@ -85,6 +85,6 @@ class DashboardRendererTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .alias("a1").title("title").build());
 
-        assertThat(new DashboardRenderer(state, new UsageTracker(state)).render()).doesNotContain("└");
+        assertThat(new DashboardRenderer(new TaskViews(state), new UsageTracker(state)).render()).doesNotContain("└");
     }
 }
