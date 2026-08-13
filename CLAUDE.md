@@ -79,6 +79,12 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     `service/TaskViews`. The TUI, `/status` and `/api/tasks` all render THAT. `Move.shippable` is also what
     `ShipService.requireShippable` calls — the dashboard used to advise independently of the gate, which is
     exactly how they drifted apart.
+  - PARITY IS AN INVARIANT, not an aspiration: a capability that exists in ONE surface only is a bug. Per-task
+    verbs come from `Move.actions()`, so a new action appears on both at once; everything else needs an explicit
+    counterpart, and the ones that were console-only were exactly the ones nobody noticed missing (`resume`,
+    `prune`, `stats`, `help`, `quit` — all added 2026-08-13). Shared text lives in `service/CommandReference`
+    (the grammar) and `StateViews` (dashboard + stats), stopping is `service/BackendShutdown`, so neither
+    surface renders its own version of any of them.
   - "how is an action executed" is `service/CommandService` (validates against `Move` first, so a stale board
     tab is refused with a sentence, not with a git error three layers down), and "how is a task started" is
     `service/TaskLauncher`. The console parses a command line, the controller parses JSON; neither owns rules.

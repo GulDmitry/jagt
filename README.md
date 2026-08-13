@@ -147,7 +147,17 @@ of steps the task took), what jagt has spent on it, and links to the ticket and 
 says when the agent has left **drafted review replies** in its worktree — read them before you ship, because
 `ship` is what posts them. Every card carries exactly the actions that are legal for it right now,
 the obvious one highlighted: open the IDE, focus the agent's terminal, ship, check the review, deploy, close.
-`New task` does what `do ABC-42` does. Sort within columns by last activity, tokens, alias or title, and tick
+`New task` does what `do ABC-42` does, and `Resume` does what `resume <mr-url>` does — take over a review
+request that already exists (reopened, or someone else's work): its branch comes back with the commits already
+on it and the request is linked, not reopened. `Prune`, `Stats` and `Help` are the same commands too (prune
+lists first and asks before deleting, exactly as typing `prune` before `prune all`), and `Stop` is `quit` — it
+stops the backend while agents keep running in tmux.
+
+**The board and the console can do the same things**; anything console-only is a bug. Per-task verbs — ship,
+review, `ide` (including the DEPLOY worktree when a deploy conflicted), deploy, revert, respawn, focus, done —
+are the card's own buttons, because the server lists the legal ones per task and the board renders exactly that.
+
+Sort within columns by last activity, tokens, alias or title, and tick
 *waiting on me* to see only the tasks that are actually yours. It updates itself — the backend pushes a change
 event, the page does not poll — and `deploy`/`done` ask for confirmation, because one writes to a shared
 branch and the other deletes a worktree.
