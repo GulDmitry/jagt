@@ -52,8 +52,17 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "pipelineStatus":{"type":"string"},\
             "comments":{"type":"array","items":{"type":"string"}}},\
             "required":["exists","approved","pipelineStatus","comments"]}""";
+    private static final String COMMAND_SCHEMA = """
+            {"type":"object","properties":{\
+            "command":{"type":"string"},\
+            "task":{"type":"string"},\
+            "ticket":{"type":"string"},\
+            "reason":{"type":"string"}},\
+            "required":["command","task","ticket","reason"]}""";
     /** The review sweep makes several code-host calls; give it much longer than a single lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
+    /** Mapping text to a command reads nothing and must feel like typing — a slow answer is worse than none. */
+    private static final Duration MAP_TIMEOUT = Duration.ofSeconds(90);
 
     private final ProcessRunner processRunner;
     private final OrchestratorProperties properties;
@@ -120,24 +129,56 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         });
     }
 
+    @Override
+    public Answer<CommandProposal> mapCommand(String text, String context) {
+        if (text == null || text.isBlank()) {
+            return Answer.unavailable();
+        }
+        String prompt = "Map this operator request onto EXACTLY ONE command of the tool below.\n\nREQUEST: "
+                + text + "\n\n" + context + "\n\nAnswer with the command word, the task it applies to (its"
+                + " id or alias, copied verbatim from the list — never invented), the ticket reference when"
+                + " the command is `do`, and a reason. Leave a field as an empty string when it does not"
+                + " apply. If the request does not clearly match one command and one task, answer"
+                + " command=\"none\" and put the ambiguity in reason. Do NOT guess between two tasks:"
+                + " ambiguity is a `none`. Respond directly.";
+        // No MCP at all: this is text -> command, so a tool call could only be a mistake (and every server
+        // loaded would be paid for in context on a call that is meant to be the cheapest one jagt makes).
+        return ask(prompt, COMMAND_SCHEMA, "command mapping", MAP_TIMEOUT, false)
+                .map(n -> new CommandProposal(n.path("command").asString(""), n.path("task").asString(""),
+                        n.path("ticket").asString(""), n.path("reason").asString("")));
+    }
+
     /** Runs one stripped, schema-forced headless Claude call; empty facts on any failure, cost always. */
     private Answer<JsonNode> ask(String prompt, String schema, String label) {
-        return ask(prompt, schema, label, TIMEOUT);
+        return ask(prompt, schema, label, TIMEOUT, true);
     }
 
     private Answer<JsonNode> ask(String prompt, String schema, String label, Duration timeout) {
+        return ask(prompt, schema, label, timeout, true);
+    }
+
+    private Answer<JsonNode> ask(String prompt, String schema, String label, Duration timeout, boolean withMcp) {
         List<String> cmd = new ArrayList<>(List.of(properties.claudeCommand(), prompt, "-p",
-                "--setting-sources", assistant.settingSources(), "--json-schema", schema,
+                "--json-schema", schema,
                 // The JSON envelope wraps the answer together with the call's token usage and cost, so the
                 // spend is measurable. Plain text output would hide the price of every read.
                 "--output-format", "json"));
+        if (withMcp) {
+            cmd.addAll(List.of("--setting-sources", assistant.settingSources()));
+        } else {
+            // An empty --mcp-config with --strict-mcp-config: no servers, no tool schemas, nothing to approve.
+            cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
+        }
         if (assistant.model() != null && !assistant.model().isBlank()) {
             cmd.add("--model");
             cmd.add(assistant.model());
         }
         // Headless `-p` can't answer the permission classifier, which then silently blocks the MCP
-        // calls the read needs; an allow-list or a permission mode lifts that gate.
-        if (!assistant.allowedTools().isEmpty()) {
+        // calls the read needs; an allow-list or a permission mode lifts that gate. A call with no MCP has
+        // nothing to gate, so it stays off that path entirely.
+        if (!withMcp) {
+            log.debug("Stripped (no-MCP) assistant call for {}", label);
+        } else if (!assistant.allowedTools().isEmpty()) {
             cmd.add("--allowedTools");
             cmd.addAll(assistant.allowedTools());
         } else if (assistant.permissionMode() != null && !assistant.permissionMode().isBlank()) {

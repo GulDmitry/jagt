@@ -81,6 +81,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   871 lines and eleven collaborators. Note the lesson (TODO.md keeps the long version): a delegating facade
   KEEPS every collaborator it does not shed, so only a group of methods that monopolises dependencies is worth
   extracting; splitting off `deploy`/`prune` was tried and reverted because it ADDED one.
+- TWO-TIER DISPATCH: tier 1 is the grammar (typed command / board button) and it stays LLM-free. Tier 2 is
+  `service/NaturalLanguageDispatch` — free text (an unknown console line, or the board's ⌘K palette →
+  `POST /api/interpret`) goes to a model that only PROPOSES one grammar command; the dispatcher validates the
+  task exists and the verb is real, then executes through `CommandService`, so tier 2 can never do more than
+  a button. The call is deliberately stripped (`--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, no
+  `--setting-sources`): text→command needs no tools, and a loaded MCP server would be paid for in context.
+  It answers with the interpretation FIRST ("understood as `ship a1` — …"), and a single unknown word is a
+  typo, not a request — it never reaches the model.
 - ADMISSION CONTROL is `service/TaskAdmission` (statics, no collaborators) enforced in
   `TaskProvisioning.initializeTask` — the choke point every surface reaches a new task through, so no
   front-end can out-run it. A slot is held by a REGISTERED task whatever its status (the worktree + language

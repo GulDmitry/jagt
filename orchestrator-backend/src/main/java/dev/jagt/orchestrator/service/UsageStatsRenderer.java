@@ -19,7 +19,10 @@ import java.util.Map;
 @Component
 public class UsageStatsRenderer {
 
-    private static final String ROW = "%-14s %6s %9s %9s %9s %9s%n";
+    /** 18 = the longest {@link AssistantCallKind} label ("merge-request read"); a longer one would shift
+     *  every number on its row out of its column, which is exactly what a table exists to prevent. */
+    static final int LABEL_W = 18;
+    private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s%n";
 
     private final StateService stateService;
     private final UsageTracker usageTracker;

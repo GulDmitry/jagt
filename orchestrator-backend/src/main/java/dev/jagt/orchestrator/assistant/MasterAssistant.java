@@ -25,6 +25,14 @@ public interface MasterAssistant {
                        String url) {
     }
 
+    /**
+     * Free text mapped onto ONE command of the console grammar — a PROPOSAL, never an execution: the caller
+     * validates it against the same gates a typed command hits and runs it itself. {@code command} empty (or
+     * "none") means nothing matched, and {@code reason} then says why in one line for the human.
+     */
+    record CommandProposal(String command, String task, String ticket, String reason) {
+    }
+
     /** Facts about an existing merge request. {@code exists=false} means the URL resolved to nothing. */
     record MergeRequestFacts(boolean exists, String sourceBranch, String projectPath, String title) {
     }
@@ -38,7 +46,7 @@ public interface MasterAssistant {
     record Answer<T>(Optional<T> facts, TokenUsage usage) {
 
         /** Never happened, so it cost nothing (a blank ref, a non-http url — no process was spawned). */
-        static <T> Answer<T> unavailable() {
+        public static <T> Answer<T> unavailable() {
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         }
 
@@ -56,4 +64,12 @@ public interface MasterAssistant {
 
     /** The `review` sweep: pipeline state + unresolved comments of an MR (a slow, multi-call read). */
     Answer<ReviewFacts> readReview(String mrUrl);
+
+    /**
+     * Maps a free-text request ("залей ту задачу с логином") onto one grammar command. {@code context} is the
+     * prompt-ready list of commands and current tasks the caller wants considered — the port knows nothing
+     * about the grammar, so adding a command never touches this interface. Reads NOTHING from the outside,
+     * so implementations should run stripped of MCP entirely: cheaper, and it cannot call a tool by accident.
+     */
+    Answer<CommandProposal> mapCommand(String text, String context);
 }

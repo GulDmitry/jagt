@@ -15,7 +15,9 @@ public enum AssistantCallKind {
     /** Reading a merge request to `resume` it — rare. */
     MR_READ("merge-request read"),
     /** One review round: the manual `review` and every auto-review poll. */
-    REVIEW_SWEEP("review sweep");
+    REVIEW_SWEEP("review sweep"),
+    /** Free text mapped to a command (the palette / an unknown console line) — cheapest call jagt makes. */
+    COMMAND_MAP("command mapping");
 
     private final String label;
 

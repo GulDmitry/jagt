@@ -269,3 +269,53 @@ events.addEventListener('changed', load);
 events.onerror = () => live.classList.remove('on');
 setInterval(render, 15000);
 load();
+
+// Tier 2 of the dispatch: free text, mapped to ONE command by a model and executed by the same gate the
+// buttons use. Kept behind ⌘K rather than in the way, because tier 1 (a button, a typed command) costs
+// nothing and this costs a model call — the point is flexibility when it is wanted, not by default.
+const palette = document.getElementById('palette');
+const ask = document.getElementById('ask');
+
+function togglePalette(show) {
+  palette.hidden = !show;
+  if (show) {
+    ask.focus();
+    ask.select();
+  }
+}
+
+document.getElementById('open-palette').onclick = () => togglePalette(palette.hidden);
+document.getElementById('cancel-palette').onclick = () => togglePalette(false);
+document.addEventListener('keydown', (event) => {
+  if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+    event.preventDefault();
+    togglePalette(palette.hidden);
+  } else if (event.key === 'Escape' && !palette.hidden) {
+    togglePalette(false);
+  }
+});
+
+palette.onsubmit = async (event) => {
+  event.preventDefault();
+  const state = document.getElementById('palette-state');
+  const button = palette.querySelector('button[type=submit]');
+  button.disabled = true;
+  state.textContent = 'interpreting…';           // a model call: seconds
+  try {
+    const result = await api('/api/interpret', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({text: ask.value}),
+    });
+    // The answer always leads with what it understood, so a wrong mapping is visible rather than mysterious.
+    toast(result.message);
+    ask.value = '';
+    togglePalette(false);
+  } catch (e) {
+    toast(e.message, true);
+  } finally {
+    button.disabled = false;
+    state.textContent = '';
+    await load();
+  }
+};

@@ -23,6 +23,7 @@
   </label>
   <label class="control checkbox"><input type="checkbox" id="mine"> waiting on me</label>
   <button id="new-task" class="primary">New task</button>
+  <button id="open-palette" title="⌘K / Ctrl-K — say what you want in words">Ask</button>
   <a class="control" href="/stats" target="_blank" rel="noreferrer">stats</a>
   <a class="control" href="/orphans" target="_blank" rel="noreferrer">orphans</a>
   <span id="live" class="dot" title="live updates"></span>
@@ -36,6 +37,14 @@
   <button type="submit" class="primary">Start</button>
   <button type="button" id="cancel-launch">Cancel</button>
   <span id="launch-state" class="muted"></span>
+</form>
+
+<form id="palette" hidden>
+  <input id="ask" placeholder="say it in words — e.g. “ship the login task”" autocomplete="off" required>
+  <button type="submit" class="primary">Run</button>
+  <button type="button" id="cancel-palette">Cancel</button>
+  <span id="palette-state" class="muted">a model maps this to ONE command, then the same gate as the buttons
+    runs it — nothing here can do more than a button can</span>
 </form>
 
 <main id="board"></main>

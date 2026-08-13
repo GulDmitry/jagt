@@ -80,4 +80,16 @@ class UsageStatsRendererTest {
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out).doesNotContain("average per call");
     }
+    /**
+     * A label longer than its column shifts every number on that row — the table's whole job. Asserted over
+     * the ENUM rather than over one rendered row, so adding a call kind cannot break the layout unnoticed.
+     */
+    @Test
+    void keepsEveryCallKindLabelInsideItsColumn() {
+        for (dev.jagt.orchestrator.model.AssistantCallKind kind
+                : dev.jagt.orchestrator.model.AssistantCallKind.values()) {
+            assertThat(kind.label().length()).as(kind.name() + " label")
+                    .isLessThanOrEqualTo(UsageStatsRenderer.LABEL_W);
+        }
+    }
 }

@@ -48,6 +48,9 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #launch { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel); }
 #launch input#ref { min-width: 220px; } #launch input#notes { flex: 1; min-width: 240px; }
+#palette { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
+  border-bottom: 1px solid var(--line); background: var(--panel); }
+#palette input#ask { flex: 1; min-width: 260px; }
 
 main { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; padding: 16px; }
 section { min-width: 0; }

@@ -44,6 +44,10 @@ public class MeteredAssistant {
         return metered(AssistantCallKind.REVIEW_SWEEP, assistant.readReview(mrUrl));
     }
 
+    public Answer<MasterAssistant.CommandProposal> mapCommand(String text, String context) {
+        return metered(AssistantCallKind.COMMAND_MAP, assistant.mapCommand(text, context));
+    }
+
     /** Attributes an already-recorded read to a task, once that task is in state.json. */
     public void chargeTask(String taskId, TokenUsage usage) {
         usageTracker.chargeTask(taskId, usage);

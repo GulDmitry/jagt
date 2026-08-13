@@ -12,8 +12,7 @@ order:
 |---|------|------------------------|------|
 | 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
 | 2 | Run the build and the jar on a real Linux box | the drivers exist and the wiring is tested from macOS; `notify-send` under a session bus, `kitty @ focus-window` under a WM and the `pkill` viewer close are not | 0.5 d + access |
-| 3 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path — in the board this is Cmd-K | 1-2 d |
-| 4 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
+| 3 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
 
 Steps 1 and 2 need access I do not have (a host token, a Linux machine) — they are the two places where what
 we believe is still ahead of what we have shown.
@@ -140,9 +139,20 @@ branches stay untouched, the detached upstream still guards a bare `git push`, a
 human's explicit approval gate. The agent keeps exactly the work that needs judgement: writing the code and
 drafting review replies (`postReviewReplies` / `reviewReplyAuthors` still route those).
 
-### NL fallback — tier 2 of the two-tier dispatch
-Tier 1 (grammar → direct `OrchestratorTools` call) is what `MasterShell` already does. Tier 2 makes free
-text work without ever putting a model on the hot path:
+### NL fallback — tier 2 of the two-tier dispatch — DONE 2026-08-13
+`NaturalLanguageDispatch`: an unknown console line or the board's ⌘K palette (`POST /api/interpret`) goes to a
+stripped headless call (`--strict-mcp-config` with an EMPTY server map, no `--setting-sources`) that returns
+`{command, task, ticket, reason}` under a schema. The dispatcher then validates — the verb must be a real
+`TaskAction` (or `do`), the task must EXIST — and executes through `CommandService`, the same gate the buttons
+use, so a model's guess cannot widen what is legal. Measured with a stubbed CLI: 940 tokens for one mapping,
+booked under the new `COMMAND_MAP` kind, so `stats` shows what the flexibility costs.
+Three decisions worth keeping: the answer leads with the interpretation ("understood as `ship ABC-1` — …")
+because an invisible mapping teaches nobody the grammar; ambiguity is a `none` with a reason rather than a
+guess between two tasks; and a SINGLE unknown word never reaches the model (it is a typo, and a typo must not
+cost a call). The model is handed only the projection's own task list with each task's LEGAL actions, so it
+does not propose something the gate would refuse.
+
+The original plan, for the record:
 1. Parse input as a grammar command → execute deterministically (today's behaviour, ~95% of interactions).
 2. No grammar match / free text ("залей ту задачу с логином") → hand the raw text to a LEAN headless Claude
    that maps it to a grammar command → VALIDATE (`SAFE_ID`, project mapping, the same gates the command

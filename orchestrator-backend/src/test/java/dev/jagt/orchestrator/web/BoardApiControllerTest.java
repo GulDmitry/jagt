@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.web;
 
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.TaskViews;
@@ -26,14 +27,26 @@ class BoardApiControllerTest {
     private final TaskLauncher launcher = mock(TaskLauncher.class);
     private final ConfigService configService = mock(ConfigService.class);
     private final UsageTracker usageTracker = mock(UsageTracker.class);
+    private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
     private final BoardApiController api = new BoardApiController(taskViews, commands, launcher, configService,
-            usageTracker, mock(TaskEventStream.class));
+            usageTracker, mock(TaskEventStream.class), naturalLanguage);
 
     @Test
     void executesAnActionByTheSameNameTheConsoleTakes() {
         when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: approval relayed");
 
         assertThat(api.act("ABC-1", "ship").message()).isEqualTo("ship ABC-1: approval relayed");
+    }
+
+    /** The palette adds no rule: it hands the text to the dispatcher and returns what came back, verbatim. */
+    @Test
+    void passesPaletteTextToTheDispatcherAndReturnsItsAnswerUnchanged() {
+        when(naturalLanguage.interpret("ship the login task"))
+                .thenReturn("understood as `ship a2` — ship a2: pushed");
+
+        assertThat(api.interpret(new BoardApiController.InterpretRequest("ship the login task")).message())
+                .isEqualTo("understood as `ship a2` — ship a2: pushed");
+        verifyNoInteractions(commands, launcher);
     }
 
     @Test

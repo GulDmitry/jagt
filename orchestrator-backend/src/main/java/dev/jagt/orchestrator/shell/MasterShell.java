@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StateViews;
@@ -64,17 +65,19 @@ public class MasterShell {
     private final CommandService commands;
     private final TaskLauncher launcher;
     private final StateService stateService;
+    private final NaturalLanguageDispatch naturalLanguage;
     private final ConfigurableApplicationContext context;
 
     public MasterShell(OrchestratorTools tools, StateViews views, ConfigService configService,
                        CommandService commands, TaskLauncher launcher, StateService stateService,
-                       ConfigurableApplicationContext context) {
+                       NaturalLanguageDispatch naturalLanguage, ConfigurableApplicationContext context) {
         this.tools = tools;
         this.views = views;
         this.configService = configService;
         this.commands = commands;
         this.launcher = launcher;
         this.stateService = stateService;
+        this.naturalLanguage = naturalLanguage;
         this.context = context;
     }
 
@@ -847,7 +850,9 @@ public class MasterShell {
                 case "revert" -> act(tok, TaskAction.REVERT);
                 case "respawn" -> act(tok, TaskAction.RESPAWN);
                 case "done" -> act(tok, TaskAction.DONE);
-                default -> "unknown command '" + cmd + "' — try 'help'";
+                // Tier 2: no grammar match, so the line is treated as a REQUEST rather than a typo. The
+                // model maps it to a command and CommandService executes; tokens are spent only here.
+                default -> naturalLanguage.interpret(line);
             };
             return result;
         } catch (IllegalArgumentException | IllegalStateException e) {
@@ -871,9 +876,7 @@ public class MasterShell {
 
 
     String doTask(List<String> tok) {
-        DoArgs args = parseDoArgs(tok);
-        return launcher.launch(arg(tok, 1, "do <ticket|url> [project] [plan] [notes…]"),
-                args.project(), args.mode(), args.strategy(), args.notes());
+        return launcher.launch(parseDoArgs(tok));
     }
 
     String resumeTask(List<String> tok) {

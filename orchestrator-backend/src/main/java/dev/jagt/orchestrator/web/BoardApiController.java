@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -52,21 +53,28 @@ public class BoardApiController {
     public record LaunchRequest(String ref, String project, String mode, String strategy, String notes) {
     }
 
+    /** Free text from the command palette (Cmd-K) — tier 2 of the dispatch, not a command. */
+    public record InterpretRequest(String text) {
+    }
+
     private final TaskViews taskViews;
     private final CommandService commands;
     private final TaskLauncher launcher;
     private final ConfigService configService;
     private final UsageTracker usageTracker;
     private final TaskEventStream events;
+    private final NaturalLanguageDispatch naturalLanguage;
 
     public BoardApiController(TaskViews taskViews, CommandService commands, TaskLauncher launcher,
-                              ConfigService configService, UsageTracker usageTracker, TaskEventStream events) {
+                              ConfigService configService, UsageTracker usageTracker, TaskEventStream events,
+                              NaturalLanguageDispatch naturalLanguage) {
         this.taskViews = taskViews;
         this.commands = commands;
         this.launcher = launcher;
         this.configService = configService;
         this.usageTracker = usageTracker;
         this.events = events;
+        this.naturalLanguage = naturalLanguage;
     }
 
     @GetMapping("/tasks")
@@ -97,6 +105,16 @@ public class BoardApiController {
         }
         return new ActionResult(launcher.launch(request.ref().strip(), blankToNull(request.project()),
                 blankToNull(request.mode()), blankToNull(request.strategy()), request.notes()));
+    }
+
+    /**
+     * The command palette: free text in, one executed grammar command out (or an explanation). The model that
+     * reads the text cannot execute anything — {@link NaturalLanguageDispatch} validates its proposal against
+     * the same gate the buttons use, so the palette can never do more than a button could.
+     */
+    @PostMapping("/interpret")
+    public ActionResult interpret(@RequestBody InterpretRequest request) {
+        return new ActionResult(naturalLanguage.interpret(request.text()));
     }
 
     /** "Something moved" — the browser re-fetches the board. See {@link TaskEventStream}. */
