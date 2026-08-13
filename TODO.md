@@ -203,7 +203,26 @@ servers (its `CODEX_HOME` points at the worktree, so `~/.codex/config.toml` is n
 but such an agent cannot post review replies itself — which stops mattering once `ship` moves into the
 backend (step 3).
 
-### `OrchestratorTools` is a god-facade and keeps growing
+### `OrchestratorTools` — part 1 landed, and the rest needs one big move, not three small ones
+DONE 2026-08-13: `ship` left (into `ShipService`) and the worktree file work left (into `WorktreeFiles`,
+statics with zero collaborators — its eight tests lost a ten-argument setup each). 871 → 744 lines.
+
+Then part 2 was ATTEMPTED and reverted, and the reason is the useful finding: extracting `deploy`/`prune` into
+a `RepositoryOps` makes the facade WORSE, not better. It would delegate, so it keeps the reference, and none of
+its eleven collaborators becomes unused — `GitService` and `EditorDriver` are still needed by `initializeTask`,
+`removeTask`, `openInIde` and `existingBranchProject`. Net effect: twelve dependencies instead of eleven, for
+the sake of a tidier-looking file. A refactor that raises the number it exists to lower is not one.
+
+What ACTUALLY shrinks the facade is one move, not a series: `initializeTask` + the agent-session methods
+(`openTaskTab`/`closeTaskTab`/`focusTask`/`writeTaskContext`/`openTab`/`agentSession`) leave TOGETHER, because
+they are what pull in `TmuxService`, `TerminalDriver`, `AgentRuntime`, `PromptTemplates`, `OrchestratorPaths`
+and `OrchestratorProperties` — six of the eleven. After that the facade holds state + config + git + editor +
+notifier + two services, `deploy`/`prune` can leave in the same pass without adding anything, and `resumeTask`
+belongs with `TaskLauncher` (it IS a launch). That is a single coherent change touching every caller and the
+heaviest test file in the suite — worth doing deliberately, NOT squeezed in next to two other active lanes,
+which is why it stopped here.
+
+### The original argument (unchanged)
 ~1000 lines and ELEVEN injected collaborators (the `AgentRuntime` arrived with the Codex runtime): task
 lifecycle (`initializeTask`/`removeTask`/`resumeTask`), worktree file copying (IDE files, local files), git
 operations (`deployTask`, `pruneBranches`), agent plumbing (tmux windows, status updates) and the MCP-facing
