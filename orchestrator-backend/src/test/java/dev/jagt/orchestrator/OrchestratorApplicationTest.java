@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.MeteredAssistant;
 import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.shell.MasterShell;
+import dev.jagt.orchestrator.ui.ConsoleLogging;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,17 @@ class OrchestratorApplicationTest {
         // which is itself worth knowing: merely starting up touches no state.
         assertThat(context.getBean(OrchestratorPaths.class).stateFile().toString())
                 .startsWith(root.toString());
+    }
+
+    /**
+     * The one thing about the launch that a booted context cannot show: a {@code @SpringBootTest} never runs
+     * {@code main}, so the listener that decides whether logs may be printed to the terminal would go
+     * unregistered without anything failing.
+     */
+    @Test
+    void launchesWithTheConsoleLoggingListenerRegistered() {
+        assertThat(OrchestratorApplication.application().getListeners())
+                .hasAtLeastOneElementOfType(ConsoleLogging.class);
     }
 
     @Test
