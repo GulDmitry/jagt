@@ -9,7 +9,7 @@ In dependency order; each step is detailed in its section below.
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
 | 1 | `Move`/`Phase`/`Owner`/`Action` instead of the next-move String | fundament for BOTH the UI and gate validation | 1 d |
-| 2 | `CodeHost` REST — review sweep first, then MR create/update | kills the dominant token spend + the "is it approved?" judgement flake | 2-3 d |
+| 2 | ~~`CodeHost` REST — review sweep~~ DONE; MR create/update still open | kills the dominant token spend + the "is it approved?" judgement flake | 1-2 d left |
 | 3 | `ship` = backend commit + push | kills the permission-classifier stall class; `SHIPPING` stops hanging | 1-2 d |
 | 4 | Local web UI (SSE + `/api` + static kanban) | mouse-driven, phase-legible, spend visible | 3-5 d |
 | 5 | Status-transition history in `state.json` | "which steps happened, how long did review take" | 0.5 d |
@@ -17,12 +17,26 @@ In dependency order; each step is detailed in its section below.
 
 Steps 2 and 3 are what move the remaining mechanics out of the LLM; 1 is a prerequisite for 4.
 
-Done: `assistant.model: haiku` is the shipped default (2026-08-13) — ~6x cheaper on every `do`/`resume`/poll
-($0.064 vs $0.41 a call, both with the MCP the reads actually need).
+Done: `assistant.model: haiku` is the shipped default (2026-08-13) — 8x cheaper on the same call
+($0.051 vs $0.41, both measured on `--setting-sources project`). The shipped invocation keeps the full
+`user,project,local` MCP the reads actually need, so its real figure is $0.064 a call — ~6x under the opus
+row, but that pair is NOT apples-to-apples: opus was never re-measured with the full MCP.
 The other half of that step, `--setting-sources project`, was DROPPED as a trap, see the cost entry below.
 
 Token accounting is already in (`stats` + `/stats`, the `TOKENS` dashboard column, per-task totals in
 state.json) — the numbers it measured are what re-ordered this table.
+
+Done 2026-08-13, the review-sweep half of step 2: `codehost/CodeHost` (+ `GitLabCodeHost` over v4 REST,
+`JsonHttp` transport port) and `service/ReviewReader`, which routes a sweep to REST when a configured host
+claims the URL and to the metered assistant otherwise. `ReviewSweepService` kept its guard and lost the
+metering plumbing. Opt-in via `orchestrator.code-host.{type,base-url,token}`; unconfigured = the old paid
+path. Two rules worth keeping: a REST failure never falls back to a paid read (invisible spend + a hidden
+misconfiguration), and a PARTIAL read fails whole, because "no comments + green" advances the task.
+
+Done 2026-08-13, the second `AgentRuntime` (see "Prove the pluggable seams"): `CodexAgentRuntime`, which
+forced `provisionWorktree` into the seam — worktree provisioning left `OrchestratorTools`, the context file is
+now `AGENTS.md` for everyone (Claude gets a `CLAUDE.md` symlink), and the flow no longer names an agent's
+files or prints "Claude" (`displayName()`).
 
 ## Architecture
 
@@ -86,11 +100,11 @@ replies, report back the URL) that jagt already fully specifies in prose.
 Lever: pull the DETERMINISTIC, mechanical outside ops into the backend behind a `CodeHost` strategy
 (GitLab / GitHub / … — sibling to the existing seams `AgentRuntime`/`TerminalDriver`/`UserNotifier`) and a
 `Tracker` strategy (Jira / Linear / …). Highest value first:
-- **Review sweep → code.** `MasterAssistant.readReview` → `ReviewFacts` is already a narrow, unit-tested
-  seam and `ReviewSweepService` needs NO change: implement `CodeHost.readReview(mrUrl)` as a REST call and
-  inject it in place of the headless read. 0 tokens, 0 model latency, no drift — and it removes the
-  judgement call jagt currently delegates to a model ("approved=true only if actually approved by a human,
-  not merely mergeable"), which is a field in the API, not an opinion.
+- ~~**Review sweep → code.**~~ DONE (2026-08-13): `CodeHost.readReview(mrUrl)` + `GitLabCodeHost`, routed by
+  `ReviewReader`; `ReviewFacts` moved to `model` since it is no longer an assistant-shaped thing. 0 tokens, 0
+  model latency, and the "approved by a human, not merely mergeable" judgement is now the approvals endpoint.
+  Still open on the read side: a second host (GitHub) — the seam has one implementation, same critique as
+  below — and `Tracker` for the ticket read, which is still the only reason `do` spawns a model at all.
 - **MR create/update → code.** jagt already owns the title pattern + merge-request defaults in config;
   creating/updating the request is a REST call, not a judgement. Removes a class of flake (mis-formatted
   title, agent forgets to report the URL).
@@ -110,9 +124,10 @@ into a backend that currently has ZERO AI deps. The only slot it could fill is a
 (`MasterAssistant` ticket→JSON), where bare Spring AI would already do — GOAP adds nothing. Revisit only if
 jagt ever needs its OWN reasoning (LLM-judge review, summarization), and even then prefer plain Spring AI.
 
-First experiment: `CodeHost.readReview(mrUrl)` REST impl wired into `ReviewSweepService` in place of the
-headless read; measure the token drop with the `stats` counter — that validates the whole "thicker app →
-thinner, cheaper sessions" hypothesis on one slice before committing to the full seam.
+First experiment DONE (2026-08-13): `GitLabCodeHost.readReview` is wired in behind `ReviewReader`. What is
+still MISSING is the measurement it was supposed to produce — point the config at a real host, run a task
+through a review round, and compare `stats` against the pre-REST numbers above. Until somebody does that, the
+token drop is arithmetic (a poll that spawns no process costs nothing), not evidence.
 
 ### `ship` should commit and push from the backend, not by instructing the agent
 `OrchestratorTools.ship` writes the agent a five-step prose instruction: commit with EXACTLY this title,
@@ -149,23 +164,29 @@ swaps — see the jdtls incident); headless `-p` holds nothing resident and, wit
 nearly as cheap. Revisit a local model only if API cost ever dominates.
 
 ### Prove the pluggable seams with a second implementation each
-"PLUGGABLE BY DESIGN" is an invariant with, today, exactly one implementation behind most of it:
-`AgentRuntime` = claude only, `UserNotifier` = macos only, `EditorDriver` = one CLI driver. Only
-`TerminalDriver` has two (kitty + warp), and it is the only one we know actually abstracts anything — the
-other interfaces have never been forced to accommodate a second shape, which is where such abstractions
-usually turn out to be leaky.
-The cheapest proof, and the most useful one: a second `AgentRuntime` (Codex or Qwen — `launchCommand` +
-worktree provisioning + that agent's own MCP config file, `config.toml` instead of `.mcp.json`). It also
-unblocks the E2E matrix entry below, which assumes a STUB runtime exists for CI. Do it before the seam
-accumulates more Claude-shaped assumptions, not after.
+`AgentRuntime` and `TerminalDriver` now have two implementations each (claude + codex, kitty + warp). Adding
+Codex is what MOVED provisioning into the seam — proof the critique below was right: an interface with one
+implementation had quietly left `.mcp.json`, `.claude/settings.local.json` and the word "Claude" sitting in
+`OrchestratorTools`.
+Still single-implementation, so still unproven: `UserNotifier` (macos only), `EditorDriver` (one CLI driver),
+`CodeHost` (GitLab only). The Linux port below is the natural second implementation for the first two.
+Two follow-ups the Codex runtime left behind:
+- a Codex worktree gets jagt's MCP proxy but NOT the human's own servers (its `CODEX_HOME` points at the
+  worktree, so `~/.codex/config.toml` is not read). Fine for the code, but such an agent cannot post review
+  replies itself — which only stops mattering once `ship` moves into the backend (step 3).
+- no stub `AgentRuntime` yet: the E2E matrix entry below still assumes one exists for CI. It is now a small
+  class — `launchCommand` that runs a script, `wireAgent` that writes nothing.
 
 ### `OrchestratorTools` is a god-facade and keeps growing
-~1000 lines and ten injected collaborators: task lifecycle (`initializeTask`/`removeTask`/`resumeTask`),
-worktree provisioning (IDE files, local-file copying, symlinks, generated settings), git operations
-(`deployTask`, now `pruneBranches`), agent plumbing (tmux windows, status updates) and the MCP-facing surface.
-Every new command lands here because it already has every dependency — `prune` did exactly that.
-The tell is in the tests: each one constructs it with ten arguments, so `OrchestratorToolsTest` is the
-heaviest file in the suite. Split by concern (task lifecycle / worktree provisioning / repository ops), keep
+~1000 lines and ELEVEN injected collaborators (the `AgentRuntime` arrived with the Codex runtime): task
+lifecycle (`initializeTask`/`removeTask`/`resumeTask`), worktree file copying (IDE files, local files), git
+operations (`deployTask`, `pruneBranches`), agent plumbing (tmux windows, status updates) and the MCP-facing
+surface. Every new command lands here because it already has every dependency — `prune` did exactly that.
+The agent-specific half of provisioning has left (it lives in `AgentRuntime` now), and the class did not
+shrink much: the concerns are additive, so this entry is unaffected.
+The tell is in the tests: each one constructs it with eleven arguments, so `OrchestratorToolsTest` is the
+heaviest file in the suite — and adding that eleventh argument meant a mechanical edit of 31 call sites, which
+is the cost of not having split it yet. Split by concern (task lifecycle / worktree provisioning / repo ops), keep
 `OrchestratorTools` as the thin MCP-facing facade that delegates. Do it BEFORE the next command is added, and
 expect the test setups to shrink to two or three collaborators each — that shrinkage is the proof it worked.
 
@@ -181,9 +202,10 @@ is live.
 ## Automation
 
 ### Make the auto-review poll free
-Every auto-review tick spends a headless `claude -p` (the dominant cost measured above) on a mechanical
-read. That is exactly what the `CodeHost` REST sweep removes; until it lands, `autoReview.enabled`
-defaulting to `false` is the cost guard.
+DONE for a configured host (2026-08-13, see the roadmap notes): with `orchestrator.code-host.type` set, a tick
+spends no model call at all. Without one it still spends a headless `claude -p` per tick, which is why
+`autoReview.enabled` keeps defaulting to `false` — the guard belongs to the expensive path, not to polling
+itself, so it can be flipped once a host is wired.
 
 ## UX
 
@@ -199,21 +221,22 @@ Fundament (do this before any UI work): `NextMove.forStatus(status)` →
 `Action = (id, label, primary)`, with legality computed by the SAME code as the command gates. Then:
 - the TUI renders phase + owner + actions instead of a sentence;
 - a UI can offer exactly the actions the server declared legal — an illegal move becomes unrepresentable;
-- the eleven statuses collapse into five rail steps a human reads at a glance:
+- the eleven statuses collapse into six rail steps a human reads at a glance (REVIEW = the human reading the
+  diff, which happens BEFORE `ship`; CHECK = the pipeline on the pushed branch):
 
 ```
-BUILD ──▶ CHECK ──▶ REVIEW ──▶ READY ──▶ DEPLOY ──▶ DONE
-NEW          REVIEW_   SHIPPING    REVIEWED   DEPLOYED
-IN_PROGRESS  PENDING   CI_POLLING  APPROVED   DEPLOY_CONFLICT
-                       CI_FAILED
-🤖 agent     👤 you     🤖/⚙️ CI     👤 you     👤 you
+BUILD ──▶    REVIEW ──▶ CHECK ──▶    READY ──▶  DEPLOY ──▶        DONE
+NEW          REVIEW_    SHIPPING     REVIEWED   DEPLOYED          DONE
+IN_PROGRESS  PENDING    CI_POLLING   APPROVED   DEPLOY_CONFLICT
+                        CI_FAILED
+🤖 agent     👤 you     🤖/⚙️ CI     👤 you     👤 you            —
 ```
 
 Keep `TaskStatus` as the persisted SSOT — `Phase` is a projection for humans, not a second state machine.
 
 ### Local web UI (mouse-driven), TUI stays as the fallback
 The CLI dashboard is fine as a monitor and bad as a control surface: no clicking, no per-task actions, no
-timeline, no cost. The backend is already Spring Boot Web on 8290 with `/state` + `/status`
+timeline, no cost. The backend is already Spring Boot Web on 8290 with `/state`, `/status` and `/stats`
 (`McpController`), so a local UI is a small addition, not a new stack:
 - `GET /api/tasks` — the dashboard projection plus `phase`/`owner`/`actions` from the entry above;
 - `GET /api/events` — SSE. `StateService` already funnels every mutation through one lock, so a listener
@@ -225,8 +248,8 @@ timeline, no cost. The backend is already Spring Boot Web on 8290 with `/state` 
   `localhost:8290`.
 
 Card per task in a column per phase: alias + ticket + title, owner badge, time-in-current-state, the MR
-link, the drafted-replies indicator, and buttons = the legal actions (`ide`, `ship`, `sweep`, `deploy`,
-`done`, `focus`). Header: how many tasks are waiting on YOU, and today's master-side token cost (`stats`).
+link, the drafted-replies indicator, and buttons = the legal actions (`ide`, `ship`, `review` — `sweep`
+after the rename below, `deploy`, `done`, `focus`). Header: how many tasks are waiting on YOU, and today's master-side token cost (`stats`).
 
 Phase 2, only if the basic UI proves itself: embed the agent terminal instead of switching windows —
 `ttyd -W tmux attach -t jagt` in an iframe makes `focus` a click in the browser. That is a new install

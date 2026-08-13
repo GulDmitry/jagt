@@ -10,13 +10,16 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - `orchestrator-backend/` — Spring Boot app ("The Brain") AND the Master console itself: state manager,
   Git lock, MCP HTTP server (`POST /mcp`), Watchdog, auto-review scheduler, macOS automation (osascript).
   Run the jar in a real terminal (see Build & run) — the process IS the Master TUI.
-  The backend talks to NO external systems (no GitLab/Jira API clients, no tokens): the outside is READ
-  through a one-shot headless agent that inherits the human's own MCP (see Master assistant), and every
-  outside WRITE (push, merge request, review replies) is done by the task's sub-agent via its own MCP.
+  The backend NEVER WRITES to an external system: every outside write (push, merge request, review replies)
+  is done by the task's sub-agent via its own MCP. Outside READS have two paths — a one-shot headless agent
+  that inherits the human's own MCP (see Master assistant), and, when configured, the read-only `CodeHost`
+  REST seam (see PLUGGABLE BY DESIGN). The REST path is opt-in and needs a token in the environment
+  (`orchestrator.code-host.*`); with none configured the backend holds no credential at all.
 - `mcp_client.js` — Node.js stdio→HTTP MCP proxy. Injects `process.cwd()` as `X-Working-Directory` header
   so the backend knows which agent is calling. Symlinked into every worktree.
 - `.mcp.json` — Claude Code project MCP config pointing at `mcp_client.js` (spec called it `.claude.json`;
-  `.mcp.json` is what Claude Code actually reads). Symlinked into every worktree.
+  `.mcp.json` is what Claude Code actually reads). Symlinked into a CLAUDE worktree by `ClaudeAgentRuntime`;
+  other runtimes write their own equivalent (Codex: `.codex/config.toml`) — it is not a universal file.
 - `config.json` — user config, grouped into logical sections: `projects` (path, baseBranch,
   deployBranch, labels), `viewer` (tmuxSession, viewMode shared|tab-per-task, keepViewer), `dashboard`
   (refreshSeconds, reservedRows), `codeReview` (mrTitlePattern, postReviewReplies, reviewReplyAuthors,
@@ -119,16 +122,25 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   … — any MCP-capable CLI). Everything OS- or agent-specific lives behind a STRATEGY INTERFACE, selected by
   config, so adding a new one is "implement the interface + register a config value" — NEVER a hardcoded
   `if claude`/`if macos` sprinkled through the flow. The agent-agnostic task flow (create worktree →
-  provision → launch → talk over MCP) must stay free of any single agent's assumptions. The four seams:
+  provision → launch → talk over MCP) must stay free of any single agent's assumptions. The five seams:
   - `UserNotifier` (`orchestrator.platform`, default macos), `TerminalDriver` (`orchestrator.terminal`,
     default `kitty`; `warp` too), `EditorDriver` (`orchestrator.editor-command`) — in `…platform`.
-  - `AgentRuntime` (`…agent`, `orchestrator.agent`, default `claude`) — the pluggable AI-agent CLI:
-    `launchCommand` + (worktree provisioning + per-agent MCP config) live here. `mcp_client.js` is a
-    STANDARD, agent-agnostic MCP stdio↔HTTP proxy (keep it that way); only the config that declares it
-    differs per agent (Claude `.mcp.json`, Codex `config.toml`, …) and belongs in each `AgentRuntime`.
-  - The shared system-knowledge file is `AGENTS.md` (the cross-agent convention); Claude reads `CLAUDE.md`,
-    so its runtime symlinks `CLAUDE.md` → `AGENTS.md`. A new agent = one `AgentRuntime` impl; a Linux port
-    = new `UserNotifier`/`TerminalDriver`/`EditorDriver` impls. Nothing else should need to change.
+  - `AgentRuntime` (`…agent`, `orchestrator.agent`, `claude` default, `codex` the second impl) — the
+    pluggable AI-agent CLI: `launchCommand` AND worktree provisioning (`provisionWorktree`, a template in
+    `AbstractAgentRuntime` + one per-agent hook) live here. `mcp_client.js` is a STANDARD, agent-agnostic MCP
+    stdio↔HTTP proxy (keep it that way) and is linked by the template; only the config that declares it
+    differs per agent (Claude `.mcp.json` + `.claude/settings.local.json`, Codex `.codex/config.toml` with
+    `CODEX_HOME` pointed at the worktree) and belongs in each `AgentRuntime`. Nothing outside the runtime may
+    name an agent's files — `OrchestratorTools` only calls `provisionWorktree` and `displayName`.
+  - `CodeHost` (`…codehost`, `orchestrator.code-host.type`, default none) — READ-ONLY REST reads of a review
+    request, so the sweep costs no model call. Implementations must never write (no push/merge/comment), and
+    `ReviewReader` deliberately does NOT fall back to the paid headless read when a configured host fails:
+    that would spend money invisibly and hide the misconfiguration. A partial REST read must fail whole —
+    "no unresolved comments + green pipeline" ADVANCES a task.
+  - The shared system-knowledge file is `AGENTS.md` (the cross-agent convention, `AgentRuntime
+    .SYSTEM_KNOWLEDGE_FILE`); Claude reads `CLAUDE.md`, so its runtime symlinks `CLAUDE.md` → `AGENTS.md` —
+    one file, never two copies to drift. A new agent = one `AgentRuntime` impl; a Linux port = new
+    `UserNotifier`/`TerminalDriver`/`EditorDriver` impls. Nothing else should need to change.
 - `KittyTerminalDriver` drives kitty via its remote-control CLI (`kitty @ --to unix:<per-session
   socket>`): one dedicated instance (`--single-instance --instance-group --listen-on -o
   allow_remote_control=yes`), tabs titled + closable (unlike Warp). Runs OVER tmux (tab execs `tmux
@@ -166,8 +178,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   or re-create the task to pick up a changed allow-list.
 
 ## Master assistant (headless one-shot)
-- The backend talks to no external systems, but `do <ticket>` needs the ticket read BEFORE a
-  worktree/agent exists (and `review`/the auto-review poll need the review request read).
+- The backend has no tracker client, but `do <ticket>` needs the ticket read BEFORE a worktree/agent exists.
+  The review sweep also goes through here UNLESS a `CodeHost` is configured — with one, `ReviewReader` takes
+  the free REST path and this assistant is never spawned for that poll (the dominant per-task cost).
   `HeadlessClaudeAssistant` (`MasterAssistant`) spawns a one-shot
   `claude "<prompt>" -p --setting-sources user,project,local --json-schema '<schema>'` (stdin
   `/dev/null` via `ProcessRunner`). It hardcodes NO MCP server or path — `--setting-sources` makes the

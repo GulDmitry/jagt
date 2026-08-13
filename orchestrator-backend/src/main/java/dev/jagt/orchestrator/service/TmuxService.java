@@ -56,7 +56,7 @@ public class TmuxService {
             // The agent gets its bootstrap prompt as CLI arg — without it the session idles forever.
             // After the agent exits the window shows the tail briefly, then closes itself
             // (an interactive shell here would linger forever and ignore Ctrl+C).
-            String command = agentRuntime.launchCommand(planMode)
+            String command = agentRuntime.launchCommand(worktreePath, planMode)
                     + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
             // -P -F prints the window id (@N): the only target immune to name
             // collisions when the same task is respawned via open_task_tab.

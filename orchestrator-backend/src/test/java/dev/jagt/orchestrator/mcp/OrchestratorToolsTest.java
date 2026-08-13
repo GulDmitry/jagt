@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.mcp;
 
+import dev.jagt.orchestrator.agent.ClaudeAgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
@@ -58,7 +59,7 @@ class OrchestratorToolsTest {
         when(git.currentBranch(any(Path.class))).thenReturn("main");
         OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String result = tools.pruneBranches(false);
 
@@ -87,7 +88,7 @@ class OrchestratorToolsTest {
                 .thenReturn(Optional.of("error: branch is checked out at /wt"));
         OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String result = tools.pruneBranches(true);
 
@@ -126,7 +127,7 @@ class OrchestratorToolsTest {
         when(git.deleteLocalBranch(any(Path.class), eq("ABC-40"))).thenReturn(Optional.empty());
         OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String result = tools.pruneBranches(true);
 
@@ -148,7 +149,7 @@ class OrchestratorToolsTest {
                 .thenThrow(new IllegalStateException("git branch --merged origin/dev failed: no such ref"));
         OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String result = tools.pruneBranches(false);
 
@@ -169,7 +170,7 @@ class OrchestratorToolsTest {
         when(tmux.killTaskWindows("jagt", "TEST-1")).thenReturn(1);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String result = tools.closeTaskTab("t1", null);
 
@@ -191,7 +192,7 @@ class OrchestratorToolsTest {
         when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.closeTaskTab("t1", null);
 
@@ -213,7 +214,7 @@ class OrchestratorToolsTest {
         TerminalDriver terminal = mock(TerminalDriver.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), terminal, mock(UserNotifier.class), properties, paths,
-                new PromptTemplates());
+                new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.removeTask("a1", null);
 
@@ -236,7 +237,7 @@ class OrchestratorToolsTest {
         TerminalDriver terminal = mock(TerminalDriver.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), terminal, mock(UserNotifier.class), properties, paths,
-                new PromptTemplates());
+                new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.removeTask("a1", null);
 
@@ -259,7 +260,7 @@ class OrchestratorToolsTest {
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String out = tools.openInIde("a1", null, null);
 
@@ -278,7 +279,7 @@ class OrchestratorToolsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.updateAgentStatus("CI_POLLING", "MR: https://gitlab/x/-/merge_requests/9", "ABC-1", null);
 
@@ -295,7 +296,7 @@ class OrchestratorToolsTest {
         UserNotifier notifier = mock(UserNotifier.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                notifier, properties, paths, new PromptTemplates());
+                notifier, properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.updateAgentStatus("REVIEW_PENDING", "done", "ABC-1", "ABC-1");
 
@@ -312,7 +313,7 @@ class OrchestratorToolsTest {
         UserNotifier notifier = mock(UserNotifier.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                notifier, properties, paths, new PromptTemplates());
+                notifier, properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.updateAgentStatus("IN_PROGRESS", "step 2", "ABC-1", "ABC-1");
 
@@ -386,7 +387,7 @@ class OrchestratorToolsTest {
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
                 editor, mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths,
-                new PromptTemplates());
+                new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.openInIde("a1", "diff", null);
 
@@ -403,7 +404,7 @@ class OrchestratorToolsTest {
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.openInIde("a1", null, null);
 
@@ -420,7 +421,7 @@ class OrchestratorToolsTest {
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), editor, mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.openInIde("a1", "project", null);
 
@@ -456,7 +457,7 @@ class OrchestratorToolsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         assertThatThrownBy(() -> tools.updateAgentStatus("CI_POLLING", "branch pushed", "ABC-1", null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -472,7 +473,7 @@ class OrchestratorToolsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.updateAgentStatus("CI_POLLING", "MR: https://gitlab.example/g/p/-/merge_requests/1", "ABC-1", null);
 
@@ -488,7 +489,7 @@ class OrchestratorToolsTest {
         state.putTask("OTHER-1", TaskState.builder("proj", "/other", TaskStatus.IN_PROGRESS).alias("o1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         assertThatThrownBy(() -> tools.updateAgentStatus("DONE", null, "OTHER-1", "MINE-1"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -504,7 +505,7 @@ class OrchestratorToolsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class), state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.updateAgentStatus("IN_PROGRESS", "root cause\nanalysis ".repeat(20), "ABC-1", null);
 
@@ -522,7 +523,7 @@ class OrchestratorToolsTest {
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
                 new StateService(new JsonMapper(), paths), git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         assertThatThrownBy(() -> tools.initializeTask(unsafeTaskId, "proj", null, null, null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -539,7 +540,7 @@ class OrchestratorToolsTest {
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
                 new StateService(new JsonMapper(), paths), git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         assertThatThrownBy(() -> tools.initializeTask("ABC-1", "proj", null, "bogus", null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -561,7 +562,7 @@ class OrchestratorToolsTest {
         OrchestratorTools tools = new OrchestratorTools(config,
                 new StateService(new JsonMapper(), paths), git, mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         assertThatThrownBy(() -> tools.initializeTask("ABC-9", "proj", null, null, null, null, null))
                 .isInstanceOf(IllegalStateException.class);
@@ -582,7 +583,7 @@ class OrchestratorToolsTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.deployTask("a1", null);
 
@@ -608,7 +609,7 @@ class OrchestratorToolsTest {
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
         EditorDriver editor = mock(EditorDriver.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class), editor,
-                mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(TerminalDriver.class), mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String result = tools.deployTask("a1", null);
 
@@ -633,7 +634,7 @@ class OrchestratorToolsTest {
         GitService git = mock(GitService.class);
         OrchestratorTools tools = new OrchestratorTools(config, state, git,
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         assertThatThrownBy(() -> tools.deployTask("a1", null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -652,7 +653,7 @@ class OrchestratorToolsTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", null, null));
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
-                mock(UserNotifier.class), properties, paths, new PromptTemplates());
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         assertThatThrownBy(() -> tools.deployTask("ABC-1", null))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -667,7 +668,7 @@ class OrchestratorToolsTest {
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
                 new StateService(new JsonMapper(), paths), mock(GitService.class), mock(TmuxService.class),
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         assertThatThrownBy(() -> tools.deployTask("ABC-1", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -689,7 +690,7 @@ class OrchestratorToolsTest {
         when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String result = tools.writeTaskContext("a1", "new instructions");
 
@@ -710,7 +711,7 @@ class OrchestratorToolsTest {
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.MISSING);
         OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class), tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         String result = tools.writeTaskContext("a1", "new instructions");
 
@@ -738,30 +739,11 @@ class OrchestratorToolsTest {
         when(tmux.sessionName(null)).thenReturn("jagt");
         OrchestratorTools tools = new OrchestratorTools(config, state, git, tmux,
                 mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
-                properties, paths, new PromptTemplates());
+                properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
 
         tools.initializeTask("ABC-2", "proj", null, null, null, null, null);
 
         assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
-    }
-
-    @Test
-    void pinsConfiguredOutputStyleInGeneratedAgentSettings() {
-        String json = OrchestratorTools.agentSettingsJson("sob-ai:Engineer", null);
-
-        String style = new JsonMapper().readTree(json).path("outputStyle").asText(null);
-
-        assertThat(style).isEqualTo("sob-ai:Engineer");
-    }
-
-    @Test
-    void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
-        String json = OrchestratorTools.agentSettingsJson(null, null);
-
-        List<String> allow = new java.util.ArrayList<>();
-        new JsonMapper().readTree(json).path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
-
-        assertThat(allow).contains("mcp__jagt-orchestrator", "Bash(git:*)");
     }
 
     @Test
@@ -838,13 +820,4 @@ class OrchestratorToolsTest {
         assertThat(OrchestratorTools.gitProjectPath(remote)).isEqualTo(expected);
     }
 
-    @Test
-    void disablesConfiguredPluginsInGeneratedAgentSettings() {
-        String json = OrchestratorTools.agentSettingsJson(null, List.of("jdtls-lsp@claude-plugins-official"));
-
-        boolean enabled = new JsonMapper().readTree(json)
-                .path("enabledPlugins").path("jdtls-lsp@claude-plugins-official").asBoolean(true);
-
-        assertThat(enabled).isFalse();
-    }
 }

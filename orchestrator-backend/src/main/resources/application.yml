@@ -41,11 +41,20 @@ orchestrator:
   # `ide <ticket> diff` opens a diff window (task changes vs base) — needs the idea binary,
   # `open -a` can't diff. Paths are appended: <left> <right>.
   editor-diff-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea", "diff"]
+  # Which agent CLI runs the sub-agents (the AgentRuntime seam): claude (default) or codex. The runtime writes
+  # its own MCP config into each worktree; the system-knowledge file is always AGENTS.md (Claude gets a
+  # CLAUDE.md symlink to it). A Codex worktree runs against its OWN CODEX_HOME, so your ~/.codex MCP servers
+  # are not inherited there.
+  # agent: claude
+  # codex:
+  #   command: codex
+  # The `claude` binary — used by the Claude runtime AND by the master assistant's headless reads, which stay
+  # Claude regardless of which agent runs the tasks.
   claude-command: claude
   # Initial prompt every spawned sub-agent starts with (otherwise the session idles).
   agent-prompt: >-
     You are the sub-agent for this worktree. Read task_context.md, set your status to IN_PROGRESS
-    via update_agent_status, and start working on the task. Follow the rules in CLAUDE.md. Work
+    via update_agent_status, and start working on the task. Follow the rules in AGENTS.md. Work
     autonomously, but do NOT commit, push, or open a merge request on your own — leave ALL changes
     UNCOMMITTED so the human reviews your working tree; committing happens ONLY when task_context.md
     later instructs it (that is the human's `ship`). When done and verified, set status REVIEW_PENDING.
@@ -65,6 +74,15 @@ orchestrator:
     # the ticket-read needs. bypassPermissions lifts the gate; or blank it and scope to named servers:
     permission-mode: bypassPermissions
     # allowed-tools: mcp__your-jira-mcp,mcp__your-gitlab-mcp   # takes precedence over permission-mode
+  # Read the review sweep over the code host's REST API instead of paying a headless model call per poll.
+  # The sweep is mechanical — approved? pipeline? unresolved threads? are API fields, not judgements — so over
+  # REST it costs nothing, returns instantly and cannot drift. READ-ONLY: jagt never pushes, merges or posts
+  # here; every outward write stays the human's `ship`/`deploy` through the agent. Blank type = not wired, and
+  # sweeps keep going through the (paid) assistant read.
+  code-host:
+    type: ${CODE_HOST_TYPE:}          # gitlab (the only implementation today); blank = disabled
+    base-url: ${CODE_HOST_URL:}       # https://gitlab.example.com — URLs are only read under this prefix
+    token: ${CODE_HOST_TOKEN:}        # read-only API token; keep it in the environment, never in a file
   # Plugins disabled in each agent worktree's settings.local.json. Default EMPTY: agents KEEP their
   # LSP (code intelligence — go-to-def, references, diagnostics; worth the RAM). jagt reaps each
   # worktree's JDT server on `done` so finished tasks don't leave servers behind. Only opt in below

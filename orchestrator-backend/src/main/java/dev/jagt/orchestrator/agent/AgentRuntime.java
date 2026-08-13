@@ -1,23 +1,42 @@
 package dev.jagt.orchestrator.agent;
 
+import java.nio.file.Path;
+
 /**
  * The pluggable AI-agent runtime — what jagt spawns per task and how it wires that agent to the
- * orchestrator. One implementation per agent CLI (Claude Code today; Codex/Gemini/… later), selected by
+ * orchestrator. One implementation per agent CLI (Claude Code, Codex, …), selected by
  * {@code orchestrator.agent} exactly like the {@code platform} strategies
  * ({@link dev.jagt.orchestrator.platform.TerminalDriver} etc.). Everything agent-specific — the launch
- * command, and (later) the worktree config + MCP callback wiring — lives behind this seam so the task
- * flow stays agent-agnostic.
+ * command, the agent's own MCP config file, the settings that let it run unattended — lives behind this seam
+ * so the task flow (create worktree → provision → launch → talk over MCP) stays agent-agnostic.
  *
- * <p>Grows by milestone: launch first; worktree provisioning + MCP artifacts land with the provisioner.
+ * <p>A new agent is therefore one class: implement this, register a config value. If something else has to
+ * change to add one, that is the pluggable-by-design invariant leaking and belongs here instead.
  */
 public interface AgentRuntime {
+
+    /**
+     * The cross-agent system-knowledge file jagt writes into every worktree (the {@code AGENTS.md}
+     * convention). A runtime whose CLI insists on another name aliases it in {@link #provisionWorktree} —
+     * jagt never writes the same knowledge twice, because two copies drift.
+     */
+    String SYSTEM_KNOWLEDGE_FILE = "AGENTS.md";
 
     /** Human-facing agent name (e.g. "Claude") for dashboard/log messages. */
     String displayName();
 
     /**
-     * The agent CLI invocation to run inside a worktree window — a bare shell command; the terminal
-     * driver wraps it (tmux window, exit tail, …). The agent's bootstrap prompt rides inside it.
+     * The agent CLI invocation to run inside {@code worktree} — a bare shell command executed with the
+     * worktree as the working directory; the terminal driver wraps it (tmux window, exit tail, …). The
+     * agent's bootstrap prompt rides inside it.
      */
-    String launchCommand(boolean planMode);
+    String launchCommand(Path worktree, boolean planMode);
+
+    /**
+     * Writes what this agent needs to run in a fresh worktree: the config that declares jagt's MCP proxy
+     * (Claude {@code .mcp.json}, Codex {@code config.toml}, …), whatever lifts its permission prompts (nobody
+     * watches the tmux window to answer one), and its alias for {@link #SYSTEM_KNOWLEDGE_FILE}. Called once
+     * per task, before the agent starts.
+     */
+    void provisionWorktree(AgentWorktree worktree);
 }

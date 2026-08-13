@@ -39,9 +39,11 @@ them; it relies only on whatever MCP your session exposes, so the concrete vendo
 - **Issue tracker** — where tickets live. Jira, Linear, GitHub Issues, or a plain URL to anything: a ticket
   is just an id, a title, and (maybe) a link to open.
 - **Version-control host** — where branches, pushes, and review requests live. GitLab, GitHub, Bitbucket —
-  any `http(s)` git remote and its merge/pull requests.
-- **AI coding agent** — the per-ticket worker session. Claude Code (default), Codex, Qwen — any MCP-capable
-  CLI.
+  any `http(s)` git remote and its merge/pull requests. Optionally jagt also READS one directly
+  (`orchestrator.code-host.type=gitlab`) so review sweeps cost no model call; it never writes there.
+- **AI coding agent** — the per-ticket worker session. Claude Code (default) or Codex today, any MCP-capable
+  CLI in principle: one runtime class each. Note that a Codex worktree gets jagt's MCP proxy but not your own
+  MCP servers (Codex reads them from `$CODEX_HOME`, which jagt points at the worktree).
 - **Terminal** — the window your agents run in, and where you drive the Master console. kitty or Warp.
 
 Plus an **editor** (IntelliJ IDEA today) and a **desktop notifier** for the human checkpoints. Every one of
@@ -79,7 +81,7 @@ service.
 | tool | install | used for |
 |------|---------|----------|
 | Java 25+ | `sdk install java 25-tem` | the backend / Master console |
-| an agent CLI | [Claude Code](https://claude.com/claude-code) — default; swap via `orchestrator.agent` | the agents |
+| an agent CLI | [Claude Code](https://claude.com/claude-code) (`orchestrator.agent=claude`, default) or the Codex CLI (`=codex`) | the agents |
 | tmux | `brew install tmux` | persistent agent sessions |
 | Node 18+ | `brew install node` | the MCP proxy jagt injects into worktrees |
 | git | Xcode CLT or `brew install git` | worktrees |
@@ -214,12 +216,16 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.kitty-font-size` | viewer font size for the kitty terminal (blank keeps kitty.conf's own) |
 | `orchestrator.editor-command` | editor launcher list (default `[/Applications/IntelliJ IDEA.app/Contents/MacOS/idea]`; e.g. `[code]`) |
 | `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` |
-| `orchestrator.agent` | which AI agent runtime — `claude` (default), and future MCP-capable CLIs; the pluggable seam |
-| `orchestrator.claude-command` | binary for the `claude` runtime (default `claude`) |
+| `orchestrator.agent` | which AI agent runtime — `claude` (default) or `codex`; the pluggable seam, one class per CLI |
+| `orchestrator.claude-command` | the `claude` binary — the agent runtime AND the master assistant's headless reads (default `claude`) |
+| `orchestrator.codex.command` | the `codex` binary for `orchestrator.agent=codex` (default `codex`) |
 | `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits (default `user,project,local`) |
 | `orchestrator.assistant.model` | model for every master-assistant read — ticket, MR, review sweep (default `haiku`: ~$0.06 a call vs ~$0.41 on the inherited default; blank = your default) |
 | `orchestrator.assistant.permission-mode` | lifts the headless permission gate so the ticket-read can call MCP (default `bypassPermissions`) |
 | `orchestrator.assistant.allowed-tools` | comma-separated `mcp__<server>` allow-list; scopes the bypass, takes precedence over permission-mode |
+| `orchestrator.code-host.type` | read review sweeps over the host's REST API instead of a paid model call: `gitlab`, or blank = off (default) |
+| `orchestrator.code-host.base-url` | the host root, e.g. `https://gitlab.example.com`; a review URL is only read under this prefix |
+| `orchestrator.code-host.token` | read-only API token (env, e.g. `CODE_HOST_TOKEN`) — jagt only GETs: never a push, merge or comment |
 | `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
 | `orchestrator.tmux-command` | tmux binary (default `/opt/homebrew/bin/tmux`) |

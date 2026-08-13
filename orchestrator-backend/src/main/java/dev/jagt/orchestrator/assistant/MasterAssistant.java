@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.assistant;
 
+import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
 
 import java.util.List;
@@ -26,13 +27,6 @@ public interface MasterAssistant {
 
     /** Facts about an existing merge request. {@code exists=false} means the URL resolved to nothing. */
     record MergeRequestFacts(boolean exists, String sourceBranch, String projectPath, String title) {
-    }
-
-    /**
-     * A review sweep of an MR: whether it is APPROVED, its latest pipeline result, and every UNRESOLVED
-     * discussion note (bots + humans), each pre-formatted as one line for relaying to the agent.
-     */
-    record ReviewFacts(boolean exists, boolean approved, String pipelineStatus, List<String> comments) {
     }
 
     /**

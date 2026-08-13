@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.mcp;
 
+import dev.jagt.orchestrator.agent.ClaudeAgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
@@ -86,7 +87,7 @@ class OrchestratorToolsAutoReviewTest {
             when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
             this.tools = new OrchestratorTools(config, state, mock(GitService.class), mock(TmuxService.class),
                     mock(EditorDriver.class), mock(TerminalDriver.class), notifier, properties, paths,
-                    new PromptTemplates());
+                    new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
         }
     }
 }

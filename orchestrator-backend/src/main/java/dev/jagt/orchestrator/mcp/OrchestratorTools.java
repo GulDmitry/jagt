@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.mcp;
 
+import dev.jagt.orchestrator.agent.AgentRuntime;
+import dev.jagt.orchestrator.agent.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
@@ -32,8 +34,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Implements the MCP tools exposed to Master and Sub-agent Claude sessions.
- * The callerTaskId (resolved from the X-Working-Directory header) scopes
+ * Implements the MCP tools exposed to the Master and to the sub-agent sessions (whichever
+ * {@link AgentRuntime} is active). The callerTaskId (resolved from the X-Working-Directory header) scopes
  * tool execution: a sub-agent may only act on its own task.
  */
 @Service
@@ -53,6 +55,7 @@ public class OrchestratorTools {
     private final OrchestratorProperties properties;
     private final OrchestratorPaths paths;
     private final PromptTemplates prompts;
+    private final AgentRuntime agentRuntime;
     /** Plugins the agent sessions should NOT load — heavy LSP plugins spawn a ~1-2GB JDT server per
      *  worktree and agents don't need them (they have file tools). Field-injected so the many test
      *  constructors need no change; null in tests = disable nothing. */
@@ -62,7 +65,8 @@ public class OrchestratorTools {
     public OrchestratorTools(ConfigService configService, StateService stateService, GitService gitService,
                              TmuxService tmuxService, EditorDriver editorDriver, TerminalDriver terminalDriver,
                              UserNotifier userNotifier, OrchestratorProperties properties, OrchestratorPaths paths,
-                             PromptTemplates prompts) {
+                             PromptTemplates prompts, AgentRuntime agentRuntime) {
+        this.agentRuntime = agentRuntime;
         this.configService = configService;
         this.stateService = stateService;
         this.gitService = gitService;
@@ -111,10 +115,10 @@ public class OrchestratorTools {
         try {
             remoteUrl = gitService.remoteUrl(projectPath);
             excludeOrchestratorFiles(projectPath);
-            linkOrchestratorFiles(worktreePath);
+            provisionForAgent(worktreePath);
             copyIdeProjectFiles(projectPath, worktreePath);
             copyLocalFiles(projectPath, worktreePath, configService.load().worktree().copyGlobsOrDefault());
-            writeString(worktreePath.resolve("CLAUDE.md"),
+            writeString(worktreePath.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE),
                     subAgentContext(taskId, projectKey, project, worktreePath, remoteUrl, config));
             if (instructions != null && !instructions.isBlank()) {
                 writeString(worktreePath.resolve("task_context.md"), instructions);
@@ -147,12 +151,13 @@ public class OrchestratorTools {
                 + (strategy == GitService.BranchStrategy.RESUME
                         ? ", RESUMED with its existing commits"
                         : " from " + project.baseBranch()) + ")\n"
-                + "- Claude sub-agent started in tmux window '" + taskId + "' of session '" + session
+                + "- " + agentRuntime.displayName() + " sub-agent started in tmux window '" + taskId
+                + "' of session '" + session
                 + "' (a Warp window attaches automatically; manual: tmux attach -t " + session + ")\n"
                 + (plan
                         ? "- PLAN MODE: the agent plans first; the human approves the plan in its tmux window\n"
                         : "")
-                + "- sub-agent context written to CLAUDE.md"
+                + "- sub-agent context written to " + AgentRuntime.SYSTEM_KNOWLEDGE_FILE
                 + (instructions != null && !instructions.isBlank() ? ", instructions to task_context.md" : "");
     }
 
@@ -205,7 +210,7 @@ public class OrchestratorTools {
         TaskState task = requireTask(taskId);
         String session = openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(),
                 planMode(mode));
-        return "New Claude session started for " + taskId + " in tmux window '" + taskId + "' of session '"
+        return "New " + agentRuntime.displayName() + " session started for " + taskId + " in tmux window '" + taskId + "' of session '"
                 + session + "' (worktree " + task.worktreePath() + ")"
                 + (planMode(mode) ? " in PLAN MODE" : "");
     }
@@ -281,7 +286,7 @@ public class OrchestratorTools {
                 agentSession(configService.load(), taskId), taskId);
         return killed == 0
                 ? "No tmux window named '" + taskId + "' found — the session was already closed."
-                : "Closed " + killed + " tmux window(s) for " + taskId + "; the Claude session is terminated. "
+                : "Closed " + killed + " tmux window(s) for " + taskId + "; the " + agentRuntime.displayName() + " session is terminated. "
                         + "Worktree kept: " + task.worktreePath();
     }
 
@@ -720,7 +725,7 @@ public class OrchestratorTools {
                         ? " and raised the agents window"
                         : " — but the agents viewer is a TAB, not a window: the terminal has no API to"
                                 + " switch tabs, so click the agents tab yourself (or keep it as its own window)")
-                + (respawned ? "; the session was dead, started a fresh Claude session" : "");
+                + (respawned ? "; the session was dead, started a fresh " + agentRuntime.displayName() + " session" : "");
     }
 
     private String resolveTaskId(String explicitTaskId, String callerTaskId) {
@@ -834,61 +839,13 @@ public class OrchestratorTools {
                 activeTasks.isBlank() ? "- (none)" : activeTasks);
     }
 
-    private void linkOrchestratorFiles(Path worktreePath) {
-        symlink(worktreePath.resolve("mcp_client.js"), paths.root().resolve("mcp_client.js"));
-        symlink(worktreePath.resolve(".mcp.json"), paths.root().resolve(".mcp.json"));
-        // Without this flag every spawned Claude session stops at an interactive
-        // "New MCP server found" approval prompt and the sub-agent never starts.
-        try {
-            Files.createDirectories(worktreePath.resolve(".claude"));
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot create .claude dir in " + worktreePath, e);
-        }
-        // Server approval alone is not enough: Claude's auto-mode classifier still gates
-        // individual tool calls, silently freezing agents on invisible prompts nobody in the
-        // tmux window answers — MCP calls (even notify_user) and the agent's own git commit/push
-        // on ship. Pre-allow the jagt tools and the worktree's git. The optional agentOutputStyle
-        // from config.json is pinned here (a worktree is an untrusted project where the human's
-        // global style may not apply); default null → omitted.
-        writeString(worktreePath.resolve(".claude").resolve("settings.local.json"),
-                agentSettingsJson(configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
-    }
-
     /**
-     * The generated worktree {@code .claude/settings.local.json}: pre-approves the jagt MCP tools and
-     * the agent's own git, optionally pins {@code agentOutputStyle}, and disables the given plugins (heavy
-     * LSP plugins spawn a JDT server per worktree — agents don't need them). Valid JSON in all cases.
+     * Everything the AGENT needs in its fresh worktree — which of those files exist, and what is in them,
+     * belongs to the runtime, not here: this method must never learn what a given agent's MCP config is called.
      */
-    static String agentSettingsJson(String outputStyle, List<String> disabledPlugins) {
-        String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
-                : "\n  \"outputStyle\": \"" + outputStyle.replace("\\", "\\\\").replace("\"", "\\\"") + "\",";
-        String pluginsLine = "";
-        if (disabledPlugins != null) {
-            String entries = disabledPlugins.stream()
-                    .filter(p -> p != null && !p.isBlank())
-                    .map(p -> "\"" + p.strip() + "\": false")
-                    .collect(Collectors.joining(", "));
-            if (!entries.isBlank()) {
-                pluginsLine = "\n  \"enabledPlugins\": {" + entries + "},";
-            }
-        }
-        return """
-                {%s%s
-                  "enableAllProjectMcpServers": true,
-                  "permissions": {
-                    "allow": ["mcp__jagt-orchestrator", "Bash(git:*)"]
-                  }
-                }
-                """.formatted(styleLine, pluginsLine);
-    }
-
-    private void symlink(Path link, Path target) {
-        try {
-            Files.deleteIfExists(link);
-            Files.createSymbolicLink(link, target);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot create symlink " + link + " -> " + target, e);
-        }
+    private void provisionForAgent(Path worktreePath) {
+        agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
+                configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
     }
 
     /**
@@ -897,8 +854,8 @@ public class OrchestratorTools {
      * tracked CLAUDE.md is unaffected.
      */
     private void excludeOrchestratorFiles(Path projectPath) {
-        List<String> entries = List.of("mcp_client.js", ".mcp.json", "CLAUDE.md", "task_context.md",
-                "review_replies.md", ".claude/", ".run/");
+        List<String> entries = List.of("mcp_client.js", ".mcp.json", "AGENTS.md", "CLAUDE.md",
+                "task_context.md", "review_replies.md", ".claude/", ".codex/", ".run/");
         try {
             Path exclude = gitService.gitCommonDir(projectPath).resolve("info").resolve("exclude");
             Files.createDirectories(exclude.getParent());

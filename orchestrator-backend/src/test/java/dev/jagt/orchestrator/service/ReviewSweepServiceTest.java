@@ -1,9 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.assistant.MasterAssistant.ReviewFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.model.ReviewFacts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,10 +22,10 @@ import static org.mockito.Mockito.when;
 
 class ReviewSweepServiceTest {
 
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
+    private final ReviewReader reviewReader = mock(ReviewReader.class);
     private final OrchestratorTools tools = mock(OrchestratorTools.class);
     private final StateService stateService = mock(StateService.class);
-    private final ReviewSweepService sweep = new ReviewSweepService(assistant, tools, stateService);
+    private final ReviewSweepService sweep = new ReviewSweepService(reviewReader, tools, stateService);
 
     @BeforeEach
     void tasksAreAddressedByTheirIdUnlessATestSaysOtherwise() {
@@ -37,8 +35,8 @@ class ReviewSweepServiceTest {
     @Test
     void advancesToApprovedWhenTheMrIsApprovedAndClean() {
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(
-                Optional.of(new ReviewFacts(true, true, "success", List.of())), TokenUsage.NONE));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
 
         var result = sweep.sweep("ABC-1");
 
@@ -50,8 +48,8 @@ class ReviewSweepServiceTest {
     @Test
     void marksReviewedWhenGreenAndCleanButNotYetApproved() {
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(
-                Optional.of(new ReviewFacts(true, false, "success", List.of())), TokenUsage.NONE));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
 
         var result = sweep.sweep("ABC-1");
 
@@ -63,9 +61,8 @@ class ReviewSweepServiceTest {
     @Test
     void relaysCommentsAsDraftsAndNeverAutoAdvancesEvenWhenApproved() {
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(
-                Optional.of(new ReviewFacts(true, true, "success",
-                        List.of("coderabbit (a.java:3): rename x"))), TokenUsage.NONE));
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, true,
+                "success", List.of("coderabbit (a.java:3): rename x"))));
 
         var result = sweep.sweep("ABC-1");
 
@@ -77,15 +74,15 @@ class ReviewSweepServiceTest {
     }
 
     @Test
-    void chargesThePollToTheTaskEvenWhenTheReviewCouldNotBeRead() {
-        TokenUsage spent = TokenUsage.ofCall(26_000, 0, 120, 0.06);
+    void reportsAnUnreadableReviewInsteadOfTreatingItAsClean() {
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(Optional.empty(), spent));
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.empty());
 
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE);
-        verify(assistant).chargeTask("ABC-1", spent);
+        verify(tools, never()).markReviewed("ABC-1");
+        verify(tools, never()).markApproved("ABC-1");
     }
 
     @Test
@@ -94,16 +91,16 @@ class ReviewSweepServiceTest {
         // headless read of the same merge request: paid for twice, and two briefs relayed for one round.
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenAnswer(call -> {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
             reentrant.set(sweep.sweep("ABC-1"));
-            return new Answer<>(Optional.of(new ReviewFacts(true, false, "running", List.of())), TokenUsage.NONE);
+            return Optional.of(new ReviewFacts(true, false, "running", List.of()));
         });
 
         sweep.sweep("ABC-1");
 
         assertThat(reentrant.get().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.IN_FLIGHT);
         assertThat(reentrant.get().message()).contains("already running");
-        verify(assistant, times(1)).readReview("http://mr/1");
+        verify(reviewReader, times(1)).read("ABC-1", "http://mr/1");
     }
 
     @Test
@@ -111,9 +108,9 @@ class ReviewSweepServiceTest {
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
         when(stateService.canonicalTaskId("a1")).thenReturn("ABC-1");
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenAnswer(call -> {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
             reentrant.set(sweep.sweep("a1"));
-            return new Answer<>(Optional.of(new ReviewFacts(true, false, "running", List.of())), TokenUsage.NONE);
+            return Optional.of(new ReviewFacts(true, false, "running", List.of()));
         });
 
         sweep.sweep("ABC-1");
@@ -124,14 +121,14 @@ class ReviewSweepServiceTest {
     @Test
     void sweepsAgainOnceThePreviousSweepHasFinished() {
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenReturn(new Answer<>(
-                Optional.of(new ReviewFacts(true, false, "running", List.of())), TokenUsage.NONE));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of())));
 
         sweep.sweep("ABC-1");
         var second = sweep.sweep("ABC-1");
 
         assertThat(second.kind()).isNotEqualTo(ReviewSweepService.SweepResult.Kind.IN_FLIGHT);
-        verify(assistant, times(2)).readReview("http://mr/1");
+        verify(reviewReader, times(2)).read("ABC-1", "http://mr/1");
     }
 
     @Test
@@ -145,10 +142,10 @@ class ReviewSweepServiceTest {
         CountDownLatch secondSweepReturned = new CountDownLatch(1);
         AtomicReference<ReviewSweepService.SweepResult> fromOtherThread = new AtomicReference<>();
         when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
-        when(assistant.readReview("http://mr/1")).thenAnswer(call -> {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
             firstSweepIsInside.countDown();
             secondSweepReturned.await(5, TimeUnit.SECONDS);
-            return new Answer<>(Optional.of(new ReviewFacts(true, false, "running", List.of())), TokenUsage.NONE);
+            return Optional.of(new ReviewFacts(true, false, "running", List.of()));
         });
         Thread contender = new Thread(() -> {
             try {
@@ -166,7 +163,7 @@ class ReviewSweepServiceTest {
         contender.join(TimeUnit.SECONDS.toMillis(5));
 
         assertThat(fromOtherThread.get().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.IN_FLIGHT);
-        verify(assistant, times(1)).readReview("http://mr/1");
+        verify(reviewReader, times(1)).read("ABC-1", "http://mr/1");
     }
 
     @Test
@@ -176,6 +173,6 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.NO_MR);
-        verifyNoInteractions(assistant);
+        verifyNoInteractions(reviewReader);
     }
 }

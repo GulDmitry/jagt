@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.assistant;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import org.slf4j.Logger;

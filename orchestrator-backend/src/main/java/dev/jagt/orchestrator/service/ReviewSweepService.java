@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant.ReviewFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.model.ReviewFacts;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,7 +23,7 @@ public class ReviewSweepService {
         public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED, IN_FLIGHT }
     }
 
-    private final MeteredAssistant assistant;
+    private final ReviewReader reviewReader;
     private final OrchestratorTools tools;
     private final StateService stateService;
     /**
@@ -35,8 +36,8 @@ public class ReviewSweepService {
      */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
-    public ReviewSweepService(MeteredAssistant assistant, OrchestratorTools tools, StateService stateService) {
-        this.assistant = assistant;
+    public ReviewSweepService(ReviewReader reviewReader, OrchestratorTools tools, StateService stateService) {
+        this.reviewReader = reviewReader;
         this.tools = tools;
         this.stateService = stateService;
     }
@@ -61,15 +62,12 @@ public class ReviewSweepService {
             return new SweepResult(SweepResult.Kind.NO_MR,
                     "error: no MR linked to " + taskId + " — `ship` or `resume <mr-url>` first");
         }
-        var sweep = assistant.readReview(mrUrl);
-        // The task exists (it has an MR), so the poll is charged right away — this is the call that repeats
-        // up to hourly for a day and therefore dominates what a task costs jagt.
-        assistant.chargeTask(taskId, sweep.usage());
-        if (sweep.facts().isEmpty() || !sweep.facts().get().exists()) {
+        Optional<ReviewFacts> facts = reviewReader.read(taskId, mrUrl);
+        if (facts.isEmpty() || !facts.get().exists()) {
             return new SweepResult(SweepResult.Kind.UNREADABLE,
                     "error: could not read the MR review for " + mrUrl);
         }
-        ReviewFacts r = sweep.facts().get();
+        ReviewFacts r = facts.get();
         String pipeline = r.pipelineStatus() == null ? "" : r.pipelineStatus().toLowerCase();
         boolean pipelineFailed = pipeline.contains("fail");
         if (r.comments().isEmpty() && !pipelineFailed) {
