@@ -33,6 +33,27 @@ tasks.withType(Test).configureEach {
     useJUnitPlatform()
 }
 
+// The end-to-end matrix lives in its own source set, NOT in `test`: it drives real git worktrees and real
+// tmux windows, so it needs tmux + git on the machine and is far slower than the unit gate. Keeping it out of
+// `test`/`check` means `./gradlew test` stays the fast, hermetic gate it is today.
+// Run it with `./gradlew e2eTest` (see TaskFlowMatrixTest for what a combination asserts).
+sourceSets {
+    e2e {
+        java.srcDirs = ['src/e2e/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+tasks.register('e2eTest', Test) {
+    description = 'Runs the end-to-end task-flow matrix (needs git + tmux; creates and removes throwaway worktrees).'
+    group = 'verification'
+    testClassesDirs = sourceSets.e2e.output.classesDirs
+    classpath = sourceSets.e2e.runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter tasks.named('test')
+}
+
 // Spring Shell reads command parameter names/metadata reflectively — needs -parameters,
 // otherwise @Option/@Argument never attach and commands reject any argument token.
 tasks.withType(JavaCompile).configureEach {

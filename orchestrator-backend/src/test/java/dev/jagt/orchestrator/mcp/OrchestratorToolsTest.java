@@ -810,14 +810,4 @@ class OrchestratorToolsTest {
                 .doesNotContain("ABC-42 Widget layout is off");
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "git@example.com:group-a/backend.git, group-a/backend",
-        "https://example.com/group-a/backend.git, group-a/backend",
-        "https://example.com/group-a/backend, group-a/backend"
-    })
-    void derivesGitProjectPathFromRemote(String remote, String expected) {
-        assertThat(OrchestratorTools.gitProjectPath(remote)).isEqualTo(expected);
-    }
-
 }

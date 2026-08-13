@@ -9,7 +9,7 @@ In dependency order; each step is detailed in its section below.
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
 | 1 | `Move`/`Phase`/`Owner`/`Action` instead of the next-move String | fundament for BOTH the UI and gate validation | 1 d |
-| 2 | ~~`CodeHost` REST — review sweep~~ DONE; MR create/update still open | kills the dominant token spend + the "is it approved?" judgement flake | 1-2 d left |
+| 2 | ~~`CodeHost` REST — review sweep + MR create/update~~ DONE in the seam; the create call is UNWIRED (step 3 wires it) | kills the dominant token spend + the "is it approved?" judgement flake | done |
 | 3 | `ship` = backend commit + push | kills the permission-classifier stall class; `SHIPPING` stops hanging | 1-2 d |
 | 4 | Local web UI (SSE + `/api` + static kanban) | mouse-driven, phase-legible, spend visible | 3-5 d |
 | 5 | Status-transition history in `state.json` | "which steps happened, how long did review take" | 0.5 d |
@@ -108,9 +108,12 @@ Lever: pull the DETERMINISTIC, mechanical outside ops into the backend behind a 
   model latency, and the "approved by a human, not merely mergeable" judgement is now the approvals endpoint.
   Still open on the read side: a second host (GitHub) — the seam has one implementation, same critique as
   below — and `Tracker` for the ticket read, which is still the only reason `do` spawns a model at all.
-- **MR create/update → code.** jagt already owns the title pattern + merge-request defaults in config;
-  creating/updating the request is a REST call, not a judgement. Removes a class of flake (mis-formatted
-  title, agent forgets to report the URL).
+- ~~**MR create/update → code.**~~ DONE in the seam (2026-08-13): `CodeHost.createOrUpdateMergeRequest` +
+  `hostsRepository` + `GitLabCodeHost`, idempotent per (source, target) and never retitling an open request.
+  `codeReview.mergeRequestDefaults` stopped being fiction while I was there — README documented
+  `removeSourceBranch`/`squash`, `CodeReviewConfig` had no such field, and the flags now feed the create call.
+  NOT WIRED: `ship` still relays the MR step to the agent in prose. Wiring it is step 3's job, and it is what
+  finally removes the "agent forgets to report the URL" flake — the capability alone removes nothing.
 - **`ship` commit + push → code.** See the dedicated entry below.
 - Leave the JUDGEMENT work in the agents: ticket distillation, the code itself, review replies. Those
   aren't mechanical.
@@ -173,12 +176,13 @@ implementation had quietly left `.mcp.json`, `.claude/settings.local.json` and t
 `OrchestratorTools`.
 Still single-implementation, so still unproven: `UserNotifier` (macos only), `EditorDriver` (one CLI driver),
 `CodeHost` (GitLab only). The Linux port below is the natural second implementation for the first two.
-Two follow-ups the Codex runtime left behind:
-- a Codex worktree gets jagt's MCP proxy but NOT the human's own servers (its `CODEX_HOME` points at the
-  worktree, so `~/.codex/config.toml` is not read). Fine for the code, but such an agent cannot post review
-  replies itself — which only stops mattering once `ship` moves into the backend (step 3).
-- no stub `AgentRuntime` yet: the E2E matrix entry below still assumes one exists for CI. It is now a small
-  class — `launchCommand` that runs a script, `wireAgent` that writes nothing.
+There is now a THIRD implementation, `StubAgentRuntime` (`orchestrator.agent=stub`), which the e2e matrix runs
+on: `launchCommand` runs a configured script (or `true`), `wireAgent` writes nothing — and that emptiness is an
+assertion, since a Claude-shaped file in a stub worktree means something outside the runtime put it there.
+One follow-up the Codex runtime left behind: a Codex worktree gets jagt's MCP proxy but NOT the human's own
+servers (its `CODEX_HOME` points at the worktree, so `~/.codex/config.toml` is not read). Fine for the code,
+but such an agent cannot post review replies itself — which stops mattering once `ship` moves into the
+backend (step 3).
 
 ### `OrchestratorTools` is a god-facade and keeps growing
 ~1000 lines and ELEVEN injected collaborators (the `AgentRuntime` arrived with the Codex runtime): task
@@ -368,6 +372,21 @@ Goal: one automated suite that exercises the WHOLE task flow (create worktree �
 talk over MCP → ship/review/deploy/done) across the full matrix of swappable pieces and config flags, and
 asserts a **deterministic expected result** for each combination — so any regression in any combo is caught
 without hand-testing.
+
+SKELETON LANDED 2026-08-13 — `./gradlew e2eTest` (own source set `src/e2e/java`, out of `test`/`check`):
+`TaskFlowCase.matrix()` × `TaskFlowMatrixTest` runs the CREATE→PROVISION→LAUNCH→TEARDOWN half over the real
+git/tmux stack with `orchestrator.agent=stub`, 4 combinations (viewMode × autoReview), asserting worktree
+contents, the per-agent provisioning absence, `TaskStatus`, the autoReview flag, and that `done` removes the
+worktree while KEEPING the branch. `E2eWorkspace` is the throwaway world (bare origin + clone + config.json +
+prefix-killed tmux sessions).
+What the skeleton does NOT cover yet, in the order it is worth adding:
+1. `ship`/`review`/`deploy`/`resume` — each needs a fake `CodeHost` bean (now trivial: the seam exists) plus a
+   stub script that reports statuses back over `POST /mcp`. That is where the oracle gets interesting: status
+   transitions, `state.json` history, the drafted-replies relay.
+2. the remaining config flags (`postReviewReplies`, `reviewReplyAuthors`, branch strategy fresh/resume, plan
+   mode) — data rows once the flow above is scripted.
+3. the real driver combinations (`terminal`, `platform`, `editor-command`), which today are Mockito doubles: a
+   GUI cannot be asserted, so those need the Linux/macOS driver comparison below, not more rows here.
 
 The matrix (Cartesian product of the strategy seams + config):
 - `AgentRuntime` (`orchestrator.agent`: claude / codex / … — stub/fake runtime for CI),

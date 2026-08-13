@@ -1,8 +1,11 @@
 package dev.jagt.orchestrator.codehost;
 
 import dev.jagt.orchestrator.config.CodeHostProperties;
+import dev.jagt.orchestrator.model.MergeRequestRef;
+import dev.jagt.orchestrator.model.MergeRequestSpec;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
@@ -15,6 +18,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +27,8 @@ class GitLabCodeHostTest {
     private static final String MR_API =
             "https://git.example.com/api/v4/projects/group%2Fsub%2Fproject/merge_requests/42";
     private static final String MR_URL = "https://git.example.com/group/sub/project/-/merge_requests/42";
+    private static final String MERGE_REQUESTS =
+            "https://git.example.com/api/v4/projects/group%2Fsub%2Fproject/merge_requests";
 
     private final JsonMapper json = new JsonMapper();
     private final JsonHttp http = mock(JsonHttp.class);
@@ -115,6 +121,87 @@ class GitLabCodeHostTest {
     })
     void claimsNothingItCannotActuallyFetch(String url) {
         assertThat(host.supports(url)).isFalse();
+    }
+
+    @Test
+    void opensAMergeRequestWhenTheBranchHasNoneYet() {
+        when(http.get(eq(MERGE_REQUESTS + "?state=opened&source_branch=ABC-1&target_branch=main"), anyMap()))
+                .thenReturn(Optional.of(json.readTree("[]")));
+        when(http.post(eq(MERGE_REQUESTS), anyMap(), anyMap())).thenReturn(Optional.of(json.readTree("""
+                {"web_url": "https://git.example.com/group/sub/project/-/merge_requests/42"}""")));
+
+        var opened = host.createOrUpdateMergeRequest(new MergeRequestSpec(
+                "git@git.example.com:group/sub/project.git", "ABC-1", "main", "ABC-1 Widget layout is off",
+                true, true));
+
+        assertThat(opened).contains(new MergeRequestRef(
+                "https://git.example.com/group/sub/project/-/merge_requests/42", true));
+        verify(http).post(eq(MERGE_REQUESTS), anyMap(), eq(Map.of(
+                "source_branch", "ABC-1", "target_branch", "main", "title", "ABC-1 Widget layout is off",
+                "remove_source_branch", true, "squash", true)));
+    }
+
+    @Test
+    void reusesTheOpenMergeRequestInsteadOfOpeningASecondForTheSameBranch() {
+        when(http.get(eq(MERGE_REQUESTS + "?state=opened&source_branch=ABC-1&target_branch=main"), anyMap()))
+                .thenReturn(Optional.of(json.readTree("""
+                [{"iid": 42, "web_url": "https://git.example.com/group/sub/project/-/merge_requests/42",
+                  "force_remove_source_branch": true, "squash": true}]""")));
+
+        var found = host.createOrUpdateMergeRequest(new MergeRequestSpec(
+                "git@git.example.com:group/sub/project.git", "ABC-1", "main", "a retitled thing", true, true));
+
+        assertThat(found).contains(new MergeRequestRef(
+                "https://git.example.com/group/sub/project/-/merge_requests/42", false));
+        verify(http, never()).post(anyString(), anyMap(), anyMap());
+        verify(http, never()).put(anyString(), anyMap(), anyMap());
+    }
+
+    @Test
+    void alignsTheMergeFlagsOfAnOpenMergeRequestWithoutTouchingItsTitle() {
+        when(http.get(eq(MERGE_REQUESTS + "?state=opened&source_branch=ABC-1&target_branch=main"), anyMap()))
+                .thenReturn(Optional.of(json.readTree("""
+                [{"iid": 42, "web_url": "https://git.example.com/group/sub/project/-/merge_requests/42",
+                  "force_remove_source_branch": false, "squash": true}]""")));
+        when(http.put(eq(MERGE_REQUESTS + "/42"), anyMap(), anyMap())).thenReturn(Optional.of(json.readTree("{}")));
+
+        host.createOrUpdateMergeRequest(new MergeRequestSpec(
+                "git@git.example.com:group/sub/project.git", "ABC-1", "main", "a retitled thing", true, true));
+
+        verify(http).put(eq(MERGE_REQUESTS + "/42"), anyMap(),
+                eq(Map.of("remove_source_branch", true, "squash", true)));
+    }
+
+    @Test
+    void reportsNothingWhenTheHostRefusesToOpenTheMergeRequest() {
+        when(http.get(eq(MERGE_REQUESTS + "?state=opened&source_branch=ABC-1&target_branch=main"), anyMap()))
+                .thenReturn(Optional.of(json.readTree("[]")));
+        when(http.post(eq(MERGE_REQUESTS), anyMap(), anyMap())).thenReturn(Optional.empty());
+
+        var opened = host.createOrUpdateMergeRequest(new MergeRequestSpec(
+                "git@git.example.com:group/sub/project.git", "ABC-1", "main", "ABC-1 Widget layout is off",
+                true, true));
+
+        assertThat(opened).isEmpty();
+    }
+
+    @Test
+    void refusesToOpenAMergeRequestOnARepositoryOfAnotherHost() {
+        var opened = host.createOrUpdateMergeRequest(new MergeRequestSpec(
+                "git@gitlab.com:someone/else.git", "ABC-1", "main", "ABC-1 Widget layout is off", true, true));
+
+        assertThat(opened).isEmpty();
+        verify(http, never()).post(anyString(), anyMap(), anyMap());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "git@git.example.com:group/sub/project.git, true",
+        "https://git.example.com/group/sub/project.git, true",
+        "git@gitlab.com:group/project.git, false"
+    })
+    void hostsOnlyTheRepositoriesOfTheHostItWasPointedAt(String remote, boolean mine) {
+        assertThat(host.hostsRepository(remote)).isEqualTo(mine);
     }
 
     @Test

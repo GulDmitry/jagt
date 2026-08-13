@@ -234,7 +234,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.kitty-font-size` | viewer font size for the kitty terminal (blank keeps kitty.conf's own) |
 | `orchestrator.editor-command` | editor launcher list (default `[/Applications/IntelliJ IDEA.app/Contents/MacOS/idea]`; e.g. `[code]`) |
 | `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` |
-| `orchestrator.agent` | which AI agent runtime — `claude` (default) or `codex`; the pluggable seam, one class per CLI |
+| `orchestrator.agent` | which AI agent runtime — `claude` (default) or `codex`; the pluggable seam, one class per CLI (plus `stub` for the e2e matrix) |
 | `orchestrator.claude-command` | the `claude` binary — the agent runtime AND the master assistant's headless reads (default `claude`) |
 | `orchestrator.codex.command` | the `codex` binary for `orchestrator.agent=codex` (default `codex`) |
 | `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits (default `user,project,local`) |
@@ -244,6 +244,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.code-host.type` | read review sweeps over the host's REST API instead of a paid model call: `gitlab`, or blank = off (default) |
 | `orchestrator.code-host.base-url` | the host root, e.g. `https://gitlab.example.com`; a review URL is only read under this prefix |
 | `orchestrator.code-host.token` | read-only API token (env, e.g. `CODE_HOST_TOKEN`) — jagt only GETs: never a push, merge or comment |
+| `orchestrator.stub.script` | only for `orchestrator.agent=stub` (the scripted runtime used by `./gradlew e2eTest`): executable run instead of an agent |
 | `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
 | `orchestrator.tmux-command` | tmux binary (default `/opt/homebrew/bin/tmux`) |

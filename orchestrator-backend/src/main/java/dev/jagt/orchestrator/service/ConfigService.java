@@ -109,22 +109,60 @@ public class ConfigService {
         /** Merge-request title + review-reply behaviour on {@code ship}. */
         @JsonIgnoreProperties(ignoreUnknown = true)
         public record CodeReviewConfig(String mrTitlePattern, Boolean postReviewReplies,
-                                       List<String> reviewReplyAuthors) {
+                                       List<String> reviewReplyAuthors,
+                                       MergeRequestDefaults mergeRequestDefaults) {
+
+            /**
+             * How a merge request jagt opens should behave on merge. Both default to true — a task branch is
+             * disposable once merged, and its intermediate commits are review noise, not history.
+             */
+            @JsonIgnoreProperties(ignoreUnknown = true)
+            public record MergeRequestDefaults(Boolean removeSourceBranch, Boolean squash) {
+
+                public static MergeRequestDefaults defaults() {
+                    return new MergeRequestDefaults(null, null);
+                }
+
+                public MergeRequestDefaults withRemoveSourceBranch(Boolean remove) {
+                    return new MergeRequestDefaults(remove, squash);
+                }
+
+                public MergeRequestDefaults withSquash(Boolean value) {
+                    return new MergeRequestDefaults(removeSourceBranch, value);
+                }
+
+                public boolean removeSourceBranchOrDefault() {
+                    return removeSourceBranch == null || removeSourceBranch;
+                }
+
+                public boolean squashOrDefault() {
+                    return squash == null || squash;
+                }
+            }
 
             public static CodeReviewConfig defaults() {
-                return new CodeReviewConfig(null, null, null);
+                return new CodeReviewConfig(null, null, null, null);
             }
 
             public CodeReviewConfig withMrTitlePattern(String pattern) {
-                return new CodeReviewConfig(pattern, postReviewReplies, reviewReplyAuthors);
+                return new CodeReviewConfig(pattern, postReviewReplies, reviewReplyAuthors, mergeRequestDefaults);
             }
 
             public CodeReviewConfig withPostReviewReplies(Boolean post) {
-                return new CodeReviewConfig(mrTitlePattern, post, reviewReplyAuthors);
+                return new CodeReviewConfig(mrTitlePattern, post, reviewReplyAuthors, mergeRequestDefaults);
             }
 
             public CodeReviewConfig withReviewReplyAuthors(List<String> authors) {
-                return new CodeReviewConfig(mrTitlePattern, postReviewReplies, authors);
+                return new CodeReviewConfig(mrTitlePattern, postReviewReplies, authors, mergeRequestDefaults);
+            }
+
+            public CodeReviewConfig withMergeRequestDefaults(MergeRequestDefaults defaults) {
+                return new CodeReviewConfig(mrTitlePattern, postReviewReplies, reviewReplyAuthors, defaults);
+            }
+
+            /** Never null, so a caller cannot forget the omitted-section case (mirrors ConfigFile's accessors). */
+            public MergeRequestDefaults mergeRequestDefaultsOrDefault() {
+                return mergeRequestDefaults == null ? MergeRequestDefaults.defaults() : mergeRequestDefaults;
             }
 
             /** Placeholders {ticket} and {title}. Default: the ticket id, a space, then the Jira title. */

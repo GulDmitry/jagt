@@ -1,6 +1,9 @@
 package dev.jagt.orchestrator.codehost;
 
 import dev.jagt.orchestrator.config.CodeHostProperties;
+import dev.jagt.orchestrator.model.GitRemote;
+import dev.jagt.orchestrator.model.MergeRequestRef;
+import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +21,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * GitLab read over the v4 REST API: approval state, latest pipeline, unresolved discussion notes. Selected by
- * {@code orchestrator.code-host.type=gitlab}.
+ * GitLab over the v4 REST API — reads the review round (approval state, latest pipeline, unresolved discussion
+ * notes) and opens/finds the merge request of a task branch. Selected by {@code orchestrator.code-host.type=gitlab}.
  *
  * <p>"Approved" is read from the approvals endpoint, i.e. a fact rather than the judgement a model used to be
  * asked for ("approved by a human, not merely mergeable" — the exact call it could get wrong).
@@ -68,6 +71,60 @@ public class GitLabCodeHost implements CodeHost {
                 && reviewRequestUrl != null
                 && reviewRequestUrl.startsWith(config.baseUrl() + "/")
                 && MR_URL.matcher(reviewRequestUrl).matches();
+    }
+
+    @Override
+    public boolean hostsRepository(String gitRemoteUrl) {
+        String host = GitRemote.host(gitRemoteUrl);
+        return config.isUsable() && host != null && host.equals(GitRemote.host(config.baseUrl()));
+    }
+
+    @Override
+    public Optional<MergeRequestRef> createOrUpdateMergeRequest(MergeRequestSpec spec) {
+        String projectPath = GitRemote.projectPath(spec.remoteUrl());
+        if (!hostsRepository(spec.remoteUrl()) || projectPath == null) {
+            return Optional.empty();
+        }
+        String mergeRequests = config.baseUrl() + "/api/v4/projects/"
+                + URLEncoder.encode(projectPath, StandardCharsets.UTF_8) + "/merge_requests";
+        Optional<JsonNode> open = get(mergeRequests
+                + "?state=opened&source_branch=" + query(spec.sourceBranch())
+                + "&target_branch=" + query(spec.targetBranch()));
+        if (open.isEmpty() || !open.get().isArray()) {
+            return Optional.empty();
+        }
+        if (open.get().isEmpty()) {
+            return http.post(mergeRequests, authHeaders(), Map.of(
+                            "source_branch", spec.sourceBranch(),
+                            "target_branch", spec.targetBranch(),
+                            "title", spec.title(),
+                            "remove_source_branch", spec.removeSourceBranch(),
+                            "squash", spec.squash()))
+                    .map(created -> new MergeRequestRef(created.path("web_url").asString(""), true));
+        }
+        return Optional.of(alignExisting(mergeRequests, open.get().get(0), spec));
+    }
+
+    /**
+     * An already-open request is NEVER retitled: {@code ship} runs again on every review round, the title came
+     * from the first one, and the human may well have edited it since. Only the merge flags are pushed, and
+     * only when they actually differ — and a failed flag update still reports the request, because it EXISTS:
+     * answering "no merge request" over a cosmetic flag would send the caller off to create a second one.
+     */
+    private MergeRequestRef alignExisting(String mergeRequests, JsonNode existing, MergeRequestSpec spec) {
+        MergeRequestRef found = new MergeRequestRef(existing.path("web_url").asString(""), false);
+        boolean sameFlags = existing.path("force_remove_source_branch").asBoolean(false) == spec.removeSourceBranch()
+                && existing.path("squash").asBoolean(false) == spec.squash();
+        if (sameFlags) {
+            return found;
+        }
+        String url = mergeRequests + "/" + existing.path("iid").asLong(0);
+        Optional<JsonNode> updated = http.put(url, authHeaders(), Map.of(
+                "remove_source_branch", spec.removeSourceBranch(), "squash", spec.squash()));
+        if (updated.isEmpty()) {
+            log.warn("Could not align the merge flags of {} — the merge request itself is unaffected", url);
+        }
+        return found;
     }
 
     @Override
@@ -152,6 +209,15 @@ public class GitLabCodeHost implements CodeHost {
     }
 
     private Optional<JsonNode> get(String url) {
-        return http.get(url, Map.of("PRIVATE-TOKEN", config.token()));
+        return http.get(url, authHeaders());
+    }
+
+    private Map<String, String> authHeaders() {
+        return Map.of("PRIVATE-TOKEN", config.token());
+    }
+
+    /** Branch names may carry slashes ({@code release/1.2}), which a raw query parameter would cut in two. */
+    private static String query(String value) {
+        return URLEncoder.encode(value == null ? "" : value, StandardCharsets.UTF_8);
     }
 }

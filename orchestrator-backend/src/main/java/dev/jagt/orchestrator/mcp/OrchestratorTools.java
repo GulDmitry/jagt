@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.agent.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.model.GitRemote;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
@@ -354,31 +355,13 @@ public class OrchestratorTools {
 
     private String projectForMrUrl(String mrUrl) {
         for (var e : configService.load().projects().entrySet()) {
-            String path = gitProjectPath(gitService.remoteUrl(Path.of(e.getValue().path())));
+            String path = GitRemote.projectPath(gitService.remoteUrl(Path.of(e.getValue().path())));
             if (path != null && mrUrl.contains(path)) {
                 return e.getKey();
             }
         }
         throw new IllegalArgumentException("no configured project matches MR url: " + mrUrl);
     }
-
-    /** {@code git@host:group/proj.git} or {@code https://host/group/proj(.git)} -> {@code group/proj}. */
-    static String gitProjectPath(String remoteUrl) {
-        if (remoteUrl == null || remoteUrl.isBlank()) {
-            return null;
-        }
-        String s = remoteUrl.trim();
-        if (s.endsWith(".git")) {
-            s = s.substring(0, s.length() - 4);
-        }
-        if (s.startsWith("http")) {
-            int host = s.indexOf('/', s.indexOf("://") + 3);
-            return host < 0 ? null : s.substring(host + 1);
-        }
-        int colon = s.indexOf(':');
-        return colon < 0 ? null : s.substring(colon + 1);
-    }
-
 
     /** Merges the task branch into the project's deploy branch and pushes it. */
     public String deployTask(String taskId, String callerTaskId) {

@@ -10,8 +10,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - `orchestrator-backend/` — Spring Boot app ("The Brain") AND the Master console itself: state manager,
   Git lock, MCP HTTP server (`POST /mcp`), Watchdog, auto-review scheduler, macOS automation (osascript).
   Run the jar in a real terminal (see Build & run) — the process IS the Master TUI.
-  The backend NEVER WRITES to an external system: every outside write (push, merge request, review replies)
-  is done by the task's sub-agent via its own MCP. Outside READS have two paths — a one-shot headless agent
+  Outside writes are the sub-agent's job via its own MCP (push, merge request, review replies) — the ONE
+  exception the backend may ever do itself is opening a task's review request over `CodeHost`, and today
+  nothing calls it. Outside READS have two paths — a one-shot headless agent
   that inherits the human's own MCP (see Master assistant), and, when configured, the read-only `CodeHost`
   REST seam (see PLUGGABLE BY DESIGN). The REST path is opt-in and needs a token in the environment
   (`orchestrator.code-host.*`); with none configured the backend holds no credential at all.
@@ -132,11 +133,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     differs per agent (Claude `.mcp.json` + `.claude/settings.local.json`, Codex `.codex/config.toml` with
     `CODEX_HOME` pointed at the worktree) and belongs in each `AgentRuntime`. Nothing outside the runtime may
     name an agent's files — `OrchestratorTools` only calls `provisionWorktree` and `displayName`.
-  - `CodeHost` (`…codehost`, `orchestrator.code-host.type`, default none) — READ-ONLY REST reads of a review
-    request, so the sweep costs no model call. Implementations must never write (no push/merge/comment), and
-    `ReviewReader` deliberately does NOT fall back to the paid headless read when a configured host fails:
-    that would spend money invisibly and hide the misconfiguration. A partial REST read must fail whole —
-    "no unresolved comments + green pipeline" ADVANCES a task.
+  - `CodeHost` (`…codehost`, `orchestrator.code-host.type`, default none) — REST reads of a review request, so
+    the sweep costs no model call, plus EXACTLY ONE write: `createOrUpdateMergeRequest` (opening the artifact a
+    human then reviews). Never a push, a merge, a comment or an approval — those belong to the human's gates or
+    to the agent's own MCP; a `CodeHost` that merges is a bug. The write is idempotent per (source, target) and
+    NEVER retitles an open request (`ship` reruns every review round, and the human may have edited the title).
+    `ReviewReader` deliberately does NOT fall back to the paid headless read when a configured host fails: that
+    would spend money invisibly and hide the misconfiguration. A partial REST read must fail whole — "no
+    unresolved comments + green pipeline" ADVANCES a task. Nothing calls the write yet: `ship` still relays to
+    the agent until roadmap step 3 moves it into the backend.
   - The shared system-knowledge file is `AGENTS.md` (the cross-agent convention, `AgentRuntime
     .SYSTEM_KNOWLEDGE_FILE`); Claude reads `CLAUDE.md`, so its runtime symlinks `CLAUDE.md` → `AGENTS.md` —
     one file, never two copies to drift. A new agent = one `AgentRuntime` impl; a Linux port = new
@@ -239,6 +244,13 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   kill the session / remove worktrees + branches afterwards.
 - Unit tests: `cd orchestrator-backend && ./gradlew test`. EVERY fixed bug gets a regression unit test
   (sob-ai:unit-testing rules), verified RED by actually reverting the fix and running the test.
+- E2E matrix: `./gradlew e2eTest` (own source set `src/e2e/java`, NOT in `test`/`check` — it needs git + tmux
+  and drives real worktrees, so the fast hermetic gate stays fast). It runs the flow once per `TaskFlowCase`
+  with `orchestrator.agent=stub` (`StubAgentRuntime` — the ONE non-deterministic participant replaced; every
+  GUI driver is a Mockito double) and asserts an exact end state. Two rules it lives by: widening coverage is
+  adding a ROW to `TaskFlowCase.matrix()`, and a combination that is NOT covered is named there with the
+  reason — a silent gap reads as coverage. Cleanup kills tmux sessions BY PREFIX, because `tab-per-task`
+  creates `<session>-<taskId>` ones the configured name alone would leave behind.
 
 ## Code quality — the test is the litmus of the production code
 - A test is the embodiment of the main code's cleanliness. If a test needs ~5+ objects set up, or its
