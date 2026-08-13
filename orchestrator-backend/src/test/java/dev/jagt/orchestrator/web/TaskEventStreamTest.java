@@ -7,6 +7,8 @@ import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,5 +67,31 @@ class TaskEventStreamTest {
         stream.onApplicationEvent(new ContextClosedEvent(new StaticApplicationContext()));
 
         assertThatIllegalStateException().isThrownBy(() -> stream.open().send("reconnected"));
+    }
+
+    /**
+     * A write that fails mid-session (the laptop slept, the VPN dropped) leaves the async request registered
+     * with the container — and the shutdown sweep can only end connections it still knows about. Forgetting
+     * one without ending it is therefore a ^C that hangs again.
+     */
+    @Test
+    void endsAConnectionWhoseWriteFailedInsteadOfMerelyForgettingIt() {
+        TaskEventStream stream = new TaskEventStream(mock(StateService.class));
+        AtomicBoolean ended = new AtomicBoolean();
+        SseEmitter gone = new SseEmitter(0L) {
+            @Override
+            public void send(SseEventBuilder builder) throws IOException {
+                throw new IOException("socket gone");
+            }
+
+            @Override
+            public void complete() {
+                ended.set(true);
+            }
+        };
+
+        stream.send(gone, "changed");
+
+        assertThat(ended).isTrue();
     }
 }

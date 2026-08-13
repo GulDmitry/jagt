@@ -77,26 +77,31 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
             open = List.copyOf(browsers);
             browsers.clear();
         }
-        open.forEach(browser -> {
-            try {
-                browser.complete();
-            } catch (RuntimeException e) {
-                log.debug("A board connection was already gone at shutdown: {}", e.toString());
-            }
-        });
+        open.forEach(this::end);
     }
 
     private void broadcast() {
         browsers.forEach(browser -> send(browser, "changed"));
     }
 
-    private void send(SseEmitter browser, String event) {
+    void send(SseEmitter browser, String event) {
         try {
             browser.send(SseEmitter.event().name(event).data(event));
         } catch (IOException | IllegalStateException e) {
-            // A closed tab is the normal case, not an error worth shouting about.
+            // A closed tab is the normal case, not an error worth shouting about. It has to be ENDED though,
+            // not merely forgotten: a failed write leaves the async request registered with the container,
+            // and the shutdown sweep can only end what is still in this list.
             browsers.remove(browser);
+            end(browser);
             log.debug("Dropping a closed board connection: {}", e.toString());
+        }
+    }
+
+    private void end(SseEmitter browser) {
+        try {
+            browser.complete();
+        } catch (RuntimeException e) {
+            log.debug("A board connection was already gone: {}", e.toString());
         }
     }
 }
