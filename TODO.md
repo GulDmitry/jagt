@@ -38,6 +38,12 @@ forced `provisionWorktree` into the seam — worktree provisioning left `Orchest
 now `AGENTS.md` for everyone (Claude gets a `CLAUDE.md` symlink), and the flow no longer names an agent's
 files or prints "Claude" (`displayName()`).
 
+Done 2026-08-13, hygiene + metering: `state.json` keeps its previous version as `state.json.bak` and a read
+that cannot parse the primary recovers from it (bad file set aside as `state.json.corrupt`); with no usable
+backup it THROWS rather than starting empty over an existing file. `WorktreeOrphanScanner` reports leftover
+worktrees and the secret copies in them (`GET /orphans`). `stats` splits the session spend by
+`AssistantCallKind`, and `UsageTracker` derives the session total from that split so the two cannot drift.
+
 ## Architecture
 
 ### Cost: what a headless assistant call actually costs — MEASURED, not guessed
@@ -80,16 +86,13 @@ cost lever — do not spend the complexity on it before steps 1 and 2 of the roa
 Verified while measuring: `--output-format json` composes with `--json-schema`, and `--strict-mcp-config`
 works with no `--mcp-config` at all (= a no-MCP call, which is what the tier-2 text→command mapper wants).
 
-Two known holes in the accounting that shipped with it:
-- **A killed call is unmeasurable.** `ProcessRunner` destroys the process on timeout and throws, so there is
-  no envelope and therefore no usage — the tokens it already burned are unknown, not zero. It is logged as
-  UNMEASURED rather than guessed. The only way to actually capture it is `--output-format stream-json`,
-  accumulating usage from the message stream as it arrives; worth doing only if timeouts turn out to be
-  common (the 6-minute review sweep is the candidate).
-- **No breakdown by call type.** `stats` totals everything, so "polls vs ticket reads" — the one split that
-  says where to optimise — has to be inferred from the call count. A `kind` on the recorded call
-  (TICKET_READ / MR_READ / REVIEW_SWEEP) would make the `CodeHost` payoff measurable per category instead of
-  in aggregate.
+One hole left in the accounting: **a killed call is unmeasurable.** `ProcessRunner` destroys the process on
+timeout and throws, so there is no envelope and therefore no usage — the tokens it already burned are unknown,
+not zero. It is logged as UNMEASURED rather than guessed. The only way to actually capture it is
+`--output-format stream-json`, accumulating usage from the message stream as it arrives; worth doing only if
+timeouts turn out to be common (the 6-minute review sweep is the candidate).
+(The other hole is closed: `stats` now splits the session by `AssistantCallKind` — TICKET_READ / MR_READ /
+REVIEW_SWEEP — biggest first, which is also how the REST payoff becomes visible per category.)
 
 ### Cut cost + raise determinism: mechanical host/tracker ops as backend code, not an LLM tool-loop
 The master side is already LLM-free for routing (see the DONE entry below) — what remains in a model is the
@@ -326,15 +329,16 @@ copies of production-ish credentials live in sibling directories of the repo, re
 process, and they are removed only when `done` succeeds in deleting the worktree. `removeWorktree` is
 best-effort and logs-and-continues in places, and a crashed/abandoned run leaves the copies behind
 indefinitely.
-Worth: a startup sweep that reports (not silently deletes) `*-<projectKey>` sibling directories with no
-matching entry in state.json, so orphaned worktrees — and the secrets in them — surface instead of rotting.
-Also worth deciding explicitly whether the copied set should be narrower by default than "any `*.pem`".
-
-### `state.json` has no history and no backup
-Writes are atomic (temp + ATOMIC_MOVE), so a crash cannot truncate it — but a bad manual edit, a botched
-migration, or a future serialization bug takes every task with it, and the file is the SSOT for what jagt is
-even doing. One `.bak` kept from the previous successful write (or a small ring of them) is a few lines and
-turns "all tasks lost" into "restore the file". Cheap insurance for the single point of failure in the design.
+DONE 2026-08-13: `WorktreeOrphanScanner` reports the leftovers (`<task>-<projectKey>` and an abandoned
+`<task>-deploy`) with the number of copied secret files still in each — one startup ping, details at
+`GET /orphans`. It deletes nothing: an orphan can hold uncommitted work.
+Two decisions still open, both about the copying itself:
+- should the default set be narrower than "any `*.pem`"? Today one config key covers .env, keys, certs and
+  keystores for every project.
+- `**/.env` does NOT match a root-level `.env` — Java's glob needs a directory component. A repo whose `.env`
+  sits at the top level silently gets nothing copied, and the app then fails to start in the worktree for a
+  reason that looks like anything but a glob. Either document it in `config.json.dist` or ship
+  `["**/.env", ".env"]` as the default.
 
 ## Testing & portability
 
