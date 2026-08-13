@@ -7,7 +7,29 @@ package dev.jagt.orchestrator.service;
  */
 public final class CommandReference {
 
+    /**
+     * One verb, as the board's palette needs it: what to type, what it does, and whether it takes a task. The
+     * palette uses this to COMPLETE and VALIDATE what a human types — and, when the line parses, to run it
+     * deterministically instead of paying a model to map it (tier 1 before tier 2).
+     */
+    public record Verb(String id, String hint, boolean takesTask) {
+    }
+
     private CommandReference() {
+    }
+
+    /** Every verb the console accepts, including the ones that are not per-task actions. */
+    public static java.util.List<Verb> verbs() {
+        java.util.List<Verb> verbs = new java.util.ArrayList<>();
+        for (dev.jagt.orchestrator.model.TaskAction action : dev.jagt.orchestrator.model.TaskAction.values()) {
+            verbs.add(new Verb(action.id(), action.hint(), true));
+        }
+        verbs.add(new Verb("do", "start a task from a ticket key or URL", false));
+        verbs.add(new Verb("resume", "take over an existing review request (its URL)", false));
+        verbs.add(new Verb("prune", "list local branches merged into deployBranch; `prune all` deletes", false));
+        verbs.add(new Verb("stats", "token spend of jagt's own model calls", false));
+        verbs.add(new Verb("help", "this command reference", false));
+        return java.util.List.copyOf(verbs);
     }
 
     public static String text() {

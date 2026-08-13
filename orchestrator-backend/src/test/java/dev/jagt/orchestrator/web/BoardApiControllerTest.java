@@ -83,6 +83,23 @@ class BoardApiControllerTest {
         assertThat(api.prune(new BoardApiController.PruneRequest(true)).message()).contains("deleted");
     }
 
+    /**
+     * The palette completes and validates against THIS list, so a verb the console accepts and this omits is a
+     * capability the board cannot express — the parity bug in miniature.
+     */
+    @Test
+    void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
+        var ids = api.commands().stream().map(dev.jagt.orchestrator.service.CommandReference.Verb::id).toList();
+
+        assertThat(ids).contains("ship", "review", "ide", "diff", "deploy", "revert", "respawn", "done", "focus",
+                "do", "resume", "prune", "stats", "help");
+        // Whether a verb needs a task is what decides if "ship" alone is a mistake or a command.
+        assertThat(api.commands().stream()
+                .filter(dev.jagt.orchestrator.service.CommandReference.Verb::takesTask)
+                .map(dev.jagt.orchestrator.service.CommandReference.Verb::id))
+                .contains("ship").doesNotContain("do", "prune", "help");
+    }
+
     @Test
     void servesTheSameCommandReferenceTheConsolePrints() {
         assertThat(api.help()).isEqualTo(dev.jagt.orchestrator.service.CommandReference.text());

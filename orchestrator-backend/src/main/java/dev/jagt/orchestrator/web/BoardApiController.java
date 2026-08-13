@@ -152,6 +152,15 @@ public class BoardApiController {
         return new ActionResult(tools.pruneBranches(request != null && request.delete()));
     }
 
+    /**
+     * The grammar as data, for the palette's autocomplete and its client-side validation. Served rather than
+     * hardcoded in the page, so a verb cannot exist in the console and be missing from the suggestions.
+     */
+    @GetMapping("/commands")
+    public List<CommandReference.Verb> commands() {
+        return CommandReference.verbs();
+    }
+
     /** The command grammar — the same text the console prints for `help` (see {@link CommandReference}). */
     @GetMapping(value = "/help", produces = MediaType.TEXT_PLAIN_VALUE)
     public String help() {

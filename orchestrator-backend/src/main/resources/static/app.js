@@ -17,6 +17,7 @@ const onlyMine = document.getElementById('mine');
 const live = document.getElementById('live');
 let tasks = [];
 let projects = [];
+let verbs = [];
 let busy = new Set();
 
 const relative = (millis) => {
@@ -65,6 +66,16 @@ async function api(path, options) {
   return body;
 }
 
+// The grammar, fetched once: the palette completes and validates against the SERVER's verb list, so a command
+// the console accepts can never be missing from the suggestions here.
+async function loadVerbs() {
+  try {
+    verbs = await api('/api/commands');
+  } catch (e) {
+    verbs = [];                      // no suggestions is a degraded palette, not a broken one
+  }
+}
+
 async function load() {
   try {
     const data = await api('/api/tasks');
@@ -97,6 +108,7 @@ function render() {
   document.getElementById('empty').hidden = tasks.length > 0;
   // Only phases that HAVE tasks get a column. `done` deletes the task outright, so a DONE column could never
   // hold anything — it just sat there reading "done 0" — and five empty columns are noise on a board of two.
+  refreshSuggestions();
   board.replaceChildren(...PHASES.map(([phase, label]) => {
     const inPhase = sorted(shown.filter((task) => task.phase === phase));
     if (!inPhase.length) return null;
@@ -216,13 +228,22 @@ async function run(task, action) {
 
 // New task: the same modifiers the `do` grammar takes, as fields.
 const launchForm = document.getElementById('launch');
+
+// One control per form: the header button opens it and closes it, and says which state it is in. Escape closes
+// whatever is open. Nothing else — an inline form does not need a second button explaining itself.
+function toggleForm(form, button, onOpen) {
+  form.hidden = !form.hidden;
+  button.setAttribute('aria-pressed', String(!form.hidden));
+  if (!form.hidden && onOpen) onOpen();
+}
+
 document.getElementById('new-task').onclick = () => {
   launchForm.hidden = !launchForm.hidden;
+  document.getElementById('new-task').setAttribute('aria-pressed', String(!launchForm.hidden));
   const select = document.getElementById('project');
   select.replaceChildren(new Option('project…', ''), ...projects.map((p) => new Option(p, p)));
   if (!launchForm.hidden) document.getElementById('ref').focus();
 };
-document.getElementById('cancel-launch').onclick = () => { launchForm.hidden = true; };
 launchForm.onsubmit = async (event) => {
   event.preventDefault();
   const state = document.getElementById('launch-state');
@@ -263,6 +284,7 @@ events.addEventListener('open', () => live.classList.add('on'));
 events.addEventListener('changed', load);
 events.onerror = () => live.classList.remove('on');
 setInterval(render, 15000);
+loadVerbs();
 load();
 
 // Tier 2 of the dispatch: free text, mapped to ONE command by a model and executed by the same gate the
@@ -273,14 +295,14 @@ const ask = document.getElementById('ask');
 
 function togglePalette(show) {
   palette.hidden = !show;
+  document.getElementById('open-palette').setAttribute('aria-pressed', String(show));
   if (show) {
     ask.focus();
     ask.select();
   }
 }
 
-document.getElementById('open-palette').onclick = () => togglePalette(palette.hidden);
-document.getElementById('cancel-palette').onclick = () => togglePalette(false);
+document.getElementById('open-palette').onclick = () => { togglePalette(palette.hidden); judgeAsk(); };
 document.addEventListener('keydown', (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault();
@@ -290,10 +312,119 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+// What the human typed, understood WITHOUT a model: a known verb, and — for the per-task ones — a task that
+// actually exists. Anything else is left to tier 2, which is what the model is for.
+function parseCommand(line) {
+  const tokens = line.trim().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return null;
+  const verb = verbs.find((v) => v.id === tokens[0].toLowerCase());
+  if (!verb) return null;
+  const argument = tokens.slice(1).join(' ');
+  if (!verb.takesTask) return {verb, argument};
+  const task = tasks.find((t) => t.id === argument || (t.alias || '') === argument);
+  return {verb, argument, task};
+}
+
+function refreshSuggestions() {
+  const options = [];
+  for (const verb of verbs) {
+    if (!verb.takesTask) {
+      options.push(verb.id);
+      continue;
+    }
+    // A per-task verb is only useful with a task, so suggest the pairs that exist rather than the bare word.
+    for (const task of tasks) options.push(`${verb.id} ${task.alias || task.id}`);
+  }
+  document.getElementById('ask-options').replaceChildren(
+    ...options.map((value) => Object.assign(document.createElement('option'), {value})));
+}
+
+// The verdict, live: a typo must be visible before Run, not after a model has been paid to guess at it.
+function judgeAsk() {
+  const state = document.getElementById('palette-state');
+  const line = ask.value.trim();
+  state.classList.remove('ok', 'bad');
+  if (!line) {
+    state.textContent = 'a known command runs as typed, for free; anything else goes to a model';
+    return;
+  }
+  const parsed = parseCommand(line);
+  if (!parsed) {
+    const word = line.split(/\s+/)[0];
+    const known = verbs.some((v) => v.id === word.toLowerCase());
+    state.textContent = known ? '' : `“${word}” is not a command — this will go to the model as plain words`;
+    return;
+  }
+  if (parsed.verb.takesTask && !parsed.task) {
+    state.classList.add('bad');
+    state.textContent = parsed.argument
+      ? `no task “${parsed.argument}” — use a ticket id or its alias`
+      : `${parsed.verb.id} needs a task: ${parsed.verb.id} <ticket|alias>`;
+    return;
+  }
+  state.classList.add('ok');
+  state.textContent = `runs as typed — ${parsed.verb.hint}`;
+}
+
+ask.addEventListener('input', judgeAsk);
+
+// Tier 1 first: a line that parses is EXECUTED, not interpreted — deterministic, instant and free. Only real
+// free text reaches /api/interpret.
+async function runParsed(parsed) {
+  const {verb, argument, task} = parsed;
+  if (verb.takesTask) {
+    await run(task, {id: verb.id, label: verb.id, hint: verb.hint});
+    return `${verb.id} ${task.alias || task.id}`;
+  }
+  if (verb.id === 'help') { showReport('help — command reference', await text('/api/help')); return 'help'; }
+  if (verb.id === 'stats') { showReport('stats — token spend', await text('/api/stats')); return 'stats'; }
+  if (verb.id === 'prune') { document.getElementById('show-prune').click(); return 'prune'; }
+  if (verb.id === 'do') {
+    if (!argument) { document.getElementById('new-task').click(); return 'do'; }
+    const result = await api('/api/tasks', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ref: argument}),
+    });
+    toast(result.message);
+    return `do ${argument}`;
+  }
+  if (verb.id === 'resume') {
+    if (!argument.startsWith('http')) {
+      document.getElementById('resume-task').click();
+      document.getElementById('resume-url').value = argument;
+      return 'resume';
+    }
+    const result = await api('/api/tasks/resume', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({reviewRequestUrl: argument}),
+    });
+    toast(result.message);
+    return `resume ${argument}`;
+  }
+  return null;
+}
+
 palette.onsubmit = async (event) => {
   event.preventDefault();
   const state = document.getElementById('palette-state');
   const button = palette.querySelector('button[type=submit]');
+  const parsed = parseCommand(ask.value);
+  if (parsed && (!parsed.verb.takesTask || parsed.task)) {
+    button.disabled = true;
+    try {
+      const ran = await runParsed(parsed);
+      if (ran) { ask.value = ''; togglePalette(false); return; }
+    } catch (e) {
+      toast(e.message, true);
+      return;
+    } finally {
+      button.disabled = false;
+      judgeAsk();
+      await load();
+    }
+  }
   button.disabled = true;
   state.textContent = 'interpreting…';           // a model call: seconds
   try {
@@ -346,11 +477,9 @@ async function text(path, options) {
 
 // `resume`: take over a review request that already exists (reopened, or someone else's work).
 const resumeForm = document.getElementById('resume');
-document.getElementById('resume-task').onclick = () => {
-  resumeForm.hidden = !resumeForm.hidden;
-  if (!resumeForm.hidden) document.getElementById('resume-url').focus();
-};
-document.getElementById('cancel-resume').onclick = () => { resumeForm.hidden = true; };
+document.getElementById('resume-task').onclick = () =>
+  toggleForm(resumeForm, document.getElementById('resume-task'),
+    () => document.getElementById('resume-url').focus());
 resumeForm.onsubmit = async (event) => {
   event.preventDefault();
   const state = document.getElementById('resume-state');
@@ -413,4 +542,15 @@ async function openReport(title, path) {
   }
 }
 
-// A <dialog> already closes on Escape by itself — nothing to wire.
+// A <dialog> closes on Escape by itself; the inline forms do not, and that is what the old "Cancel" buttons
+// were standing in for.
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape') return;
+  for (const [id, button] of [['launch', 'new-task'], ['resume', 'resume-task'], ['palette', 'open-palette']]) {
+    const form = document.getElementById(id);
+    if (form && !form.hidden) {
+      form.hidden = true;
+      document.getElementById(button).setAttribute('aria-pressed', 'false');
+    }
+  }
+});

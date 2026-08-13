@@ -42,7 +42,6 @@
   <label class="checkbox"><input type="checkbox" id="plan"> plan first</label>
   <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
   <button type="submit" class="primary">Start</button>
-  <button type="button" id="cancel-launch">Cancel</button>
   <span id="launch-state" class="muted"></span>
 </form>
 
@@ -50,17 +49,17 @@
   <input id="resume-url" placeholder="review-request URL (…/merge_requests/42 or …/pull/42)" autocomplete="off" required>
   <input id="resume-ticket" placeholder="ticket (optional — skips the read)" autocomplete="off">
   <button type="submit" class="primary">Resume</button>
-  <button type="button" id="cancel-resume">Cancel</button>
   <span id="resume-state" class="muted">its branch is resumed with the commits already on it — yours or
     someone else's — and the request is linked, not reopened</span>
 </form>
 
 <form id="palette" hidden>
-  <input id="ask" placeholder="say it in words — e.g. “ship the login task”" autocomplete="off" required>
+  <input id="ask" list="ask-options" placeholder="a command (ship a1) or plain words (“залей задачу с логином”)"
+         autocomplete="off" required>
+  <datalist id="ask-options"></datalist>
   <button type="submit" class="primary">Run</button>
-  <button type="button" id="cancel-palette">Cancel</button>
-  <span id="palette-state" class="muted">a model maps this to ONE command, then the same gate as the buttons
-    runs it — nothing here can do more than a button can</span>
+  <span id="palette-state" class="muted">a known command runs as typed, for free; anything else goes to a model
+    that maps it to ONE command — and then through the same gate as the buttons</span>
 </form>
 
 <dialog id="report">

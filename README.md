@@ -188,7 +188,10 @@ status, and points at drafted review replies when the agent has written any. Tal
 | `respawn <ticket>` | restart a dead agent session |
 | `done <ticket>` | close the task: full cleanup — session, worktree, state (branch kept) |
 | `prune [all]` | list the LOCAL branches already merged into `deployBranch` (a dry run); `prune all` deletes them. Never touches a remote branch, a live task's branch, or your base/deploy branch. A **squash**-merged branch looks unmerged to git, so it is never listed — jagt cannot prove the work survived. The list is every merged local branch, not only the ones jagt created: read it before typing `all` |
-| anything else (free text) | tier 2 of the dispatch: a model maps your words onto ONE of the commands above and jagt executes it through the same gate a button uses — it answers with what it understood ("understood as `ship a1` — …"). In the board this is the **Ask** button / **⌘K**. Costs one small model call, and only here; a single mistyped word is treated as a typo and costs nothing |
+| anything else (free text) | tier 2 of the dispatch: a model maps your words onto ONE of the commands above and jagt executes it through the same gate a button uses — it answers with what it understood ("understood as `ship a1` — …"). In the board this is the **Ask** button / **⌘K**, and that field is not only free text: it completes the
+grammar as you type (from the server's own verb list, so nothing can be missing), says whether the line
+will run — green — or why it will not (`no task “a9”`, `ship needs a task`), and a line that parses is
+EXECUTED as typed, without a model call. Only real prose reaches the model. Costs one small model call, and only here; a single mistyped word is treated as a typo and costs nothing |
 | `help` | command reference + recovery cheatsheet |
 
 The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
