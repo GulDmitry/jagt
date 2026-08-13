@@ -321,12 +321,21 @@ palette.onsubmit = async (event) => {
 // worktree), deploy, revert, respawn, focus, done — are already the card's own buttons, because the server
 // lists them per task and the board renders exactly that list.
 
-const panel = document.getElementById('panel');
+const report = document.getElementById('report');
+const reportTitle = document.getElementById('report-title');
+const reportBody = document.getElementById('report-body');
 
-function showPanel(text) {
-  panel.hidden = false;
-  panel.textContent = text;
+// One dialog for every plain-text answer the backend gives (help, stats, orphans, prune). A native <dialog>
+// costs nothing, dims the board itself, closes on Escape, and — unlike a new tab — cannot be lost behind the
+// window you were already reading.
+function showReport(title, text) {
+  reportTitle.textContent = title;
+  reportBody.textContent = text.trimEnd();
+  if (!report.open) report.showModal();
+  reportBody.scrollTop = 0;
 }
+
+document.getElementById('close-report').onclick = () => report.close();
 
 async function text(path, options) {
   const response = await fetch(path, options);
@@ -377,48 +386,31 @@ document.getElementById('show-prune').onclick = async () => {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({delete: false}),
     });
-    showPanel(dryRun.message);
+    showReport('prune — dry run', dryRun.message);
     if (!confirm(`${dryRun.message}\n\nDelete these local branches now?`)) return;
     const deleted = await api('/api/prune', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({delete: true}),
     });
-    showPanel(deleted.message);
+    showReport('prune — deleted', deleted.message);
     toast('prune: done');
   } catch (e) {
     toast(e.message, true);
   }
 };
 
-document.getElementById('show-stats').onclick = async () => {
+document.getElementById('show-stats').onclick = () => openReport('stats — token spend', '/api/stats');
+document.getElementById('show-help').onclick = () => openReport('help — command reference', '/api/help');
+// The orphan report is the same plain text /orphans has always served; it just no longer costs you a tab.
+document.getElementById('show-orphans').onclick = () => openReport('orphaned worktrees', '/orphans');
+
+async function openReport(title, path) {
   try {
-    showPanel(await text('/api/stats'));
+    showReport(title, await text(path));
   } catch (e) {
     toast(e.message, true);
   }
-};
+}
 
-document.getElementById('show-help').onclick = async () => {
-  try {
-    showPanel(await text('/api/help'));
-  } catch (e) {
-    toast(e.message, true);
-  }
-};
-
-// `quit`: stops the BACKEND. Agents keep running in tmux, which is why this is offered at all.
-document.getElementById('stop-backend').onclick = async () => {
-  if (!confirm('Stop the jagt backend?\n\nAgents keep running in tmux; start the jar again to reattach.')) return;
-  try {
-    const result = await api('/api/shutdown', {method: 'POST'});
-    showPanel(result.message);
-  } catch (e) {
-    toast(e.message, true);
-  }
-};
-
-// Escape closes whatever text panel is open — it is a reading surface, not a mode.
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !panel.hidden) panel.hidden = true;
-});
+// A <dialog> already closes on Escape by itself — nothing to wire.

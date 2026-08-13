@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
-import dev.jagt.orchestrator.service.BackendShutdown;
 import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateViews;
@@ -75,12 +74,11 @@ public class BoardApiController {
     private final NaturalLanguageDispatch naturalLanguage;
     private final OrchestratorTools tools;
     private final StateViews views;
-    private final BackendShutdown shutdown;
 
     public BoardApiController(TaskViews taskViews, CommandService commands, TaskLauncher launcher,
                               ConfigService configService, UsageTracker usageTracker, TaskEventStream events,
                               NaturalLanguageDispatch naturalLanguage, OrchestratorTools tools,
-                              StateViews views, BackendShutdown shutdown) {
+                              StateViews views) {
         this.taskViews = taskViews;
         this.commands = commands;
         this.launcher = launcher;
@@ -90,7 +88,6 @@ public class BoardApiController {
         this.naturalLanguage = naturalLanguage;
         this.tools = tools;
         this.views = views;
-        this.shutdown = shutdown;
     }
 
     @GetMapping("/tasks")
@@ -165,16 +162,6 @@ public class BoardApiController {
     @GetMapping(value = "/stats", produces = MediaType.TEXT_PLAIN_VALUE)
     public String stats() {
         return views.usageStats();
-    }
-
-    /**
-     * The console's `quit`: stops the BACKEND. Agents keep running in tmux — that is the whole point of them
-     * living there — so this detaches the orchestrator, it does not end any work.
-     */
-    @PostMapping("/shutdown")
-    public ActionResult shutdown() {
-        shutdown.stopAfterResponding();
-        return new ActionResult("Stopping the backend — agents keep running in tmux; start it again to reattach.");
     }
 
     /** "Something moved" — the browser re-fetches the board. See {@link TaskEventStream}. */

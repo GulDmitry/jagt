@@ -52,10 +52,22 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #resume { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel); }
 #resume input#resume-url { flex: 1; min-width: 300px; }
-/* The plain-text answers (help, stats, prune) render as-is: they are aligned text, and a table would lie. */
-#panel {
-  margin: 0; padding: 12px 16px; background: var(--panel); border-bottom: 1px solid var(--line);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; overflow-x: auto;
+/* Reports (help, stats, orphans, prune) open OVER the board in a native <dialog>: no new tab to lose, and the
+   board keeps its place instead of being pushed down. Plain <pre> inside — the text is column-aligned, and a
+   table would only misrepresent it. */
+#report {
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text);
+  padding: 0; max-width: min(900px, 92vw); max-height: 82vh; overflow: hidden;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
+}
+#report::backdrop { background: rgb(0 0 0 / 45%); }
+.report-head {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; background: var(--panel);
+}
+#report-body {
+  margin: 0; padding: 12px 14px; max-height: calc(82vh - 46px); overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45;
 }
 
 main { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; padding: 16px; }

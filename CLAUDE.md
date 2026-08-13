@@ -82,9 +82,12 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   - PARITY IS AN INVARIANT, not an aspiration: a capability that exists in ONE surface only is a bug. Per-task
     verbs come from `Move.actions()`, so a new action appears on both at once; everything else needs an explicit
     counterpart, and the ones that were console-only were exactly the ones nobody noticed missing (`resume`,
-    `prune`, `stats`, `help`, `quit` — all added 2026-08-13). Shared text lives in `service/CommandReference`
-    (the grammar) and `StateViews` (dashboard + stats), stopping is `service/BackendShutdown`, so neither
-    surface renders its own version of any of them.
+    `prune`, `stats`, `help`, `orphans` — all added 2026-08-13). Shared text lives in `service/CommandReference`
+    (the grammar) and `StateViews` (dashboard + stats), so neither surface renders its own version. The reports
+    open in a `<dialog>` over the board, never a new page. ONE deliberate exception to parity: `quit` is
+    console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill), not to a browser
+    button, and nothing is lost by that since agents live in tmux. A shutdown endpoint was built and removed;
+    do not add one back.
   - "how is an action executed" is `service/CommandService` (validates against `Move` first, so a stale board
     tab is refused with a sentence, not with a git error three layers down), and "how is a task started" is
     `service/TaskLauncher`. The console parses a command line, the controller parses JSON; neither owns rules.

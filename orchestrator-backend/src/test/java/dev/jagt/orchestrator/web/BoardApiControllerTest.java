@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.web;
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
-import dev.jagt.orchestrator.service.BackendShutdown;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
@@ -32,9 +31,8 @@ class BoardApiControllerTest {
     private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
     private final OrchestratorTools tools = mock(OrchestratorTools.class);
     private final StateViews views = mock(StateViews.class);
-    private final BackendShutdown shutdown = mock(BackendShutdown.class);
     private final BoardApiController api = new BoardApiController(taskViews, commands, launcher, configService,
-            usageTracker, mock(TaskEventStream.class), naturalLanguage, tools, views, shutdown);
+            usageTracker, mock(TaskEventStream.class), naturalLanguage, tools, views);
 
     @Test
     void executesAnActionByTheSameNameTheConsoleTakes() {
@@ -95,14 +93,6 @@ class BoardApiControllerTest {
         when(views.usageStats()).thenReturn("assistant token spend …");
 
         assertThat(api.stats()).isEqualTo("assistant token spend …");
-    }
-
-    /** `quit` in the console. Stopping must answer FIRST — closing the context inline kills the response. */
-    @Test
-    void stopsTheBackendOnlyAfterTellingTheCallerSo() {
-        assertThat(api.shutdown().message()).contains("agents keep running");
-
-        verify(shutdown).stopAfterResponding();
     }
 
     @Test

@@ -149,9 +149,13 @@ says when the agent has left **drafted review replies** in its worktree — read
 the obvious one highlighted: open the IDE, focus the agent's terminal, ship, check the review, deploy, close.
 `New task` does what `do ABC-42` does, and `Resume` does what `resume <mr-url>` does — take over a review
 request that already exists (reopened, or someone else's work): its branch comes back with the commits already
-on it and the request is linked, not reopened. `Prune`, `Stats` and `Help` are the same commands too (prune
-lists first and asks before deleting, exactly as typing `prune` before `prune all`), and `Stop` is `quit` — it
-stops the backend while agents keep running in tmux.
+on it and the request is linked, not reopened. `Prune`, `Stats`, `Help` and `Orphans` are the same commands
+too — they open OVER the board in a dialog instead of taking you to another page, and prune lists first and asks
+before deleting, exactly as typing `prune` before `prune all`.
+
+The one console verb the board deliberately does NOT have is `quit`: stopping the backend belongs to whoever
+started the process (Ctrl-C, or kill it), not to a button in a browser. Nothing is lost either way — agents live
+in tmux and keep working when the backend goes away.
 
 **The board and the console can do the same things**; anything console-only is a bug. Per-task verbs — ship,
 review, `ide` (including the DEPLOY worktree when a deploy conflicted), deploy, revert, respawn, focus, done —
