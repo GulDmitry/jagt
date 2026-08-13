@@ -39,6 +39,10 @@ class CodexAgentRuntimeTest {
         assertThat(Files.readString(worktree.resolve(".codex/config.toml")))
                 .contains("[mcp_servers.jagt-orchestrator]")
                 .contains("args = [\"" + worktree.resolve("mcp_client.js") + "\"]");
+        // The config names the bridge, so the bridge has to BE there: Codex spawns its MCP servers rather than
+        // reaching a remote one, which is the one reason Node is still installed for this runtime.
+        assertThat(Files.readSymbolicLink(worktree.resolve("mcp_client.js")))
+                .isEqualTo(root.resolve("mcp_client.js"));
     }
 
     @Test

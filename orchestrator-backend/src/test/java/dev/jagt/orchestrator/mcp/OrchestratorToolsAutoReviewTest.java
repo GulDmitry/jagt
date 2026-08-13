@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.agent.AgentRuntime;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.agent.ClaudeAgentRuntime;
+import dev.jagt.orchestrator.agent.McpEndpoint;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
@@ -102,7 +103,7 @@ class OrchestratorToolsAutoReviewTest {
     private static OrchestratorTools facade(ConfigService config, StateService state, GitService git,
                                             TmuxService tmux, EditorDriver editor, TerminalDriver terminal,
                                             UserNotifier notifier, OrchestratorProperties properties) {
-        AgentRuntime runtime = new ClaudeAgentRuntime(properties);
+        AgentRuntime runtime = new ClaudeAgentRuntime(properties, new McpEndpoint("http://localhost:8290/mcp"));
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, runtime);
         return new OrchestratorTools(config, state, git, editor, notifier, sessions,
                 new TaskProvisioning(config, state, git, sessions, runtime, properties,

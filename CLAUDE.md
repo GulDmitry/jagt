@@ -16,11 +16,17 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   that inherits the human's own MCP (see Master assistant), and, when configured, the read-only `CodeHost`
   REST seam (see PLUGGABLE BY DESIGN). The REST path is opt-in and needs a token in the environment
   (`orchestrator.code-host.*`); with none configured the backend holds no credential at all.
-- `mcp_client.js` — Node.js stdio→HTTP MCP proxy. Injects `process.cwd()` as `X-Working-Directory` header
-  so the backend knows which agent is calling. Symlinked into every worktree.
-- `.mcp.json` — Claude Code project MCP config pointing at `mcp_client.js` (spec called it `.claude.json`;
-  `.mcp.json` is what Claude Code actually reads). Symlinked into a CLAUDE worktree by `ClaudeAgentRuntime`;
-  other runtimes write their own equivalent (Codex: `.codex/config.toml`) — it is not a universal file.
+- HOW AN AGENT REACHES THE MCP SERVER IS PART OF THE `AgentRuntime` SEAM, and there are exactly two paths
+  (`agent/McpEndpoint` documents both): HTTP — the CLI is pointed at `orchestrator.mcp-url` and carries
+  `X-Working-Directory: <worktree>` itself, nothing running in between; or stdio — the CLI can only SPAWN a
+  server, so the runtime calls `AbstractAgentRuntime.linkStdioProxy` and gets `mcp_client.js`, the standard
+  Node bridge that POSTs the same header. Prefer HTTP: verified against a real session, and it is what took
+  Node out of jagt's requirements. `mcp_client.js` exists only for the stdio path (Codex today, whose config
+  has no verified remote-server form) — do NOT link it for everybody again.
+- `.mcp.json` — Claude Code's project MCP config, GENERATED per worktree by `ClaudeAgentRuntime` (not
+  symlinked: the header value IS that worktree's path). The committed ROOT `.mcp.json` is the same server for a
+  dev session working ON jagt, with no header — that session is not a task, so the backend treats it as Master.
+  Other runtimes write their own equivalent (Codex: `.codex/config.toml`); it is not a universal file.
 - `config.json` — user config, grouped into logical sections: `projects` (path, baseBranch,
   deployBranch, labels), `viewer` (tmuxSession, viewMode shared|tab-per-task, keepViewer), `dashboard`
   (refreshSeconds, reservedRows), `codeReview` (mrTitlePattern, postReviewReplies, reviewReplyAuthors,
@@ -30,8 +36,10 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   defaults, so callers never null-check). Gitignored; created by copying committed `config.json.dist`.
   Never commit user-specific paths. ALL config keys are documented in README's Configuration section —
   keep it in sync.
-- Orchestrator root is auto-detected at startup: nearest parent dir containing `mcp_client.js`
-  (`OrchestratorPaths`); overridable via `ORCHESTRATOR_ROOT`. No absolute user paths in the repo.
+- Orchestrator root is auto-detected at startup: nearest parent dir containing `config.json.dist` OR
+  `mcp_client.js` (`OrchestratorPaths`); overridable via `ORCHESTRATOR_ROOT`. Two markers on purpose — the
+  bridge is only still here for stdio-only agents, so root detection must not depend on it. No absolute user
+  paths in the repo.
 - `initialize_task` copies the base repo's IDE files into the worktree so `ide` opens it ready to run
   and query (`copyIdeProjectFiles`): run configs — both `.run/` (modern) and `.idea/runConfigurations/`
   (legacy; only "Store as project file" ones, workspace-only don't copy) — plus the DB connections

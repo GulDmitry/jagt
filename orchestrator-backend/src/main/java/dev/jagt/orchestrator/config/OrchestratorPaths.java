@@ -6,16 +6,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Resolves the orchestrator root without any machine-specific configuration:
- * walks up from the launch directory until it finds mcp_client.js (a committed
- * root marker). Works both for `./gradlew bootRun` (started in
- * orchestrator-backend/) and for `java -jar` started from the root itself.
- * Everything is overridable via orchestrator.* properties / ORCHESTRATOR_ROOT.
+ * Resolves the orchestrator root without any machine-specific configuration: walks up from the launch
+ * directory until it finds a committed root marker. Works both for `./gradlew bootRun` (started in
+ * orchestrator-backend/) and for `java -jar` started from the root itself. Everything is overridable via
+ * orchestrator.* properties / ORCHESTRATOR_ROOT.
+ *
+ * <p>TWO markers are accepted, and that is deliberate: `mcp_client.js` is only still here for agents that
+ * cannot talk to a remote MCP server, so "where is the root" must not depend on whether that bridge exists.
  */
 @Component
 public class OrchestratorPaths {
 
-    private static final String ROOT_MARKER = "mcp_client.js";
+    private static final java.util.List<String> ROOT_MARKERS =
+            java.util.List.of("config.json.dist", "mcp_client.js");
 
     private final Path root;
     private final Path configFile;
@@ -50,11 +53,13 @@ public class OrchestratorPaths {
     private static Path findRoot() {
         Path start = Path.of(System.getProperty("user.dir")).toAbsolutePath().normalize();
         for (Path dir = start; dir != null; dir = dir.getParent()) {
-            if (Files.exists(dir.resolve(ROOT_MARKER))) {
-                return dir;
+            for (String marker : ROOT_MARKERS) {
+                if (Files.exists(dir.resolve(marker))) {
+                    return dir;
+                }
             }
         }
-        throw new IllegalStateException("Cannot locate orchestrator root: no " + ROOT_MARKER
+        throw new IllegalStateException("Cannot locate orchestrator root: none of " + ROOT_MARKERS
                 + " found in " + start + " or any parent. Set ORCHESTRATOR_ROOT.");
     }
 }

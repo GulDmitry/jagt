@@ -6,26 +6,33 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Common agent-runtime logic, so concrete runtimes only fill in what actually varies: provisioning is a
- * TEMPLATE here (the agent-agnostic MCP proxy is linked the same way for everyone) with one hook for the
- * per-agent artifacts.
+ * Common agent-runtime logic, so concrete runtimes only fill in what actually varies. Provisioning is a
+ * TEMPLATE with one hook, {@link #wireAgent}, because everything in it is per-agent — including how the CLI
+ * reaches jagt's MCP server (see {@link McpEndpoint}: HTTP directly, or the stdio bridge below).
  */
 public abstract class AbstractAgentRuntime implements AgentRuntime {
 
     @Override
     public final void provisionWorktree(AgentWorktree worktree) {
-        // mcp_client.js is a STANDARD stdio↔HTTP MCP proxy — every agent links the same script, and only the
-        // config that declares it differs. Keeping the link here is what stops that from being duplicated.
-        symlink(worktree.path().resolve("mcp_client.js"),
-                worktree.orchestratorRoot().resolve("mcp_client.js"));
         wireAgent(worktree);
     }
 
     /**
-     * The per-agent half of provisioning: the MCP config declaring the proxy, unattended-run permissions, and
-     * an alias for {@link #SYSTEM_KNOWLEDGE_FILE} if this CLI reads another filename.
+     * The per-agent half of provisioning: the MCP config (HTTP endpoint or the stdio bridge), unattended-run
+     * permissions, and an alias for {@link #SYSTEM_KNOWLEDGE_FILE} if this CLI reads another filename.
      */
     protected abstract void wireAgent(AgentWorktree worktree);
+
+    /**
+     * For a CLI that cannot talk to a remote MCP server and can only SPAWN one: links the standard Node bridge
+     * into the worktree, which POSTs to the same endpoint with the same caller header. Call it only from a
+     * runtime that needs it — an agent that speaks HTTP wants no proxy process, and linking one for everybody
+     * is what used to make Node a prerequisite of jagt itself.
+     */
+    protected static void linkStdioProxy(AgentWorktree worktree) {
+        symlink(worktree.path().resolve("mcp_client.js"),
+                worktree.orchestratorRoot().resolve("mcp_client.js"));
+    }
 
     /** POSIX single-quote a shell argument (the agent's bootstrap prompt in {@link #launchCommand}). */
     protected static String shellQuote(String s) {

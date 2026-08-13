@@ -49,6 +49,11 @@ public class CodexAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     protected void wireAgent(AgentWorktree worktree) {
+        // Codex spawns its MCP servers; its config has no verified remote-server form with custom headers, and
+        // the header is what tells the backend which task is calling. So this runtime keeps the stdio bridge
+        // (and with it Node) until somebody confirms an HTTP form on a real Codex — at which point this becomes
+        // the same two lines as ClaudeAgentRuntime and the link goes away. See McpEndpoint for both paths.
+        linkStdioProxy(worktree);
         write(worktree.path().resolve(CODEX_HOME_DIR).resolve("config.toml"), configToml(worktree.path()));
     }
 

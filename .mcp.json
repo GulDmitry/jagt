@@ -1,9 +1,8 @@
 {
   "mcpServers": {
     "jagt-orchestrator": {
-      "type": "stdio",
-      "command": "node",
-      "args": ["./mcp_client.js"]
+      "type": "http",
+      "url": "http://localhost:8290/mcp"
     }
   }
 }

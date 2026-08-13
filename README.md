@@ -87,7 +87,7 @@ service.
 | Java 25+ | `sdk install java 25-tem` | the backend / Master console |
 | an agent CLI | [Claude Code](https://claude.com/claude-code) (`orchestrator.agent=claude`, default) or the Codex CLI (`=codex`) | the agents |
 | tmux | `brew install tmux` | persistent agent sessions |
-| Node 18+ | `brew install node` | the MCP proxy jagt injects into worktrees |
+| Node 18+ | `brew install node` | ONLY for `orchestrator.agent=codex` — Codex spawns its MCP server, so it gets the stdio bridge. Claude Code talks to jagt over HTTP and needs no Node |
 | git | Xcode CLT or `brew install git` | worktrees |
 | IntelliJ IDEA | JetBrains Toolbox | the `ide` review checkpoint |
 | kitty | `brew install kitty` | default agents terminal (swap it in config) |
@@ -100,7 +100,7 @@ service.
 | Java 25+ | `sdk install java 25-tem` | the backend / Master console |
 | an agent CLI | [Claude Code](https://claude.com/claude-code) — default; swap via `orchestrator.agent` | the agents |
 | tmux | `apt install tmux` | persistent agent sessions |
-| Node 18+ | `apt install nodejs` | the MCP proxy jagt injects into worktrees |
+| Node 18+ | `apt install nodejs` | ONLY for `orchestrator.agent=codex` (see the macOS table) |
 | git | `apt install git` | worktrees |
 | kitty | `apt install kitty` | agents terminal |
 | libnotify | `apt install libnotify-bin` | desktop notifications (`notify-send`) |
@@ -304,6 +304,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
 | `orchestrator.kitty-command` | the kitty binary for the viewer (default `kitty`) |
+| `orchestrator.mcp-url` | where an agent's MCP client reaches jagt (default `http://localhost:<server.port>/mcp`). Claude Code is pointed straight at it; only agents that cannot use a remote server get the stdio bridge |
 | `orchestrator.tmux-command` | tmux binary (default `tmux`) — a bare name is resolved on PATH and then in the usual install dirs (Homebrew included, since a GUI-launched process has neither on PATH); give an absolute path to pin one |
 | `orchestrator.config-file` / `orchestrator.state-file` | where `config.json` and `state.json` live (default: inside the orchestrator root) |
 | `orchestrator.open-warp-window` | auto-open the agents terminal window (`false` in tests) |

@@ -101,7 +101,10 @@ class TaskFlowMatrixTest {
         assertThat(created).contains("Stub sub-agent started");
         assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();
         assertThat(worktree.resolve("task_context.md")).exists();
-        assertThat(worktree.resolve("mcp_client.js")).exists();
+        // Nothing agent-shaped: no MCP config, no Claude directory, and no stdio bridge either. The bridge is
+        // asked for by the runtimes that cannot reach the endpoint themselves (Codex today), so a worktree that
+        // has one means something outside the runtime put it there.
+        assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
         assertThat(worktree.resolve(".mcp.json")).doesNotExist();
         assertThat(worktree.resolve(".claude")).doesNotExist();
         assertThat(stateService.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.NEW);

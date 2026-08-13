@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.agent.ClaudeAgentRuntime;
+import dev.jagt.orchestrator.agent.McpEndpoint;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
@@ -55,7 +56,7 @@ class TaskProvisioningTest {
     }
 
     private TaskProvisioning provisioning() {
-        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties);
+        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, new McpEndpoint("http://localhost:8290/mcp"));
         AgentSessions sessions = new AgentSessions(config, state, mock(TmuxService.class),
                 mock(TerminalDriver.class), runtime);
         return new TaskProvisioning(config, state, git, sessions, runtime, properties,

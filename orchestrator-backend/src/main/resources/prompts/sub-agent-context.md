@@ -37,7 +37,7 @@ of text:
 
 ## Orchestrator system knowledge
 - Master project (orchestrator root): %s
-- Backend: Spring Boot at http://localhost:8290 (MCP over `./mcp_client.js`, already configured via `.mcp.json` in this directory)
+- Backend: Spring Boot at http://localhost:8290 (its MCP server is already configured in this directory — you reach it over HTTP, nothing to start). If a `jagt-orchestrator` tool is missing or its call fails, the backend is DOWN: say so in one line and stop. Never answer a question about tasks from memory — an empty answer reads as "nothing to do", which is a lie the human acts on.
 - State SSOT: %s
 - User config: %s
 

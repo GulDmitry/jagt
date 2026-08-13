@@ -104,6 +104,17 @@ whether the tracker is Jira or Linear or what the human named it. It would have 
 (`assistant.mcpServers: ["…"]`, empty = inherit everything). Given the measured ~7k tokens the MCP surface
 costs, this is a determinism nicety, NOT a cost lever.
 
+### Verify what a live agent session does when the backend restarts under it (HTTP transport)
+The stdio bridge retried `ECONNREFUSED` for ~15 s, which is what let a session survive a jar rebuild — agents
+mark an MCP server as failed on the first error. With Claude pointed straight at the HTTP endpoint that
+behaviour belongs to the client, and it is NOT verified: a one-shot `-p` session cannot span a restart.
+Measured instead, and worth knowing: a session STARTED while the backend is down has no jagt tools, and the
+model then answers "No tasks found." — a lie dressed as data. The sub-agent prompt now forbids that ("if a
+`jagt-orchestrator` tool is missing or fails, say the backend is DOWN and stop"), but the reconnect question
+needs one interactive session: start an agent, restart the jar, ask it to call `update_agent_status`.
+If it turns out a live session does not recover, the fix is not to bring the proxy back for everyone — it is
+either a client-side setting or a runtime that keeps the bridge, which is exactly what the seam is for.
+
 ## The record — what shipped, and the finding worth keeping
 
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules

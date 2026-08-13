@@ -21,9 +21,11 @@ import java.util.stream.Collectors;
 public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     private final OrchestratorProperties properties;
+    private final McpEndpoint mcp;
 
-    public ClaudeAgentRuntime(OrchestratorProperties properties) {
+    public ClaudeAgentRuntime(OrchestratorProperties properties, McpEndpoint mcp) {
         this.properties = properties;
+        this.mcp = mcp;
     }
 
     @Override
@@ -40,10 +42,31 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     protected void wireAgent(AgentWorktree worktree) {
-        symlink(worktree.path().resolve(".mcp.json"), worktree.orchestratorRoot().resolve(".mcp.json"));
+        write(worktree.path().resolve(".mcp.json"), mcpJson(mcp.url(),
+                mcp.callerHeaderValue(worktree.path())));
         symlink(worktree.path().resolve("CLAUDE.md"), worktree.path().resolve(SYSTEM_KNOWLEDGE_FILE));
         write(worktree.path().resolve(".claude").resolve("settings.local.json"),
                 settingsJson(worktree.outputStyle(), worktree.disabledPlugins()));
+    }
+
+    /**
+     * The worktree's MCP config: Claude Code talks to the backend over HTTP and carries the caller header
+     * itself, so there is no proxy process between them — which is what took Node out of jagt's requirements.
+     * Written per worktree rather than symlinked from the root, because the header value IS the worktree path
+     * (that is how the backend knows which task is calling; the old bridge computed it as {@code process.cwd()}).
+     */
+    static String mcpJson(String url, String worktreePath) {
+        return """
+                {
+                  "mcpServers": {
+                    "jagt-orchestrator": {
+                      "type": "http",
+                      "url": "%s",
+                      "headers": { "%s": "%s" }
+                    }
+                  }
+                }
+                """.formatted(url, McpEndpoint.CALLER_HEADER, worktreePath.replace("\\", "\\\\"));
     }
 
     /**

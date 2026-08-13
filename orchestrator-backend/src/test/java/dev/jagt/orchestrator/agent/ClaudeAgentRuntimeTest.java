@@ -16,7 +16,8 @@ class ClaudeAgentRuntimeTest {
 
     private static ClaudeAgentRuntime runtime(String command, String prompt) {
         return new ClaudeAgentRuntime(OrchestratorProperties.defaults()
-                .withClaudeCommand(command).withAgentPrompt(prompt));
+                .withClaudeCommand(command).withAgentPrompt(prompt),
+                new McpEndpoint("http://localhost:8290/mcp"));
     }
 
     @Test
@@ -37,25 +38,35 @@ class ClaudeAgentRuntimeTest {
                 .isEqualTo("claude 'it'\\''s fine'");
     }
 
+    /**
+     * Claude Code speaks MCP over HTTP, so the worktree gets an endpoint and a header — not a proxy process.
+     * The header value IS the worktree path: that is how the backend answers "which task is calling?", and it
+     * is exactly what the old Node bridge computed at runtime as {@code process.cwd()}.
+     */
     @Test
-    void linksTheAgentAgnosticMcpProxyIntoTheWorktree(@TempDir Path root) throws Exception {
+    void declaresTheJagtMcpServerOverHttpWithThisWorktreeAsTheCaller(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
         runtime("claude", "go").provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
-        assertThat(Files.readSymbolicLink(worktree.resolve("mcp_client.js")))
-                .isEqualTo(root.resolve("mcp_client.js"));
+        var config = new JsonMapper().readTree(Files.readString(worktree.resolve(".mcp.json")))
+                .path("mcpServers").path("jagt-orchestrator");
+        assertThat(config.path("type").asString("")).isEqualTo("http");
+        assertThat(config.path("url").asString("")).isEqualTo("http://localhost:8290/mcp");
+        assertThat(config.path("headers").path("X-Working-Directory").asString(""))
+                .isEqualTo(worktree.toAbsolutePath().normalize().toString());
     }
 
+    /** No bridge, no Node: an agent that can reach the endpoint itself must not get a proxy in its worktree. */
     @Test
-    void declaresTheJagtMcpServerThroughTheProjectMcpConfig(@TempDir Path root) throws Exception {
+    void leavesNoStdioProxyInTheWorktree(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
         runtime("claude", "go").provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
-        assertThat(Files.readSymbolicLink(worktree.resolve(".mcp.json"))).isEqualTo(root.resolve(".mcp.json"));
+        assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
     }
 
     @Test
