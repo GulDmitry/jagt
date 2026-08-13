@@ -21,8 +21,9 @@ class CommandServiceTest {
 
     private final OrchestratorTools tools = mock(OrchestratorTools.class);
     private final ReviewSweepService reviewSweep = mock(ReviewSweepService.class);
+    private final ShipService shipService = mock(ShipService.class);
     private final StateService stateService = mock(StateService.class);
-    private final CommandService commands = new CommandService(tools, reviewSweep, stateService);
+    private final CommandService commands = new CommandService(tools, reviewSweep, shipService, stateService);
 
     @BeforeEach
     void tasksAreAddressedByTheirIdUnlessATestSaysOtherwise() {
@@ -45,7 +46,7 @@ class CommandServiceTest {
     @Test
     void runsALegalActionAndHandsBackWhateverTheToolSaid() {
         havingTask("ABC-1", TaskStatus.REVIEW_PENDING, null);
-        when(tools.ship("ABC-1")).thenReturn("ship ABC-1: approval relayed");
+        when(shipService.ship("ABC-1")).thenReturn("ship ABC-1: approval relayed");
 
         assertThat(commands.execute("ABC-1", TaskAction.SHIP)).isEqualTo("ship ABC-1: approval relayed");
     }

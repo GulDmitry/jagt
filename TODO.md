@@ -10,7 +10,7 @@ In dependency order; each step is detailed in its section below.
 |---|------|------------------------|------|
 
 | 2 | ~~`CodeHost` REST — review sweep + MR create/update~~ DONE in the seam; the create call is UNWIRED (step 3 wires it) | kills the dominant token spend + the "is it approved?" judgement flake | done |
-| 3 | `ship` = backend commit + push | kills the permission-classifier stall class; `SHIPPING` stops hanging | 1-2 d |
+
 
 | 5 | Status-transition history in `state.json` | "which steps happened, how long did review take" | 0.5 d |
 | 6 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path | 1-2 d |
@@ -142,7 +142,19 @@ still MISSING is the measurement it was supposed to produce — point the config
 through a review round, and compare `stats` against the pre-REST numbers above. Until somebody does that, the
 token drop is arithmetic (a poll that spawns no process costs nothing), not evidence.
 
-### `ship` should commit and push from the backend, not by instructing the agent
+### DONE 2026-08-13 — `ship` commits and pushes from the backend
+`ShipService` does it in-process when a `CodeHost` owns the repository (commit → push → create/update the
+request → CI_POLLING with the link), and `OrchestratorTools` lost `ship` entirely — the split has started.
+`Move.shippable` is the single gate, `stripTicketPrefix` became `model/ReviewRequestTitle`, and a per-task
+in-flight guard stops a double click from pushing twice.
+Two deliberate limits, both worth keeping in mind before "improving" them:
+- a review-round commit message is mechanical (`<task> address review comments`); the backend cannot describe
+  a fix it did not make, and inventing prose is worse than being plain;
+- posting the drafted replies is still the agent's, because a reply needs the thread it answers and
+  `ReviewFacts.comments` carries formatted strings, not discussion ids. Extending the sweep to carry ids is
+  what would finish this — then `CodeHost` could post them and the agent would be out of `ship` completely.
+
+### Superseded — the original argument for moving ship into the backend
 `OrchestratorTools.ship` writes the agent a five-step prose instruction: commit with EXACTLY this title,
 push branch, create the MR, post drafted replies, report `CI_POLLING` with the URL. Every step of that is
 deterministic and already belongs to the backend — `GitService` holds the per-repo lock, `mrTitlePattern`

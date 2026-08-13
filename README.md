@@ -151,7 +151,7 @@ branch and the other deletes a worktree.
 | `focus <ticket>` | jump to the agent's session — **talk to the agent directly there** |
 | `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (falls back to `baseBranch`) — does not auto-refresh |
 | `review <ticket>` | pull the MR's pipeline + comments; the agent fixes locally and drafts replies (nothing pushed) |
-| `ship <ticket>` | approved: the agent commits (title from `mrTitlePattern`), pushes, opens the merge request on the first ship (updates it on later rounds), posts drafted replies, then reports `CI_POLLING` with the link |
+| `ship <ticket>` | approved: jagt itself commits (title from `mrTitlePattern`), pushes the task branch and opens or updates the review request over the code host's API — no model involved, so nothing can stall or reword it. Only the drafted replies stay with the agent, as a follow-up. Without `orchestrator.code-host` configured it falls back to instructing the agent, as before |
 | `resume <mr-url>` | reopened merge request: resume its branch with existing commits and link that MR → `CI_POLLING` (no new MR) |
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push. On conflict nothing is pushed: the task goes `DEPLOY_CONFLICT`, `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, then `deploy` again |
 | `respawn <ticket>` | restart a dead agent session |

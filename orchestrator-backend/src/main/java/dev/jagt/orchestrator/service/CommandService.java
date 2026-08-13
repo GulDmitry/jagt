@@ -20,11 +20,14 @@ public class CommandService {
 
     private final OrchestratorTools tools;
     private final ReviewSweepService reviewSweep;
+    private final ShipService shipService;
     private final StateService stateService;
 
-    public CommandService(OrchestratorTools tools, ReviewSweepService reviewSweep, StateService stateService) {
+    public CommandService(OrchestratorTools tools, ReviewSweepService reviewSweep, ShipService shipService,
+                          StateService stateService) {
         this.tools = tools;
         this.reviewSweep = reviewSweep;
+        this.shipService = shipService;
         this.stateService = stateService;
     }
 
@@ -45,7 +48,7 @@ public class CommandService {
             case FOCUS -> tools.focusTask(taskId);
             case IDE -> tools.openInIde(taskId, "project", null);
             case DIFF -> tools.openInIde(taskId, "diff", null);
-            case SHIP -> tools.ship(taskId);
+            case SHIP -> shipService.ship(taskId);
             case SWEEP -> reviewSweep.sweep(taskId).message();
             case DEPLOY -> tools.deployTask(taskId, null);
             case RESPAWN -> tools.openTaskTab(taskId, null);

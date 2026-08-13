@@ -135,6 +135,55 @@ public class GitService {
         return stdout.lines().map(String::strip).filter(line -> !line.isEmpty()).toList();
     }
 
+    /** What a ship committed, so the caller can report the truth instead of assuming a commit happened. */
+    public record Commit(boolean created, int changedFiles) {
+    }
+
+    /**
+     * Stages EVERYTHING in a task worktree and commits it with {@code message} — the mechanical half of
+     * {@code ship}, which used to be prose an agent had to follow (and could reword, or stall on a permission
+     * prompt nobody was watching).
+     *
+     * <p>Nothing staged means no commit, not an error: a review round where the agent changed nothing, or a
+     * ship after the agent committed by itself, is a legitimate no-op that still pushes and updates the
+     * review request.
+     */
+    public Commit commitAll(Path projectPath, Path worktree, String message) {
+        return withRepoLock(projectPath, () -> {
+            processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "add", "-A"))
+                    .expectSuccess("git add -A in " + worktree);
+            List<String> staged = branchNames(processRunner.run(worktree, GIT_TIMEOUT,
+                            List.of("git", "diff", "--cached", "--name-only"))
+                    .expectSuccess("git diff --cached in " + worktree).stdout());
+            if (staged.isEmpty()) {
+                return new Commit(false, 0);
+            }
+            processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "commit", "-m", message))
+                    .expectSuccess("git commit in " + worktree);
+            return new Commit(true, staged.size());
+        });
+    }
+
+    /**
+     * Pushes a TASK branch to origin, and only that branch.
+     *
+     * <p>Every part of the command is a safety decision. The refspec is explicit on both sides
+     * ({@code refs/heads/x:refs/heads/x}) so the push cannot follow HEAD or an upstream somewhere else — the
+     * same reason {@link #detachUpstream} exists. No {@code --force}, ever: a task branch that diverged from
+     * its remote is a human's problem, not something to overwrite. No {@code -u}: setting an upstream is
+     * exactly the trap detachUpstream removes.
+     */
+    public void pushBranch(Path projectPath, Path worktree, String branch) {
+        withRepoLock(projectPath, () -> {
+            var push = processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "push", "origin",
+                    "refs/heads/" + branch + ":refs/heads/" + branch));
+            if (push.exitCode() != 0) {
+                String details = push.stderr().isBlank() ? push.stdout() : push.stderr();
+                throw new IllegalStateException("Could not push branch '" + branch + "': " + details.strip());
+            }
+        });
+    }
+
     public boolean branchExists(Path projectPath, String branch) {
         return withRepoLock(projectPath, () -> processRunner.run(projectPath, GIT_TIMEOUT,
                 List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0);

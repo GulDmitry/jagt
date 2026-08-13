@@ -93,6 +93,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   asserts the invariants (one dashboard header, input pinned to the bottom row, dashboard above it) across
   startup + resize both ways + task-count changes. Run it after ANY change to `MasterShell` rendering.
   No-TTY (e.g. `gradlew bootRun`) falls back to a plain inline line-REPL.
+- `ship` is DETERMINISTIC when a `CodeHost` owns the repository: `ShipService` commits the worktree, pushes the
+  task branch and opens/updates the review request in-process (`GitService.commitAll`/`pushBranch` +
+  `CodeHost.createOrUpdateMergeRequest`), then sets CI_POLLING with the link. No model on that path, so
+  SHIPPING is no longer a state a task can hang in. Two things stay deliberate: a REVIEW-ROUND commit message
+  is MECHANICAL (`<task> address review comments`) because the backend cannot describe what the agent fixed,
+  and posting the drafted `review_replies.md` is still relayed to the agent — a reply needs the thread it
+  answers, which `ReviewFacts` does not carry — but as a FOLLOW-UP, never on the critical path. With no host
+  configured the old prose relay is kept verbatim: an unconfigured setup must behave as it always did.
 - CRITICAL git safety: the ONLY write to a shared branch anywhere is `deploy` (task branch ->
   `deployBranch`, via `GitService.mergeIntoAndPush`). `ship` creates/updates a merge REQUEST only —
   never merges. The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
@@ -101,6 +109,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   is cut FROM `origin/<baseBranch>` and inherits it as upstream, so `GitService.detachUpstream` unsets
   it right after creation — a bare `git push` then errors ("no upstream") instead of pushing the task
   branch straight into the release branch.
+  `GitService.pushBranch` pushes ONE task branch with an explicit both-sided refspec, never `--force`, never
+  `-u` (an upstream is the trap `detachUpstream` removes).
   `prune` deletes LOCAL branches only, never a remote one (that would be an outward write), only branches
   already merged into `deployBranch`, never an ACTIVE task's branch (merged ≠ finished — a task lives until
   `done`), and never without the explicit `prune all`; a bare `prune` is a dry run.

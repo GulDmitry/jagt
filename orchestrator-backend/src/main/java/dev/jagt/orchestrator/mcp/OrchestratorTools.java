@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.model.GitRemote;
 import dev.jagt.orchestrator.model.Move;
+import dev.jagt.orchestrator.model.ReviewRequestTitle;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
@@ -348,7 +349,8 @@ public class OrchestratorTools {
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
         // The MR title the assistant read is already ticket-prefixed (the pattern built it); store it bare so
         // the dashboard isn't redundant and a later ship's pattern expansion stays single-prefixed.
-        initializeTask(taskId, projectKey, instructions, null, "resume", stripTicketPrefix(title, taskId), null);
+        initializeTask(taskId, projectKey, instructions, null, "resume",
+                ReviewRequestTitle.stripTicketPrefix(title, taskId), null);
         updateAgentStatus("CI_POLLING", "MR: " + mrUrl, taskId, null);
         return "Resumed " + taskId + " on its existing branch; linked MR " + mrUrl
                 + "; status CI_POLLING — run `review` or `deploy`.";
@@ -547,124 +549,6 @@ public class OrchestratorTools {
         if (updated && status != previous) {
             userNotifier.notify("jagt · " + id, Move.forTask(status, true).hint());
         }
-    }
-
-    /** Whether a ship may proceed at all (delivery + respawning a dead agent is writeTaskContext's job). */
-    enum ShipGate { PROCEED, REFUSE }
-
-    /**
-     * Pure ship gate. ship IS the human's approval, so IN_PROGRESS and REVIEW_PENDING both PROCEED (agents
-     * often finish without self-reporting REVIEW_PENDING); a task stuck at SHIPPING whose agent has DIED
-     * mid-ship also PROCEEDs (recovery). While a SHIPPING agent is still live the ship is in flight →
-     * REFUSE (no double-ship). Once an MR exists, CI_POLLING/CI_FAILED/DEPLOYED PROCEED too — deploy is a
-     * dev/pre-release step, not an end state, so the human iterates and re-ships another round onto the
-     * same MR. Only NEW (no MR to ship onto) and DONE (closed) REFUSE.
-     */
-    static ShipGate shipGate(TaskStatus status, boolean agentLive, boolean hasMr) {
-        // ONE rule, shared with the projection that decides whether to OFFER ship at all (Move.shippable) —
-        // the dashboard used to advise independently of this gate, which is how they drifted apart.
-        return Move.shippable(status, agentLive, hasMr) ? ShipGate.PROCEED : ShipGate.REFUSE;
-    }
-
-    /**
-     * The human approved the current uncommitted changes. Ship is the ONLY commit point: it relays the
-     * approval to the agent (which owns the code-host MCP) via task_context.md — commit with the pattern
-     * title, push, create the MR if absent (target = baseBranch), post any drafted review replies, and
-     * report back CI_POLLING with the MR url. jagt itself never touches the remote.
-     */
-    public String ship(String taskId) {
-        taskId = canonicalTaskId(taskId);
-        TaskState task = requireTask(taskId);
-        ConfigService.ConfigFile config = configService.load();
-        boolean agentLive = tmuxService.taskWindowState(agentSession(config, taskId), taskId)
-                == TmuxService.WindowState.AGENT_RUNNING;
-        // ship IS the human's explicit approval → accept IN_PROGRESS too (agents often finish without
-        // self-reporting REVIEW_PENDING). Also recover a task stuck at SHIPPING whose agent died mid-ship
-        // (crash / API 529) — but only when the agent is NOT live, so an in-flight ship is never doubled.
-        // Once an MR exists, re-ship a follow-up round onto it (deploy is a dev step, not the end). writeTaskContext
-        // respawns the agent if it's down, so a killed session is no dead-end.
-        TaskStatus st = task.status();
-        if (shipGate(st, agentLive, task.mrUrl() != null) == ShipGate.REFUSE) {
-            throw new IllegalStateException("ship: " + taskId + " is " + st
-                    + (st == TaskStatus.SHIPPING
-                            ? " with its agent still shipping — a ship is in flight; `focus` to watch it."
-                            : " — ship needs a task still in progress (IN_PROGRESS/REVIEW_PENDING) or an"
-                                    + " existing MR to re-ship onto; this one has neither."));
-        }
-        ProjectConfig project = configService.project(task.project());
-        String baseBranch = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
-        // The MR does not exist until the first ship creates it (resume also sets mrUrl); its presence marks
-        // a REVIEW-ROUND ship, where the commit describes the fixes, not the (already-titled) MR.
-        boolean firstShip = task.mrUrl() == null;
-        // Strip any leading ticket from the stored title BEFORE applying the pattern, so the id can never
-        // appear twice regardless of flow (a resumed task's title came from the already-prefixed MR title)
-        // or how many ships ran — the expansion is idempotent.
-        String title = config.codeReview().mrTitlePatternOrDefault()
-                .replace("{ticket}", taskId)
-                .replace("{title}", stripTicketPrefix(task.title(), taskId))
-                .trim();
-        String repliesStep;
-        if (!config.codeReview().postReviewRepliesOrDefault()) {
-            repliesStep = "4. Do NOT post any replies — LEAVE review_replies.md untouched for the human to"
-                    + " post; only the code is pushed.\n";
-        } else if (config.codeReview().reviewReplyAuthorsOrEmpty().isEmpty()) {
-            repliesStep = "4. If review_replies.md exists, post each drafted reply to its MR thread, then"
-                    + " delete it.\n";
-        } else {
-            repliesStep = "4. If review_replies.md exists, post drafted replies ONLY to threads whose comment"
-                    + " author matches (case-insensitive) any of: "
-                    + String.join(", ", config.codeReview().reviewReplyAuthorsOrEmpty())
-                    + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones.\n";
-        }
-        writeTaskContext(taskId, shipInstruction(firstShip, title, taskId, baseBranch, repliesStep));
-        // Flip to SHIPPING now so the dashboard shows ship is underway (the status only reaches
-        // CI_POLLING when the agent reports back the MR) and a second `ship` is refused meanwhile.
-        stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.SHIPPING, "shipping"));
-        return "ship " + taskId + ": approval relayed — agent will commit "
-                + (firstShip ? "\"" + title + "\" and open the MR" : "a concise review-fix message on the existing MR")
-                + ", push, post replies, then report CI_POLLING.";
-    }
-
-    /**
-     * The ship instruction relayed to the agent. First ship: commit the exact pattern title and open the
-     * MR. Review round (MR already exists): commit a concise one-liner that LEADS with the task id, then a
-     * short summary — the identifier always comes first, but the full ticket title is not repeated — and
-     * leave the existing MR's title alone.
-     */
-    static String shipInstruction(boolean firstShip, String title, String taskId, String baseBranch,
-                                  String repliesStep) {
-        String commitStep = firstShip
-                ? "1. Commit ALL current changes with EXACTLY this message: \"" + title + "\".\n"
-                : "1. Commit ALL current changes with a CONCISE one-line message that STARTS with \"" + taskId
-                        + "\" followed by a short imperative summary (max ~10 words) of ONLY the changes you"
-                        + " just made (e.g. \"" + taskId + " Guard null sort key, fix header toggle\").\n";
-        String mrStep = firstShip
-                ? "3. No merge request exists yet — create one via your code-host MCP: source " + taskId
-                        + " -> target " + baseBranch + ", title \"" + title + "\".\n"
-                : "3. The merge request already exists — do NOT create a new one or retitle it.\n";
-        return "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"
-                + commitStep
-                + "2. Push branch " + taskId + ".\n"
-                + mrStep
-                + repliesStep
-                + "5. Report back with update_agent_status CI_POLLING, message \"MR: <the merge request url>\".";
-    }
-
-    /**
-     * The title with a leading {@code <taskId>} (and its separators) removed, so applying
-     * {@code mrTitlePattern} can never double the ticket — a resumed task inherits the MR title, which the
-     * pattern already prefixed with the id. Idempotent: stripping an already-bare title is a no-op. Empty
-     * ("") when the title carried nothing but the ticket; null stays null.
-     */
-    static String stripTicketPrefix(String title, String taskId) {
-        if (title == null) {
-            return null;
-        }
-        String t = title.strip();
-        if (taskId != null && !taskId.isBlank() && t.regionMatches(true, 0, taskId, 0, taskId.length())) {
-            t = t.substring(taskId.length()).replaceFirst("^[\\s:|/–—-]+", "").strip();
-        }
-        return t;
     }
 
     public String notifyUser(String title, String message) {
