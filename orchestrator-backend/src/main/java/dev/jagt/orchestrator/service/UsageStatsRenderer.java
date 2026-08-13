@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.springframework.stereotype.Component;
@@ -50,6 +51,17 @@ public class UsageStatsRenderer {
         }
         TokenUsage session = usageTracker.session();
         out.append("\n").append(row("current tasks", tasksTotal)).append(row("this session", session));
+
+        // WHAT the spend was for is the actionable half: a ticket read happens once per task, a review sweep
+        // repeats up to hourly for a day — and a category that stops growing is a REST read paying off.
+        var byKind = usageTracker.sessionByKind();
+        if (!byKind.isEmpty()) {
+            out.append('\n').append(String.format(ROW, "BY CALL", "CALLS", "IN", "CACHED", "OUT", "TOTAL"));
+            byKind.entrySet().stream()
+                    .sorted(Comparator.comparingLong((Map.Entry<AssistantCallKind, TokenUsage> e) ->
+                            e.getValue().total()).reversed())
+                    .forEach(e -> out.append(row(e.getKey().label(), e.getValue())));
+        }
 
         if (session.isNone()) {
             out.append("\nno calls since this backend started — the per-task numbers above were"

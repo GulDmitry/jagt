@@ -1,11 +1,14 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Books what jagt's own model calls cost, so the spend is visible instead of invisible.
@@ -26,18 +29,19 @@ public class UsageTracker {
     private static final Logger log = LoggerFactory.getLogger(UsageTracker.class);
 
     private final StateService stateService;
-    private final AtomicReference<TokenUsage> session = new AtomicReference<>(TokenUsage.NONE);
+    /** Session spend split by what the call was FOR; the session total is the sum, never a second counter. */
+    private final Map<AssistantCallKind, TokenUsage> sessionByKind = new ConcurrentHashMap<>();
 
     public UsageTracker(StateService stateService) {
         this.stateService = stateService;
     }
 
     /** Adds a measured call to the session total. Call this for EVERY call, attributable or not. */
-    public void record(TokenUsage usage) {
-        if (usage == null || usage.isNone()) {
+    public void record(AssistantCallKind kind, TokenUsage usage) {
+        if (usage == null || usage.isNone() || kind == null) {
             return;
         }
-        session.updateAndGet(current -> current.plus(usage));
+        sessionByKind.merge(kind, usage, TokenUsage::plus);
     }
 
     /**
@@ -59,6 +63,13 @@ public class UsageTracker {
 
     /** Everything spent since this backend started. */
     public TokenUsage session() {
-        return session.get();
+        return sessionByKind.values().stream().reduce(TokenUsage.NONE, TokenUsage::plus);
+    }
+
+    /** The same spend, split by what each call was for — biggest first, so the answer is the top line. */
+    public Map<AssistantCallKind, TokenUsage> sessionByKind() {
+        Map<AssistantCallKind, TokenUsage> copy = new EnumMap<>(AssistantCallKind.class);
+        copy.putAll(sessionByKind);
+        return copy;
     }
 }

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -22,12 +23,29 @@ class UsageTrackerTest {
     }
 
     @Test
+    void splitsTheSessionSpendByWhatEachCallWasFor(@TempDir Path root) {
+        UsageTracker tracker = new UsageTracker(stateIn(root));
+
+        tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
+        tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(30_000, 0, 200, 0.06));
+        tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(31_000, 0, 210, 0.06));
+
+        var byKind = tracker.sessionByKind();
+        assertThat(byKind.get(AssistantCallKind.REVIEW_SWEEP).calls()).isEqualTo(2);
+        assertThat(byKind.get(AssistantCallKind.TICKET_READ).calls()).isEqualTo(1);
+        assertThat(byKind).doesNotContainKey(AssistantCallKind.MR_READ);
+        // The session total must stay the SUM of the split, not a second counter that can drift from it.
+        assertThat(tracker.session().calls()).isEqualTo(3);
+        assertThat(tracker.session().inputTokens()).isEqualTo(86_000);
+    }
+
+    @Test
     void chargesTheCallToTheTaskThatTriggeredIt(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         UsageTracker tracker = new UsageTracker(state);
 
-        tracker.record(TokenUsage.ofCall(25_000, 0, 170, 0.05));
+        tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 170, 0.05));
 
         assertThat(state.task("ABC-1").orElseThrow().usageOrNone().inputTokens()).isEqualTo(25_000);
@@ -67,7 +85,7 @@ class UsageTrackerTest {
         StateService state = stateIn(root);
         UsageTracker tracker = new UsageTracker(state);
 
-        tracker.record(TokenUsage.ofCall(24_000, 0, 150, 0.05));
+        tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(24_000, 0, 150, 0.05));
         tracker.chargeTask(null, TokenUsage.ofCall(24_000, 0, 150, 0.05));
 
         assertThat(tracker.session().inputTokens()).isEqualTo(24_000);
@@ -78,7 +96,7 @@ class UsageTrackerTest {
     void ignoresAnEmptyMeasurementSoUnmeteredCallsDoNotInflateTheCallCount(@TempDir Path root) {
         UsageTracker tracker = new UsageTracker(stateIn(root));
 
-        tracker.record(TokenUsage.NONE);
+        tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.NONE);
 
         assertThat(tracker.session()).isEqualTo(TokenUsage.NONE);
     }

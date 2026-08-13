@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.model.TokenUsage;
@@ -56,7 +57,7 @@ class DashboardRendererTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").title("title").build());
         UsageTracker tracker = new UsageTracker(state);
-        tracker.record(TokenUsage.ofCall(63_500, 0, 500, 0.12));
+        tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(63_500, 0, 500, 0.12));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(63_500, 0, 500, 0.12));
 
         String out = new DashboardRenderer(state, tracker).render();

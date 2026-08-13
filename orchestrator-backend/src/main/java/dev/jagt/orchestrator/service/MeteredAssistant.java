@@ -3,8 +3,9 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.assistant.MasterAssistant;
 import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
 import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
-import dev.jagt.orchestrator.assistant.MasterAssistant.ReviewFacts;
 import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
+import dev.jagt.orchestrator.model.ReviewFacts;
+import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.springframework.stereotype.Component;
 
@@ -32,15 +33,15 @@ public class MeteredAssistant {
     }
 
     public Answer<TicketFacts> readTicket(String ticketRef) {
-        return metered(assistant.readTicket(ticketRef));
+        return metered(AssistantCallKind.TICKET_READ, assistant.readTicket(ticketRef));
     }
 
     public Answer<MergeRequestFacts> readMergeRequest(String mrUrl) {
-        return metered(assistant.readMergeRequest(mrUrl));
+        return metered(AssistantCallKind.MR_READ, assistant.readMergeRequest(mrUrl));
     }
 
     public Answer<ReviewFacts> readReview(String mrUrl) {
-        return metered(assistant.readReview(mrUrl));
+        return metered(AssistantCallKind.REVIEW_SWEEP, assistant.readReview(mrUrl));
     }
 
     /** Attributes an already-recorded read to a task, once that task is in state.json. */
@@ -48,8 +49,8 @@ public class MeteredAssistant {
         usageTracker.chargeTask(taskId, usage);
     }
 
-    private <T> Answer<T> metered(Answer<T> answer) {
-        usageTracker.record(answer.usage());
+    private <T> Answer<T> metered(AssistantCallKind kind, Answer<T> answer) {
+        usageTracker.record(kind, answer.usage());
         return answer;
     }
 }
