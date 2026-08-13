@@ -876,7 +876,9 @@ public class MasterShell {
 
 
     String doTask(List<String> tok) {
-        return launcher.launch(parseDoArgs(tok));
+        DoArgs args = parseDoArgs(tok);
+        return launcher.launch(arg(tok, 1, "do <ticket|url> [project] [plan] [notes…]"),
+                args.project(), args.mode(), args.strategy(), args.notes());
     }
 
     String resumeTask(List<String> tok) {
