@@ -13,10 +13,13 @@ public class StateViews {
 
     private final DashboardRenderer dashboard;
     private final UsageStatsRenderer usageStats;
+    private final WorktreeOrphanScanner orphanScanner;
 
-    public StateViews(DashboardRenderer dashboard, UsageStatsRenderer usageStats) {
+    public StateViews(DashboardRenderer dashboard, UsageStatsRenderer usageStats,
+                      WorktreeOrphanScanner orphanScanner) {
         this.dashboard = dashboard;
         this.usageStats = usageStats;
+        this.orphanScanner = orphanScanner;
     }
 
     public String dashboard() {
@@ -25,5 +28,10 @@ public class StateViews {
 
     public String usageStats() {
         return usageStats.render();
+    }
+
+    /** What is on disk that state.json knows nothing about — leftover worktrees and the secrets in them. */
+    public String orphanedWorktrees() {
+        return orphanScanner.report();
     }
 }

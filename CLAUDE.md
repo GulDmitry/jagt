@@ -93,7 +93,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   HTTP errors → synthesized JSON-RPC error in `mcp_client.js` (never forward Spring error pages).
   The proxy retries ONLY `ECONNREFUSED` (request never sent) — other failures may have executed a
   non-idempotent tool.
-- `state.json` writes are atomic (temp file + `Files.move` ATOMIC_MOVE) in `StateService`.
+- `state.json` writes are atomic (temp file + `Files.move` ATOMIC_MOVE) in `StateService`. Atomicity covers a
+  TORN file, not a BAD one, so every write also copies the previous version to `state.json.bak`, and a read
+  that cannot parse the primary recovers from that backup (moving the bad file to `state.json.corrupt`). With
+  no usable backup it THROWS: starting with an empty task list over an existing state file would destroy the
+  human's data on the next write. Never make that path "fail soft".
+- `WorktreeOrphanScanner` only ever LOOKS: worktree directories no task owns can hold uncommitted work AND
+  copies of secrets (`worktree.copyGlobs`), so it reports them (startup ping + `GET /orphans`) and deletes
+  nothing. Its startup listener catches everything — an `ApplicationReadyEvent` listener that throws fails the
+  whole boot, and a diagnostic must never be able to stop the backend from starting.
 - Every MCP tool call from a registered worktree bumps `lastActiveTimestamp` (Watchdog keep-alive).
 - CODE REVIEW IS NEVER FULLY AUTOMATED. The auto-review poll (`AutoReviewScheduler` → `ReviewSweepService`)
   only READS and DRAFTS: an approval may advance status, but comments are merely RELAYED to the agent, which

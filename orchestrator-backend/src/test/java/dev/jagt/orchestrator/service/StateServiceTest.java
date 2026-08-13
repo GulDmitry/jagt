@@ -10,13 +10,61 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class StateServiceTest {
+
+    private static StateService stateIn(Path root, Path stateFile) {
+        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
+    }
+
+
+    @Test
+    void keepsThePreviousVersionBesideTheStateFileOnEveryWrite(@TempDir Path root) throws IOException {
+        Path stateFile = root.resolve("state.json");
+        StateService state = stateIn(root, stateFile);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
+
+        // The backup is the version BEFORE the last write — that is what makes it a recovery point.
+        assertThat(Files.readString(root.resolve("state.json.bak"))).contains("ABC-1").doesNotContain("ABC-2");
+        assertThat(Files.readString(stateFile)).contains("ABC-1", "ABC-2");
+    }
+
+    @Test
+    void recoversEveryTaskFromTheBackupWhenTheStateFileIsUnreadable(@TempDir Path root) throws IOException {
+        Path stateFile = root.resolve("state.json");
+        StateService state = stateIn(root, stateFile);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
+        Files.writeString(stateFile, "{\"tasks\": {\"ABC-1\": {truncated…");
+
+        var tasks = stateIn(root, stateFile).tasks();
+
+        assertThat(tasks).containsOnlyKeys("ABC-1");                  // whatever the backup still had
+        assertThat(Files.exists(root.resolve("state.json.corrupt"))).isTrue();
+        assertThat(Files.readString(root.resolve("state.json.corrupt"))).contains("truncated");
+    }
+
+    @Test
+    void refusesToStartWithAnEmptyTaskListOverAnUnreadableStateFile(@TempDir Path root) throws IOException {
+        // Silently starting empty is the one unacceptable outcome: the next write would overwrite the file
+        // the human might still salvage by hand.
+        Path stateFile = root.resolve("state.json");
+        Files.writeString(stateFile, "this is not json");
+
+        assertThatThrownBy(() -> stateIn(root, stateFile).tasks())
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining("no usable backup");
+    }
 
     @Test
     void writesOnlyRealStateForATaskThatHasSpentTokens(@TempDir Path root) throws IOException {

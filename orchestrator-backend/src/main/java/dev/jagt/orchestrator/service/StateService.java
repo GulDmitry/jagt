@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.model.TaskState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -21,6 +23,12 @@ import java.util.function.UnaryOperator;
 /**
  * SSOT for all active tasks. Every mutation rewrites state.json atomically
  * (temp file + Files.move with ATOMIC_MOVE) so a crash never leaves a torn file.
+ *
+ * <p>Atomicity protects against a TORN file, not against a bad one: a hand edit, a botched migration or a
+ * serialization bug can leave valid-but-wrong or unparseable JSON, and this one file is the only record of
+ * what jagt is doing. So every write keeps the previous version next to it as {@code state.json.bak}, and a
+ * read that cannot parse the primary recovers from that backup instead of losing every task. It NEVER starts
+ * empty over an existing file — that would destroy the human's data on the very next write.
  */
 @Service
 public class StateService {
@@ -33,8 +41,13 @@ public class StateService {
         }
     }
 
+    private static final Logger log = LoggerFactory.getLogger(StateService.class);
+
     private final ObjectMapper mapper;
     private final Path stateFile;
+    /** The previous successful write, and where an unparseable file is set aside for the human to inspect. */
+    private final Path backupFile;
+    private final Path corruptFile;
     private final Object lock = new Object();
 
     public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
@@ -45,6 +58,12 @@ public class StateService {
                 .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                 .build();
         this.stateFile = paths.stateFile();
+        this.backupFile = sibling(paths.stateFile(), ".bak");
+        this.corruptFile = sibling(paths.stateFile(), ".corrupt");
+    }
+
+    private static Path sibling(Path file, String suffix) {
+        return file.resolveSibling(file.getFileName() + suffix);
     }
 
     public StateFile read() {
@@ -145,23 +164,75 @@ public class StateService {
     }
 
     private StateFile readUnlocked() {
+        if (!Files.exists(stateFile)) {
+            return new StateFile(null);
+        }
         try {
-            if (!Files.exists(stateFile)) {
-                return new StateFile(null);
-            }
-            return mapper.readValue(Files.readString(stateFile), StateFile.class);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot read state file " + stateFile, e);
+            return parse(stateFile);
+        } catch (RuntimeException | IOException primaryFailure) {
+            return recoverFromBackup(primaryFailure);
         }
     }
 
+    private StateFile parse(Path file) throws IOException {
+        return mapper.readValue(Files.readString(file), StateFile.class);
+    }
+
+    /**
+     * The primary is unreadable. Fall back to the backup and keep the bad file for inspection — but only when
+     * the backup actually parses: with nothing to fall back to, FAILING is the safe outcome. Starting empty
+     * would look like "no tasks" and the next write would overwrite whatever the human might still salvage.
+     */
+    private StateFile recoverFromBackup(Exception primaryFailure) {
+        if (Files.exists(backupFile)) {
+            try {
+                StateFile recovered = parse(backupFile);
+                log.error("state file {} is unreadable ({}) — recovered {} task(s) from {}; the bad file is"
+                                + " kept at {}", stateFile, primaryFailure.getMessage(),
+                        recovered.tasks().size(), backupFile, corruptFile);
+                setAsideCorruptFile();
+                return recovered;
+            } catch (RuntimeException | IOException backupFailure) {
+                log.error("backup {} is unreadable too: {}", backupFile, backupFailure.getMessage());
+            }
+        }
+        throw new UncheckedIOException("Cannot read state file " + stateFile + " and no usable backup at "
+                + backupFile + " — fix or remove the file; jagt will not start with an empty task list over"
+                + " an existing state file", asIoException(primaryFailure));
+    }
+
+    private void setAsideCorruptFile() {
+        try {
+            Files.move(stateFile, corruptFile, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.warn("Could not move the unreadable {} aside to {}: {}", stateFile, corruptFile, e.getMessage());
+        }
+    }
+
+    private static IOException asIoException(Exception e) {
+        return e instanceof IOException io ? io : new IOException(e);
+    }
+
     private void writeUnlocked(StateFile state) {
+        backUpCurrentVersion();
         try {
             Path temp = Files.createTempFile(stateFile.getParent(), "state", ".json.tmp");
             Files.writeString(temp, mapper.writerWithDefaultPrettyPrinter().writeValueAsString(state));
             Files.move(temp, stateFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot write state file " + stateFile, e);
+        }
+    }
+
+    /** Best-effort: a failed backup must not stop the write — the live file matters more than its copy. */
+    private void backUpCurrentVersion() {
+        if (!Files.exists(stateFile)) {
+            return;
+        }
+        try {
+            Files.copy(stateFile, backupFile, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.warn("Could not back up {} to {}: {}", stateFile, backupFile, e.getMessage());
         }
     }
 }

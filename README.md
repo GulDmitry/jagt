@@ -125,7 +125,7 @@ Talk to the Master console:
 The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
 with **Shift+←/→** or by clicking a task in the status bar. Every task also gets a short alias (`p1`, `s2`)
 you can use in any command instead of the ticket id. Plain text any time: `curl -s localhost:8290/status`,
-`curl -s localhost:8290/stats`.
+`curl -s localhost:8290/stats`, `curl -s localhost:8290/orphans`.
 Closing the terminal window only detaches the viewer — agents keep running; kill them explicitly with `done`.
 
 ### The ideal flow
@@ -238,3 +238,5 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `API Error: 529 Overloaded` | transient model overload, server-side | wait a moment and re-run; task state is unchanged |
 | `deploy` says `MERGE CONFLICT` | task branch and `deployBranch` changed the same lines; jagt merges in a throwaway worktree, so nothing is pushed and the task goes `DEPLOY_CONFLICT` | `ide <ticket>` opens that **deploy** worktree (not the task's) — resolve the conflicts, `git add` them, then `deploy <ticket>` again; jagt finishes the commit + push. Your task branch and its MR are untouched |
 | Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Installation → macOS** |
+| `state.json` got corrupted (bad hand edit, half-written by another tool) | every write keeps the previous version as `state.json.bak` | jagt recovers the tasks from the backup by itself, moves the bad file to `state.json.corrupt` and says so in the log. If the backup is gone too it REFUSES to start with an empty task list — fix or move the file yourself, nothing is silently overwritten |
+| A worktree directory nobody is using is still on disk | a crashed or abandoned task, or a `done` that could not delete it | jagt pings you once at startup and lists them with `curl -s localhost:8290/orphans`, including how many copied secret files (`worktree.copyGlobs`) are still inside. It never deletes them — they can hold uncommitted work, so that call is yours |

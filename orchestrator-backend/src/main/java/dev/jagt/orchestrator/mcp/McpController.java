@@ -61,4 +61,10 @@ public class McpController {
     public String stats() {
         return views.usageStats();
     }
+
+    /** Worktree directories no task owns any more, and how many copied secret files they still hold. */
+    @GetMapping(value = "/orphans", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String orphans() {
+        return views.orphanedWorktrees();
+    }
 }
