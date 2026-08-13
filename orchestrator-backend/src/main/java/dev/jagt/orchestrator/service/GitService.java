@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -80,6 +81,58 @@ public class GitService {
                     .expectSuccess("git worktree add " + worktreePath);
             detachUpstream(projectPath, branch);
         });
+    }
+
+    /**
+     * Local branches whose tip is reachable from {@code intoRef} — i.e. whose work is already IN that ref, so
+     * deleting them loses nothing. Fetches first, or a branch merged on the host still looks unmerged here.
+     * The caller decides what is safe to delete; this only reports.
+     */
+    public List<String> branchesMergedInto(Path projectPath, String intoRef) {
+        return withRepoLock(projectPath, () -> {
+            processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"));
+            var listed = processRunner.run(projectPath, GIT_TIMEOUT,
+                    List.of("git", "branch", "--merged", intoRef, "--format=%(refname:short)"));
+            if (listed.exitCode() != 0) {
+                throw new IllegalStateException("git branch --merged " + intoRef + " failed: "
+                        + (listed.stderr().isBlank() ? listed.stdout() : listed.stderr()));
+            }
+            return branchNames(listed.stdout());
+        });
+    }
+
+    /** The branch currently checked out in the base repo — git refuses to delete it, so callers skip it. */
+    public String currentBranch(Path projectPath) {
+        return withRepoLock(projectPath, () -> {
+            var head = processRunner.run(projectPath, GIT_TIMEOUT,
+                    List.of("git", "rev-parse", "--abbrev-ref", "HEAD"));
+            return head.exitCode() == 0 ? head.stdout().strip() : "";
+        });
+    }
+
+    /**
+     * Deletes a LOCAL branch. Never touches the remote: a remote branch is shared state, and pushing a
+     * deletion would be an outward write, which only `deploy` is allowed to do. Returns git's own reason on
+     * failure — a branch checked out in a worktree, or the repo's current branch. Note {@code -D} does NOT
+     * refuse unmerged work: the merged-ness question is the CALLER's, answered by branchesMergedInto.
+     */
+    public Optional<String> deleteLocalBranch(Path projectPath, String branch) {
+        return withRepoLock(projectPath, () -> {
+            var deleted = processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", branch));
+            if (deleted.exitCode() == 0) {
+                return Optional.empty();
+            }
+            String reason = deleted.stderr().isBlank() ? deleted.stdout() : deleted.stderr();
+            return Optional.of(reason.strip().replaceAll("\\s+", " "));
+        });
+    }
+
+    /** One branch name per line, blanks dropped — the shape of {@code --format=%(refname:short)} output. */
+    static List<String> branchNames(String stdout) {
+        if (stdout == null || stdout.isBlank()) {
+            return List.of();
+        }
+        return stdout.lines().map(String::strip).filter(line -> !line.isEmpty()).toList();
     }
 
     public boolean branchExists(Path projectPath, String branch) {

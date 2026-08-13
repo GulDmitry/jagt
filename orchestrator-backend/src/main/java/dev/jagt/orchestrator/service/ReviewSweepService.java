@@ -4,6 +4,9 @@ import dev.jagt.orchestrator.assistant.MasterAssistant.ReviewFacts;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * One MR review sweep: read the MR's approval + pipeline + unresolved comments, then take the single
  * correct action. Shared by the manual {@code review} command (human types it) and the
@@ -16,18 +19,43 @@ public class ReviewSweepService {
 
     /** What the sweep did, so callers format a message / decide whether to notify. */
     public record SweepResult(Kind kind, String message) {
-        public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED }
+        public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED, IN_FLIGHT }
     }
 
     private final MeteredAssistant assistant;
     private final OrchestratorTools tools;
+    private final StateService stateService;
+    /**
+     * One sweep at a time per task, no matter who asked. The guard lives HERE, not in a caller, because
+     * there are several triggers — the human's `review`, the auto-review scheduler, later a UI button — and
+     * a second sweep of the same merge request spends a full headless read twice AND can relay a second
+     * brief for the same review round (the agent then fixes the same comments twice, or interleaves them).
+     * The scheduler keeps its own guard on top: that one stops polls from QUEUING up behind a slow sweep,
+     * which is a different problem from two triggers colliding.
+     */
+    private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
-    public ReviewSweepService(MeteredAssistant assistant, OrchestratorTools tools) {
+    public ReviewSweepService(MeteredAssistant assistant, OrchestratorTools tools, StateService stateService) {
         this.assistant = assistant;
         this.tools = tools;
+        this.stateService = stateService;
     }
 
-    public SweepResult sweep(String taskId) {
+    public SweepResult sweep(String taskIdOrAlias) {
+        // Resolve first: `review a1` and the scheduler's `review ABC-1` must take the SAME lock.
+        String taskId = stateService.canonicalTaskId(taskIdOrAlias);
+        if (!inFlight.add(taskId)) {
+            return new SweepResult(SweepResult.Kind.IN_FLIGHT,
+                    "review " + taskId + ": a sweep is already running — wait for it to finish");
+        }
+        try {
+            return sweepExclusively(taskId);
+        } finally {
+            inFlight.remove(taskId);
+        }
+    }
+
+    private SweepResult sweepExclusively(String taskId) {
         String mrUrl = tools.taskMrUrl(taskId);
         if (mrUrl == null || mrUrl.isBlank()) {
             return new SweepResult(SweepResult.Kind.NO_MR,

@@ -90,7 +90,7 @@ public class MasterShell implements ApplicationRunner {
 
     /** Every command, for Tab-completion of the first word. */
     private static final List<String> COMMANDS = List.of("status", "stats", "do", "resume", "review", "ship",
-            "focus", "ide", "deploy", "respawn", "done", "help", "quit", "exit");
+            "focus", "ide", "deploy", "respawn", "done", "prune", "help", "quit", "exit");
     /** Commands whose first argument is an EXISTING task (so Tab completes its alias/id); `do`/`resume`
      *  take a new ticket/URL, not a current task. */
     private static final Set<String> TASK_ARG_COMMANDS = Set.of(
@@ -322,6 +322,8 @@ public class MasterShell implements ApplicationRunner {
             pool = COMMANDS;
         } else if (cmd.equals("ide") && idx == 2) {
             pool = List.of("diff");
+        } else if (cmd.equals("prune") && idx == 1) {
+            pool = List.of("all");
         } else if (cmd.equals("do") && idx >= 2) {
             pool = List.of("plan");
         } else {
@@ -824,6 +826,7 @@ public class MasterShell implements ApplicationRunner {
             String result = switch (cmd) {
                 case "status" -> "";
                 case "stats" -> views.usageStats();
+                case "prune" -> tools.pruneBranches(pruneDeletes(tok));
                 case "help" -> help();
                 case "do" -> doTask(tok);
                 case "resume" -> resumeTask(tok);
@@ -909,6 +912,19 @@ public class MasterShell implements ApplicationRunner {
         // one case where money bought nothing must not be the one case the task reports as free.
         assistant.chargeTask(ref, read.usage());
         return result;
+    }
+
+    /** {@code prune} is a dry run, {@code prune all} deletes; anything else is refused rather than guessed —
+     *  a typo must never be read as "yes, delete", and `prune ABC-1 all` is not a per-task prune. */
+    static boolean pruneDeletes(List<String> tok) {
+        if (tok.size() == 1) {
+            return false;
+        }
+        if (tok.size() == 2 && tok.get(1).equals("all")) {
+            return true;
+        }
+        throw new IllegalArgumentException("usage: prune [all] — `prune` lists, `prune all` deletes"
+                + " (there is no per-project or per-branch form yet)");
     }
 
     record DoArgs(String project, String mode, String strategy, String notes) {
@@ -1045,6 +1061,7 @@ public class MasterShell implements ApplicationRunner {
         lines.add("  deploy <ticket>              merge task branch into deployBranch + push");
         lines.add("  respawn <ticket>             restart a dead agent session");
         lines.add("  done <ticket>                full cleanup (window, worktree, state; branch kept)");
+        lines.add("  prune [all]                  list LOCAL branches merged into deployBranch; `all` deletes them");
         lines.add("  help | quit                  this reference | detach (agents keep running)");
         return String.join("\n", lines);
     }

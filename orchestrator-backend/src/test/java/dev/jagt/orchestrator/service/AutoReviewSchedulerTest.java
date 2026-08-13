@@ -134,10 +134,8 @@ class AutoReviewSchedulerTest {
     }
 
     private static StateService stateWith(Path root, TaskState task) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", task);
         return state;

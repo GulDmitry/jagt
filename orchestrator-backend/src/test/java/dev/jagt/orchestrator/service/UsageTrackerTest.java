@@ -17,9 +17,8 @@ import static org.assertj.core.api.Assertions.within;
 class UsageTrackerTest {
 
     private static StateService stateIn(Path root) {
-        return new StateService(new JsonMapper(), new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null)));
+        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
     }
 
     @Test

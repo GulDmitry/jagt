@@ -23,9 +23,8 @@ class StateServiceTest {
         // state.json is the SSOT: a derived accessor on TokenUsage must not become a persisted field. It did
         // once — Jackson picked up isNone() and wrote "none":false into every task's usage block.
         Path stateFile = root.resolve("state.json");
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, stateFile.toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .usage(TokenUsage.ofCall(25_000, 100, 170, 0.05)).build());
 
@@ -44,9 +43,8 @@ class StateServiceTest {
         Files.writeString(stateFile, """
                 {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"CI_POLLING",
                 "lastActiveTimestamp":123,"alias":"a1","mrUrl":"http://mr/1"}}}""");
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, stateFile.toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
 
         var task = state.task("ABC-1").orElseThrow();
 
@@ -59,9 +57,8 @@ class StateServiceTest {
 
     @Test
     void resolvesCallerTaskWhenCallerReportsPhysicalPathOfSymlinkedWorktree(@TempDir Path root) throws IOException {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.NEW).alias("a1").build());
         String physicalCallerCwd = root.toRealPath().toString();
 
@@ -72,9 +69,8 @@ class StateServiceTest {
 
     @Test
     void forgetsTaskWhenItIsRemoved(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
         boolean removed = state.removeTask("ABC-1");

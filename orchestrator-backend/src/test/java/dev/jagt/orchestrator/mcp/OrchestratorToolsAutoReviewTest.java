@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
-import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.contains;
@@ -79,10 +78,8 @@ class OrchestratorToolsAutoReviewTest {
         final OrchestratorTools tools;
 
         Fixture(Path root) {
-            OrchestratorProperties properties = new OrchestratorProperties(
-                    root.toString(), null, root.resolve("state.json").toString(),
-                    null, null, null, null, null, null, null, false,
-                    new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+            OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
             OrchestratorPaths paths = new OrchestratorPaths(properties);
             this.state = new StateService(new JsonMapper(), paths);
             ConfigService config = mock(ConfigService.class);

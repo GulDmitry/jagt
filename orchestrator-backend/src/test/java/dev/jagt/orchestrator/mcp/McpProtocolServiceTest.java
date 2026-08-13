@@ -21,9 +21,8 @@ class McpProtocolServiceTest {
     @Test
     void advertisesStatusEnumMatchingTaskStatusValues(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         JsonNode response = protocol.handle(
@@ -41,9 +40,8 @@ class McpProtocolServiceTest {
     @Test
     void rejectsToolCallWhenRequiredArgumentIsMissing(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         JsonNode response = protocol.handle(mapper.readTree(
@@ -60,9 +58,8 @@ class McpProtocolServiceTest {
     @Test
     void answersParseErrorWithJsonRpcCode32700(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
         JsonNode error = protocol.parseError("unexpected character");
@@ -73,9 +70,8 @@ class McpProtocolServiceTest {
     @Test
     void countsAnyRequestFromWorktreeAsKeepAlive(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).lastActiveTimestamp(1000).alias("a1").build());
         McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
 
@@ -87,9 +83,8 @@ class McpProtocolServiceTest {
     @Test
     void skipsKeepAliveRewriteWhenAgentWasActiveSecondsAgo(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
-        StateService state = new StateService(mapper, new OrchestratorPaths(new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null)));
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         long freshTimestamp = System.currentTimeMillis();
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(freshTimestamp).alias("a1").build());

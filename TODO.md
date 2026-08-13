@@ -17,17 +17,6 @@ In dependency order; each step is detailed in its section below.
 
 Steps 2 and 3 are what move the remaining mechanics out of the LLM; 1 is a prerequisite for 4.
 
-Independent of that sequence — small, each fixes something that is wrong TODAY (details in the sections
-below). None of them blocks another, so they fit between the big steps:
-
-| step | what is broken now | est. |
-|------|--------------------|------|
-| One sweep per task, whoever triggered it | a manual `review` during an auto-poll runs a SECOND headless read of the same MR: double spend, two briefs relayed to the agent | 0.5 d |
-| Watchdog covers the states an agent can actually die in | it only watches NEW/IN_PROGRESS, so an agent that dies while SHIPPING (the state the README's own troubleshooting entry is about) is never flagged | 0.5 d |
-| A Spring context-load test | the repo has NO `@SpringBootTest`: adding a bean or a cycle breaks startup while all unit tests stay green — wiring is currently proven only by the layout smoke script running the jar | 0.5 d |
-| `OrchestratorProperties.defaults()` + withers | a 12-field config record with no builder; every test writes 9 positional `null`s, which is exactly the null-soup CLAUDE.md bans (its sibling `ConfigFile` already has defaults + withers) | 0.5 d |
-| `prune` for stale task branches | `done` keeps the branch BY DESIGN and no path removes a finished one, so branches pile up forever and a repeated ticket trips "branch already exists" (the `git branch -D` plumbing already exists) | 0.5 d |
-
 Done: `assistant.model: haiku` is the shipped default (2026-08-13) — ~6x cheaper on every `do`/`resume`/poll
 ($0.064 vs $0.41 a call, both with the MCP the reads actually need).
 The other half of that step, `--setting-sources project`, was DROPPED as a trap, see the cost entry below.
@@ -159,28 +148,6 @@ Prefer headless haiku over a resident local model: a 3-7B local model adds 4-8 G
 swaps — see the jdtls incident); headless `-p` holds nothing resident and, with a stripped context, is
 nearly as cheap. Revisit a local model only if API cost ever dominates.
 
-### One sweep per task, wherever it was triggered from
-The in-flight guard lives in the WRONG class: `AutoReviewScheduler.poll` holds `inFlight`, but the manual
-`review` command goes `MasterShell` → `ReviewSweepService.sweep` directly, on the shell's worker thread. So a
-human typing `review` while an auto-poll is already running spawns a SECOND headless read of the same merge
-request. Two consequences, both now measurable with `stats`: the spend doubles for that round, and both
-sweeps can call `writeTaskContext`, handing the agent two briefs for one review round (it may fix the same
-comments twice, or interleave them).
-Fix: move the guard down into `ReviewSweepService` (a per-task lock/`Set` there), so EVERY trigger — manual,
-scheduled, or a future web-UI button — is serialised per task by construction. The scheduler's own set then
-becomes redundant. A second `review` should say "a sweep is already running for ABC-1" rather than queue.
-
-### Watchdog only watches two of the eleven statuses
-`WatchdogService` flags a task only when it is `NEW` or `IN_PROGRESS` (plus a silent MCP + no tmux activity).
-An agent that dies at any other point is invisible to it — most importantly `SHIPPING`, which is exactly the
-failure the README's troubleshooting table documents ("Task stuck at SHIPPING, no MR appears"): recovery is
-possible only because the human notices and types `ship` again. `REVIEW_PENDING` after a relayed review round
-has the same hole (the agent is supposed to be working on the fixes).
-Fix: watch every status where jagt EXPECTS the agent to be doing something — NEW, IN_PROGRESS, SHIPPING, and
-REVIEW_PENDING while a relayed brief is unanswered — and keep ignoring the ones where idling is correct
-(CI_POLLING, REVIEWED, APPROVED, DEPLOYED, DEPLOY_CONFLICT, DONE). The window-activity check already prevents
-false positives for a busy-but-quiet agent, so widening the status set is cheap.
-
 ### Prove the pluggable seams with a second implementation each
 "PLUGGABLE BY DESIGN" is an invariant with, today, exactly one implementation behind most of it:
 `AgentRuntime` = claude only, `UserNotifier` = macos only, `EditorDriver` = one CLI driver. Only
@@ -191,6 +158,16 @@ The cheapest proof, and the most useful one: a second `AgentRuntime` (Codex or Q
 worktree provisioning + that agent's own MCP config file, `config.toml` instead of `.mcp.json`). It also
 unblocks the E2E matrix entry below, which assumes a STUB runtime exists for CI. Do it before the seam
 accumulates more Claude-shaped assumptions, not after.
+
+### `OrchestratorTools` is a god-facade and keeps growing
+~1000 lines and ten injected collaborators: task lifecycle (`initializeTask`/`removeTask`/`resumeTask`),
+worktree provisioning (IDE files, local-file copying, symlinks, generated settings), git operations
+(`deployTask`, now `pruneBranches`), agent plumbing (tmux windows, status updates) and the MCP-facing surface.
+Every new command lands here because it already has every dependency — `prune` did exactly that.
+The tell is in the tests: each one constructs it with ten arguments, so `OrchestratorToolsTest` is the
+heaviest file in the suite. Split by concern (task lifecycle / worktree provisioning / repository ops), keep
+`OrchestratorTools` as the thin MCP-facing facade that delegates. Do it BEFORE the next command is added, and
+expect the test setups to shrink to two or three collaborators each — that shrinkage is the proof it worked.
 
 ### `deploy` has no undo
 `deploy` is the one outward write in the whole system (task branch → `deployBranch`, pushed), and there is no
@@ -207,18 +184,6 @@ is live.
 Every auto-review tick spends a headless `claude -p` (the dominant cost measured above) on a mechanical
 read. That is exactly what the `CodeHost` REST sweep removes; until it lands, `autoReview.enabled`
 defaulting to `false` is the cost guard.
-
-### Finished task branches accumulate forever — add `prune`
-`done` deliberately keeps the task branch (the work must survive a cleanup), and no path ever removes a
-FINISHED task's branch, so every ticket leaves one behind: the base repo slowly fills up, `git branch` becomes
-unreadable, and re-running a ticket hits the "branch 'ABC-42' already exists" warning that `do … recreate|
-resume` exists to work around.
-The git plumbing is already there — `GitService` runs `git branch -D` for the `recreate` strategy and for the
-throwaway `jagt-deploy-*` branch — so this is a SELECTION and CONFIRMATION problem, not new git work. Add a
-`prune` command that LISTS the task branches whose review request is merged/closed (once `CodeHost` can answer
-that; before then, branches with no unmerged commits vs `deployBranch`) and deletes only what the human
-confirms. Never automatic, never on `done`: deleting work is exactly the class of action jagt keeps
-human-gated. Same for any `jagt-deploy-*` worktree that survived a crash.
 
 ## UX
 
@@ -354,27 +319,6 @@ turns "all tasks lost" into "restore the file". Cheap insurance for the single p
 `mrUrl` / "MR" / `CI_POLLING` are GitLab-flavoured INTERNAL names — fine as-is, but user-facing text could
 say "review request" / "pipeline or checks" generically. Not worth a churny rename until a non-GitLab host
 is actually wired. (The invariant itself — never hardcode a tracker or code host — lives in CLAUDE.md.)
-
-### No Spring context test — wiring is only proven by running the jar
-There is not a single `@SpringBootTest` in the repo. Every unit test builds its collaborators by hand, so a
-missing bean, an ambiguous injection point, a circular dependency or a broken `@ConfigurationProperties`
-binding cannot fail the test suite — it fails at STARTUP, i.e. in front of the human. Today the only thing
-standing between a wiring break and a broken release is `dashboard-layout-smoke.sh`, which happens to boot
-the jar for a different reason.
-Add one test that loads the context (with the scheduler disabled and the platform drivers stubbed/no-op, per
-the leave-no-trace etiquette) and asserts it starts. It is a handful of lines and it covers every bean the
-project will ever add — including the seams that must stay unambiguous, like "exactly one `MasterAssistant`
-implementation, injected only by `MeteredAssistant`" (an off-the-books model call is otherwise a compiling,
-wiring, silent mistake).
-
-### Config records: `OrchestratorProperties` still has no `defaults()`
-`ConfigService.ConfigFile` and its sections have `defaults()` + withers precisely so nobody writes positional
-null-soup — but `OrchestratorProperties` is a 12-field record with neither, and it is the one tests must
-construct. Every test that needs a `StateService` therefore writes nine consecutive `null`s, now copied into
-four test classes; the argument list is unreadable and a reordering of the record's components would silently
-change what those tests configure. Give it the same `defaults()` + `withX` treatment (or a builder) and the
-duplication in the tests collapses to `OrchestratorProperties.defaults().withStateFile(path)`.
-This is the CLAUDE.md "the test is the litmus of the production code" rule pointing at a specific class.
 
 ### Verify the build on Linux, then actually implement its drivers
 Confirm `./gradlew build` and the runnable jar work on Linux (Java 25, Node, tmux, git present). The core

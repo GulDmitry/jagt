@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Auto-review poller: after `ship`, watches each CI_POLLING task's MR on its own within the configured
@@ -107,18 +108,37 @@ public class AutoReviewScheduler {
     }
 
     private void poll(String taskId) {
-        if (!inFlight.add(taskId)) {   // a previous (slow) sweep is still running for this task
+        // Stops the 60s tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a
+        // task's sweeps mutually exclusive — a human typing `review` at the same time is a different
+        // trigger entirely; that exclusion lives in ReviewSweepService, where every trigger passes through.
+        if (!inFlight.add(taskId)) {
             return;
         }
-        executor.execute(() -> {
+        try {
+            executor.execute(() -> pollNow(taskId));
+        } catch (RejectedExecutionException e) {
+            // Submission itself failed (the executor is shut down with the backend). Caught NARROWLY: an
+            // exception thrown by the sweep must not land here, or it would be logged as a scheduling failure
+            // and — with a same-thread executor — leave lastPolledAt unadvanced, re-running the sweep forever.
+            inFlight.remove(taskId);
+            log.warn("Could not schedule an auto-review poll for {}: {}", taskId, e.toString());
+        }
+    }
+
+    private void pollNow(String taskId) {
+        try {
+            reviewSweep.sweep(taskId);
+        } catch (RuntimeException e) {
+            log.warn("Auto-review sweep failed for {}: {}", taskId, e.toString());
+        } finally {
+            // Release the marker LAST and unconditionally: stamping the poll writes state.json, which throws
+            // when the disk is full or the file turns unwritable. Losing the release there would exclude this
+            // task from auto-review for the rest of the JVM's life, long after the disk recovered.
             try {
-                reviewSweep.sweep(taskId);
-            } catch (RuntimeException e) {
-                log.warn("Auto-review sweep failed for {}: {}", taskId, e.toString());
-            } finally {
                 stateService.updateTask(taskId, t -> t.withLastPolledAt(System.currentTimeMillis()));
+            } finally {
                 inFlight.remove(taskId);
             }
-        });
+        }
     }
 }

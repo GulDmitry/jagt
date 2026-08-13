@@ -51,9 +51,8 @@ class ConfigServiceTest {
                   "projects": {} // none yet
                 }
                 """);
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), configFile.toString(), root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false, null);
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
         ConfigService service = new ConfigService(new OrchestratorPaths(properties));
 
         assertThat(service.load().worktree().copyGlobsOrDefault()).containsExactly("**/.env");

@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.service.MeteredAssistant;
 import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.ReviewSweepService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
@@ -238,6 +241,23 @@ class MasterShellTest {
         assertThat(editor.text()).isEqualTo("ship p");   // ambiguous → unchanged, options listed instead
         assertThat(log).anyMatch(l -> l.contains("PAN-2536") && l.contains("Excel export flag"));
         assertThat(log).anyMatch(l -> l.contains("PAN-2540") && l.contains("Login rate limit"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"prune ABC-1", "prune all extra", "prune ALL", "prune -f", "prune yes"})
+    void refusesAnythingButABarePruneOrPruneAllRatherThanGuessing(String line) {
+        // This guard is all that stands between a typo and a bulk delete across every project, so it must
+        // never read an unknown token as "yes, delete" — and `prune ABC-1` (a per-task prune that does not
+        // exist) must not silently prune everything.
+        assertThatThrownBy(() -> MasterShell.pruneDeletes(List.of(line.split(" "))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("usage: prune [all]");
+    }
+
+    @Test
+    void listsOnABarePruneAndDeletesOnlyOnPruneAll() {
+        assertThat(MasterShell.pruneDeletes(List.of("prune"))).isFalse();
+        assertThat(MasterShell.pruneDeletes(List.of("prune", "all"))).isTrue();
     }
 
     @Test

@@ -73,6 +73,17 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   is cut FROM `origin/<baseBranch>` and inherits it as upstream, so `GitService.detachUpstream` unsets
   it right after creation — a bare `git push` then errors ("no upstream") instead of pushing the task
   branch straight into the release branch.
+  `prune` deletes LOCAL branches only, never a remote one (that would be an outward write), only branches
+  already merged into `deployBranch`, never an ACTIVE task's branch (merged ≠ finished — a task lives until
+  `done`), and never without the explicit `prune all`; a bare `prune` is a dry run.
+- Watchdog scope is deliberate (`WatchdogService.watches`): it alerts only for statuses where the AGENT is
+  expected to be working — NEW, IN_PROGRESS, SHIPPING. Every other status idles by design (CI_POLLING waits
+  on the code host, REVIEW_PENDING/REVIEWED/APPROVED/DEPLOY_CONFLICT on the human), and watching those turns
+  the alert into noise.
+- ONE review sweep per task at a time, whatever triggered it: the guard lives in `ReviewSweepService` because
+  the manual `review`, the auto-poll and any future UI button all pass through it (two sweeps = the headless
+  read paid twice + two briefs relayed for one review round). `AutoReviewScheduler` keeps its own separate
+  guard, which solves a different problem: stopping 60s ticks from QUEUING behind a sweep that runs minutes.
 - All git ops in `GitService` under a per-repository `ReentrantLock` (index.lock races are per-repo;
   a slow fetch in one project must not block another).
 - Sub-agents can only act on their own task (X-Working-Directory scoping is ENFORCED in

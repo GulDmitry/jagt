@@ -470,4 +470,11 @@ class GitServiceTest {
         String originDevTip = runner.run(repo, timeout, List.of("git", "rev-parse", "origin/dev")).stdout().trim();
         assertThat(originDevTip).isEqualTo(taskTip);
     }
+
+    @Test
+    void readsOneBranchNamePerLineIgnoringBlanks() {
+        assertThat(GitService.branchNames("ABC-40\nABC-41\n\n  main  \n")).containsExactly(
+                "ABC-40", "ABC-41", "main");
+        assertThat(GitService.branchNames("")).isEmpty();
+    }
 }

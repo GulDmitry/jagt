@@ -23,9 +23,10 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,11 +43,122 @@ import static org.mockito.Mockito.when;
 class OrchestratorToolsTest {
 
     @Test
+    void listsMergedTaskBranchesWithoutDeletingAnythingUntilAsked(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("demo", new ProjectConfig(root.toString(), "origin/main", "dev", List.of()))));
+        GitService git = mock(GitService.class);
+        state.putTask("ABC-99", TaskState.builder("demo", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(git.branchesMergedInto(any(Path.class), eq("origin/dev")))
+                .thenReturn(List.of("ABC-40", "ABC-41", "ABC-99", "dev", "main"));
+        when(git.currentBranch(any(Path.class))).thenReturn("main");
+        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
+                properties, paths, new PromptTemplates());
+
+        String result = tools.pruneBranches(false);
+
+        assertThat(result).contains("ABC-40", "ABC-41", "dry run", "`prune all`");
+        // The protections must show up as ABSENCE from the list, or nothing pins them: ABC-99 is a live task
+        // (merged is not finished), main is the base branch and the repo's checkout, dev is the deploy branch.
+        assertThat(result).doesNotContain("  ABC-99\n", "  main\n", "  dev\n");
+        verify(git, never()).deleteLocalBranch(any(Path.class), anyString());
+    }
+
+    @Test
+    void deletesTheMergedBranchesAndReportsTheOnesGitRefused(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("demo", new ProjectConfig(root.toString(), "origin/main", "dev", List.of()))));
+        GitService git = mock(GitService.class);
+        when(git.branchesMergedInto(any(Path.class), eq("origin/dev")))
+                .thenReturn(List.of("ABC-40", "ABC-41"));
+        when(git.currentBranch(any(Path.class))).thenReturn("main");
+        when(git.deleteLocalBranch(any(Path.class), eq("ABC-40"))).thenReturn(Optional.empty());
+        when(git.deleteLocalBranch(any(Path.class), eq("ABC-41")))
+                .thenReturn(Optional.of("error: branch is checked out at /wt"));
+        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
+                properties, paths, new PromptTemplates());
+
+        String result = tools.pruneBranches(true);
+
+        assertThat(result).contains("deleted ABC-40", "KEPT ABC-41 — error: branch is checked out at /wt");
+        // The count must say what HAPPENED, not what was offered — git refused one of the two.
+        assertThat(result).contains("deleted 1 of 2");
+    }
+
+    @Test
+    void neverOffersToDeleteALiveTasksBranchOrALongLivedOne() {
+        // Merged into the deploy branch is NOT the same as finished: a task stays live until `done`.
+        List<String> merged = List.of("dev", "main", "release", "ABC-40", "ABC-99", "feature-x");
+
+        List<String> prunable = OrchestratorTools.prunable(merged, "origin/main", "dev", "release",
+                Set.of("ABC-99"));
+
+        assertThat(prunable).containsExactly("ABC-40", "feature-x");
+    }
+
+    @Test
+    void keepsTheRecordOfWhatItDeletedWhenAnotherProjectCannotBeExamined(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        ConfigService config = mock(ConfigService.class);
+        Map<String, ProjectConfig> projects = new java.util.LinkedHashMap<>();
+        projects.put("alpha", new ProjectConfig(root.resolve("alpha").toString(), "origin/main", "dev", List.of()));
+        projects.put("beta", new ProjectConfig(root.resolve("beta").toString(), "origin/main", "release", List.of()));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(projects));
+        GitService git = mock(GitService.class);
+        when(git.branchesMergedInto(any(Path.class), eq("origin/dev"))).thenReturn(List.of("ABC-40"));
+        when(git.branchesMergedInto(any(Path.class), eq("origin/release")))
+                .thenThrow(new IllegalStateException("git branch --merged origin/release failed: no such ref"));
+        when(git.currentBranch(any(Path.class))).thenReturn("main");
+        when(git.deleteLocalBranch(any(Path.class), eq("ABC-40"))).thenReturn(Optional.empty());
+        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
+                properties, paths, new PromptTemplates());
+
+        String result = tools.pruneBranches(true);
+
+        // Losing "deleted ABC-40" because a LATER project failed would leave the human with no audit trail.
+        assertThat(result).contains("deleted ABC-40", "beta: SKIPPED — git branch --merged origin/release failed");
+    }
+
+    @Test
+    void doesNotClaimTheRepoIsCleanWhenNoProjectCouldBeExamined(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("demo", new ProjectConfig(root.toString(), "origin/main", "dev", List.of()))));
+        GitService git = mock(GitService.class);
+        when(git.branchesMergedInto(any(Path.class), eq("origin/dev")))
+                .thenThrow(new IllegalStateException("git branch --merged origin/dev failed: no such ref"));
+        OrchestratorTools tools = new OrchestratorTools(config, state, git, mock(TmuxService.class),
+                mock(EditorDriver.class), mock(TerminalDriver.class), mock(UserNotifier.class),
+                properties, paths, new PromptTemplates());
+
+        String result = tools.pruneBranches(false);
+
+        assertThat(result).contains("no project could be examined").doesNotContain("nothing to prune");
+    }
+
+    @Test
     void closesTaskWindowWhenCalledWithItsAlias(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
@@ -66,10 +178,8 @@ class OrchestratorToolsTest {
 
     @Test
     void givesEachTaskItsOwnSessionWhenViewModeIsTabPerTask(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
@@ -90,10 +200,8 @@ class OrchestratorToolsTest {
 
     @Test
     void keepsAgentsViewerOpenAfterLastTaskByDefault(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
@@ -114,10 +222,8 @@ class OrchestratorToolsTest {
 
     @Test
     void closesAgentsViewerAfterLastTaskWhenKeepViewerDisabled(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
@@ -142,10 +248,8 @@ class OrchestratorToolsTest {
         Path repo = Files.createDirectories(root.resolve("repo"));
         Path deployWorktree = Files.createDirectories(root.resolve("ABC-1-deploy"));   // sibling of the repo
         Path taskWorktree = Files.createDirectories(root.resolve("ABC-1-sng"));
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", taskWorktree.toString(), TaskStatus.DEPLOY_CONFLICT)
@@ -167,10 +271,8 @@ class OrchestratorToolsTest {
 
     @Test
     void storesTheMrLinkFromTheStatusMessageForTheDashboard(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -185,10 +287,8 @@ class OrchestratorToolsTest {
 
     @Test
     void notifiesHumanWhenAgentFinishesAndHandsBackForReview(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -204,10 +304,8 @@ class OrchestratorToolsTest {
 
     @Test
     void doesNotNotifyOnRoutineInProgressKeepAlive(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -275,10 +373,8 @@ class OrchestratorToolsTest {
 
     @Test
     void opensStaticDiffAgainstBaseWhenModeIsDiff(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -299,10 +395,8 @@ class OrchestratorToolsTest {
 
     @Test
     void opensWorktreeAsProjectByDefault(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -318,10 +412,8 @@ class OrchestratorToolsTest {
 
     @Test
     void opensWorktreeAsProjectWhenModeIsProject(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -357,10 +449,8 @@ class OrchestratorToolsTest {
 
     @Test
     void rejectsCiPollingStatusWhenMessageCarriesNoMrLink(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -375,10 +465,8 @@ class OrchestratorToolsTest {
 
     @Test
     void acceptsCiPollingStatusWhenMessageCarriesTheMrLink(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -393,10 +481,8 @@ class OrchestratorToolsTest {
 
     @Test
     void rejectsStatusUpdateWhenSubAgentTargetsSiblingTask(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("OTHER-1", TaskState.builder("proj", "/other", TaskStatus.IN_PROGRESS).alias("o1").build());
@@ -411,10 +497,8 @@ class OrchestratorToolsTest {
 
     @Test
     void truncatesStatusMessageToOneDashboardLineWhenAgentSendsAnEssay(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -431,10 +515,8 @@ class OrchestratorToolsTest {
     @ParameterizedTest
     @ValueSource(strings = {"feature/X", "../escape", "a b"})
     void rejectsTaskIdBeforeTouchingGitWhenItCannotBeABranchName(String unsafeTaskId, @TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         GitService git = mock(GitService.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
@@ -450,10 +532,8 @@ class OrchestratorToolsTest {
 
     @Test
     void rejectsUnknownModeBeforeTouchingGit(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         GitService git = mock(GitService.class);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
@@ -469,10 +549,8 @@ class OrchestratorToolsTest {
 
     @Test
     void removesFreshWorktreeAndBranchWhenContextSetupFailsAfterCheckout(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         Path projectPath = root.resolve("repo");
         ConfigService config = mock(ConfigService.class);
@@ -494,10 +572,8 @@ class OrchestratorToolsTest {
 
     @Test
     void movesTaskToDeployedAfterASuccessfulDeploy(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -516,10 +592,8 @@ class OrchestratorToolsTest {
     @Test
     void flagsDeployConflictOnTheDashboardWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
             throws Exception {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         Path worktree = java.nio.file.Files.createDirectories(root.resolve("wt"));
@@ -549,10 +623,8 @@ class OrchestratorToolsTest {
 
     @Test
     void refusesDeployWhenDeployBranchIsTheBaseBranch(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).message("MR: http://x").alias("a1").build());
@@ -571,10 +643,8 @@ class OrchestratorToolsTest {
 
     @Test
     void refusesDeployWhenProjectHasNoDeployBranch(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
@@ -591,10 +661,8 @@ class OrchestratorToolsTest {
 
     @Test
     void refusesDeployWhenCalledBySubAgent(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         OrchestratorTools tools = new OrchestratorTools(mock(ConfigService.class),
                 new StateService(new JsonMapper(), paths), mock(GitService.class), mock(TmuxService.class),
@@ -608,10 +676,8 @@ class OrchestratorToolsTest {
 
     @Test
     void nudgesRunningAgentWhenTaskContextIsUpdated(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -632,10 +698,8 @@ class OrchestratorToolsTest {
 
     @Test
     void respawnsADownSessionWhenWriteTaskContextTargetsIt(@TempDir Path root) {
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, null, null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).alias("a1").build());
@@ -657,10 +721,9 @@ class OrchestratorToolsTest {
     @Test
     void assignsNextFreeAliasWhenTicketLetterAlreadyInUse(@TempDir Path root) throws Exception {
         java.nio.file.Files.createDirectories(root.resolve("ABC-2-proj"));
-        OrchestratorProperties properties = new OrchestratorProperties(
-                root.toString(), null, root.resolve("state.json").toString(),
-                null, null, null, null, null, "prompt", null, false,
-                new OrchestratorProperties.Watchdog(Duration.ofMinutes(5)));
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())
+                .withAgentPrompt("prompt");
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());

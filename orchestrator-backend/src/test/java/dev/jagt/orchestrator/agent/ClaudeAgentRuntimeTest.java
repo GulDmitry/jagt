@@ -8,8 +8,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ClaudeAgentRuntimeTest {
 
     private static ClaudeAgentRuntime runtime(String command, String prompt) {
-        return new ClaudeAgentRuntime(new OrchestratorProperties(
-                null, null, null, null, null, null, null, command, prompt, null, false, null));
+        return new ClaudeAgentRuntime(OrchestratorProperties.defaults()
+                .withClaudeCommand(command).withAgentPrompt(prompt));
     }
 
     @Test

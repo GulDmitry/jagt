@@ -69,9 +69,9 @@ class OrchestratorApplicationTest {
 
     @Test
     void reachesTheAssistantOnlyThroughItsMeterSoNoCallerCanSpendOffTheBooks() {
-        // A second MasterAssistant bean would make the injection point ambiguous, and a caller injecting the
-        // port directly would skip token accounting entirely. Both are compile-clean, wiring-clean mistakes.
+        // A second MasterAssistant bean would make the injection point ambiguous — a compile-clean,
+        // wiring-clean mistake. (That a caller injects the METER rather than the port cannot be asserted from
+        // here: MeteredAssistant deliberately does not implement the interface, so it is not even a candidate.)
         assertThat(context.getBeansOfType(MasterAssistant.class)).hasSize(1);
-        assertThat(context.getBeanNamesForType(MasterAssistant.class)).doesNotContain("meteredAssistant");
     }
 }

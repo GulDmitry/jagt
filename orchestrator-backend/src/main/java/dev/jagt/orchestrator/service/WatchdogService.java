@@ -38,16 +38,30 @@ public class WatchdogService {
         this.configService = configService;
     }
 
+    /**
+     * The statuses in which jagt EXPECTS the agent to be doing something, so silence means death:
+     * NEW (died before its first status update — spawn failure, auth prompt), IN_PROGRESS, and SHIPPING
+     * (the documented "stuck at SHIPPING, no MR appears" failure, previously invisible to the watchdog —
+     * recovery depended on the human noticing).
+     *
+     * <p>Every other status is idle BY DESIGN and must stay unwatched or the alert becomes noise:
+     * REVIEW_PENDING / REVIEWED / APPROVED / CI_FAILED / DEPLOY_CONFLICT wait on the HUMAN (jagt's own
+     * next-move for CI_FAILED is "your move: review"), CI_POLLING waits on the code host, DEPLOYED and DONE
+     * are terminal. REVIEW_PENDING and CI_FAILED are the arguable ones: right after a relayed brief the agent
+     * IS working. Telling "relayed, unanswered" apart from "waiting for you" needs state jagt does not keep,
+     * and guessing would fire alerts at a human who is simply taking their time.
+     */
+    static boolean watches(TaskStatus status) {
+        return status == TaskStatus.NEW || status == TaskStatus.IN_PROGRESS || status == TaskStatus.SHIPPING;
+    }
+
     @Scheduled(fixedRate = 60_000)
     public void scan() {
         long staleMs = properties.watchdog().staleAfter().toMillis();
         long now = System.currentTimeMillis();
         String session = tmuxService.sessionName(configService.load().viewer().tmuxSession());
         stateService.tasks().forEach((taskId, task) -> {
-            // NEW is watched too: an agent that dies before its first status update
-            // (spawn failure, auth prompt) is exactly the silent death to catch.
-            boolean active = task.status() == TaskStatus.IN_PROGRESS || task.status() == TaskStatus.NEW;
-            if (!active || now - task.lastActiveTimestamp() < staleMs) {
+            if (!watches(task.status()) || now - task.lastActiveTimestamp() < staleMs) {
                 lastAlertAt.remove(taskId);
                 return;
             }

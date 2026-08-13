@@ -119,6 +119,7 @@ Talk to the Master console:
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push. On conflict nothing is pushed: the task goes `DEPLOY_CONFLICT`, `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, then `deploy` again |
 | `respawn <ticket>` | restart a dead agent session |
 | `done <ticket>` | close the task: full cleanup — session, worktree, state (branch kept) |
+| `prune [all]` | list the LOCAL branches already merged into `deployBranch` (a dry run); `prune all` deletes them. Never touches a remote branch, a live task's branch, or your base/deploy branch. A **squash**-merged branch looks unmerged to git, so it is never listed — jagt cannot prove the work survived. The list is every merged local branch, not only the ones jagt created: read it before typing `all` |
 | `help` | command reference + recovery cheatsheet |
 
 The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
