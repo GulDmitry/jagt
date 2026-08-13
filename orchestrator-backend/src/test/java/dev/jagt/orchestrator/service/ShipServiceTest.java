@@ -63,8 +63,11 @@ class ShipServiceTest {
         verify(host).createOrUpdateMergeRequest(spec.capture());
         assertThat(spec.getValue().sourceBranch()).isEqualTo("ABC-42");
         assertThat(spec.getValue().targetBranch()).isEqualTo("main");     // never the origin/ spelling
-        verify(tools).updateAgentStatus("CI_POLLING", "MR: https://host/mr/9", "ABC-42", null);
+        // The status move is recorded as a review ROUND (history + a fresh polling window), not as a generic
+        // status update — see recordsAnotherRoundShippedOntoTheSameRequestAsARealRound.
+        verify(stateService).updateTask(eq("ABC-42"), any());
         verify(tools, never()).writeTaskContext(anyString(), anyString());
+        verify(tools, never()).appendTaskContext(anyString(), anyString());
         assertThat(result).contains("committed 3 file(s)", "pushed", "opened https://host/mr/9", "CI_POLLING");
     }
 
@@ -148,7 +151,8 @@ class ShipServiceTest {
 
         String result = ship().ship("ABC-42");
 
-        verify(tools).writeTaskContext(eq("ABC-42"), contains("NOTHING to commit or push"));
+        // APPENDS: a sweep may have just relayed a brief, and truncating it would lose the comments.
+        verify(tools).appendTaskContext(eq("ABC-42"), contains("NOTHING to commit or push"));
         assertThat(result).contains("asked the agent to post the drafted replies");
     }
 
@@ -169,6 +173,7 @@ class ShipServiceTest {
         String result = ship().ship("ABC-42");
 
         verify(tools, never()).writeTaskContext(anyString(), anyString());
+        verify(tools, never()).appendTaskContext(anyString(), anyString());
         assertThat(result).contains("left for you to post");
     }
 
@@ -187,6 +192,26 @@ class ShipServiceTest {
         assertThat(instruction).contains("STARTS with \"ABC-42\"")
                 .contains("do NOT create a new one or retitle it")
                 .doesNotContain("EXACTLY this message");
+    }
+
+    @Test
+    void recordsAnotherRoundShippedOntoTheSameRequestAsARealRound() {
+        // The path CLAUDE.md calls normal ("the human iterates and ships another round onto the same request")
+        // does not change the status, so it used to leave no history entry and no fresh polling window.
+        havingTask("ABC-42", TaskStatus.CI_POLLING, "https://host/mr/9", "Widget layout is off");
+        when(host.createOrUpdateMergeRequest(any()))
+                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
+
+        ship().ship("ABC-42");
+
+        ArgumentCaptor<java.util.function.UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-42"), update.capture());
+        TaskState before = TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("https://host/mr/9").mrCreatedAt(1_000L).lastPolledAt(9_000L).build();
+        TaskState after = update.getValue().apply(before);
+        assertThat(after.history()).hasSizeGreaterThan(before.history().size());
+        assertThat(after.mrCreatedAt()).isGreaterThan(1_000L);
+        assertThat(after.lastPolledAt()).isZero();
     }
 
     private ShipService ship() {

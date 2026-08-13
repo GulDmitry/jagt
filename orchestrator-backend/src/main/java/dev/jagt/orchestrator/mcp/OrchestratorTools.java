@@ -48,6 +48,9 @@ public class OrchestratorTools {
     private static final Logger log = LoggerFactory.getLogger(OrchestratorTools.class);
     /** Task ids become git branches, directory names and tmux window names/targets. */
     private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_-]{0,63}");
+    /** Per-task relay monitors; a handful of entries, one per task ever relayed to in this session. */
+    private final java.util.concurrent.ConcurrentHashMap<String, Object> relayLocks =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     private final ConfigService configService;
     private final StateService stateService;
@@ -265,9 +268,32 @@ public class OrchestratorTools {
     }
 
     public String writeTaskContext(String taskId, String instructions) {
+        return relay(taskId, instructions, false);
+    }
+
+    /**
+     * Adds to whatever the agent has not read yet instead of replacing it. Two independent flows relay to the
+     * same file — a review sweep's brief and ship's "post your drafted replies" — and truncating lost one of
+     * them outright: a sweep that had just handed over four unresolved comments, overwritten a second later by
+     * a ship, left the agent with no idea the comments existed and the task sitting at CI_POLLING as if the
+     * review were clean. Supplementary instructions append; a NEW round of work still replaces (see the sweep).
+     */
+    public String appendTaskContext(String taskId, String instructions) {
+        return relay(taskId, instructions, true);
+    }
+
+    private String relay(String taskId, String instructions, boolean append) {
         taskId = canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        WorktreeFiles.write(Path.of(task.worktreePath()).resolve("task_context.md"), instructions);
+        Path contextFile = Path.of(task.worktreePath()).resolve("task_context.md");
+        // One relay at a time per task: the sweep runs unattended every 60s while a human can ship at any
+        // moment, and interleaving two writes to one file is how an instruction disappears.
+        synchronized (relayLock(taskId)) {
+            WorktreeFiles.write(contextFile, append
+                    ? WorktreeFiles.read(contextFile).map(existing -> existing + "\n\n" + instructions)
+                            .orElse(instructions)
+                    : instructions);
+        }
         // A file on disk doesn't wake a running Claude session — nudge it directly.
         String session = agentSession(configService.load(), taskId);
         if (tmuxService.taskWindowState(session, taskId) == TmuxService.WindowState.AGENT_RUNNING
@@ -616,6 +642,11 @@ public class OrchestratorTools {
     private TaskState requireTask(String taskId) {
         return stateService.task(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
+    }
+
+    /** One monitor per task id, so relays to one task serialise while different tasks never wait on each other. */
+    private Object relayLock(String taskId) {
+        return relayLocks.computeIfAbsent(taskId, id -> new Object());
     }
 
     /** Every taskId argument also accepts the task's short alias (p1, s2, ...). */

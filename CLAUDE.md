@@ -68,8 +68,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   answer to any question the others already answer:
   - "what is this task and what can I do with it" is `model/Move` + `model/TaskView`, built by
     `service/TaskViews`. The TUI, `/status` and `/api/tasks` all render THAT. `Move.shippable` is also what
-    `OrchestratorTools.shipGate` calls — the dashboard used to advise independently of the gate, which is
-    exactly how they drifted.
+    `ShipService.requireShippable` calls — the dashboard used to advise independently of the gate, which is
+    exactly how they drifted apart.
   - "how is an action executed" is `service/CommandService` (validates against `Move` first, so a stale board
     tab is refused with a sentence, not with a git error three layers down), and "how is a task started" is
     `service/TaskLauncher`. The console parses a command line, the controller parses JSON; neither owns rules.
@@ -323,8 +323,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   enforced here as a workflow rule, not in settings.json.)
 
 ## Build & run
-- The backend process IS the Master control terminal (Lanterna full-screen TUI); run it in a REAL terminal
-  so the TUI can take over the screen: `./gradlew build` then `java -jar build/libs/jagt.jar` (bootJar has a
+- Default run is the WEB BOARD: `./gradlew build` then `java -jar build/libs/jagt.jar` serves it on 8290 and
+  prints the URL. For the console instead, add `--orchestrator.ui=tui` (or `=both`) — and note the layout
+  smoke script must pass that flag too, since it drives the TUI (bootJar has a
   fixed, version-independent archive name, so the run command never changes across releases).
 - `./gradlew bootRun` works but Gradle captures stdout → no TTY (`System.console()` is null) → the TUI
   falls back to a plain inline line-REPL (dashboard printed after each command). Run the jar directly for

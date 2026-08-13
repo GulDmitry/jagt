@@ -75,14 +75,16 @@ public class AutoReviewScheduler {
         AutoReviewCadence cadence = AutoReviewCadence.from(cfg);
         long now = System.currentTimeMillis();
         stateService.tasks().forEach((taskId, task) -> {
-            // A task that left CI_POLLING (re-shipped, deployed, done) re-arms its window-elapsed ping.
+            // A task that left CI_POLLING (deployed, done) re-arms its window-elapsed ping.
             if (task.status() != TaskStatus.CI_POLLING) {
-                windowElapsedNotified.remove(taskId);
+                windowElapsedNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
                 return;
             }
             switch (decide(task, cadence, now)) {
                 case WINDOW_ELAPSED -> {
-                    if (windowElapsedNotified.add(taskId)) {
+                    // Keyed by the WINDOW, not the task: shipping another round starts a new window without
+                    // ever leaving CI_POLLING, and that round deserves its own reminder.
+                    if (windowElapsedNotified.add(taskId + "@" + task.mrCreatedAt())) {
                         userNotifier.notify("jagt · " + taskId, "auto-review window elapsed — `review` manually");
                     }
                 }

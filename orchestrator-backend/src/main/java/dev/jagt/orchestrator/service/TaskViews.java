@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.model.TaskView;
 import org.springframework.stereotype.Component;
 
@@ -45,6 +46,12 @@ public class TaskViews {
      * than the alternative (an agent-reported flag jagt would then have to keep in sync with the file).
      */
     private static boolean hasDraftedReplies(TaskState task) {
+        // Only where it is ACTIONABLE. The file survives until the agent deletes it (and with
+        // codeReview.postReviewReplies=false nobody ever does), so showing it for every later status turned a
+        // signal into a permanent nag — "read them before you ship" on a task that is already DEPLOYED.
+        if (task.status() != TaskStatus.REVIEW_PENDING && task.status() != TaskStatus.CI_FAILED) {
+            return false;
+        }
         String worktree = task.worktreePath();
         return worktree != null && !worktree.isBlank()
                 && Files.isRegularFile(Path.of(worktree).resolve(DRAFTED_REPLIES_FILE));

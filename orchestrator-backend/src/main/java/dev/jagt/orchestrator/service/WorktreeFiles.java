@@ -114,6 +114,19 @@ public final class WorktreeFiles {
         }
     }
 
+    /** The file's content, or empty when it is not there — an absent relay file is the normal first case. */
+    public static java.util.Optional<String> read(Path file) {
+        if (!Files.isRegularFile(file)) {
+            return java.util.Optional.empty();
+        }
+        try {
+            return java.util.Optional.of(Files.readString(file));
+        } catch (IOException e) {
+            log.warn("Could not read {}: {}", file, e.getMessage());
+            return java.util.Optional.empty();
+        }
+    }
+
     /** Writes a file, failing loudly: a missing task_context.md or agent config is not something to shrug at. */
     public static void write(Path file, String content) {
         try {

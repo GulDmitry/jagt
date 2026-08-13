@@ -49,9 +49,42 @@ public record TaskState(
      */
     public TaskState withStatus(TaskStatus status, String message) {
         long now = System.currentTimeMillis();
+        List<StatusChange> known = seededHistory();
         return toBuilder().status(status).lastActiveTimestamp(now).message(message)
-                .history(status == this.status ? history : appended(history, new StatusChange(status, now)))
+                .history(status == this.status ? known : appended(known, new StatusChange(status, now)))
                 .build();
+    }
+
+    /**
+     * A ship landed on the review request: new commits, so a NEW review round — recorded even when the status
+     * does not change, which it does not when a round is shipped from CI_POLLING onto the same request. Without
+     * this the one question history exists to answer ("how many rounds did this take") is wrong for the path
+     * that is actually normal, and the auto-review window would never re-arm for the new pipeline.
+     */
+    public TaskState withReviewRound(String reviewRequestUrl) {
+        long now = System.currentTimeMillis();
+        return toBuilder().status(TaskStatus.CI_POLLING).lastActiveTimestamp(now)
+                .message("MR: " + reviewRequestUrl)
+                .history(appended(seededHistory(), new StatusChange(TaskStatus.CI_POLLING, now)))
+                .mrUrl(reviewRequestUrl)
+                // The window is per ROUND, not per request: a round shipped days later gets its own polling
+                // window, and lastPolledAt=0 makes the next scheduler tick look at it right away.
+                .mrCreatedAt(now).lastPolledAt(0)
+                .build();
+    }
+
+    /**
+     * History for a task written BEFORE history existed: seed it with the current status at the last activity
+     * stamp. Without this, a legacy task's {@link #statusSince()} falls back to {@code lastActiveTimestamp} —
+     * which every keep-alive bumps — so an hour-old status would read as "0m" until its next real transition,
+     * the exact lie the field was added to prevent.
+     */
+    private List<StatusChange> seededHistory() {
+        if (!history.isEmpty()) {
+            return history;
+        }
+        long since = lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis();
+        return List.of(new StatusChange(status, since));
     }
 
     private static List<StatusChange> appended(List<StatusChange> history, StatusChange change) {

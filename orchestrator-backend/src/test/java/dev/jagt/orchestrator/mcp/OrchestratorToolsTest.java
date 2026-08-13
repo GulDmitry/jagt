@@ -671,4 +671,50 @@ class OrchestratorToolsTest {    @Test
 
         assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
     }
+
+    @Test
+    void addsToAnUnreadRelayInsteadOfWipingIt(@TempDir Path root) throws Exception {
+        // Two flows relay to one file: a sweep's brief with unresolved comments, and ship's "post your drafted
+        // replies". Truncating meant the agent never saw whichever arrived first — the review looked clean.
+        Path worktree = java.nio.file.Files.createDirectories(root.resolve("ABC-1-demo"));
+        java.nio.file.Files.writeString(worktree.resolve("task_context.md"), "BRIEF: four unresolved comments");
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING)
+                .alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
+                mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+
+        tools.appendTaskContext("ABC-1", "ALSO: post your drafted replies");
+
+        assertThat(java.nio.file.Files.readString(worktree.resolve("task_context.md")))
+                .contains("BRIEF: four unresolved comments", "ALSO: post your drafted replies");
+    }
+
+    @Test
+    void replacesTheRelayForANewRoundOfWork(@TempDir Path root) throws Exception {
+        Path worktree = java.nio.file.Files.createDirectories(root.resolve("ABC-1-demo"));
+        java.nio.file.Files.writeString(worktree.resolve("task_context.md"), "STALE: last round");
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING)
+                .alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        OrchestratorTools tools = new OrchestratorTools(config, state, mock(GitService.class),
+                mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
+                mock(UserNotifier.class), properties, paths, new PromptTemplates(), new ClaudeAgentRuntime(OrchestratorProperties.defaults()));
+
+        tools.writeTaskContext("ABC-1", "NEW ROUND: fix the pipeline");
+
+        assertThat(java.nio.file.Files.readString(worktree.resolve("task_context.md")))
+                .isEqualTo("NEW ROUND: fix the pipeline").doesNotContain("STALE");
+    }
 }

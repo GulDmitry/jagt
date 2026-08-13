@@ -107,6 +107,26 @@ class AutoReviewSchedulerTest {
     }
 
     @Test
+    void pingsAgainForTheNewWindowAShippedRoundOpens(@TempDir Path root) {
+        // A round shipped in-process never leaves CI_POLLING, so the old per-task marker silenced the reminder
+        // for the rest of the task's life — and the new pipeline was never polled either.
+        StateService state = stateWith(root, polling()
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis()).build());
+        UserNotifier notifier = mock(UserNotifier.class);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(),
+                mock(ReviewSweepService.class), notifier, Runnable::run);
+        scheduler.scan();
+
+        // ship lands another round: same status, brand-new window
+        state.updateTask("ABC-1", task -> task.withReviewRound("http://mr/1"));
+        state.updateTask("ABC-1", task -> task.withMrCreatedAt(
+                System.currentTimeMillis() - Duration.ofHours(25).toMillis()));
+        scheduler.scan();
+
+        verify(notifier, org.mockito.Mockito.times(2)).notify(eq("jagt · ABC-1"), contains("window elapsed"));
+    }
+
+    @Test
     void scanDoesNothingWhenAutoReviewIsDisabled(@TempDir Path root) {
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(1).toMillis()).build());

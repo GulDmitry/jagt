@@ -2,54 +2,24 @@
 
 Backlog of ideas, not commitments. Newest thinking at the top of each section.
 
-## Roadmap — decided order (review of 2026-08-12)
+## Roadmap — what is left (reviewed 2026-08-13)
 
-In dependency order; each step is detailed in its section below.
+Steps 1-5 of the original roadmap have shipped: the phase/action projection, `CodeHost` over REST (read AND
+create), `ship` in the backend, the web board, and the status-transition history. What remains, in dependency
+order:
 
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
+| 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
+| 2 | Run the build and the jar on a real Linux box | the drivers exist and the wiring is tested from macOS; `notify-send` under a session bus, `kitty @ focus-window` under a WM and the `pkill` viewer close are not | 0.5 d + access |
+| 3 | Finish the `OrchestratorTools` split in ONE move | `initializeTask` + the agent-session methods leave together, because those six pull in six of the eleven collaborators (see the entry below) | 1 d |
+| 4 | `maxConcurrentTasks` | nothing stops a fifth agent from taking the machine down; each is 1-2 GB | 0.5 d |
+| 5 | `revert <ticket>` | `deploy` is the one outward write and has no way back through jagt | 1 d |
+| 6 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path — in the board this is Cmd-K | 1-2 d |
+| 7 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; needs a documented install | 1 d |
 
-| 2 | ~~`CodeHost` REST — review sweep + MR create/update~~ DONE in the seam; the create call is UNWIRED (step 3 wires it) | kills the dominant token spend + the "is it approved?" judgement flake | done |
-
-
-| 5 | ~~Status-transition history in `state.json`~~ DONE — `TaskState.history` + `statusSince()`, shown on both surfaces | "which steps happened, how long did review take" | done |
-| 6 | NL fallback as a command palette (tier 2 of two-tier dispatch) | flexibility, off the hot path | 1-2 d |
-
-Steps 2 and 3 are what move the remaining mechanics out of the LLM; 1 is a prerequisite for 4.
-
-Done: `assistant.model: haiku` is the shipped default (2026-08-13) — 8x cheaper on the same call
-($0.051 vs $0.41, both measured on `--setting-sources project`). The shipped invocation keeps the full
-`user,project,local` MCP the reads actually need, so its real figure is $0.064 a call — ~6x under the opus
-row, but that pair is NOT apples-to-apples: opus was never re-measured with the full MCP.
-The other half of that step, `--setting-sources project`, was DROPPED as a trap, see the cost entry below.
-
-Done 2026-08-13, the phase model and the web board (roadmap steps 1 and 4): `Move`/`Phase`/`Owner`/`TaskAction`
-+ `TaskView` are the one projection every surface renders, `CommandService`/`TaskLauncher` the one way an action
-runs or a task starts, and `OperatorUi` (`orchestrator.ui`) is the seam that makes the board the default and the
-console a switch. The board is vanilla static assets + `/api/tasks`, `/api/tasks/{id}/actions/{action}` and an
-SSE stream fed by `StateService.onChange`. Left for later: embedding the agent terminal (ttyd, phase 2) and the
-drafted-replies indicator below, which now only needs a field on the projection.
-
-Token accounting is already in (`stats` + `/stats`, the `TOKENS` dashboard column, per-task totals in
-state.json) — the numbers it measured are what re-ordered this table.
-
-Done 2026-08-13, the review-sweep half of step 2: `codehost/CodeHost` (+ `GitLabCodeHost` over v4 REST,
-`JsonHttp` transport port) and `service/ReviewReader`, which routes a sweep to REST when a configured host
-claims the URL and to the metered assistant otherwise. `ReviewSweepService` kept its guard and lost the
-metering plumbing. Opt-in via `orchestrator.code-host.{type,base-url,token}`; unconfigured = the old paid
-path. Two rules worth keeping: a REST failure never falls back to a paid read (invisible spend + a hidden
-misconfiguration), and a PARTIAL read fails whole, because "no comments + green" advances the task.
-
-Done 2026-08-13, the second `AgentRuntime` (see "Prove the pluggable seams"): `CodexAgentRuntime`, which
-forced `provisionWorktree` into the seam — worktree provisioning left `OrchestratorTools`, the context file is
-now `AGENTS.md` for everyone (Claude gets a `CLAUDE.md` symlink), and the flow no longer names an agent's
-files or prints "Claude" (`displayName()`).
-
-Done 2026-08-13, hygiene + metering: `state.json` keeps its previous version as `state.json.bak` and a read
-that cannot parse the primary recovers from it (bad file set aside as `state.json.corrupt`); with no usable
-backup it THROWS rather than starting empty over an existing file. `WorktreeOrphanScanner` reports leftover
-worktrees and the secret copies in them (`GET /orphans`). `stats` splits the session spend by
-`AssistantCallKind`, and `UsageTracker` derives the session total from that split so the two cannot drift.
+Steps 1 and 2 need access I do not have (a host token, a Linux machine) — they are the two places where what
+we believe is still ahead of what we have shown.
 
 ## Architecture
 

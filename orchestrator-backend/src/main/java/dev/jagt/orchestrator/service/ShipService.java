@@ -107,8 +107,9 @@ public class ShipService {
                         + host.displayName() + " would not open the review request — check"
                         + " orchestrator.code-host.token and open it by hand if this repeats."));
 
-        // The status carries the link, which is what the dashboard and the review sweep both read.
-        tools.updateAgentStatus("CI_POLLING", "MR: " + request.url(), taskId, null);
+        // A ROUND, not just a status: recorded in history and re-arming the auto-review window even when the
+        // status was already CI_POLLING, which is the case for every round after the first.
+        stateService.updateTask(taskId, state -> state.withReviewRound(request.url()));
         return "ship " + taskId + ": " + describe(commit) + ", pushed, "
                 + (request.created() ? "opened " : "updated ") + request.url()
                 + " — status CI_POLLING" + relayDraftedReplies(taskId, worktree, config);
@@ -142,7 +143,7 @@ public class ShipService {
         if (!config.codeReview().postReviewRepliesOrDefault()) {
             return "; review_replies.md is left for you to post (codeReview.postReviewReplies=false)";
         }
-        tools.writeTaskContext(taskId, "The change is committed, pushed and the review request is up to date —"
+        tools.appendTaskContext(taskId, "The change is committed, pushed and the review request is up to date —"
                 + " there is NOTHING to commit or push.\n" + repliesStep(config)
                 + "Then set status REVIEW_PENDING only if you had to change code; otherwise leave the status"
                 + " alone.");

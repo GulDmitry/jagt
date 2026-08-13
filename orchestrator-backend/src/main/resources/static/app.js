@@ -27,11 +27,14 @@ const relative = (millis) => {
   return `${Math.round(seconds / 86400)}d ago`;
 };
 
+// FLOOR everywhere, matching DashboardRenderer.compactDuration exactly: with `orchestrator.ui=both` the two
+// surfaces sit side by side, and 90 minutes reading "1h" here and "2h" there is the drift the shared
+// projection exists to prevent — sharing the data is not enough if a derived number is formatted twice.
 const duration = (millis) => {
-  const minutes = Math.max(0, Math.round(millis / 60000));
+  const minutes = Math.max(0, Math.floor(millis / 60000));
   if (minutes < 60) return `${minutes}m`;
-  if (minutes < 1440) return `${Math.round(minutes / 60)}h`;
-  return `${Math.round(minutes / 1440)}d`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
+  return `${Math.floor(minutes / 1440)}d`;
 };
 
 // The transitions the task actually went through, as a tooltip: the card stays one line, the record is one
