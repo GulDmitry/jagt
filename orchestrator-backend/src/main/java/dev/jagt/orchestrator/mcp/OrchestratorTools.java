@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.GitService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TmuxService;
+import dev.jagt.orchestrator.service.WorktreeFiles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -117,14 +118,15 @@ public class OrchestratorTools {
         String remoteUrl;
         try {
             remoteUrl = gitService.remoteUrl(projectPath);
-            excludeOrchestratorFiles(projectPath);
+            WorktreeFiles.excludeOrchestratorPlumbing(gitService.gitCommonDir(projectPath));
             provisionForAgent(worktreePath);
-            copyIdeProjectFiles(projectPath, worktreePath);
-            copyLocalFiles(projectPath, worktreePath, configService.load().worktree().copyGlobsOrDefault());
-            writeString(worktreePath.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE),
+            WorktreeFiles.copyIdeProjectFiles(projectPath, worktreePath);
+            WorktreeFiles.copyLocalFiles(projectPath, worktreePath,
+                    configService.load().worktree().copyGlobsOrDefault());
+            WorktreeFiles.write(worktreePath.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE),
                     subAgentContext(taskId, projectKey, project, worktreePath, remoteUrl, config));
             if (instructions != null && !instructions.isBlank()) {
-                writeString(worktreePath.resolve("task_context.md"), instructions);
+                WorktreeFiles.write(worktreePath.resolve("task_context.md"), instructions);
             }
         } catch (RuntimeException e) {
             // Compensate: without this, the taskId is burned (branch + worktree exist,
@@ -265,7 +267,7 @@ public class OrchestratorTools {
     public String writeTaskContext(String taskId, String instructions) {
         taskId = canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        writeString(Path.of(task.worktreePath()).resolve("task_context.md"), instructions);
+        WorktreeFiles.write(Path.of(task.worktreePath()).resolve("task_context.md"), instructions);
         // A file on disk doesn't wake a running Claude session — nudge it directly.
         String session = agentSession(configService.load(), taskId);
         if (tmuxService.taskWindowState(session, taskId) == TmuxService.WindowState.AGENT_RUNNING
@@ -712,135 +714,6 @@ public class OrchestratorTools {
     private void provisionForAgent(Path worktreePath) {
         agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
                 configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
-    }
-
-    /**
-     * Keeps orchestrator plumbing out of `git status` in every worktree of the
-     * project. info/exclude only affects untracked files, so a project's own
-     * tracked CLAUDE.md is unaffected.
-     */
-    private void excludeOrchestratorFiles(Path projectPath) {
-        List<String> entries = List.of("mcp_client.js", ".mcp.json", "AGENTS.md", "CLAUDE.md",
-                "task_context.md", "review_replies.md", ".claude/", ".codex/", ".run/");
-        try {
-            Path exclude = gitService.gitCommonDir(projectPath).resolve("info").resolve("exclude");
-            Files.createDirectories(exclude.getParent());
-            String current = Files.exists(exclude) ? Files.readString(exclude) : "";
-            StringBuilder additions = new StringBuilder();
-            for (String entry : entries) {
-                if (current.lines().noneMatch(entry::equals)) {
-                    additions.append(entry).append('\n');
-                }
-            }
-            if (!additions.isEmpty()) {
-                Files.writeString(exclude, current.isEmpty() || current.endsWith("\n")
-                        ? current + additions
-                        : current + "\n" + additions);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot update git info/exclude for " + projectPath, e);
-        }
-    }
-
-    /**
-     * Copies the base project's IDE files (run configurations, database connections) into the worktree so
-     * {@code ide <ticket>} opens ready to run and query. They are gitignored in the base repo, so a fresh
-     * checkout of the task branch lacks them. Best-effort; absent path = no-op.
-     */
-    static void copyIdeProjectFiles(Path projectPath, Path worktreePath) {
-        List<String> ideFiles = List.of(".run", ".idea/runConfigurations",
-                ".idea/dataSources.xml", ".idea/dataSources.local.xml", ".idea/dataSources");
-        for (String path : ideFiles) {
-            copyTree(projectPath.resolve(path), worktreePath.resolve(path), worktreePath);
-        }
-    }
-
-    /** Directories never worth scanning for local files (huge and/or generated). */
-    private static final Set<String> COPY_SCAN_SKIP =
-            Set.of(".git", "node_modules", "build", "target", "out", "dist", ".gradle", ".idea");
-
-    /**
-     * Copies gitignored LOCAL files matching the configured {@code worktreeCopyGlobs} from the base
-     * repo to the same relative path in a new worktree — module {@code .env}, key files, SSL certs
-     * etc. that the run configs reference but git omits, so the app can start in the worktree. The
-     * patterns are per-project config, NOT hardcoded. Best-effort; heavy dirs skipped. (Secrets live
-     * only in the local, gitignored worktree.)
-     */
-    static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
-        var matchers = (globs == null ? List.<String>of() : globs).stream()
-                .filter(g -> g != null && !g.isBlank())
-                .map(g -> java.nio.file.FileSystems.getDefault().getPathMatcher("glob:" + g.strip()))
-                .toList();
-        if (matchers.isEmpty()) {
-            return;
-        }
-        try {
-            Files.walkFileTree(projectPath, new SimpleFileVisitor<>() {
-                @Override
-                public FileVisitResult preVisitDirectory(Path d, BasicFileAttributes a) {
-                    return COPY_SCAN_SKIP.contains(d.getFileName().toString())
-                            ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFile(Path f, BasicFileAttributes a) {
-                    Path rel = projectPath.relativize(f);
-                    if (matchers.stream().anyMatch(m -> m.matches(rel))) {
-                        copyFile(f, worktreePath.resolve(rel));
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            log.warn("Could not scan {} for local files: {}", projectPath, e.getMessage());
-        }
-    }
-
-    private static void copyTree(Path source, Path target, Path worktreePath) {
-        if (Files.isRegularFile(source)) {
-            copyFile(source, target);
-            return;
-        }
-        if (!Files.isDirectory(source)) {
-            return;
-        }
-        try (var files = Files.walk(source)) {
-            files.forEach(from -> {
-                Path to = target.resolve(source.relativize(from));
-                if (Files.isDirectory(from)) {
-                    mkdirs(to);
-                } else {
-                    copyFile(from, to);
-                }
-            });
-        } catch (IOException e) {
-            log.warn("Could not copy {} into {}: {}", source, worktreePath, e.getMessage());
-        }
-    }
-
-    private static void copyFile(Path from, Path to) {
-        try {
-            Files.createDirectories(to.getParent());
-            Files.copy(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            log.warn("Could not copy {} -> {}: {}", from, to, e.getMessage());
-        }
-    }
-
-    private static void mkdirs(Path dir) {
-        try {
-            Files.createDirectories(dir);
-        } catch (IOException e) {
-            log.warn("Could not create {}: {}", dir, e.getMessage());
-        }
-    }
-
-    private void writeString(Path file, String content) {
-        try {
-            Files.writeString(file, content);
-        } catch (IOException e) {
-            throw new UncheckedIOException("Cannot write " + file, e);
-        }
     }
 
     private static final Pattern URL = Pattern.compile("https?://\\S+");

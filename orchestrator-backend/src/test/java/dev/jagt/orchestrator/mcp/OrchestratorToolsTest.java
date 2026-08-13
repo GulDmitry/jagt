@@ -41,8 +41,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class OrchestratorToolsTest {
-    @Test
+class OrchestratorToolsTest {    @Test
     void listsMergedTaskBranchesWithoutDeletingAnythingUntilAsked(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
@@ -317,58 +316,6 @@ class OrchestratorToolsTest {
         tools.updateAgentStatus("IN_PROGRESS", "step 2", "ABC-1", "ABC-1");
 
         verifyNoInteractions(notifier);
-    }
-
-    @Test
-    void copiesLegacyIdeaRunConfigurationsIntoTheWorktree(@TempDir Path root) throws Exception {
-        Path project = root.resolve("repo");
-        java.nio.file.Files.createDirectories(project.resolve(".idea").resolve("runConfigurations"));
-        java.nio.file.Files.writeString(project.resolve(".idea").resolve("runConfigurations").resolve("App.xml"),
-                "<configuration/>");
-        Path worktree = root.resolve("PAN-1-repo");
-
-        OrchestratorTools.copyIdeProjectFiles(project, worktree);
-
-        assertThat(worktree.resolve(".idea").resolve("runConfigurations").resolve("App.xml"))
-                .exists().hasContent("<configuration/>");
-    }
-
-    @Test
-    void copiesDatabaseConnectionsIntoTheWorktree(@TempDir Path root) throws Exception {
-        Path project = root.resolve("repo");
-        java.nio.file.Files.createDirectories(project.resolve(".idea").resolve("dataSources"));
-        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources.xml"), "<dataSource/>");
-        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources.local.xml"), "<local/>");
-        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources").resolve("pg.xml"), "<db/>");
-        Path worktree = root.resolve("PAN-1-repo");
-
-        OrchestratorTools.copyIdeProjectFiles(project, worktree);
-
-        assertThat(worktree.resolve(".idea").resolve("dataSources.xml")).exists().hasContent("<dataSource/>");
-        assertThat(worktree.resolve(".idea").resolve("dataSources.local.xml")).exists().hasContent("<local/>");
-        assertThat(worktree.resolve(".idea").resolve("dataSources").resolve("pg.xml")).exists().hasContent("<db/>");
-    }
-
-    @Test
-    void copiesModernDotRunConfigurationsIntoTheWorktree(@TempDir Path root) throws Exception {
-        Path project = root.resolve("repo");
-        java.nio.file.Files.createDirectories(project.resolve(".run"));
-        java.nio.file.Files.writeString(project.resolve(".run").resolve("App.run.xml"), "<configuration/>");
-        Path worktree = root.resolve("PAN-1-repo");
-
-        OrchestratorTools.copyIdeProjectFiles(project, worktree);
-
-        assertThat(worktree.resolve(".run").resolve("App.run.xml")).exists().hasContent("<configuration/>");
-    }
-
-    @Test
-    void doesNotFailWhenBaseProjectHasNoSharedRunConfigurations(@TempDir Path root) {
-        Path project = root.resolve("repo");
-        Path worktree = root.resolve("PAN-1-repo");
-
-        OrchestratorTools.copyIdeProjectFiles(project, worktree);
-
-        assertThat(worktree.resolve(".idea")).doesNotExist();
     }
 
     @Test
@@ -723,37 +670,5 @@ class OrchestratorToolsTest {
         tools.initializeTask("ABC-2", "proj", null, null, null, null, null);
 
         assertThat(state.task("ABC-2").orElseThrow().alias()).isEqualTo("a2");
-    }
-
-    @Test
-    void copiesLocalFilesMatchingGlobsSkippingHeavyDirs(@TempDir Path root) throws Exception {
-        Path base = root.resolve("base");
-        java.nio.file.Files.createDirectories(base.resolve("app"));
-        java.nio.file.Files.writeString(base.resolve("app/.env"), "SECRET=1");
-        java.nio.file.Files.createDirectories(base.resolve("lib"));
-        java.nio.file.Files.writeString(base.resolve("lib/key.pem"), "PEM");
-        java.nio.file.Files.createDirectories(base.resolve("node_modules"));
-        java.nio.file.Files.writeString(base.resolve("node_modules/.env"), "IGNORED=1");
-        Path wt = root.resolve("wt");
-        java.nio.file.Files.createDirectories(wt);
-
-        OrchestratorTools.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"));
-
-        assertThat(wt.resolve("app/.env")).exists().hasContent("SECRET=1");
-        assertThat(wt.resolve("lib/key.pem")).exists().hasContent("PEM");
-        assertThat(wt.resolve("node_modules/.env")).doesNotExist();
-    }
-
-    @Test
-    void copiesNothingWithoutFailingWhenAGlobsDirectoryIsAbsent(@TempDir Path root) throws Exception {
-        Path base = root.resolve("base");
-        java.nio.file.Files.createDirectories(base.resolve("src"));
-        java.nio.file.Files.writeString(base.resolve("src/Main.java"), "class Main {}");
-        Path wt = root.resolve("wt");
-        java.nio.file.Files.createDirectories(wt);
-
-        OrchestratorTools.copyLocalFiles(base, wt, List.of("vendor/**"));
-
-        assertThat(wt.resolve("vendor")).doesNotExist();
     }
 }
