@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- One base branch forking into parallel task branches: the whole product in three nodes.
-       Chunky on purpose — strokes thinner than 3 turn to mush at 16px.
+  <!-- A "j" that is also a branch: the stem is the line of work, the tittle and the foot are its two commit
+       nodes, and the hook is where it comes back. A letterform on purpose — the generic three-node fork glyph
+       this replaced belongs to every "share" button ever drawn, and at 16px a mark has to be jagt's own.
+       Strokes stay ≥3 units (1.5px at 16px); anything thinner turns to mush.
        This file is the source; regenerate the fallbacks after editing it (no build step, they are committed):
          for s in 16 32 48; do rsvg-convert -w $s -h $s favicon.svg -o /tmp/f$s.png; done
          magick /tmp/f16.png /tmp/f32.png /tmp/f48.png favicon.ico
@@ -8,13 +10,12 @@
     -->
   <style>
     .badge { fill: #1d4ed8 }
-    .mark { fill: none; stroke: #fff; stroke-width: 3.2; stroke-linecap: round }
-    .node { fill: #fff; stroke: none }
+    .stem { fill: none; stroke: #fff; stroke-width: 4.2; stroke-linecap: round }
+    .node { fill: #fff }
     @media (prefers-color-scheme: dark) { .badge { fill: #3b6cf0 } }
   </style>
   <rect class="badge" width="32" height="32" rx="7"/>
-  <path class="mark" d="M16 25.5v-7M16 18.5 9 10.5M16 18.5 23 10.5"/>
-  <circle class="node" cx="16" cy="25.5" r="3.1"/>
-  <circle class="node" cx="9" cy="10.5" r="3.1"/>
-  <circle class="node" cx="23" cy="10.5" r="3.1"/>
+  <path class="stem" d="M19 11v8c0 4-3 6-7 5.6"/>
+  <circle class="node" cx="19" cy="5.6" r="2.9"/>
+  <circle class="node" cx="11.4" cy="24.4" r="3.4"/>
 </svg>
