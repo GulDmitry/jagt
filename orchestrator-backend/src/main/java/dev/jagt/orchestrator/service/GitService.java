@@ -284,6 +284,16 @@ public class GitService {
                     sourceBranch));
             if (merge.exitCode() != 0) {
                 String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
+                // A failed merge is not automatically a CONFLICT: no committer identity, a refusing hook, a
+                // broken object — git exits non-zero for all of them. Calling those a conflict sent the human
+                // to resolve conflicts that do not exist AND left the deploy worktree behind, so the next
+                // deploy took the "the human resolved it" path and pushed whatever was in there. Only unmerged
+                // paths mean a conflict; anything else is an error, and the worktree goes away with it.
+                if (unmergedPaths(deployWorktree).isBlank()) {
+                    removeDeployWorktree(projectPath, deployWorktree, deployBranch);
+                    throw new IllegalStateException("Could not merge " + sourceBranch + " into " + targetBranch
+                            + " — nothing was pushed and no conflict is waiting for you; git said: " + details);
+                }
                 throw new MergeConflictException(sourceBranch, targetBranch, details, deployWorktree);
             }
             return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
@@ -293,9 +303,7 @@ public class GitService {
     /** Finishes a deploy whose conflicted worktree the human has resolved: commits the merge, pushes, cleans up. */
     private String finishDeploy(Path projectPath, Path deployWorktree, String deployBranch,
                                 String sourceBranch, String targetBranch) {
-        String unmerged = processRunner.run(deployWorktree, GIT_TIMEOUT,
-                        List.of("git", "diff", "--name-only", "--diff-filter=U"))
-                .expectSuccess("git unmerged paths in " + deployWorktree).stdout().trim();
+        String unmerged = unmergedPaths(deployWorktree);
         if (!unmerged.isBlank()) {
             throw new MergeConflictException(sourceBranch, targetBranch,
                     "still unresolved (git add them):\n" + unmerged, deployWorktree);
@@ -323,10 +331,22 @@ public class GitService {
         }
         String merged = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
                 .expectSuccess("git rev-parse HEAD in " + deployWorktree).stdout().trim();
+        removeDeployWorktree(projectPath, deployWorktree, deployBranch);
+        return merged;
+    }
+
+    /** Paths git left unmerged — the only thing that distinguishes a conflict from a failed merge. */
+    private String unmergedPaths(Path worktree) {
+        return processRunner.run(worktree, GIT_TIMEOUT,
+                        List.of("git", "diff", "--name-only", "--diff-filter=U"))
+                .expectSuccess("git unmerged paths in " + worktree).stdout().trim();
+    }
+
+    /** Drops the throwaway deploy checkout and its temp branch. Best-effort: it is scaffolding, not state. */
+    private void removeDeployWorktree(Path projectPath, Path deployWorktree, String deployBranch) {
         processRunner.run(projectPath, GIT_TIMEOUT,
                 List.of("git", "worktree", "remove", "--force", deployWorktree.toString()));
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", deployBranch));
-        return merged;
     }
 
     /**
@@ -557,6 +577,17 @@ public class GitService {
      * dying with it. Best-effort, macOS {@code lsof}; failures are logged, never thrown.
      */
     private void reapWorktreeProcesses(Path worktree) {
+        try {
+            reapWorktreeProcessesOrThrow(worktree);
+        } catch (RuntimeException e) {
+            // Hygiene, not state: a machine without `lsof` (most minimal Linux images) or a kill that is
+            // refused must never stop a worktree from being removed — that would turn `done` into a no-op.
+            log.warn("Could not reap processes rooted in {} ({}) — removing it anyway; a language server may"
+                    + " survive and hold memory", worktree, e.getMessage());
+        }
+    }
+
+    private void reapWorktreeProcessesOrThrow(Path worktree) {
         // Reap EVERY process whose cwd is under the worktree — NOT just java (jdtls). The agent is a Node
         // process and any of its MCP plugins may run daemons/hooks that write state into the cwd; a
         // java-only reap left those alive to repopulate the directory right after we deleted it, so the

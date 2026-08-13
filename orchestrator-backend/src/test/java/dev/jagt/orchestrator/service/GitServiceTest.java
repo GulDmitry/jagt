@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class GitServiceTest {
 
@@ -160,8 +161,14 @@ class GitServiceTest {
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
     }
 
+    /**
+     * Needs the real {@code lsof} — the reap has no other way to ask which processes sit in a directory. A
+     * minimal image (many Linux containers) has none, and there the reap is a documented no-op, so this SKIPS
+     * rather than fails: the production behaviour without lsof has its own test below.
+     */
     @Test
     void removeWorktreeReapsEveryWorktreeRootedProcessNotJustJava(@TempDir Path dir) throws Exception {
+        assumeTrue(onPath("lsof"), "lsof is not installed — the reap cannot see cwds without it");
         ProcessRunner runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
@@ -605,6 +612,90 @@ class GitServiceTest {
 
         assertThat(repo.sha("origin/dev")).isEqualTo(devTip);
         assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
+    }
+
+    /**
+     * `lsof` missing must not take `done` down with it. The reap is hygiene — it frees a language server's
+     * memory — while REMOVING the worktree is the actual job, and a machine without lsof (a slim Linux image,
+     * a locked-down host) used to fail the whole call: ProcessRunner throws when a binary cannot be started,
+     * and the "best-effort, never thrown" promise in the reap's own javadoc was not kept.
+     */
+    @Test
+    void removesTheWorktreeEvenWhenTheProcessReaperIsNotInstalled(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner() {
+            @Override
+            public ProcessResult run(Path workingDir, Duration timeout, List<String> command) {
+                if (command.get(0).equals("lsof")) {
+                    throw new IllegalStateException("Failed to start command: lsof (not installed)");
+                }
+                return super.run(workingDir, timeout, command);
+            }
+        };
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "commit", "-qm", "init"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        GitService git = new GitService(runner);
+        Path worktree = dir.resolve("wt");
+        git.createWorktree(repo, worktree, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
+
+        git.removeWorktree(repo, worktree, "ABC-1");
+
+        assertThat(worktree).doesNotExist();
+    }
+
+    /**
+     * The failure a CI runner found: `git merge` exits non-zero for plenty of reasons that are NOT a conflict
+     * (no committer identity there, a refusing hook, a broken object), and calling all of them a conflict sent
+     * the human to resolve conflicts that did not exist — while LEAVING the deploy worktree behind, so the next
+     * `deploy` took the "the human resolved it" path and pushed whatever was in there.
+     */
+    @Test
+    void reportsAFailedMergeAsAnErrorAndNotAsAConflictWhenNothingIsUnmerged(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner() {
+            @Override
+            public ProcessResult run(Path workingDir, Duration timeout, List<String> command) {
+                if (command.size() > 1 && command.get(1).equals("merge")) {
+                    return new ProcessResult(128, "", "Author identity unknown");
+                }
+                return super.run(workingDir, timeout, command);
+            }
+        };
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("g.txt"), "task");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "commit", "-qm", "task"));
+        GitService git = new GitService(runner);
+
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(IllegalStateException.class)
+                .isNotInstanceOf(GitService.MergeConflictException.class)
+                .hasMessageContaining("no conflict is waiting for you")
+                .hasMessageContaining("Author identity unknown");
+
+        // The scaffolding must not survive: a leftover worktree is what the next deploy would try to finish.
+        assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    }
+
+    private static boolean onPath(String binary) {
+        String path = System.getenv("PATH");
+        return path != null && java.util.Arrays.stream(path.split(":"))
+                .anyMatch(dir -> !dir.isBlank() && java.nio.file.Files.isExecutable(Path.of(dir, binary)));
     }
 
     @Test

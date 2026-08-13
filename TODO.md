@@ -79,6 +79,21 @@ window-elapsed markers leaking one string per task retired while CI_POLLING) are
 - Cosmetic: the board pushes an EMPTY detail `div` when the detail is just the request link (the link is
   rendered separately); `McpProtocolService` can answer `-32603` with a null message when the cause had none.
 
+### What CI found that no local run could (2026-08-13)
+Both failures were the same shape — code that assumed the machine it grew up on — and both are fixed with a
+RED-verified test. Worth remembering as a class:
+- `git merge` exiting non-zero was reported as a merge CONFLICT unconditionally. On a runner with no committer
+  identity that meant eight deploy tests "conflicting", and in production it would send a human to resolve
+  conflicts that do not exist while LEAVING the deploy worktree behind — so the next `deploy` would take the
+  "the human resolved it" path and push whatever was in there. Only unmerged paths mean a conflict now.
+- The smoke scripts launched a bare `java` INSIDE a tmux pane, whose shell rebuilds PATH from the system
+  profile: a JDK that exists only in the caller's environment (setup-java, sdkman, Nix) is invisible there, so
+  the pane printed "command not found" and the script waited for a dashboard that never came. They resolve
+  java themselves now — the same lesson as the `/opt/homebrew/bin/tmux` default.
+- Also: the process reap hard-failed when `lsof` was missing, taking `done` with it, despite its own javadoc
+  promising "never thrown"; and the suite depended on an ambient git identity, so it was green on any
+  developer machine and red on every runner. The Test tasks now declare the identity they need.
+
 ### Generic wording for the GitLab-leaning internal names (low priority)
 `mrUrl` / "MR" / `CI_POLLING` are GitLab-flavoured INTERNAL names. Fine as-is; user-facing text could say
 "review request" / "pipeline or checks". Not worth a churny rename until a non-GitLab host is wired.

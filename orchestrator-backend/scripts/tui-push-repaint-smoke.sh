@@ -18,6 +18,18 @@ set -u
 JAR="${1:-$(cd "$(dirname "$0")/.." && pwd)/build/libs/jagt.jar}"
 if [[ ! -f "$JAR" ]]; then echo "jar not found: $JAR (run ./gradlew bootJar)"; exit 2; fi
 command -v tmux >/dev/null || { echo "tmux required"; exit 2; }
+# The jar is launched INSIDE a tmux pane, whose shell rebuilds PATH from the system profile — so a JDK that
+# only exists in the caller's environment (a CI runner's setup-java, an sdkman shim, a Nix profile) is simply
+# not found there and the pane prints "java: command not found" while this script waits for a dashboard that
+# will never appear. Resolve java HERE and send an absolute path.
+if [[ -n "${JAVA_HOME:-}" && -x "$JAVA_HOME/bin/java" ]]; then
+    JAVA="$JAVA_HOME/bin/java"
+elif command -v java >/dev/null; then
+    JAVA="$(command -v java)"
+else
+    echo "java not found (set JAVA_HOME or put java on PATH)"; exit 2
+fi
+
 command -v python3 >/dev/null || { echo "python3 required"; exit 2; }
 
 SESSION="jagt-push-smoke-$$"
@@ -41,7 +53,7 @@ PY
 
 tmux kill-session -t "$SESSION" 2>/dev/null
 tmux new-session -d -s "$SESSION" -x 120 -y 30
-tmux send-keys -t "$SESSION" "ORCHESTRATOR_ROOT=$ROOT java -jar $JAR --server.port=$PORT --orchestrator.ui=tui --orchestrator.open-warp-window=false" Enter
+tmux send-keys -t "$SESSION" "ORCHESTRATOR_ROOT=$ROOT $JAVA -jar $JAR --server.port=$PORT --orchestrator.ui=tui --orchestrator.open-warp-window=false" Enter
 for _ in $(seq 1 40); do curl -s "localhost:$PORT/state" >/dev/null 2>&1 && break; sleep 1; done
 sleep 3
 
