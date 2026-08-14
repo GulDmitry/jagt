@@ -25,14 +25,28 @@ public class TaskLauncher {
     /** A bare issue key like {@code ABC-123} — used only to skip the read on the fast path, never parsed out of a URL. */
     private static final Pattern KEY_REF = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TaskLauncher.class);
+
     private final OrchestratorTools tools;
     private final MeteredAssistant assistant;
     private final ConfigService configService;
+    private final StateService stateService;
+    private final java.util.concurrent.Executor background;
 
-    public TaskLauncher(OrchestratorTools tools, MeteredAssistant assistant, ConfigService configService) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public TaskLauncher(OrchestratorTools tools, MeteredAssistant assistant, ConfigService configService,
+                        StateService stateService) {
+        this(tools, assistant, configService, stateService,
+                java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor());
+    }
+
+    TaskLauncher(OrchestratorTools tools, MeteredAssistant assistant, ConfigService configService,
+                 StateService stateService, java.util.concurrent.Executor background) {
         this.tools = tools;
         this.assistant = assistant;
         this.configService = configService;
+        this.stateService = stateService;
+        this.background = background;
     }
 
     /**
@@ -59,8 +73,10 @@ public class TaskLauncher {
 
         // Fast path: a bare key + explicit project needs no read — the key IS the task id.
         if (bareKey && project != null) {
-            return tools.initializeTask(newTask(ref, resolveProject(project), readAndImplement(ref, request),
-                    request).build());
+            String result = tools.initializeTask(newTask(ref, resolveProject(project),
+                    readAndImplement(ref, request), request).build());
+            titleLater(ref);
+            return result;
         }
         // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
         // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
@@ -185,6 +201,24 @@ public class TaskLauncher {
     }
 
     /** The brief for a task jagt could not read the ticket for: the agent reads it itself. */
+    /**
+     * The fast path skips the ticket read, and a task with no title reads on the board as a bare id — the one
+     * thing that tells two tickets apart at a glance. So the read still happens, just off the launch: the agent
+     * is already working by the time the title lands, and a failed read costs the task nothing but its title.
+     */
+    private void titleLater(String taskId) {
+        background.execute(() -> {
+            try {
+                var read = assistant.readTicket(taskId);
+                assistant.chargeTask(taskId, read.usage());
+                read.facts().filter(TicketFacts::exists).ifPresent(facts -> stateService.updateTask(taskId,
+                        task -> task.withTicket(facts.title(), facts.url())));
+            } catch (RuntimeException e) {
+                log.warn("Could not read a title for {}: {}", taskId, e.getMessage());
+            }
+        });
+    }
+
     private static String readAndImplement(String ref, LaunchRequest request) {
         return withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", request.notes());
     }

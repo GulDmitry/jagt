@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -31,7 +32,9 @@ class TaskLauncherTest {
     private final OrchestratorTools tools = mock(OrchestratorTools.class);
     private final MeteredAssistant assistant = mock(MeteredAssistant.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final TaskLauncher launcher = new TaskLauncher(tools, assistant, configService);
+    private final StateService stateService = mock(StateService.class);
+    private final TaskLauncher launcher = new TaskLauncher(tools, assistant, configService, stateService,
+            Runnable::run);
 
     @BeforeEach
     void configIsReadable() {
@@ -84,6 +87,35 @@ class TaskLauncherTest {
         assertThat(created.getValue()).extracting(NewTask::taskId, NewTask::projectKey)
                 .containsExactly("ABC-42", "group-a");
         verify(assistant).chargeTask("ABC-42", spent);
+    }
+
+    @Test
+    void givesTheBoardATitleEvenWhenTheKeyAndProjectMadeTheReadSkippable() {
+        oneProject("group-a");
+        when(assistant.readTicket("ABC-7")).thenReturn(new Answer<>(
+                Optional.of(new TicketFacts(true, "ABC-7", "Widget layout is off", "ABC", List.of(),
+                        "https://tracker/ABC-7")), TokenUsage.NONE));
+
+        launcher.launch(new LaunchRequest("ABC-7", "group-a", null, null, null, null));
+
+        ArgumentCaptor<java.util.function.UnaryOperator<dev.jagt.orchestrator.model.TaskState>> update =
+                ArgumentCaptor.forClass(java.util.function.UnaryOperator.class);
+        verify(stateService).updateTask(eq("ABC-7"), update.capture());
+        var titled = update.getValue().apply(dev.jagt.orchestrator.model.TaskState
+                .builder("group-a", "/w", dev.jagt.orchestrator.model.TaskStatus.NEW).build());
+        assertThat(titled.title()).isEqualTo("Widget layout is off");
+        assertThat(titled.ticketUrl()).isEqualTo("https://tracker/ABC-7");
+    }
+
+    @Test
+    void leavesTheTaskAloneWhenTheTitleReadFails() {
+        oneProject("group-a");
+        when(assistant.readTicket("ABC-8")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
+
+        launcher.launch(new LaunchRequest("ABC-8", "group-a", null, null, null, null));
+
+        verify(tools).initializeTask(any());
+        verify(stateService, never()).updateTask(any(), any());
     }
 
     @Test

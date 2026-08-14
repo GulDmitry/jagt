@@ -39,7 +39,11 @@ button {
 button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 button:disabled { opacity: .5; cursor: progress; }
 button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
-@media (prefers-color-scheme: dark) { button.primary { color: #10131a; } }
+/* The generic hover paints the label with the accent, which on a primary button IS the background. */
+button.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.12); }
+@media (prefers-color-scheme: dark) {
+  button.primary, button.primary:hover:not(:disabled) { color: #10131a; }
+}
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .dot.on { background: var(--ok); }
 

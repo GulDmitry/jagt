@@ -140,6 +140,10 @@ public record TaskState(
         return repos.stream().anyMatch(TaskRepo::hasReviewRequest);
     }
 
+    public TaskState withTicket(String title, String ticketUrl) {
+        return toBuilder().title(title).ticketUrl(ticketUrl).build();
+    }
+
     /**
      * A status move — the ONE place history grows. Records an entry only when the status actually CHANGED: the
      * agent's keep-alive goes through here with its current status (see {@link #touched()}), and logging those
@@ -149,7 +153,7 @@ public record TaskState(
         long now = System.currentTimeMillis();
         List<StatusChange> known = seededHistory();
         return toBuilder().status(status).lastActiveTimestamp(now).message(message)
-                .history(status == this.status ? known : appended(known, new StatusChange(status, now)))
+                .history(status == this.status ? known : appended(known, new StatusChange(status, now, null)))
                 .build();
     }
 
@@ -166,7 +170,7 @@ public record TaskState(
         long now = System.currentTimeMillis();
         return toBuilder().status(TaskStatus.CI_POLLING).lastActiveTimestamp(now)
                 .message("MR: " + reviewRequestUrl)
-                .history(appended(seededHistory(), new StatusChange(TaskStatus.CI_POLLING, now)))
+                .history(appended(seededHistory(), new StatusChange(TaskStatus.CI_POLLING, now, null)))
                 .repos(mapRepo(project, repo -> repo.withMrUrl(reviewRequestUrl)))
                 // The window is per ROUND, not per request: a round shipped days later gets its own polling
                 // window, and lastPolledAt=0 makes the next scheduler tick look at it right away.
@@ -190,7 +194,20 @@ public record TaskState(
             return history;
         }
         long since = lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis();
-        return List.of(new StatusChange(status, since));
+        return List.of(new StatusChange(status, since, null));
+    }
+
+    /**
+     * Names who caused the step this task just took. Separate from taking the step because the two are known in
+     * different places: the transition is built where the work happens, the asker only at the entry point.
+     */
+    public TaskState withLastChangeOrigin(ActionOrigin origin) {
+        if (history.isEmpty()) {
+            return this;
+        }
+        List<StatusChange> stamped = new ArrayList<>(history);
+        stamped.set(stamped.size() - 1, stamped.getLast().by(origin));
+        return toBuilder().history(List.copyOf(stamped)).build();
     }
 
     private static List<StatusChange> appended(List<StatusChange> history, StatusChange change) {
@@ -416,7 +433,7 @@ public record TaskState(
          */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
-                    lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis()));
+                    lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, lastPolledAt, autoReview, usage, log);
         }
