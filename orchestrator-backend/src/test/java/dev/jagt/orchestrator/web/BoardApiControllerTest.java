@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.web;
 
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
@@ -29,10 +28,9 @@ class BoardApiControllerTest {
     private final ConfigService configService = mock(ConfigService.class);
     private final UsageTracker usageTracker = mock(UsageTracker.class);
     private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
-    private final OrchestratorTools tools = mock(OrchestratorTools.class);
     private final StateViews views = mock(StateViews.class);
     private final BoardApiController api = new BoardApiController(taskViews, commands, launcher, configService,
-            usageTracker, mock(TaskEventStream.class), naturalLanguage, tools, views);
+            usageTracker, mock(TaskEventStream.class), naturalLanguage, views);
 
     @Test
     void executesAnActionByTheSameNameTheConsoleTakes() {
@@ -73,16 +71,6 @@ class BoardApiControllerTest {
         verifyNoInteractions(launcher);
     }
 
-    /** The console makes you type `prune` before `prune all`; the board must not collapse that into one click. */
-    @Test
-    void prunesAsADryRunUnlessDeletionIsAsked() {
-        when(tools.pruneBranches(false)).thenReturn("would delete ABC-40 (dry run)");
-        when(tools.pruneBranches(true)).thenReturn("deleted 1 of 1");
-
-        assertThat(api.prune(new BoardApiController.PruneRequest(false)).message()).contains("dry run");
-        assertThat(api.prune(new BoardApiController.PruneRequest(true)).message()).contains("deleted");
-    }
-
     /**
      * The palette completes and validates against THIS list, so a verb the console accepts and this omits is a
      * capability the board cannot express — the parity bug in miniature.
@@ -92,12 +80,12 @@ class BoardApiControllerTest {
         var ids = api.commands().stream().map(dev.jagt.orchestrator.service.CommandReference.Verb::id).toList();
 
         assertThat(ids).contains("ship", "review", "ide", "diff", "deploy", "revert", "respawn", "done", "focus",
-                "do", "resume", "prune", "stats", "help");
+                "do", "resume", "stats", "help");
         // Whether a verb needs a task is what decides if "ship" alone is a mistake or a command.
         assertThat(api.commands().stream()
                 .filter(dev.jagt.orchestrator.service.CommandReference.Verb::takesTask)
                 .map(dev.jagt.orchestrator.service.CommandReference.Verb::id))
-                .contains("ship").doesNotContain("do", "prune", "help");
+                .contains("ship").doesNotContain("do", "resume", "help");
     }
 
     @Test

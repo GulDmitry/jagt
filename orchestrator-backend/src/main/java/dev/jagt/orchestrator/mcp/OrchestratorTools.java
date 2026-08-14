@@ -20,10 +20,8 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -353,99 +351,6 @@ public class OrchestratorTools {
         return stateService.prettyJson();
     }
 
-    /**
-     * Task branches pile up forever: `done` keeps the branch by design (the work must survive a cleanup) and
-     * nothing else removes one. This lists LOCAL branches whose work is already in the project's deployBranch
-     * — deleting those loses nothing — and deletes them only when the human explicitly asks.
-     *
-     * <p>Scope, stated plainly because this deletes things: the candidates are ALL local merged branches, not
-     * only the ones jagt created. jagt keeps no record of retired tasks, so it cannot tell its own leftovers
-     * from a branch you merged by hand; the dry run IS the confirmation step, and it prints every name before
-     * `prune all` touches anything. Never a remote branch (shared state — only `deploy` writes outward).
-     */
-    public String pruneBranches(boolean delete) {
-        ConfigService.ConfigFile config = configService.load();
-        // A task owns two branch names: its own, and the throwaway jagt-deploy-<task> a conflicted deploy
-        // leaves behind (its tip equals the deploy branch, so git reports it as merged).
-        Set<String> activeBranches = new HashSet<>();
-        stateService.tasks().keySet().forEach(taskId -> {
-            activeBranches.add(taskId);
-            activeBranches.add("jagt-deploy-" + taskId);
-        });
-        StringBuilder out = new StringBuilder();
-        int candidates = 0;
-        int deleted = 0;
-        int examined = 0;
-        for (var entry : config.projects().entrySet()) {
-            ProjectConfig project = entry.getValue();
-            if (project.deployBranch() == null || project.deployBranch().isBlank()) {
-                out.append(entry.getKey()).append(": no deployBranch configured — nothing to compare against\n");
-                continue;
-            }
-            Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
-            String into = "origin/" + project.deployBranch().replaceFirst("^origin/", "");
-            List<String> prunable;
-            try {
-                prunable = prunable(gitService.branchesMergedInto(projectPath, into),
-                        project.baseBranch(), project.deployBranch(), gitService.currentBranch(projectPath),
-                        activeBranches);
-            } catch (RuntimeException e) {
-                // Keep going and keep the report: this is a multi-project sweep, and losing the record of
-                // what was already deleted in project A because project B's remote ref is gone is worse
-                // than the failure itself.
-                out.append(entry.getKey()).append(": SKIPPED — ").append(e.getMessage()).append('\n');
-                continue;
-            }
-            examined++;
-            candidates += prunable.size();
-            out.append(entry.getKey()).append(": ").append(prunable.size())
-                    .append(" local branch(es) merged into ").append(into).append('\n');
-            for (String branch : prunable) {
-                if (!delete) {
-                    out.append("  ").append(branch).append('\n');
-                    continue;
-                }
-                var failure = gitService.deleteLocalBranch(projectPath, branch);
-                if (failure.isEmpty()) {
-                    deleted++;
-                }
-                out.append(failure.map(reason -> "  KEPT " + branch + " — " + reason)
-                        .orElse("  deleted " + branch)).append('\n');
-            }
-        }
-        if (candidates == 0) {
-            // "nothing to prune" is an all-clear, so it must not be printed when no project could be read —
-            // a human skimming the last line would conclude the repo is clean when nothing was examined.
-            return out + (examined == 0
-                    ? "no project could be examined — nothing was compared, see above."
-                    : "nothing to prune.");
-        }
-        // Report what actually happened, not what was offered: git refuses a branch that is checked out in
-        // some worktree, so "N candidates" and "N gone" are different numbers.
-        return delete
-                ? out + "deleted " + deleted + " of " + candidates + " branch(es); the rest are listed above."
-                : out + "dry run — nothing deleted. `prune all` tries to delete the " + candidates
-                        + " branch(es) above.";
-    }
-
-    /**
-     * Which of the merged branches jagt may offer to delete. Excluded: the project's base and deploy branches
-     * (long-lived, and always "merged" into the deploy branch), the branch the base repo currently has
-     * checked out (git refuses to delete it), and every ACTIVE task's branch — a task whose work is already
-     * in the deploy branch is still live until the human runs `done`.
-     *
-     * <p>All three refs are normalized the same way, so it does not matter which is which: they land in one
-     * keep-set, and mixing up the arguments at the call site cannot un-protect any of them.
-     */
-    static List<String> prunable(List<String> merged, String baseBranch, String deployBranch,
-                                 String currentBranch, Set<String> activeTaskBranches) {
-        Set<String> keep = new HashSet<>(activeTaskBranches);
-        for (String ref : List.of(baseBranch == null ? "" : baseBranch, deployBranch == null ? "" : deployBranch,
-                currentBranch == null ? "" : currentBranch)) {
-            keep.add(ref.replaceFirst("^origin/", ""));
-        }
-        return merged.stream().filter(branch -> !branch.isBlank() && !keep.contains(branch)).toList();
-    }
 
     /** The MR url linked to a task (via ship/resume), or null. Resolves aliases. Used by `review`. */
     public String taskMrUrl(String taskId) {

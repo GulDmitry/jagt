@@ -60,7 +60,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 /* The palette's verdict, so a typo is visible BEFORE Run: green = will run as typed, red = will be refused. */
 #palette-state.ok { color: var(--ok); }
 #palette-state.bad { color: var(--danger); }
-/* Reports (help, stats, orphans, prune) open OVER the board in a native <dialog>: no new tab to lose, and the
+/* Reports (help, stats, orphans) open OVER the board in a native <dialog>: no new tab to lose, and the
    board keeps its place instead of being pushed down. Plain <pre> inside — the text is column-aligned, and a
    table would only misrepresent it. */
 #report {

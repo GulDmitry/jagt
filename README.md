@@ -149,9 +149,8 @@ says when the agent has left **drafted review replies** in its worktree — read
 the obvious one highlighted: open the IDE, focus the agent's terminal, ship, check the review, deploy, close.
 `New task` does what `do ABC-42` does, and `Resume` does what `resume <mr-url>` does — take over a review
 request that already exists (reopened, or someone else's work): its branch comes back with the commits already
-on it and the request is linked, not reopened. `Prune`, `Stats`, `Help` and `Orphans` are the same commands
-too — they open OVER the board in a dialog instead of taking you to another page, and prune lists first and asks
-before deleting, exactly as typing `prune` before `prune all`.
+on it and the request is linked, not reopened. `Stats`, `Help` and `Orphans` are the same commands
+too — they open OVER the board in a dialog instead of taking you to another page.
 
 The one console verb the board deliberately does NOT have is `quit`: stopping the backend belongs to whoever
 started the process (Ctrl-C, or kill it), not to a button in a browser. Nothing is lost either way — agents live
@@ -187,7 +186,6 @@ status, and points at drafted review replies when the agent has written any. Tal
 | `revert <ticket>` | undo that deploy: revert the merge commit it created on `deployBranch` and push the revert → `REVERTED`. Only adds a commit (no history rewrite, no force-push) and leaves your branch and its commits intact, so the normal follow-up is fix + `ship` again. Refused, with nothing written, when the commit is already reverted, is not on the branch, or the revert conflicts with later work there |
 | `respawn <ticket>` | restart a dead agent session |
 | `done <ticket>` | close the task: full cleanup — session, worktree, state (branch kept) |
-| `prune [all]` | list the LOCAL branches already merged into `deployBranch` (a dry run); `prune all` deletes them. Never touches a remote branch, a live task's branch, or your base/deploy branch. A **squash**-merged branch looks unmerged to git, so it is never listed — jagt cannot prove the work survived. The list is every merged local branch, not only the ones jagt created: read it before typing `all` |
 | anything else (free text) | tier 2 of the dispatch: a model maps your words onto ONE of the commands above and jagt executes it through the same gate a button uses — it answers with what it understood ("understood as `ship a1` — …"). In the board this is the **Ask** button / **⌘K**, and that field is not only free text: it completes the
 grammar as you type (from the server's own verb list, so nothing can be missing), says whether the line
 will run — green — or why it will not (`no task “a9”`, `ship needs a task`), and a line that parses is

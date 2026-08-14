@@ -379,7 +379,6 @@ async function runParsed(parsed) {
   }
   if (verb.id === 'help') { showReport('help — command reference', await text('/api/help')); return 'help'; }
   if (verb.id === 'stats') { showReport('stats — token spend', await text('/api/stats')); return 'stats'; }
-  if (verb.id === 'prune') { document.getElementById('show-prune').click(); return 'prune'; }
   if (verb.id === 'do') {
     if (!argument) { document.getElementById('ref').focus(); return 'do'; }
     const result = await api('/api/tasks', {
@@ -449,7 +448,7 @@ palette.onsubmit = async (event) => {
 
 // ---- everything the console can do that is not a per-task button ----
 // Parity is the rule, not a nice-to-have: a capability that exists in one surface only is the bug this section
-// closes (resume, prune, stats, help, stop). Per-task verbs — ship, review, ide (incl. the DEPLOY_CONFLICT
+// closes (resume, stats, help, stop). Per-task verbs — ship, review, ide (incl. the DEPLOY_CONFLICT
 // worktree), deploy, revert, respawn, focus, done — are already the card's own buttons, because the server
 // lists them per task and the board renders exactly that list.
 
@@ -457,7 +456,7 @@ const report = document.getElementById('report');
 const reportTitle = document.getElementById('report-title');
 const reportBody = document.getElementById('report-body');
 
-// One dialog for every plain-text answer the backend gives (help, stats, orphans, prune). A native <dialog>
+// One dialog for every plain-text answer the backend gives (help, stats, orphans). A native <dialog>
 // costs nothing, dims the board itself, closes on Escape, and — unlike a new tab — cannot be lost behind the
 // window you were already reading.
 function showReport(title, text) {
@@ -502,28 +501,6 @@ resumeForm.onsubmit = async (event) => {
     button.disabled = false;
     state.textContent = '';
     await load();
-  }
-};
-
-// `prune`: the dry run first, exactly as the console makes you type `prune` before `prune all`.
-document.getElementById('show-prune').onclick = async () => {
-  try {
-    const dryRun = await api('/api/prune', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({delete: false}),
-    });
-    showReport('prune — dry run', dryRun.message);
-    if (!confirm(`${dryRun.message}\n\nDelete these local branches now?`)) return;
-    const deleted = await api('/api/prune', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({delete: true}),
-    });
-    showReport('prune — deleted', deleted.message);
-    toast('prune: done');
-  } catch (e) {
-    toast(e.message, true);
   }
 };
 

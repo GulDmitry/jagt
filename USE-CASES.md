@@ -43,3 +43,4 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Deploy hit a conflict | resolve in the deploy worktree | Status DEPLOY_CONFLICT; jagt keeps the half-done state for you. |
 | Take a deploy back out | `revert <task>` | Reverts the recorded merge commit. Refused (with a by-hand recipe) whenever it would have to guess which commit. |
 | Done | `done <task>` | Kills the agent window, reaps its language server. The branch survives. |
+| Merged task branches pile up | your own git, per branch | jagt has no `prune`: a cross-project bulk delete was removed deliberately. Cleanup is one task's own business. |

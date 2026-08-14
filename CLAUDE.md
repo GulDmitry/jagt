@@ -82,7 +82,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   - PARITY IS AN INVARIANT, not an aspiration: a capability that exists in ONE surface only is a bug. Per-task
     verbs come from `Move.actions()`, so a new action appears on both at once; everything else needs an explicit
     counterpart, and the ones that were console-only were exactly the ones nobody noticed missing (`resume`,
-    `prune`, `stats`, `help`, `orphans` — all added 2026-08-13). Shared text lives in `service/CommandReference`
+    `stats`, `help`, `orphans` — all added 2026-08-13). Shared text lives in `service/CommandReference`
     (the grammar) and `StateViews` (dashboard + stats), so neither surface renders its own version. The reports
     open in a `<dialog>` over the board, never a new page. ONE deliberate exception to parity: `quit` is
     console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill), not to a browser
@@ -97,7 +97,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   a new concern here just because the dependency it needs is already injected — that is exactly how it grew to
   871 lines and eleven collaborators. Note the lesson (TODO.md keeps the long version): a delegating facade
   KEEPS every collaborator it does not shed, so only a group of methods that monopolises dependencies is worth
-  extracting; splitting off `deploy`/`prune` was tried and reverted because it ADDED one.
+  extracting; splitting off the repository verbs (`deploy` and the since-removed `prune`) into a `RepositoryOps`
+  was tried and reverted because it ADDED one.
 - TWO-TIER DISPATCH: tier 1 is the grammar (typed command / board button) and it stays LLM-free. Tier 2 is
   `service/NaturalLanguageDispatch` — free text (an unknown console line, or the board's ⌘K palette →
   `POST /api/interpret`) goes to a model that only PROPOSES one grammar command; the dispatcher validates the
@@ -173,9 +174,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   branch straight into the release branch.
   `GitService.pushBranch` pushes ONE task branch with an explicit both-sided refspec, never `--force`, never
   `-u` (an upstream is the trap `detachUpstream` removes).
-  `prune` deletes LOCAL branches only, never a remote one (that would be an outward write), only branches
-  already merged into `deployBranch`, never an ACTIVE task's branch (merged ≠ finished — a task lives until
-  `done`), and never without the explicit `prune all`; a bare `prune` is a dry run.
+  NO BULK BRANCH CLEANUP, and this is a DECISION, not an omission: `prune [all]` (a cross-project sweep of
+  local branches merged into `deployBranch`) was built and then REMOVED on the owner's instruction — branch
+  cleanup belongs to the ONE task it concerns, not to a command that reaches across every project at once, and
+  a human who wants a branch gone has git. Do not reintroduce a prune verb, a "merged branches" report, or a
+  board button for either.
 - Watchdog scope is deliberate (`WatchdogService.watches`): it alerts only for statuses where the AGENT is
   expected to be working — NEW, IN_PROGRESS, SHIPPING. Every other status idles by design (CI_POLLING waits
   on the code host, REVIEW_PENDING/REVIEWED/APPROVED/DEPLOY_CONFLICT on the human), and watching those turns

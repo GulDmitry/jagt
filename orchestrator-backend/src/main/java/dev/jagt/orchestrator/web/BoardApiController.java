@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateViews;
@@ -49,10 +48,6 @@ public class BoardApiController {
     public record ActionResult(String message) {
     }
 
-    /** {@code delete=false} lists what WOULD go (the console's bare `prune`); true is the console's `prune all`. */
-    public record PruneRequest(boolean delete) {
-    }
-
     /** Free text from the command palette (Cmd-K) — tier 2 of the dispatch, not a command. */
     public record InterpretRequest(String text) {
     }
@@ -72,13 +67,11 @@ public class BoardApiController {
     private final UsageTracker usageTracker;
     private final TaskEventStream events;
     private final NaturalLanguageDispatch naturalLanguage;
-    private final OrchestratorTools tools;
     private final StateViews views;
 
     public BoardApiController(TaskViews taskViews, CommandService commands, TaskLauncher launcher,
                               ConfigService configService, UsageTracker usageTracker, TaskEventStream events,
-                              NaturalLanguageDispatch naturalLanguage, OrchestratorTools tools,
-                              StateViews views) {
+                              NaturalLanguageDispatch naturalLanguage, StateViews views) {
         this.taskViews = taskViews;
         this.commands = commands;
         this.launcher = launcher;
@@ -86,7 +79,6 @@ public class BoardApiController {
         this.usageTracker = usageTracker;
         this.events = events;
         this.naturalLanguage = naturalLanguage;
-        this.tools = tools;
         this.views = views;
     }
 
@@ -139,16 +131,6 @@ public class BoardApiController {
     @PostMapping("/interpret")
     public ActionResult interpret(@RequestBody InterpretRequest request) {
         return new ActionResult(naturalLanguage.interpret(request.text()));
-    }
-
-    /**
-     * Branch cleanup, the board's half of `prune [all]`. {@code delete=false} is the dry run — the same rule the
-     * console has, where a bare `prune` lists and only `prune all` deletes, so the destructive form is never
-     * one click away from the harmless one.
-     */
-    @PostMapping("/prune")
-    public ActionResult prune(@RequestBody PruneRequest request) {
-        return new ActionResult(tools.pruneBranches(request != null && request.delete()));
     }
 
     /**

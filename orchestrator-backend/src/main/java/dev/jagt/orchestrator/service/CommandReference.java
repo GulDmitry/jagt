@@ -17,7 +17,7 @@ public final class CommandReference {
 
     /** Most-used first; a verb missing here sorts to the end rather than being dropped. */
     private static final java.util.List<String> BY_USE = java.util.List.of(
-            "review", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "prune", "respawn",
+            "review", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
             "revert", "done", "help");
 
     private CommandReference() {
@@ -31,7 +31,6 @@ public final class CommandReference {
         }
         verbs.add(new Verb("do", "start a task from a ticket key or URL", false));
         verbs.add(new Verb("resume", "take over an existing review request (its URL)", false));
-        verbs.add(new Verb("prune", "list local branches merged into deployBranch; `prune all` deletes", false));
         verbs.add(new Verb("stats", "token spend of jagt's own model calls", false));
         verbs.add(new Verb("help", "this command reference", false));
         verbs.sort(java.util.Comparator.comparingInt(verb -> {
@@ -58,7 +57,6 @@ public final class CommandReference {
                 "  revert <ticket>              undo that deploy: revert its merge on deployBranch + push",
                 "  respawn <ticket>             restart a dead agent session",
                 "  done <ticket>                full cleanup (window, worktree, state; branch kept)",
-                "  prune [all]                  list LOCAL branches merged into deployBranch; `all` deletes them",
                 "  help | quit                  this reference | detach (agents keep running)",
                 "",
                 "anything else is free text: a model maps it to ONE of the above and jagt runs it through the",

@@ -100,7 +100,7 @@ public class MasterShell {
 
     /** Every command, for Tab-completion of the first word. */
     private static final List<String> COMMANDS = List.of("status", "stats", "do", "resume", "review", "ship",
-            "focus", "ide", "deploy", "revert", "respawn", "done", "prune", "help", "quit", "exit");
+            "focus", "ide", "deploy", "revert", "respawn", "done", "help", "quit", "exit");
     /** Commands whose first argument is an EXISTING task (so Tab completes its alias/id); `do`/`resume`
      *  take a new ticket/URL, not a current task. */
     private static final Set<String> TASK_ARG_COMMANDS = Set.of(
@@ -336,8 +336,6 @@ public class MasterShell {
             pool = COMMANDS;
         } else if (cmd.equals("ide") && idx == 2) {
             pool = List.of("diff");
-        } else if (cmd.equals("prune") && idx == 1) {
-            pool = List.of("all");
         } else if (cmd.equals("do") && idx >= 2) {
             pool = List.of("plan", "from");
         } else {
@@ -840,7 +838,6 @@ public class MasterShell {
             String result = switch (cmd) {
                 case "status" -> "";
                 case "stats" -> views.usageStats();
-                case "prune" -> tools.pruneBranches(pruneDeletes(tok));
                 case "help" -> help();
                 case "do" -> doTask(tok);
                 case "resume" -> resumeTask(tok);
@@ -890,19 +887,6 @@ public class MasterShell {
                     + " to start a NEW task on a new branch use `do <ticket>`");
         }
         return launcher.resume(url);
-    }
-
-    /** {@code prune} is a dry run, {@code prune all} deletes; anything else is refused rather than guessed —
-     *  a typo must never be read as "yes, delete", and `prune ABC-1 all` is not a per-task prune. */
-    static boolean pruneDeletes(List<String> tok) {
-        if (tok.size() == 1) {
-            return false;
-        }
-        if (tok.size() == 2 && tok.get(1).equals("all")) {
-            return true;
-        }
-        throw new IllegalArgumentException("usage: prune [all] — `prune` lists, `prune all` deletes"
-                + " (there is no per-project or per-branch form yet)");
     }
 
     private static final Set<String> BRANCH_STRATEGIES = Set.of("recreate", "resume", "fresh");

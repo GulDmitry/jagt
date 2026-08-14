@@ -115,6 +115,30 @@ needs one interactive session: start an agent, restart the jar, ask it to call `
 If it turns out a live session does not recover, the fix is not to bring the proxy back for everyone — it is
 either a client-side setting or a runtime that keeps the bridge, which is exactly what the seam is for.
 
+### Three ideas from spec-kitty, and what was rejected with them (reviewed 2026-08-14)
+[spec-kitty](https://github.com/Priivacy-ai/spec-kitty) is spec-first (`spec → plan → tasks → next → review →
+accept → merge`, artifacts under `kitty-specs/`, work packages in lanes, worktrees, a local kanban). Its axis is
+the SPEC ARTIFACT and it delegates execution to an external provider; jagt's axis is the live session, so most
+of it does not transfer. Three things do:
+- **`history` records the status, never the ORIGIN.** Nothing distinguishes a board button from a typed command,
+  from the ⌘K palette, from `AutoReviewScheduler`, from the agent's own MCP call — which is the first question
+  asked of a task that sat in CI_POLLING for three hours. One field on the history entry, threaded through
+  `CommandService`. It is also the only way to see what tier 2 actually does.
+- **`CommandService` answers in prose only.** Correct for a human, but the board and `NaturalLanguageDispatch`
+  cannot branch on it — the dispatcher already distinguishes "no such task" from "verb not applicable" by
+  matching strings. A stable code alongside the sentence (`NOT_SHIPPABLE`, `AGENT_ALIVE`, `NO_SUCH_TASK`) is
+  what their `orchestrator-api` returns next to its message.
+- **Per-project directives have nowhere to live.** The generated `AGENTS.md` carries system knowledge and
+  `task_context.md` the task; a project's own standing rules ("never touch migrations", "commit style X") are
+  in the human's head and re-typed per task. A path in `config.json` appended to the sub-agent context is the
+  whole feature — spec-kitty layers this as directives/tactics/profiles, which is more machinery than jagt needs.
+
+Rejected deliberately, so the next reader does not re-derive them: spec-first artifacts in the repo (the ticket
+IS the spec; a second copy is exactly the drift the tracker seam avoids), worktrees INSIDE the repo (jagt's are
+siblings — IDE indexing, `worktree.copyGlobs`, `WorktreeOrphanScanner` all assume it), an agent reviewer that
+transitions to done and merges on its own (contradicts CODE REVIEW IS NEVER FULLY AUTOMATED), and a host/provider
+process split (that boundary already exists inside the JVM as `Move` + `CommandService` + the MCP facade).
+
 ## The record — what shipped, and the finding worth keeping
 
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
@@ -176,10 +200,10 @@ then the one big move — `AgentSessions` (tmux window, focus, kill, relay) + `T
 creation, alias, sub-agent context). The shrinkage showed up in the tests, as predicted: the twelve moved
 tests build ONE service with four or five collaborators instead of the facade with eleven.
 
-The finding that decided HOW: extracting `deploy`/`prune` into a `RepositoryOps` was tried and reverted
+The finding that decided HOW: extracting `deploy`/`prune` (prune has since been removed) into a `RepositoryOps` was tried and reverted
 because a delegating facade KEEPS every collaborator it does not shed — that split would have made it twelve
 dependencies instead of eleven. Only a group of methods that MONOPOLISES dependencies is worth moving.
-Two ideas from that plan stay open and are not worth a pass on their own: `deploy`/`prune` could still leave,
+Two ideas from that plan stay open and are not worth a pass on their own: `deploy` could still leave,
 and `resumeTask` arguably belongs with `TaskLauncher` (it IS a launch).
 
 ### `deploy` has an undo — `revert <ticket>`
