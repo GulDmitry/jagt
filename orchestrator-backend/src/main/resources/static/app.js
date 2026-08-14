@@ -15,9 +15,14 @@ const toasts = document.getElementById('toasts');
 const sortBy = document.getElementById('sort');
 const onlyMine = document.getElementById('mine');
 const live = document.getElementById('live');
+const projectSelect = document.getElementById('project');
 let tasks = [];
 let projects = [];
 let renderedProjects = null;
+// An untouched default is not a decision, and naming a project SKIPS the ticket read — the escape hatch a
+// typed `do ABC-1 <project>` deliberately takes. So the list opens on a real project, and only a pick is sent.
+let projectPicked = false;
+projectSelect.onchange = () => { projectPicked = true; };
 let verbs = [];
 let busy = new Set();
 
@@ -103,18 +108,19 @@ async function load() {
 }
 
 function fillProjects() {
-  const select = document.getElementById('project');
   const signature = projects.join('\n');
   if (renderedProjects === signature) {
     return;                       // a rebuild collapses the list under a human who has it open
   }
   renderedProjects = signature;
-  const chosen = select.value;
-  select.replaceChildren(...(projects.length
+  const chosen = projectSelect.value;
+  projectSelect.replaceChildren(...(projects.length
     ? projects.map((p) => new Option(p, p))
     : [Object.assign(new Option('no projects in config.json', ''), {disabled: true})]));
   if (projects.includes(chosen)) {
-    select.value = chosen;
+    projectSelect.value = chosen;
+  } else {
+    projectPicked = false;
   }
 }
 
@@ -277,7 +283,7 @@ launchForm.onsubmit = async (event) => {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         ref: document.getElementById('ref').value,
-        project: document.getElementById('project').value,
+        project: projectPicked ? projectSelect.value : '',
         mode: document.getElementById('plan').checked ? 'plan' : null,
         baseBranch: document.getElementById('base-branch').value,
         notes: document.getElementById('notes').value,
@@ -285,7 +291,7 @@ launchForm.onsubmit = async (event) => {
     });
     toast(result.message);
     launchForm.reset();
-    launchForm.hidden = true;
+    projectPicked = false;
   } catch (e) {
     toast(e.message, true);
   } finally {

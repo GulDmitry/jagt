@@ -32,6 +32,12 @@ public class NaturalLanguageDispatch {
     /** Also not a TaskAction: `resume` takes over an EXISTING review request instead of starting anything. */
     private static final String RESUME = "resume";
 
+    /** A retired verb keeps being typed, and mapping one onto a live command is the one guess that could be
+     *  destructive — `prune all` has no near neighbour but `done <task>`. Answered by name instead. */
+    private static final Map<String, String> RETIRED = Map.of(
+            "prune", "jagt has no `prune`: cleaning up a merged branch is that one task's business, and yours"
+                    + " to do with git.");
+
     private final MeteredAssistant assistant;
     private final StateService stateService;
     private final TaskViews taskViews;
@@ -55,6 +61,10 @@ public class NaturalLanguageDispatch {
     public String interpret(String text) {
         if (text == null || text.isBlank()) {
             return "Nothing to interpret.";
+        }
+        String retired = RETIRED.get(text.strip().split("\\s+")[0].toLowerCase());
+        if (retired != null) {
+            return retired;
         }
         // A single word reached tier 2 because it is not a command — overwhelmingly a typo (`shipp`), and a
         // typo must not cost a model call. It also cannot name both an action and a task, so there is nothing

@@ -11,7 +11,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Project not obvious from the ticket | `do ABC-1 <project>` | Same, without the label lookup. |
 | Work must sit on someone else's branch | `do ABC-1 from feature/parent` | Branch cut from `feature/parent`; the merge request will TARGET it. Deploy still goes to `deployBranch`. |
 | Ticket unreadable / no tracker | `do ABC-1 <project>` | The read is skipped; the task carries no title. |
-| On the board | the launch row, always open | Ticket, project, base branch, notes and Start. The project list comes from `config.json` on every load — no button to press first. |
+| On the board | the launch row, always open | Ticket, project, base branch, notes and Start. The project list comes from `config.json` on every load — no button to press first. It opens on the first project rather than a placeholder; a project is sent only if you actually pick one, so an untouched list still gets the ticket read and the label lookup. |
 
 ## Review requests
 
@@ -44,3 +44,4 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Take a deploy back out | `revert <task>` | Reverts the recorded merge commit. Refused (with a by-hand recipe) whenever it would have to guess which commit. |
 | Done | `done <task>` | Kills the agent window, reaps its language server. The branch survives. |
 | Merged task branches pile up | your own git, per branch | jagt has no `prune`: a cross-project bulk delete was removed deliberately. Cleanup is one task's own business. |
+| Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be MAPPED onto a live one (`done <task>` is the near neighbour, and it kills a worktree). |

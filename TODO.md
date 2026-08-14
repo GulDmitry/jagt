@@ -124,10 +124,12 @@ of it does not transfer. Three things do:
   from the ⌘K palette, from `AutoReviewScheduler`, from the agent's own MCP call — which is the first question
   asked of a task that sat in CI_POLLING for three hours. One field on the history entry, threaded through
   `CommandService`. It is also the only way to see what tier 2 actually does.
-- **`CommandService` answers in prose only.** Correct for a human, but the board and `NaturalLanguageDispatch`
-  cannot branch on it — the dispatcher already distinguishes "no such task" from "verb not applicable" by
-  matching strings. A stable code alongside the sentence (`NOT_SHIPPABLE`, `AGENT_ALIVE`, `NO_SUCH_TASK`) is
-  what their `orchestrator-api` returns next to its message.
+- **`CommandService` answers in prose only** — a refusal and a success are both a `String`, and a refusal is an
+  `IllegalArgumentException` whose only distinguishing feature is its wording. Two callers already pay for it:
+  the board's `postJson` turns every 400 into one red toast, so "your tab is stale, reload" looks exactly like
+  "the gate refused this", and `NaturalLanguageDispatch` prefixes `understood as \`ship a1\` — ` to whatever
+  comes back, so a refusal reads as an execution. A stable code beside the sentence (`NOT_SHIPPABLE`,
+  `AGENT_ALIVE`, `NO_SUCH_TASK`) is what their `orchestrator-api` returns next to its message.
 - **Per-project directives have nowhere to live.** The generated `AGENTS.md` carries system knowledge and
   `task_context.md` the task; a project's own standing rules ("never touch migrations", "commit style X") are
   in the human's head and re-typed per task. A path in `config.json` appended to the sub-agent context is the

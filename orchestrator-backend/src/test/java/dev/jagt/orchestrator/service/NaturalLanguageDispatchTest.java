@@ -165,6 +165,15 @@ class NaturalLanguageDispatchTest {
         verifyNoInteractions(assistant, commands, launcher);
     }
 
+    @Test
+    void answersARetiredVerbByNameInsteadOfLettingAModelMapItOntoALiveOne(@TempDir Path root) {
+        NaturalLanguageDispatch dispatch = dispatchWith(stateWithOneTask(root));
+
+        assertThat(dispatch.interpret("prune all")).contains("jagt has no `prune`");
+        assertThat(dispatch.interpret("prune")).contains("jagt has no `prune`");
+        verifyNoInteractions(assistant, commands, launcher);
+    }
+
     /**
      * The model is told the tasks AND what is legal for each, so it does not propose a refused action. That
      * context comes from the same projection the board renders — nothing else may invent a command list.
