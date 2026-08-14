@@ -418,7 +418,10 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   GUI driver is a Mockito double) and asserts an exact end state. Two rules it lives by: widening coverage is
   adding a ROW to `TaskFlowCase.matrix()`, and a combination that is NOT covered is named there with the
   reason — a silent gap reads as coverage. Cleanup kills tmux sessions BY PREFIX, because `tab-per-task`
-  creates `<session>-<taskId>` ones the configured name alone would leave behind.
+  creates `<session>-<taskId>` ones the configured name alone would leave behind. It also asserts the SENTENCE
+  a flow returns, and `./gradlew test` cannot see it: reword a message and CI is the first thing that notices,
+  so run `e2eTest` before pushing one. Row 1 leaves the branch behind when it fails, so rows 2-4 then fail with
+  "branch already exists" — fix the FIRST row and re-run before reading the rest as four bugs.
 
 ## Code quality — the test is the litmus of the production code
 - A test is the embodiment of the main code's cleanliness. If a test needs ~5+ objects set up, or its

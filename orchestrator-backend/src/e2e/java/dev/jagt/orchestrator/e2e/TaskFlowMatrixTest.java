@@ -98,7 +98,7 @@ class TaskFlowMatrixTest {
         String created = tools.initializeTask(NewTask.builder("ABC-1", "proj")
                 .instructions("Fix the widget").title("Widget layout is off").build());
 
-        assertThat(created).contains("Stub sub-agent started");
+        assertThat(created).contains("ABC-1 is a1", "agent running on ABC-1");
         assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();
         assertThat(worktree.resolve("task_context.md")).exists();
         // Nothing agent-shaped: no MCP config, no Claude directory, and no stdio bridge either. The bridge is
