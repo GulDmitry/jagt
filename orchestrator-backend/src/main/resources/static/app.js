@@ -241,7 +241,11 @@ document.getElementById('new-task').onclick = () => {
   launchForm.hidden = !launchForm.hidden;
   document.getElementById('new-task').setAttribute('aria-pressed', String(!launchForm.hidden));
   const select = document.getElementById('project');
-  select.replaceChildren(new Option('project…', ''), ...projects.map((p) => new Option(p, p)));
+  // An empty list is a fact about config.json, not a blank control: say which file to add a project to.
+  select.replaceChildren(projects.length
+    ? new Option('project…', '')
+    : Object.assign(new Option('no projects in config.json', ''), {disabled: true}),
+    ...projects.map((p) => new Option(p, p)));
   if (!launchForm.hidden) document.getElementById('ref').focus();
 };
 launchForm.onsubmit = async (event) => {
@@ -279,8 +283,15 @@ onlyMine.onchange = render;
 
 // Push, not poll: the backend tells us when state changed. The slow interval only refreshes the relative
 // clocks ("4m ago"), which no event can announce.
+// EVERY connect resyncs, not just the first: EventSource reconnects by itself after a backend restart, and
+// the events it missed while down are gone. Without this the tab keeps whatever it last loaded — an empty
+// project list if it was open before the backend was — and only ⌘R fixes it, which reads as a broken board.
 const events = new EventSource('/api/events');
-events.addEventListener('open', () => live.classList.add('on'));
+events.addEventListener('open', () => {
+  live.classList.add('on');
+  loadVerbs();
+  load();
+});
 events.addEventListener('changed', load);
 events.onerror = () => live.classList.remove('on');
 setInterval(render, 15000);
