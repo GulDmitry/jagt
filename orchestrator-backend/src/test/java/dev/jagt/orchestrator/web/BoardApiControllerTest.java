@@ -100,7 +100,6 @@ class BoardApiControllerTest {
                 .contains("ship").doesNotContain("do", "prune", "help");
     }
 
-    /** A suggestion list is read top-down, and declaration order offered `focus` and `done` before `ship`. */
     @Test
     void offersTheEverydayVerbsBeforeTheRareOnes() {
         var ids = api.commands().stream().map(dev.jagt.orchestrator.service.CommandReference.Verb::id).toList();

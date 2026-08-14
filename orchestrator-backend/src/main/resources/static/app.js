@@ -81,7 +81,7 @@ async function load() {
   try {
     const data = await api('/api/tasks');
     tasks = data.tasks;
-    projects = data.projects;
+    projects = data.projects || [];
     document.getElementById('spend').textContent =
       data.spend.calls ? `${data.spend.calls} calls · ${compactTokens(data.spend.tokens)}` : '';
     render();
@@ -237,11 +237,11 @@ function toggleForm(form, button, onOpen) {
   if (!form.hidden && onOpen) onOpen();
 }
 
-document.getElementById('new-task').onclick = () => {
+document.getElementById('new-task').onclick = async () => {
   launchForm.hidden = !launchForm.hidden;
   document.getElementById('new-task').setAttribute('aria-pressed', String(!launchForm.hidden));
+  if (!launchForm.hidden) await load();      // config.json may have gained a project since the page loaded
   const select = document.getElementById('project');
-  // An empty list is a fact about config.json, not a blank control: say which file to add a project to.
   select.replaceChildren(projects.length
     ? new Option('project…', '')
     : Object.assign(new Option('no projects in config.json', ''), {disabled: true}),
@@ -283,9 +283,7 @@ onlyMine.onchange = render;
 
 // Push, not poll: the backend tells us when state changed. The slow interval only refreshes the relative
 // clocks ("4m ago"), which no event can announce.
-// EVERY connect resyncs, not just the first: EventSource reconnects by itself after a backend restart, and
-// the events it missed while down are gone. Without this the tab keeps whatever it last loaded — an empty
-// project list if it was open before the backend was — and only ⌘R fixes it, which reads as a broken board.
+// A reconnect is not a resync: the events missed while the backend was down are gone.
 const events = new EventSource('/api/events');
 events.addEventListener('open', () => {
   live.classList.add('on');
@@ -336,9 +334,6 @@ function parseCommand(line) {
   return {verb, argument, task};
 }
 
-// The bare grammar, in the server's most-used-first order. Suggesting verb×task PAIRS was worse the more tasks
-// you had — five tasks turned nine per-task verbs into forty-five near-identical lines — and the alias is the
-// one part a human types without help.
 function refreshSuggestions() {
   document.getElementById('ask-options').replaceChildren(
     ...verbs.map((verb) => Object.assign(document.createElement('option'),
@@ -351,7 +346,7 @@ function judgeAsk() {
   const line = ask.value.trim();
   state.classList.remove('ok', 'bad');
   if (!line) {
-    state.textContent = '';          // the verdict only, never a standing explanation of the field
+    state.textContent = '';
     return;
   }
   const parsed = parseCommand(line);

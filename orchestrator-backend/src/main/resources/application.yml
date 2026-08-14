@@ -8,6 +8,13 @@ spring:
     name: jagt-orchestrator
   main:
     banner-mode: "off"
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          # Same URLs serve new content after every upgrade, and without this the browser may reuse what it
+          # has without asking. Revalidate, not "never cache" — unchanged assets still answer 304.
+          no-cache: true
 
 logging:
   # There is deliberately no console threshold here: it depends on which surface owns the terminal, and
