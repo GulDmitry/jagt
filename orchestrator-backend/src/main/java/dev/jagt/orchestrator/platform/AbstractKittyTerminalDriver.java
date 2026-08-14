@@ -11,20 +11,15 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * kitty as the agents viewer, driven entirely by its remote-control CLI
- * ({@code kitty @ --to unix:<socket> …}) — no keystrokes, no URI scheme. Unlike Warp, kitty tabs are
- * addressable: they can be titled, focused and closed programmatically, and its GPU renderer is fast enough
- * that tmux inside it does not feel sluggish. Runs over tmux (the tab execs {@code tmux attach}), so agent
- * persistence is unchanged; only the viewer differs.
+ * kitty as the agents viewer, driven by its remote-control CLI ({@code kitty @ --to unix:<socket> …}) — no
+ * keystrokes. Its tabs are addressable, so they can be titled, focused and closed. The tab execs
+ * {@code tmux attach}, so agents persist whatever happens to the viewer.
  *
- * <p>One dedicated kitty instance per tmux session, isolated from the user's own kitty via
- * {@code --instance-group}/{@code --listen-on} on a per-session socket. Remote control is enabled at launch
- * with {@code -o allow_remote_control=yes}; the user's kitty.conf is never touched.
+ * <p>One dedicated instance per tmux session, isolated from the user's own kitty by {@code --instance-group}
+ * and a per-session socket; their kitty.conf is never touched.
  *
- * <p>ALL of the above is OS-neutral — kitty speaks the same protocol everywhere, and the socket lives in the
- * JVM's temp dir. Exactly two things are not, and they are the two hooks below: raising the application
- * window ({@link #bringToFront()}), and any launch options that only make sense on one desktop
- * ({@link #platformOptions()}). Adding a platform means a subclass of this, nothing else.
+ * <p>OS-neutral except the two hooks below — raising the window ({@link #bringToFront()}) and desktop-only
+ * launch options ({@link #platformOptions()}). A new platform is a subclass and nothing else.
  */
 @Slf4j
 public abstract class AbstractKittyTerminalDriver implements TerminalDriver {

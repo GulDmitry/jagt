@@ -1,13 +1,7 @@
 package dev.jagt.orchestrator.web;
 
-import dev.jagt.orchestrator.model.LaunchRequest;
-import dev.jagt.orchestrator.model.TaskAction;
-import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateViews;
-import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.Refusal;
-import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
 import org.junit.jupiter.api.Test;
@@ -15,76 +9,17 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class BoardApiControllerTest {
 
     private final TaskViews taskViews = mock(TaskViews.class);
-    private final CommandService commands = mock(CommandService.class);
-    private final TaskLauncher launcher = mock(TaskLauncher.class);
     private final ConfigService configService = mock(ConfigService.class);
     private final UsageTracker usageTracker = mock(UsageTracker.class);
-    private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
     private final StateViews views = mock(StateViews.class);
-    private final BoardApiController api = new BoardApiController(taskViews, commands, launcher, configService,
-            usageTracker, mock(TaskEventStream.class), naturalLanguage, views);
-
-    @Test
-    void executesAnActionByTheSameNameTheConsoleTakes() {
-        when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: approval relayed");
-
-        assertThat(api.act("ABC-1", "ship").message()).isEqualTo("ship ABC-1: approval relayed");
-    }
-
-    /**
-     * A page that has been open a while asks for actions the task no longer allows. The sentence is for the
-     * human; the code is what lets the page tell "your view was stale" from "jagt refuses this".
-     */
-    @Test
-    void namesTheRefusalKindSoAStalePageCanTellItselfApartFromARealRefusal() {
-        var refused = api.refused(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available"));
-
-        assertThat(refused.getBody()).containsEntry("error", "Deploy is not available")
-                .containsEntry("code", "ACTION_NOT_AVAILABLE");
-        assertThat(api.refused(new IllegalStateException("ship: ABC-1 is DEPLOYED")).getBody())
-                .containsOnlyKeys("error");
-    }
-
-    /** The palette adds no rule: it hands the text to the dispatcher and returns what came back, verbatim. */
-    @Test
-    void passesPaletteTextToTheDispatcherAndReturnsItsAnswerUnchanged() {
-        when(naturalLanguage.interpret("ship the login task"))
-                .thenReturn("understood as `ship a2` — ship a2: pushed");
-
-        assertThat(api.interpret(new BoardApiController.InterpretRequest("ship the login task")).message())
-                .isEqualTo("understood as `ship a2` — ship a2: pushed");
-        verifyNoInteractions(commands, launcher);
-    }
-
-    /**
-     * PARITY is the rule for the two surfaces, and these are the verbs the board had no way to reach at all —
-     * `resume` above all: a reopened review request, or taking over someone else's, was console-only.
-     */
-    @Test
-    void resumesAnExistingReviewRequestLikeTheConsoleDoes() {
-        when(launcher.resume("https://host/mr/42")).thenReturn("Resumed PROJ-1 on its existing branch");
-
-        assertThat(api.resume(new BoardApiController.ResumeRequest("  https://host/mr/42  ")).message())
-                .isEqualTo("Resumed PROJ-1 on its existing branch");
-    }
-
-    /** A ticket key is not a review request: there is nothing to resume from it, so it is refused, not guessed. */
-    @Test
-    void refusesToResumeWithoutAReviewRequestUrl() {
-        assertThatThrownBy(() -> api.resume(new BoardApiController.ResumeRequest("ABC-1")))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("URL is required");
-        verifyNoInteractions(launcher);
-    }
+    private final BoardApiController api = new BoardApiController(taskViews, configService, usageTracker,
+            mock(TaskEventStream.class), views);
 
     /**
      * The palette completes and validates against THIS list, so a verb the console accepts and this omits is a
@@ -122,47 +57,6 @@ class BoardApiControllerTest {
         when(views.usageStats()).thenReturn("assistant token spend …");
 
         assertThat(api.stats()).isEqualTo("assistant token spend …");
-    }
-
-    @Test
-    void refusesAnUnknownActionIdRatherThanMappingItToSomethingNear() {
-        assertThatThrownBy(() -> api.act("ABC-1", "shipit"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown action 'shipit'");
-        verifyNoInteractions(commands);
-    }
-
-    @Test
-    void startsATaskThroughTheSameLauncherTheTypedCommandUses() {
-        LaunchRequest posted = new LaunchRequest("ABC-42", "demo", "plan", null, "feature/parent",
-                "with tests");
-        when(launcher.launch(posted)).thenReturn("Task ABC-42 initialized");
-
-        var result = api.launch(posted);
-
-        assertThat(result.message()).isEqualTo("Task ABC-42 initialized");
-    }
-
-    @Test
-    void treatsBlankModifiersAsAbsentSoAnEmptyFormFieldIsNotAProjectNamedEmptyString() {
-        api.launch(new LaunchRequest("  ABC-42 ", "", "", "", "", ""));
-
-        verify(launcher).launch(new LaunchRequest("ABC-42", null, null, null, null, null));
-    }
-
-    @Test
-    void refusesALaunchWithNothingToLookUp() {
-        assertThatThrownBy(() -> api.launch(new LaunchRequest(" ", null, null, null, null, null)))
-                .hasMessageContaining("ticket key or a URL is required");
-        verifyNoInteractions(launcher);
-    }
-
-    @Test
-    void turnsARefusalIntoA400WithTheSentenceTheHumanShouldRead() {
-        var response = api.refused(new IllegalStateException("ship: ABC-1 is DONE — nothing to ship onto"));
-
-        assertThat(response.getStatusCode().value()).isEqualTo(400);
-        assertThat(response.getBody()).containsEntry("error", "ship: ABC-1 is DONE — nothing to ship onto");
     }
 
     @Test

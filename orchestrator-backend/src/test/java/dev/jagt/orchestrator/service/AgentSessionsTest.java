@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -121,5 +122,26 @@ class AgentSessionsTest {
         Files.writeString(worktree.resolve("task_context.md"), existingContent);
         state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING).build());
         return worktree;
+    }
+
+    @Test
+    void keepsTheAgentsViewerOpenAfterTheLastTaskByDefault() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withViewer(ConfigService.ConfigFile.ViewerConfig.defaults().withTmuxSession("jagt")));
+        when(tmux.sessionName("jagt")).thenReturn("jagt");
+
+        assertThat(sessions().closeViewerIfNoTasksLeft()).isFalse();
+        verifyNoInteractions(terminal);
+    }
+
+    @Test
+    void closesTheAgentsViewerAfterTheLastTaskWhenReservingItIsTurnedOff() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withViewer(ConfigService.ConfigFile.ViewerConfig.defaults().withTmuxSession("jagt")
+                        .withKeepViewer(false)));
+        when(tmux.sessionName("jagt")).thenReturn("jagt");
+
+        assertThat(sessions().closeViewerIfNoTasksLeft()).isTrue();
+        verify(terminal).closeViewerWindow("jagt");
     }
 }

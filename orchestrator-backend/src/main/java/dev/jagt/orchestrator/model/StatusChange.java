@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * One step a task actually took, in the order it happened — the record `state.json` used to lack entirely: it
+ * One step a task actually took, in the order it happened: it
  * kept the CURRENT status and one activity stamp, so "which steps has this been through" and "how long did it
  * sit in review" were unanswerable.
  *

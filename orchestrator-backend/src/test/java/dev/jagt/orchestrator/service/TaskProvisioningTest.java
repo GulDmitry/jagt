@@ -59,8 +59,10 @@ class TaskProvisioningTest {
         ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, new McpEndpoint("http://localhost:8290/mcp"));
         AgentSessions sessions = new AgentSessions(config, state, mock(TmuxService.class),
                 mock(TerminalDriver.class), runtime);
-        return new TaskProvisioning(config, state, git, sessions, runtime, properties,
-                new OrchestratorPaths(properties), new PromptTemplates());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        WorktreeSetup setup = new WorktreeSetup(runtime, paths, config,
+                new SubAgentBriefing(new PromptTemplates(), properties, paths, config, state));
+        return new TaskProvisioning(config, state, git, sessions, setup);
     }
 
     /** A task id becomes a branch name, a directory name and a tmux window name — so it is validated first. */

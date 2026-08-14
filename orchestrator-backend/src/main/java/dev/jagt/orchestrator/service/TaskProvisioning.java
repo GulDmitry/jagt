@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.agent.AgentRuntime;
-import dev.jagt.orchestrator.agent.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
@@ -10,23 +9,15 @@ import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
  * Creating a task: cut the worktree, put in what the agent needs, register it in state.json, start the agent.
- *
- * <p>This and {@link AgentSessions} left {@code OrchestratorTools} in ONE move, and that was the point — they
- * are what pulled six of its eleven collaborators ({@code TmuxService}, {@code TerminalDriver},
- * {@code AgentRuntime}, {@code PromptTemplates}, {@code OrchestratorPaths}, {@code OrchestratorProperties})
- * into a class that is otherwise about task state. Extracting anything else first only ADDED a dependency,
- * because a delegating facade keeps everything it does not shed.
  *
  * <p>What belongs to the AGENT rather than to jagt stays behind {@link AgentRuntime}: this class never learns
  * what a given agent's config file is called.
@@ -42,13 +33,7 @@ public class TaskProvisioning {
     private final StateService stateService;
     private final GitService gitService;
     private final AgentSessions agentSessions;
-    private final AgentRuntime agentRuntime;
-    private final OrchestratorProperties properties;
-    private final OrchestratorPaths paths;
-    private final PromptTemplates prompts;
-    /** Plugins the agent sessions should NOT load — heavy LSP plugins spawn a ~1-2GB server per worktree. */
-    @Value("${orchestrator.agent-disabled-plugins:}")
-    private List<String> agentDisabledPlugins;
+    private final WorktreeSetup worktreeSetup;
 
     /** The configured project whose repo already has a branch named taskId, or null if none. */
     public String existingBranchProject(String taskId, String projectKey) {
@@ -65,7 +50,6 @@ public class TaskProvisioning {
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();
         String projectKey = request.projectKey();
-        String instructions = request.instructions();
         requireSafeId(taskId, "taskId");
         requireSafeId(projectKey, "projectKey");
         boolean plan = AgentSessions.planMode(request.mode());
@@ -89,16 +73,8 @@ public class TaskProvisioning {
         String remoteUrl;
         try {
             remoteUrl = gitService.remoteUrl(projectPath);
-            WorktreeFiles.excludeOrchestratorPlumbing(gitService.gitCommonDir(projectPath));
-            provisionForAgent(worktreePath);
-            WorktreeFiles.copyIdeProjectFiles(projectPath, worktreePath);
-            WorktreeFiles.copyLocalFiles(projectPath, worktreePath,
-                    configService.load().worktree().copyGlobsOrDefault());
-            WorktreeFiles.write(worktreePath.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE),
-                    subAgentContext(request, project, baseBranch, worktreePath, remoteUrl, config));
-            if (instructions != null && !instructions.isBlank()) {
-                WorktreeFiles.write(worktreePath.resolve("task_context.md"), instructions);
-            }
+            worktreeSetup.fill(request, project, projectPath, worktreePath,
+                    gitService.gitCommonDir(projectPath), baseBranch, remoteUrl);
         } catch (RuntimeException e) {
             // Compensate: without this, the taskId is burned (branch + worktree exist,
             // nothing registered) and a retry hits "branch already exists".
@@ -180,39 +156,8 @@ public class TaskProvisioning {
      * the master root, the backend, all configured projects and the other active
      * tasks — not only its own worktree.
      */
-    private String subAgentContext(NewTask request, ProjectConfig project, String baseBranch,
-                                   Path worktreePath, String remoteUrl, ConfigService.ConfigFile config) {
-        String taskId = request.taskId();
-        String projectsTable = config.projects().entrySet().stream()
-                .map(e -> "| " + e.getKey() + " | " + e.getValue().path() + " | " + e.getValue().baseBranch() + " |")
-                .collect(Collectors.joining("\n"));
-        String activeTasks = stateService.tasks().entrySet().stream()
-                .map(e -> "- " + e.getKey() + " [" + e.getValue().status() + "] " + e.getValue().worktreePath())
-                .collect(Collectors.joining("\n"));
-        return prompts.subAgentContext().formatted(
-                taskId,
-                taskId, request.projectKey(), project.path(), baseBranch, remoteUrl, worktreePath,
-                properties.watchdog().staleAfter().toMinutes() + " minutes",
-                taskId,
-                taskId, baseBranch,
-                paths.root(),
-                paths.stateFile(),
-                paths.configFile(),
-                projectsTable.isBlank() ? "| (none) | | |" : projectsTable,
-                activeTasks.isBlank() ? "- (none)" : activeTasks);
-    }
 
-    /**
-     * Everything the AGENT needs in its fresh worktree — which of those files exist, and what is in them,
-     * belongs to the runtime, not here: this method must never learn what a given agent's MCP config is called.
-     */
-    private void provisionForAgent(Path worktreePath) {
-        agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
-                configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
-    }
-
-    /** Public because the MCP facade validates a resumed ticket id BEFORE it spends git calls
-     *  resolving the project — one pattern, one message, in the class that owns task creation. */
+    /** Public so a resume can validate the id BEFORE spending git calls: one pattern, one message. */
     public static void requireSafeId(String value, String name) {
         if (!isSafeId(value)) {
             throw new IllegalArgumentException("Argument '" + name + "' must match " + SAFE_ID.pattern()

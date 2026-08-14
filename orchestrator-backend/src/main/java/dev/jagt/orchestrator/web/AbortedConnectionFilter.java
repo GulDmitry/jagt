@@ -15,28 +15,12 @@ import java.net.SocketException;
 import java.util.Arrays;
 
 /**
- * Drops the one ERROR the board prints for connections nobody ever meant to use.
+ * Drops the one ERROR the board prints for connections nobody ever meant to use: the peer tore the connection
+ * down between {@code accept()} and Tomcat's {@code setSoLinger}, so the setsockopt fails for a connection that
+ * carried no request. Tomcat offers no knob — it sets {@code connectionLinger} in its constructor.
  *
- * <p>Tomcat configures each accepted socket on the acceptor thread, and {@code SO_LINGER} is the FIRST option
- * it sets that is not guarded — every other one is either unset by default or, like {@code TCP_NODELAY},
- * wrapped in a catch of its own (see {@code SocketProperties#setProperties}). So when the peer has already
- * torn the connection down between {@code accept()} and that call, macOS answers the setsockopt with EINVAL,
- * and Tomcat reports "Error setting socket options" with a {@link SocketException} — for a connection that
- * carried no request. There is no knob for it: {@code AbstractProtocol} sets {@code connectionLinger} to its
- * default in the constructor, which is exactly what makes both linger properties non-null and the call
- * unconditional.
- *
- * <p>jagt hands out abandoned connections all day: a browser pre-connects to the board speculatively, Node
- * clients (Claude Code's MCP calls, {@code mcp_client.js}) race IPv6 and IPv4 to {@code localhost} and destroy
- * the loser, every {@code curl} probe of {@code /state} is one more. All of them are normal, none of them is
- * an error, and a log that cries wolf on them is a log nobody reads.
- *
- * <p>Scoped to precisely that event — Tomcat's own network logger, a {@code SocketException}, and a
- * {@code setSoLinger} frame in the trace; matching the frame rather than the message keeps it independent of
- * the C library's locale. A failure to configure any OTHER option still reaches the log. A systemic
- * {@code SO_LINGER} failure would be silent, and that is accepted: Tomcat destroys the socket in the same
- * catch, so the symptom is a board that answers nothing at all — impossible to miss, and impossible to
- * confuse with the per-connection noise this drops.
+ * <p>Matched by the {@code setSoLinger} frame rather than the message, which keeps it independent of the C
+ * library's locale. A failure to configure any OTHER socket option still reaches the log.
  */
 @Component
 public class AbortedConnectionFilter extends TurboFilter {

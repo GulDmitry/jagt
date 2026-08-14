@@ -21,7 +21,7 @@ public class PromptTemplates {
         this.subAgentContext = load("prompts/sub-agent-context.md");
     }
 
-    /** %s placeholders — see the formatted() call in OrchestratorTools for the argument order. */
+    /** 16 positional {@code %s} placeholders; {@code SubAgentBriefing.of} is the one call that fills them. */
     public String subAgentContext() {
         return subAgentContext;
     }

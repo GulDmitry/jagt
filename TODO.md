@@ -8,36 +8,18 @@ CLAUDE.md, not here; if an entry below has hardened into a rule, it belongs ther
 
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
-| 1 | **Finish the comment sweep** — `sob-ai:commenting` over every remaining file | 2298 comment lines against 7040 of code in `src/main/java` alone. The infrastructure and the seams are done (`build.gradle` 30→10, `application.yml` 55→33, `CodeHost` 39→20, `TerminalDriver` 39→25, `GitService` 190→173); the Java bulk is not. Worst left: `GitService` 173, `MasterShell` 140, `TaskState` 91, `OrchestratorTools` 89 | 1 d |
-| 2 | **A decoupling pass** — see the section below | the widest class takes eight collaborators, and the tests say it louder: one writes `mock(` 91 times. (The Lombok half of this item shipped — see the record below) | 1-2 d |
-| 3 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
-| 4 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are checked by hand today. A runner already has chromium, so it is the same steps in both pipelines | 1 d |
-| 5 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; a new install requirement, so it goes in README's Prerequisites | 1 d |
-| 6 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
-| 7 | A second `CodeHost` (GitHub) + a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the last per-task model cost | 2-3 d |
-| 8 | Extend the e2e matrix over `ship`/`review`/`deploy`/`resume` | the matrix covers CREATE→PROVISION→LAUNCH→TEARDOWN; the interesting oracle (status transitions, history, the replies relay) needs a fake `CodeHost` bean and a stub script that reports back over `POST /mcp` | 1-2 d |
+| 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
+| 2 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are checked by hand today. A runner already has chromium, so it is the same steps in both pipelines | 1 d |
+| 3 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; a new install requirement, so it goes in README's Prerequisites | 1 d |
+| 4 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
+| 5 | A second `CodeHost` (GitHub) + a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the last per-task model cost | 2-3 d |
+| 6 | Extend the e2e matrix over `ship`/`review`/`deploy`/`resume` | the matrix covers CREATE→PROVISION→LAUNCH→TEARDOWN; the interesting oracle (status transitions, history, the replies relay) needs a fake `CodeHost` bean and a stub script that reports back over `POST /mcp` | 1-2 d |
 
-Step 3 needs access nobody has handed over yet (a token for a real code host). Everything else is unblocked.
+Step 1 needs access nobody has handed over yet (a token for a real code host). Everything else is unblocked.
 
 Linux is answered as far as a container and a CI runner can answer it (see the record below); what remains is
 one desktop-only question — `reveal` raising the viewer above other applications, and the viewer close that
 the container run left open (the `@Disabled` test in `LinuxKittyTerminalDriverLinuxTest` names the lead).
-
-## Step 2 — a decoupling pass
-
-The tests are the measure, not the line count: `OrchestratorToolsTest` writes `mock(` 91 times, `MasterShellTest`
-31 — and the project's own rule is that a heavy setup means the production code is poorly decomposed, not that
-the test needs more fixture. The widest classes are `MasterShell`, `BoardApiController` and `TaskProvisioning`
-(eight collaborators each; `OrchestratorTools` seven).
-
-The ONE lesson already paid for: a delegating facade KEEPS every collaborator it does not shed (splitting
-`deploy` off `OrchestratorTools` was tried and reverted for adding a dependency), so the move is to GROUP
-collaborators into a cohesive object, not to move methods elsewhere. Parameter clumps go the same way —
-`(explicitTaskId, callerTaskId)` recurs through `OrchestratorTools` as one concept, "who is asking about which
-task", and it is a value object.
-
-Add an interface only where it buys a test a real seam. The five existing strategy seams are the pattern; an
-interface with one implementation and no second caller is ceremony, and jagt has already deleted a few.
 
 ## Open questions
 
@@ -137,6 +119,50 @@ either a client-side setting or a runtime that keeps the bridge, which is exactl
 
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
 themselves are in CLAUDE.md.
+
+### The screen stopped owning the grammar — 2026-08-14
+`MasterShell` was eight collaborators and its test built the whole screen to check that `do ABC-1 from x`
+parses. Tier 1 now lives in `shell/GrammarDispatch` (parse a line, run it, fall through to tier 2), the screen
+keeps the Lanterna buffer, the input line and Tab completion, and the completion list became a projection
+(`TaskViews.choices()` served through `StateViews`) instead of a reach into the MCP facade. 8 → 5
+collaborators, and the test went from 31 `mock(` calls to 4 with the layout smoke script still green.
+
+Two more came out of `OrchestratorTools`: `service/DeployService` (the only code that writes a shared branch)
+and `mcp/CallerScope` (a call acts on its own task or on nothing, and retiring/deploying/reverting stay with the
+human). Both have their own tests now — the scoping rule used to be checked through an eight-mock facade.
+
+### The tools facade is gone, and nothing is over five collaborators — 2026-08-14
+`OrchestratorTools` was 871 lines and eleven collaborators, and every attempt to thin it ADDED one: a
+delegating aggregate keeps whatever it does not shed, which is why the `deploy` split was reverted the first
+time. Dissolving it was the only move that worked.
+
+- The MCP surface became a registry: `mcp/McpTools` + `mcp/McpToolRegistry`, and each group under `mcp/tools`
+  declares its own tools with their schemas. `McpProtocolService` takes `List<McpTools>` and knows no tool by
+  name, so adding one needs no edit there.
+- The work landed in units small enough to test alone: `AgentStatusReports`, `IdeLauncher`, `DeployService`,
+  `TaskRetirement`, `TaskResume`, `TicketTitleBackfill`, `WorktreeSetup`, `SubAgentBriefing`, `TaskOperations`,
+  and `mcp/CallerScope` for the X-Working-Directory rule.
+- `MasterShell` handed the grammar to `shell/GrammarDispatch` (8 → 5 collaborators), `BoardApiController` split
+  its writes into `TaskCommandsController` with `RefusedRequests` as shared advice (8 → 5 and 3), and
+  `ShipService` dropped its own liveness probe for the one `AgentSessions` already owns (6 → 5).
+
+The numbers, because the tests are the measure: `OrchestratorToolsTest` wrote `mock(` 91 times and no longer
+exists; `MasterShellTest` went 31 → 4; the worst file left is 17 across eight tests. 70 classes, none above
+five collaborators, 47 at three or fewer.
+
+One coverage hole this opened and closed: moving the deploy tests out took the only assertions that a SUB-AGENT
+cannot reach `deploy_task`/`revert_task`/`remove_task`. Testing `CallerScope` alone would have left every tool
+free to skip it, so `McpToolScopeTest` drives the declared handlers themselves.
+
+### Comments went through the gate, file by file — 2026-08-14
+`sob-ai:commenting` over the infrastructure, the seams and the biggest offenders: `build.gradle` 30 → 10 comment
+lines (it explained how the dashboard renders and what a merge conflict means), `application.yml` 55 → 33,
+`GitService` 190 → 146, `MasterShell` 140 → 95, `TaskState` 91 → 78, plus `CodeHost`, `TerminalDriver`,
+`AbortedConnectionFilter` (24 → 7), `Move`, `McpEndpoint`, `Executables`, `ShipService`, `RunningJarWatch`,
+`UsageTracker`, `StubAgentRuntime`, `GitLabCodeHost`, `AbstractKittyTerminalDriver`. 2349 → ~2150 lines against
+7271 of code, and the history/justification language ("used to", "which is how", "verified", "Without this") is
+gone from every one of the 23 places that carried it. What is left is one-line contract statements — if a sweep
+wants a number to chase, chase those instead: a javadoc that repeats the signature is still noise.
 
 ### Lombok for the mechanical boilerplate — 2026-08-14
 `@RequiredArgsConstructor` in 27 classes (the constructor only assigned), `@Slf4j` for 24 logger fields, `@With`
@@ -305,14 +331,14 @@ runs CREATE→PROVISION→LAUNCH→TEARDOWN over real git/tmux with `orchestrato
 contents, the per-agent provisioning ABSENCE (a Claude-shaped file in a stub worktree means something outside
 the runtime put it there), `TaskStatus`, and that `done` removes the worktree while KEEPING the branch.
 Design rules it lives by: assert OBSERVABLE state, never timing; widening coverage is adding a ROW; and a
-combination that is not covered is NAMED with the reason. What is still missing is roadmap step 8, plus the
+combination that is not covered is NAMED with the reason. What is still missing is roadmap step 6, plus the
 real driver combinations — a GUI cannot be asserted, which is what `linuxDriverTest` exists for instead.
 
 ### Seams and their second implementations
 `AgentRuntime` (claude / codex / stub) and `TerminalDriver` (kitty / warp) have more than one, and adding
 Codex is what MOVED provisioning into the seam — proof that an interface with one implementation had quietly
 left `.mcp.json` and the word "Claude" sitting in `OrchestratorTools`. Still single-implementation, so still
-unproven: `EditorDriver` (one CLI driver) and `CodeHost` (GitLab only — roadmap step 7). `UserNotifier` got
+unproven: `EditorDriver` (one CLI driver) and `CodeHost` (GitLab only — roadmap step 5). `UserNotifier` got
 its second with Linux.
 One follow-up Codex left: its worktree gets jagt's MCP proxy but NOT the human's own servers (`CODEX_HOME`
 points at the worktree), so such an agent cannot post review replies itself — which stopped mattering when

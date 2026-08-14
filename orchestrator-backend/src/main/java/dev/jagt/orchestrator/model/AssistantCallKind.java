@@ -1,12 +1,9 @@
 package dev.jagt.orchestrator.model;
 
 /**
- * What a metered model call was FOR. Without this split {@code stats} can only say "42 calls, 1.8M tokens",
- * and the one question worth asking — is the spend the once-per-task ticket read or the poll that repeats up
- * to hourly for a day? — has to be guessed from the call count.
- *
- * <p>It is also how the payoff of moving a read to a REST {@code CodeHost} becomes visible: that category's
- * line stops growing while the others keep going.
+ * What a metered model call was FOR, so {@code stats} can separate the once-per-task ticket read from the poll
+ * that repeats up to hourly — and so the payoff of moving a read to a REST {@code CodeHost} is visible as one
+ * category's line stopping while the others grow.
  */
 public enum AssistantCallKind {
 

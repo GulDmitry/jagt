@@ -1,0 +1,70 @@
+package dev.jagt.orchestrator.service;
+
+import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.platform.EditorDriver;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+/** Opens a task for a human to look at: its live worktree, a frozen diff, or the worktree a deploy stalled in. */
+@Service
+@RequiredArgsConstructor
+public class IdeLauncher {
+
+    private final StateService stateService;
+    private final ConfigService configService;
+    private final GitService gitService;
+    private final EditorDriver editorDriver;
+
+    public String open(String taskIdOrAlias, String mode) {
+        String taskId = stateService.canonicalTaskId(taskIdOrAlias);
+        TaskState task = stateService.task(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
+        Path worktree = Path.of(task.worktreePath());
+        if ("diff".equalsIgnoreCase(mode)) {
+            return openDiff(taskId, task, worktree);
+        }
+        if (mode != null && !mode.isBlank() && !"project".equalsIgnoreCase(mode)) {
+            throw new IllegalArgumentException("Unknown ide mode '" + mode + "'. Allowed: project, diff");
+        }
+        // A DEPLOY_CONFLICT lives on the DEPLOY side: the task's own worktree is clean and has nothing to
+        // resolve, which is what made this look broken.
+        if (task.status() == TaskStatus.DEPLOY_CONFLICT) {
+            Path deployWorktree = GitService.deployWorktreePath(
+                    Path.of(configService.project(task.project()).path()), taskId);
+            if (Files.isDirectory(deployWorktree)) {
+                editorDriver.open(deployWorktree);
+                return "Opened the DEPLOY worktree " + deployWorktree + " — resolve the conflict there (fix the"
+                        + " files, `git add` them), then `deploy " + taskId + "` again. Your task branch and its MR"
+                        + " are untouched.";
+            }
+        }
+        editorDriver.open(worktree);
+        return "Opened " + task.worktreePath() + " as a project in the editor"
+                + " (use Git → Local Changes for a live diff vs base)";
+    }
+
+    /**
+     * Both sides are clean git checkouts: a folder-diff of the live worktree ignores .gitignore and dumps build
+     * artifacts. The right side is FROZEN at this call — the editor's Refresh does nothing.
+     */
+    private String openDiff(String taskId, TaskState task, Path worktree) {
+        ProjectConfig project = configService.project(task.project());
+        Path projectPath = Path.of(project.path());
+        // Against what the task MERGES INTO, not what it was cut from, so a conflict-merged deploy does not
+        // read as this task's change. A task with its own base diffs against THAT: nothing else contains it.
+        String diffBase = task.baseBranch() != null && !task.baseBranch().isBlank()
+                ? "origin/" + task.baseBranch()
+                : (project.deployBranch() != null && !project.deployBranch().isBlank()
+                        ? "origin/" + project.deployBranch() : project.baseBranch());
+        Path base = gitService.checkoutBaseForDiff(projectPath, diffBase, taskId);
+        Path clean = gitService.checkoutWorktreeCleanForDiff(worktree, projectPath, diffBase, taskId);
+        editorDriver.openDiff(base, clean);
+        return "Opened STATIC diff of " + taskId + " (changes vs " + diffBase
+                + ") — snapshot, does not refresh; re-run for a fresh one";
+    }
+}

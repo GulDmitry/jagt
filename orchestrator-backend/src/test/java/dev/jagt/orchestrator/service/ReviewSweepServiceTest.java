@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.ReviewFacts;
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -24,54 +25,55 @@ import static org.mockito.Mockito.when;
 class ReviewSweepServiceTest {
 
     private final ReviewReader reviewReader = mock(ReviewReader.class);
-    private final OrchestratorTools tools = mock(OrchestratorTools.class);
+    private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
+    private final AgentSessions sessions = mock(AgentSessions.class);
     private final StateService stateService = mock(StateService.class);
-    private final ReviewSweepService sweep = new ReviewSweepService(reviewReader, tools, stateService);
+    private final ReviewSweepService sweep = new ReviewSweepService(reviewReader, statusReports, sessions,
+            stateService);
 
     @BeforeEach
-    void tasksAreAddressedByTheirIdUnlessATestSaysOtherwise() {
+    void aTaskWithAnOpenRequest() {
         when(stateService.canonicalTaskId(anyString())).thenAnswer(call -> call.getArgument(0));
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));
     }
 
     @Test
     void advancesToApprovedWhenTheMrIsApprovedAndClean() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1"))
                 .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
 
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.APPROVED);
-        verify(tools).markApproved("ABC-1");
-        verify(tools, never()).markReviewed("ABC-1");
+        verify(statusReports).markApproved("ABC-1");
+        verify(statusReports, never()).markReviewed("ABC-1");
     }
 
     @Test
     void marksReviewedWhenGreenAndCleanButNotYetApproved() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1"))
                 .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
 
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
-        verify(tools).markReviewed("ABC-1");
-        verify(tools, never()).markApproved("ABC-1");
+        verify(statusReports).markReviewed("ABC-1");
+        verify(statusReports, never()).markApproved("ABC-1");
     }
 
     @Test
     void relaysCommentsAsDraftsAndNeverAutoAdvancesEvenWhenApproved() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, true,
                 "success", List.of("coderabbit (a.java:3): rename x"))));
 
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
-        verify(tools).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"),
+        verify(sessions).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"),
                 org.mockito.ArgumentMatchers.contains("review_replies.md"));
-        verify(tools, never()).markApproved("ABC-1");
-        verify(tools, never()).markReviewed("ABC-1");
+        verify(statusReports, never()).markApproved("ABC-1");
+        verify(statusReports, never()).markReviewed("ABC-1");
     }
 
     /**
@@ -81,14 +83,13 @@ class ReviewSweepServiceTest {
      */
     @Test
     void relaysAReviewRoundAsAJudgementCallAndNotAsAListOfOrders() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
                 "success", List.of("reviewer (a.java:3): drop the cache"))));
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
 
         sweep.sweep("ABC-1");
 
-        verify(tools).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        verify(sessions).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
                 .contains("Wrong: change NOTHING")          // disagreeing is a route, not a failure
                 .contains("awaiting:")                      // so is asking, instead of guessing
@@ -102,14 +103,13 @@ class ReviewSweepServiceTest {
      */
     @Test
     void asksTheAgentToReportWhetherTheRoundChangedAnything() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
                 "success", List.of("reviewer (a.java:3): drop the cache"))));
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
 
         sweep.sweep("ABC-1");
 
-        verify(tools).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        verify(sessions).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
                 .contains("\"no changes: <why, few words>\"")
                 .contains("Never say this if you edited a file")
@@ -123,27 +123,25 @@ class ReviewSweepServiceTest {
      */
     @Test
     void tellsAnAgentFixingOnlyAFailedBuildWhenTheRoundIsOver() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1"))
                 .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
         ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
 
         sweep.sweep("ABC-1");
 
-        verify(tools).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        verify(sessions).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue()).contains("When the build is fixed locally, set status REVIEW_PENDING.");
     }
 
     @Test
     void reportsAnUnreadableReviewInsteadOfTreatingItAsClean() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.empty());
 
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE);
-        verify(tools, never()).markReviewed("ABC-1");
-        verify(tools, never()).markApproved("ABC-1");
+        verify(statusReports, never()).markReviewed("ABC-1");
+        verify(statusReports, never()).markApproved("ABC-1");
     }
 
     @Test
@@ -151,7 +149,6 @@ class ReviewSweepServiceTest {
         // The trigger does not matter — a human typing `review` during an auto-poll used to spawn a second
         // headless read of the same merge request: paid for twice, and two briefs relayed for one round.
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
             reentrant.set(sweep.sweep("ABC-1"));
             return Optional.of(new ReviewFacts(true, false, "running", List.of()));
@@ -168,7 +165,6 @@ class ReviewSweepServiceTest {
     void guardsAnAliasAndItsTaskIdAsOneAndTheSameSweep() {
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
         when(stateService.canonicalTaskId("a1")).thenReturn("ABC-1");
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
             reentrant.set(sweep.sweep("a1"));
             return Optional.of(new ReviewFacts(true, false, "running", List.of()));
@@ -181,7 +177,6 @@ class ReviewSweepServiceTest {
 
     @Test
     void sweepsAgainOnceThePreviousSweepHasFinished() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1"))
                 .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of())));
 
@@ -202,7 +197,6 @@ class ReviewSweepServiceTest {
         CountDownLatch firstSweepIsInside = new CountDownLatch(1);
         CountDownLatch secondSweepReturned = new CountDownLatch(1);
         AtomicReference<ReviewSweepService.SweepResult> fromOtherThread = new AtomicReference<>();
-        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
         when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
             firstSweepIsInside.countDown();
             secondSweepReturned.await(5, TimeUnit.SECONDS);
@@ -229,7 +223,8 @@ class ReviewSweepServiceTest {
 
     @Test
     void reportsMissingMrWithoutReadingTheCodeHost() {
-        when(tools.taskMrUrl("ABC-1")).thenReturn(null);
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()));
 
         var result = sweep.sweep("ABC-1");
 

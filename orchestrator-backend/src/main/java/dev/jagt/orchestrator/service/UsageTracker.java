@@ -13,15 +13,12 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Books what jagt's own model calls cost, so the spend is visible instead of invisible.
  *
- * <p>Booking is TWO steps on purpose, because a call can happen before the task it belongs to exists: the
- * {@code do} ticket read is what produces the id the task is then created under. So {@link #record} takes
- * the session total the moment the call returns (it can never be lost), and {@link #chargeTask} attributes
- * that same measurement once there is a task to attribute it to. Charging twice is the caller's only way to
- * get this wrong, and each call site does exactly one of each.
+ * <p>Booking is TWO steps because a call can happen before the task it belongs to exists: {@link #record} takes
+ * the session total the moment a call returns, {@link #chargeTask} attributes the same measurement once there is
+ * a task. Charging twice is the one way a caller can get this wrong.
  *
- * <p>The two totals are NOT summable: a task's total lives as long as the task does, while the session
- * total counts every call since backend start — including tasks already retired with {@code done} and reads
- * that never became a task. The views label each for what it is.
+ * <p>The two totals are NOT summable: a task's lives as long as the task, the session's counts every call since
+ * startup — including retired tasks and reads that never became one.
  */
 @Component
 @RequiredArgsConstructor

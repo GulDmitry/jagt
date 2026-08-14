@@ -17,7 +17,7 @@ import java.util.Map;
  * <p>Lowest precedence on purpose ({@code addLast}), so {@code --logging.threshold.console=...} still wins.
  * Registered by hand in {@code main} rather than through {@code META-INF/spring/…imports}: {@code bootJar}
  * hoists that file to the jar ROOT, which is NOT on the executable jar's classpath, so an
- * {@code EnvironmentPostProcessor} declared there is silently never loaded (verified — the TUI came up with
+ * {@code EnvironmentPostProcessor} declared there is silently never loaded (the TUI came up with
  * Spring's log lines painted over it).
  */
 public class ConsoleLogging implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {

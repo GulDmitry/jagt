@@ -3,7 +3,8 @@ package dev.jagt.orchestrator.e2e;
 import dev.jagt.orchestrator.agent.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.service.TaskProvisioning;
+import dev.jagt.orchestrator.service.TaskRetirement;
 import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
@@ -68,7 +69,9 @@ class TaskFlowMatrixTest {
     private UserNotifier userNotifier;
 
     @Autowired
-    private OrchestratorTools tools;
+    private TaskProvisioning provisioning;
+    @Autowired
+    private TaskRetirement retirement;
     @Autowired
     private StateService stateService;
     @Autowired
@@ -95,7 +98,7 @@ class TaskFlowMatrixTest {
         E2eWorkspace.writeConfig(paths.configFile(), workspace.resolve("proj"), flowCase);
         Path worktree = workspace.resolve("ABC-1-proj");
 
-        String created = tools.initializeTask(NewTask.builder("ABC-1", "proj")
+        String created = provisioning.initializeTask(NewTask.builder("ABC-1", "proj")
                 .instructions("Fix the widget").title("Widget layout is off").build());
 
         assertThat(created).contains("ABC-1 is a1", "agent running on ABC-1");
@@ -111,7 +114,7 @@ class TaskFlowMatrixTest {
         assertThat(stateService.task("ABC-1").orElseThrow().autoReview()).isEqualTo(flowCase.autoReview());
         assertThat(E2eWorkspace.git(workspace.resolve("proj"), "branch", "--list", "ABC-1")).contains("ABC-1");
 
-        tools.removeTask("ABC-1", null);
+        retirement.retire("ABC-1");
 
         assertThat(worktree).doesNotExist();
         assertThat(stateService.task("ABC-1")).isEmpty();

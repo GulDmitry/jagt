@@ -1,9 +1,8 @@
 package dev.jagt.orchestrator.model;
 
 /**
- * What creating a task needs, as one value. The chain that carries it (console/board -> {@code TaskLauncher}
- * -> {@code OrchestratorTools} -> {@code TaskProvisioning}) passed eight positional Strings of which a typical
- * call filled three, so two swapped nulls were indistinguishable at every hop.
+ * What creating a task needs, as one value — the chain that carries it used to pass eight positional Strings of
+ * which a typical call filled three, so two swapped nulls were indistinguishable at every hop.
  *
  * <p>{@code baseBranch} is the per-task OVERRIDE of the project's configured base: the branch the worktree is
  * cut from AND the branch its review request targets. Null (the normal case) means "the project's baseBranch",

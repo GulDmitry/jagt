@@ -50,7 +50,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
      * The worktree's MCP config: Claude Code talks to the backend over HTTP and carries the caller header
      * itself, so there is no proxy process between them — which is what took Node out of jagt's requirements.
      * Written per worktree rather than symlinked from the root, because the header value IS the worktree path
-     * (that is how the backend knows which task is calling; the old bridge computed it as {@code process.cwd()}).
+     * (how the backend knows which task is calling).
      */
     static String mcpJson(String url, String worktreePath) {
         return """

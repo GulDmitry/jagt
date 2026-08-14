@@ -6,20 +6,14 @@ import java.util.List;
 import java.util.function.Predicate;
 
 /**
- * Finds the external binaries jagt shells out to, portably. It exists because the default for {@code tmux} was
- * {@code /opt/homebrew/bin/tmux} — a macOS Homebrew path that made the whole flow fail on Linux with
- * "Failed to start command", which is how the container suite found it (see {@code docker/linux-suite.Dockerfile}).
- *
- * <p>The rules, in order:
+ * Finds the external binaries jagt shells out to, portably. In order:
  * <ol>
- *   <li>A value containing a separator is the human's explicit choice and is returned untouched — jagt does not
- *       second-guess a configured path, even one that does not exist yet (a mount that appears later, a symlink
- *       the human is about to create); the failure then names what they asked for.</li>
- *   <li>A bare name is looked up on {@code PATH}, which is the portable answer whenever jagt runs from a shell.</li>
- *   <li>Only if PATH has it nowhere do the known install locations get probed, because a process launched from a
- *       GUI (Finder, a launch agent) inherits a PATH that has neither Homebrew prefix in it — the original
- *       reason someone hardcoded an absolute path.</li>
- *   <li>Still nothing: the bare name is returned, so the error a human reads is {@code tmux}, not a guess.</li>
+ *   <li>A value with a separator is the human's explicit choice, returned untouched even if it does not exist
+ *       yet — the failure then names what they asked for.</li>
+ *   <li>A bare name comes off {@code PATH}.</li>
+ *   <li>Then the known install directories, because a GUI-launched process inherits a PATH with neither
+ *       Homebrew prefix in it.</li>
+ *   <li>Failing everything, the bare name — so the error reads {@code tmux}, not a guess.</li>
  * </ol>
  */
 public final class Executables {

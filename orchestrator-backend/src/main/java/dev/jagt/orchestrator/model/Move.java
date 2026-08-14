@@ -4,23 +4,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * What a task IS to a human and what may be done about it: its {@link Phase}, whose turn it is, the actions
- * that are legal right now, and which of them is the obvious one. Pure and total over {@link TaskStatus} and {@link AgentReport}, so
- * every surface — the TUI, the web board, the HTTP API — offers the same set, and an illegal move is not
- * merely rejected but never offered.
+ * What a task IS to a human and what may be done about it. Total over {@link TaskStatus} × {@link AgentReport},
+ * so every surface offers the same set and an illegal move is never offered rather than merely rejected.
+ * {@link #shippable} is the ONE ship rule, shared with the gate that executes it.
  *
- * <p>This replaces a prose hint that could be neither turned into a button nor validated, and that advised
- * independently of the gates in {@code OrchestratorTools} (two sources of truth for "what can I do now").
- * {@link #shippable} is now that one rule, used both here and by the ship gate itself.
+ * <p>The report is an input because all three outcomes of a review round end at the same status, and only one
+ * of them is a ship.
  *
- * <p>The status alone cannot answer "whose move is it": a review round ends at REVIEW_PENDING whether the agent
- * fixed code, asked something, or found nothing to change, and advising a ship for all three turned the third
- * into a loop — the ship returns the task to CI_POLLING, where the poll relays the threads it just answered.
- *
- * <p>Liveness is deliberately NOT an input to the projection: asking tmux whether each agent is alive would
- * mean a process spawn per task on every render. A task stuck at {@code SHIPPING} is therefore offered SHIP,
- * and if its agent turns out to be alive the gate refuses at execution time — the honest split, since only the
- * execution path can afford to look.
+ * <p>Liveness is NOT an input: it would cost a process spawn per task per render. A task stuck at
+ * {@code SHIPPING} is therefore offered SHIP, and the gate refuses at execution time if its agent is alive.
  */
 public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskAction primary, String hint) {
 

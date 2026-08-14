@@ -12,12 +12,8 @@ import java.util.List;
 /**
  * One task, as {@code state.json} holds it.
  *
- * <p>A task works in one or MORE repositories ({@link #repos()}): a piece of work can span a PHP service, a
- * Java service and the contract between them, and one agent session changes all of them — the contract only
- * makes sense if both sides move together. What multiplies is worktrees, not sessions. {@code repos.get(0)} is
- * where the agent's session runs, and the single-repo accessors below ({@link #project()},
- * {@link #worktreePath()}, …) answer for it, so everything that legitimately concerns "the task's own place"
- * reads the same as it always did.
+ * <p>A task works in one or MORE repositories ({@link #repos()}) but always in ONE session: what multiplies is
+ * worktrees. {@code repos.get(0)} is where that session runs, and the single-repo accessors answer for it.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -44,10 +40,8 @@ public record TaskState(
 ) {
 
     /**
-     * Enough to answer "which steps happened and how long did each take" while keeping `state.json` small — the
-     * file is read and rewritten on every single MCP call, so an unbounded log would grow into that hot path.
-     * A task that changes status fifty times is pathological, and the OLDEST entries are the ones nobody asks
-     * about, so those are what a full history drops.
+     * The file is rewritten on every MCP call, so the log cannot be unbounded. A full history drops its OLDEST
+     * entries — the ones nobody asks about.
      */
     private static final int MAX_HISTORY = 50;
 
@@ -57,11 +51,9 @@ public record TaskState(
     }
 
     /**
-     * Reads BOTH shapes of {@code state.json}: the current one with {@code repos}, and every file written before
-     * a task could span repositories, which carried {@code project}/{@code worktreePath}/{@code remoteUrl}/
-     * {@code mrUrl}/{@code deployCommit} at the top level. Without this, adding the list would have silently
-     * dropped every existing task on the next read — and losing the human's tasks is precisely what the backup
-     * machinery in {@code StateService} exists to prevent, so the migration belongs here, not in a note.
+     * Reads BOTH shapes of {@code state.json}: the current one with {@code repos}, and the older files that
+     * carried {@code project}/{@code worktreePath}/{@code remoteUrl}/{@code mrUrl}/{@code deployCommit} at the
+     * top level. Without it, the next read of an existing file would silently drop every task in it.
      */
     @JsonCreator
     static TaskState fromJson(
@@ -145,9 +137,8 @@ public record TaskState(
     }
 
     /**
-     * A status move — the ONE place history grows. Records an entry only when the status actually CHANGED: the
-     * agent's keep-alive goes through here with its current status (see {@link #touched()}), and logging those
-     * would bury the four real transitions of a task under hundreds of identical rows.
+     * A status move — the ONE place history grows, and only when the status actually CHANGED: the keep-alive
+     * comes through here too, and four real transitions must not drown in hundreds of identical rows.
      */
     public TaskState withStatus(TaskStatus status, String message) {
         long now = System.currentTimeMillis();
@@ -158,13 +149,10 @@ public record TaskState(
     }
 
     /**
-     * A ship landed on a review request: new commits, so a NEW review round — recorded even when the status
-     * does not change, which it does not when a round is shipped from CI_POLLING onto the same request. Without
-     * this the one question history exists to answer ("how many rounds did this take") is wrong for the path
-     * that is actually normal, and the auto-review window would never re-arm for the new pipeline.
+     * A ship landed: a NEW review round, recorded even when the status does not change — which it does not for
+     * a round shipped from CI_POLLING onto the same request, the normal path.
      *
-     * <p>The URL is stored on the repo it belongs to: a task spanning two repositories has two requests, and
-     * putting the second one on top of the first would make the board link to the wrong diff.
+     * <p>The URL goes on the repo it belongs to: a task spanning two would otherwise link to the wrong diff.
      */
     public TaskState withReviewRound(String project, String reviewRequestUrl) {
         long now = System.currentTimeMillis();
@@ -184,10 +172,9 @@ public record TaskState(
     }
 
     /**
-     * History for a task written BEFORE history existed: seed it with the current status at the last activity
-     * stamp. Without this, a legacy task's {@link #statusSince()} falls back to {@code lastActiveTimestamp} —
-     * which every keep-alive bumps — so an hour-old status would read as "0m" until its next real transition,
-     * the exact lie the field was added to prevent.
+     * A task written before history existed is seeded with its current status at the last activity stamp:
+     * otherwise {@link #statusSince()} falls back to a field every keep-alive bumps, and an hour-old status
+     * reads as "0m".
      */
     private List<StatusChange> seededHistory() {
         if (!history.isEmpty()) {

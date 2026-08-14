@@ -27,7 +27,7 @@ public abstract class AbstractAgentRuntime implements AgentRuntime {
      * For a CLI that cannot talk to a remote MCP server and can only SPAWN one: links the standard Node bridge
      * into the worktree, which POSTs to the same endpoint with the same caller header. Call it only from a
      * runtime that needs it — an agent that speaks HTTP wants no proxy process, and linking one for everybody
-     * is what used to make Node a prerequisite of jagt itself.
+     * is why Node is not a prerequisite of jagt itself.
      */
     protected static void linkStdioProxy(AgentWorktree worktree) {
         symlink(worktree.path().resolve("mcp_client.js"),

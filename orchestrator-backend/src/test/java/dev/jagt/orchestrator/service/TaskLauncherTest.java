@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
 import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
 import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ProjectConfig;
@@ -29,12 +28,13 @@ import static org.mockito.Mockito.when;
 
 class TaskLauncherTest {
 
-    private final OrchestratorTools tools = mock(OrchestratorTools.class);
+    private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
     private final MeteredAssistant assistant = mock(MeteredAssistant.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final StateService stateService = mock(StateService.class);
-    private final TaskLauncher launcher = new TaskLauncher(tools, assistant, configService, stateService,
-            Runnable::run);
+    private final TaskResume resumes = mock(TaskResume.class);
+    private final TicketTitleBackfill titles = mock(TicketTitleBackfill.class);
+    private final TaskLauncher launcher = new TaskLauncher(provisioning, assistant, configService, resumes,
+            titles);
 
     @BeforeEach
     void configIsReadable() {
@@ -52,7 +52,7 @@ class TaskLauncherTest {
                 null, null));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(tools).initializeTask(created.capture());
+        verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue())
                 .extracting(NewTask::taskId, NewTask::projectKey, NewTask::title, NewTask::ticketUrl)
                 .containsExactly("ABC-123", "group-a", "Some title",
@@ -69,8 +69,8 @@ class TaskLauncherTest {
         launcher.launch(new LaunchRequest("https://tracker/ABC-123", "group-a", null, null, null, null));
 
         // The read happens BEFORE the task exists, so it can only be charged after initializeTask created it.
-        var order = inOrder(tools, assistant);
-        order.verify(tools).initializeTask(any());
+        var order = inOrder(provisioning, assistant);
+        order.verify(provisioning).initializeTask(any());
         order.verify(assistant).chargeTask("ABC-123", spent);
     }
 
@@ -83,51 +83,22 @@ class TaskLauncherTest {
         launcher.launch(LaunchRequest.of("ABC-42"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(tools).initializeTask(created.capture());
+        verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue()).extracting(NewTask::taskId, NewTask::projectKey)
                 .containsExactly("ABC-42", "group-a");
         verify(assistant).chargeTask("ABC-42", spent);
     }
 
     @Test
-    void givesTheBoardATitleEvenWhenTheKeyAndProjectMadeTheReadSkippable() {
-        oneProject("group-a");
-        when(assistant.readTicket("ABC-7")).thenReturn(new Answer<>(
-                Optional.of(new TicketFacts(true, "ABC-7", "Widget layout is off", "ABC", List.of(),
-                        "https://tracker/ABC-7")), TokenUsage.NONE));
-
-        launcher.launch(new LaunchRequest("ABC-7", "group-a", null, null, null, null));
-
-        ArgumentCaptor<java.util.function.UnaryOperator<dev.jagt.orchestrator.model.TaskState>> update =
-                ArgumentCaptor.forClass(java.util.function.UnaryOperator.class);
-        verify(stateService).updateTask(eq("ABC-7"), update.capture());
-        var titled = update.getValue().apply(dev.jagt.orchestrator.model.TaskState
-                .builder("group-a", "/w", dev.jagt.orchestrator.model.TaskStatus.NEW).build());
-        assertThat(titled.title()).isEqualTo("Widget layout is off");
-        assertThat(titled.ticketUrl()).isEqualTo("https://tracker/ABC-7");
-    }
-
-    @Test
-    void leavesTheTaskAloneWhenTheTitleReadFails() {
-        oneProject("group-a");
-        when(assistant.readTicket("ABC-8")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
-
-        launcher.launch(new LaunchRequest("ABC-8", "group-a", null, null, null, null));
-
-        verify(tools).initializeTask(any());
-        verify(stateService, never()).updateTask(any(), any());
-    }
-
-    @Test
     void warnsAboutALeftoverBranchWithoutSpendingATicketRead() {
         oneProject("group-a");
-        when(tools.existingBranchProject("ABC-9", null)).thenReturn("group-a");
+        when(provisioning.existingBranchProject("ABC-9", null)).thenReturn("group-a");
 
         String out = launcher.launch(LaunchRequest.of("ABC-9"));
 
         assertThat(out).contains("already exists in group-a", "do ABC-9 recreate", "do ABC-9 resume");
         verifyNoInteractions(assistant);
-        verify(tools, never()).initializeTask(any());
+        verify(provisioning, never()).initializeTask(any());
     }
 
     @Test
@@ -137,7 +108,7 @@ class TaskLauncherTest {
         launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(tools).initializeTask(created.capture());
+        verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue().instructions()).contains("start with tests only");
         assertThat(created.getValue().mode()).isEqualTo("plan");
     }
@@ -149,7 +120,7 @@ class TaskLauncherTest {
         launcher.launch(new LaunchRequest("ABC-1", "demo", null, "recreate", null, null));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(tools).initializeTask(created.capture());
+        verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue().branchStrategy()).isEqualTo("recreate");
     }
 
@@ -160,7 +131,7 @@ class TaskLauncherTest {
         launcher.launch(new LaunchRequest("ABC-1", "demo", null, null, "feature/parent", null));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(tools).initializeTask(created.capture());
+        verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue().baseBranch()).isEqualTo("feature/parent");
     }
 
@@ -173,7 +144,7 @@ class TaskLauncherTest {
 
         launcher.resume("https://host/mr/425");
 
-        verify(tools).resumeTask("PROJ-1", "https://host/mr/425", "PROJ-1 Excel export", "release/2");
+        verify(resumes).resume("PROJ-1", "https://host/mr/425", "PROJ-1 Excel export", "release/2");
     }
 
     /**
@@ -191,7 +162,7 @@ class TaskLauncherTest {
         String result = launcher.resume("https://host/mr/426");
 
         assertThat(result).contains("feature/widget-layout").contains("do <ticket> from");
-        verifyNoInteractions(tools);
+        verifyNoInteractions(provisioning);
     }
 
     @Test
@@ -208,5 +179,15 @@ class TaskLauncherTest {
     private void oneProject(String key) {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of(key, new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+    }
+
+    @Test
+    void asksForTheTitleAfterALaunchThatSkippedTheTicketRead() {
+        oneProject("group-a");
+
+        launcher.launch(new LaunchRequest("ABC-7", "group-a", null, null, null, null));
+
+        verify(provisioning).initializeTask(any());
+        verify(titles).of("ABC-7");
     }
 }

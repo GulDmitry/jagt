@@ -10,7 +10,7 @@ import java.util.function.Function;
 /**
  * A one-shot, hard-formatted headless Claude call for the Master side: spin up a stripped session
  * that inherits ONLY the human's own MCP servers (no hardcoded servers/paths in jagt), ask one
- * question, force a deterministic JSON answer, done. Used to read a Jira ticket before a worktree
+ * question, force a deterministic JSON answer, done. Reads a ticket before a worktree
  * exists (so the sub-agent can't do it yet). Empty result = assistant unavailable / call failed —
  * callers fall back to explicit input.
  */

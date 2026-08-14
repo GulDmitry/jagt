@@ -4,6 +4,10 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.mcp.tools.SessionTools;
+import dev.jagt.orchestrator.mcp.tools.StatusTools;
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -11,6 +15,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,12 +23,19 @@ import static org.mockito.Mockito.mock;
 
 class McpProtocolServiceTest {
 
+    /** Only the two groups these tests address; the protocol treats every group the same. */
+    private static List<McpTools> groups() {
+        CallerScope scope = new CallerScope(mock(StateService.class));
+        return List.of(new StatusTools(mock(AgentStatusReports.class), scope),
+                new SessionTools(mock(AgentSessions.class), scope));
+    }
+
     @Test
     void advertisesStatusEnumMatchingTaskStatusValues(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
+        McpProtocolService protocol = new McpProtocolService(mapper, state, groups());
 
         JsonNode response = protocol.handle(
                 mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"), null).orElseThrow();
@@ -42,7 +54,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
+        McpProtocolService protocol = new McpProtocolService(mapper, state, groups());
 
         JsonNode response = protocol.handle(mapper.readTree(
                 "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\","
@@ -60,7 +72,7 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
+        McpProtocolService protocol = new McpProtocolService(mapper, state, groups());
 
         JsonNode error = protocol.parseError("unexpected character");
 
@@ -73,7 +85,7 @@ class McpProtocolServiceTest {
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).lastActiveTimestamp(1000).alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
+        McpProtocolService protocol = new McpProtocolService(mapper, state, groups());
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"), root.toString());
 
@@ -88,7 +100,7 @@ class McpProtocolServiceTest {
         long freshTimestamp = System.currentTimeMillis();
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(freshTimestamp).alias("a1").build());
-        McpProtocolService protocol = new McpProtocolService(mapper, mock(OrchestratorTools.class), state);
+        McpProtocolService protocol = new McpProtocolService(mapper, state, groups());
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"ping\"}"), root.toString());
 

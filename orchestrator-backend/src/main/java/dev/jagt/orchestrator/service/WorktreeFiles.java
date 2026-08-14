@@ -19,9 +19,8 @@ import java.util.Set;
  * and the gitignored local files the app cannot start without. Plus keeping jagt's own plumbing out of every
  * worktree's {@code git status}.
  *
- * <p>Statics with no collaborators on purpose — this is filesystem work with no state and no policy, which is
- * why it was the first thing worth lifting out of {@code OrchestratorTools}: it needed none of that class's
- * eleven dependencies and its tests need none either.
+ * <p>Statics with no collaborators on purpose: filesystem work with no state and no policy, so its tests need
+ * nothing either.
  */
 @Slf4j
 public final class WorktreeFiles {

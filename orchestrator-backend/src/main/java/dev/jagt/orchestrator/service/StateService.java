@@ -60,9 +60,8 @@ public class StateService {
     private final List<Consumer<StateFile>> changeListeners = new CopyOnWriteArrayList<>();
 
     public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
-        // Tolerate state.json files written before a new primitive field existed: a missing/null primitive
-        // must default to 0/false, not blow up the whole load (which would strand every task). Without this,
-        // adding a `long`/`boolean` to TaskState makes older state.json unreadable ("Cannot map null into long").
+        // A missing primitive defaults to 0/false instead of failing the whole load: adding a `long` to
+        // TaskState would otherwise make every older state.json unreadable.
         this.mapper = mapper.rebuild()
                 .disable(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
                 .build();

@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.RoundState;
 import dev.jagt.orchestrator.model.Move;
 import dev.jagt.orchestrator.model.TaskAction;
@@ -9,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * The ONE place a per-task action is executed, whoever asked: a typed command in the console, a button in the
- * web board, or an HTTP POST. Without it each surface would call {@link OrchestratorTools} in its own way and
+ * web board, or an HTTP POST. Without it each surface would call these services in its own way and
  * "what does ship do" would have as many answers as there are front-ends.
  *
  * <p>It also enforces the same legality the surfaces use to DECIDE what to offer ({@link Move}), so an action
@@ -19,14 +18,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class CommandService {
 
-    private final OrchestratorTools tools;
+    private final TaskOperations operations;
+    private final DeployService deploys;
     private final ReviewSweepService reviewSweep;
     private final ShipService shipService;
     private final StateService stateService;
 
-    public CommandService(OrchestratorTools tools, ReviewSweepService reviewSweep, ShipService shipService,
-                          StateService stateService) {
-        this.tools = tools;
+    public CommandService(TaskOperations operations, DeployService deploys, ReviewSweepService reviewSweep,
+                          ShipService shipService, StateService stateService) {
+        this.operations = operations;
+        this.deploys = deploys;
         this.reviewSweep = reviewSweep;
         this.shipService = shipService;
         this.stateService = stateService;
@@ -47,15 +48,15 @@ public class CommandService {
                     + taskId + " (it is " + task.status() + " — " + move.hint() + ")");
         }
         return switch (action) {
-            case FOCUS -> tools.focusTask(taskId);
-            case IDE -> tools.openInIde(taskId, "project", null);
-            case DIFF -> tools.openInIde(taskId, "diff", null);
+            case FOCUS -> operations.focus(taskId);
+            case IDE -> operations.openProject(taskId);
+            case DIFF -> operations.openDiff(taskId);
             case SHIP -> shipService.ship(taskId);
             case SWEEP -> reviewSweep.sweep(taskId).message();
-            case DEPLOY -> tools.deployTask(taskId, null);
-            case REVERT -> tools.revertTask(taskId, null);
-            case RESPAWN -> tools.openTaskTab(taskId, null);
-            case DONE -> tools.removeTask(taskId, null);
+            case DEPLOY -> deploys.deploy(taskId);
+            case REVERT -> deploys.revert(taskId);
+            case RESPAWN -> operations.respawnAgent(taskId);
+            case DONE -> operations.retire(taskId);
         };
     }
 }

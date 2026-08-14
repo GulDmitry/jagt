@@ -8,17 +8,11 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 
 /**
- * A scripted agent for automated runs — selected by {@code orchestrator.agent=stub}, never by a human working
- * on real tickets. It exists because the whole task flow (create worktree → provision → launch → talk over
- * MCP → ship/review/deploy/done) can only be asserted end-to-end if the ONE non-deterministic participant, the
- * model, is replaced by something that behaves the same way twice. Everything else in an e2e run stays real:
- * real git worktrees, real tmux windows, real state transitions.
+ * A scripted agent for automated runs ({@code orchestrator.agent=stub}), which is the ONE non-deterministic
+ * participant an end-to-end assertion has to replace. Everything else in such a run stays real.
  *
- * <p>It writes NO agent config into the worktree: a scripted agent talks to the orchestrator over
- * {@code POST /mcp} directly (the {@code X-Working-Directory} header is the scoping), so the only artifact it
- * needs is the proxy the template links for every runtime. That absence is also the assertion that
- * per-agent provisioning really lives behind this seam — if a Claude-shaped file shows up in a stub worktree,
- * something outside the runtime put it there.
+ * <p>It writes NO agent config: a scripted agent POSTs to {@code /mcp} itself. That absence is also the
+ * assertion — a Claude-shaped file in a stub worktree means something outside the runtime put it there.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent", havingValue = "stub")

@@ -12,17 +12,11 @@ import java.nio.file.Path;
 /**
  * Notices that the jar this JVM is running from has been REWRITTEN underneath it, and says so.
  *
- * <p>Why this earns its place: {@code ./gradlew build} rewrites {@code build/libs/jagt.jar} in place — same
- * inode — so a jagt started from that path keeps reading a file whose contents have changed. Classes already
- * loaded keep working, and every class loaded for the FIRST time afterwards fails with a
- * {@code NoClassDefFoundError}. What the human sees is a board that still renders while {@code /status},
- * {@code /stats} and {@code /orphans} answer HTTP 500 — a symptom that looks exactly like a bug in those three
- * endpoints and costs a debugging session to trace back to a rebuild. It happened, twice.
+ * <p>A rebuild replaces {@code jagt.jar} at the same inode, so already-loaded classes keep working and the next
+ * first-time load dies with {@code NoClassDefFoundError} — which surfaces as a board that renders while some
+ * endpoints answer 500, and reads exactly like a bug in those endpoints.
  *
- * <p>So the diagnosis is made where the fact is knowable: here, by comparing the jar's size and modification
- * time against what they were at startup. It only ever REPORTS (log + one desktop banner) — the fix is a
- * restart, and whether to restart while agents are working is the human's call. Agents live in tmux and are
- * unaffected either way.
+ * <p>It only REPORTS: the fix is a restart, and whether to restart while agents are working is the human's call.
  */
 @Service
 @Slf4j

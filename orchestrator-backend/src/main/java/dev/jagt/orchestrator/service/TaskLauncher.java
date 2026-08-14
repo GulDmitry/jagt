@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.NewTask;
 import org.springframework.stereotype.Service;
@@ -27,26 +26,19 @@ public class TaskLauncher {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TaskLauncher.class);
 
-    private final OrchestratorTools tools;
+    private final TaskProvisioning provisioning;
     private final MeteredAssistant assistant;
     private final ConfigService configService;
-    private final StateService stateService;
-    private final java.util.concurrent.Executor background;
+    private final TaskResume resumes;
+    private final TicketTitleBackfill titles;
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public TaskLauncher(OrchestratorTools tools, MeteredAssistant assistant, ConfigService configService,
-                        StateService stateService) {
-        this(tools, assistant, configService, stateService,
-                java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor());
-    }
-
-    TaskLauncher(OrchestratorTools tools, MeteredAssistant assistant, ConfigService configService,
-                 StateService stateService, java.util.concurrent.Executor background) {
-        this.tools = tools;
+    public TaskLauncher(TaskProvisioning provisioning, MeteredAssistant assistant, ConfigService configService,
+                        TaskResume resumes, TicketTitleBackfill titles) {
+        this.provisioning = provisioning;
         this.assistant = assistant;
         this.configService = configService;
-        this.stateService = stateService;
-        this.background = background;
+        this.resumes = resumes;
+        this.titles = titles;
     }
 
     /**
@@ -63,7 +55,7 @@ public class TaskLauncher {
         // Warn before spending a ticket read on a task that would only collide later; a chosen strategy
         // means the collision is intended, so let it through.
         if (bareKey && strategy == null) {
-            String existing = tools.existingBranchProject(ref, project);
+            String existing = provisioning.existingBranchProject(ref, project);
             if (existing != null) {
                 return "branch '" + ref + "' already exists in " + existing + " (previous run of this"
                         + " ticket). Retry with `do " + ref + " recreate` (discard old work, start fresh)"
@@ -73,9 +65,9 @@ public class TaskLauncher {
 
         // Fast path: a bare key + explicit project needs no read — the key IS the task id.
         if (bareKey && project != null) {
-            String result = tools.initializeTask(newTask(ref, resolveProject(project),
+            String result = provisioning.initializeTask(newTask(ref, resolveProject(project),
                     readAndImplement(ref, request), request).build());
-            titleLater(ref);
+            titles.of(ref);
             return result;
         }
         // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
@@ -96,7 +88,7 @@ public class TaskLauncher {
             String resolved = project != null ? resolveProject(project) : resolveByLabels(f);
             String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
                     + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
-            String result = tools.initializeTask(newTask(taskId, resolved, instructions, request)
+            String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
                     .title(f.title()).ticketUrl(f.url()).build());
             // Only NOW does the task exist, so only now can the read that named it be charged to it —
             // charging earlier silently dropped the most expensive call in a task's life.
@@ -107,7 +99,7 @@ public class TaskLauncher {
         if (!bareKey) {
             return "error: assistant unavailable — pass an issue key (not a URL), or add the project";
         }
-        String result = tools.initializeTask(newTask(ref, resolveProject(project),
+        String result = provisioning.initializeTask(newTask(ref, resolveProject(project),
                 readAndImplement(ref, request), request).build());
         // The read FAILED but was still paid for, and the key alone was enough to create the task — so the
         // one case where money bought nothing must not be the one case the task reports as free.
@@ -118,10 +110,8 @@ public class TaskLauncher {
     /**
      * Reopened review request: the URL is the ONLY input, because the request already carries every answer —
      * its SOURCE branch is the task (a jagt task IS its branch) and its TARGET is the base that the next ship
-     * must update rather than open a second request against. A ticket used to be accepted here to name the
-     * task instead; it could not skip the read (the title and the target still had to come from somewhere)
-     * and, when it disagreed with the source branch, it produced a task whose branch the request does not
-     * track — so `ship` would push one branch and open a request for another.
+     * must update rather than open a second request against. A ticket is NOT accepted here: when it disagrees
+     * with the source branch, `ship` pushes one branch and updates the request of another.
      */
     public String resume(String reviewRequestUrl) {
         var read = assistant.readMergeRequest(reviewRequestUrl);
@@ -142,7 +132,7 @@ public class TaskLauncher {
                     + " '_'). Work in the branch directly, or start a task of your own with `do <ticket> from "
                     + taskId + "`.";
         }
-        String result = tools.resumeTask(taskId, reviewRequestUrl, request.get().title(),
+        String result = resumes.resume(taskId, reviewRequestUrl, request.get().title(),
                 request.get().targetBranch());
         assistant.chargeTask(taskId, read.usage());       // the task exists only after resumeTask
         return result;
@@ -201,23 +191,6 @@ public class TaskLauncher {
     }
 
     /** The brief for a task jagt could not read the ticket for: the agent reads it itself. */
-    /**
-     * The fast path skips the ticket read, and a task with no title reads on the board as a bare id — the one
-     * thing that tells two tickets apart at a glance. So the read still happens, just off the launch: the agent
-     * is already working by the time the title lands, and a failed read costs the task nothing but its title.
-     */
-    private void titleLater(String taskId) {
-        background.execute(() -> {
-            try {
-                var read = assistant.readTicket(taskId);
-                assistant.chargeTask(taskId, read.usage());
-                read.facts().filter(TicketFacts::exists).ifPresent(facts -> stateService.updateTask(taskId,
-                        task -> task.withTicket(facts.title(), facts.url())));
-            } catch (RuntimeException e) {
-                log.warn("Could not read a title for {}: {}", taskId, e.getMessage());
-            }
-        });
-    }
 
     private static String readAndImplement(String ref, LaunchRequest request) {
         return withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", request.notes());

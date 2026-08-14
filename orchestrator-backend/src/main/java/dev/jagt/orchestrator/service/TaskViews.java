@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.TaskChoice;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskView;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,13 @@ import java.util.Map;
 public class TaskViews {
 
     private final StateService stateService;
+
+    /** Every task as something to pick from. */
+    public List<TaskChoice> choices() {
+        return stateService.tasks().entrySet().stream()
+                .map(e -> new TaskChoice(e.getValue().alias(), e.getKey(), e.getValue().title()))
+                .toList();
+    }
 
     public List<TaskView> all() {
         Map<String, TaskState> tasks = stateService.tasks();

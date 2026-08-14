@@ -13,10 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Everything about an agent's SESSION: the tmux window it lives in, focusing it for the human, killing it, and
- * relaying an instruction into its worktree. Lifted out of {@code OrchestratorTools} together with task
- * creation, because these methods are what pulled {@code TmuxService}, {@code TerminalDriver} and
- * {@code AgentRuntime} into that class — and a facade that delegates keeps every collaborator it does not shed,
- * so extracting anything else first would only have ADDED a dependency (see TODO.md).
+ * relaying an instruction into its worktree.
  *
  * <p>Which agent runs here is never assumed: window titles, liveness and the words in these messages come from
  * {@code TmuxService} and {@link AgentRuntime#displayName()}.

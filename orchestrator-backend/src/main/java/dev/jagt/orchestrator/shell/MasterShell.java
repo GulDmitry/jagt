@@ -1,16 +1,8 @@
 package dev.jagt.orchestrator.shell;
 
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
+import dev.jagt.orchestrator.model.TaskChoice;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
-import dev.jagt.orchestrator.model.ActionOrigin;
-import dev.jagt.orchestrator.model.LaunchRequest;
-import dev.jagt.orchestrator.model.TaskAction;
-import dev.jagt.orchestrator.service.OriginContext;
-import dev.jagt.orchestrator.service.CommandReference;
-import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
-import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StateViews;
 import com.googlecode.lanterna.SGR;
@@ -26,6 +18,7 @@ import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal;
 import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -41,54 +34,28 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
- * The console control surface: a deterministic full-screen TUI running in the backend process. One of the
- * {@code OperatorUi} implementations drives it (see {@code orchestrator.ui}); the web board is the other, and
- * both go through the same projection and the same {@link CommandService}.
+ * The console control surface: a full-screen Lanterna screen with the command output on top, the dashboard
+ * under it and the input line pinned to the bottom row, all redrawn from one back-buffer. It owns the screen,
+ * the input line and Tab completion; what a finished line MEANS belongs to {@link GrammarDispatch}.
  *
- * <p>A deterministic REPL: It parses a
- * fixed grammar and calls {@link OrchestratorTools} directly (same JVM — no LLM, no MCP round-trip, no
- * drift). Every command prints its result then the dashboard, so the terminal always ends on current
- * state. Callers here are the Master (never a sub-agent), so the {@code callerTaskId} scoping arg is
- * always {@code null}.
- *
- * <p>{@code ship}/{@code review} are not here yet: they delegate GitLab/Jira work to the sub-agent
- * (its own MCP) via {@code write_task_context}; that lands with the delegation layer.
+ * <p>One of the {@code OperatorUi} implementations drives it (see {@code orchestrator.ui}); the board is the
+ * other, and both go through the same projection and the same gate.
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class MasterShell {
 
-    private final OrchestratorTools tools;
     private final StateViews views;
     private final ConfigService configService;
-    private final CommandService commands;
-    private final TaskLauncher launcher;
     private final StateService stateService;
-    private final NaturalLanguageDispatch naturalLanguage;
+    private final GrammarDispatch grammar;
     private final ConfigurableApplicationContext context;
 
-    public MasterShell(OrchestratorTools tools, StateViews views, ConfigService configService,
-                       CommandService commands, TaskLauncher launcher, StateService stateService,
-                       NaturalLanguageDispatch naturalLanguage, ConfigurableApplicationContext context) {
-        this.tools = tools;
-        this.views = views;
-        this.configService = configService;
-        this.commands = commands;
-        this.launcher = launcher;
-        this.stateService = stateService;
-        this.naturalLanguage = naturalLanguage;
-        this.context = context;
-    }
-
     /**
-     * Rows reserved for the command-output + input area BELOW the dashboard, so the dashboard region never
-     * eats the whole screen when there are many tasks. The full-screen TUI stacks the output log on top,
-     * the dashboard table beneath it, and the input line at the very bottom — all in one Lanterna
-     * back-buffer that is re-laid-out and fully redrawn on resize (no scroll-region/anchor fragility).
-     * Configurable via {@code dashboardReservedRows} in config.json; read at startup (default 17).
+     * Rows kept for output + input, so a long task list cannot eat the whole screen. Read at startup.
      */
     private int commandRows = 17;
 
@@ -110,24 +77,20 @@ public class MasterShell {
         ConfigService.ConfigFile config = configService.load();
         int refreshSeconds = config.dashboard().refreshSecondsOrDefault();
         this.commandRows = config.dashboard().reservedRowsOrDefault();
-        // Push, not poll: an agent's status change repaints the dashboard the moment it lands instead of up to
-        // refreshSeconds later. The listener only RAISES A FLAG — Lanterna's screen belongs to the UI thread,
-        // and this runs on whichever thread served the agent's MCP call. Same event the board's SSE uses.
+        // Only a FLAG: the screen belongs to the UI thread, and this runs on whichever thread served the
+        // agent's MCP call.
         stateService.onChange(state -> stateDirty.set(true));
 
         Screen screen = null;
         try {
-            // A TUI needs a real interactive terminal. Under `gradlew bootRun` (Gradle pipes stdout) or any
-            // other non-TTY there is no console — fall back to a plain line REPL instead of a garbled TUI.
+            // No TTY (Gradle pipes stdout) means a garbled TUI, so fall back to a plain line REPL.
             if (System.console() == null) {
                 runInlineFallback();
             } else {
                 Terminal terminal = new DefaultTerminalFactory()
-                        // Force a text terminal: never let Lanterna fall back to a Swing window (it would if
-                        // a GUI is present) — the Master is a terminal app.
+                        // Or Lanterna opens a Swing window when a GUI is present.
                         .setForceTextTerminal(true)
-                        // TRAP delivers Ctrl-C to us as a keystroke (abort the input line) instead of killing
-                        // the JVM (Lanterna's default is CTRL_C_KILLS_APPLICATION).
+                        // Ctrl-C arrives as a keystroke (abort the line) instead of killing the JVM.
                         .setUnixTerminalCtrlCBehaviour(UnixLikeTerminal.CtrlCBehaviour.TRAP)
                         .createTerminal();
                 screen = new TerminalScreen(terminal);
@@ -152,12 +115,9 @@ public class MasterShell {
     }
 
     /**
-     * Stop the backend and GUARANTEE the process dies. {@code context.close()} runs on a side thread with a
-     * hard cap: if {@code ./gradlew build} rewrote the fat jar IN PLACE while this JVM was running (see
-     * CLAUDE.md), lazy class loading is corrupted and close() can throw {@code NoClassDefFoundError} or hang
-     * — which used to leave non-daemon Tomcat threads alive, so {@code exit} hung until killed by hand.
-     * Either way we {@code halt(0)}: it skips shutdown hooks and needs no class loading. Agents live in
-     * their own tmux processes, so halting this JVM never touches them.
+     * Stop the backend and GUARANTEE the process dies. A jar rewritten under a running JVM can make
+     * {@code close()} throw or hang, leaving non-daemon threads alive, so it runs on a capped side thread and
+     * {@code halt(0)} follows either way — it skips shutdown hooks and loads no class. Agents live in tmux.
      */
     private void shutdownBackend() {
         Thread closer = new Thread(() -> {
@@ -178,11 +138,8 @@ public class MasterShell {
     }
 
     /**
-     * The full-screen TUI loop: one Lanterna back-buffer holding the command-output log (top), the
-     * dashboard table (middle), and the input line (bottom). Each iteration polls a keystroke, applies it,
-     * repaints when the refresh interval elapses, and — crucially — calls {@code doResizeIfNecessary} + a
-     * full redraw, so a terminal resize just re-lays-out cleanly (the whole class of JLine scroll-region /
-     * ghost / prompt-anchor bugs cannot occur when every frame is drawn from scratch into a back buffer).
+     * One back-buffer: output log, dashboard, input line. Every frame is drawn from scratch after
+     * {@code doResizeIfNecessary}, which is what makes a resize a re-layout instead of a ghost.
      */
     private void runTui(Screen screen, long refreshMillis) throws IOException {
         List<String> outputLog = new ArrayList<>();
@@ -190,8 +147,7 @@ public class MasterShell {
         LineEditor editor = new LineEditor();
         List<String> history = new ArrayList<>();
         int histIdx = 0;                                           // navigation cursor; == size() means "new line"
-        // Commands (resume/review/do spawn a headless `claude` and take tens of seconds) run on a worker so
-        // the UI thread keeps polling input + repainting — otherwise Enter freezes the whole TUI until done.
+        // A command can take tens of seconds; on the UI thread, Enter would freeze the screen for all of it.
         ExecutorService worker = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "jagt-command");
             t.setDaemon(true);
@@ -252,7 +208,7 @@ public class MasterShell {
                             runningLabel = line;
                             runningSince = System.currentTimeMillis();
                             String cmd = line;
-                            pending = worker.submit(() -> dispatch(cmd));   // off the UI thread
+                            pending = worker.submit(() -> grammar.run(cmd));   // off the UI thread
                         }
                     } else if (type == KeyType.ArrowUp) {
                         histIdx = recallHistory(editor, history, histIdx, -1);
@@ -317,10 +273,8 @@ public class MasterShell {
     }
 
     /**
-     * Tab-complete the word at the end of the input: the command (first word), an existing task's alias/id
-     * (a {@code <ticket>} arg), or a flag (`ide … diff`, `do … plan`). A single match is filled in with a
-     * trailing space; several matches extend to the common prefix, or list the options (task options show
-     * the title, so a bare number is recognisable). Purely local — the command set is fixed and known.
+     * Completes the last word: a command, a task's alias/id, or a flag. One match fills in, several extend to
+     * the common prefix or list the options — with titles, so a bare number is recognisable.
      */
     void completeInput(LineEditor editor, List<String> outputLog) {
         String[] parts = editor.text().split(" ", -1);
@@ -358,7 +312,7 @@ public class MasterShell {
 
     /** Complete a {@code <ticket>} argument from the live tasks; on ambiguity, list matches WITH titles. */
     private void completeTaskArg(LineEditor editor, List<String> outputLog, String[] parts, int idx, String word) {
-        List<OrchestratorTools.TaskChoice> choices = tools.taskChoices();
+        List<TaskChoice> choices = views.taskChoices();
         List<String> matches = choices.stream()
                 .flatMap(c -> java.util.stream.Stream.of(c.alias(), c.id()))
                 .filter(t -> t != null && !t.isBlank() && t.startsWith(word))
@@ -404,12 +358,9 @@ public class MasterShell {
     }
 
     /**
-     * Draw the whole screen into Lanterna's back buffer: output log on top, dashboard table beneath it
-     * (capped so {@code commandRows} rows stay for output+input; overflow → a "… +N" line), and the input
-     * line at the very bottom. NEVER {@code screen.clear()} — that forces a full terminal wipe on the next
-     * refresh (visible flicker on every keystroke/tick). Instead every row is drawn (empties blanked) and
-     * {@code refresh(DELTA)} sends only the cells that actually changed; {@code full} (first paint / resize)
-     * uses COMPLETE.
+     * Draws every row into the back buffer, blanks included. NEVER {@code screen.clear()}: it wipes the
+     * terminal on the next refresh, which is visible flicker on every keystroke. {@code refresh(DELTA)} sends
+     * only changed cells; a first paint or resize needs COMPLETE.
      */
     private void render(Screen screen, List<String> outputLog, LineEditor editor, String busy, boolean full)
             throws IOException {
@@ -421,8 +372,7 @@ public class MasterShell {
         String[] dash = views.dashboard().split("\\R");
         int body = Math.max(1, height - 1);                       // rows above the input line
 
-        // Expand the dashboard: wrap a long task title onto continuation lines indented under the TITLE
-        // column, so the whole title is visible; every other line passes through unchanged.
+        // A long title wraps under the TITLE column instead of being cut.
         int titleAvail = Math.max(1, width - DashboardRenderer.COL_TITLE);
         String indent = " ".repeat(DashboardRenderer.COL_TITLE);
         List<DashRow> drows = new ArrayList<>();
@@ -435,9 +385,7 @@ public class MasterShell {
                     drows.add(new DashRow(indent + parts.get(p), RowKind.TITLE_CONT));
                 }
             } else if (!isTaskRow(line) && line.length() > width) {
-                // A detail (└) or next-move (→) line longer than the screen would otherwise be CLIPPED,
-                // hiding its tail. Wrap it with a hanging indent so the whole line is visible at any width,
-                // continuations aligned under the text after the marker (and kept yellow for a "your move").
+                // Clipping a detail or next-move line hides its tail, so it wraps with a hanging indent.
                 RowKind cont = dashColor(line) == TextColor.ANSI.YELLOW_BRIGHT ? RowKind.MOVE_CONT : RowKind.PLAIN;
                 List<String> parts = wrapHanging(line, width);
                 drows.add(new DashRow(parts.get(0), RowKind.PLAIN));
@@ -452,8 +400,7 @@ public class MasterShell {
         int outputRows = body - dashRows;                          // output log gets whatever is left on top
         int dashTop = outputRows;
 
-        // Word-wrap the log so long lines (paths, URLs) show in full instead of truncating. Build bottom-up
-        // and stop once we have enough to fill outputRows — don't wrap the whole 2000-line history each frame.
+        // Bottom-up and stop at outputRows: wrapping the whole 2000-line history every frame is waste.
         List<Row> rows = new ArrayList<>();
         for (int e = outputLog.size() - 1; e >= 0 && rows.size() < outputRows; e--) {
             String entry = outputLog.get(e);
@@ -813,7 +760,7 @@ public class MasterShell {
                 if (cmd.equals("exit") || cmd.equals("quit")) {
                     break;
                 }
-                System.out.println(withDashboard(dispatch(cmd), views.dashboard()));
+                System.out.println(withDashboard(grammar.run(cmd), views.dashboard()));
             }
         } catch (IOException e) {
             log.warn("inline shell input closed: {}", e.getMessage());
@@ -831,117 +778,8 @@ public class MasterShell {
         context.close();
     }
 
-    private String dispatch(String line) {
-        return OriginContext.as(ActionOrigin.CONSOLE, () -> dispatchHere(line));
-    }
-
-    private String dispatchHere(String line) {
-        List<String> tok = List.of(line.split("\\s+"));
-        String cmd = tok.get(0);
-        try {
-            String result = switch (cmd) {
-                case "status" -> "";
-                case "stats" -> views.usageStats();
-                case "help" -> help();
-                case "do" -> doTask(tok);
-                case "resume" -> resumeTask(tok);
-                case "review" -> act(tok, TaskAction.SWEEP);
-                case "ship" -> act(tok, TaskAction.SHIP);
-                case "focus" -> act(tok, TaskAction.FOCUS);
-                case "ide" -> act(tok, tok.contains("diff") ? TaskAction.DIFF : TaskAction.IDE);
-                case "deploy" -> act(tok, TaskAction.DEPLOY);
-                case "revert" -> act(tok, TaskAction.REVERT);
-                case "respawn" -> act(tok, TaskAction.RESPAWN);
-                case "done" -> act(tok, TaskAction.DONE);
-                // Tier 2: no grammar match, so the line is treated as a REQUEST rather than a typo. The
-                // model maps it to a command and CommandService executes; tokens are spent only here.
-                default -> naturalLanguage.interpret(line);
-            };
-            return result;
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return "error: " + e.getMessage();
-        }
-    }
-
-    /**
-     * Every per-task verb is the SAME action the web board's button posts — routed through
-     * {@link CommandService}, which also refuses a move that is not legal for the task's status instead of
-     * letting git or tmux fail further down.
-     */
-    private String act(List<String> tok, TaskAction action) {
-        return commands.execute(arg(tok, 1, action.id() + " <ticket>"), action);
-    }
-
-    /** Inline-fallback formatting (no pinned region): the command result then the dashboard (blank result = dashboard alone). */
+    /** Inline-fallback formatting: the command result then the dashboard (blank result = dashboard alone). */
     static String withDashboard(String result, String dashboardText) {
         return result.isBlank() ? dashboardText : result + "\n\n" + dashboardText;
-    }
-
-    String doTask(List<String> tok) {
-        return launcher.launch(parseDoArgs(tok));
-    }
-
-    /** The request names its own branches, so anything typed beside its URL could only contradict it. */
-    String resumeTask(List<String> tok) {
-        String url = tok.stream().skip(1).filter(token -> token.startsWith("http")).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("usage: resume <mr-url>"));
-        if (tok.size() > 2) {
-            throw new IllegalArgumentException("usage: resume <mr-url> — the request carries its own branches;"
-                    + " to start a NEW task on a new branch use `do <ticket>`");
-        }
-        return launcher.resume(url);
-    }
-
-    private static final Set<String> BRANCH_STRATEGIES = Set.of("recreate", "resume", "fresh");
-
-    private static final String DO_USAGE = "do <ticket|url> [project] [plan] [from <branch>] [notes…]";
-
-    /**
-     * Splits {@code do <ticket> …} after the ticket: leading {@code plan}, a known project key, a branch
-     * strategy and {@code from <branch>} — in any order — are consumed as modifiers; everything after them is
-     * free-text notes. Each modifier is recognised only as a leading token, so a note may contain the word
-     * "plan"; {@code from} takes the token after it, which is why a note may start with "from" only once the
-     * branch has been given.
-     */
-    LaunchRequest parseDoArgs(List<String> tok) {
-        String ref = arg(tok, 1, DO_USAGE);
-        List<String> rest = new ArrayList<>(tok.subList(Math.min(2, tok.size()), tok.size()));
-        Set<String> projectKeys = configService.load().projects().keySet();
-        String mode = null;
-        String project = null;
-        String strategy = null;
-        String baseBranch = null;
-        while (!rest.isEmpty()) {
-            String head = rest.get(0);
-            if (mode == null && head.equals("plan")) {
-                mode = "plan";
-            } else if (project == null && projectKeys.contains(head)) {
-                project = head;
-            } else if (strategy == null && BRANCH_STRATEGIES.contains(head)) {
-                strategy = head;
-            } else if (baseBranch == null && head.equals("from")) {
-                if (rest.size() < 2 || rest.get(1).isBlank()) {
-                    throw new IllegalArgumentException("usage: " + DO_USAGE
-                            + " — `from` needs the branch to start from");
-                }
-                baseBranch = rest.remove(1);
-            } else {
-                break;
-            }
-            rest.remove(0);
-        }
-        return new LaunchRequest(ref, project, mode, strategy, baseBranch,
-                String.join(" ", rest).strip()).normalized();
-    }
-
-    private static String arg(List<String> tok, int i, String usage) {
-        if (tok.size() <= i || tok.get(i).isBlank()) {
-            throw new IllegalArgumentException("usage: " + usage);
-        }
-        return tok.get(i);
-    }
-
-    private static String help() {
-        return CommandReference.text();
     }
 }

@@ -57,7 +57,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   carried by `service/OriginContext` and stamped in `StateService`, NOT passed down: a deploy reaches the same
   code whether it was clicked, typed, said in words or called over MCP, so every signature in between would
   have to grow a parameter it has no use for. Set it at an ENTRY POINT only — `web/OriginFilter` (both HTTP
-  surfaces at once, so a new endpoint cannot forget), `MasterShell.dispatch`, `NaturalLanguageDispatch` and
+  surfaces at once, so a new endpoint cannot forget), `GrammarDispatch.run`, `NaturalLanguageDispatch` and
   `AutoReviewScheduler`; nesting is honest, so console free text is recorded as the interpretation it became. Read "since when in this status" from
   `TaskState.statusSince()`, NEVER from `lastActiveTimestamp` — a keep-alive bumps that one, so an hour-old
   status would look fresh.
@@ -67,8 +67,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   REVERTED (its deploy was taken back out; the branch and commits survive, so the next move is a fix), DONE.
 
 ## Session roles
-- Master = the backend process itself. `MasterShell` parses a fixed grammar and calls `OrchestratorTools`
-  in-process: no LLM, no MCP round-trip, no tokens, no drift. There is NO Master Claude session — the
+- Master = the backend process itself. `MasterShell` owns the screen; `shell/GrammarDispatch` parses the fixed
+  grammar and executes it in-process: no LLM, no MCP round-trip, no tokens, no drift. There is NO Master Claude session — the
   deterministic REPL/TUI replaced it, and `master_prompt.md` went with it (see git history). The only LLM
   call on the master side is the headless one-shot assistant below.
 - Sub-agents: Claude in worktrees `<taskId>-<projectKey>` (sibling of the base repo). Their generated
@@ -99,14 +99,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     The sentence stays the whole answer for a human; a refusal a caller must ACT on also carries a
     `service/Refusal.Code`, and that enum grows ONLY when something branches on the new value — a reason
     nobody handles differently keeps throwing plain.
-- `OrchestratorTools` is the MCP-FACING FACADE ONLY (~480 lines, 7 collaborators) — the work lives in
-  `service/AgentSessions` (tmux window, focus, kill, relay to `task_context.md`), `service/TaskProvisioning`
-  (worktree creation, alias, sub-agent context), `service/ShipService` and `service/WorktreeFiles`. Do NOT put
-  a new concern here just because the dependency it needs is already injected — that is exactly how it grew to
-  871 lines and eleven collaborators. Note the lesson (TODO.md keeps the long version): a delegating facade
-  KEEPS every collaborator it does not shed, so only a group of methods that monopolises dependencies is worth
-  extracting; splitting off the repository verbs (`deploy` and the since-removed `prune`) into a `RepositoryOps`
-  was tried and reverted because it ADDED one.
+- THERE IS NO TOOLS FACADE ANY MORE, and do not bring one back. `OrchestratorTools` grew to 871 lines and
+  eleven collaborators, and every attempt to thin it ADDED one, because a delegating aggregate keeps what it
+  does not shed. It was DISSOLVED (2026-08-14): each MCP tool group declares its own tools (`mcp/McpTools` +
+  `mcp/McpToolRegistry`, implementations under `mcp/tools`), and every other caller takes the small service it
+  actually uses — `AgentSessions` (tmux window, focus, kill, relay), `TaskProvisioning` + `WorktreeSetup` +
+  `SubAgentBriefing` (creation), `AgentStatusReports` (what an agent reports), `IdeLauncher`, `DeployService`
+  (the only shared-branch writes), `TaskRetirement`, `TaskResume`, `TaskOperations` (the per-task verbs a
+  surface offers). `mcp/CallerScope` owns the X-Working-Directory rule for all of them.
 - TWO-TIER DISPATCH: tier 1 is the grammar (typed command / board button) and it stays LLM-free. Tier 2 is
   `service/NaturalLanguageDispatch` — free text (an unknown console line, or the board's ⌘K palette →
   `POST /api/interpret`) goes to a model that only PROPOSES one grammar command; the dispatcher validates the
@@ -198,7 +198,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 - All git ops in `GitService` under a per-repository `ReentrantLock` (index.lock races are per-repo;
   a slow fetch in one project must not block another).
 - Sub-agents can only act on their own task (X-Working-Directory scoping is ENFORCED in
-  `resolveTaskId`); `initialize_task`/`remove_task` are Master-only. Task ids are validated
+  `mcp/CallerScope`, and its wiring into each tool is what `McpToolScopeTest` pins — the rule was real for three
+  tools and MISSING from four until 2026-08-14, so a new tool taking a taskId gets a row in that test, not a
+  promise); `initialize_task`/`remove_task`/`deploy_task`/`revert_task` are Master-only. Task ids are validated
   (`[A-Za-z0-9][A-Za-z0-9_-]*`) — they become branch/dir/tmux names.
 - The MCP transport must never emit non-JSON-RPC bytes: malformed JSON → `-32700` from the controller,
   HTTP errors → synthesized JSON-RPC error in `mcp_client.js` (never forward Spring error pages).
@@ -266,7 +268,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     stdio↔HTTP proxy (keep it that way) and is linked by the template; only the config that declares it
     differs per agent (Claude `.mcp.json` + `.claude/settings.local.json`, Codex `.codex/config.toml` with
     `CODEX_HOME` pointed at the worktree) and belongs in each `AgentRuntime`. Nothing outside the runtime may
-    name an agent's files — `OrchestratorTools` only calls `provisionWorktree` and `displayName`.
+    name an agent's files — `WorktreeSetup` only calls `provisionWorktree`, and `AgentSessions` `displayName`.
   - `CodeHost` (`…codehost`, `orchestrator.code-host.type`, default none) — REST reads of a review request, so
     the sweep costs no model call, plus EXACTLY ONE write: `createOrUpdateMergeRequest` (opening the artifact a
     human then reviews). Never a push, a merge, a comment or an approval — those belong to the human's gates or
@@ -428,9 +430,18 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   cognitive load / composition is high, the SMELL IS IN THE PRODUCTION CODE (poor decomposition /
   isolation), NOT the test — fix the code so the test goes light (sob-ai:unit-testing §5). Never paper
   over it with fatter test setup or shared fixtures.
-- No fat constructors / positional null-soup. Keep params to ~4-6; beyond that GROUP collaborators into a
-  cohesive component (composition) or use a builder. Config/value records get a builder or a
-  `defaults()` + `withX` withers — never call a 10-arg record constructor with a row of `null`s.
+- NO GOD OBJECTS. THREE collaborators per class is the target, FIVE is the hard ceiling — and that ceiling
+  holds for a class that only DELEGATES, because a delegating aggregate is exactly how one grows. Over it,
+  GROUP collaborators into a cohesive component (composition, never inheritance) and let callers depend on the
+  part they use. The ceiling is not advisory: `MasterShell` sat at eight and its test built the whole screen to
+  check a parse, which is how a 31-mock test happens.
+- THE TEST IS THE MEASURE, not the line count: a test that needs more than ~3 mocks is telling you the class
+  under it does too much. Fix the class, never the fixture (sob-ai:unit-testing §5).
+- NO CLASS IS OVER THE CEILING TODAY (checked 2026-08-14: 70 classes, none above five, 47 at three or fewer).
+  A new aggregate is how that regresses: when a class would need a sixth collaborator, the answer is a registry
+  of small units (see `mcp/McpTools`, and `Move.actions()` for the per-task verbs), never one more field.
+- No positional null-soup: config/value records get a builder or `defaults()` + `withX` withers — never a
+  10-arg record constructor with a row of `null`s.
 - LOMBOK CARRIES THE MECHANICAL BOILERPLATE, and nothing else: `@RequiredArgsConstructor` for injected final
   fields, `@Slf4j` for the logger, `@With` for a record's positional copy-withers (1.18.46 supports `@With` AND
   `@Builder` on records — verified under the Java 25 toolchain; an older note here claimed otherwise). Written

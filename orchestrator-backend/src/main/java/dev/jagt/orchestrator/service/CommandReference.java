@@ -1,9 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 /**
- * The command grammar, in one place, because BOTH surfaces show it: the console prints it for `help` and the
- * board serves it behind its Help button. It lived inside {@code MasterShell} while the board had no help at
- * all — which is how a capability ends up existing in one surface only.
+ * The command grammar, in one place, because BOTH surfaces show it: the console prints it for `help`, the board
+ * serves it behind its Help button.
  */
 public final class CommandReference {
 

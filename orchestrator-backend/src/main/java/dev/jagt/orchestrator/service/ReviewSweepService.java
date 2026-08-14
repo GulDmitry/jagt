@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TaskLabel;
 import dev.jagt.orchestrator.model.TaskState;
@@ -30,7 +29,8 @@ public class ReviewSweepService {
     }
 
     private final ReviewReader reviewReader;
-    private final OrchestratorTools tools;
+    private final AgentStatusReports statusReports;
+    private final AgentSessions sessions;
     private final StateService stateService;
     /**
      * One sweep at a time per task, no matter who asked. The guard lives HERE, not in a caller, because
@@ -62,7 +62,7 @@ public class ReviewSweepService {
     }
 
     private SweepResult sweepExclusively(String taskId) {
-        String mrUrl = tools.taskMrUrl(taskId);
+        String mrUrl = stateService.task(taskId).map(TaskState::mrUrl).orElse(null);
         if (mrUrl == null || mrUrl.isBlank()) {
             return new SweepResult(SweepResult.Kind.NO_MR,
                     "error: no MR linked to " + taskId + " — `ship` or `resume <mr-url>` first");
@@ -77,13 +77,13 @@ public class ReviewSweepService {
         boolean pipelineFailed = pipeline.contains("fail");
         if (r.comments().isEmpty() && !pipelineFailed) {
             if (r.approved()) {
-                tools.markApproved(taskId);
+                statusReports.markApproved(taskId);
                 return new SweepResult(SweepResult.Kind.APPROVED,
                         "review " + taskId + ": MR approved, pipeline " + r.pipelineStatus()
                                 + " — your move: `deploy` or `done`");
             }
             if (pipeline.contains("success")) {   // only advance when CI is GREEN, not merely still running
-                tools.markReviewed(taskId);
+                statusReports.markReviewed(taskId);
                 return new SweepResult(SweepResult.Kind.REVIEWED,
                         "review " + taskId + ": pipeline " + r.pipelineStatus()
                                 + ", no unresolved comments — your move: `deploy` or `done`");
@@ -92,7 +92,7 @@ public class ReviewSweepService {
                     "review " + taskId + ": pipeline " + r.pipelineStatus()
                             + ", no unresolved comments yet, not approved — still waiting");
         }
-        tools.writeTaskContext(taskId, brief(mrUrl, r, pipelineFailed));
+        sessions.writeTaskContext(taskId, brief(mrUrl, r, pipelineFailed));
         return new SweepResult(SweepResult.Kind.RELAYED,
                 "review " + taskId + ": relayed " + r.comments().size() + " comment(s), pipeline "
                         + r.pipelineStatus() + " -> agent");

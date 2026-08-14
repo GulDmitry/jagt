@@ -23,14 +23,9 @@ import java.util.regex.Pattern;
  * GitLab over the v4 REST API — reads the review round (approval state, latest pipeline, unresolved discussion
  * notes) and opens/finds the merge request of a task branch. Selected by {@code orchestrator.code-host.type=gitlab}.
  *
- * <p>"Approved" is read from the approvals endpoint, i.e. a fact rather than the judgement a model used to be
- * asked for ("approved by a human, not merely mergeable" — the exact call it could get wrong).
- *
- * <p>A PARTIAL read is never reported as a clean review: if the merge request or its discussions cannot be
- * fetched, the whole read fails, because "no unresolved comments" plus a green pipeline ADVANCES the task, and
- * advancing on a failed HTTP call would silently tell the human their review is done. The one exception is the
- * approvals endpoint (absent on some instances/tokens): unreadable there means "not approved", which can only
- * hold a task back, never push it forward.
+ * <p>A PARTIAL read must never look like a clean review: an unfetchable request or discussion list fails the
+ * whole read, because "nothing unresolved + green" ADVANCES a task. The one exception is the approvals endpoint
+ * (absent on some instances): unreadable there means "not approved", which can only hold a task back.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.code-host.type", havingValue = "gitlab")

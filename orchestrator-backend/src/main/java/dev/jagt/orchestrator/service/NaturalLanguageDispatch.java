@@ -19,12 +19,11 @@ import java.util.stream.Collectors;
  * command go through — validates and executes it. The model only ever PROPOSES: it holds no git, no state, no
  * gate, so a wrong guess costs a sentence, not a push (the asymmetric-failure rule).
  *
- * <p>Tier 1 stays on the hot path for ~every interaction, so tokens and latency are spent ONLY when someone
- * actually uses the flexibility. The call itself is the cheapest jagt makes: no MCP servers, no tools, and a
- * context that is one list of commands plus one list of tasks.
+ * <p>The call is deliberately the cheapest jagt makes: no MCP servers, no tools, one list of commands and one
+ * of tasks.
  *
- * <p>It always reports what it understood BEFORE the outcome ("understood as `ship a2` — …"). A dispatcher
- * whose interpretation is invisible teaches nobody the grammar and cannot be corrected.
+ * <p>It reports what it understood BEFORE the outcome ("understood as `ship a2` — …"): an invisible
+ * interpretation cannot be corrected.
  */
 @Service
 @RequiredArgsConstructor

@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.codehost.CodeHost;
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.Move;
@@ -20,19 +19,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * {@code ship} — the human's approval, executed. Everything about it is mechanical: commit what is in the
- * worktree with a title jagt already owns, push the task branch, open or update the review request. It used to
- * be five steps of prose relayed to the agent, which bought three failure modes: the permission classifier
- * could stall {@code git commit} in a window nobody was watching, the title came back reworded, and the
- * report of the request's URL simply might not happen (hence a defensive "CI_POLLING requires the link").
+ * {@code ship} — the human's approval, executed: commit the worktree under a title jagt owns, push the task
+ * branch, open or update the review request.
  *
- * <p>With a {@link CodeHost} configured for the repository, none of that involves a model: SHIPPING stops
- * being a state a task can hang in, because there is no longer anyone to wait for. Without one, the old relay
- * is kept verbatim — opening a review request needs an API jagt does not otherwise have.
+ * <p>With a {@link CodeHost} for the repository no model is involved, so SHIPPING stops being a state a task
+ * can hang in. Without one the prose relay is kept VERBATIM: an unconfigured setup must behave as it always did.
  *
- * <p>What stays with the agent either way is the judgement work: the code, and the review replies it drafted.
- * Posting those needs the thread each one answers, which the sweep does not carry, so it remains a small
- * follow-up instruction — and never on the critical path, so a dead agent no longer blocks a ship.
+ * <p>Posting the drafted replies stays with the agent either way — a reply needs the thread it answers, which
+ * the sweep does not carry — and never on the critical path, so a dead agent cannot block a ship.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,8 +35,7 @@ public class ShipService {
     private final StateService stateService;
     private final ConfigService configService;
     private final GitService gitService;
-    private final TmuxService tmuxService;
-    private final OrchestratorTools tools;
+    private final AgentSessions sessions;
     private final List<CodeHost> codeHosts;
     /** One ship at a time per task: two clicks in a row would push and call the host twice for nothing. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
@@ -64,7 +57,7 @@ public class ShipService {
                 .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
         ConfigService.ConfigFile config = configService.load();
         boolean hasRequest = task.mrUrl() != null && !task.mrUrl().isBlank();
-        requireShippable(taskId, task.status(), hasRequest, agentLive(config, taskId));
+        requireShippable(taskId, task.status(), hasRequest, sessions.agentLive(taskId));
 
         ProjectConfig project = configService.project(task.project());
         // The task's own base when the human named one at `do` time — a task cut from a parent feature branch
@@ -115,7 +108,7 @@ public class ShipService {
      */
     private String relayToAgent(String taskId, TaskState task, ConfigService.ConfigFile config, String title,
                                String targetBranch, boolean firstShip) {
-        tools.writeTaskContext(taskId, shipInstruction(firstShip, title, taskId, targetBranch,
+        sessions.writeTaskContext(taskId, shipInstruction(firstShip, title, taskId, targetBranch,
                 repliesStep(config)));
         // SHIPPING says "underway": the status only reaches CI_POLLING when the agent reports the link back.
         stateService.updateTask(taskId, state -> state.withStatus(TaskStatus.SHIPPING, "shipping"));
@@ -128,7 +121,7 @@ public class ShipService {
 
     /**
      * The agent's drafted replies, posted as a FOLLOW-UP — off the critical path on purpose, so a dead agent
-     * can no longer block a ship the way it did when the whole sequence was its job.
+     * cannot block a ship.
      */
     private String relayDraftedReplies(String taskId, Path worktree, ConfigService.ConfigFile config) {
         if (!Files.isRegularFile(worktree.resolve("review_replies.md"))) {
@@ -137,17 +130,11 @@ public class ShipService {
         if (!config.codeReview().postReviewRepliesOrDefault()) {
             return "; review_replies.md is left for you to post (codeReview.postReviewReplies=false)";
         }
-        tools.appendTaskContext(taskId, "The change is committed, pushed and the review request is up to date —"
+        sessions.appendTaskContext(taskId, "The change is committed, pushed and the review request is up to date —"
                 + " there is NOTHING to commit or push.\n" + repliesStep(config)
                 + "Then set status REVIEW_PENDING only if you had to change code; otherwise leave the status"
                 + " alone.");
         return "; asked the agent to post the drafted replies";
-    }
-
-    private boolean agentLive(ConfigService.ConfigFile config, String taskId) {
-        String session = tmuxService.sessionName(config.viewer().tmuxSession());
-        return tmuxService.taskWindowState(config.viewer().sharedView() ? session : session + "-" + taskId,
-                taskId) == TmuxService.WindowState.AGENT_RUNNING;
     }
 
     private static void requireShippable(String taskId, TaskStatus status, boolean hasRequest,

@@ -64,7 +64,7 @@ public class WorktreeOrphanScanner {
         } catch (RuntimeException e) {
             // A DIAGNOSTIC must never be able to stop the backend from starting: an ApplicationReadyEvent
             // listener that throws fails the whole boot. Reading the config is exactly such a risk — it
-            // refuses to load when config.json is missing, which used to be reported at the first command.
+            // refuses to load when config.json is missing.
             log.warn("Could not scan for orphaned worktrees: {}", e.getMessage());
             return;
         }

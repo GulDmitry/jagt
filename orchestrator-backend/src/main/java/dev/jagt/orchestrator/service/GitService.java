@@ -34,18 +34,14 @@ public class GitService {
 
     public void createWorktree(Path projectPath, Path worktreePath, String branch, String baseBranch,
                                BranchStrategy strategy) {
-        // Always cut from the REMOTE-TRACKING ref, never a local branch: `git fetch` below refreshes
-        // origin/<base> but never fast-forwards a checkout-less local branch, so cutting from a local
-        // `main` would inherit STALE history. Normalizing here (not trusting the config to spell it
-        // `origin/...`) guarantees the subtree is always based on freshly fetched upstream — matching
-        // what deploy already hardcodes for its target branch (see mergeIntoAndPush).
+        // The REMOTE-TRACKING ref, always: a fetch refreshes origin/<base> but never fast-forwards a
+        // checkout-less local branch, so cutting from a local `main` inherits stale history.
         String base = "origin/" + baseBranch.replaceFirst("^origin/", "");
         withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            // Self-heal: a previous `done` may have unregistered the worktree but failed to delete the
-            // directory (a file held open), which makes `git worktree add` below fail "already exists".
-            // Clear a stale leftover at the target path before creating.
+            // A previous `done` can unregister a worktree and still fail to delete the directory, which
+            // makes `git worktree add` fail "already exists".
             if (Files.exists(worktreePath)) {
                 log.warn("Clearing a stale leftover worktree directory before creating {}", worktreePath);
                 clearWorktreePath(projectPath, worktreePath);
@@ -139,10 +135,8 @@ public class GitService {
     }
 
     /**
-     * CRITICAL SAFETY: a branch created from origin/release inherits it as
-     * upstream, so a bare `git push` from an agent would target the RELEASE
-     * branch. Unset the upstream — now a bare push errors ("no upstream"), and
-     * the agent must push explicitly to its own branch.
+     * CRITICAL SAFETY: a new branch inherits the base as upstream, so a bare {@code git push} from an agent
+     * would target the release branch. Without an upstream it errors instead.
      */
     private void detachUpstream(Path projectPath, String branch) {
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "--unset-upstream", branch));
@@ -159,9 +153,8 @@ public class GitService {
             var removed = processRunner.run(projectPath, GIT_TIMEOUT,
                     List.of("git", "worktree", "remove", "--force", worktreePath.toString()));
             if (removed.exitCode() != 0) {
-                // git commonly UNregisters the worktree but then fails to delete the directory (a file
-                // held open at that instant, IDE/build metadata). Do NOT stop here — prune the admin
-                // entry and force-delete the dir below, or the worktree leaks on disk.
+                // git often unregisters the worktree and still fails to delete the directory (a file held
+                // open), so stopping here leaks it on disk.
                 log.warn("git worktree remove {} exited {}: {} — pruning and deleting the directory",
                         worktreePath, removed.exitCode(), removed.stderr());
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
@@ -195,9 +188,7 @@ public class GitService {
             if (Files.isDirectory(deployWorktree)) {
                 return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
             }
-            // Nothing-to-deploy guard: refuse when the source branch has no commits beyond the
-            // target (empty branch, or already deployed) — deploy is decoupled from review state,
-            // its ONLY precondition is that there is committed work to ship downstream.
+            // Deploy is decoupled from review state: its ONLY precondition is committed work to ship.
             String ahead = processRunner.run(projectPath, GIT_TIMEOUT,
                             List.of("git", "rev-list", "--count", "origin/" + targetBranch + ".." + sourceBranch))
                     .expectSuccess("git rev-list count " + sourceBranch).stdout().trim();
@@ -208,22 +199,17 @@ public class GitService {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "add",
                             "-B", deployBranch, deployWorktree.toString(), "origin/" + targetBranch))
                     .expectSuccess("git worktree add (deploy) " + targetBranch);
-            // Explicit message: the merge runs on a temp branch (jagt-deploy-*), and git's
-            // default "into <current branch>" would leak that name instead of the real target.
-            // --no-ff: ALWAYS a merge commit, even when the target has not moved and git could fast-forward.
-            // That single commit is what `revert` undoes — a fast-forward would leave the task's commits
-            // sitting loose on the deploy branch, and reverting "the deploy" would then mean reverting a
-            // RANGE, so a task with three commits would come back out only one third of the way.
+            // The message is explicit because git's default would name the throwaway branch, not the target.
+            // --no-ff ALWAYS: that one merge commit is what `revert` undoes — a fast-forward would leave the
+            // commits loose, and "the deploy" would become a range.
             var merge = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "merge", "--no-ff",
                     "--no-edit", "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch,
                     sourceBranch));
             if (merge.exitCode() != 0) {
                 String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
-                // A failed merge is not automatically a CONFLICT: no committer identity, a refusing hook, a
-                // broken object — git exits non-zero for all of them. Calling those a conflict sent the human
-                // to resolve conflicts that do not exist AND left the deploy worktree behind, so the next
-                // deploy took the "the human resolved it" path and pushed whatever was in there. Only unmerged
-                // paths mean a conflict; anything else is an error, and the worktree goes away with it.
+                // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer
+                // identity or a refusing hook, and calling those a conflict leaves a worktree behind that the
+                // next deploy treats as "resolved" and pushes.
                 if (unmergedPaths(deployWorktree).isBlank()) {
                     removeDeployWorktree(projectPath, deployWorktree, deployBranch);
                     throw new IllegalStateException("Could not merge " + sourceBranch + " into " + targetBranch
@@ -285,17 +271,13 @@ public class GitService {
     }
 
     /**
-     * Undoes ONE deploy: reverts {@code mergeCommit} on {@code targetBranch} and pushes the revert commit.
-     * The second outward write in the system, and it is built to be the safe kind — it only ever ADDS a
-     * commit, so history is never rewritten and nothing is force-pushed. The task branch is not touched: its
-     * commits still exist, which is what makes "fix and ship again" possible after a revert.
+     * Undoes ONE deploy: reverts {@code mergeCommit} on {@code targetBranch} and pushes. Only ever ADDS a
+     * commit — no rewrite, no force-push — and leaves the task branch's commits alone, which is what makes
+     * "fix and ship again" possible.
      *
-     * <p>Refuses instead of guessing whenever the situation is not the one the caller thinks: the commit is
-     * not on the target branch (history rewritten, or it was never deployed there), it is not a merge (so
-     * reverting it would undo part of a task), it has already been reverted, or the revert itself conflicts
-     * because later work touched the same lines. That last one is aborted and cleaned up — unlike a deploy
-     * conflict, a half-reverted worktree is not something a human can usefully finish, since what they
-     * actually need to decide is whether reverting is still the right move at all.
+     * <p>Refuses rather than guess when the commit is not on the branch, is not a merge, was already reverted,
+     * or the revert conflicts with later work. That last one is aborted and cleaned up: unlike a deploy
+     * conflict, there is nothing useful for a human to finish there.
      *
      * @return the revert commit pushed to {@code targetBranch}
      */
@@ -337,8 +319,7 @@ public class GitService {
                 return processRunner.run(revertWorktree, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
                         .expectSuccess("git rev-parse HEAD in " + revertWorktree).stdout().trim();
             } finally {
-                // Always: a revert worktree holds no human decision worth keeping (unlike a conflicted
-                // deploy), so leaving one behind would only make the NEXT revert start from stale state.
+                // A revert worktree holds no human decision worth keeping, unlike a conflicted deploy.
                 processRunner.run(projectPath, GIT_TIMEOUT,
                         List.of("git", "worktree", "remove", "--force", revertWorktree.toString()));
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", revertBranch));
@@ -347,9 +328,8 @@ public class GitService {
     }
 
     /**
-     * Every jagt deploy is a merge commit (see {@code --no-ff}), and only a merge can be reverted as ONE unit.
-     * A non-merge here means the commit was not made by a jagt deploy, so reverting it would undo one commit
-     * of a task rather than the deploy — a partial rollback nobody asked for.
+     * Only a merge can be reverted as ONE unit, and every deploy makes one ({@code --no-ff}). A non-merge here
+     * means reverting would undo one commit of a task instead of the deploy.
      */
     private void requireMergeCommit(Path revertWorktree, String mergeCommit, String targetBranch) {
         String parents = processRunner.run(revertWorktree, GIT_TIMEOUT,
@@ -410,11 +390,9 @@ public class GitService {
     }
 
     /**
-     * A deploy merge hit conflicts. The conflicted checkout is LEFT on disk at {@link #deployWorktree} — a
-     * dev-side worktree with the task branch merged into it — for the human to resolve there and deploy
-     * again. The resolution stays on the deploy side; the task branch is never touched, so its MR (which
-     * targets the base branch, not the deploy branch) keeps only the task's own change.
-     * {@link #details} is git's raw conflict output (which files clashed).
+     * A deploy merge hit conflicts. The checkout is LEFT at {@link #deployWorktree} for the human to resolve
+     * and deploy again; the task branch is never touched, so its request keeps only the task's own change.
+     * {@link #details} is git's raw conflict output.
      */
     public static class MergeConflictException extends IllegalStateException {
         private final transient String details;
@@ -439,9 +417,8 @@ public class GitService {
     }
 
     /**
-     * Left side of the `ide` diff: a throwaway detached worktree at the base branch. Reused per
-     * task (previous one removed first). Pair with {@link #checkoutWorktreeCleanForDiff} for the
-     * right side — the two clean checkouts are what the editor folder-diffs. Returns the path.
+     * Left side of the `ide` diff: a throwaway detached worktree at the base branch, reused per task. Pair it
+     * with {@link #checkoutWorktreeCleanForDiff} — the editor folder-diffs the two clean checkouts.
      */
     public Path checkoutBaseForDiff(Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
@@ -457,13 +434,9 @@ public class GitService {
     }
 
     /**
-     * Right side of the `ide` diff: a clean detached worktree of the task's CURRENT tracked state
-     * (committed + uncommitted), built through a throwaway index so {@code .gitignore} AND
-     * {@code .git/info/exclude} are honored. This is the fix for `idea diff` on the live worktree,
-     * whose raw folder compare ignores git and dumps hundreds of untracked files — the orchestrator
-     * plumbing (mcp_client.js, .mcp.json, .claude/, CLAUDE.md, task_context.md, .run/) and build/IDE
-     * artifacts. Snapshotting via {@code git add -A} in a temp index drops exactly those. Reused per
-     * task (previous one removed first). Returns the checkout path.
+     * Right side of the `ide` diff: the task's CURRENT tracked state, committed or not, snapshotted through a
+     * throwaway index so {@code .gitignore} and {@code .git/info/exclude} are honored — a raw folder compare
+     * of the live worktree dumps hundreds of untracked files instead. Reused per task.
      */
     public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
@@ -554,7 +527,7 @@ public class GitService {
     /**
      * Picks the processes to reap from {@code lsof -d cwd -Fpcn} output: those whose cwd is at or under
      * {@code target}, EXCLUDING {@code tmux}. Field order per process set is {@code p<pid>},
-     * {@code c<command>}, then {@code n<cwd>} (verified), so the command is known by the time we see
+     * {@code c<command>}, then {@code n<cwd>}, so the command is known by the time we see
      * the cwd.
      *
      * <p>tmux is spared because every terminal driver's viewer window runs {@code tmux attach} as its

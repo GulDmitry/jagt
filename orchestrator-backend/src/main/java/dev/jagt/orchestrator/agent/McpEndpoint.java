@@ -6,23 +6,19 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 
 /**
- * Where an agent's MCP client reaches jagt, and how it says WHICH task it is. Shared by every
- * {@link AgentRuntime}, because neither fact is agent-specific — only the file that declares them is (Claude's
- * {@code .mcp.json}, Codex's {@code config.toml}, the next CLI's whatever).
+ * Where an agent's MCP client reaches jagt, and how it says WHICH task it is. Neither fact is agent-specific —
+ * only the file that declares them is.
  *
- * <p>There are exactly two ways a runtime can wire this up, and picking one is the runtime's whole job here:
+ * <p>A runtime wires up exactly one of two paths:
  * <ul>
- *   <li><b>HTTP</b> — the CLI talks to {@link #url()} directly and carries {@link #CALLER_HEADER} with the
- *       worktree path. Nothing runs in between: no proxy process, no second language on the machine. This is
- *       the path to prefer, and every MCP client that supports remote servers can take it.</li>
+ *   <li><b>HTTP</b> — the CLI talks to {@link #url()} and carries {@link #CALLER_HEADER} itself, with nothing
+ *       in between. Prefer this wherever the client supports a remote server.</li>
  *   <li><b>stdio</b> — the CLI can only SPAWN a server, so it spawns the standard bridge
- *       ({@code mcp_client.js}, linked by {@code AbstractAgentRuntime.linkStdioProxy}) which does the same POST
- *       with the same header. Kept for agents whose config has no remote-server form.</li>
+ *       ({@code mcp_client.js}) which POSTs the same header. For clients whose config has no remote form.</li>
  * </ul>
  *
- * <p>The header is what the backend scopes a caller by ({@code StateService.findByWorktree}), which is why the
- * HTTP path can be static config at all: jagt writes the config per worktree and already knows the path — the
- * proxy only ever computed it at runtime as {@code process.cwd()}.
+ * <p>The header is how a caller is scoped ({@code StateService.findByWorktree}), and jagt knows each worktree's
+ * path when it writes the config — which is why the HTTP path can be static.
  */
 @Component
 public class McpEndpoint {

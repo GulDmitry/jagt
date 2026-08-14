@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
@@ -20,11 +19,12 @@ import static org.mockito.Mockito.when;
 
 class CommandServiceTest {
 
-    private final OrchestratorTools tools = mock(OrchestratorTools.class);
+    private final TaskOperations operations = mock(TaskOperations.class);
+    private final DeployService deploys = mock(DeployService.class);
     private final ReviewSweepService reviewSweep = mock(ReviewSweepService.class);
     private final ShipService shipService = mock(ShipService.class);
     private final StateService stateService = mock(StateService.class);
-    private final CommandService commands = new CommandService(tools, reviewSweep, shipService, stateService);
+    private final CommandService commands = new CommandService(operations, deploys, reviewSweep, shipService, stateService);
 
     @BeforeEach
     void tasksAreAddressedByTheirIdUnlessATestSaysOtherwise() {
@@ -71,7 +71,7 @@ class CommandServiceTest {
 
         commands.execute("a1", TaskAction.FOCUS);
 
-        verify(tools).focusTask("ABC-1");
+        verify(operations).focus("ABC-1");
     }
 
     @Test

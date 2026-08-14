@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.codehost.CodeHost;
-import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ProjectConfig;
@@ -32,8 +31,7 @@ class ShipServiceTest {
     private final StateService stateService = mock(StateService.class);
     private final ConfigService configService = mock(ConfigService.class);
     private final GitService gitService = mock(GitService.class);
-    private final TmuxService tmuxService = mock(TmuxService.class);
-    private final OrchestratorTools tools = mock(OrchestratorTools.class);
+    private final AgentSessions sessions = mock(AgentSessions.class);
     private final CodeHost host = mock(CodeHost.class);
 
     @BeforeEach
@@ -83,8 +81,8 @@ class ShipServiceTest {
         // The status move is recorded as a review ROUND (history + a fresh polling window), not as a generic
         // status update — see recordsAnotherRoundShippedOntoTheSameRequestAsARealRound.
         verify(stateService).updateTask(eq("ABC-42"), any());
-        verify(tools, never()).writeTaskContext(anyString(), anyString());
-        verify(tools, never()).appendTaskContext(anyString(), anyString());
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
+        verify(sessions, never()).appendTaskContext(anyString(), anyString());
         assertThat(result).contains("committed 3 file(s)", "pushed", "opened https://host/mr/9", "CI_POLLING");
     }
 
@@ -125,7 +123,6 @@ class ShipServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Pushed branch ABC-42")
                 .hasMessageContaining("GitLab would not open the review request");
-        verify(tools, never()).updateAgentStatus(anyString(), anyString(), anyString(), any());
     }
 
     @Test
@@ -137,7 +134,7 @@ class ShipServiceTest {
 
         String result = ship().ship("ABC-42");
 
-        verify(tools).writeTaskContext(eq("ABC-42"), contains("This IS the human approval to ship"));
+        verify(sessions).writeTaskContext(eq("ABC-42"), contains("This IS the human approval to ship"));
         verify(gitService, never()).pushBranch(any(), any(), anyString());
         assertThat(result).contains("approval relayed", "orchestrator.code-host");
     }
@@ -184,7 +181,7 @@ class ShipServiceTest {
         String result = ship().ship("ABC-42");
 
         // APPENDS: a sweep may have just relayed a brief, and truncating it would lose the comments.
-        verify(tools).appendTaskContext(eq("ABC-42"), contains("NOTHING to commit or push"));
+        verify(sessions).appendTaskContext(eq("ABC-42"), contains("NOTHING to commit or push"));
         assertThat(result).contains("asked the agent to post the drafted replies");
     }
 
@@ -204,8 +201,8 @@ class ShipServiceTest {
 
         String result = ship().ship("ABC-42");
 
-        verify(tools, never()).writeTaskContext(anyString(), anyString());
-        verify(tools, never()).appendTaskContext(anyString(), anyString());
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
+        verify(sessions, never()).appendTaskContext(anyString(), anyString());
         assertThat(result).contains("left for you to post");
     }
 
@@ -247,7 +244,7 @@ class ShipServiceTest {
     }
 
     private ShipService ship() {
-        return new ShipService(stateService, configService, gitService, tmuxService, tools, List.of(host));
+        return new ShipService(stateService, configService, gitService, sessions, List.of(host));
     }
 
     private void havingTask(String taskId, TaskStatus status, String requestUrl, String title) {
