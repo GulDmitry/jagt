@@ -211,7 +211,7 @@ a `do` used to be carried by through four hops. Documented here and in README be
 adjacent commit; the CODE is still in the working tree, so treat this entry as a promise until it lands.
 
 ### The projection: `Move` / `Phase` / `Owner` / `TaskView`
-The root of "ревью/шип/деплой непонятно" was that four statuses all read as the word "review" and the next-step
+The root of "review/ship/deploy are all a blur" was that four statuses all read as the word "review" and the next-step
 hint was PROSE, so it could be neither turned into a button nor validated — while `ship`'s real legality lived
 somewhere else entirely. Now `Move.forTask(status, hasReviewRequest)` answers phase + owner + legal actions +
 the obvious one, `TaskView` carries it to every surface, and `Move.shippable` is the same predicate the ship

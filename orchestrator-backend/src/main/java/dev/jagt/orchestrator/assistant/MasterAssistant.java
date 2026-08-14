@@ -67,7 +67,7 @@ public interface MasterAssistant {
     Answer<ReviewFacts> readReview(String mrUrl);
 
     /**
-     * Maps a free-text request ("залей ту задачу с логином") onto one grammar command. {@code context} is the
+     * Maps a free-text request ("push the login one for review") onto one grammar command. {@code context} is the
      * prompt-ready list of commands and current tasks the caller wants considered — the port knows nothing
      * about the grammar, so adding a command never touches this interface. Reads NOTHING from the outside,
      * so implementations should run stripped of MCP entirely: cheaper, and it cannot call a tool by accident.

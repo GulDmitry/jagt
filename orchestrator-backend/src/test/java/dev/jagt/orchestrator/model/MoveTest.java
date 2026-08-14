@@ -34,7 +34,7 @@ class MoveTest {
 
     @Test
     void collapsesTheFourStatusesThatAllReadAsReviewIntoDistinctPhases() {
-        // The root of "ревью/шип/деплой непонятно": these four say "review" to a human but mean four things.
+        // The root of "review/ship/deploy are all a blur": these four say "review" to a human but mean four things.
         assertThat(Move.forTask(TaskStatus.REVIEW_PENDING, false).phase()).isEqualTo(Phase.REVIEW);
         assertThat(Move.forTask(TaskStatus.CI_POLLING, true).phase()).isEqualTo(Phase.CHECK);
         assertThat(Move.forTask(TaskStatus.REVIEWED, true).phase()).isEqualTo(Phase.READY);

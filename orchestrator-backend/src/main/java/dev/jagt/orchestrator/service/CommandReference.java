@@ -15,6 +15,15 @@ public final class CommandReference {
     public record Verb(String id, String hint, boolean takesTask) {
     }
 
+    /**
+     * Most-used first. The palette shows this list as-is, and a suggestion list is read top-down: declaration
+     * order put {@code focus} and {@code done} above {@code review} and {@code ship}, which is the wrong way
+     * round for every day of use. A verb missing here is not dropped — it sorts to the end.
+     */
+    private static final java.util.List<String> BY_USE = java.util.List.of(
+            "review", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "prune", "respawn",
+            "revert", "done", "help");
+
     private CommandReference() {
     }
 
@@ -29,6 +38,10 @@ public final class CommandReference {
         verbs.add(new Verb("prune", "list local branches merged into deployBranch; `prune all` deletes", false));
         verbs.add(new Verb("stats", "token spend of jagt's own model calls", false));
         verbs.add(new Verb("help", "this command reference", false));
+        verbs.sort(java.util.Comparator.comparingInt(verb -> {
+            int rank = BY_USE.indexOf(verb.id());
+            return rank < 0 ? BY_USE.size() : rank;
+        }));
         return java.util.List.copyOf(verbs);
     }
 
