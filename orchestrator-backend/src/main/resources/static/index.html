@@ -25,7 +25,6 @@
     </select>
   </label>
   <label class="control checkbox"><input type="checkbox" id="mine"> waiting on me</label>
-  <button id="new-task" class="primary">New task</button>
   <button id="resume-task" title="take over an existing review request: resume its branch and link it">Resume</button>
   <button id="open-palette" title="⌘K / Ctrl-K — say what you want in words">Ask</button>
   <button id="show-prune" title="list LOCAL branches already merged into deployBranch (then delete them)">Prune</button>
@@ -35,7 +34,7 @@
   <span id="live" class="dot" title="live updates"></span>
 </header>
 
-<form id="launch" hidden>
+<form id="launch">
   <input id="ref" name="ref" placeholder="ABC-42 or a ticket URL" autocomplete="off" required>
   <select id="project" name="project"><option value="">project…</option></select>
   <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">

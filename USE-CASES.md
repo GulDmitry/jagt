@@ -11,6 +11,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Project not obvious from the ticket | `do ABC-1 <project>` | Same, without the label lookup. |
 | Work must sit on someone else's branch | `do ABC-1 from feature/parent` | Branch cut from `feature/parent`; the merge request will TARGET it. Deploy still goes to `deployBranch`. |
 | Ticket unreadable / no tracker | `do ABC-1 <project>` | The read is skipped; the task carries no title. |
+| On the board | the launch row, always open | Ticket, project, base branch, notes and Start. The project list comes from `config.json` on every load — no button to press first. |
 
 ## Review requests
 

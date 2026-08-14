@@ -82,12 +82,23 @@ async function load() {
     const data = await api('/api/tasks');
     tasks = data.tasks;
     projects = data.projects || [];
+    fillProjects();
     document.getElementById('spend').textContent =
       data.spend.calls ? `${data.spend.calls} calls · ${compactTokens(data.spend.tokens)}` : '';
     render();
   } catch (e) {
     toast(`Cannot reach the backend: ${e.message}`, true);
   }
+}
+
+function fillProjects() {
+  const select = document.getElementById('project');
+  const chosen = select.value;
+  select.replaceChildren(projects.length
+    ? new Option('project…', '')
+    : Object.assign(new Option('no projects in config.json', ''), {disabled: true}),
+    ...projects.map((p) => new Option(p, p)));
+  select.value = chosen;
 }
 
 function sorted(list) {
@@ -237,17 +248,6 @@ function toggleForm(form, button, onOpen) {
   if (!form.hidden && onOpen) onOpen();
 }
 
-document.getElementById('new-task').onclick = async () => {
-  launchForm.hidden = !launchForm.hidden;
-  document.getElementById('new-task').setAttribute('aria-pressed', String(!launchForm.hidden));
-  if (!launchForm.hidden) await load();      // config.json may have gained a project since the page loaded
-  const select = document.getElementById('project');
-  select.replaceChildren(projects.length
-    ? new Option('project…', '')
-    : Object.assign(new Option('no projects in config.json', ''), {disabled: true}),
-    ...projects.map((p) => new Option(p, p)));
-  if (!launchForm.hidden) document.getElementById('ref').focus();
-};
 launchForm.onsubmit = async (event) => {
   event.preventDefault();
   const state = document.getElementById('launch-state');
@@ -381,7 +381,7 @@ async function runParsed(parsed) {
   if (verb.id === 'stats') { showReport('stats — token spend', await text('/api/stats')); return 'stats'; }
   if (verb.id === 'prune') { document.getElementById('show-prune').click(); return 'prune'; }
   if (verb.id === 'do') {
-    if (!argument) { document.getElementById('new-task').click(); return 'do'; }
+    if (!argument) { document.getElementById('ref').focus(); return 'do'; }
     const result = await api('/api/tasks', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -544,7 +544,7 @@ async function openReport(title, path) {
 // were standing in for.
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
-  for (const [id, button] of [['launch', 'new-task'], ['resume', 'resume-task'], ['palette', 'open-palette']]) {
+  for (const [id, button] of [['resume', 'resume-task'], ['palette', 'open-palette']]) {
     const form = document.getElementById(id);
     if (form && !form.hidden) {
       form.hidden = true;

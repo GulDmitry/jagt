@@ -52,6 +52,8 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 #resume { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel); }
 #resume input#resume-url { flex: 1; min-width: 300px; }
+/* An id rule outranks the browser's own [hidden], so a toggled form stayed on screen and its button did nothing. */
+#launch[hidden], #palette[hidden], #resume[hidden] { display: none; }
 /* The header button that opened a form also closes it, so it shows that state instead of needing a second
    control next to it — a "Cancel"/✕ inside an inline form only raises the question "cancel what?". */
 button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
