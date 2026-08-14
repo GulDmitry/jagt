@@ -127,28 +127,17 @@ public class TaskProvisioning {
                 .autoReview(config.autoReview().enabledOrDefault())
                 .build());
 
-        String session;
         try {
-            session = agentSessions.startAgent(taskId, alias, worktreePath, plan);
+            agentSessions.startAgent(taskId, alias, worktreePath, plan);
         } catch (RuntimeException e) {
             return "Task " + taskId + " registered and worktree created at " + worktreePath
                     + ", but the agent session failed to start: " + e.getMessage()
                     + " Fix the cause and call open_task_tab(\"" + taskId + "\") — do NOT call initialize_task again.";
         }
 
-        return "Task " + taskId + " initialized (alias: " + alias + ").\n"
-                + "- worktree: " + worktreePath + " (branch " + taskId
-                + (strategy == GitService.BranchStrategy.RESUME
-                        ? ", RESUMED with its existing commits"
-                        : " from " + baseBranch) + ")\n"
-                + "- " + agentRuntime.displayName() + " sub-agent started in tmux window '" + taskId
-                + "' of session '" + session
-                + "' (the viewer window attaches automatically; manual: tmux attach -t " + session + ")\n"
-                + (plan
-                        ? "- PLAN MODE: the agent plans first; the human approves the plan in its tmux window\n"
-                        : "")
-                + "- sub-agent context written to " + AgentRuntime.SYSTEM_KNOWLEDGE_FILE
-                + (instructions != null && !instructions.isBlank() ? ", instructions to task_context.md" : "");
+        return taskId + " is " + alias + " — agent running on " + taskId
+                + (strategy == GitService.BranchStrategy.RESUME ? " (resumed)" : " from " + baseBranch) + "."
+                + (plan ? " Plan mode: approve its plan in the agent window (focus " + alias + ")." : "");
     }
 
     /**

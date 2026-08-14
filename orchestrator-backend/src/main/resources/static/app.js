@@ -17,6 +17,7 @@ const onlyMine = document.getElementById('mine');
 const live = document.getElementById('live');
 let tasks = [];
 let projects = [];
+let renderedProjects = null;
 let verbs = [];
 let busy = new Set();
 
@@ -51,10 +52,20 @@ const compactTokens = (n) => {
   return `${(n / 1e6).toFixed(1)}M tok`;
 };
 
+// A toast is gone in seconds, so every one of them is also kept here for the session. No persistence: a
+// reload starts an empty log, and the backend's own file keeps what matters longer.
+const messages = [];
+
 function toast(message, isError) {
+  messages.push(`${new Date().toLocaleTimeString()}  ${message}`);
+  const opener = document.getElementById('show-log');
+  opener.hidden = false;
+  opener.textContent = message.split('\n')[0];
+
   const node = document.createElement('div');
   node.className = isError ? 'toast error' : 'toast';
   node.textContent = message;
+  node.onclick = () => node.remove();
   toasts.append(node);
   setTimeout(() => node.remove(), isError ? 12000 : 7000);
 }
@@ -93,12 +104,18 @@ async function load() {
 
 function fillProjects() {
   const select = document.getElementById('project');
+  const signature = projects.join('\n');
+  if (renderedProjects === signature) {
+    return;                       // a rebuild collapses the list under a human who has it open
+  }
+  renderedProjects = signature;
   const chosen = select.value;
-  select.replaceChildren(projects.length
-    ? new Option('project…', '')
-    : Object.assign(new Option('no projects in config.json', ''), {disabled: true}),
-    ...projects.map((p) => new Option(p, p)));
-  select.value = chosen;
+  select.replaceChildren(...(projects.length
+    ? projects.map((p) => new Option(p, p))
+    : [Object.assign(new Option('no projects in config.json', ''), {disabled: true})]));
+  if (projects.includes(chosen)) {
+    select.value = chosen;
+  }
 }
 
 function sorted(list) {
@@ -467,6 +484,7 @@ function showReport(title, text) {
 }
 
 document.getElementById('close-report').onclick = () => report.close();
+document.getElementById('show-log').onclick = () => showReport('log — this session', messages.join('\n'));
 
 async function text(path, options) {
   const response = await fetch(path, options);

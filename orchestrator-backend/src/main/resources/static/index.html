@@ -35,7 +35,7 @@
 
 <form id="launch">
   <input id="ref" name="ref" placeholder="ABC-42 or a ticket URL" autocomplete="off" required>
-  <select id="project" name="project"><option value="">project…</option></select>
+  <select id="project" name="project"></select>
   <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">
   <label class="checkbox"><input type="checkbox" id="plan"> plan first</label>
   <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
@@ -67,8 +67,9 @@
 </dialog>
 
 <main id="board"></main>
-<p id="empty" class="empty" hidden>No tasks. <strong>New task</strong> starts one — the same thing
+<p id="empty" class="empty" hidden>No tasks. The row above starts one — the same thing
   <code>do ABC-42</code> does in the console.</p>
+<button id="show-log" class="log" hidden></button>
 <div id="toasts"></div>
 <script src="app.js"></script>
 </body>
