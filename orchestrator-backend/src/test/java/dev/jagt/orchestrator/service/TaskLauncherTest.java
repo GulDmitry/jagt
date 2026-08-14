@@ -132,9 +132,9 @@ class TaskLauncherTest {
 
     @Test
     void relaysTheHumansNotesToTheAgentAlongsideTheTicket() {
-        oneProject("sng");
+        oneProject("demo");
 
-        launcher.launch(new LaunchRequest("ABC-1", "sng", "plan", null, null, "start with tests only"));
+        launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(tools).initializeTask(created.capture());
@@ -144,9 +144,9 @@ class TaskLauncherTest {
 
     @Test
     void threadsTheChosenBranchStrategyIntoInitialize() {
-        oneProject("sng");
+        oneProject("demo");
 
-        launcher.launch(new LaunchRequest("ABC-1", "sng", null, "recreate", null, null));
+        launcher.launch(new LaunchRequest("ABC-1", "demo", null, "recreate", null, null));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(tools).initializeTask(created.capture());
@@ -155,9 +155,9 @@ class TaskLauncherTest {
 
     @Test
     void threadsTheChosenBaseBranchIntoInitialize() {
-        oneProject("sng");
+        oneProject("demo");
 
-        launcher.launch(new LaunchRequest("ABC-1", "sng", null, null, "feature/parent", null));
+        launcher.launch(new LaunchRequest("ABC-1", "demo", null, null, "feature/parent", null));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(tools).initializeTask(created.capture());

@@ -1,13 +1,10 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.model.TaskView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +20,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class TaskViews {
 
-    /** Written by the agent, in the worktree — see {@link ReviewSweepService}'s relayed brief. */
-    private static final String DRAFTED_REPLIES_FILE = "review_replies.md";
-
     private final StateService stateService;
 
     public List<TaskView> all() {
@@ -34,24 +28,7 @@ public class TaskViews {
                 .sorted(Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
                         e.getValue().lastActiveTimestamp()).reversed())
                 .map(entry -> TaskView.of(entry.getKey(), entry.getValue(),
-                        hasDraftedReplies(entry.getValue())))
+                        WorktreeFiles.draftedReplies(entry.getValue())))
                 .toList();
-    }
-
-    /**
-     * The drafted replies live in a FILE the agent writes, not in {@code state.json} — which is why nothing
-     * used to mention them. So the projection looks: one {@code stat} per task per render, which is cheaper
-     * than the alternative (an agent-reported flag jagt would then have to keep in sync with the file).
-     */
-    private static boolean hasDraftedReplies(TaskState task) {
-        // Only where it is ACTIONABLE. The file survives until the agent deletes it (and with
-        // codeReview.postReviewReplies=false nobody ever does), so showing it for every later status turned a
-        // signal into a permanent nag — "read them before you ship" on a task that is already DEPLOYED.
-        if (task.status() != TaskStatus.REVIEW_PENDING && task.status() != TaskStatus.CI_FAILED) {
-            return false;
-        }
-        String worktree = task.worktreePath();
-        return worktree != null && !worktree.isBlank()
-                && Files.isRegularFile(Path.of(worktree).resolve(DRAFTED_REPLIES_FILE));
     }
 }

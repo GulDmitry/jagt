@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import lombok.With;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.model.ProjectConfig;
@@ -29,28 +30,18 @@ import java.util.Map;
 public class ConfigService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @With
     public record ConfigFile(Map<String, ProjectConfig> projects, ViewerConfig viewer, DashboardConfig dashboard,
                              CodeReviewConfig codeReview, AgentConfig agent, WorktreeConfig worktree,
                              AutoReviewConfig autoReview) {
 
         /** Agent viewer window/tabs + the tmux session everything attaches to. */
         @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
         public record ViewerConfig(String tmuxSession, String viewMode, Boolean keepViewer) {
 
             public static ViewerConfig defaults() {
                 return new ViewerConfig(null, null, null);
-            }
-
-            public ViewerConfig withTmuxSession(String session) {
-                return new ViewerConfig(session, viewMode, keepViewer);
-            }
-
-            public ViewerConfig withViewMode(String mode) {
-                return new ViewerConfig(tmuxSession, mode, keepViewer);
-            }
-
-            public ViewerConfig withKeepViewer(Boolean keep) {
-                return new ViewerConfig(tmuxSession, viewMode, keep);
             }
 
             /** Default true: the agents window/tab stays open (reserved) after the last task is done. */
@@ -69,18 +60,11 @@ public class ConfigService {
 
         /** Master TUI dashboard sizing. */
         @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
         public record DashboardConfig(Integer refreshSeconds, Integer reservedRows) {
 
             public static DashboardConfig defaults() {
                 return new DashboardConfig(null, null);
-            }
-
-            public DashboardConfig withRefreshSeconds(Integer seconds) {
-                return new DashboardConfig(seconds, reservedRows);
-            }
-
-            public DashboardConfig withReservedRows(Integer rows) {
-                return new DashboardConfig(refreshSeconds, rows);
             }
 
             /**
@@ -110,6 +94,7 @@ public class ConfigService {
 
         /** Merge-request title + review-reply behaviour on {@code ship}. */
         @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
         public record CodeReviewConfig(String mrTitlePattern, Boolean postReviewReplies,
                                        List<String> reviewReplyAuthors,
                                        MergeRequestDefaults mergeRequestDefaults) {
@@ -119,18 +104,11 @@ public class ConfigService {
              * disposable once merged, and its intermediate commits are review noise, not history.
              */
             @JsonIgnoreProperties(ignoreUnknown = true)
+            @With
             public record MergeRequestDefaults(Boolean removeSourceBranch, Boolean squash) {
 
                 public static MergeRequestDefaults defaults() {
                     return new MergeRequestDefaults(null, null);
-                }
-
-                public MergeRequestDefaults withRemoveSourceBranch(Boolean remove) {
-                    return new MergeRequestDefaults(remove, squash);
-                }
-
-                public MergeRequestDefaults withSquash(Boolean value) {
-                    return new MergeRequestDefaults(removeSourceBranch, value);
                 }
 
                 public boolean removeSourceBranchOrDefault() {
@@ -144,22 +122,6 @@ public class ConfigService {
 
             public static CodeReviewConfig defaults() {
                 return new CodeReviewConfig(null, null, null, null);
-            }
-
-            public CodeReviewConfig withMrTitlePattern(String pattern) {
-                return new CodeReviewConfig(pattern, postReviewReplies, reviewReplyAuthors, mergeRequestDefaults);
-            }
-
-            public CodeReviewConfig withPostReviewReplies(Boolean post) {
-                return new CodeReviewConfig(mrTitlePattern, post, reviewReplyAuthors, mergeRequestDefaults);
-            }
-
-            public CodeReviewConfig withReviewReplyAuthors(List<String> authors) {
-                return new CodeReviewConfig(mrTitlePattern, postReviewReplies, authors, mergeRequestDefaults);
-            }
-
-            public CodeReviewConfig withMergeRequestDefaults(MergeRequestDefaults defaults) {
-                return new CodeReviewConfig(mrTitlePattern, postReviewReplies, reviewReplyAuthors, defaults);
             }
 
             /** Never null, so a caller cannot forget the omitted-section case (mirrors ConfigFile's accessors). */
@@ -193,14 +155,11 @@ public class ConfigService {
 
         /** Per-agent settings written into each worktree. */
         @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
         public record AgentConfig(String outputStyle) {
 
             public static AgentConfig defaults() {
                 return new AgentConfig(null);
-            }
-
-            public AgentConfig withOutputStyle(String style) {
-                return new AgentConfig(style);
             }
 
             /**
@@ -220,27 +179,12 @@ public class ConfigService {
          * the window (linear). See {@code AutoReviewScheduler} + {@code AutoReviewCadence}.
          */
         @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
         public record AutoReviewConfig(Boolean enabled, Integer windowHours, Integer minIntervalMinutes,
                                        Integer maxIntervalMinutes) {
 
             public static AutoReviewConfig defaults() {
                 return new AutoReviewConfig(null, null, null, null);
-            }
-
-            public AutoReviewConfig withEnabled(Boolean value) {
-                return new AutoReviewConfig(value, windowHours, minIntervalMinutes, maxIntervalMinutes);
-            }
-
-            public AutoReviewConfig withWindowHours(Integer value) {
-                return new AutoReviewConfig(enabled, value, minIntervalMinutes, maxIntervalMinutes);
-            }
-
-            public AutoReviewConfig withMinIntervalMinutes(Integer value) {
-                return new AutoReviewConfig(enabled, windowHours, value, maxIntervalMinutes);
-            }
-
-            public AutoReviewConfig withMaxIntervalMinutes(Integer value) {
-                return new AutoReviewConfig(enabled, windowHours, minIntervalMinutes, value);
             }
 
             /** Default false: auto-review is opt-in — nothing polls until the human turns it on. */
@@ -270,14 +214,11 @@ public class ConfigService {
 
         /** Which gitignored local files get copied from the base repo into each new worktree. */
         @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
         public record WorktreeConfig(List<String> copyGlobs) {
 
             public static WorktreeConfig defaults() {
                 return new WorktreeConfig(null);
-            }
-
-            public WorktreeConfig withCopyGlobs(List<String> globs) {
-                return new WorktreeConfig(globs);
             }
 
             /**
@@ -329,33 +270,6 @@ public class ConfigService {
             return autoReview == null ? AutoReviewConfig.defaults() : autoReview;
         }
 
-        public ConfigFile withProjects(Map<String, ProjectConfig> newProjects) {
-            return new ConfigFile(newProjects, viewer, dashboard, codeReview, agent, worktree, autoReview);
-        }
-
-        public ConfigFile withViewer(ViewerConfig newViewer) {
-            return new ConfigFile(projects, newViewer, dashboard, codeReview, agent, worktree, autoReview);
-        }
-
-        public ConfigFile withDashboard(DashboardConfig newDashboard) {
-            return new ConfigFile(projects, viewer, newDashboard, codeReview, agent, worktree, autoReview);
-        }
-
-        public ConfigFile withCodeReview(CodeReviewConfig newCodeReview) {
-            return new ConfigFile(projects, viewer, dashboard, newCodeReview, agent, worktree, autoReview);
-        }
-
-        public ConfigFile withAgent(AgentConfig newAgent) {
-            return new ConfigFile(projects, viewer, dashboard, codeReview, newAgent, worktree, autoReview);
-        }
-
-        public ConfigFile withWorktree(WorktreeConfig newWorktree) {
-            return new ConfigFile(projects, viewer, dashboard, codeReview, agent, newWorktree, autoReview);
-        }
-
-        public ConfigFile withAutoReview(AutoReviewConfig newAutoReview) {
-            return new ConfigFile(projects, viewer, dashboard, codeReview, agent, worktree, newAutoReview);
-        }
     }
 
     // config.json is hand-edited — allow // and /* */ comments.

@@ -29,8 +29,8 @@ public final class DashboardLine {
             // title lives in its own column; this line stays contextual.)
             case REVIEW_PENDING -> switch (report) {
                 case QUESTION -> needsInput(message);
-                // Same reason the link is outranked: "nothing changed" reads as ready-to-ship without it.
-                case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change");
+                case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change")
+                        + (hasMr(task) ? " · " + task.mrUrl() : "");
                 case PLAIN -> hasMr(task) ? task.mrUrl() : "";
             };
             case NEW, IN_PROGRESS -> awaiting ? needsInput(message) : "";

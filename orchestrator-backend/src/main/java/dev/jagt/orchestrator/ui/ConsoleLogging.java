@@ -23,6 +23,7 @@ import java.util.Map;
 public class ConsoleLogging implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 
     private static final String THRESHOLD = "logging.threshold.console";
+    private static final String FILE_FORMAT = "logging.structured.format.file";
 
     @Override
     public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
@@ -32,8 +33,9 @@ public class ConsoleLogging implements ApplicationListener<ApplicationEnvironmen
     void apply(ConfigurableEnvironment environment) {
         String ui = environment.getProperty("orchestrator.ui", "web").trim();
         if ("tui".equalsIgnoreCase(ui) || "both".equalsIgnoreCase(ui)) {
-            environment.getPropertySources()
-                    .addLast(new MapPropertySource("jagt-console-logging", Map.of(THRESHOLD, "off")));
+            // With the console silenced the FILE is the only log a human can read, so it is not JSON there.
+            environment.getPropertySources().addLast(new MapPropertySource("jagt-console-logging",
+                    Map.of(THRESHOLD, "off", FILE_FORMAT, "")));
         }
     }
 

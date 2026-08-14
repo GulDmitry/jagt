@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
-import dev.jagt.orchestrator.model.AgentReport;
+import dev.jagt.orchestrator.model.RoundState;
 import dev.jagt.orchestrator.model.Move;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskState;
@@ -41,7 +41,7 @@ public class CommandService {
         TaskState task = stateService.task(taskId).orElseThrow(() -> new Refusal(Refusal.Code.NO_SUCH_TASK,
                 "No task " + taskIdOrAlias + " — it may have been closed since this page loaded."));
         Move move = Move.forTask(task.status(), task.mrUrl() != null && !task.mrUrl().isBlank(),
-                AgentReport.of(task.message()));
+                RoundState.of(task.message(), WorktreeFiles.draftedReplies(task)));
         if (!move.actions().contains(action)) {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — " + move.hint() + ")");

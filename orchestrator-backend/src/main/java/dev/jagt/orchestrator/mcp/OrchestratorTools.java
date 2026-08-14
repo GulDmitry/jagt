@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.mcp;
 
-import dev.jagt.orchestrator.model.AgentReport;
+import dev.jagt.orchestrator.model.RoundState;
 import dev.jagt.orchestrator.model.GitRemote;
 import dev.jagt.orchestrator.model.Move;
 import dev.jagt.orchestrator.model.NewTask;
@@ -123,9 +123,14 @@ public class OrchestratorTools {
         // the agent's frequent IN_PROGRESS keep-alives.
         if (newStatus != previous && (newStatus == TaskStatus.REVIEW_PENDING || newStatus == TaskStatus.CI_FAILED)) {
             userNotifier.notify("jagt · " + taskId,
-                    Move.forTask(newStatus, true, AgentReport.of(shortMessage)).hint());
+                    Move.forTask(newStatus, true, roundState(newStatus, shortMessage, current)).hint());
         }
         return "Task " + taskId + " -> " + newStatus + (shortMessage == null ? "" : " (" + shortMessage + ")");
+    }
+
+    private static RoundState roundState(TaskStatus status, String message, Optional<TaskState> task) {
+        return RoundState.of(message, task.map(t -> t.withStatus(status, message))
+                .map(dev.jagt.orchestrator.service.WorktreeFiles::draftedReplies).orElse(false));
     }
 
     public String openInIde(String explicitTaskId, String mode, String callerTaskId) {
@@ -390,7 +395,7 @@ public class OrchestratorTools {
         // Only ping on a real transition of an existing task — never for a no-op (task gone) or a re-poll
         // that lands on the same status the human already saw.
         if (updated && status != previous) {
-            userNotifier.notify("jagt · " + id, Move.forTask(status, true, AgentReport.of(message)).hint());
+            userNotifier.notify("jagt · " + id, Move.forTask(status, true, roundState(status, message, stateService.task(id))).hint());
         }
     }
 

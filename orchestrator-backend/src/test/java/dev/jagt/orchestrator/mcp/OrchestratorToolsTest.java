@@ -91,7 +91,7 @@ class OrchestratorToolsTest {
     void ideOpensTheDeployWorktreeForATaskStuckInDeployConflict(@TempDir Path root) throws Exception {
         Path repo = Files.createDirectories(root.resolve("repo"));
         Path deployWorktree = Files.createDirectories(root.resolve("ABC-1-deploy"));   // sibling of the repo
-        Path taskWorktree = Files.createDirectories(root.resolve("ABC-1-sng"));
+        Path taskWorktree = Files.createDirectories(root.resolve("ABC-1-demo"));
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         OrchestratorPaths paths = new OrchestratorPaths(properties);
@@ -459,7 +459,7 @@ class OrchestratorToolsTest {
         StateService state = new StateService(new JsonMapper(), paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
-        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release/sng", "release/sng", null));
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release", "release", null));
         GitService git = mock(GitService.class);
         OrchestratorTools tools = facade(config, state, git,
                 mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),

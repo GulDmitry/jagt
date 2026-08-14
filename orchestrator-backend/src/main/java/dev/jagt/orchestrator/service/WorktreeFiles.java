@@ -113,6 +113,17 @@ public final class WorktreeFiles {
     }
 
     /** The file's content, or empty when it is not there — an absent relay file is the normal first case. */
+    /** Announced only where it is actionable: the file survives until the agent deletes it. */
+    public static boolean draftedReplies(dev.jagt.orchestrator.model.TaskState task) {
+        if (task.status() != dev.jagt.orchestrator.model.TaskStatus.REVIEW_PENDING
+                && task.status() != dev.jagt.orchestrator.model.TaskStatus.CI_FAILED) {
+            return false;
+        }
+        String worktree = task.worktreePath();
+        return worktree != null && !worktree.isBlank()
+                && java.nio.file.Files.isRegularFile(Path.of(worktree).resolve("review_replies.md"));
+    }
+
     public static java.util.Optional<String> read(Path file) {
         if (!Files.isRegularFile(file)) {
             return java.util.Optional.empty();

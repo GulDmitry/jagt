@@ -13,7 +13,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void answersForEveryStatusThereIsSoNoTaskCanRenderAsUnknown(TaskStatus status) {
-        Move move = Move.forTask(status, false, AgentReport.PLAIN);
+        Move move = Move.forTask(status, false, RoundState.NONE);
 
         assertThat(move.phase()).isNotNull();
         assertThat(move.owner()).isNotNull();
@@ -25,7 +25,7 @@ class MoveTest {
     void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
         // Shipping it commits nothing and returns the task to CI_POLLING, where the auto-poll relays the very
         // threads that round answered — the ping-pong. Nothing is highlighted instead.
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, AgentReport.NO_CHANGES);
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, false));
 
         assertThat(move.primary()).isNull();
         assertThat(move.hint()).isEqualTo("nothing to ship — every comment answered; the open threads are the"
@@ -35,8 +35,19 @@ class MoveTest {
     }
 
     @Test
+    void stillAdvisesAShipWhenTheRoundLeftRepliesToPostEvenThoughItChangedNoCode() {
+        // `ship` is the only thing that posts review_replies.md, so "nothing to ship" would strand the answers
+        // and leave the reviewer waiting on threads the agent already answered.
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, true));
+
+        assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
+        assertThat(move.hint()).isEqualTo("no code changed — ship to post the drafted replies, nothing else"
+                + " goes out");
+    }
+
+    @Test
     void pointsAtTheAgentWhenTheRoundEndedInAQuestionInsteadOfAtTheShipButton() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, AgentReport.QUESTION);
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.QUESTION, false));
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
         assertThat(move.hint()).contains("the agent is asking");
@@ -46,7 +57,7 @@ class MoveTest {
     void namesTheHumanAsTheOwnerOfExactlyTheStatusesThatWaitForOne() {
         // This is the fact a person scans a board for, so it must be exhaustive rather than sampled.
         var waitingOnYou = Arrays.stream(TaskStatus.values())
-                .filter(status -> Move.forTask(status, false, AgentReport.PLAIN).owner() == Owner.YOU).toList();
+                .filter(status -> Move.forTask(status, false, RoundState.NONE).owner() == Owner.YOU).toList();
 
         assertThat(waitingOnYou).containsExactly(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED,
                 TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.DEPLOYED,
@@ -56,73 +67,73 @@ class MoveTest {
     @Test
     void collapsesTheFourStatusesThatAllReadAsReviewIntoDistinctPhases() {
         // The root of "review/ship/deploy are all a blur": these four say "review" to a human but mean four things.
-        assertThat(Move.forTask(TaskStatus.REVIEW_PENDING, false, AgentReport.PLAIN).phase()).isEqualTo(Phase.REVIEW);
-        assertThat(Move.forTask(TaskStatus.CI_POLLING, true, AgentReport.PLAIN).phase()).isEqualTo(Phase.CHECK);
-        assertThat(Move.forTask(TaskStatus.REVIEWED, true, AgentReport.PLAIN).phase()).isEqualTo(Phase.READY);
-        assertThat(Move.forTask(TaskStatus.APPROVED, true, AgentReport.PLAIN).phase()).isEqualTo(Phase.READY);
+        assertThat(Move.forTask(TaskStatus.REVIEW_PENDING, false, RoundState.NONE).phase()).isEqualTo(Phase.REVIEW);
+        assertThat(Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE).phase()).isEqualTo(Phase.CHECK);
+        assertThat(Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE).phase()).isEqualTo(Phase.READY);
+        assertThat(Move.forTask(TaskStatus.APPROVED, true, RoundState.NONE).phase()).isEqualTo(Phase.READY);
     }
 
     @Test
     void offersShipOnlyWhereTheShipGateWouldAcceptIt() {
-        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, AgentReport.PLAIN).actions()).contains(TaskAction.SHIP);
-        assertThat(Move.forTask(TaskStatus.REVIEW_PENDING, false, AgentReport.PLAIN).actions()).contains(TaskAction.SHIP);
-        assertThat(Move.forTask(TaskStatus.NEW, false, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.SHIP);
-        assertThat(Move.forTask(TaskStatus.DONE, true, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE).actions()).contains(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.REVIEW_PENDING, false, RoundState.NONE).actions()).contains(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.NEW, false, RoundState.NONE).actions()).doesNotContain(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.DONE, true, RoundState.NONE).actions()).doesNotContain(TaskAction.SHIP);
         // A further round onto an existing request is a ship; without a request there is nothing to ship onto.
-        assertThat(Move.forTask(TaskStatus.CI_POLLING, true, AgentReport.PLAIN).actions()).contains(TaskAction.SHIP);
-        assertThat(Move.forTask(TaskStatus.CI_POLLING, false, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE).actions()).contains(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.CI_POLLING, false, RoundState.NONE).actions()).doesNotContain(TaskAction.SHIP);
     }
 
     @Test
     void offersTheReviewSweepOnlyWhenThereIsSomethingToSweep() {
-        assertThat(Move.forTask(TaskStatus.CI_POLLING, true, AgentReport.PLAIN).actions()).contains(TaskAction.SWEEP);
-        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.SWEEP);
+        assertThat(Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE).actions()).contains(TaskAction.SWEEP);
+        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE).actions()).doesNotContain(TaskAction.SWEEP);
     }
 
     @Test
     void offersDeployOnlyWhenTheChangeIsReadyOrStuckOnItsWayOut() {
-        assertThat(Move.forTask(TaskStatus.REVIEWED, true, AgentReport.PLAIN).actions()).contains(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.APPROVED, true, AgentReport.PLAIN).actions()).contains(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.DEPLOY_CONFLICT, true, AgentReport.PLAIN).actions()).contains(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.DEPLOYED, true, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE).actions()).contains(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.APPROVED, true, RoundState.NONE).actions()).contains(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.DEPLOY_CONFLICT, true, RoundState.NONE).actions()).contains(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE).actions()).doesNotContain(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.DEPLOYED, true, RoundState.NONE).actions()).doesNotContain(TaskAction.DEPLOY);
     }
 
     @Test
     void pointsAtTheOneObviousActionForEachStatus() {
-        assertThat(Move.forTask(TaskStatus.REVIEW_PENDING, false, AgentReport.PLAIN).primary()).isEqualTo(TaskAction.SHIP);
-        assertThat(Move.forTask(TaskStatus.CI_FAILED, true, AgentReport.PLAIN).primary()).isEqualTo(TaskAction.SWEEP);
-        assertThat(Move.forTask(TaskStatus.APPROVED, true, AgentReport.PLAIN).primary()).isEqualTo(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.DEPLOYED, true, AgentReport.PLAIN).primary()).isEqualTo(TaskAction.DONE);
-        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, AgentReport.PLAIN).primary()).isEqualTo(TaskAction.FOCUS);
-        assertThat(Move.forTask(TaskStatus.DONE, false, AgentReport.PLAIN).primary()).isNull();
+        assertThat(Move.forTask(TaskStatus.REVIEW_PENDING, false, RoundState.NONE).primary()).isEqualTo(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.CI_FAILED, true, RoundState.NONE).primary()).isEqualTo(TaskAction.SWEEP);
+        assertThat(Move.forTask(TaskStatus.APPROVED, true, RoundState.NONE).primary()).isEqualTo(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.DEPLOYED, true, RoundState.NONE).primary()).isEqualTo(TaskAction.DONE);
+        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE).primary()).isEqualTo(TaskAction.FOCUS);
+        assertThat(Move.forTask(TaskStatus.DONE, false, RoundState.NONE).primary()).isNull();
     }
 
     @Test
     void offersShipForATaskStuckAtShippingBecauseTheDeadAgentIsWhatMakesItStuck() {
         // Liveness is not an input to the projection (it would cost a process spawn per task per render), so
         // SHIP is offered and the gate refuses at execution time if the agent turns out to be alive.
-        assertThat(Move.forTask(TaskStatus.SHIPPING, false, AgentReport.PLAIN).actions()).contains(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.SHIPPING, false, RoundState.NONE).actions()).contains(TaskAction.SHIP);
         assertThat(Move.shippable(TaskStatus.SHIPPING, true, false)).isFalse();
         assertThat(Move.shippable(TaskStatus.SHIPPING, false, false)).isTrue();
     }
 
     @Test
     void offersRevertOnlyForATaskWhoseDeployActuallyLanded() {
-        assertThat(Move.forTask(TaskStatus.DEPLOYED, true, AgentReport.PLAIN).actions()).contains(TaskAction.REVERT);
+        assertThat(Move.forTask(TaskStatus.DEPLOYED, true, RoundState.NONE).actions()).contains(TaskAction.REVERT);
         // A conflicted deploy never merged, and a reverted one has nothing left to take back out.
-        assertThat(Move.forTask(TaskStatus.DEPLOY_CONFLICT, true, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.REVERT);
-        assertThat(Move.forTask(TaskStatus.REVERTED, true, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.REVERT);
-        assertThat(Move.forTask(TaskStatus.REVIEWED, true, AgentReport.PLAIN).actions()).doesNotContain(TaskAction.REVERT);
+        assertThat(Move.forTask(TaskStatus.DEPLOY_CONFLICT, true, RoundState.NONE).actions()).doesNotContain(TaskAction.REVERT);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE).actions()).doesNotContain(TaskAction.REVERT);
+        assertThat(Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE).actions()).doesNotContain(TaskAction.REVERT);
     }
 
     @Test
     void treatsAReversionAsWorkToRedoRatherThanATaskToClose() {
         // The change came back out, so the expected next move is a fix onto the same review request — not DONE,
         // which is what a DEPLOYED task gets.
-        assertThat(Move.forTask(TaskStatus.REVERTED, true, AgentReport.PLAIN).primary()).isEqualTo(TaskAction.SHIP);
-        assertThat(Move.forTask(TaskStatus.REVERTED, true, AgentReport.PLAIN).actions()).contains(TaskAction.SHIP);
-        assertThat(Move.forTask(TaskStatus.REVERTED, false, AgentReport.PLAIN).primary()).isEqualTo(TaskAction.FOCUS);
-        assertThat(Move.forTask(TaskStatus.REVERTED, true, AgentReport.PLAIN).phase()).isEqualTo(Phase.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE).primary()).isEqualTo(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE).actions()).contains(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.REVERTED, false, RoundState.NONE).primary()).isEqualTo(TaskAction.FOCUS);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE).phase()).isEqualTo(Phase.DEPLOY);
     }
 }

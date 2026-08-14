@@ -64,10 +64,10 @@ class LineEditorTest {
 
     @Test
     void deleteWordBackRemovesThePreviousWordIncludingTrailingSpaces() {
-        MasterShell.LineEditor e = of("do PAN-1 project ");
+        MasterShell.LineEditor e = of("do ABC-1 project ");
         e.deleteWordBack();
 
-        assertThat(e.text()).isEqualTo("do PAN-1 ");
+        assertThat(e.text()).isEqualTo("do ABC-1 ");
         assertThat(e.cursor()).isEqualTo(9);
     }
 

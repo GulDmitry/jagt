@@ -91,15 +91,7 @@ public class GitService {
     public record Commit(boolean created, int changedFiles) {
     }
 
-    /**
-     * Stages EVERYTHING in a task worktree and commits it with {@code message} — the mechanical half of
-     * {@code ship}, which used to be prose an agent had to follow (and could reword, or stall on a permission
-     * prompt nobody was watching).
-     *
-     * <p>Nothing staged means no commit, not an error: a review round where the agent changed nothing, or a
-     * ship after the agent committed by itself, is a legitimate no-op that still pushes and updates the
-     * review request.
-     */
+    /** Stages everything in the worktree and commits it. Nothing staged = no commit, and not an error. */
     public Commit commitAll(Path projectPath, Path worktree, String message) {
         return withRepoLock(projectPath, () -> {
             processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "add", "-A"))
@@ -117,13 +109,9 @@ public class GitService {
     }
 
     /**
-     * Pushes a TASK branch to origin, and only that branch.
-     *
-     * <p>Every part of the command is a safety decision. The refspec is explicit on both sides
-     * ({@code refs/heads/x:refs/heads/x}) so the push cannot follow HEAD or an upstream somewhere else — the
-     * same reason {@link #detachUpstream} exists. No {@code --force}, ever: a task branch that diverged from
-     * its remote is a human's problem, not something to overwrite. No {@code -u}: setting an upstream is
-     * exactly the trap detachUpstream removes.
+     * Pushes ONE branch, with a refspec explicit on both sides so it cannot follow HEAD or an upstream.
+     * Never {@code --force} (a diverged branch is a human's call) and never {@code -u} (see
+     * {@link #detachUpstream}).
      */
     public void pushBranch(Path projectPath, Path worktree, String branch) {
         withRepoLock(projectPath, () -> {
@@ -142,9 +130,8 @@ public class GitService {
     }
 
     /**
-     * Does {@code origin} carry this branch? Asked over the network rather than of {@code refs/remotes}: a
-     * branch pushed a minute ago is absent locally until the next fetch, and refusing to start a task on it
-     * would be wrong. Only the caller of a HUMAN-TYPED branch name needs this; the configured base is trusted.
+     * Does {@code origin} carry this branch? Asked over the network, not of {@code refs/remotes}: a branch
+     * pushed a minute ago is absent locally until the next fetch.
      */
     public boolean remoteBranchExists(Path projectPath, String branch) {
         return withRepoLock(projectPath, () -> processRunner.run(projectPath, GIT_TIMEOUT,
@@ -152,7 +139,7 @@ public class GitService {
     }
 
     /**
-     * CRITICAL SAFETY: a branch created from origin/release/sng inherits it as
+     * CRITICAL SAFETY: a branch created from origin/release inherits it as
      * upstream, so a bare `git push` from an agent would target the RELEASE
      * branch. Unset the upstream — now a bare push errors ("no upstream"), and
      * the agent must push explicitly to its own branch.
@@ -192,15 +179,11 @@ public class GitService {
     }
 
     /**
-     * Merges sourceBranch (the task branch) into targetBranch (the deploy branch) and pushes — always in a
-     * dedicated deploy-side worktree cut from {@code origin/<target>}, so the merge and any conflict
-     * resolution happen on the deploy side and the task branch is NEVER modified (its MR targets the base
-     * branch, so touching it would balloon the diff with everything the deploy branch carries).
+     * Merges the task branch into the deploy branch and pushes, in a dedicated worktree cut from
+     * {@code origin/<target>} — so the task branch is NEVER modified by a deploy.
      *
-     * <p>On conflict the deploy worktree is LEFT on disk with the conflict markers instead of aborted; the
-     * human resolves it there and calls deploy again, which detects the resolved worktree and finishes the
-     * push. Only this method and {@link #revertMergeAndPush} (its undo) ever write the shared deploy
-     * branch, and both are Master-only.
+     * <p>A conflict LEAVES that worktree on disk with its markers instead of aborting: the next call detects
+     * the resolved worktree and finishes the push.
      */
     public String mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
         return withRepoLock(projectPath, () -> {

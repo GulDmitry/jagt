@@ -39,9 +39,16 @@ class ReviewRequestTitleTest {
     @CsvSource({
             "'{ticket}: {title}', ABC-42",
             "'{ticket} {title}',  ABC-42",
-            "'{ticket} — {title}', ABC-42"
+            "'{ticket} — {title}', ABC-42",
+            "'{title} — {ticket}', ABC-42"
     })
     void namesARequestAfterItsTicketAloneWhenTheTaskNeverGotATitle(String pattern, String ticket) {
         assertThat(ReviewRequestTitle.expand(pattern, ticket, null)).isEqualTo("ABC-42");
+    }
+
+    @Test
+    void neverEditsATitleThatEndsInAPatternSeparator() {
+        assertThat(ReviewRequestTitle.expand("{ticket}: {title}", "ABC-42", "Rework endpoint /users/"))
+                .isEqualTo("ABC-42: Rework endpoint /users/");
     }
 }

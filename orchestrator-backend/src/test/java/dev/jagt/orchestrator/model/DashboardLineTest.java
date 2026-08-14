@@ -90,13 +90,13 @@ class DashboardLineTest {
     }
 
     @Test
-    void saysTheRoundChangedNothingRatherThanShowingALinkThatReadsAsReadyToShip() {
+    void saysTheRoundChangedNothingWithoutDroppingTheLinkToTheThreadsItNames() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("no changes: every comment already handled").alias("a1").title("title")
                 .mrUrl("https://host/mr/440").build();
 
         assertThat(DashboardLine.forTask("ABC-1", task))
-                .isEqualTo("ANSWERED: every comment already handled");
+                .isEqualTo("ANSWERED: every comment already handled · https://host/mr/440");
     }
 
 }

@@ -41,7 +41,7 @@ public record TaskView(
 
     public static TaskView of(String id, TaskState task, boolean draftedReplies) {
         Move move = Move.forTask(task.status(), task.mrUrl() != null && !task.mrUrl().isBlank(),
-                AgentReport.of(task.message()));
+                RoundState.of(task.message(), draftedReplies));
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
                         action == move.primary()))

@@ -13,10 +13,10 @@ class CliEditorDriverTest {
 
     private static final String XML = """
             <application><component name="RecentProjectsManager"><option name="additionalInfo"><map>
-                <entry key="$USER_HOME$/www/sbrd/PAN-2391-sng">
-                  <value><RecentProjectMetaInfo><option name="frameTitle" value="PAN-2391" /></RecentProjectMetaInfo></value>
+                <entry key="$USER_HOME$/www/repos/ABC-2391-demo">
+                  <value><RecentProjectMetaInfo><option name="frameTitle" value="ABC-2391" /></RecentProjectMetaInfo></value>
                 </entry>
-                <entry key="$USER_HOME$/www/sbrd/sng-back">
+                <entry key="$USER_HOME$/www/repos/demo-back">
                   <value><RecentProjectMetaInfo /></value>
                 </entry>
             </map></option></component></application>""";
@@ -24,53 +24,53 @@ class CliEditorDriverTest {
     @Test
     void removesTheDoneWorktreeEntryButKeepsTheOthers() {
         String pruned = CliEditorDriver.pruneRecentProjects(XML, "/Users/me",
-                Path.of("/Users/me/www/sbrd/PAN-2391-sng"));
+                Path.of("/Users/me/www/repos/ABC-2391-demo"));
 
-        assertThat(pruned).doesNotContain("PAN-2391-sng").contains("sng-back");
+        assertThat(pruned).doesNotContain("ABC-2391-demo").contains("demo-back");
     }
 
     @Test
     void matchesTheAbsolutePathFormToo() {
-        String absForm = XML.replace("$USER_HOME$/www/sbrd/PAN-2391-sng", "/Users/me/www/sbrd/PAN-2391-sng");
+        String absForm = XML.replace("$USER_HOME$/www/repos/ABC-2391-demo", "/Users/me/www/repos/ABC-2391-demo");
 
         String pruned = CliEditorDriver.pruneRecentProjects(absForm, "/Users/me",
-                Path.of("/Users/me/www/sbrd/PAN-2391-sng"));
+                Path.of("/Users/me/www/repos/ABC-2391-demo"));
 
-        assertThat(pruned).doesNotContain("PAN-2391-sng").contains("sng-back");
+        assertThat(pruned).doesNotContain("ABC-2391-demo").contains("demo-back");
     }
 
     @Test
     void leavesTheFileUntouchedWhenTheWorktreeIsNotListed() {
         String pruned = CliEditorDriver.pruneRecentProjects(XML, "/Users/me",
-                Path.of("/Users/me/www/sbrd/NOT-THERE-sng"));
+                Path.of("/Users/me/www/repos/NOT-THERE-demo"));
 
         assertThat(pruned).isEqualTo(XML);
     }
 
     private static final String GC_XML = """
             <application><component name="RecentProjectsManager"><option name="additionalInfo"><map>
-                <entry key="$USER_HOME$/www/sbrd/PAN-2575-sng"><value><RecentProjectMetaInfo /></value></entry>
-                <entry key="$USER_HOME$/www/sbrd/PAN-2575-deploy"><value><RecentProjectMetaInfo /></value></entry>
-                <entry key="$USER_HOME$/www/sbrd/PAN-2676-sng"><value><RecentProjectMetaInfo /></value></entry>
-                <entry key="$USER_HOME$/www/sbrd/sng-back"><value><RecentProjectMetaInfo /></value></entry>
+                <entry key="$USER_HOME$/www/repos/ABC-2575-demo"><value><RecentProjectMetaInfo /></value></entry>
+                <entry key="$USER_HOME$/www/repos/ABC-2575-deploy"><value><RecentProjectMetaInfo /></value></entry>
+                <entry key="$USER_HOME$/www/repos/ABC-2676-demo"><value><RecentProjectMetaInfo /></value></entry>
+                <entry key="$USER_HOME$/www/repos/demo-back"><value><RecentProjectMetaInfo /></value></entry>
                 <entry key="$USER_HOME$/www/other/some-old-project"><value><RecentProjectMetaInfo /></value></entry>
             </map></option></component></application>""";
 
     private static final List<WorktreeLocation> LOCATIONS =
-            List.of(new WorktreeLocation(Path.of("/Users/me/www/sbrd"), "sng"));
+            List.of(new WorktreeLocation(Path.of("/Users/me/www/repos"), "demo"));
 
     @Test
     void garbageCollectsDeadTaskAndDeployWorktreesButKeepsLiveAndForeignEntries() {
-        // Everything is gone from disk EXCEPT the still-checked-out PAN-2676-sng worktree and the sng-back repo.
-        Predicate<Path> dirExists = p -> p.endsWith("PAN-2676-sng") || p.endsWith("sng-back");
+        // Everything is gone from disk EXCEPT the still-checked-out ABC-2676-demo worktree and the demo-back repo.
+        Predicate<Path> dirExists = p -> p.endsWith("ABC-2676-demo") || p.endsWith("demo-back");
 
         List<String> dead = CliEditorDriver.deadWorktreeKeys(GC_XML, "/Users/me", LOCATIONS, dirExists);
         String pruned = CliEditorDriver.removeEntries(GC_XML, dead);
 
         assertThat(pruned)
-                .doesNotContain("PAN-2575-sng").doesNotContain("PAN-2575-deploy")
-                .contains("PAN-2676-sng")           // still checked out — live, kept
-                .contains("sng-back")               // the base repo — kept
+                .doesNotContain("ABC-2575-demo").doesNotContain("ABC-2575-deploy")
+                .contains("ABC-2676-demo")           // still checked out — live, kept
+                .contains("demo-back")               // the base repo — kept
                 .contains("some-old-project");      // dead but not a jagt worktree location — left alone
     }
 

@@ -28,7 +28,7 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
     private static final List<TaskAction> ALWAYS = List.of(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF,
             TaskAction.RESPAWN, TaskAction.DONE);
 
-    public static Move forTask(TaskStatus status, boolean hasReviewRequest, AgentReport report) {
+    public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round) {
         List<TaskAction> actions = new ArrayList<>();
         if (shippable(status, false, hasReviewRequest)) {
             actions.add(TaskAction.SHIP);
@@ -47,7 +47,7 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         }
         actions.addAll(ALWAYS);
         return new Move(phaseOf(status), ownerOf(status), List.copyOf(actions),
-                primaryOf(status, hasReviewRequest, report), hint(status, report));
+                primaryOf(status, hasReviewRequest, round), hint(status, round));
     }
 
     /**
@@ -94,14 +94,14 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         };
     }
 
-    private static TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest, AgentReport report) {
+    private static TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest, RoundState round) {
         return switch (status) {
             case NEW, IN_PROGRESS, SHIPPING -> TaskAction.FOCUS;
-            // A round that changed nothing has nothing to ship, and shipping it only returns the task to
-            // CI_POLLING, where the auto-poll relays the very threads it just answered. Nothing is highlighted:
-            // the open threads are the reviewer's to resolve. A question is answered where the agent can hear it.
-            case REVIEW_PENDING -> switch (report) {
-                case NO_CHANGES -> null;
+            // Shipping a round that changed nothing commits nothing and drops the task back into
+            // CI_POLLING, where the poll relays the threads it just answered — unless replies are waiting,
+            // because `ship` is the only thing that posts them.
+            case REVIEW_PENDING -> switch (round.report()) {
+                case NO_CHANGES -> round.draftedReplies() ? TaskAction.SHIP : null;
                 case QUESTION -> TaskAction.FOCUS;
                 case PLAIN -> TaskAction.SHIP;
             };
@@ -115,12 +115,13 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
     }
 
     /** One line of prose for the TUI and for a button tooltip — the same wording the dashboard always used. */
-    private static String hint(TaskStatus status, AgentReport report) {
+    private static String hint(TaskStatus status, RoundState round) {
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent working — wait or focus";
-            case REVIEW_PENDING -> switch (report) {
-                case NO_CHANGES -> "nothing to ship — every comment answered; the open threads are the"
-                        + " reviewer's move";
+            case REVIEW_PENDING -> switch (round.report()) {
+                case NO_CHANGES -> round.draftedReplies()
+                        ? "no code changed — ship to post the drafted replies, nothing else goes out"
+                        : "nothing to ship — every comment answered; the open threads are the reviewer's move";
                 case QUESTION -> "the agent is asking — answer it (focus), then ship";
                 case PLAIN -> "your move: read the diff (ide), then ship";
             };

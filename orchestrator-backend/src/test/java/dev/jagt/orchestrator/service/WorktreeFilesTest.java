@@ -17,7 +17,7 @@ class WorktreeFilesTest {
         java.nio.file.Files.createDirectories(project.resolve(".idea").resolve("runConfigurations"));
         java.nio.file.Files.writeString(project.resolve(".idea").resolve("runConfigurations").resolve("App.xml"),
                 "<configuration/>");
-        Path worktree = root.resolve("PAN-1-repo");
+        Path worktree = root.resolve("ABC-1-repo");
 
         WorktreeFiles.copyIdeProjectFiles(project, worktree);
 
@@ -31,7 +31,7 @@ class WorktreeFilesTest {
         java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources.xml"), "<dataSource/>");
         java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources.local.xml"), "<local/>");
         java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources").resolve("pg.xml"), "<db/>");
-        Path worktree = root.resolve("PAN-1-repo");
+        Path worktree = root.resolve("ABC-1-repo");
 
         WorktreeFiles.copyIdeProjectFiles(project, worktree);
 
@@ -44,7 +44,7 @@ class WorktreeFilesTest {
         Path project = root.resolve("repo");
         java.nio.file.Files.createDirectories(project.resolve(".run"));
         java.nio.file.Files.writeString(project.resolve(".run").resolve("App.run.xml"), "<configuration/>");
-        Path worktree = root.resolve("PAN-1-repo");
+        Path worktree = root.resolve("ABC-1-repo");
 
         WorktreeFiles.copyIdeProjectFiles(project, worktree);
 
@@ -53,7 +53,7 @@ class WorktreeFilesTest {
     @Test
     void doesNotFailWhenBaseProjectHasNoSharedRunConfigurations(@TempDir Path root) {
         Path project = root.resolve("repo");
-        Path worktree = root.resolve("PAN-1-repo");
+        Path worktree = root.resolve("ABC-1-repo");
 
         WorktreeFiles.copyIdeProjectFiles(project, worktree);
 

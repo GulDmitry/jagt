@@ -34,7 +34,7 @@ class MasterShellTest {
     void treatsFreeTextAfterPlanAsNotesNotAProject() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
-                "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()),
+                "demo", new ProjectConfig("/a", "origin/main", "dev", List.of()),
                 "sobrado", new ProjectConfig("/b", "origin/stage", "dev", List.of()))));
         MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
                 config, mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class),
@@ -51,16 +51,16 @@ class MasterShellTest {
     void readsTheBaseBranchAfterFromAndKeepsTheRestAsNotes() {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
-                "sng", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
+                "demo", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
         MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
                 config, mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class),
                 mock(NaturalLanguageDispatch.class), mock(ConfigurableApplicationContext.class));
 
         LaunchRequest args = shell.parseDoArgs(
-                List.of("do", "ABC-1", "from", "feature/parent", "sng", "keep the API stable"));
+                List.of("do", "ABC-1", "from", "feature/parent", "demo", "keep the API stable"));
 
         assertThat(args.baseBranch()).isEqualTo("feature/parent");
-        assertThat(args.project()).isEqualTo("sng");
+        assertThat(args.project()).isEqualTo("demo");
         assertThat(args.notes()).isEqualTo("keep the API stable");
     }
 
@@ -123,7 +123,7 @@ class MasterShellTest {
     @Test
     void tabCompletesATaskAliasFromTheLiveTasks() {
         OrchestratorTools tools = mock(OrchestratorTools.class);
-        when(tools.taskChoices()).thenReturn(List.of(new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel")));
+        when(tools.taskChoices()).thenReturn(List.of(new OrchestratorTools.TaskChoice("p1", "ABC-2536", "Excel")));
         MasterShell shell = new MasterShell(tools, mock(StateViews.class), mock(ConfigService.class),
                 mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class),
                 mock(NaturalLanguageDispatch.class), mock(ConfigurableApplicationContext.class));
@@ -139,8 +139,8 @@ class MasterShellTest {
     void tabListsAmbiguousTasksWithTheirTitlesInsteadOfCompleting() {
         OrchestratorTools tools = mock(OrchestratorTools.class);
         when(tools.taskChoices()).thenReturn(List.of(
-                new OrchestratorTools.TaskChoice("p1", "PAN-2536", "Excel export flag"),
-                new OrchestratorTools.TaskChoice("p2", "PAN-2540", "Login rate limit")));
+                new OrchestratorTools.TaskChoice("p1", "ABC-2536", "Excel export flag"),
+                new OrchestratorTools.TaskChoice("p2", "ABC-2540", "Login rate limit")));
         MasterShell shell = new MasterShell(tools, mock(StateViews.class), mock(ConfigService.class),
                 mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class),
                 mock(NaturalLanguageDispatch.class), mock(ConfigurableApplicationContext.class));
@@ -151,8 +151,8 @@ class MasterShellTest {
         shell.completeInput(editor, log);
 
         assertThat(editor.text()).isEqualTo("ship p");   // ambiguous → unchanged, options listed instead
-        assertThat(log).anyMatch(l -> l.contains("PAN-2536") && l.contains("Excel export flag"));
-        assertThat(log).anyMatch(l -> l.contains("PAN-2540") && l.contains("Login rate limit"));
+        assertThat(log).anyMatch(l -> l.contains("ABC-2536") && l.contains("Excel export flag"));
+        assertThat(log).anyMatch(l -> l.contains("ABC-2540") && l.contains("Login rate limit"));
     }
 
     @Test

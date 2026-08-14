@@ -454,7 +454,7 @@ palette.onsubmit = async (event) => {
       const ran = await runParsed(parsed);
       if (ran) { ask.value = ''; togglePalette(false); return; }
     } catch (e) {
-      toast(e.message, true);
+      toast(refusal(e), true);
       return;
     } finally {
       button.disabled = false;
@@ -475,7 +475,7 @@ palette.onsubmit = async (event) => {
     ask.value = '';
     togglePalette(false);
   } catch (e) {
-    toast(e.message, true);
+    toast(refusal(e), true);
   } finally {
     button.disabled = false;
     state.textContent = '';

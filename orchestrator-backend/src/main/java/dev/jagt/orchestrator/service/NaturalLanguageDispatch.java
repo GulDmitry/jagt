@@ -104,9 +104,12 @@ public class NaturalLanguageDispatch {
             return understood + commands.execute(task, action.get());
         } catch (Refusal e) {
             // Rethrown rather than returned: a refusal answered as text reads as a success to every caller —
-            // 200 to the palette, which then clears the input and closes on a neutral toast. It carries the
-            // interpretation now, because a refusal about a task the operator never named explains nothing.
+            // 200 to the palette, which then clears the input and closes on a neutral toast.
             throw new Refusal(e.code(), understood + "refused: " + e.getMessage());
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // The gates below CommandService refuse with these, and a refusal naming a task the operator
+            // never typed explains nothing without the interpretation.
+            throw new IllegalStateException(understood + "refused: " + e.getMessage(), e);
         }
     }
 

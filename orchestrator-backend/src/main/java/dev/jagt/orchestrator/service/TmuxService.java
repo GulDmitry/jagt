@@ -219,7 +219,7 @@ public class TmuxService {
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string",
                 "#{?#{@jagt_alias},#W (#{@jagt_alias}),#W}"));
         // The status-bar window list (what you scan while attached) shows only #I:#W#F by default — add the
-        // alias, so "PAN-2554 (p1)" is visible in the bar, not just in the terminal tab title. Keep the
+        // alias, so "ABC-2554 (p1)" is visible in the bar, not just in the terminal tab title. Keep the
         // trailing #F: it renders the window flags (`*` current, `-` last, `Z` zoomed) — dropping it is what
         // made the active-tab `*` marker vanish once a custom format replaced tmux's default.
         String windowFormat = "#I:#W#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";

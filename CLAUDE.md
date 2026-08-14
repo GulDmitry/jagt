@@ -359,6 +359,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   settings — default EMPTY (opt-in for RAM-constrained setups; disabling an absent plugin is a no-op).
 
 ## Conventions
+- COMMENTS GO THROUGH THE `sob-ai:commenting` SKILL, EVERY TIME, BEFORE WRITING OR EDITING ANY — no exceptions,
+  including a "quick" one-liner. Its HARD GATE decides: default is NO comment, one non-obvious WHY at most.
+  Deleted on sight — narration of what the code does, an argument that a change is correct (that belongs in the
+  review, not in the file), how the code got this way, and a fact whose source of truth is elsewhere. jagt's
+  own history is the warning: 2349 comment lines against 7027 code lines, a build file explaining how the
+  dashboard renders and what a merge conflict means, and two comments still naming libraries deleted months
+  before (Spring Shell, JLine). ONE MORE RULE FOR THIS REPO: a file may only speak its own layer — the build
+  file knows about the build, a seam interface states its contract and never one implementation's mechanism.
 - `USE-CASES.md` is the one-line answer per SITUATION ("the request does not target the base branch → …").
   When a case turns out to be non-obvious — or a session re-derives one that was already decided — append a
   row there instead of only fixing the code. CLAUDE.md keeps the rules; USE-CASES.md keeps the answers.
@@ -419,10 +427,13 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   over it with fatter test setup or shared fixtures.
 - No fat constructors / positional null-soup. Keep params to ~4-6; beyond that GROUP collaborators into a
   cohesive component (composition) or use a builder. Config/value records get a builder or a
-  `defaults()` + `withX` withers — never call a 10-arg record constructor with a row of `null`s. (Lombok
-  `@Builder`/`@Value` is welcome for non-record boilerplate, added deliberately; it does NOT apply to
-  records, so jagt's config records need a hand-rolled builder/defaults. Lombok is NOT a dependency today —
-  adopting it, and re-checking what it does support on records, is roadmap step 1 in TODO.md.)
+  `defaults()` + `withX` withers — never call a 10-arg record constructor with a row of `null`s.
+- LOMBOK CARRIES THE MECHANICAL BOILERPLATE, and nothing else: `@RequiredArgsConstructor` for injected final
+  fields, `@Slf4j` for the logger, `@With` for a record's positional copy-withers (1.18.46 supports `@With` AND
+  `@Builder` on records — verified under the Java 25 toolchain; an older note here claimed otherwise). Written
+  by hand where the code is not mechanical: a constructor that validates or derives (`OrchestratorPaths`), a
+  wither that does more than copy one component (`TaskState.withStatus` stamps history), and
+  `TaskState.builder(project, worktree, status)` — Lombok's generated `builder()` cannot demand those three.
 - Prefer composition over many injected dependencies; SOLID + clean-code defaults — standard for 30 years,
   apply them, don't reinvent.
 - SELF-CONTROL LOOP (mandatory, every code+test change): run the changed tests through the

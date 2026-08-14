@@ -17,10 +17,12 @@ public final class ReviewRequestTitle {
      */
     public static String expand(String pattern, String taskId, String storedTitle) {
         String title = stripTicketPrefix(storedTitle, taskId);
-        return pattern.replace("{ticket}", taskId)
-                .replace("{title}", title == null ? "" : title)
-                .replaceFirst("[\\s:|/–—-]+$", "")
-                .trim();
+        // With no title the placeholder's own separators go with it, wherever it sits in the pattern. Cleaning
+        // up the RESULT instead would edit a title that legitimately ends in one of them.
+        String filled = title == null || title.isBlank()
+                ? pattern.replaceFirst("[\\s:|/–—-]*\\{title}[\\s:|/–—-]*", "")
+                : pattern.replace("{title}", title);
+        return filled.replace("{ticket}", taskId).trim();
     }
 
     /**

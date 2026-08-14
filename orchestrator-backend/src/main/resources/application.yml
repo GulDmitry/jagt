@@ -1,6 +1,5 @@
 server:
-  # Non-standard on purpose: 8080 collides with everything in a microservice dev setup. Override with
-  # --server.port=... or SERVER_PORT if 8290 is taken (also set MCP_SERVER_URL for mcp_client.js then).
+  # Change this and mcp_client.js needs MCP_SERVER_URL to match.
   port: 8290
 
 spring:
@@ -12,14 +11,11 @@ spring:
     resources:
       cache:
         cachecontrol:
-          # Same URLs serve new content after every upgrade, and without this the browser may reuse what it
-          # has without asking. Revalidate, not "never cache" — unchanged assets still answer 304.
+          # Revalidate, not "never cache": unchanged assets still answer 304.
           no-cache: true
 
 logging:
-  # There is deliberately no console threshold here: it depends on which surface owns the terminal, and
-  # `ui/ConsoleLogging` sets it (off for tui|both, Boot's default for the board). Setting it here would
-  # outrank that, and the board would go silent again.
+  # No console threshold here: `ui/ConsoleLogging` decides it per surface, and this would outrank that.
   file:
     name: ${LOG_FILE:jagt-backend.log}
   structured:
@@ -28,42 +24,28 @@ logging:
       file: ecs
 
 orchestrator:
-  # Which control surface the human drives (OperatorUi strategy): web | tui | both.
-  # web (default) serves the board at localhost:${server.port}; tui is the full-screen console; both runs the
-  # board and then hands the terminal to the console.
+  # web | tui | both.
   ui: web
-  # Root is auto-detected by walking up from the launch dir to the folder
-  # containing mcp_client.js; set ORCHESTRATOR_ROOT only to override it.
-  # config.json / state.json live in the root unless overridden here.
+  # Blank = auto-detected by walking up from the launch directory.
   root: ${ORCHESTRATOR_ROOT:}
   config-file: ${ORCHESTRATOR_CONFIG_FILE:}
   state-file: ${ORCHESTRATOR_STATE_FILE:}
-  # Platform strategies (see dev.jagt.orchestrator.platform): notifier is selected
-  # by `platform`, terminal window driver by `terminal`, editor by `editor-command`
-  # (any CLI launcher: idea, code, subl). Defaults = macOS + Warp + IntelliJ.
+  # macos | linux — selects the notifier and the terminal driver.
   platform: macos
-  # Agents viewer: kitty (default — addressable, closable, titled tabs + fast GPU render) or warp.
-  # Both run over tmux, so agents persist regardless. kitty needs `brew install kitty`.
+  # kitty | warp. Both run over tmux, so agents persist either way.
   terminal: kitty
   # kitty-command: kitty   # override the kitty binary if not on PATH
   # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own (default 11)
-  # Editor launcher + args; the worktree path is appended. The idea binary opens the given
-  # directory as a project reliably; `open -a "IntelliJ IDEA" <dir>` only ACTIVATES the app —
-  # with another project already open it shows that window instead of the passed worktree.
-  # Alternatives: [code] for VS Code, [subl] for Sublime.
+  # Any CLI launcher; the worktree path is appended. `open -a` will NOT do: it activates the app
+  # without opening the passed directory.
   editor-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"]
-  # `ide <ticket> diff` opens a diff window (task changes vs base) — needs the idea binary,
-  # `open -a` can't diff. Paths are appended: <left> <right>.
+  # Two paths are appended: <left> <right>.
   editor-diff-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea", "diff"]
-  # Which agent CLI runs the sub-agents (the AgentRuntime seam): claude (default) or codex. The runtime writes
-  # its own MCP config into each worktree; the system-knowledge file is always AGENTS.md (Claude gets a
-  # CLAUDE.md symlink to it). A Codex worktree runs against its OWN CODEX_HOME, so your ~/.codex MCP servers
-  # are not inherited there.
+  # claude | codex. A Codex worktree runs against its own CODEX_HOME, so your ~/.codex servers are not there.
   # agent: claude
   # codex:
   #   command: codex
-  # The `claude` binary — used by the Claude runtime AND by the master assistant's headless reads, which stay
-  # Claude regardless of which agent runs the tasks.
+  # Also used by the headless reads, which stay Claude whichever agent runs the tasks.
   claude-command: claude
   # Initial prompt every spawned sub-agent starts with (otherwise the session idles).
   agent-prompt: >-
@@ -72,44 +54,29 @@ orchestrator:
     autonomously, but do NOT commit, push, or open a merge request on your own — leave ALL changes
     UNCOMMITTED so the human reviews your working tree; committing happens ONLY when task_context.md
     later instructs it (that is the human's `ship`). When done and verified, set status REVIEW_PENDING.
-  # Master assistant: a one-shot headless Claude for `do <ticket>` — reads the Jira ticket to resolve
-  # the project (matching the ticket's labels to your projects' `labels`) and grab the title. It
-  # inherits YOUR MCP servers via --setting-sources (jagt hardcodes NO server or path); --json-schema
-  # forces deterministic JSON. If it can't read the ticket, `do` falls back to an explicit project.
+  # The one-shot headless reads. They inherit YOUR MCP servers; jagt hardcodes no server or path.
   assistant:
-    # Do NOT narrow this to `project`: the call runs from the temp dir, so project scope alone loads
-    # ZERO MCP servers (verified) and every read fails — the ~7k tokens it saves buy nothing.
+    # Do NOT narrow to `project`: the call runs from a temp dir, where that scope loads zero servers.
     setting-sources: user,project,local
-    # Mostly mechanical extraction (open an item, return fields under a schema), so the cheapest
-    # capable model wins: measured $0.06 a call against $0.41 on the inherited default. The review
-    # sweep is the one judgement-heavy read ("approved by a human?") — raise this if you distrust it.
+    # Blank inherits your own model; the reads are mechanical enough for the cheapest one.
     model: haiku
-    # Headless `-p` can't answer the permission classifier, which then silently blocks the MCP calls
-    # the ticket-read needs. bypassPermissions lifts the gate; or blank it and scope to named servers:
+    # Nothing can answer a permission prompt in a headless call, and a blocked tool fails silently.
     permission-mode: bypassPermissions
     # allowed-tools: mcp__your-jira-mcp,mcp__your-gitlab-mcp   # takes precedence over permission-mode
-  # Read the review sweep over the code host's REST API instead of paying a headless model call per poll.
-  # The sweep is mechanical — approved? pipeline? unresolved threads? are API fields, not judgements — so over
-  # REST it costs nothing, returns instantly and cannot drift. READ-ONLY: jagt never pushes, merges or posts
-  # here; every outward write stays the human's `ship`/`deploy` through the agent. Blank type = not wired, and
-  # sweeps keep going through the (paid) assistant read.
+  # Blank type = not wired, and the review sweep falls back to a paid headless read.
   code-host:
     type: ${CODE_HOST_TYPE:}          # gitlab (the only implementation today); blank = disabled
     base-url: ${CODE_HOST_URL:}       # https://gitlab.example.com — URLs are only read under this prefix
     token: ${CODE_HOST_TOKEN:}        # read-only API token; keep it in the environment, never in a file
-  # Plugins disabled in each agent worktree's settings.local.json. Default EMPTY: agents KEEP their
-  # LSP (code intelligence — go-to-def, references, diagnostics; worth the RAM). jagt reaps each
-  # worktree's JDT server on `done` so finished tasks don't leave servers behind. Only opt in below
-  # if you're RAM-constrained and accept dumber agents (MCP plugins like Jira/GitLab stay enabled):
+  # Opt-in for RAM-constrained setups; disabling an LSP plugin buys memory and costs the agent its
+  # code intelligence.
   # agent-disabled-plugins:
   #   - jdtls-lsp@claude-plugins-official
   #   - php-lsp@claude-plugins-official
   #   - oh-my-claudecode@omc
-  # Bare name on purpose: resolved on PATH, then in the known install dirs (Homebrew, /usr/bin, …).
-  # An absolute path here was a macOS-only default that broke every Linux run — see Executables.
+  # A bare name is resolved on PATH and then in the known install dirs; an absolute path is not portable.
   tmux-command: tmux
-  # Auto-open a Warp window attached to the agents' tmux session. Disable in
-  # smoke tests (--orchestrator.open-warp-window=false) so tests leave no windows behind.
+  # Smoke tests pass false, so a run leaves no window behind.
   open-warp-window: true
   watchdog:
     stale-after: 5m
