@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.model.TokenUsage;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -25,6 +26,7 @@ import java.util.Optional;
  * human's user-level MCP loads (no jagt project MCP), keeping the context — and tokens — small.
  */
 @Component
+@RequiredArgsConstructor
 public class HeadlessClaudeAssistant implements MasterAssistant {
 
     private static final Logger log = LoggerFactory.getLogger(HeadlessClaudeAssistant.class);
@@ -69,13 +71,6 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private final OrchestratorProperties properties;
     private final AssistantProperties assistant;
     private final JsonMapper mapper = new JsonMapper();
-
-    public HeadlessClaudeAssistant(ProcessRunner processRunner, OrchestratorProperties properties,
-                                   AssistantProperties assistant) {
-        this.processRunner = processRunner;
-        this.properties = properties;
-        this.assistant = assistant;
-    }
 
     @Override
     public Answer<TicketFacts> readTicket(String ticketRef) {

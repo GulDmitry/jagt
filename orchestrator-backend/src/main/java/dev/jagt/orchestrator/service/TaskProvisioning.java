@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
  * what a given agent's config file is called.
  */
 @Service
+@RequiredArgsConstructor
 public class TaskProvisioning {
 
     /** Task ids become git branches, directory names and tmux window names/targets. */
@@ -47,19 +49,6 @@ public class TaskProvisioning {
     /** Plugins the agent sessions should NOT load — heavy LSP plugins spawn a ~1-2GB server per worktree. */
     @Value("${orchestrator.agent-disabled-plugins:}")
     private List<String> agentDisabledPlugins;
-
-    public TaskProvisioning(ConfigService configService, StateService stateService, GitService gitService,
-                            AgentSessions agentSessions, AgentRuntime agentRuntime,
-                            OrchestratorProperties properties, OrchestratorPaths paths, PromptTemplates prompts) {
-        this.configService = configService;
-        this.stateService = stateService;
-        this.gitService = gitService;
-        this.agentSessions = agentSessions;
-        this.agentRuntime = agentRuntime;
-        this.properties = properties;
-        this.paths = paths;
-        this.prompts = prompts;
-    }
 
     /** The configured project whose repo already has a branch named taskId, or null if none. */
     public String existingBranchProject(String taskId, String projectKey) {

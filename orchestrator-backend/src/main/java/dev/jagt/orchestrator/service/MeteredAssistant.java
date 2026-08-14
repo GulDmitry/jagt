@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.TokenUsage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,15 +23,11 @@ import org.springframework.stereotype.Component;
  * simply spends money off the books.
  */
 @Component
+@RequiredArgsConstructor
 public class MeteredAssistant {
 
     private final MasterAssistant assistant;
     private final UsageTracker usageTracker;
-
-    public MeteredAssistant(MasterAssistant assistant, UsageTracker usageTracker) {
-        this.assistant = assistant;
-        this.usageTracker = usageTracker;
-    }
 
     public Answer<TicketFacts> readTicket(String ticketRef) {
         return metered(AssistantCallKind.TICKET_READ, assistant.readTicket(ticketRef));

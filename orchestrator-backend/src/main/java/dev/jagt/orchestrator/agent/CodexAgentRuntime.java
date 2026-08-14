@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.agent;
 
 import dev.jagt.orchestrator.config.CodexProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -21,17 +22,13 @@ import java.nio.file.Path;
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent", havingValue = "codex")
+@RequiredArgsConstructor
 public class CodexAgentRuntime extends AbstractAgentRuntime {
 
     private static final String CODEX_HOME_DIR = ".codex";
 
     private final OrchestratorProperties properties;
     private final CodexProperties codex;
-
-    public CodexAgentRuntime(OrchestratorProperties properties, CodexProperties codex) {
-        this.properties = properties;
-        this.codex = codex;
-    }
 
     @Override
     public String displayName() {

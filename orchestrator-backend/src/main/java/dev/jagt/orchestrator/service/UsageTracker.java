@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
@@ -24,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * that never became a task. The views label each for what it is.
  */
 @Component
+@RequiredArgsConstructor
 public class UsageTracker {
 
     private static final Logger log = LoggerFactory.getLogger(UsageTracker.class);
@@ -31,10 +33,6 @@ public class UsageTracker {
     private final StateService stateService;
     /** Session spend split by what the call was FOR; the session total is the sum, never a second counter. */
     private final Map<AssistantCallKind, TokenUsage> sessionByKind = new ConcurrentHashMap<>();
-
-    public UsageTracker(StateService stateService) {
-        this.stateService = stateService;
-    }
 
     /** Adds a measured call to the session total. Call this for EVERY call, attributable or not. */
     public void record(AssistantCallKind kind, TokenUsage usage) {

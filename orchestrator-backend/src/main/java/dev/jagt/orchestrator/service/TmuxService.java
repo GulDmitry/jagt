@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.platform.TerminalDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -20,6 +21,7 @@ import java.util.Optional;
  * configured {@link TerminalDriver} whenever no client is attached.
  */
 @Service
+@RequiredArgsConstructor
 public class TmuxService {
 
     private static final Logger log = LoggerFactory.getLogger(TmuxService.class);
@@ -33,15 +35,6 @@ public class TmuxService {
     private final TerminalDriver terminalDriver;
     private final AgentRuntime agentRuntime;
     private final Object lock = new Object();
-
-    public TmuxService(ProcessRunner processRunner, OrchestratorProperties properties, OrchestratorPaths paths,
-                       TerminalDriver terminalDriver, AgentRuntime agentRuntime) {
-        this.processRunner = processRunner;
-        this.properties = properties;
-        this.paths = paths;
-        this.terminalDriver = terminalDriver;
-        this.agentRuntime = agentRuntime;
-    }
 
     public String sessionName(String configured) {
         return configured == null || configured.isBlank() ? "jagt" : configured;

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ import java.util.stream.Stream;
  * keeps branches and why this only ever looks.
  */
 @Service
+@RequiredArgsConstructor
 public class WorktreeOrphanScanner {
 
     private static final Logger log = LoggerFactory.getLogger(WorktreeOrphanScanner.class);
@@ -51,13 +53,6 @@ public class WorktreeOrphanScanner {
     private final ConfigService configService;
     private final StateService stateService;
     private final UserNotifier userNotifier;
-
-    public WorktreeOrphanScanner(ConfigService configService, StateService stateService,
-                                 UserNotifier userNotifier) {
-        this.configService = configService;
-        this.stateService = stateService;
-        this.userNotifier = userNotifier;
-    }
 
     /**
      * One ping at startup when something is rotting, because a log line alone would be invisible: the Master

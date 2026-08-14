@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.platform.TerminalDriver;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "terminal", havingValue = "warp", matchIfMissing = false)
+@RequiredArgsConstructor
 public class WarpTerminalDriver implements TerminalDriver {
 
     private static final Logger log = LoggerFactory.getLogger(WarpTerminalDriver.class);
@@ -37,12 +39,6 @@ public class WarpTerminalDriver implements TerminalDriver {
     private final OrchestratorProperties properties;
     private final OsaScript osaScript;
     private final ConcurrentHashMap<String, Long> openedAt = new ConcurrentHashMap<>();
-
-    public WarpTerminalDriver(ProcessRunner processRunner, OrchestratorProperties properties, OsaScript osaScript) {
-        this.processRunner = processRunner;
-        this.properties = properties;
-        this.osaScript = osaScript;
-    }
 
     @Override
     public void openViewer(String tmuxSession, String dedicatedTitle, Path tabCwd) {

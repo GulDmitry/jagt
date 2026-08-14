@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.service.StateService;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * a browser that missed one event would then be silently stale.
  */
 @Component
+@RequiredArgsConstructor
 public class TaskEventStream implements ApplicationListener<ContextClosedEvent> {
 
     private static final Logger log = LoggerFactory.getLogger(TaskEventStream.class);
@@ -30,10 +32,6 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
     private final StateService stateService;
     private final List<SseEmitter> browsers = new CopyOnWriteArrayList<>();
     private volatile boolean closing;
-
-    public TaskEventStream(StateService stateService) {
-        this.stateService = stateService;
-    }
 
     @PostConstruct
     void followStateChanges() {

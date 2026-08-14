@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.codehost.CodeHost;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,17 +23,13 @@ import java.util.Optional;
  * site: a free read charges nothing, a paid one is always booked to the task.
  */
 @Component
+@RequiredArgsConstructor
 public class ReviewReader {
 
     private static final Logger log = LoggerFactory.getLogger(ReviewReader.class);
 
     private final List<CodeHost> codeHosts;
     private final MeteredAssistant assistant;
-
-    public ReviewReader(List<CodeHost> codeHosts, MeteredAssistant assistant) {
-        this.codeHosts = codeHosts;
-        this.assistant = assistant;
-    }
 
     /** The review round for {@code reviewRequestUrl}; any paid read is charged to {@code taskId}. */
     public Optional<ReviewFacts> read(String taskId, String reviewRequestUrl) {

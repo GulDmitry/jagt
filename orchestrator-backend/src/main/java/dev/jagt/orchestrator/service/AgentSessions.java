@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.agent.AgentRuntime;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.platform.TerminalDriver;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -19,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code TmuxService} and {@link AgentRuntime#displayName()}.
  */
 @Service
+@RequiredArgsConstructor
 public class AgentSessions {
 
     private final ConfigService configService;
@@ -28,15 +30,6 @@ public class AgentSessions {
     private final AgentRuntime agentRuntime;
     /** Per-task relay monitors; a handful of entries, one per task ever relayed to in this session. */
     private final ConcurrentHashMap<String, Object> relayLocks = new ConcurrentHashMap<>();
-
-    public AgentSessions(ConfigService configService, StateService stateService, TmuxService tmuxService,
-                         TerminalDriver terminalDriver, AgentRuntime agentRuntime) {
-        this.configService = configService;
-        this.stateService = stateService;
-        this.tmuxService = tmuxService;
-        this.terminalDriver = terminalDriver;
-        this.agentRuntime = agentRuntime;
-    }
 
     /** Starts the agent in its tmux window and returns the session name. */
     public String startAgent(String taskId, String alias, Path worktreePath, boolean planMode) {

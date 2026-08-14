@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -24,15 +25,11 @@ import java.util.regex.Pattern;
  * or [code] or [subl]. The worktree path is appended as the last argument.
  */
 @Component
+@RequiredArgsConstructor
 public class CliEditorDriver implements EditorDriver {
 
     private final ProcessRunner processRunner;
     private final OrchestratorProperties properties;
-
-    public CliEditorDriver(ProcessRunner processRunner, OrchestratorProperties properties) {
-        this.processRunner = processRunner;
-        this.properties = properties;
-    }
 
     // Detached: GUI launchers (idea, open -a) may not return until the IDE is ready or the window
     // closes; waiting would time out and then kill the window we just opened.

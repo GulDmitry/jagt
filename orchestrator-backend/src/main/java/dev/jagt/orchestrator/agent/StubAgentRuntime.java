@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.agent;
 
 import dev.jagt.orchestrator.config.StubAgentProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -21,13 +22,10 @@ import java.nio.file.Path;
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent", havingValue = "stub")
+@RequiredArgsConstructor
 public class StubAgentRuntime extends AbstractAgentRuntime {
 
     private final StubAgentProperties stub;
-
-    public StubAgentRuntime(StubAgentProperties stub) {
-        this.stub = stub;
-    }
 
     @Override
     public String displayName() {

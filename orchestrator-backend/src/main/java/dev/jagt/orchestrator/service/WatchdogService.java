@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * even between MCP calls, so the window-activity check removes the false "unresponsive" alerts.
  */
 @Service
+@RequiredArgsConstructor
 public class WatchdogService {
 
     private static final Logger log = LoggerFactory.getLogger(WatchdogService.class);
@@ -28,15 +30,6 @@ public class WatchdogService {
     private final TmuxService tmuxService;
     private final ConfigService configService;
     private final Map<String, Long> lastAlertAt = new ConcurrentHashMap<>();
-
-    public WatchdogService(StateService stateService, UserNotifier userNotifier, OrchestratorProperties properties,
-                           TmuxService tmuxService, ConfigService configService) {
-        this.stateService = stateService;
-        this.userNotifier = userNotifier;
-        this.properties = properties;
-        this.tmuxService = tmuxService;
-        this.configService = configService;
-    }
 
     /**
      * The statuses in which jagt EXPECTS the agent to be doing something, so silence means death:

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.model.ProjectConfig;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.json.JsonMapper;
@@ -24,6 +25,7 @@ import java.util.Map;
  * section to its all-default instance, so callers never null-check.
  */
 @Service
+@RequiredArgsConstructor
 public class ConfigService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -360,10 +362,6 @@ public class ConfigService {
     private final JsonMapper mapper = JsonMapper.builder()
             .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS).build();
     private final OrchestratorPaths paths;
-
-    public ConfigService(OrchestratorPaths paths) {
-        this.paths = paths;
-    }
 
     public ConfigFile load() {
         if (!Files.exists(paths.configFile())) {

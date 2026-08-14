@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.model.TaskView;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
@@ -19,16 +20,13 @@ import java.util.Map;
  * regroups and re-sorts client-side, which is where a sort belongs when the data is already in the browser.
  */
 @Component
+@RequiredArgsConstructor
 public class TaskViews {
 
     /** Written by the agent, in the worktree — see {@link ReviewSweepService}'s relayed brief. */
     private static final String DRAFTED_REPLIES_FILE = "review_replies.md";
 
     private final StateService stateService;
-
-    public TaskViews(StateService stateService) {
-        this.stateService = stateService;
-    }
 
     public List<TaskView> all() {
         Map<String, TaskState> tasks = stateService.tasks();

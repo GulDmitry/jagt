@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -21,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * `git fetch` in one project must not block initializing tasks in another.
  */
 @Service
+@RequiredArgsConstructor
 public class GitService {
 
     private static final Logger log = LoggerFactory.getLogger(GitService.class);
@@ -28,10 +30,6 @@ public class GitService {
 
     private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();
     private final ProcessRunner processRunner;
-
-    public GitService(ProcessRunner processRunner) {
-        this.processRunner = processRunner;
-    }
 
     public enum BranchStrategy { FRESH, RECREATE, RESUME }
 

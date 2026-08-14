@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.ui;
 
 import dev.jagt.orchestrator.shell.MasterShell;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
@@ -14,13 +15,10 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnExpression("'${orchestrator.ui:web}'.matches('tui|both')")
+@RequiredArgsConstructor
 public class TuiOperatorUi implements OperatorUi {
 
     private final MasterShell masterShell;
-
-    public TuiOperatorUi(MasterShell masterShell) {
-        this.masterShell = masterShell;
-    }
 
     @Override
     public void start() {

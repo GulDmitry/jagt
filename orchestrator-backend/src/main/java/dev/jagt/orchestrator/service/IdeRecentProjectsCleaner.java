@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.platform.EditorDriver;
 import dev.jagt.orchestrator.platform.EditorDriver.WorktreeLocation;
+import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -18,15 +19,11 @@ import java.util.List;
  * own worktrees so a human's real projects are never pruned.
  */
 @Service
+@RequiredArgsConstructor
 public class IdeRecentProjectsCleaner {
 
     private final EditorDriver editorDriver;
     private final ConfigService configService;
-
-    public IdeRecentProjectsCleaner(EditorDriver editorDriver, ConfigService configService) {
-        this.editorDriver = editorDriver;
-        this.configService = configService;
-    }
 
     @Scheduled(fixedRate = 60_000)
     public void cleanDeadWorktreeProjects() {

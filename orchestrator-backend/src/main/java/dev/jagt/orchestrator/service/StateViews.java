@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,18 +10,12 @@ import org.springframework.stereotype.Component;
  * same text.
  */
 @Component
+@RequiredArgsConstructor
 public class StateViews {
 
     private final DashboardRenderer dashboard;
     private final UsageStatsRenderer usageStats;
     private final WorktreeOrphanScanner orphanScanner;
-
-    public StateViews(DashboardRenderer dashboard, UsageStatsRenderer usageStats,
-                      WorktreeOrphanScanner orphanScanner) {
-        this.dashboard = dashboard;
-        this.usageStats = usageStats;
-        this.orphanScanner = orphanScanner;
-    }
 
     public String dashboard() {
         return dashboard.render();

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 
 import java.time.Duration;
@@ -11,17 +12,12 @@ import java.time.Duration;
  * default): poll often early, back off as the MR ages. Past the window it returns {@code null} — polling
  * stops (the scheduler pings the human once to sweep manually).
  */
+@RequiredArgsConstructor
 public final class AutoReviewCadence {
 
     private final Duration window;
     private final long minMinutes;
     private final long maxMinutes;
-
-    public AutoReviewCadence(Duration window, long minMinutes, long maxMinutes) {
-        this.window = window;
-        this.minMinutes = minMinutes;
-        this.maxMinutes = maxMinutes;
-    }
 
     public static AutoReviewCadence from(AutoReviewConfig cfg) {
         return new AutoReviewCadence(Duration.ofHours(cfg.windowHoursOrDefault()),

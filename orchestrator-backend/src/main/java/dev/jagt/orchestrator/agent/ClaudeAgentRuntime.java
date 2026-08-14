@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.agent;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -18,15 +19,11 @@ import java.util.stream.Collectors;
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent", havingValue = "claude", matchIfMissing = true)
+@RequiredArgsConstructor
 public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     private final OrchestratorProperties properties;
     private final McpEndpoint mcp;
-
-    public ClaudeAgentRuntime(OrchestratorProperties properties, McpEndpoint mcp) {
-        this.properties = properties;
-        this.mcp = mcp;
-    }
 
     @Override
     public String displayName() {

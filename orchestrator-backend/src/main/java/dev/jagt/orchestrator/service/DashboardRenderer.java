@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.model.TokenUsage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.util.List;
  * next move cannot mean one thing here and another there.
  */
 @Component
+@RequiredArgsConstructor
 public class DashboardRenderer {
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -40,11 +42,6 @@ public class DashboardRenderer {
 
     private final TaskViews taskViews;
     private final UsageTracker usageTracker;
-
-    public DashboardRenderer(TaskViews taskViews, UsageTracker usageTracker) {
-        this.taskViews = taskViews;
-        this.usageTracker = usageTracker;
-    }
 
     public String render() {
         List<TaskView> tasks = taskViews.all();

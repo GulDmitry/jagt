@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TokenUsage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -17,6 +18,7 @@ import java.util.Map;
  * backend started — including tasks already retired with {@code done} and reads that never became a task.
  */
 @Component
+@RequiredArgsConstructor
 public class UsageStatsRenderer {
 
     /** 18 = the longest {@link AssistantCallKind} label ("merge-request read"); a longer one would shift
@@ -26,11 +28,6 @@ public class UsageStatsRenderer {
 
     private final StateService stateService;
     private final UsageTracker usageTracker;
-
-    public UsageStatsRenderer(StateService stateService, UsageTracker usageTracker) {
-        this.stateService = stateService;
-        this.usageTracker = usageTracker;
-    }
 
     public String render() {
         Map<String, TaskState> tasks = stateService.tasks();

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.mcp;
 
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.StateViews;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,20 +14,13 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 @RestController
+@RequiredArgsConstructor
 public class McpController {
 
     private final McpProtocolService protocolService;
     private final StateService stateService;
     private final StateViews views;
     private final ObjectMapper mapper;
-
-    public McpController(McpProtocolService protocolService, StateService stateService,
-                         StateViews views, ObjectMapper mapper) {
-        this.protocolService = protocolService;
-        this.stateService = stateService;
-        this.views = views;
-        this.mapper = mapper;
-    }
 
     @PostMapping(value = "/mcp", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JsonNode> mcp(@RequestBody String body,
