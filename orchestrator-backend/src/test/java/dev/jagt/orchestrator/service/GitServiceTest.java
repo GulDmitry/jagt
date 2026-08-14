@@ -237,6 +237,36 @@ class GitServiceTest {
         assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("task work");
     }
 
+    /**
+     * The reported case: the base repo itself still had the ticket's branch checked out (an editor was open on
+     * it), so git refused the worktree with its own message and the human was left guessing what to free.
+     */
+    @Test
+    void namesTheCheckoutHoldingTheBranchInsteadOfRelayingGitsRefusal(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        // Left ON the branch, which is what an editor holding it looks like.
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        GitService git = new GitService(runner);
+
+        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
+                GitService.BranchStrategy.RESUME))
+                .isInstanceOf(IllegalStateException.class)
+                // git answers with the real path, which on macOS is the /private prefix of a temp dir.
+                .hasMessageContaining("is checked out at ").hasMessageContaining(repo.getFileName().toString())
+                .hasMessageContaining("switch <other-branch>")
+                .hasMessageContaining("nothing was registered");
+        assertThat(dir.resolve("wt")).doesNotExist();
+    }
+
     @Test
     void startsBranchFreshFromBaseWhenReopenedTicketRecreatesIt(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();

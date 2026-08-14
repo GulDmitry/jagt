@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -49,6 +50,13 @@ public class GitService {
             boolean branchExists = processRunner.run(projectPath, GIT_TIMEOUT,
                     List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0;
             if (branchExists) {
+                checkoutOf(projectPath, branch).ifPresent(held -> {
+                    throw new IllegalStateException("Branch '" + branch + "' is checked out at " + held
+                            + ", and git allows one checkout per branch — so no worktree can take it. Free it"
+                            + " there (`git -C " + held + " switch <other-branch>`) and run this again; nothing"
+                            + " was registered. jagt will not switch a checkout that may hold your uncommitted"
+                            + " work.");
+                });
                 switch (strategy) {
                     // A reopened ticket after a squash merge looks "unmerged" to git, an
                     // aborted task may hold unpushed work — deleting silently is never safe.
@@ -73,6 +81,21 @@ public class GitService {
                     .expectSuccess("git worktree add " + worktreePath);
             detachUpstream(projectPath, branch);
         });
+    }
+
+    /** Which worktree (the base repo included) has {@code branch} checked out, if any. */
+    private Optional<Path> checkoutOf(Path projectPath, String branch) {
+        var listed = processRunner.run(projectPath, GIT_TIMEOUT,
+                List.of("git", "worktree", "list", "--porcelain"));
+        Path worktree = null;
+        for (String line : listed.stdout().lines().map(String::strip).toList()) {
+            if (line.startsWith("worktree ")) {
+                worktree = Path.of(line.substring("worktree ".length()));
+            } else if (line.equals("branch refs/heads/" + branch)) {
+                return Optional.ofNullable(worktree);
+            }
+        }
+        return Optional.empty();
     }
 
     /** One branch name per line, blanks dropped — the shape of {@code --format=%(refname:short)} output. */

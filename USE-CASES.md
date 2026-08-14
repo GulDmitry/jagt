@@ -23,6 +23,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | A new ticket whose work happens to live on an older task's branch | `do <new-ticket> from <that-branch>` | A new task/branch of its own; the old request stays with the old branch. |
 | The request's source branch is not a legal task name (`feature/x`) | — | Refused with that branch named: a task IS its branch, and the name becomes a directory and a tmux window too. |
 | Request unreadable (no code host, assistant failed) | — | Refused. A guessed branch name would point the task at a branch the request does not track. |
+| The branch is still checked out somewhere (the base repo, an editor, an old worktree) | free it, then `resume` again | Refused by NAME: git allows one checkout per branch, so the message says which directory holds it and the `git -C <dir> switch` that frees it. Nothing is registered, so the retry is clean. jagt will not switch a checkout that may hold uncommitted work. |
 
 ## Review rounds
 
