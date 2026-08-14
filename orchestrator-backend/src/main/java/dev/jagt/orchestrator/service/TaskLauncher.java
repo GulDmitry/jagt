@@ -100,27 +100,35 @@ public class TaskLauncher {
     }
 
     /**
-     * Reopened review request: the URL is enough. The assistant reads it for the source branch (= the task)
-     * and its project; jagt resumes that branch and links the request at CI_POLLING (no new request). An
-     * explicit ticket may be given to skip the lookup.
+     * Reopened review request: the URL is the ONLY input, because the request already carries every answer —
+     * its SOURCE branch is the task (a jagt task IS its branch) and its TARGET is the base that the next ship
+     * must update rather than open a second request against. A ticket used to be accepted here to name the
+     * task instead; it could not skip the read (the title and the target still had to come from somewhere)
+     * and, when it disagreed with the source branch, it produced a task whose branch the request does not
+     * track — so `ship` would push one branch and open a request for another.
      */
-    public String resume(String reviewRequestUrl, String ticket) {
-        // The read also carries the title, so a resumed task shows one on the board just like a `do` task.
-        String title = null;
-        String targetBranch = null;
+    public String resume(String reviewRequestUrl) {
         var read = assistant.readMergeRequest(reviewRequestUrl);
         var request = read.facts();
-        if (request.isPresent() && request.get().exists()) {
-            title = request.get().title();
-            targetBranch = request.get().targetBranch();
-            if (ticket == null) {
-                ticket = request.get().sourceBranch();
-            }
-        } else if (ticket == null) {
+        if (request.isEmpty() || !request.get().exists()) {
             return "error: could not read the review request (or not found): " + reviewRequestUrl;
         }
-        String result = tools.resumeTask(ticket, reviewRequestUrl, title, targetBranch);
-        assistant.chargeTask(ticket, read.usage());       // the task exists only after resumeTask
+        // The read also carries the title, so a resumed task shows one on the board just like a `do` task.
+        String taskId = request.get().sourceBranch();
+        if (taskId == null || taskId.isBlank()) {
+            return "error: the review request names no source branch: " + reviewRequestUrl;
+        }
+        // Someone else's branch is not bound by jagt's naming, and a task IS its branch — so say which branch
+        // and why, instead of letting the generic id check report a regex the human never typed.
+        if (!TaskProvisioning.isSafeId(taskId)) {
+            return "error: source branch '" + taskId + "' cannot be a jagt task — a task IS its branch, and"
+                    + " that name also becomes a directory and a tmux window (allowed: letters, digits, '-',"
+                    + " '_'). Work in the branch directly, or start a task of your own with `do <ticket> from "
+                    + taskId + "`.";
+        }
+        String result = tools.resumeTask(taskId, reviewRequestUrl, request.get().title(),
+                request.get().targetBranch());
+        assistant.chargeTask(taskId, read.usage());       // the task exists only after resumeTask
         return result;
     }
 

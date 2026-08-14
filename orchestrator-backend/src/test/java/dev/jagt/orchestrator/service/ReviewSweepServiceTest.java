@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.Optional;
@@ -71,6 +72,45 @@ class ReviewSweepServiceTest {
                 org.mockito.ArgumentMatchers.contains("review_replies.md"));
         verify(tools, never()).markApproved("ABC-1");
         verify(tools, never()).markReviewed("ABC-1");
+    }
+
+    /**
+     * A relayed list of comments reads as a work order, and an agent handed a work order complies with the
+     * wrong comments too — after which the human mistakes obedience in the diff for agreement. The brief has
+     * to hand the agent a decision (fix / push back / ask) before it hands it the comments.
+     */
+    @Test
+    void relaysAReviewRoundAsAJudgementCallAndNotAsAListOfOrders() {
+        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("reviewer (a.java:3): drop the cache"))));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(tools).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue())
+                .contains("Wrong: change NOTHING")          // disagreeing is a route, not a failure
+                .contains("awaiting:")                      // so is asking, instead of guessing
+                .contains("drop the cache");
+    }
+
+    /**
+     * A red build with no comments goes through the same brief, and its exit condition has to be one the
+     * agent can actually reach: it is forbidden to push, so it can never watch the pipeline turn green — only
+     * finish the fix locally.
+     */
+    @Test
+    void tellsAnAgentFixingOnlyAFailedBuildWhenTheRoundIsOver() {
+        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(tools).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue()).contains("When the build is fixed locally, set status REVIEW_PENDING.");
     }
 
     @Test

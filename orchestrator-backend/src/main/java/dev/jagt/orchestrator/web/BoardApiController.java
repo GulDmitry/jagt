@@ -59,10 +59,10 @@ public class BoardApiController {
 
     /**
      * Taking over a review request that already exists: its branch is resumed with the commits already on it
-     * (someone else's, or your own from before), the request is linked, and no second one is opened. The ticket
-     * is optional — the read supplies it — and giving it skips that read.
+     * (someone else's, or your own from before), the request is linked, and no second one is opened. Its URL is
+     * the only input: the request names its own source branch (= the task) and target (= the base).
      */
-    public record ResumeRequest(String reviewRequestUrl, String ticket) {
+    public record ResumeRequest(String reviewRequestUrl) {
     }
 
     private final TaskViews taskViews;
@@ -128,8 +128,7 @@ public class BoardApiController {
         if (!url.startsWith("http")) {
             throw new IllegalArgumentException("A review-request URL is required (http…)");
         }
-        String ticket = request.ticket() == null || request.ticket().isBlank() ? null : request.ticket().strip();
-        return new ActionResult(launcher.resume(url, ticket));
+        return new ActionResult(launcher.resume(url));
     }
 
     /**

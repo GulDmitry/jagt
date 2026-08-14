@@ -43,11 +43,11 @@ class MasterShellTest {
                 config, mock(CommandService.class), mock(TaskLauncher.class), mock(StateService.class),
                 mock(NaturalLanguageDispatch.class), mock(ConfigurableApplicationContext.class));
 
-        LaunchRequest args = shell.parseDoArgs(List.of("do", "ABC-2099", "plan", "давай", "разберём", "алгоритм"));
+        LaunchRequest args = shell.parseDoArgs(List.of("do", "ABC-2099", "plan", "walk", "me", "through", "it"));
 
         assertThat(args.project()).isNull();
         assertThat(args.mode()).isEqualTo("plan");
-        assertThat(args.notes()).isEqualTo("давай разберём алгоритм");
+        assertThat(args.notes()).isEqualTo("walk me through it");
     }
 
     @Test
@@ -65,6 +65,24 @@ class MasterShellTest {
         assertThat(args.baseBranch()).isEqualTo("feature/parent");
         assertThat(args.project()).isEqualTo("sng");
         assertThat(args.notes()).isEqualTo("keep the API stable");
+    }
+
+    /**
+     * A review request names its own source and target branch, so a ticket typed beside its URL can only
+     * contradict it — and the task that came out would be a branch the request does not track, which the next
+     * `ship` pushes while the request keeps waiting on the other one.
+     */
+    @Test
+    void refusesAResumeThatTriesToNameTheTaskBesideTheRequestUrl() {
+        TaskLauncher launcher = mock(TaskLauncher.class);
+        MasterShell shell = new MasterShell(mock(OrchestratorTools.class), mock(StateViews.class),
+                mock(ConfigService.class), mock(CommandService.class), launcher, mock(StateService.class),
+                mock(NaturalLanguageDispatch.class), mock(ConfigurableApplicationContext.class));
+
+        assertThatThrownBy(() -> shell.resumeTask(List.of("resume", "https://host/mr/42", "ABC-9")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("carries its own branches");
+        verifyNoInteractions(launcher);
     }
 
     @Test

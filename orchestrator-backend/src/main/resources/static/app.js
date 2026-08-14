@@ -74,6 +74,7 @@ async function loadVerbs() {
   } catch (e) {
     verbs = [];                      // no suggestions is a degraded palette, not a broken one
   }
+  refreshSuggestions();
 }
 
 async function load() {
@@ -108,7 +109,6 @@ function render() {
   document.getElementById('empty').hidden = tasks.length > 0;
   // Only phases that HAVE tasks get a column. `done` deletes the task outright, so a DONE column could never
   // hold anything — it just sat there reading "done 0" — and five empty columns are noise on a board of two.
-  refreshSuggestions();
   board.replaceChildren(...PHASES.map(([phase, label]) => {
     const inPhase = sorted(shown.filter((task) => task.phase === phase));
     if (!inPhase.length) return null;
@@ -325,18 +325,13 @@ function parseCommand(line) {
   return {verb, argument, task};
 }
 
+// The bare grammar, in the server's most-used-first order. Suggesting verb×task PAIRS was worse the more tasks
+// you had — five tasks turned nine per-task verbs into forty-five near-identical lines — and the alias is the
+// one part a human types without help.
 function refreshSuggestions() {
-  const options = [];
-  for (const verb of verbs) {
-    if (!verb.takesTask) {
-      options.push(verb.id);
-      continue;
-    }
-    // A per-task verb is only useful with a task, so suggest the pairs that exist rather than the bare word.
-    for (const task of tasks) options.push(`${verb.id} ${task.alias || task.id}`);
-  }
   document.getElementById('ask-options').replaceChildren(
-    ...options.map((value) => Object.assign(document.createElement('option'), {value})));
+    ...verbs.map((verb) => Object.assign(document.createElement('option'),
+      {value: verb.id, label: verb.hint})));
 }
 
 // The verdict, live: a typo must be visible before Run, not after a model has been paid to guess at it.
@@ -345,7 +340,7 @@ function judgeAsk() {
   const line = ask.value.trim();
   state.classList.remove('ok', 'bad');
   if (!line) {
-    state.textContent = 'a known command runs as typed, for free; anything else goes to a model';
+    state.textContent = '';          // the verdict only, never a standing explanation of the field
     return;
   }
   const parsed = parseCommand(line);
@@ -490,10 +485,7 @@ resumeForm.onsubmit = async (event) => {
     const result = await api('/api/tasks/resume', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        reviewRequestUrl: document.getElementById('resume-url').value,
-        ticket: document.getElementById('resume-ticket').value,
-      }),
+      body: JSON.stringify({reviewRequestUrl: document.getElementById('resume-url').value}),
     });
     toast(result.message);
     resumeForm.reset();

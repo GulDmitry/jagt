@@ -60,7 +60,7 @@ class NaturalLanguageDispatchTest {
         proposes("ship", "a1", "", "the only task about layout");
         when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: pushed");
 
-        String result = dispatchWith(state).interpret("залей ту задачу с вёрсткой");
+        String result = dispatchWith(state).interpret("push the layout one for review");
 
         // The interpretation is stated BEFORE the outcome: a wrong mapping has to be visible to be correctable.
         assertThat(result).isEqualTo("understood as `ship ABC-1` — ship ABC-1: pushed");
@@ -105,7 +105,7 @@ class NaturalLanguageDispatchTest {
         proposes("do", "", "ABC-42", "a new ticket");
         when(launcher.launch(LaunchRequest.of("ABC-42"))).thenReturn("Task ABC-42 initialized");
 
-        String result = dispatchWith(state).interpret("возьми ABC-42 в работу");
+        String result = dispatchWith(state).interpret("pick up ABC-42");
 
         assertThat(result).isEqualTo("understood as `do ABC-42` — Task ABC-42 initialized");
     }
@@ -115,9 +115,9 @@ class NaturalLanguageDispatchTest {
     void resumesAReviewRequestWhenTheRequestIsAUrlToOne(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
         proposes("resume", "", "https://host/mr/42", "an existing merge request");
-        when(launcher.resume("https://host/mr/42", null)).thenReturn("Resumed PROJ-1");
+        when(launcher.resume("https://host/mr/42")).thenReturn("Resumed PROJ-1");
 
-        assertThat(dispatchWith(state).interpret("перехвати вот этот MR https://host/mr/42"))
+        assertThat(dispatchWith(state).interpret("take over this MR https://host/mr/42"))
                 .isEqualTo("understood as `resume https://host/mr/42` — Resumed PROJ-1");
     }
 
@@ -136,7 +136,7 @@ class NaturalLanguageDispatchTest {
         StateService state = stateWithOneTask(root);
         proposes("do", "", "", "no ticket in the request");
 
-        String result = dispatchWith(state).interpret("начни новую задачу");
+        String result = dispatchWith(state).interpret("start a new task");
 
         assertThat(result).contains("no ticket was named");
         verifyNoInteractions(launcher);
@@ -174,7 +174,7 @@ class NaturalLanguageDispatchTest {
         StateService state = stateWithOneTask(root);
         proposes("none", "", "", "");
 
-        dispatchWith(state).interpret("что там с вёрсткой");
+        dispatchWith(state).interpret("what is going on with the layout one");
 
         var context = forClass(String.class);
         verify(assistant).mapCommand(any(), context.capture());

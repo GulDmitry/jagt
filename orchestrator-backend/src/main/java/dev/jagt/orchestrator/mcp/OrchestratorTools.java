@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -97,12 +98,15 @@ public class OrchestratorTools {
         }
         String taskId = resolveTaskId(explicitTaskId, callerTaskId);
         String shortMessage = abbreviate(message);
-        // The dashboard is the SSOT for "where is my MR" — a linkless CI_POLLING is a lie.
+        Optional<TaskState> current = stateService.task(taskId);
+        // The dashboard is the SSOT for "where is my MR" — a linkless CI_POLLING is a lie. Kept strict on
+        // purpose: an agent with a question does not park in CI_POLLING (prompt rule 5, nothing polls it on
+        // its behalf) but hands the round back at REVIEW_PENDING, where the question IS what the board shows.
         if (newStatus == TaskStatus.CI_POLLING && (shortMessage == null || !shortMessage.contains("http"))) {
             throw new IllegalArgumentException(
                     "CI_POLLING requires the MR link in the message, e.g. \"MR: https://...\"");
         }
-        TaskStatus previous = stateService.task(taskId).map(TaskState::status).orElse(null);
+        TaskStatus previous = current.map(TaskState::status).orElse(null);
         String url = extractUrl(shortMessage);
         boolean updated = stateService.updateTask(taskId, t -> {
             TaskState next = t.withStatus(newStatus, shortMessage);

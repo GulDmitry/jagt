@@ -214,6 +214,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   an explicit human `ship`; the loop never ships, deploys, pushes or posts on its own. Every round hands the
   human two artifacts to inspect via `ide <alias>` — the local diff and the drafted replies. Do not erode
   this: the human-in-the-loop gate lives in the OUTCOME, not in who triggered the sweep.
+- A REVIEW ROUND IS A JUDGEMENT, NOT A WORK ORDER. Relay a bare list of comments and the agent implements all
+  of them — including the ones wrong about the architecture, which the reviewer could not see from the diff —
+  and the human then reads agreement into code that was only obedient. `ReviewSweepService.brief` therefore
+  opens with the three routes per comment (fix / change NOTHING and say why / ask via `awaiting:` before
+  guessing), and `sub-agent-context.md` carries the same stance for the task itself. A question ENDS the round
+  (REVIEW_PENDING, message `awaiting: …`) instead of parking in CI_POLLING — a parked task is re-briefed by
+  every auto-review poll on the very comments it was told to hold, paying for a review read each time.
+  Deliberately NOT extended to jagt's orchestration steps: a commit/ship instruction IS the human's approval
+  and is executed as given.
 - NO GIT HOOKS, EVER — never propose, add, or rely on any git hook anywhere; enforce invariants in code + prompts.
 - NO GUI/keystroke automation, ever: System Events keystrokes race with the human typing (they land in
   whatever is focused). Agent terminals are tmux windows (`TmuxService`); visibility comes from one Warp
@@ -326,11 +335,20 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   settings — default EMPTY (opt-in for RAM-constrained setups; disabling an absent plugin is a no-op).
 
 ## Conventions
+- `USE-CASES.md` is the one-line answer per SITUATION ("the request does not target the base branch → …").
+  When a case turns out to be non-obvious — or a session re-derives one that was already decided — append a
+  row there instead of only fixing the code. CLAUDE.md keeps the rules; USE-CASES.md keeps the answers.
 - NEVER use real project identifiers anywhere in this repo — code, tests, comments, docs, examples,
   fixtures. No real ticket keys/numbers, project names, abbreviations, or issue titles from any actual
   project. Always invent obviously fictional placeholders (e.g. `ABC-42`, "Widget layout is off"); the
   existing tests already use `ABC-N` ids — follow that.
+- ENGLISH ONLY, everywhere — UI strings, placeholders, example phrases, comments, docs, test fixtures. The NL
+  palette ACCEPTS any language; jagt never WRITES one but English. The single exception is functional, not
+  textual: `KittyTerminalDriver`'s ЙЦУКЕН keymap (`map=cmd+м …`), where the Cyrillic symbols ARE the key events.
 - Markdown and docs: aim for ~120-character lines, hard max 150; don't force awkward wrapping.
+- A form field explains itself with a PLACEHOLDER, not with a paragraph parked next to its button. The `*-state`
+  spans are progress/verdict slots (`reading the ticket…`, `no task “x”`) and start EMPTY — static prose there
+  vanishes on the first submit (the `finally` clears it) and never comes back, which reads as a bug.
 - Prompt structure (per Anthropic prompt-engineering guidance) — applies to every prompt jagt WRITES: the
   sub-agent context, the ship/review briefs, the headless assistant prompts. Wrap concerns in named XML
   sections (`<role>`, `<rules>`, `<output_format>`, `<examples>`). Forbid preamble explicitly; damp

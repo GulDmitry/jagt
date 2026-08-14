@@ -93,18 +93,55 @@ public class ReviewSweepService {
                         + r.pipelineStatus() + " -> agent");
     }
 
+    /**
+     * The round is relayed as a JUDGEMENT, not as a work order. An agent handed a list of comments complies
+     * with all of them — including the ones that are wrong about the system, which the reviewer cannot see
+     * from the diff — and the human then reads agreement into code that was merely obedient. So the brief
+     * spends its opening on the three routes a comment can take, and the reply file is what carries the
+     * disagreements and the questions back.
+     */
     private static String brief(String mrUrl, ReviewFacts r, boolean pipelineFailed) {
         StringBuilder brief = new StringBuilder("Review round for MR ").append(mrUrl).append(".\n");
         if (pipelineFailed) {
             brief.append("Pipeline: ").append(r.pipelineStatus()).append(" — fix the failing build.\n");
         }
         if (!r.comments().isEmpty()) {
-            brief.append("Unresolved comments — fix the valid ones LOCALLY (no commit/push). For EACH"
-                    + " comment write a block in review_replies.md: the original comment (with its thread"
-                    + " link if available) followed by the reply you intend to post:\n");
+            brief.append("""
+                    <how_to_judge>
+                    Your job this round is to get the code RIGHT, not to satisfy the reviewer. A comment is an
+                    argument from someone who read the diff, not the system: it can be mistaken about the
+                    architecture, and you have the code in front of you. Weigh each one, then take exactly ONE
+                    route per comment:
+                    - Right: fix it LOCALLY (no commit, no push).
+                    - Wrong: change NOTHING and reply with the one concrete technical reason it is wrong.
+                    - You cannot tell, or it is right but forces a design decision nobody gave you: do not guess
+                      and do not half-implement it. Leave that comment's code alone, put the question in its
+                      review_replies.md block, and hand the round back — notify_user, then set REVIEW_PENDING
+                      with message "awaiting: <question, few words>".
+                    Implementing a change you believe is wrong is the worst outcome available to you: silent
+                    compliance is invisible in a diff. Never report a fix you did not make.
+                    </how_to_judge>
+                    <replies>
+                    For EACH comment write a block in review_replies.md: the original comment (with its thread
+                    link if available) followed by the reply you intend to post — including the ones you push
+                    back on and the ones you are asking about.
+                    </replies>
+                    <comments>
+                    """);
             r.comments().forEach(c -> brief.append("- ").append(c).append('\n'));
+            brief.append("</comments>\n");
         }
-        brief.append("When done, set status REVIEW_PENDING. Do NOT push or post anything yourself.");
+        // An unanswered question ends the round rather than parking in it: staying CI_POLLING would have the
+        // auto-review poll re-brief the agent on the very comments it was told to hold — every interval, each
+        // one paying for another review read. REVIEW_PENDING is what "the human's move" means here, and the
+        // question rides along in the status message.
+        // With no comments this is a failed pipeline, and the agent that fixes it cannot push (below), so it
+        // cannot watch the build turn green either — its exit is the local fix.
+        brief.append(r.comments().isEmpty()
+                ? "When the build is fixed locally, set status REVIEW_PENDING."
+                : "When every comment is fixed, answered or asked about, set status REVIEW_PENDING — with"
+                        + " message \"awaiting: …\" if a question of yours is still open.");
+        brief.append(" Do NOT push or post anything yourself.");
         return brief.toString();
     }
 }

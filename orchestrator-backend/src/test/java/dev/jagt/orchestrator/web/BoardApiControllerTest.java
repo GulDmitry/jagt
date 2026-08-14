@@ -58,16 +58,16 @@ class BoardApiControllerTest {
      */
     @Test
     void resumesAnExistingReviewRequestLikeTheConsoleDoes() {
-        when(launcher.resume("https://host/mr/42", null)).thenReturn("Resumed PROJ-1 on its existing branch");
+        when(launcher.resume("https://host/mr/42")).thenReturn("Resumed PROJ-1 on its existing branch");
 
-        assertThat(api.resume(new BoardApiController.ResumeRequest("  https://host/mr/42  ", "  ")).message())
+        assertThat(api.resume(new BoardApiController.ResumeRequest("  https://host/mr/42  ")).message())
                 .isEqualTo("Resumed PROJ-1 on its existing branch");
     }
 
     /** A ticket key is not a review request: there is nothing to resume from it, so it is refused, not guessed. */
     @Test
     void refusesToResumeWithoutAReviewRequestUrl() {
-        assertThatThrownBy(() -> api.resume(new BoardApiController.ResumeRequest("ABC-1", null)))
+        assertThatThrownBy(() -> api.resume(new BoardApiController.ResumeRequest("ABC-1")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("URL is required");
         verifyNoInteractions(launcher);
@@ -98,6 +98,16 @@ class BoardApiControllerTest {
                 .filter(dev.jagt.orchestrator.service.CommandReference.Verb::takesTask)
                 .map(dev.jagt.orchestrator.service.CommandReference.Verb::id))
                 .contains("ship").doesNotContain("do", "prune", "help");
+    }
+
+    /** A suggestion list is read top-down, and declaration order offered `focus` and `done` before `ship`. */
+    @Test
+    void offersTheEverydayVerbsBeforeTheRareOnes() {
+        var ids = api.commands().stream().map(dev.jagt.orchestrator.service.CommandReference.Verb::id).toList();
+
+        assertThat(ids).startsWith("review", "ship", "do");
+        assertThat(ids.indexOf("ship")).isLessThan(ids.indexOf("focus"));
+        assertThat(ids.indexOf("deploy")).isLessThan(ids.indexOf("done"));
     }
 
     @Test

@@ -47,19 +47,16 @@
 
 <form id="resume" hidden>
   <input id="resume-url" placeholder="review-request URL (…/merge_requests/42 or …/pull/42)" autocomplete="off" required>
-  <input id="resume-ticket" placeholder="ticket (optional — skips the read)" autocomplete="off">
   <button type="submit" class="primary">Resume</button>
-  <span id="resume-state" class="muted">its branch is resumed with the commits already on it — yours or
-    someone else's — and the request is linked, not reopened</span>
+  <span id="resume-state" class="muted"></span>
 </form>
 
 <form id="palette" hidden>
-  <input id="ask" list="ask-options" placeholder="a command (ship a1) or plain words (“залей задачу с логином”)"
+  <input id="ask" list="ask-options" placeholder="a command (ship a1), or say it in words"
          autocomplete="off" required>
   <datalist id="ask-options"></datalist>
   <button type="submit" class="primary">Run</button>
-  <span id="palette-state" class="muted">a known command runs as typed, for free; anything else goes to a model
-    that maps it to ONE command — and then through the same gate as the buttons</span>
+  <span id="palette-state" class="muted"></span>
 </form>
 
 <dialog id="report">

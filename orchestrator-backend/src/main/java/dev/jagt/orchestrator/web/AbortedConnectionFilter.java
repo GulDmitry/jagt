@@ -32,9 +32,11 @@ import java.util.Arrays;
  * an error, and a log that cries wolf on them is a log nobody reads.
  *
  * <p>Scoped to precisely that event — Tomcat's own network logger, a {@code SocketException}, and a
- * {@code setSoLinger} frame in the trace. Any other failure to configure a socket, including a real one on
- * that same line, still reaches the log; matching the frame rather than the message also keeps it independent
- * of the C library's locale.
+ * {@code setSoLinger} frame in the trace; matching the frame rather than the message keeps it independent of
+ * the C library's locale. A failure to configure any OTHER option still reaches the log. A systemic
+ * {@code SO_LINGER} failure would be silent, and that is accepted: Tomcat destroys the socket in the same
+ * catch, so the symptom is a board that answers nothing at all — impossible to miss, and impossible to
+ * confuse with the per-connection noise this drops.
  */
 @Component
 public class AbortedConnectionFilter extends TurboFilter {

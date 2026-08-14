@@ -21,10 +21,12 @@ public final class DashboardLine {
             case SHIPPING -> "SHIPPING: agent committing & pushing… (focus to watch)";
             case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED ->
                     orDefault(task.mrUrl(), "MR link missing");
-            // A live MR is the clickable next step — show it even if the agent also left an "awaiting"
-            // note; only fall back to NEEDS INPUT / blank when there is no MR yet. (The title lives in
-            // its own dashboard column, so this line stays contextual.)
-            case REVIEW_PENDING -> hasMr(task) ? task.mrUrl() : (awaiting ? needsInput(message) : "");
+            // A question OUTRANKS the MR link: a review round can end with the agent asking instead of
+            // guessing, and this line is the only place that question surfaces. Showing the link instead reads
+            // as "ready to ship" — the human ships, and the unanswered question goes out as a review reply.
+            // `awaiting:` is the prompt's reserved prefix for exactly this (rule 10), not status chatter. (The
+            // title lives in its own column; this line stays contextual.)
+            case REVIEW_PENDING -> awaiting ? needsInput(message) : (hasMr(task) ? task.mrUrl() : "");
             case NEW, IN_PROGRESS -> awaiting ? needsInput(message) : "";
             case DONE -> "";
         };

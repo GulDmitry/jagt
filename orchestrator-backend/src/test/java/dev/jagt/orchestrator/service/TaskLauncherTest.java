@@ -139,9 +139,27 @@ class TaskLauncherTest {
                         "PROJ-1 Excel export")),
                 TokenUsage.NONE));
 
-        launcher.resume("https://host/mr/425", null);
+        launcher.resume("https://host/mr/425");
 
         verify(tools).resumeTask("PROJ-1", "https://host/mr/425", "PROJ-1 Excel export", "release/2");
+    }
+
+    /**
+     * Taking over someone else's request means taking over a branch named by someone else's convention, and a
+     * jagt task IS its branch (also a directory and a tmux window). Naming the branch and the way out beats
+     * the generic id check reporting a regex against a name the human never typed.
+     */
+    @Test
+    void explainsWhyASlashedSourceBranchCannotBecomeATask() {
+        when(assistant.readMergeRequest("https://host/mr/426")).thenReturn(new Answer<>(
+                Optional.of(new MergeRequestFacts(true, "feature/widget-layout", "main", "group/proj",
+                        "Widget layout is off")),
+                TokenUsage.NONE));
+
+        String result = launcher.resume("https://host/mr/426");
+
+        assertThat(result).contains("feature/widget-layout").contains("do <ticket> from");
+        verifyNoInteractions(tools);
     }
 
     @Test

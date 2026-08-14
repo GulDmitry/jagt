@@ -76,11 +76,17 @@ class DashboardLineTest {
         assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/417");
     }
 
+    /**
+     * A review round can end with the agent asking instead of guessing, and this line is the only place that
+     * question surfaces. Showing the MR link there instead reads as "ready to ship" — so the human ships, and
+     * the unanswered question goes out as a review reply.
+     */
     @Test
-    void showsTheMrLinkForAReviewPendingTaskEvenWhenTheAgentLeftAnAwaitingNote() {
+    void shoutsNeedsInputRatherThanTheMrLinkWhenAReviewRoundEndedInAQuestion() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
-                .message("awaiting: review comments; branch resumed, MR open").alias("a1").title("title").mrUrl("https://host/mr/425").build();
+                .message("awaiting: cache or index?").alias("a1").title("title").mrUrl("https://host/mr/425").build();
 
-        assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("https://host/mr/425");
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEqualTo("NEEDS INPUT: cache or index?");
     }
+
 }

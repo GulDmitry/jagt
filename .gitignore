@@ -1,6 +1,7 @@
 state.json
 state.json.bak
 state.json.corrupt
+state*.json.tmp
 .omc/
 .idea/
 *.iml

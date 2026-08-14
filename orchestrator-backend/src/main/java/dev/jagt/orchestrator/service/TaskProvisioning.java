@@ -236,9 +236,14 @@ public class TaskProvisioning {
     /** Public because the MCP facade validates a resumed ticket id BEFORE it spends git calls
      *  resolving the project — one pattern, one message, in the class that owns task creation. */
     public static void requireSafeId(String value, String name) {
-        if (value == null || !SAFE_ID.matcher(value).matches()) {
+        if (!isSafeId(value)) {
             throw new IllegalArgumentException("Argument '" + name + "' must match " + SAFE_ID.pattern()
                     + " (it becomes a branch, directory and tmux window name); got: " + value);
         }
+    }
+
+    /** For callers that must EXPLAIN an unusable id rather than throw the generic one (see `resume`). */
+    public static boolean isSafeId(String value) {
+        return value != null && SAFE_ID.matcher(value).matches();
     }
 }

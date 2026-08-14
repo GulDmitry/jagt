@@ -113,7 +113,7 @@ public class NaturalLanguageDispatch {
             return "Understood as `resume` but no review-request URL was named (" + reasonOf(mapped)
                     + ") — say it explicitly: `resume <mr-url>`.";
         }
-        return "understood as `resume " + url + "` — " + launcher.resume(url, null);
+        return "understood as `resume " + url + "` — " + launcher.resume(url);
     }
 
     /** Only a task that EXISTS may be acted on; an id the model invented resolves to nothing and is refused. */

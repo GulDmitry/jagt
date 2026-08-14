@@ -364,6 +364,28 @@ class OrchestratorToolsTest {    @Test
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_POLLING);
     }
 
+    /**
+     * Carrying an MR link is not a licence to go back to polling it: a task the human has already taken past
+     * review must not be dropped into CI_POLLING by a confused agent, which would re-arm the auto-review poll
+     * against a request nobody is waiting on any more.
+     */
+    @Test
+    void refusesToPushATaskThatIsPastReviewBackIntoCiPolling(@TempDir Path root) {
+        OrchestratorProperties properties = OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        StateService state = new StateService(new JsonMapper(), paths);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1")
+                .mrUrl("https://gitlab.example/g/p/-/merge_requests/1").build());
+        OrchestratorTools tools = facade(mock(ConfigService.class), state, mock(GitService.class),
+                mock(TmuxService.class), mock(EditorDriver.class), mock(TerminalDriver.class),
+                mock(UserNotifier.class), properties);
+
+        assertThatThrownBy(() -> tools.updateAgentStatus("CI_POLLING", "waiting for the pipeline", "ABC-1", null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("MR link");
+    }
+
     @Test
     void rejectsStatusUpdateWhenSubAgentTargetsSiblingTask(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()

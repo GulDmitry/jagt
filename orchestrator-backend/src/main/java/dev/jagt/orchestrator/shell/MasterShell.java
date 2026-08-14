@@ -881,11 +881,15 @@ public class MasterShell {
         return launcher.launch(parseDoArgs(tok));
     }
 
+    /** The request names its own branches, so anything typed beside its URL could only contradict it. */
     String resumeTask(List<String> tok) {
         String url = tok.stream().skip(1).filter(token -> token.startsWith("http")).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("usage: resume <mr-url>"));
-        String ticket = tok.stream().skip(1).filter(token -> !token.startsWith("http")).findFirst().orElse(null);
-        return launcher.resume(url, ticket);
+        if (tok.size() > 2) {
+            throw new IllegalArgumentException("usage: resume <mr-url> — the request carries its own branches;"
+                    + " to start a NEW task on a new branch use `do <ticket>`");
+        }
+        return launcher.resume(url);
     }
 
     /** {@code prune} is a dry run, {@code prune all} deletes; anything else is refused rather than guessed —
