@@ -203,6 +203,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   nothing. Its startup listener catches everything — an `ApplicationReadyEvent` listener that throws fails the
   whole boot, and a diagnostic must never be able to stop the backend from starting.
 - Every MCP tool call from a registered worktree bumps `lastActiveTimestamp` (Watchdog keep-alive).
+- Tomcat's "Error setting socket options" (`SocketException` at `setSoLinger`) is a connection the peer aborted
+  between `accept()` and configuring it — a browser pre-connect, the losing half of a Node client's IPv6/IPv4
+  race to `localhost`, a `curl` probe. `SO_LINGER` is simply the first unguarded setsockopt, and Tomcat gives no
+  knob (`AbstractProtocol` sets `connectionLinger` in its constructor). `web/AbortedConnectionFilter` drops that
+  one event and nothing else — do NOT "fix" it by silencing `NioEndpoint`, which also hides real socket errors.
 - CODE REVIEW IS NEVER FULLY AUTOMATED. The auto-review poll (`AutoReviewScheduler` → `ReviewSweepService`)
   only READS and DRAFTS: an approval may advance status, but comments are merely RELAYED to the agent, which
   fixes LOCALLY and writes its intended answers to `review_replies.md`. Nothing is pushed or posted without
