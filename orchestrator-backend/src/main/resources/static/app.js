@@ -53,13 +53,6 @@ const timeline = (task) => (task.history || [])
   })
   .join('\n');
 
-const compactTokens = (n) => {
-  if (!n) return '';
-  if (n < 1000) return `${n} tok`;
-  if (n < 999500) return `${Math.round(n / 1000)}k tok`;
-  return `${(n / 1e6).toFixed(1)}M tok`;
-};
-
 // A toast is gone in seconds, so every one of them is also kept here for the session. No persistence: a
 // reload starts an empty log, and the backend's own file keeps what matters longer.
 const messages = [];
@@ -113,8 +106,6 @@ async function load() {
     tasks = data.tasks;
     projects = data.projects || [];
     fillProjects();
-    document.getElementById('spend').textContent =
-      data.spend.calls ? `${data.spend.calls} calls · ${compactTokens(data.spend.tokens)}` : '';
     render();
   } catch (e) {
     toast(`Cannot reach the backend: ${e.message}`, true);
@@ -141,8 +132,7 @@ function fillProjects() {
 function sorted(list) {
   const copy = [...list];
   const by = sortBy.value;
-  if (by === 'tokens') copy.sort((a, b) => b.tokens - a.tokens);
-  else if (by === 'alias') copy.sort((a, b) => (a.alias || '').localeCompare(b.alias || ''));
+  if (by === 'alias') copy.sort((a, b) => (a.alias || '').localeCompare(b.alias || ''));
   else if (by === 'title') copy.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
   else copy.sort((a, b) => b.lastActiveAt - a.lastActiveAt);
   return copy;
@@ -195,8 +185,7 @@ function card(task) {
   status.title = timeline(task);
   meta.append(status);
   meta.insertAdjacentHTML('beforeend', `<span>${task.project}</span>`
-    + `<span>${relative(task.lastActiveAt)}</span>`
-    + (task.tokens ? `<span>${compactTokens(task.tokens)}</span>` : ''));
+    + `<span>${relative(task.lastActiveAt)}</span>`);
 
   const hint = document.createElement('div');
   hint.className = 'hint';
