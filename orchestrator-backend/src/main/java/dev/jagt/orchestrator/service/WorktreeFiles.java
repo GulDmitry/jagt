@@ -1,8 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
@@ -24,9 +23,8 @@ import java.util.Set;
  * why it was the first thing worth lifting out of {@code OrchestratorTools}: it needed none of that class's
  * eleven dependencies and its tests need none either.
  */
+@Slf4j
 public final class WorktreeFiles {
-
-    private static final Logger log = LoggerFactory.getLogger(WorktreeFiles.class);
 
     /** Directories never worth scanning for local files (huge and/or generated). */
     private static final Set<String> COPY_SCAN_SKIP =

@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
+import dev.jagt.orchestrator.service.Refusal;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -166,6 +167,9 @@ public class BoardApiController {
      */
     @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     public ResponseEntity<Map<String, String>> refused(RuntimeException e) {
-        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() == null ? "refused" : e.getMessage()));
+        String message = e.getMessage() == null ? "refused" : e.getMessage();
+        return ResponseEntity.badRequest().body(e instanceof Refusal refusal
+                ? Map.of("error", message, "code", refusal.code().name())
+                : Map.of("error", message));
     }
 }

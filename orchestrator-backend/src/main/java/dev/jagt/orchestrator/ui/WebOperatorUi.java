@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.ui;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
@@ -16,9 +15,8 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnExpression("'${orchestrator.ui:web}'.matches('web|both')")
+@Slf4j
 public class WebOperatorUi implements OperatorUi {
-
-    private static final Logger log = LoggerFactory.getLogger(WebOperatorUi.class);
 
     private final String port;
 

@@ -96,6 +96,27 @@ class ReviewSweepServiceTest {
     }
 
     /**
+     * All three outcomes of a round end at REVIEW_PENDING, so the human is advised from the MESSAGE. Without
+     * the "no changes" marker a round that touched nothing is advised as a ship, and that ship returns the task
+     * to CI_POLLING where the next poll relays the same threads.
+     */
+    @Test
+    void asksTheAgentToReportWhetherTheRoundChangedAnything() {
+        when(tools.taskMrUrl("ABC-1")).thenReturn("http://mr/1");
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("reviewer (a.java:3): drop the cache"))));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(tools).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue())
+                .contains("\"no changes: <why, few words>\"")
+                .contains("Never say this if you edited a file")
+                .contains("The file holds DRAFTS: post nothing and resolve");
+    }
+
+    /**
      * A red build with no comments goes through the same brief, and its exit condition has to be one the
      * agent can actually reach: it is forbidden to push, so it can never watch the pipeline turn green — only
      * finish the fix locally.

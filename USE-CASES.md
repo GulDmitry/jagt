@@ -32,7 +32,11 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Comment is wrong | Changes nothing, replies with the one technical reason. Silent compliance is the failure mode this exists to prevent. |
 | Comment is unclear, or forces a design decision | Asks: `notify_user` + REVIEW_PENDING with message `awaiting: …`. The board shows NEEDS INPUT instead of the link. |
 | Pipeline red, no comments | Fixes the build locally, then REVIEW_PENDING — it cannot push, so it never sees the pipeline go green. |
+| Every comment was already handled, or pushed back on | REVIEW_PENDING with message `no changes: …`. Nothing is highlighted, the line reads ANSWERED, and jagt does NOT advise a ship — there is no diff, and shipping would return the task to CI_POLLING for the poll to relay the same threads. |
 | Drafted replies exist | Both surfaces flag it; they are posted only after a human `ship`. |
+| A thread the agent FIXED | Resolved at ship time, by the agent's own MCP — an unresolved thread is relayed by every later round. |
+| A thread the agent disagreed with or asked about | Left UNRESOLVED on purpose: resolving it would read as agreement, and settling it is the reviewer's move. |
+| The reviewer never resolves the threads | The task simply sits at REVIEW_PENDING (the auto-poll only watches CI_POLLING), so nothing is re-briefed and nothing is paid for. `review <task>` re-checks when you want. |
 
 ## Finishing
 

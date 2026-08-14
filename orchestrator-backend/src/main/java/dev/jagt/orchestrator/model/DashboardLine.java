@@ -14,7 +14,8 @@ public final class DashboardLine {
 
     public static String forTask(String taskId, TaskState task) {
         String message = task.message();
-        boolean awaiting = message != null && message.toLowerCase().startsWith("awaiting");
+        AgentReport report = AgentReport.of(message);
+        boolean awaiting = report == AgentReport.QUESTION;
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "pipeline/build failed");
             case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict — resolve in the deploy worktree");
@@ -26,14 +27,19 @@ public final class DashboardLine {
             // as "ready to ship" — the human ships, and the unanswered question goes out as a review reply.
             // `awaiting:` is the prompt's reserved prefix for exactly this (rule 10), not status chatter. (The
             // title lives in its own column; this line stays contextual.)
-            case REVIEW_PENDING -> awaiting ? needsInput(message) : (hasMr(task) ? task.mrUrl() : "");
+            case REVIEW_PENDING -> switch (report) {
+                case QUESTION -> needsInput(message);
+                // Same reason the link is outranked: "nothing changed" reads as ready-to-ship without it.
+                case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change");
+                case PLAIN -> hasMr(task) ? task.mrUrl() : "";
+            };
             case NEW, IN_PROGRESS -> awaiting ? needsInput(message) : "";
             case DONE -> "";
         };
     }
 
     private static String needsInput(String message) {
-        return "NEEDS INPUT: " + message.replaceFirst("(?i)^awaiting:?\\s*", "");
+        return "NEEDS INPUT: " + AgentReport.QUESTION.detailOf(message);
     }
 
     private static boolean hasMr(TaskState task) {

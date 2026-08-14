@@ -2,8 +2,7 @@ package dev.jagt.orchestrator.platform.linux;
 
 import dev.jagt.orchestrator.platform.UserNotifier;
 import dev.jagt.orchestrator.service.ProcessRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -22,9 +21,9 @@ import java.util.List;
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "linux")
+@Slf4j
 public class LibNotifyNotifier implements UserNotifier {
 
-    private static final Logger log = LoggerFactory.getLogger(LibNotifyNotifier.class);
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private final ProcessRunner processRunner;

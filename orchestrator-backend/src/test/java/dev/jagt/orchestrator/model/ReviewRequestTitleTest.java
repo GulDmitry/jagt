@@ -34,4 +34,14 @@ class ReviewRequestTitleTest {
     void keepsANullTitleNullRatherThanInventingOne() {
         assertThat(ReviewRequestTitle.stripTicketPrefix(null, "ABC-42")).isNull();
     }
+
+    @ParameterizedTest
+    @CsvSource({
+            "'{ticket}: {title}', ABC-42",
+            "'{ticket} {title}',  ABC-42",
+            "'{ticket} — {title}', ABC-42"
+    })
+    void namesARequestAfterItsTicketAloneWhenTheTaskNeverGotATitle(String pattern, String ticket) {
+        assertThat(ReviewRequestTitle.expand(pattern, ticket, null)).isEqualTo("ABC-42");
+    }
 }

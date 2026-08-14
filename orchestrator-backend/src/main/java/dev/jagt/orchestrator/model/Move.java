@@ -5,13 +5,17 @@ import java.util.List;
 
 /**
  * What a task IS to a human and what may be done about it: its {@link Phase}, whose turn it is, the actions
- * that are legal right now, and which of them is the obvious one. Pure and total over {@link TaskStatus}, so
+ * that are legal right now, and which of them is the obvious one. Pure and total over {@link TaskStatus} and {@link AgentReport}, so
  * every surface — the TUI, the web board, the HTTP API — offers the same set, and an illegal move is not
  * merely rejected but never offered.
  *
  * <p>This replaces a prose hint that could be neither turned into a button nor validated, and that advised
  * independently of the gates in {@code OrchestratorTools} (two sources of truth for "what can I do now").
  * {@link #shippable} is now that one rule, used both here and by the ship gate itself.
+ *
+ * <p>The status alone cannot answer "whose move is it": a review round ends at REVIEW_PENDING whether the agent
+ * fixed code, asked something, or found nothing to change, and advising a ship for all three turned the third
+ * into a loop — the ship returns the task to CI_POLLING, where the poll relays the threads it just answered.
  *
  * <p>Liveness is deliberately NOT an input to the projection: asking tmux whether each agent is alive would
  * mean a process spawn per task on every render. A task stuck at {@code SHIPPING} is therefore offered SHIP,
@@ -24,7 +28,7 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
     private static final List<TaskAction> ALWAYS = List.of(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF,
             TaskAction.RESPAWN, TaskAction.DONE);
 
-    public static Move forTask(TaskStatus status, boolean hasReviewRequest) {
+    public static Move forTask(TaskStatus status, boolean hasReviewRequest, AgentReport report) {
         List<TaskAction> actions = new ArrayList<>();
         if (shippable(status, false, hasReviewRequest)) {
             actions.add(TaskAction.SHIP);
@@ -42,8 +46,8 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
             actions.add(TaskAction.REVERT);
         }
         actions.addAll(ALWAYS);
-        return new Move(phaseOf(status), ownerOf(status), List.copyOf(actions), primaryOf(status, hasReviewRequest),
-                hint(status));
+        return new Move(phaseOf(status), ownerOf(status), List.copyOf(actions),
+                primaryOf(status, hasReviewRequest, report), hint(status, report));
     }
 
     /**
@@ -90,10 +94,17 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         };
     }
 
-    private static TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest) {
+    private static TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest, AgentReport report) {
         return switch (status) {
             case NEW, IN_PROGRESS, SHIPPING -> TaskAction.FOCUS;
-            case REVIEW_PENDING -> TaskAction.SHIP;
+            // A round that changed nothing has nothing to ship, and shipping it only returns the task to
+            // CI_POLLING, where the auto-poll relays the very threads it just answered. Nothing is highlighted:
+            // the open threads are the reviewer's to resolve. A question is answered where the agent can hear it.
+            case REVIEW_PENDING -> switch (report) {
+                case NO_CHANGES -> null;
+                case QUESTION -> TaskAction.FOCUS;
+                case PLAIN -> TaskAction.SHIP;
+            };
             case CI_POLLING, CI_FAILED -> hasReviewRequest ? TaskAction.SWEEP : TaskAction.FOCUS;
             case REVIEWED, APPROVED, DEPLOY_CONFLICT -> TaskAction.DEPLOY;
             case DEPLOYED -> TaskAction.DONE;
@@ -104,10 +115,15 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
     }
 
     /** One line of prose for the TUI and for a button tooltip — the same wording the dashboard always used. */
-    private static String hint(TaskStatus status) {
+    private static String hint(TaskStatus status, AgentReport report) {
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent working — wait or focus";
-            case REVIEW_PENDING -> "your move: read the diff (ide), then ship";
+            case REVIEW_PENDING -> switch (report) {
+                case NO_CHANGES -> "nothing to ship — every comment answered; the open threads are the"
+                        + " reviewer's move";
+                case QUESTION -> "the agent is asking — answer it (focus), then ship";
+                case PLAIN -> "your move: read the diff (ide), then ship";
+            };
             case SHIPPING -> "shipping — agent committing/pushing; wait for the review request";
             case CI_POLLING -> "waiting on the code host — check the review when you want";
             case CI_FAILED -> "your move: check the review (it relays the failure)";

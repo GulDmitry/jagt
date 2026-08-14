@@ -1,9 +1,8 @@
 package dev.jagt.orchestrator.web;
 
 import dev.jagt.orchestrator.service.StateService;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextClosedEvent;
@@ -25,9 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class TaskEventStream implements ApplicationListener<ContextClosedEvent> {
-
-    private static final Logger log = LoggerFactory.getLogger(TaskEventStream.class);
 
     private final StateService stateService;
     private final List<SseEmitter> browsers = new CopyOnWriteArrayList<>();

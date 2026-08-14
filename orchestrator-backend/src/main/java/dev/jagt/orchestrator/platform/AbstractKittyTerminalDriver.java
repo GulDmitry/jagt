@@ -1,9 +1,8 @@
 package dev.jagt.orchestrator.platform;
 
+import lombok.extern.slf4j.Slf4j;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ProcessRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -27,9 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * window ({@link #bringToFront()}), and any launch options that only make sense on one desktop
  * ({@link #platformOptions()}). Adding a platform means a subclass of this, nothing else.
  */
+@Slf4j
 public abstract class AbstractKittyTerminalDriver implements TerminalDriver {
 
-    private static final Logger log = LoggerFactory.getLogger(AbstractKittyTerminalDriver.class);
     protected static final Duration TIMEOUT = Duration.ofSeconds(20);
     /** The window/tab needs a moment to open and attach; don't open a second one meanwhile. */
     private static final long ATTACH_GRACE_MS = 60_000;

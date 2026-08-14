@@ -3,8 +3,10 @@ package dev.jagt.orchestrator.shell;
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
+import dev.jagt.orchestrator.model.ActionOrigin;
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
+import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
@@ -23,8 +25,7 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.ansi.UnixLikeTerminal;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -57,9 +58,8 @@ import java.util.regex.Pattern;
  * (its own MCP) via {@code write_task_context}; that lands with the delegation layer.
  */
 @Component
+@Slf4j
 public class MasterShell {
-
-    private static final Logger log = LoggerFactory.getLogger(MasterShell.class);
 
     private final OrchestratorTools tools;
     private final StateViews views;
@@ -832,6 +832,10 @@ public class MasterShell {
     }
 
     private String dispatch(String line) {
+        return OriginContext.as(ActionOrigin.CONSOLE, () -> dispatchHere(line));
+    }
+
+    private String dispatchHere(String line) {
         List<String> tok = List.of(line.split("\\s+"));
         String cmd = tok.get(0);
         try {
@@ -872,7 +876,6 @@ public class MasterShell {
     static String withDashboard(String result, String dashboardText) {
         return result.isBlank() ? dashboardText : result + "\n\n" + dashboardText;
     }
-
 
     String doTask(List<String> tok) {
         return launcher.launch(parseDoArgs(tok));

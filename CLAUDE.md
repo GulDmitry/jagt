@@ -51,9 +51,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   files, SSL certs (e.g. `app/.env`, `**/*.pem`) which are gitignored and otherwise missing, so the
   app wouldn't start. Patterns are config, NOT hardcoded. Best-effort, gitignored, no-op if absent.
 - `state.json` — SSOT for tasks (gitignored, auto-created). Each task also keeps `history` — every status it
-  moved TO, with when, oldest first, capped at 50 (the file is rewritten on every MCP call). A KEEP-ALIVE adds
-  nothing (same status = no entry, else four real transitions drown in hundreds of identical rows), and a task
-  starts its history at the status it was created with. Read "since when in this status" from
+  moved TO, with when and WHO ASKED, oldest first, capped at 50 (the file is rewritten on every MCP call). A
+  KEEP-ALIVE adds nothing (same status = no entry, else four real transitions drown in hundreds of identical
+  rows), and a task starts its history at the status it was created with. The asker (`model/ActionOrigin`) is
+  carried by `service/OriginContext` and stamped in `StateService`, NOT passed down: a deploy reaches the same
+  code whether it was clicked, typed, said in words or called over MCP, so every signature in between would
+  have to grow a parameter it has no use for. Set it at an ENTRY POINT only — `web/OriginFilter` (both HTTP
+  surfaces at once, so a new endpoint cannot forget), `MasterShell.dispatch`, `NaturalLanguageDispatch` and
+  `AutoReviewScheduler`; nesting is honest, so console free text is recorded as the interpretation it became. Read "since when in this status" from
   `TaskState.statusSince()`, NEVER from `lastActiveTimestamp` — a keep-alive bumps that one, so an hour-old
   status would look fresh.
   Status enum: NEW, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED,
@@ -91,6 +96,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   - "how is an action executed" is `service/CommandService` (validates against `Move` first, so a stale board
     tab is refused with a sentence, not with a git error three layers down), and "how is a task started" is
     `service/TaskLauncher`. The console parses a command line, the controller parses JSON; neither owns rules.
+    The sentence stays the whole answer for a human; a refusal a caller must ACT on also carries a
+    `service/Refusal.Code`, and that enum grows ONLY when something branches on the new value — a reason
+    nobody handles differently keeps throwing plain.
 - `OrchestratorTools` is the MCP-FACING FACADE ONLY (~480 lines, 7 collaborators) — the work lives in
   `service/AgentSessions` (tmux window, focus, kill, relay to `task_context.md`), `service/TaskProvisioning`
   (worktree creation, alias, sub-agent context), `service/ShipService` and `service/WorktreeFiles`. Do NOT put
@@ -226,6 +234,19 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   every auto-review poll on the very comments it was told to hold, paying for a review read each time.
   Deliberately NOT extended to jagt's orchestration steps: a commit/ship instruction IS the human's approval
   and is executed as given.
+- A ROUND REPORTS ITS OUTCOME, because all three end at REVIEW_PENDING and the human is advised from the
+  MESSAGE: `awaiting: …` = a question, `no changes: …` = nothing was edited (already handled, or every comment
+  pushed back on), anything else = there is a diff to read. `model/AgentReport` is the ONE parser of that
+  vocabulary (`Move` and `DashboardLine` both read it, so they cannot disagree), and `Move` is total over
+  (status × report). Why it matters: advising SHIP for a no-change round is a LOOP — the ship commits nothing
+  and returns the task to CI_POLLING, the only status the auto-poll watches, which relays the same threads
+  again. So NO_CHANGES highlights nothing and says the open threads are the reviewer's move.
+- A REPLY DOES NOT RESOLVE A THREAD, and the sweep relays every UNRESOLVED one (`resolvable && !resolved`), so
+  a comment the agent pushed back on comes back every round forever. The agent therefore resolves — at SHIP
+  time, with its own MCP, never jagt's `CodeHost` — ONLY the threads whose code it actually changed
+  (`ShipService.repliesStep`). A thread it disagreed with or asked about stays unresolved: that disagreement is
+  the reviewer's to settle, and resolving it would read as agreement. During the round the agent posts nothing
+  at all — `review_replies.md` holds DRAFTS until the human ships.
 - NO GIT HOOKS, EVER — never propose, add, or rely on any git hook anywhere; enforce invariants in code + prompts.
 - NO GUI/keystroke automation, ever: System Events keystrokes race with the human typing (they land in
   whatever is focused). Agent terminals are tmux windows (`TmuxService`); visibility comes from one Warp
@@ -253,8 +274,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     NEVER retitles an open request (`ship` reruns every review round, and the human may have edited the title).
     `ReviewReader` deliberately does NOT fall back to the paid headless read when a configured host fails: that
     would spend money invisibly and hide the misconfiguration. A partial REST read must fail whole — "no
-    unresolved comments + green pipeline" ADVANCES a task. Nothing calls the write yet: `ship` still relays to
-    the agent until roadmap step 3 moves it into the backend.
+    unresolved comments + green pipeline" ADVANCES a task. The one caller of the write is `ShipService`, and
+    only when a host is configured — with none, `ship` keeps relaying the prose to the agent.
   - The shared system-knowledge file is `AGENTS.md` (the cross-agent convention, `AgentRuntime
     .SYSTEM_KNOWLEDGE_FILE`); Claude reads `CLAUDE.md`, so its runtime symlinks `CLAUDE.md` → `AGENTS.md` —
     one file, never two copies to drift. A new agent = one `AgentRuntime` impl; a Linux port = new
@@ -400,7 +421,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   cohesive component (composition) or use a builder. Config/value records get a builder or a
   `defaults()` + `withX` withers — never call a 10-arg record constructor with a row of `null`s. (Lombok
   `@Builder`/`@Value` is welcome for non-record boilerplate, added deliberately; it does NOT apply to
-  records, so jagt's config records need a hand-rolled builder/defaults.)
+  records, so jagt's config records need a hand-rolled builder/defaults. Lombok is NOT a dependency today —
+  adopting it, and re-checking what it does support on records, is roadmap step 1 in TODO.md.)
 - Prefer composition over many injected dependencies; SOLID + clean-code defaults — standard for 30 years,
   apply them, don't reinvent.
 - SELF-CONTROL LOOP (mandatory, every code+test change): run the changed tests through the

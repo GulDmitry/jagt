@@ -47,6 +47,23 @@ class ShipServiceTest {
         when(gitService.commitAll(any(), any(), anyString())).thenReturn(new GitService.Commit(true, 3));
     }
 
+    /**
+     * A reply does not resolve a thread, and the next round relays every unresolved one — so without this the
+     * comments an agent pushed back on come back forever. Resolving a disagreement would hide it instead, which
+     * is why the rule is about what was FIXED, and why it cannot appear where nothing is posted at all.
+     */
+    @Test
+    void tellsTheAgentToResolveOnlyTheThreadsItActuallyFixed() {
+        var posting = ConfigService.ConfigFile.defaults();
+        var notPosting = ConfigService.ConfigFile.defaults().withCodeReview(
+                posting.codeReview().withPostReviewReplies(false));
+
+        assertThat(ShipService.repliesStep(posting))
+                .contains("Resolve a thread ONLY where you changed the code it asked for")
+                .contains("pushed back on or asked about UNRESOLVED");
+        assertThat(ShipService.repliesStep(notPosting)).doesNotContain("Resolve a thread");
+    }
+
     @Test
     void commitsPushesAndOpensTheReviewRequestWithoutInvolvingTheAgent() {
         // The whole point: no prose relayed to a model, so there is nobody to stall on a permission prompt

@@ -5,8 +5,7 @@ import dev.jagt.orchestrator.model.GitRemote;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ReviewFacts;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -35,9 +34,9 @@ import java.util.regex.Pattern;
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.code-host.type", havingValue = "gitlab")
+@Slf4j
 public class GitLabCodeHost implements CodeHost {
 
-    private static final Logger log = LoggerFactory.getLogger(GitLabCodeHost.class);
     /** {@code https://host/group/sub/project/-/merge_requests/42} (+ any /diffs, query or fragment tail). */
     private static final Pattern MR_URL = Pattern.compile(
             "^(?<base>https?://[^/]+)/(?<project>.+?)/-/merge_requests/(?<iid>\\d+)(?:[/?#].*)?$");

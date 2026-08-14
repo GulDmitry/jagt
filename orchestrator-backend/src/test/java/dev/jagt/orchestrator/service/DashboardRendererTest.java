@@ -54,7 +54,7 @@ class DashboardRendererTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .alias("a1").title("title")
                 .history(java.util.List.of(new dev.jagt.orchestrator.model.StatusChange(
-                        TaskStatus.REVIEW_PENDING, System.currentTimeMillis() - 7_200_000)))
+                        TaskStatus.REVIEW_PENDING, System.currentTimeMillis() - 7_200_000, null)))
                 .build());
 
         String out = rendererFor(state).render();

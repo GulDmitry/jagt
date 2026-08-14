@@ -15,7 +15,7 @@ class TaskStateTest {
         TaskState created = TaskState.builder("proj", "/wt", TaskStatus.NEW)
                 .lastActiveTimestamp(1_000).build();
 
-        assertThat(created.history()).containsExactly(new StatusChange(TaskStatus.NEW, 1_000));
+        assertThat(created.history()).containsExactly(new StatusChange(TaskStatus.NEW, 1_000, null));
     }
 
     @Test
@@ -44,7 +44,7 @@ class TaskStateTest {
     @Test
     void dropsTheOldestMovesOnceFiftyAreRecordedSoStateJsonStaysSmall() {
         List<StatusChange> fifty = IntStream.range(0, 50)
-                .mapToObj(i -> new StatusChange(TaskStatus.IN_PROGRESS, i)).toList();
+                .mapToObj(i -> new StatusChange(TaskStatus.IN_PROGRESS, i, null)).toList();
         TaskState full = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).history(fifty).build();
 
         TaskState moved = full.withStatus(TaskStatus.REVIEW_PENDING, "done");
@@ -57,7 +57,7 @@ class TaskStateTest {
     @Test
     void reportsTimeInTheCurrentStatusRatherThanTimeSinceTheLastKeepAlive() {
         TaskState working = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
-                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000))).build();
+                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1_000, null))).build();
 
         TaskState keptAlive = working.touched();
 

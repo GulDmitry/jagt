@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.mcp;
 
+import dev.jagt.orchestrator.model.AgentReport;
 import dev.jagt.orchestrator.model.GitRemote;
 import dev.jagt.orchestrator.model.Move;
 import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ReviewRequestTitle;
 import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskLabel;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
@@ -14,8 +16,8 @@ import dev.jagt.orchestrator.service.GitService;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.StateService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
@@ -30,9 +32,10 @@ import java.util.regex.Pattern;
  * tool execution: a sub-agent may only act on its own task.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class OrchestratorTools {
 
-    private static final Logger log = LoggerFactory.getLogger(OrchestratorTools.class);
     private final ConfigService configService;
     private final StateService stateService;
     private final GitService gitService;
@@ -40,18 +43,6 @@ public class OrchestratorTools {
     private final UserNotifier userNotifier;
     private final AgentSessions sessions;
     private final TaskProvisioning provisioning;
-
-    public OrchestratorTools(ConfigService configService, StateService stateService, GitService gitService,
-                             EditorDriver editorDriver, UserNotifier userNotifier, AgentSessions sessions,
-                             TaskProvisioning provisioning) {
-        this.configService = configService;
-        this.stateService = stateService;
-        this.gitService = gitService;
-        this.editorDriver = editorDriver;
-        this.userNotifier = userNotifier;
-        this.sessions = sessions;
-        this.provisioning = provisioning;
-    }
 
     // ---- delegation: the MCP surface stays here, the work lives in the two services the split created ----
 
@@ -120,11 +111,19 @@ public class OrchestratorTools {
         if (!updated) {
             throw new IllegalArgumentException("Task " + taskId + " not found in state.json");
         }
+        if (newStatus != previous) {
+            log.atInfo().addKeyValue("task", taskId)
+                    .addKeyValue("alias", current.map(TaskState::alias).orElse(null))
+                    .addKeyValue("status", newStatus).addKeyValue("from", previous)
+                    .log("<- agent {}: {}{}", TaskLabel.of(taskId, current.map(TaskState::alias).orElse(null)),
+                            newStatus, shortMessage == null ? "" : " — " + shortMessage);
+        }
         // Event-driven: the human doesn't poll, so ping them the moment a task hands
         // control back (finished review / broke CI). Only on the transition, never on
         // the agent's frequent IN_PROGRESS keep-alives.
         if (newStatus != previous && (newStatus == TaskStatus.REVIEW_PENDING || newStatus == TaskStatus.CI_FAILED)) {
-            userNotifier.notify("jagt · " + taskId, Move.forTask(newStatus, true).hint());
+            userNotifier.notify("jagt · " + taskId,
+                    Move.forTask(newStatus, true, AgentReport.of(shortMessage)).hint());
         }
         return "Task " + taskId + " -> " + newStatus + (shortMessage == null ? "" : " (" + shortMessage + ")");
     }
@@ -351,7 +350,6 @@ public class OrchestratorTools {
         return stateService.prettyJson();
     }
 
-
     /** The MR url linked to a task (via ship/resume), or null. Resolves aliases. Used by `review`. */
     public String taskMrUrl(String taskId) {
         return requireTask(canonicalTaskId(taskId)).mrUrl();
@@ -392,7 +390,7 @@ public class OrchestratorTools {
         // Only ping on a real transition of an existing task — never for a no-op (task gone) or a re-poll
         // that lands on the same status the human already saw.
         if (updated && status != previous) {
-            userNotifier.notify("jagt · " + id, Move.forTask(status, true).hint());
+            userNotifier.notify("jagt · " + id, Move.forTask(status, true, AgentReport.of(message)).hint());
         }
     }
 

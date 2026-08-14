@@ -2,8 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.codehost.CodeHost;
 import dev.jagt.orchestrator.model.ReviewFacts;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -24,9 +23,8 @@ import java.util.Optional;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ReviewReader {
-
-    private static final Logger log = LoggerFactory.getLogger(ReviewReader.class);
 
     private final List<CodeHost> codeHosts;
     private final MeteredAssistant assistant;

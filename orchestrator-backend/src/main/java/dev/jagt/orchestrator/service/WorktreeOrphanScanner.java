@@ -1,8 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.platform.UserNotifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -38,9 +37,8 @@ import java.util.stream.Stream;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WorktreeOrphanScanner {
-
-    private static final Logger log = LoggerFactory.getLogger(WorktreeOrphanScanner.class);
 
     /** Directories never worth walking for secret copies (huge and/or generated). */
     private static final Set<String> SKIP = Set.of(".git", "node_modules", "build", "target", "out", "dist",

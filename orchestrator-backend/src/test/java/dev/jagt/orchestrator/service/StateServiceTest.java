@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.model.ActionOrigin;
+import dev.jagt.orchestrator.model.StatusChange;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.model.TokenUsage;
@@ -20,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 class StateServiceTest {
 
@@ -172,6 +175,51 @@ class StateServiceTest {
         var found = state.findByWorktree(physicalCallerCwd);
 
         assertThat(found).map(Map.Entry::getKey).contains("ABC-1");
+    }
+
+    @Test
+    void recordsWhoAskedForEachStepATaskTakes(@TempDir Path root) {
+        StateService state = stateIn(root, root.resolve("state.json"));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        OriginContext.as(ActionOrigin.BOARD,
+                () -> state.updateTask("ABC-1", task -> task.withStatus(TaskStatus.SHIPPING, "shipping")));
+
+        assertThat(state.task("ABC-1").orElseThrow().history())
+                .extracting(StatusChange::status, StatusChange::origin)
+                .containsExactly(tuple(TaskStatus.NEW, null), tuple(TaskStatus.SHIPPING, ActionOrigin.BOARD));
+    }
+
+    @Test
+    void leavesTheEarlierStepAloneWhenAKeepAliveChangesNothing(@TempDir Path root) {
+        StateService state = stateIn(root, root.resolve("state.json"));
+        OriginContext.as(ActionOrigin.CONSOLE,
+                () -> state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build()));
+
+        OriginContext.as(ActionOrigin.MCP, () -> state.updateTask("ABC-1", TaskState::touched));
+
+        assertThat(state.task("ABC-1").orElseThrow().history())
+                .extracting(StatusChange::origin)
+                .containsExactly(ActionOrigin.CONSOLE);
+    }
+
+    /**
+     * A task written before history existed has its status reconstructed on the next write. Signing that
+     * reconstruction would credit whoever happened to write next with a status a human reached days ago.
+     */
+    @Test
+    void doesNotSignTheStatusItReconstructsForATaskThatPredatesHistory(@TempDir Path root) throws IOException {
+        Path stateFile = root.resolve("state.json");
+        Files.writeString(stateFile, """
+                {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"APPROVED","alias":"a1",
+                "lastActiveTimestamp":1000}}}""");
+        StateService state = stateIn(root, stateFile);
+
+        OriginContext.as(ActionOrigin.MCP, () -> state.updateTask("ABC-1", TaskState::touched));
+
+        assertThat(state.task("ABC-1").orElseThrow().history())
+                .extracting(StatusChange::status, StatusChange::origin)
+                .containsExactly(tuple(TaskStatus.APPROVED, null));
     }
 
     @Test

@@ -1,8 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.platform.UserNotifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -26,9 +25,8 @@ import java.nio.file.Path;
  * unaffected either way.
  */
 @Service
+@Slf4j
 public class RunningJarWatch {
-
-    private static final Logger log = LoggerFactory.getLogger(RunningJarWatch.class);
 
     /** What a jar file looked like: the two cheap facts that a rewrite cannot leave both unchanged. */
     record Stamp(long lastModified, long size) {

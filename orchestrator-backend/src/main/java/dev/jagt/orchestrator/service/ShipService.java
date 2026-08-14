@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.ReviewRequestTitle;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * follow-up instruction — and never on the critical path, so a dead agent no longer blocks a ship.
  */
 @Service
+@RequiredArgsConstructor
 public class ShipService {
 
     private final StateService stateService;
@@ -44,16 +46,6 @@ public class ShipService {
     private final List<CodeHost> codeHosts;
     /** One ship at a time per task: two clicks in a row would push and call the host twice for nothing. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
-
-    public ShipService(StateService stateService, ConfigService configService, GitService gitService,
-                       TmuxService tmuxService, OrchestratorTools tools, List<CodeHost> codeHosts) {
-        this.stateService = stateService;
-        this.configService = configService;
-        this.gitService = gitService;
-        this.tmuxService = tmuxService;
-        this.tools = tools;
-        this.codeHosts = codeHosts;
-    }
 
     public String ship(String taskIdOrAlias) {
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
@@ -182,13 +174,20 @@ public class ShipService {
             return "Do NOT post any replies — LEAVE review_replies.md untouched for the human to post.\n";
         }
         if (config.codeReview().reviewReplyAuthorsOrEmpty().isEmpty()) {
-            return "If review_replies.md exists, post each drafted reply to its thread, then delete it.\n";
+            return "If review_replies.md exists, post each drafted reply to its thread, then delete it."
+                    + THREADS;
         }
         return "If review_replies.md exists, post drafted replies ONLY to threads whose comment author matches"
                 + " (case-insensitive) any of: "
                 + String.join(", ", config.codeReview().reviewReplyAuthorsOrEmpty())
-                + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones.\n";
+                + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones."
+                + THREADS;
     }
+
+    /** A reply does not resolve a thread, and the next round relays every unresolved one. */
+    private static final String THREADS = " Resolve a thread ONLY where you changed the code it asked for."
+            + " Leave every thread you pushed back on or asked about UNRESOLVED — that disagreement is the"
+            + " reviewer's to settle, and resolving it would read as agreement.\n";
 
     /**
      * The ship instruction for the relay path. First ship: commit the exact pattern title and open the

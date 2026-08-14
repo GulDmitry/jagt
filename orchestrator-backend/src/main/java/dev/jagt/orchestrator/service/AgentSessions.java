@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.agent.AgentRuntime;
+import dev.jagt.orchestrator.model.TaskLabel;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.platform.TerminalDriver;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -21,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AgentSessions {
 
     private final ConfigService configService;
@@ -157,6 +160,11 @@ public class AgentSessions {
                             .orElse(instructions)
                     : instructions);
         }
+        // The opening line only: a brief runs to hundreds of lines.
+        log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", task.alias())
+                .addKeyValue("chars", instructions.length()).addKeyValue("appended", append)
+                .log("-> agent {}: {}", TaskLabel.of(taskId, task.alias()),
+                        instructions.lines().findFirst().orElse("(empty)"));
         // A file on disk doesn't wake a running agent session — nudge it directly.
         String session = agentSession(configService.load(), taskId);
         if (tmuxService.taskWindowState(session, taskId) == TmuxService.WindowState.AGENT_RUNNING
@@ -164,6 +172,9 @@ public class AgentSessions {
                         "The Master updated task_context.md — re-read it now and follow the new instructions.")) {
             return "Instructions written to task_context.md and the agent was nudged to re-read them.";
         }
+        log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", task.alias())
+                .log("-> agent {}: its session was down, respawning it to read the instructions",
+                        TaskLabel.of(taskId, task.alias()));
         // Session not running (killed / crashed / never started): respawn it — a fresh agent session
         // reads task_context.md on start and acts on the relayed instruction, so ship/review can't
         // dead-end against a dead agent.

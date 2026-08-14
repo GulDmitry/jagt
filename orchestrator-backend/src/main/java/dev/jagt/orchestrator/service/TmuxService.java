@@ -4,8 +4,7 @@ import dev.jagt.orchestrator.agent.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.platform.TerminalDriver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +21,9 @@ import java.util.Optional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TmuxService {
 
-    private static final Logger log = LoggerFactory.getLogger(TmuxService.class);
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
 
     public enum WindowState { MISSING, DEAD_SHELL, AGENT_RUNNING }

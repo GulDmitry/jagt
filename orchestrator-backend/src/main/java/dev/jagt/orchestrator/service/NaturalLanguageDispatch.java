@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant.CommandProposal;
+import dev.jagt.orchestrator.model.ActionOrigin;
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskView;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
  * whose interpretation is invisible teaches nobody the grammar and cannot be corrected.
  */
 @Service
+@RequiredArgsConstructor
 public class NaturalLanguageDispatch {
 
     /** Not a TaskAction: `do` creates a task rather than acting on one, and it is the commonest request. */
@@ -44,21 +47,16 @@ public class NaturalLanguageDispatch {
     private final CommandService commands;
     private final TaskLauncher launcher;
 
-    public NaturalLanguageDispatch(MeteredAssistant assistant, StateService stateService, TaskViews taskViews,
-                                   CommandService commands, TaskLauncher launcher) {
-        this.assistant = assistant;
-        this.stateService = stateService;
-        this.taskViews = taskViews;
-        this.commands = commands;
-        this.launcher = launcher;
-    }
-
     /**
      * Interprets free text and runs what it means. Never throws for a request it cannot place — an operator
      * typing prose gets an explanation and the grammar, not a stack trace. A refusal from the gate below
      * (wrong status, unknown project) does propagate: that is a real answer about a real task.
      */
     public String interpret(String text) {
+        return OriginContext.as(ActionOrigin.PALETTE, () -> interpretHere(text));
+    }
+
+    private String interpretHere(String text) {
         if (text == null || text.isBlank()) {
             return "Nothing to interpret.";
         }
@@ -101,7 +99,15 @@ public class NaturalLanguageDispatch {
         }
         // Execution goes through the SAME gate as a button: an action the task's status does not allow is
         // refused with a sentence here, so a model's guess can never widen what is legal.
-        return "understood as `" + command + " " + task + "` — " + commands.execute(task, action.get());
+        String understood = "understood as `" + command + " " + task + "` — ";
+        try {
+            return understood + commands.execute(task, action.get());
+        } catch (Refusal e) {
+            // Rethrown rather than returned: a refusal answered as text reads as a success to every caller —
+            // 200 to the palette, which then clears the input and closes on a neutral toast. It carries the
+            // interpretation now, because a refusal about a task the operator never named explains nothing.
+            throw new Refusal(e.code(), understood + "refused: " + e.getMessage());
+        }
     }
 
     private String runDo(CommandProposal mapped) {

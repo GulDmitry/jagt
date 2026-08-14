@@ -2,8 +2,7 @@ package dev.jagt.orchestrator.platform;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ProcessRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +25,7 @@ import java.util.regex.Pattern;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class CliEditorDriver implements EditorDriver {
 
     private final ProcessRunner processRunner;
@@ -47,8 +47,6 @@ public class CliEditorDriver implements EditorDriver {
         command.add(right.toString());
         processRunner.runDetached(null, command);
     }
-
-    private static final Logger log = LoggerFactory.getLogger(CliEditorDriver.class);
 
     /**
      * Drop the worktree from every JetBrains IDE's recent-projects list (macOS config location), so a

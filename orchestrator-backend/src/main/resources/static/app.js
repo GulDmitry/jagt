@@ -47,7 +47,10 @@ const duration = (millis) => {
 // The transitions the task actually went through, as a tooltip: the card stays one line, the record is one
 // hover away. Server-sent, so it is the same history state.json holds.
 const timeline = (task) => (task.history || [])
-  .map((step) => `${new Date(step.at).toLocaleString()}  ${step.status}`)
+  .map((step) => {
+    const asked = step.origin ? `  (${step.origin.toLowerCase().replace('_', '-')})` : '';
+    return `${new Date(step.at).toLocaleString()}  ${step.status}${asked}`;
+  })
   .join('\n');
 
 const compactTokens = (n) => {
@@ -78,9 +81,20 @@ function toast(message, isError) {
 async function api(path, options) {
   const response = await fetch(path, options);
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body.error || `${response.status} ${response.statusText}`);
+  if (!response.ok) {
+    const failure = new Error(body.error || `${response.status} ${response.statusText}`);
+    failure.code = body.code;
+    throw failure;
+  }
   return body;
 }
+
+// Refusals that mean "this page was describing a task that has moved on". Every action reloads the board
+// afterwards, so by the time the message is read the view is already right — say so, or it reads as jagt
+// refusing something it will keep refusing.
+const STALE_VIEW = ['NO_SUCH_TASK', 'ACTION_NOT_AVAILABLE'];
+
+const refusal = (e) => (STALE_VIEW.includes(e.code) ? `${e.message}\n\nThe board is up to date now.` : e.message);
 
 // The grammar, fetched once: the palette completes and validates against the SERVER's verb list, so a command
 // the console accepts can never be missing from the suggestions here.
@@ -253,7 +267,7 @@ async function run(task, action) {
     const result = await api(`/api/tasks/${encodeURIComponent(task.id)}/actions/${action.id}`, {method: 'POST'});
     toast(result.message);
   } catch (e) {
-    toast(e.message, true);
+    toast(refusal(e), true);
   } finally {
     busy.delete(task.id);
     await load();

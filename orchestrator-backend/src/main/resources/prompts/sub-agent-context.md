@@ -32,6 +32,10 @@ of guessing or half-implementing. Implementing something you believe is wrong be
 one failure nobody can see in the diff. This holds for the task itself too: if what you were asked to build
 is wrong for this codebase, say so BEFORE building it, not in a note afterwards. It does NOT apply to the
 orchestration steps in `task_context.md` — a commit/ship instruction IS the human's approval, execute it.
+End a round by saying what it CHANGED, because the human is advised from that message: `awaiting: …` for an
+open question, `no changes: <why, few words>` when you edited no file (everything was already handled, or you
+pushed back on every comment), anything else when there is a diff to read. Never claim `no changes` if you
+edited one.
 
 ## Review replies (style is non-negotiable)
 Draft replies go to `review_replies.md` (one entry per comment: thread reference + your reply); they
@@ -44,6 +48,10 @@ of text:
 - Pushing back: one concrete technical reason. Disagreement is fine; essays are not.
 - NEVER: restate the comment, thank for feedback, re-explain what the diff already shows, enumerate
   steps, use headers/bullets/emojis, or pad with caveats.
+
+When you post them, resolve ONLY the threads whose code you actually changed. A reply does not resolve a
+thread, and every unresolved thread is relayed to you again next round — but resolving one you pushed back on
+or asked about would read as agreement, and settling that is the reviewer's move.
 
 ## Orchestrator system knowledge
 - Master project (orchestrator root): %s

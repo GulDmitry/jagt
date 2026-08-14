@@ -3,8 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.UserNotifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -20,9 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WatchdogService {
-
-    private static final Logger log = LoggerFactory.getLogger(WatchdogService.class);
 
     private final StateService stateService;
     private final UserNotifier userNotifier;

@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,9 +22,9 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GitService {
 
-    private static final Logger log = LoggerFactory.getLogger(GitService.class);
     private static final Duration GIT_TIMEOUT = Duration.ofMinutes(3);
 
     private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();

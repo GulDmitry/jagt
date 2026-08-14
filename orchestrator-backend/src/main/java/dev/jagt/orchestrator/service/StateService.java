@@ -2,9 +2,10 @@ package dev.jagt.orchestrator.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.model.ActionOrigin;
+import dev.jagt.orchestrator.model.StatusChange;
 import dev.jagt.orchestrator.model.TaskState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -34,6 +35,7 @@ import java.util.function.UnaryOperator;
  * empty over an existing file — that would destroy the human's data on the very next write.
  */
 @Service
+@Slf4j
 public class StateService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -43,8 +45,6 @@ public class StateService {
             tasks = tasks == null ? new LinkedHashMap<>() : new LinkedHashMap<>(tasks);
         }
     }
-
-    private static final Logger log = LoggerFactory.getLogger(StateService.class);
 
     private final ObjectMapper mapper;
     private final Path stateFile;
@@ -120,7 +120,7 @@ public class StateService {
 
     public void putTask(String taskId, TaskState state) {
         mutate(file -> {
-            file.tasks().put(taskId, state);
+            file.tasks().put(taskId, stamped(file.tasks().get(taskId), state));
             return file;
         });
     }
@@ -130,7 +130,7 @@ public class StateService {
         mutate(file -> {
             TaskState current = file.tasks().get(taskId);
             if (current != null) {
-                file.tasks().put(taskId, update.apply(current));
+                file.tasks().put(taskId, stamped(current, update.apply(current)));
                 found.set(true);
             }
             return file;
@@ -177,6 +177,32 @@ public class StateService {
     /** The single JSON rendering of orchestrator state, same shape as state.json on disk. */
     public String prettyJson() {
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(read());
+    }
+
+    /**
+     * Names the asker on a step that was just taken. Every persisted change funnels through here, which is the
+     * only layer that sees both the step and {@link OriginContext} — the code that builds a transition is too
+     * far from the entry point to know who triggered it.
+     */
+    private static TaskState stamped(TaskState before, TaskState after) {
+        ActionOrigin origin = OriginContext.current();
+        if (origin == null || after.history().isEmpty() || !tookAStep(before, after)) {
+            return after;
+        }
+        return after.withLastChangeOrigin(origin);
+    }
+
+    private static boolean tookAStep(TaskState before, TaskState after) {
+        if (before == null) {
+            return true;
+        }
+        if (before.history().isEmpty()) {
+            // A task written before history existed has its current status reconstructed on the next write.
+            // That entry is a reconstruction of something that happened long ago, not a step anyone just took,
+            // so a keep-alive must not sign it — least of all with a status a human reached days earlier.
+            return after.history().size() > 1;
+        }
+        return !before.history().getLast().equals(after.history().getLast());
     }
 
     private void mutate(UnaryOperator<StateFile> mutation) {

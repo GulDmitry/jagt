@@ -1,10 +1,11 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.ActionOrigin;
+import dev.jagt.orchestrator.model.TaskLabel;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.UserNotifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -28,9 +29,8 @@ import java.util.concurrent.RejectedExecutionException;
  * "window elapsed" ping per task.
  */
 @Service
+@Slf4j
 public class AutoReviewScheduler {
-
-    private static final Logger log = LoggerFactory.getLogger(AutoReviewScheduler.class);
 
     enum Action { SKIP, POLL, WINDOW_ELAPSED }
 
@@ -92,7 +92,7 @@ public class AutoReviewScheduler {
                         userNotifier.notify("jagt · " + taskId, "auto-review window elapsed — `review` manually");
                     }
                 }
-                case POLL -> poll(taskId);
+                case POLL -> poll(taskId, task.alias());
                 case SKIP -> { }
             }
         });
@@ -113,13 +113,15 @@ public class AutoReviewScheduler {
         return now - task.lastPolledAt() >= interval.toMillis() ? Action.POLL : Action.SKIP;
     }
 
-    private void poll(String taskId) {
+    private void poll(String taskId, String alias) {
         // Stops the 60s tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a
         // task's sweeps mutually exclusive — a human typing `review` at the same time is a different
         // trigger entirely; that exclusion lives in ReviewSweepService, where every trigger passes through.
         if (!inFlight.add(taskId)) {
             return;
         }
+        log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
+                .log("auto-review {}: poll due, reading the review request", TaskLabel.of(taskId, alias));
         try {
             executor.execute(() -> pollNow(taskId));
         } catch (RejectedExecutionException e) {
@@ -133,7 +135,7 @@ public class AutoReviewScheduler {
 
     private void pollNow(String taskId) {
         try {
-            reviewSweep.sweep(taskId);
+            OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> reviewSweep.sweep(taskId));
         } catch (RuntimeException e) {
             log.warn("Auto-review sweep failed for {}: {}", taskId, e.toString());
         } finally {

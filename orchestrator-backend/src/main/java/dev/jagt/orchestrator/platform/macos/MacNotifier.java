@@ -2,8 +2,7 @@ package dev.jagt.orchestrator.platform.macos;
 
 import dev.jagt.orchestrator.platform.UserNotifier;
 import dev.jagt.orchestrator.service.ProcessRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -21,9 +20,9 @@ import java.util.List;
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "macos", matchIfMissing = true)
+@Slf4j
 public class MacNotifier implements UserNotifier {
 
-    private static final Logger log = LoggerFactory.getLogger(MacNotifier.class);
     private static final List<String> TN_CANDIDATES =
             List.of("/opt/homebrew/bin/terminal-notifier", "/usr/local/bin/terminal-notifier");
 

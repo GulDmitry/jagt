@@ -4,8 +4,7 @@ import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.service.StateService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -27,9 +26,9 @@ import java.util.stream.Collectors;
  * tools/list, dispatch and required-argument validation cannot drift apart.
  */
 @Service
+@Slf4j
 public class McpProtocolService {
 
-    private static final Logger log = LoggerFactory.getLogger(McpProtocolService.class);
     private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
     /** Keep-alive writes are throttled: a bump within this window carries no information. */
     private static final long KEEP_ALIVE_THROTTLE_MS = 15_000;

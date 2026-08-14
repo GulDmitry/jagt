@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.Refusal;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -37,6 +38,20 @@ class BoardApiControllerTest {
         when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: approval relayed");
 
         assertThat(api.act("ABC-1", "ship").message()).isEqualTo("ship ABC-1: approval relayed");
+    }
+
+    /**
+     * A page that has been open a while asks for actions the task no longer allows. The sentence is for the
+     * human; the code is what lets the page tell "your view was stale" from "jagt refuses this".
+     */
+    @Test
+    void namesTheRefusalKindSoAStalePageCanTellItselfApartFromARealRefusal() {
+        var refused = api.refused(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available"));
+
+        assertThat(refused.getBody()).containsEntry("error", "Deploy is not available")
+                .containsEntry("code", "ACTION_NOT_AVAILABLE");
+        assertThat(api.refused(new IllegalStateException("ship: ABC-1 is DEPLOYED")).getBody())
+                .containsOnlyKeys("error");
     }
 
     /** The palette adds no rule: it hands the text to the dispatcher and returns what came back, verbatim. */

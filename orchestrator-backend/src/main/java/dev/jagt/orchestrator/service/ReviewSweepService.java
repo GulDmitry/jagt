@@ -2,6 +2,10 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.mcp.OrchestratorTools;
 import dev.jagt.orchestrator.model.ReviewFacts;
+import dev.jagt.orchestrator.model.TaskLabel;
+import dev.jagt.orchestrator.model.TaskState;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -16,6 +20,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * RELAYED to the agent as drafts (nothing is pushed/posted), so the human always closes the loop.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ReviewSweepService {
 
     /** What the sweep did, so callers format a message / decide whether to notify. */
@@ -36,12 +42,6 @@ public class ReviewSweepService {
      */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
-    public ReviewSweepService(ReviewReader reviewReader, OrchestratorTools tools, StateService stateService) {
-        this.reviewReader = reviewReader;
-        this.tools = tools;
-        this.stateService = stateService;
-    }
-
     public SweepResult sweep(String taskIdOrAlias) {
         // Resolve first: `review a1` and the scheduler's `review ABC-1` must take the SAME lock.
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
@@ -50,7 +50,12 @@ public class ReviewSweepService {
                     "review " + taskId + ": a sweep is already running — wait for it to finish");
         }
         try {
-            return sweepExclusively(taskId);
+            SweepResult result = sweepExclusively(taskId);
+            String alias = stateService.task(taskId).map(TaskState::alias).orElse(null);
+            log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
+                    .addKeyValue("outcome", result.kind())
+                    .log("review {}: {}", TaskLabel.of(taskId, alias), result.message());
+            return result;
         } finally {
             inFlight.remove(taskId);
         }
@@ -124,7 +129,8 @@ public class ReviewSweepService {
                     <replies>
                     For EACH comment write a block in review_replies.md: the original comment (with its thread
                     link if available) followed by the reply you intend to post — including the ones you push
-                    back on and the ones you are asking about.
+                    back on and the ones you are asking about. The file holds DRAFTS: post nothing and resolve
+                    no thread this round. Nothing leaves this machine until the human ships.
                     </replies>
                     <comments>
                     """);
@@ -137,11 +143,19 @@ public class ReviewSweepService {
         // question rides along in the status message.
         // With no comments this is a failed pipeline, and the agent that fixes it cannot push (below), so it
         // cannot watch the build turn green either — its exit is the local fix.
+        // The round's OUTCOME rides in the message, because all three end at the same status and the human is
+        // advised from it: a ship for a round that changed nothing only returns the task to CI_POLLING, where
+        // the next poll relays the same threads (a reply does not resolve one) and the lap repeats.
         brief.append(r.comments().isEmpty()
                 ? "When the build is fixed locally, set status REVIEW_PENDING."
-                : "When every comment is fixed, answered or asked about, set status REVIEW_PENDING — with"
-                        + " message \"awaiting: …\" if a question of yours is still open.");
-        brief.append(" Do NOT push or post anything yourself.");
+                : """
+                        When every comment is fixed, answered or asked about, set status REVIEW_PENDING, and open
+                        the message with the outcome of THIS round:
+                        - "awaiting: <question>" — a question of yours is still open.
+                        - "no changes: <why, few words>" — you changed no code (all already handled, or you
+                          pushed back on every comment). Never say this if you edited a file.
+                        - anything else — you fixed code locally and there is a diff to read.""");
+        brief.append("\nDo NOT push or post anything yourself.");
         return brief.toString();
     }
 }

@@ -17,6 +17,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -64,6 +66,22 @@ class NaturalLanguageDispatchTest {
 
         // The interpretation is stated BEFORE the outcome: a wrong mapping has to be visible to be correctable.
         assertThat(result).isEqualTo("understood as `ship ABC-1` — ship ABC-1: pushed");
+    }
+
+    /** A refusal stays a refusal — answered as text it would reach the palette as a success. */
+    @Test
+    void keepsTheInterpretationVisibleWhenTheGateRefusesWhatWasUnderstood(@TempDir Path root) {
+        StateService state = stateWithOneTask(root);
+        proposes("deploy", "a1", "", "asked to release it");
+        when(commands.execute("ABC-1", TaskAction.DEPLOY)).thenThrow(new Refusal(
+                Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available for ABC-1 (it is REVIEW_PENDING)"));
+
+        assertThatThrownBy(() -> dispatchWith(state).interpret("put the layout one live"))
+                .asInstanceOf(type(Refusal.class))
+                .satisfies(refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE))
+                .extracting(Throwable::getMessage)
+                .isEqualTo("understood as `deploy ABC-1` — refused: Deploy is not available for ABC-1"
+                        + " (it is REVIEW_PENDING)");
     }
 
     @Test

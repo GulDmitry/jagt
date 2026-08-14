@@ -3,8 +3,7 @@ package dev.jagt.orchestrator.platform.macos;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.platform.TerminalDriver;
 import dev.jagt.orchestrator.service.ProcessRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -28,9 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "terminal", havingValue = "warp", matchIfMissing = false)
 @RequiredArgsConstructor
+@Slf4j
 public class WarpTerminalDriver implements TerminalDriver {
 
-    private static final Logger log = LoggerFactory.getLogger(WarpTerminalDriver.class);
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
     /** The tab needs seconds to open and attach; don't open a second one meanwhile. */
     private static final long ATTACH_GRACE_MS = 60_000;

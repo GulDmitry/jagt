@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.ui;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -21,9 +20,8 @@ import java.util.List;
 @Component
 @Order(Integer.MAX_VALUE)
 @RequiredArgsConstructor
+@Slf4j
 public class OperatorUiRunner implements ApplicationRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(OperatorUiRunner.class);
 
     private final List<OperatorUi> surfaces;
 

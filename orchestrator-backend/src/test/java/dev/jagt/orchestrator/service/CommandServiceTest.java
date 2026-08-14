@@ -11,6 +11,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -41,6 +42,18 @@ class CommandServiceTest {
                 .hasMessageContaining("Deploy is not available for ABC-1")
                 .hasMessageContaining("IN_PROGRESS");
         verifyNoInteractions(reviewSweep);
+    }
+
+    @Test
+    void marksTheTwoRefusalsThatMeanTheCallersViewIsOutOfDate() {
+        havingTask("ABC-1", TaskStatus.IN_PROGRESS, null);
+
+        assertThatThrownBy(() -> commands.execute("ABC-1", TaskAction.DEPLOY))
+                .asInstanceOf(type(Refusal.class))
+                .extracting(Refusal::code).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE);
+        assertThatThrownBy(() -> commands.execute("GONE-1", TaskAction.FOCUS))
+                .asInstanceOf(type(Refusal.class))
+                .extracting(Refusal::code).isEqualTo(Refusal.Code.NO_SUCH_TASK);
     }
 
     @Test

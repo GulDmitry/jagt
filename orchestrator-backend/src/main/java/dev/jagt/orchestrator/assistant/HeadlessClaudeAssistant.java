@@ -5,8 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
 import dev.jagt.orchestrator.service.ProcessRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -27,9 +26,9 @@ import java.util.Optional;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class HeadlessClaudeAssistant implements MasterAssistant {
 
-    private static final Logger log = LoggerFactory.getLogger(HeadlessClaudeAssistant.class);
     private static final Duration TIMEOUT = Duration.ofMinutes(3);
     private static final String TICKET_SCHEMA = """
             {"type":"object","properties":{\

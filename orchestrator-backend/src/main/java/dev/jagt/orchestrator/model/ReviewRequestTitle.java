@@ -10,10 +10,16 @@ public final class ReviewRequestTitle {
     private ReviewRequestTitle() {
     }
 
-    /** {@code {ticket}}/{@code {title}} filled in, with the id never appearing twice however often it runs. */
+    /**
+     * {@code {ticket}}/{@code {title}} filled in, with the id never appearing twice however often it runs. A
+     * task that never got a title expands to the ticket alone: it is the one field {@code do} cannot always
+     * fill (an unreadable ticket, a `resume` before the request was read), and a request still has to open.
+     */
     public static String expand(String pattern, String taskId, String storedTitle) {
+        String title = stripTicketPrefix(storedTitle, taskId);
         return pattern.replace("{ticket}", taskId)
-                .replace("{title}", stripTicketPrefix(storedTitle, taskId))
+                .replace("{title}", title == null ? "" : title)
+                .replaceFirst("[\\s:|/–—-]+$", "")
                 .trim();
     }
 

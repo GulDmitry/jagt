@@ -22,6 +22,10 @@ logging:
   # outrank that, and the board would go silent again.
   file:
     name: ${LOG_FILE:jagt-backend.log}
+  structured:
+    format:
+      # The console is what a human reads while jagt runs; blank this to make the file readable too.
+      file: ecs
 
 orchestrator:
   # Which control surface the human drives (OperatorUi strategy): web | tui | both.

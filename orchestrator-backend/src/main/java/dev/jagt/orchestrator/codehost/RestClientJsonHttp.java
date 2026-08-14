@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.codehost;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -16,9 +15,9 @@ import java.util.Optional;
 
 /** {@link JsonHttp} over Spring's {@code RestClient}. */
 @Component
+@Slf4j
 public class RestClientJsonHttp implements JsonHttp {
 
-    private static final Logger log = LoggerFactory.getLogger(RestClientJsonHttp.class);
     /** A code-host call runs on the auto-review tick or inside `ship`, so it must fail fast, not hold either. */
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
 

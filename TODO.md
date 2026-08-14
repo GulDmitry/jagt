@@ -8,18 +8,50 @@ CLAUDE.md, not here; if an entry below has hardened into a rule, it belongs ther
 
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
-| 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
-| 2 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are checked by hand today. A runner already has chromium, so it is the same steps in both pipelines | 1 d |
-| 3 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; a new install requirement, so it goes in README's Prerequisites | 1 d |
-| 4 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
-| 5 | A second `CodeHost` (GitHub) + a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the last per-task model cost | 2-3 d |
-| 6 | Extend the e2e matrix over `ship`/`review`/`deploy`/`resume` | the matrix covers CREATE→PROVISION→LAUNCH→TEARDOWN; the interesting oracle (status transitions, history, the replies relay) needs a fake `CodeHost` bean and a stub script that reports back over `POST /mcp` | 1-2 d |
+| 1 | **Lombok + a decoupling pass** — see the section below | 34 constructors do nothing but assign final fields, 49 hand-rolled withers exist across three files, and the widest class takes eight collaborators. The tests say the same thing louder: one of them writes `mock(` 91 times | 2-3 d |
+| 2 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
+| 3 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are checked by hand today. A runner already has chromium, so it is the same steps in both pipelines | 1 d |
+| 4 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; a new install requirement, so it goes in README's Prerequisites | 1 d |
+| 5 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
+| 6 | A second `CodeHost` (GitHub) + a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the last per-task model cost | 2-3 d |
+| 7 | Extend the e2e matrix over `ship`/`review`/`deploy`/`resume` | the matrix covers CREATE→PROVISION→LAUNCH→TEARDOWN; the interesting oracle (status transitions, history, the replies relay) needs a fake `CodeHost` bean and a stub script that reports back over `POST /mcp` | 1-2 d |
 
-Step 1 needs access nobody has handed over yet (a token for a real code host). Everything else is unblocked.
+Step 2 needs access nobody has handed over yet (a token for a real code host). Everything else is unblocked.
 
 Linux is answered as far as a container and a CI runner can answer it (see the record below); what remains is
 one desktop-only question — `reveal` raising the viewer above other applications, and the viewer close that
 the container run left open (the `@Disabled` test in `LinuxKittyTerminalDriverLinuxTest` names the lead).
+
+## Step 1 — Lombok + a decoupling pass
+
+Two halves of one pass, in this order: delete the boilerplate first so the coupling is what is left to look at.
+
+**Boilerplate, measured.** 34 constructors consist of nothing but `this.x = x` (194 source lines), the widest
+taking eight parameters (`MasterShell`, `BoardApiController`, `TaskProvisioning`; `OrchestratorTools` takes
+seven). 49 hand-rolled `withX` methods sit across three files (`ConfigService` 24, `TaskState` 13,
+`OrchestratorProperties` 12). `@RequiredArgsConstructor` on final fields is the whole answer for the first
+group — Spring injects a single constructor without `@Autowired`, so nothing about wiring changes.
+
+Three things to establish BEFORE rewriting anything, because each one can kill the idea:
+- Lombok must support Java 25 (the toolchain pins it). Its annotation processor breaks on JDKs it has not
+  caught up with, and downgrading the toolchain to save boilerplate is the wrong trade — if it lags, this item
+  waits.
+- `@Builder` on a RECORD works off the canonical constructor, but `@With` does not support records at all.
+  CLAUDE.md currently states Lombok "does NOT apply to records" — check what is actually true today, then fix
+  that line either way, since it is what will be read next time.
+- `AutoReviewScheduler`'s `@Autowired` marks which of its TWO constructors Spring must use (the other is the
+  package-private one tests inject an `Executor` through). A generated constructor must not displace it.
+
+**Coupling.** The tests are the measure, not the line count: `OrchestratorToolsTest` writes `mock(` 91 times,
+`MasterShellTest` 31 — and the project's own rule is that a heavy test setup means the production code is
+poorly decomposed, not that the test needs more fixture. Targets, and the ONE lesson already paid for: a
+delegating facade KEEPS every collaborator it does not shed (splitting `deploy` off `OrchestratorTools` was
+tried and reverted for adding a dependency), so the move is to GROUP collaborators into a cohesive object, not
+to move methods elsewhere. Parameter clumps go the same way — `(explicitTaskId, callerTaskId)` recurs through
+`OrchestratorTools` as one concept, "who is asking about which task", and it is a value object.
+
+Add an interface only where it buys a test a real seam. The five existing strategy seams are the pattern; an
+interface with one implementation and no second caller is ceremony, and jagt has already deleted a few.
 
 ## Open questions
 
@@ -114,32 +146,6 @@ model then answers "No tasks found." — a lie dressed as data. The sub-agent pr
 needs one interactive session: start an agent, restart the jar, ask it to call `update_agent_status`.
 If it turns out a live session does not recover, the fix is not to bring the proxy back for everyone — it is
 either a client-side setting or a runtime that keeps the bridge, which is exactly what the seam is for.
-
-### Three ideas from spec-kitty, and what was rejected with them (reviewed 2026-08-14)
-[spec-kitty](https://github.com/Priivacy-ai/spec-kitty) is spec-first (`spec → plan → tasks → next → review →
-accept → merge`, artifacts under `kitty-specs/`, work packages in lanes, worktrees, a local kanban). Its axis is
-the SPEC ARTIFACT and it delegates execution to an external provider; jagt's axis is the live session, so most
-of it does not transfer. Three things do:
-- **`history` records the status, never the ORIGIN.** Nothing distinguishes a board button from a typed command,
-  from the ⌘K palette, from `AutoReviewScheduler`, from the agent's own MCP call — which is the first question
-  asked of a task that sat in CI_POLLING for three hours. One field on the history entry, threaded through
-  `CommandService`. It is also the only way to see what tier 2 actually does.
-- **`CommandService` answers in prose only** — a refusal and a success are both a `String`, and a refusal is an
-  `IllegalArgumentException` whose only distinguishing feature is its wording. Two callers already pay for it:
-  the board's `postJson` turns every 400 into one red toast, so "your tab is stale, reload" looks exactly like
-  "the gate refused this", and `NaturalLanguageDispatch` prefixes `understood as \`ship a1\` — ` to whatever
-  comes back, so a refusal reads as an execution. A stable code beside the sentence (`NOT_SHIPPABLE`,
-  `AGENT_ALIVE`, `NO_SUCH_TASK`) is what their `orchestrator-api` returns next to its message.
-- **Per-project directives have nowhere to live.** The generated `AGENTS.md` carries system knowledge and
-  `task_context.md` the task; a project's own standing rules ("never touch migrations", "commit style X") are
-  in the human's head and re-typed per task. A path in `config.json` appended to the sub-agent context is the
-  whole feature — spec-kitty layers this as directives/tactics/profiles, which is more machinery than jagt needs.
-
-Rejected deliberately, so the next reader does not re-derive them: spec-first artifacts in the repo (the ticket
-IS the spec; a second copy is exactly the drift the tracker seam avoids), worktrees INSIDE the repo (jagt's are
-siblings — IDE indexing, `worktree.copyGlobs`, `WorktreeOrphanScanner` all assume it), an agent reviewer that
-transitions to done and merges on its own (contradicts CODE REVIEW IS NEVER FULLY AUTOMATED), and a host/provider
-process split (that boundary already exists inside the JVM as `Move` + `CommandService` + the MCP facade).
 
 ## The record — what shipped, and the finding worth keeping
 
@@ -294,14 +300,14 @@ runs CREATE→PROVISION→LAUNCH→TEARDOWN over real git/tmux with `orchestrato
 contents, the per-agent provisioning ABSENCE (a Claude-shaped file in a stub worktree means something outside
 the runtime put it there), `TaskStatus`, and that `done` removes the worktree while KEEPING the branch.
 Design rules it lives by: assert OBSERVABLE state, never timing; widening coverage is adding a ROW; and a
-combination that is not covered is NAMED with the reason. What is still missing is roadmap step 6, plus the
+combination that is not covered is NAMED with the reason. What is still missing is roadmap step 7, plus the
 real driver combinations — a GUI cannot be asserted, which is what `linuxDriverTest` exists for instead.
 
 ### Seams and their second implementations
 `AgentRuntime` (claude / codex / stub) and `TerminalDriver` (kitty / warp) have more than one, and adding
 Codex is what MOVED provisioning into the seam — proof that an interface with one implementation had quietly
 left `.mcp.json` and the word "Claude" sitting in `OrchestratorTools`. Still single-implementation, so still
-unproven: `EditorDriver` (one CLI driver) and `CodeHost` (GitLab only — roadmap step 5). `UserNotifier` got
+unproven: `EditorDriver` (one CLI driver) and `CodeHost` (GitLab only — roadmap step 6). `UserNotifier` got
 its second with Linux.
 One follow-up Codex left: its worktree gets jagt's MCP proxy but NOT the human's own servers (`CODEX_HOME`
 points at the worktree), so such an agent cannot post review replies itself — which stopped mattering when
