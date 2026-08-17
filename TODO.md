@@ -4,18 +4,18 @@ Backlog of ideas, not commitments. Structure: what is OPEN first, then the quest
 then a compact record of what shipped — kept only where the DECISION is worth re-reading. Invariants live in
 CLAUDE.md, not here; if an entry below has hardened into a rule, it belongs there instead.
 
-## Roadmap — what is left (reviewed 2026-08-13)
+## Roadmap — what is left (reviewed 2026-08-17)
 
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
-| 1 | MEASURE the CodeHost payoff against a real host | the token drop is still arithmetic, not evidence — one task through one review round with `stats` before/after settles it | 1 h + access |
-| 2 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are checked by hand today. A runner already has chromium, so it is the same steps in both pipelines | 1 d |
-| 3 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; a new install requirement, so it goes in README's Prerequisites | 1 d |
-| 4 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
-| 5 | A second `CodeHost` (GitHub) + a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the last per-task model cost | 2-3 d |
-| 6 | Extend the e2e matrix over `ship`/`review`/`deploy`/`resume` | the matrix covers CREATE→PROVISION→LAUNCH→TEARDOWN; the interesting oracle (status transitions, history, the replies relay) needs a fake `CodeHost` bean and a stub script that reports back over `POST /mcp` | 1-2 d |
+| 1 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are checked by hand today. A runner already has chromium, so it is the same steps in both pipelines | 1 d |
+| 2 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; a new install requirement, so it goes in README's Prerequisites | 1 d |
+| 3 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
+| 4 | A second `CodeHost` (GitHub) + a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the last per-task model cost | 2-3 d |
+| 5 | Extend the e2e matrix over `ship`/`review`/`deploy`/`resume` | the matrix covers CREATE→PROVISION→LAUNCH→TEARDOWN; the interesting oracle (status transitions, history, the replies relay) needs a fake `CodeHost` bean and a stub script that reports back over `POST /mcp` | 1-2 d |
 
-Step 1 needs access nobody has handed over yet (a token for a real code host). Everything else is unblocked.
+Nothing here is blocked on access any more: measuring the `CodeHost` payoff was step 1 and it is done — see the
+record.
 
 Linux is answered as far as a container and a CI runner can answer it (see the record below); what remains is
 one desktop-only question — `reveal` raising the viewer above other applications, and the viewer close that
@@ -119,6 +119,38 @@ either a client-side setting or a runtime that keeps the bridge, which is exactl
 
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
 themselves are in CLAUDE.md.
+
+### The CodeHost payoff — MEASURED against a real host, 2026-08-17
+
+The same real review rounds swept twice — once with `orchestrator.code-host.type=gitlab`, once without (the
+paid headless read) — from a throwaway `ORCHESTRATOR_ROOT` with a stub agent, so no live state was touched.
+Model: the shipped `assistant.model: haiku`.
+
+| review round | read path | latency | cost | comments relayed |
+|---|---|---|---|---|
+| 37 discussions, 9 unresolved | headless | 41.7 s | $0.132 | **5** |
+| the same one | REST | 1.5 s | $0 | **9** |
+| 4 discussions, 1 unresolved | headless | 29.7 s | $0.058 | 1 |
+| the same one | REST | 1.1 s | $0 | 1 |
+
+Three things it settles:
+
+1. **The unit of cost is the review REQUEST, not the call.** The default cadence escalates 10 → 60 min linearly
+   across a 24 h window, so it fires ~52 polls — ∫₀^1440 dt/i(t) = (1440/50)·ln 6 — putting one request at
+   **$3-$7 on haiku**, 6-8x that on an inherited default model, against $0 over REST. The arithmetic this file
+   used to carry (40 polls × $0.40) had the order of magnitude right.
+2. **The paid read is LOSSY, and worst on the rounds that matter most.** Nine unresolved comments came back as
+   five: it dropped a whole two-note thread and the reviewer's opening question, while REST returned all nine,
+   matching the API exactly. That is not merely noise — the sweep ADVANCES a task when the list is empty and CI
+   is green, so a lossy read can mark a round REVIEWED with unanswered threads still open. On the 4-discussion
+   round it was exact, which is the shape of the risk: loss grows with the size of the round. This is a stronger
+   argument for the seam than the money is.
+3. **The reader holds up against a real instance**: nested group paths, approval read off `approved`/
+   `approved_by`, bot essays truncated, and every outcome seen for real — RELAYED, REVIEWED (clean + green) and
+   APPROVED — each under 1.2 s, over four requests in three projects.
+
+Not measured, and deliberately: `createOrUpdateMergeRequest`, the one write. Exercising it means opening a real
+merge request, so it stays covered by unit tests only.
 
 ### The screen stopped owning the grammar — 2026-08-14
 `MasterShell` was eight collaborators and its test built the whole screen to check that `do ABC-1 from x`
@@ -331,14 +363,14 @@ runs CREATE→PROVISION→LAUNCH→TEARDOWN over real git/tmux with `orchestrato
 contents, the per-agent provisioning ABSENCE (a Claude-shaped file in a stub worktree means something outside
 the runtime put it there), `TaskStatus`, and that `done` removes the worktree while KEEPING the branch.
 Design rules it lives by: assert OBSERVABLE state, never timing; widening coverage is adding a ROW; and a
-combination that is not covered is NAMED with the reason. What is still missing is roadmap step 6, plus the
+combination that is not covered is NAMED with the reason. What is still missing is roadmap step 5, plus the
 real driver combinations — a GUI cannot be asserted, which is what `linuxDriverTest` exists for instead.
 
 ### Seams and their second implementations
 `AgentRuntime` (claude / codex / stub) and `TerminalDriver` (kitty / warp) have more than one, and adding
 Codex is what MOVED provisioning into the seam — proof that an interface with one implementation had quietly
 left `.mcp.json` and the word "Claude" sitting in `OrchestratorTools`. Still single-implementation, so still
-unproven: `EditorDriver` (one CLI driver) and `CodeHost` (GitLab only — roadmap step 5). `UserNotifier` got
+unproven: `EditorDriver` (one CLI driver) and `CodeHost` (GitLab only — roadmap step 4). `UserNotifier` got
 its second with Linux.
 One follow-up Codex left: its worktree gets jagt's MCP proxy but NOT the human's own servers (`CODEX_HOME`
 points at the worktree), so such an agent cannot post review replies itself — which stopped mattering when

@@ -318,7 +318,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.assistant.model` | model for every master-assistant read — ticket, MR, review sweep (default `haiku`: ~$0.06 a call vs ~$0.41 on the inherited default; blank = your default) |
 | `orchestrator.assistant.permission-mode` | lifts the headless permission gate so the ticket-read can call MCP (default `bypassPermissions`) |
 | `orchestrator.assistant.allowed-tools` | comma-separated `mcp__<server>` allow-list; scopes the bypass, takes precedence over permission-mode |
-| `orchestrator.code-host.type` | read review sweeps over the host's REST API instead of a paid model call: `gitlab`, or blank = off (default) |
+| `orchestrator.code-host.type` | read review sweeps over the host's REST API instead of a paid model call: `gitlab`, or blank = off (default). Worth setting if `autoReview` is on: measured against a real host, 24 h of polling costs $3-$7 per request without it, and the model read returned 5 of 9 unresolved comments on a large round |
 | `orchestrator.code-host.base-url` | the host root, e.g. `https://gitlab.example.com`; a review URL is only read under this prefix |
 | `orchestrator.code-host.token` | read-only API token (env, e.g. `CODE_HOST_TOKEN`) — jagt only GETs: never a push, merge or comment |
 | `orchestrator.stub.script` | only for `orchestrator.agent=stub` (the scripted runtime used by `./gradlew e2eTest`): executable run instead of an agent |
