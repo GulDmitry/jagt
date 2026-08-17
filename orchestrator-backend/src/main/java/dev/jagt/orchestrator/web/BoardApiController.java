@@ -63,7 +63,7 @@ public class BoardApiController {
     /** Token spend, the same text `stats` prints, so the board does not need a second renderer for it. */
     @GetMapping(value = "/stats", produces = MediaType.TEXT_PLAIN_VALUE)
     public String stats() {
-        return views.usageStats();
+        return views.stats();
     }
 
     /** "Something moved" — the browser re-fetches the board. See {@link TaskEventStream}. */

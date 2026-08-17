@@ -26,11 +26,9 @@ public class UsageStatsRenderer {
     static final int LABEL_W = 18;
     private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s%n";
 
-    private final StateService stateService;
     private final UsageTracker usageTracker;
 
-    public String render() {
-        Map<String, TaskState> tasks = stateService.tasks();
+    public String render(Map<String, TaskState> tasks) {
         StringBuilder out = new StringBuilder("assistant token spend — jagt's own calls only"
                 + " (a sub-agent's own session is invisible to jagt)\n\n");
         out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL"));

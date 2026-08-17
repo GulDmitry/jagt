@@ -54,7 +54,7 @@ class BoardApiControllerTest {
 
     @Test
     void servesTheSameSpendTextTheConsolePrints() {
-        when(views.usageStats()).thenReturn("assistant token spend …");
+        when(views.stats()).thenReturn("assistant token spend …");
 
         assertThat(api.stats()).isEqualTo("assistant token spend …");
     }

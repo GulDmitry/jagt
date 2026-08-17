@@ -53,7 +53,7 @@ public class McpController {
     /** Plain-text token spend of jagt's own model calls, per task (same view as the `stats` command). */
     @GetMapping(value = "/stats", produces = MediaType.TEXT_PLAIN_VALUE)
     public String stats() {
-        return views.usageStats();
+        return views.stats();
     }
 
     /** Worktree directories no task owns any more, and how many copied secret files they still hold. */

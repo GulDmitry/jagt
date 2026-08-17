@@ -28,7 +28,7 @@ class UsageStatsRendererTest {
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
 
-        String out = new UsageStatsRenderer(state, tracker).render();
+        String out = new UsageStatsRenderer(tracker).render(state.tasks());
 
         // "42 calls, 1.8M tokens" does not say where to optimise; this split does, and the answer is the top
         // line — the poll that repeats, not the read that happens once.
@@ -48,7 +48,7 @@ class UsageStatsRendererTest {
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
         tracker.chargeTask("ABC-2", TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
 
-        String out = new UsageStatsRenderer(state, tracker).render();
+        String out = new UsageStatsRenderer(tracker).render(state.tasks());
 
         assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
         assertThat(out).contains("average per call");
@@ -63,7 +63,7 @@ class UsageStatsRendererTest {
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
         state.removeTask("ABC-1");
 
-        String out = new UsageStatsRenderer(state, tracker).render();
+        String out = new UsageStatsRenderer(tracker).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out.lines().filter(l -> l.startsWith("this session")).findFirst().orElseThrow())
@@ -75,7 +75,7 @@ class UsageStatsRendererTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
-        String out = new UsageStatsRenderer(state, new UsageTracker(state)).render();
+        String out = new UsageStatsRenderer(new UsageTracker(state)).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out).doesNotContain("average per call");

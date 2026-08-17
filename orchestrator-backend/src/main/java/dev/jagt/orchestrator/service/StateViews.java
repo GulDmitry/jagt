@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * The read-only views of jagt's state: the dashboard, the token-spend stats, the tasks to pick from.
+ * The read-only views of jagt's state: the dashboard, the stats report, the tasks to pick from.
  * Grouped into one collaborator so a caller that shows state (the Master shell, the HTTP endpoints) takes
  * a single dependency instead of one per screen — and so both surfaces are guaranteed to show the exact
  * same text.
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class StateViews {
 
     private final DashboardRenderer dashboard;
-    private final UsageStatsRenderer usageStats;
+    private final StatsReport stats;
     private final WorktreeOrphanScanner orphanScanner;
     private final TaskViews taskViews;
 
@@ -23,8 +23,8 @@ public class StateViews {
         return dashboard.render();
     }
 
-    public String usageStats() {
-        return usageStats.render();
+    public String stats() {
+        return stats.render();
     }
 
     public java.util.List<TaskChoice> taskChoices() {
