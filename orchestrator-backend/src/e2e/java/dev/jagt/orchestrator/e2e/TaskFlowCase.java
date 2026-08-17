@@ -12,6 +12,11 @@ import java.util.List;
  * terminal drivers are replaced by headless doubles in the run (a GUI cannot be asserted and must not open on
  * a developer's machine), so they are not rows either until a Linux driver exists to compare against.
  *
+ * <p>Also not a row, deliberately: what happens BETWEEN creation and teardown — ship, a review round, deploy,
+ * revert, resume. Those need a host and an agent that answers, they behave the same however terminals are
+ * arranged, and running them four times over would only pay for that twice. {@link ReviewAndDeployFlowTest}
+ * covers them on one combination, over its own matrix of what a round can report.
+ *
  * @param viewMode   {@code viewer.viewMode} — shared vs one terminal tab per task
  * @param autoReview {@code autoReview.enabled} — whether a shipped task gets polled unattended
  */

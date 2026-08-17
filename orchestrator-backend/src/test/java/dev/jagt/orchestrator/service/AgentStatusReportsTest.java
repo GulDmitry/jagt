@@ -116,6 +116,28 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void keepsTheWholeMrLinkWhenTheMessageIsTooLongForOneDashboardLine(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        String link = "https://gitlab.example/group/subgroup/team/project/-/merge_requests/1234567";
+
+        reports(state).report("CI_POLLING", "pipeline queued after the push — MR: " + link, "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo(link);
+    }
+
+    @Test
+    void rejectsCiPollingWhenTheMessageMentionsHttpButCarriesNoLink(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+
+        assertThatThrownBy(() -> reports(state)
+                .report("CI_POLLING", "pushed, see the http docs for the request", "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("MR link");
+    }
+
+    @Test
     void markApprovedAdvancesTheStatusAndPingsTheHumanOnce(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)

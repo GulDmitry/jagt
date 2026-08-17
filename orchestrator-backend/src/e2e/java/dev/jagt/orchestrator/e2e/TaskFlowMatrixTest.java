@@ -32,9 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * The end-to-end task flow, once per {@link TaskFlowCase} — real git worktrees, real tmux windows, real state
  * transitions, with the model replaced by the scripted {@code stub} runtime so the expected result is exact
- * rather than plausible. This is the skeleton the matrix grows on: {@code ship}/{@code review}/{@code deploy}
- * are NOT covered yet (they need a fake {@code CodeHost} and a scripted agent that reports back), and the
- * missing rows are named in {@link TaskFlowCase}.
+ * rather than plausible. Creation and teardown are what varies with these combinations; the flow between them
+ * is {@link ReviewAndDeployFlowTest}, and what neither covers is named in {@link TaskFlowCase}.
  *
  * <p>Not part of {@code ./gradlew test}: it needs git + tmux and writes worktrees. Run it with
  * {@code ./gradlew e2eTest}. It leaves no trace — throwaway origin/clone under a temp dir, a throwaway tmux

@@ -39,14 +39,15 @@ public class AgentStatusReports {
         }
         String shortMessage = abbreviate(message);
         Optional<TaskState> current = stateService.task(taskId);
+        // A message is cut down to one dashboard line, and a cut URL is a dead link.
+        String url = extractUrl(message);
         // The dashboard is the SSOT for "where is my MR" — a linkless CI_POLLING is a lie. An agent with a
         // question hands the round back at REVIEW_PENDING instead, where the question IS what the board shows.
-        if (newStatus == TaskStatus.CI_POLLING && (shortMessage == null || !shortMessage.contains("http"))) {
+        if (newStatus == TaskStatus.CI_POLLING && url == null) {
             throw new IllegalArgumentException(
                     "CI_POLLING requires the MR link in the message, e.g. \"MR: https://...\"");
         }
         TaskStatus previous = current.map(TaskState::status).orElse(null);
-        String url = extractUrl(shortMessage);
         boolean updated = stateService.updateTask(taskId, t -> {
             TaskState next = t.withStatus(newStatus, shortMessage);
             if (url != null) {
