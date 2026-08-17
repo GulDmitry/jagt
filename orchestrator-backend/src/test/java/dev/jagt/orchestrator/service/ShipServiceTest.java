@@ -339,4 +339,24 @@ class ShipServiceTest {
         when(stateService.task(taskId)).thenReturn(Optional.of(TaskState.builder("demo", "/wt", status)
                 .mrUrl(requestUrl).remoteUrl("git@host:demo/demo.git").title(title).build()));
     }
+
+    @Test
+    void keepsTheRequestOfARepositoryThatLandedWhenALaterOneFails() {
+        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
+                List.of()));
+        List<TaskRepo> repos = List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
+                new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null));
+        when(stateService.task("ABC-5")).thenReturn(Optional.of(
+                TaskState.builder(repos, TaskStatus.REVIEW_PENDING).title("Widget layout is off").build()));
+        when(host.createOrUpdateMergeRequest(any()))
+                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", true)), Optional.empty());
+
+        assertThatThrownBy(() -> ship().ship("ABC-5")).isInstanceOf(IllegalStateException.class);
+
+        ArgumentCaptor<java.util.function.UnaryOperator<TaskState>> saved = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-5"), saved.capture());
+        TaskState after = saved.getValue().apply(TaskState.builder(repos, TaskStatus.REVIEW_PENDING).build());
+        assertThat(after.repo("demo").orElseThrow().mrUrl()).isEqualTo("https://host/mr/1");
+        assertThat(after.status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    }
 }

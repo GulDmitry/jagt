@@ -201,7 +201,7 @@ class TaskProvisioningTest {
         assertThatThrownBy(() -> provisioning().initializeTask(
                 NewTask.builder("ABC-5", "proj").baseBranch("feature/typo").build()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("does not exist on origin");
+                .hasMessageContaining("does not exist on proj's origin");
 
         verify(git, never()).createWorktree(any(), any(), any(), any(), any());
         assertThat(state.task("ABC-5")).isEmpty();
@@ -220,5 +220,42 @@ class TaskProvisioningTest {
                                 List.of()),
                         "web", new ProjectConfig(root.resolve("web-repo").toString(), "origin/release", null,
                                 List.of())))));
+    }
+
+    @Test
+    void keepsAResumedBranchWhenTheUnwindRemovesItsWorktree() {
+        withProject("proj");
+        when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
+        when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        WorktreeSetup setup = mock(WorktreeSetup.class);
+        doThrow(new IllegalStateException("provisioning failed")).when(setup).fill(any(), any(), any());
+
+        assertThatThrownBy(() -> provisioning(setup).initializeTask(
+                NewTask.builder("ABC-4", "proj").branchStrategy("resume").build()))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(git).removeWorktree(root.resolve("repo").toAbsolutePath().normalize(),
+                root.resolve("ABC-4-proj"), null);
+    }
+
+    @Test
+    void refusesToBuildATaskWithNoProjectForItsSession() {
+        assertThatThrownBy(() -> NewTask.builder("ABC-1", " ").alsoIn(List.of("web")).build())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("needs the project its session runs in");
+    }
+
+    @Test
+    void namesTheRepositoryWhoseOriginIsMissingTheBaseBranch() {
+        withProjects();
+        when(git.remoteBranchExists(any(), eq("feature/parent"))).thenReturn(true);
+        when(git.remoteBranchExists(eq(root.resolve("web-repo")), eq("feature/parent"))).thenReturn(false);
+
+        assertThatThrownBy(() -> provisioning().initializeTask(NewTask.builder("ABC-3", "api")
+                .alsoIn(List.of("web")).baseBranch("feature/parent").build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("does not exist on web's origin");
+
+        verify(git, never()).createWorktree(any(), any(), any(), any(), any());
     }
 }
