@@ -59,8 +59,8 @@ public class McpProtocolService {
             return Optional.empty();
         }
         boolean isNotification = id == null || id.isNull();
-        String callerTaskId = keepAlive(callerCwd);
         try {
+            String callerTaskId = keepAlive(callerCwd);
             JsonNode result = switch (method) {
                 case "initialize" -> initializeResult(message);
                 case "ping" -> mapper.createObjectNode();
@@ -81,7 +81,7 @@ public class McpProtocolService {
             return Optional.of(response);
         } catch (Exception e) {
             log.error("MCP {} failed: {}", method, e.getMessage(), e);
-            return isNotification ? Optional.empty() : Optional.of(error(id, -32603, e.getMessage()));
+            return isNotification ? Optional.empty() : Optional.of(error(id, -32603, describe(e)));
         }
     }
 
@@ -145,7 +145,7 @@ public class McpProtocolService {
             return toolResult(spec.handler().call(args, callerTaskId), false);
         } catch (Exception e) {
             log.warn("Tool {} failed: {}", name, e.getMessage());
-            return toolResult("Error: " + e.getMessage(), true);
+            return toolResult("Error: " + describe(e), true);
         }
     }
 
@@ -166,8 +166,12 @@ public class McpProtocolService {
         response.set("id", id);
         ObjectNode error = response.putObject("error");
         error.put("code", code);
-        error.put("message", message == null ? "Internal error" : message);
+        error.put("message", message);
         return response;
+    }
+
+    private String describe(Exception e) {
+        return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
     }
 
 }

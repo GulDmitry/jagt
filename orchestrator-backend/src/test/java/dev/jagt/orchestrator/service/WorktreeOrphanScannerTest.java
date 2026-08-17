@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.UserNotifier;
@@ -29,8 +30,6 @@ class WorktreeOrphanScannerTest {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
         Files.createDirectories(orphan.resolve("app"));
-        // `**/.env` needs a directory component to match — a root-level .env is NOT copied by that glob
-        // either, which is how copyLocalFiles behaves in production.
         Files.writeString(orphan.resolve("app").resolve(".env"), "TOKEN=secret");
         Files.writeString(orphan.resolve("app").resolve("key.pem"), "-----BEGIN KEY-----");
         WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env", "**/*.pem"));
@@ -43,6 +42,29 @@ class WorktreeOrphanScannerTest {
             assertThat(found.secretFiles()).isEqualTo(2);
         });
         assertThat(scanner.report()).contains("ABC-40-demo", "2 copied secret file(s)", "never deletes");
+    }
+
+    @Test
+    void leavesEveryRepositoryOfALiveTaskAloneNotJustItsFirst(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path agentRuns = Files.createDirectories(root.resolve("ABC-1-alpha"));
+        Path alsoEdited = Files.createDirectories(root.resolve("ABC-1-demo"));
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"),
+                Map.of("ABC-1", TaskState.builder(List.of(TaskRepo.of("alpha", agentRuns.toString()),
+                        TaskRepo.of("demo", alsoEdited.toString())), TaskStatus.IN_PROGRESS).build()));
+
+        assertThat(scanner.scan()).isEmpty();
+    }
+
+    @Test
+    void countsASecretLeftAtTheRootOfAnOrphanTheSameWayItWasCopiedThere(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path orphan = Files.createDirectories(root.resolve("ABC-42-demo"));
+        Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+
+        assertThat(scanner.scan()).singleElement()
+                .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
     }
 
     @Test

@@ -62,6 +62,21 @@ class StateServiceTest {
     }
 
     @Test
+    void keepsResolvingCallersWhenOneStateEntryHasNoWorktreePath(@TempDir Path root) throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-2-alpha"));
+        Path stateFile = root.resolve("state.json");
+        Files.writeString(stateFile, """
+                {"tasks": {
+                  "ABC-1": {"repos": [{"project": "alpha"}], "status": "NEW"},
+                  "ABC-2": {"repos": [{"project": "alpha", "worktreePath": "%s"}], "status": "NEW"}
+                }}
+                """.formatted(worktree));
+
+        assertThat(stateIn(root, stateFile).findByWorktree(worktree.toString())).get()
+                .extracting(Map.Entry::getKey).isEqualTo("ABC-2");
+    }
+
+    @Test
     void staysQuietWhenAMutationChangedNothing(@TempDir Path root) {
         StateService state = stateIn(root, root.resolve("state.json"));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());

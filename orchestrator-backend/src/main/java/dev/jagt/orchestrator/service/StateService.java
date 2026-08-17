@@ -161,8 +161,8 @@ public class StateService {
 
     /**
      * Resolves the calling agent's task from the X-Working-Directory header value. ANY of the task's
-     * repositories answers, not just the session's own: one piece of work can span several, and a tool called
-     * from the directory the agent is currently editing must reach the task that owns it.
+     * repositories answers, not just the first: one piece of work can span several, and a session started in
+     * any of them belongs to the same task — so a multi-repo task is ONE caller, not several.
      */
     public Optional<Map.Entry<String, TaskState>> findByWorktree(String cwd) {
         if (cwd == null || cwd.isBlank()) {

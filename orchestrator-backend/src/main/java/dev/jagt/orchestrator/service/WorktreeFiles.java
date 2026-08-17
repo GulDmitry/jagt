@@ -8,11 +8,13 @@ import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * The files a fresh worktree needs that git does not carry: the IDE's run configs and database connections,
@@ -82,10 +84,7 @@ public final class WorktreeFiles {
      * hardcoded. Best-effort; heavy dirs skipped. (Secrets live only in the local, gitignored worktree.)
      */
     public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
-        var matchers = (globs == null ? List.<String>of() : globs).stream()
-                .filter(glob -> glob != null && !glob.isBlank())
-                .map(glob -> FileSystems.getDefault().getPathMatcher("glob:" + glob.strip()))
-                .toList();
+        var matchers = localFileMatchers(globs);
         if (matchers.isEmpty()) {
             return;
         }
@@ -100,8 +99,13 @@ public final class WorktreeFiles {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     Path relative = projectPath.relativize(file);
-                    if (matchers.stream().anyMatch(matcher -> matcher.matches(relative))) {
-                        copyFile(file, worktreePath.resolve(relative));
+                    Path target = worktreePath.resolve(relative);
+                    // Anything already in a fresh worktree came out of the checkout, i.e. git TRACKS it — and
+                    // then this is not the file the app is missing. Overwriting it would start every worktree
+                    // with an uncommitted change the agent could commit (a repo whose root `.env` is tracked
+                    // and whose `.env.local` is the ignored one is the common shape).
+                    if (!Files.exists(target) && matchers.stream().anyMatch(m -> m.matches(relative))) {
+                        copyFile(file, target);
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -109,6 +113,23 @@ public final class WorktreeFiles {
         } catch (IOException e) {
             log.warn("Could not scan {} for local files: {}", projectPath, e.getMessage());
         }
+    }
+
+    /**
+     * The patterns as matchers against a repository-relative path. A {@code **}{@code /} prefix ALSO matches at
+     * the root: Java's glob wants a directory component there, so the pattern that reads "any .env" skipped the
+     * one a single-module repository has, and the app then failed to start for a reason that looks like anything
+     * but a glob. Shared with whoever reports what those patterns left behind, so the two cannot disagree.
+     */
+    public static List<PathMatcher> localFileMatchers(List<String> globs) {
+        return (globs == null ? List.<String>of() : globs).stream()
+                .filter(glob -> glob != null && !glob.isBlank())
+                .map(String::strip)
+                .flatMap(glob -> glob.startsWith("**/")
+                        ? Stream.of(glob, glob.substring("**/".length()))
+                        : Stream.of(glob))
+                .map(glob -> FileSystems.getDefault().getPathMatcher("glob:" + glob))
+                .toList();
     }
 
     /** The file's content, or empty when it is not there — an absent relay file is the normal first case. */

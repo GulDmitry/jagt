@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class McpProtocolServiceTest {
 
@@ -77,6 +79,36 @@ class McpProtocolServiceTest {
         JsonNode error = protocol.parseError("unexpected character");
 
         assertThat(error.path("error").path("code").asInt()).isEqualTo(-32700);
+    }
+
+    @Test
+    void namesTheFailureKindWhenTheCauseCarriesNoMessage() {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = mock(StateService.class);
+        when(state.findByWorktree(any())).thenThrow(new IllegalStateException());
+        McpProtocolService protocol = new McpProtocolService(mapper, state, groups());
+
+        JsonNode error = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"ping\"}"),
+                "/nowhere").orElseThrow().path("error");
+
+        assertThat(error.path("code").asInt()).isEqualTo(-32603);
+        assertThat(error.path("message").asText()).isEqualTo("IllegalStateException");
+    }
+
+    @Test
+    void namesTheFailureKindWhenAToolThrowsWithoutAMessage(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpTools failing = tools -> tools.tool("boom", "{\"type\":\"object\",\"properties\":{}}",
+                (args, caller) -> { throw new IllegalStateException(); });
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of(failing));
+
+        JsonNode response = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null).orElseThrow();
+
+        assertThat(response.path("result").path("content").get(0).path("text").asText())
+                .isEqualTo("Error: IllegalStateException");
     }
 
     @Test

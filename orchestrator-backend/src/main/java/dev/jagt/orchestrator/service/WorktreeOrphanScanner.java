@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -8,7 +9,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -84,7 +84,8 @@ public class WorktreeOrphanScanner {
         Map<Path, Orphan> found = new LinkedHashMap<>();
         Set<String> owned = ownedDirectoryNames();
         ConfigService.ConfigFile config = configService.load();
-        List<PathMatcher> secretMatchers = secretMatchers(config.worktree().copyGlobsOrDefault());
+        List<PathMatcher> secretMatchers = WorktreeFiles.localFileMatchers(
+                config.worktree().copyGlobsOrDefault());
         config.projects().forEach((projectKey, project) -> {
             Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
             Path parent = projectPath.getParent();
@@ -128,15 +129,21 @@ public class WorktreeOrphanScanner {
                 .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
     }
 
-    /** Directory names a live task owns: its worktree, plus the deploy worktree a conflict may have left. */
+    /**
+     * Directory names a live task owns: EVERY repository's worktree — a task spanning two projects has two, and
+     * naming only the first would report the other as rotting while its agent is editing it — plus the deploy
+     * worktree a conflict may have left.
+     */
     private Set<String> ownedDirectoryNames() {
         Set<String> owned = new java.util.HashSet<>();
         stateService.tasks().forEach((taskId, task) -> {
             owned.add(taskId + "-deploy");
-            Path worktree = Path.of(task.worktreePath()).getFileName();
-            if (worktree != null) {
-                owned.add(worktree.toString());
-            }
+            task.repos().stream()
+                    .map(TaskRepo::worktreePath)
+                    .filter(path -> path != null && !path.isBlank())
+                    .map(path -> Path.of(path).getFileName())
+                    .filter(java.util.Objects::nonNull)
+                    .forEach(name -> owned.add(name.toString()));
         });
         return owned;
     }
@@ -150,13 +157,6 @@ public class WorktreeOrphanScanner {
             log.warn("Could not list {} for orphaned worktrees: {}", parent, e.getMessage());
             return List.of();
         }
-    }
-
-    private static List<PathMatcher> secretMatchers(List<String> copyGlobs) {
-        return copyGlobs.stream()
-                .filter(glob -> glob != null && !glob.isBlank())
-                .map(glob -> FileSystems.getDefault().getPathMatcher("glob:" + glob.strip()))
-                .toList();
     }
 
     /** How many of the files jagt copies into a worktree (secrets, keys, certs) are still sitting in there. */

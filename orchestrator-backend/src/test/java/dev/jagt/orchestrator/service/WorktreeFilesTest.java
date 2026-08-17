@@ -78,6 +78,33 @@ class WorktreeFilesTest {
         assertThat(wt.resolve("node_modules/.env")).doesNotExist();
     }
     @Test
+    void leavesAFileTheCheckoutAlreadyProvidedAsGitWroteIt(@TempDir Path root) throws Exception {
+        Path base = root.resolve("base");
+        java.nio.file.Files.createDirectories(base);
+        java.nio.file.Files.writeString(base.resolve(".env"), "LOCALLY EDITED");
+        Path wt = root.resolve("wt");
+        java.nio.file.Files.createDirectories(wt);
+        java.nio.file.Files.writeString(wt.resolve(".env"), "AS COMMITTED");
+
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
+
+        assertThat(wt.resolve(".env")).hasContent("AS COMMITTED");
+    }
+
+    @Test
+    void copiesTheEnvFileASingleModuleRepositoryKeepsAtItsRoot(@TempDir Path root) throws Exception {
+        Path base = root.resolve("base");
+        java.nio.file.Files.createDirectories(base);
+        java.nio.file.Files.writeString(base.resolve(".env"), "SECRET=1");
+        Path wt = root.resolve("wt");
+        java.nio.file.Files.createDirectories(wt);
+
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
+
+        assertThat(wt.resolve(".env")).exists().hasContent("SECRET=1");
+    }
+
+    @Test
     void copiesNothingWithoutFailingWhenAGlobsDirectoryIsAbsent(@TempDir Path root) throws Exception {
         Path base = root.resolve("base");
         java.nio.file.Files.createDirectories(base.resolve("src"));
