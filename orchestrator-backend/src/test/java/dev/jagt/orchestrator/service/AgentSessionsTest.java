@@ -17,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -73,6 +74,21 @@ class AgentSessionsTest {
         sessions().closeTaskTab("TEST-1");
 
         verify(tmux).killTaskWindows("jagt-TEST-1", "TEST-1");
+    }
+
+    @Test
+    void namesTheSessionATasksWindowLivesIn() {
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+
+        assertThat(sessions().sessionOf("ABC-1")).isEqualTo("jagt");
+    }
+
+    @Test
+    void refusesToNameASessionForATaskNobodyOwns() {
+        assertThatThrownBy(() -> sessions().sessionOf("ABC-9"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ABC-9");
     }
 
     @Test

@@ -33,7 +33,7 @@ public class ProcessRunner {
      * closes — waiting would time out and then destroy the very window it opened. Only a failure to
      * START (bad binary) is reported; the launched app's own errors are its business.
      */
-    public void runDetached(Path workingDir, List<String> command) {
+    public Process runDetached(Path workingDir, List<String> command) {
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             if (workingDir != null) {
@@ -42,7 +42,7 @@ public class ProcessRunner {
             builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
             builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
             builder.redirectError(ProcessBuilder.Redirect.DISCARD);
-            builder.start();
+            return builder.start();
         } catch (IOException e) {
             throw new IllegalStateException("Failed to launch: " + String.join(" ", command), e);
         }

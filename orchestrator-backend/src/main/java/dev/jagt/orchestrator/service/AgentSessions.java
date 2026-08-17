@@ -54,6 +54,13 @@ public class AgentSessions {
         return true;
     }
 
+    /** The tmux session holding the task's window: the shared one, or its own in viewMode tab-per-task. */
+    public String sessionOf(String taskId) {
+        String canonical = stateService.canonicalTaskId(taskId);
+        requireTask(canonical);
+        return agentSession(configService.load(), canonical);
+    }
+
     /** Whether the task's agent is alive right now — the one question a projection deliberately does not ask. */
     public boolean agentLive(String taskId) {
         return tmuxService.taskWindowState(agentSession(configService.load(), taskId), taskId)
