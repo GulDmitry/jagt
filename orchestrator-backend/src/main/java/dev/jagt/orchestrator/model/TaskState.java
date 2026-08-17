@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * One task, as {@code state.json} holds it.
@@ -172,6 +173,34 @@ public record TaskState(
     }
 
     /**
+     * One ship, however many repositories it landed in: every URL goes on its own repo, and the round is
+     * recorded ONCE — a history entry per repository would read as several rounds.
+     *
+     * <p>The status message carries the session repo's link, the one a human follows first; the rest are on the
+     * repos, which is where a surface reads them from anyway.
+     */
+    public TaskState withReviewRound(Map<String, String> urlByProject) {
+        if (urlByProject.isEmpty()) {
+            return this;
+        }
+        String primaryUrl = urlByProject.getOrDefault(primary().project(),
+                urlByProject.values().iterator().next());
+        return withMrUrls(urlByProject).withReviewRound(primary().project(), primaryUrl);
+    }
+
+    /**
+     * Links each repository to its own request WITHOUT recording a round — what a ship that failed part way
+     * still knows for certain: those requests exist, whatever the task's status ends up saying.
+     */
+    public TaskState withMrUrls(Map<String, String> urlByProject) {
+        TaskState linked = this;
+        for (Map.Entry<String, String> request : urlByProject.entrySet()) {
+            linked = linked.withMrUrl(request.getKey(), request.getValue());
+        }
+        return linked;
+    }
+
+    /**
      * A task written before history existed is seeded with its current status at the last activity stamp:
      * otherwise {@link #statusSince()} falls back to a field every keep-alive bumps, and an hour-old status
      * reads as "0m".
@@ -210,6 +239,15 @@ public record TaskState(
      * keep-alive bumps that stamp, so an agent that has been working for an hour looks like it just moved.
      * Falls back to the activity stamp for a task written before history existed.
      */
+    /**
+     * Whether the oldest steps have been dropped, which makes anything counted over the whole log — how many
+     * times it went out for review, how long ago it started — a FLOOR rather than the figure.
+     */
+    @JsonIgnore
+    public boolean historyAtCap() {
+        return history.size() >= MAX_HISTORY;
+    }
+
     public long statusSince() {
         return history.isEmpty() ? lastActiveTimestamp : history.get(history.size() - 1).at();
     }

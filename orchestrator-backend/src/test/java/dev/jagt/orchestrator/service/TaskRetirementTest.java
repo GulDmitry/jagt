@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
@@ -80,5 +81,20 @@ class TaskRetirementTest {
         retirement(state).retire("ABC-1");
 
         verify(editor).forgetProject(Path.of("/wt"));
+    }
+    @Test
+    void deletesTheWorktreeOfEveryRepositoryTheTaskWorkedIn(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api-repo", "origin/main", "dev", List.of()),
+                "web", new ProjectConfig("/web-repo", "origin/main", "dev", List.of()))));
+
+        retirement(state).retire("a1");
+
+        verify(git).removeWorktree(Path.of("/api-repo"), Path.of("/api-wt"), null);
+        verify(git).removeWorktree(Path.of("/web-repo"), Path.of("/web-wt"), null);
+        assertThat(state.task("ABC-1")).isEmpty();
     }
 }

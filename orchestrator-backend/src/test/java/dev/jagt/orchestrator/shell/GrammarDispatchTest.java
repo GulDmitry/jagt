@@ -76,4 +76,26 @@ class GrammarDispatchTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("`from` needs the branch");
     }
+    @Test
+    void readsSeveralProjectsFromOneTokenForWorkThatSpansThem() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "demo", new ProjectConfig("/a", "origin/main", "dev", List.of()),
+                "sobrado", new ProjectConfig("/b", "origin/stage", "dev", List.of()))));
+
+        LaunchRequest args = grammar.parseDoArgs(List.of("do", "ABC-1", "demo,sobrado", "keep them in step"));
+
+        assertThat(args.project()).isEqualTo("demo,sobrado");
+        assertThat(args.notes()).isEqualTo("keep them in step");
+    }
+
+    @Test
+    void keepsATokenAsNotesWhenOnlySomeOfItsCommaPartsAreProjects() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "demo", new ProjectConfig("/a", "origin/main", "dev", List.of()))));
+
+        LaunchRequest args = grammar.parseDoArgs(List.of("do", "ABC-1", "demo,whatever"));
+
+        assertThat(args.project()).isNull();
+        assertThat(args.notes()).isEqualTo("demo,whatever");
+    }
 }

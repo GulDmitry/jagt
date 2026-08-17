@@ -30,7 +30,7 @@ public final class CommandReference {
         }
         verbs.add(new Verb("do", "start a task from a ticket key or URL", false));
         verbs.add(new Verb("resume", "take over an existing review request (its URL)", false));
-        verbs.add(new Verb("stats", "token spend of jagt's own model calls", false));
+        verbs.add(new Verb("stats", "what jagt's own model calls cost, and where each task's time went", false));
         verbs.add(new Verb("help", "this command reference", false));
         verbs.sort(java.util.Comparator.comparingInt(verb -> {
             int rank = BY_USE.indexOf(verb.id());
@@ -43,8 +43,9 @@ public final class CommandReference {
         return String.join("\n",
                 "commands (task = ticket id or alias):",
                 "  status                       show the dashboard",
-                "  stats                        token spend of jagt's own model calls, per task",
+                "  stats                        model spend per task, and where each task's time went",
                 "  do <ticket> [project] [plan] spin up a sub-agent in a worktree",
+                "    … [proj1,proj2]            one session, a worktree in EACH: work that spans repositories",
                 "    … [from <branch>]          cut the worktree from <branch> and target its MR at it",
                 "  resume <mr-url>              reopened MR: resume its branch + link it -> CI_POLLING",
                 "  focus <ticket>               jump to the agent's window (talk to it there)",

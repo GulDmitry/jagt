@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.codehost.CodeHost;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,12 +18,14 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -241,6 +244,91 @@ class ShipServiceTest {
         assertThat(after.history()).hasSizeGreaterThan(before.history().size());
         assertThat(after.mrCreatedAt()).isGreaterThan(1_000L);
         assertThat(after.lastPolledAt()).isZero();
+    }
+
+    @Test
+    void opensARequestInEveryRepositoryTheTaskWorksInAndRecordsOneRound() {
+        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
+                List.of()));
+        when(stateService.task("ABC-5")).thenReturn(Optional.of(TaskState.builder(List.of(
+                        new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
+                        new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null)),
+                TaskStatus.REVIEW_PENDING).title("Widget layout is off").build()));
+        when(host.createOrUpdateMergeRequest(any()))
+                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", true)),
+                        Optional.of(new MergeRequestRef("https://host/mr/2", true)));
+
+        String result = ship().ship("ABC-5");
+
+        ArgumentCaptor<MergeRequestSpec> specs = ArgumentCaptor.captor();
+        verify(host, times(2)).createOrUpdateMergeRequest(specs.capture());
+        assertThat(specs.getAllValues()).extracting(MergeRequestSpec::remoteUrl, MergeRequestSpec::targetBranch)
+                .containsExactly(tuple("git@host:demo/demo.git", "main"),
+                        tuple("git@host:demo/web.git", "release"));
+        verify(gitService).pushBranch(any(), eq(Path.of("/wt")), eq("ABC-5"));
+        verify(gitService).pushBranch(any(), eq(Path.of("/web-wt")), eq("ABC-5"));
+        assertThat(result).contains("demo committed", "web committed", "https://host/mr/1",
+                "https://host/mr/2");
+    }
+
+    @Test
+    void keepsBothRequestsOnTheirOwnRepositoriesWhileRecordingASingleRound() {
+        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
+                List.of()));
+        List<TaskRepo> repos = List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
+                new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null));
+        when(stateService.task("ABC-5")).thenReturn(Optional.of(
+                TaskState.builder(repos, TaskStatus.REVIEW_PENDING).title("Widget layout is off").build()));
+        when(host.createOrUpdateMergeRequest(any()))
+                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", true)),
+                        Optional.of(new MergeRequestRef("https://host/mr/2", true)));
+
+        ship().ship("ABC-5");
+
+        ArgumentCaptor<java.util.function.UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-5"), update.capture());
+        TaskState after = update.getValue().apply(TaskState.builder(repos, TaskStatus.REVIEW_PENDING).build());
+        assertThat(after.repo("demo").orElseThrow().mrUrl()).isEqualTo("https://host/mr/1");
+        assertThat(after.repo("web").orElseThrow().mrUrl()).isEqualTo("https://host/mr/2");
+        assertThat(after.history()).hasSize(2);
+    }
+
+    @Test
+    void commitsTheOpeningTitleInARepositoryThatIsStillARoundBehind() {
+        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
+                List.of()));
+        when(stateService.task("ABC-5")).thenReturn(Optional.of(TaskState.builder(List.of(
+                        new TaskRepo("demo", "/wt", "git@host:demo/demo.git", "https://host/mr/1", null),
+                        new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null)),
+                TaskStatus.CI_POLLING).title("Widget layout is off").build()));
+        when(host.createOrUpdateMergeRequest(any()))
+                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", false)),
+                        Optional.of(new MergeRequestRef("https://host/mr/2", true)));
+
+        ship().ship("ABC-5");
+
+        verify(gitService).commitAll(any(), eq(Path.of("/wt")), eq("ABC-5 address review comments"));
+        verify(gitService).commitAll(any(), eq(Path.of("/web-wt")), eq("ABC-5 Widget layout is off"));
+    }
+
+    @Test
+    void refusesToShipAMultiRepoTaskWhoseRepositoriesAreNotAllHosted() {
+        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
+                List.of()));
+        when(host.hostsRepository("git@host:demo/web.git")).thenReturn(false);
+        when(stateService.task("ABC-5")).thenReturn(Optional.of(TaskState.builder(List.of(
+                        new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
+                        new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null)),
+                TaskStatus.REVIEW_PENDING).title("Widget layout is off").build()));
+
+        assertThatThrownBy(() -> ship().ship("ABC-5"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("web has no configured code host")
+                .hasMessageContaining("orchestrator.code-host");
+
+        verify(host, never()).createOrUpdateMergeRequest(any());
+        verify(gitService, never()).pushBranch(any(), any(), any());
+        verify(sessions, never()).writeTaskContext(anyString(), anyString());
     }
 
     private ShipService ship() {

@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.agent.AgentRuntime;
 import dev.jagt.orchestrator.agent.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.model.NewRepo;
 import dev.jagt.orchestrator.model.NewTask;
-import dev.jagt.orchestrator.model.ProjectConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,19 +26,23 @@ public class WorktreeSetup {
     @Value("${orchestrator.agent-disabled-plugins:}")
     private List<String> agentDisabledPlugins;
 
-    public void fill(NewTask request, ProjectConfig project, Path projectPath, Path worktreePath,
-                     Path gitCommonDir, String baseBranch, String remoteUrl) {
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir);
+    /**
+     * @param repos every repository of the task, so the briefing can name the ones this agent may also edit
+     */
+    public void fill(NewTask request, NewRepo repo, List<NewRepo> repos) {
+        Path worktreePath = repo.worktreePath();
+        WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir());
         // Which files exist and what is in them belongs to the runtime: nothing here may learn what a given
         // agent's MCP config is called.
         agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
                 configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
-        WorktreeFiles.copyIdeProjectFiles(projectPath, worktreePath);
-        WorktreeFiles.copyLocalFiles(projectPath, worktreePath,
+        WorktreeFiles.copyIdeProjectFiles(repo.projectPath(), worktreePath);
+        WorktreeFiles.copyLocalFiles(repo.projectPath(), worktreePath,
                 configService.load().worktree().copyGlobsOrDefault());
         WorktreeFiles.write(worktreePath.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE),
-                briefing.of(request, project, baseBranch, worktreePath, remoteUrl));
-        if (request.instructions() != null && !request.instructions().isBlank()) {
+                briefing.of(request, repo, repos));
+        // The instructions live where the session reads them, and a relay writes to that same one worktree.
+        if (repo.primary() && request.instructions() != null && !request.instructions().isBlank()) {
             WorktreeFiles.write(worktreePath.resolve("task_context.md"), request.instructions());
         }
     }

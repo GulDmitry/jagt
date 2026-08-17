@@ -19,6 +19,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,12 +59,16 @@ class TaskProvisioningTest {
     }
 
     private TaskProvisioning provisioning() {
+        OrchestratorPaths paths = new OrchestratorPaths(properties);
+        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, new McpEndpoint("http://localhost:8290/mcp"));
+        return provisioning(new WorktreeSetup(runtime, paths, config,
+                new SubAgentBriefing(new PromptTemplates(), properties, paths, config, state)));
+    }
+
+    private TaskProvisioning provisioning(WorktreeSetup setup) {
         ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, new McpEndpoint("http://localhost:8290/mcp"));
         AgentSessions sessions = new AgentSessions(config, state, mock(TmuxService.class),
                 mock(TerminalDriver.class), runtime);
-        OrchestratorPaths paths = new OrchestratorPaths(properties);
-        WorktreeSetup setup = new WorktreeSetup(runtime, paths, config,
-                new SubAgentBriefing(new PromptTemplates(), properties, paths, config, state));
         return new TaskProvisioning(config, state, git, sessions, setup);
     }
 
@@ -86,13 +93,64 @@ class TaskProvisioningTest {
     @Test
     void removesFreshWorktreeAndBranchWhenContextSetupFailsAfterCheckout() {
         Path projectPath = withProject("proj");
-        when(git.remoteUrl(any())).thenThrow(new IllegalStateException("remote lookup failed"));
+        WorktreeSetup setup = mock(WorktreeSetup.class);
+        doThrow(new IllegalStateException("provisioning failed")).when(setup).fill(any(), any(), any());
 
-        assertThatThrownBy(() -> provisioning().initializeTask(NewTask.builder("ABC-9", "proj").build()))
+        assertThatThrownBy(() -> provisioning(setup).initializeTask(NewTask.builder("ABC-9", "proj").build()))
                 .isInstanceOf(IllegalStateException.class);
 
         verify(git).removeWorktree(projectPath.toAbsolutePath().normalize(),
                 root.resolve("ABC-9-proj"), "ABC-9");
+        assertThat(state.task("ABC-9")).isEmpty();
+    }
+
+    @Test
+    void cutsOneWorktreePerProjectAndRunsTheSessionInTheFirst() {
+        withProjects();
+        when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
+        when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+
+        String answer = provisioning().initializeTask(
+                NewTask.builder("ABC-7", "api").alsoIn(List.of("web")).build());
+
+        assertThat(answer).contains("agent running on ABC-7", "also in web");
+        verify(git).createWorktree(root.resolve("api-repo"), root.resolve("ABC-7-api"), "ABC-7",
+                "origin/main", GitService.BranchStrategy.FRESH);
+        verify(git).createWorktree(root.resolve("web-repo"), root.resolve("ABC-7-web"), "ABC-7",
+                "origin/release", GitService.BranchStrategy.FRESH);
+        assertThat(state.task("ABC-7").orElseThrow().projects()).containsExactly("api", "web");
+        assertThat(state.task("ABC-7").orElseThrow().worktreePath())
+                .isEqualTo(root.resolve("ABC-7-api").toString());
+    }
+
+    @Test
+    void unwindsTheWorktreesItAlreadyCutWhenALaterRepositoryFails() {
+        withProjects();
+        when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
+        when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        WorktreeSetup setup = mock(WorktreeSetup.class);
+        doNothing().doThrow(new IllegalStateException("second repo failed"))
+                .when(setup).fill(any(), any(), any());
+
+        assertThatThrownBy(() -> provisioning(setup).initializeTask(
+                NewTask.builder("ABC-8", "api").alsoIn(List.of("web")).build()))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(git).removeWorktree(root.resolve("api-repo"), root.resolve("ABC-8-api"), "ABC-8");
+        verify(git).removeWorktree(root.resolve("web-repo"), root.resolve("ABC-8-web"), "ABC-8");
+        assertThat(state.task("ABC-8")).isEmpty();
+    }
+
+    @Test
+    void refusesTheWholeTaskWhenOneOfItsProjectsIsUnknown() {
+        withProjects();
+
+        assertThatThrownBy(() -> provisioning().initializeTask(
+                NewTask.builder("ABC-6", "api").alsoIn(List.of("nope")).build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown project 'nope'");
+
+        verify(git, never()).createWorktree(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -154,5 +212,13 @@ class TaskProvisioningTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of(key, new ProjectConfig(projectPath.toString(), "origin/main", null, List.of()))));
         return projectPath;
+    }
+
+    private void withProjects() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(new LinkedHashMap<>(
+                Map.of("api", new ProjectConfig(root.resolve("api-repo").toString(), "origin/main", null,
+                                List.of()),
+                        "web", new ProjectConfig(root.resolve("web-repo").toString(), "origin/release", null,
+                                List.of())))));
     }
 }

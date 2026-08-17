@@ -24,6 +24,9 @@ public record TaskView(
         String detail,
         String ticketUrl,
         String reviewRequestUrl,
+        // Every repository the one session works in, with its own request. A single-repo task has one entry, so
+        // a surface that lists these needs no second shape for the ordinary case.
+        List<RepoView> repos,
         long lastActiveAt,
         // Since when it has been in THIS status (not the activity stamp a keep-alive bumps) plus every step it
         // took, so a surface can say "waiting on you for 6h" and show the timeline instead of one word.
@@ -39,8 +42,12 @@ public record TaskView(
     public record ActionView(String id, String label, String hint, boolean primary) {
     }
 
+    /** One repository of the task: which project it is, and the review request open for it. */
+    public record RepoView(String project, String reviewRequestUrl) {
+    }
+
     public static TaskView of(String id, TaskState task, boolean draftedReplies) {
-        Move move = Move.forTask(task.status(), task.mrUrl() != null && !task.mrUrl().isBlank(),
+        Move move = Move.forTask(task.status(), task.hasReviewRequest(),
                 RoundState.of(task.message(), draftedReplies));
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
@@ -50,6 +57,9 @@ public record TaskView(
                 move.owner(), move.hint(), actions,
                 move.primary() == null ? null : move.primary().id(),
                 DashboardLine.forTask(id, task), webLink(task.ticketUrl()), webLink(task.mrUrl()),
+                task.repos().stream()
+                        .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl())))
+                        .toList(),
                 task.lastActiveTimestamp(),
                 task.statusSince(), task.history(), draftedReplies, task.usageOrNone().total());
     }

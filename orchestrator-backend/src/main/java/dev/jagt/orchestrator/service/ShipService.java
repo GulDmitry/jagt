@@ -4,8 +4,8 @@ import dev.jagt.orchestrator.codehost.CodeHost;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.Move;
-import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.ReviewRequestTitle;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,50 +59,103 @@ public class ShipService {
         TaskState task = stateService.task(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
         ConfigService.ConfigFile config = configService.load();
-        boolean hasRequest = task.mrUrl() != null && !task.mrUrl().isBlank();
+        // ANY repository's request makes another round possible, which is the same question the projection asks
+        // to OFFER the ship — the gate and the button must not answer it differently.
+        boolean hasRequest = task.hasReviewRequest();
         requireShippable(taskId, task.status(), hasRequest, sessions.agentLive(taskId));
 
-        ProjectConfig project = configService.project(task.project());
-        // The task's own base when the human named one at `do` time — a task cut from a parent feature branch
-        // must merge back into it, not into the project's release branch.
-        String base = task.baseBranchOr(project.baseBranch());
-        String targetBranch = base == null ? "" : base.replaceFirst("^origin/", "");
         String title = ReviewRequestTitle.expand(config.codeReview().mrTitlePatternOrDefault(), taskId,
                 task.title());
 
-        Optional<CodeHost> host = codeHosts.stream()
-                .filter(candidate -> candidate.hostsRepository(task.remoteUrl()))
-                .findFirst();
-        if (host.isEmpty()) {
-            return relayToAgent(taskId, task, config, title, targetBranch, !hasRequest);
+        // Every repository must have a host of its own for the mechanical path: with one of them unhosted, half
+        // the task would be pushed by jagt and half asked of the agent, and neither the human nor the agent
+        // would know which half is which.
+        Map<String, CodeHost> hosts = new LinkedHashMap<>();
+        task.repos().forEach(repo -> codeHosts.stream()
+                .filter(candidate -> candidate.hostsRepository(repo.remoteUrl()))
+                .findFirst()
+                .ifPresent(host -> hosts.put(repo.project(), host)));
+        if (hosts.size() < task.repos().size()) {
+            // The relay can only ask for ONE request and hear ONE link back (a status message carries one), so
+            // for several repositories it would push some and lose the rest — the half-shipped state the sweep
+            // then asks about forever. Refusing names what to configure instead.
+            if (task.repos().size() > 1) {
+                throw new IllegalStateException("ship " + taskId + ": this task works in "
+                        + String.join(", ", task.projects()) + ", and "
+                        + String.join(", ", unhosted(task, hosts.keySet())) + " has no configured code host."
+                        + " jagt ships a multi-repository task only when it can open every request itself —"
+                        + " set orchestrator.code-host for it, or ship these repositories by hand.");
+            }
+            return relayToAgent(taskId, task, config, title, targetOf(task, task.primary()), !hasRequest);
         }
-        return shipOverRest(taskId, task, config, host.get(), title, targetBranch, !hasRequest);
+        return shipOverRest(taskId, task, config, hosts, title);
     }
 
-    private String shipOverRest(String taskId, TaskState task, ConfigService.ConfigFile config, CodeHost host,
-                                String title, String targetBranch, boolean firstShip) {
-        Path projectPath = Path.of(configService.project(task.project()).path()).toAbsolutePath().normalize();
-        Path worktree = Path.of(task.worktreePath());
+    private String shipOverRest(String taskId, TaskState task, ConfigService.ConfigFile config,
+                                Map<String, CodeHost> hosts, String title) {
+        Map<String, String> requests = new LinkedHashMap<>();
+        List<String> reported = new ArrayList<>();
+        try {
+            for (TaskRepo repo : task.repos()) {
+                Shipped shipped = shipRepo(taskId, task, config, hosts.get(repo.project()), repo, title);
+                requests.put(repo.project(), shipped.request().url());
+                reported.add((task.repos().size() > 1 ? repo.project() + " " : "") + describe(shipped.commit())
+                        + ", pushed, " + (shipped.request().created() ? "opened " : "updated ")
+                        + shipped.request().url());
+            }
+        } catch (RuntimeException e) {
+            // A repository that DID land has a pushed branch and an open request; losing that would make the
+            // retry commit onto it as if it were a first ship, and leave the human a request jagt never named.
+            if (!requests.isEmpty()) {
+                stateService.updateTask(taskId, state -> state.withMrUrls(requests));
+            }
+            throw e;
+        }
+        // A ROUND, not just a status: recorded in history and re-arming the auto-review window even when the
+        // status was already CI_POLLING, which is the case for every round after the first.
+        stateService.updateTask(taskId, state -> state.withReviewRound(requests));
+        return "ship " + taskId + ": " + String.join("; ", reported) + " — status CI_POLLING"
+                + relayDraftedReplies(taskId, Path.of(task.worktreePath()), config);
+    }
+
+    /** What one repository's share of a ship produced. */
+    private record Shipped(GitService.Commit commit, MergeRequestRef request) {
+    }
+
+    private static List<String> unhosted(TaskState task, Set<String> hosted) {
+        return task.projects().stream().filter(project -> !hosted.contains(project)).toList();
+    }
+
+    /** One repository's share of a ship: its own commit, its own push, its own review request. */
+    private Shipped shipRepo(String taskId, TaskState task, ConfigService.ConfigFile config, CodeHost host,
+                             TaskRepo repo, String title) {
+        Path projectPath = Path.of(configService.project(repo.project()).path()).toAbsolutePath().normalize();
+        Path worktree = Path.of(repo.worktreePath());
         // A review round's commit cannot be described by the backend — it does not know what the agent fixed —
-        // so it is mechanical and honest instead of invented. The first ship uses the pattern title.
+        // so it is mechanical and honest instead of invented. The first ship uses the pattern title, and which
+        // ship this is, is asked of THIS repository: one of them can be a round behind after a failed ship.
         GitService.Commit commit = gitService.commitAll(projectPath, worktree,
-                firstShip ? title : taskId + " address review comments");
+                repo.hasReviewRequest() ? taskId + " address review comments" : title);
         gitService.pushBranch(projectPath, worktree, taskId);
 
-        MergeRequestRef request = host.createOrUpdateMergeRequest(new MergeRequestSpec(task.remoteUrl(),
-                        taskId, targetBranch, title,
+        MergeRequestRef request = host.createOrUpdateMergeRequest(new MergeRequestSpec(repo.remoteUrl(),
+                        taskId, targetOf(task, repo), title,
                         config.codeReview().mergeRequestDefaultsOrDefault().removeSourceBranchOrDefault(),
                         config.codeReview().mergeRequestDefaultsOrDefault().squashOrDefault()))
                 .orElseThrow(() -> new IllegalStateException("Pushed branch " + taskId + ", but "
                         + host.displayName() + " would not open the review request — check"
                         + " orchestrator.code-host.token and open it by hand if this repeats."));
+        return new Shipped(commit, request);
+    }
 
-        // A ROUND, not just a status: recorded in history and re-arming the auto-review window even when the
-        // status was already CI_POLLING, which is the case for every round after the first.
-        stateService.updateTask(taskId, state -> state.withReviewRound(request.url()));
-        return "ship " + taskId + ": " + describe(commit) + ", pushed, "
-                + (request.created() ? "opened " : "updated ") + request.url()
-                + " — status CI_POLLING" + relayDraftedReplies(taskId, worktree, config);
+    /**
+     * What this repository's request merges into: the task's own base when the human named one at {@code do}
+     * time — a task cut from a parent feature branch must merge back into it, not into the release branch —
+     * otherwise that repository's own configured base, which is not the same branch in every repository.
+     */
+    private String targetOf(TaskState task, TaskRepo repo) {
+        String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
+        return base == null ? "" : base.replaceFirst("^origin/", "");
     }
 
     /**

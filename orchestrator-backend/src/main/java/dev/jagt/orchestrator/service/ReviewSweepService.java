@@ -2,14 +2,18 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TaskLabel;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * One MR review sweep: read the MR's approval + pipeline + unresolved comments, then take the single
@@ -62,17 +66,36 @@ public class ReviewSweepService {
     }
 
     private SweepResult sweepExclusively(String taskId) {
-        String mrUrl = stateService.task(taskId).map(TaskState::mrUrl).orElse(null);
-        if (mrUrl == null || mrUrl.isBlank()) {
+        List<TaskRepo> reviewed = stateService.task(taskId).map(TaskState::repos).orElse(List.of()).stream()
+                .filter(TaskRepo::hasReviewRequest)
+                .toList();
+        if (reviewed.isEmpty()) {
             return new SweepResult(SweepResult.Kind.NO_MR,
                     "error: no MR linked to " + taskId + " — `ship` or `resume <mr-url>` first");
         }
-        Optional<ReviewFacts> facts = reviewReader.read(taskId, mrUrl);
-        if (facts.isEmpty() || !facts.get().exists()) {
-            return new SweepResult(SweepResult.Kind.UNREADABLE,
-                    "error: could not read the MR review for " + mrUrl);
+        // A repository with no request yet is work nobody is reviewing, so the round cannot be called clean:
+        // advancing here would report "nothing unresolved" over a half that was never shipped.
+        List<String> unshipped = stateService.task(taskId).map(TaskState::repos).orElse(List.of()).stream()
+                .filter(repo -> !repo.hasReviewRequest())
+                .map(TaskRepo::project)
+                .toList();
+        if (!unshipped.isEmpty()) {
+            return new SweepResult(SweepResult.Kind.PENDING, "review " + taskId + ": no review request in "
+                    + String.join(", ", unshipped) + " — `ship` again so every repository has one");
         }
-        ReviewFacts r = facts.get();
+        String mrUrl = reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", "));
+        // One unreadable request fails the WHOLE sweep, exactly as a partial read of one does: "nothing
+        // unresolved + green" advances a task, and half a task's repositories cannot say that.
+        List<ReviewFacts> rounds = new ArrayList<>();
+        for (TaskRepo repo : reviewed) {
+            Optional<ReviewFacts> read = reviewReader.read(taskId, repo.mrUrl());
+            if (read.isEmpty() || !read.get().exists()) {
+                return new SweepResult(SweepResult.Kind.UNREADABLE,
+                        "error: could not read the MR review for " + repo.mrUrl());
+            }
+            rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
+        }
+        ReviewFacts r = merged(rounds);
         String pipeline = r.pipelineStatus() == null ? "" : r.pipelineStatus().toLowerCase();
         boolean pipelineFailed = pipeline.contains("fail");
         if (r.comments().isEmpty() && !pipelineFailed) {
@@ -96,6 +119,41 @@ public class ReviewSweepService {
         return new SweepResult(SweepResult.Kind.RELAYED,
                 "review " + taskId + ": relayed " + r.comments().size() + " comment(s), pipeline "
                         + r.pipelineStatus() + " -> agent");
+    }
+
+    /** Which repository a comment came from, so the agent knows which worktree to open. */
+    private static ReviewFacts named(String project, ReviewFacts round) {
+        return new ReviewFacts(round.exists(), round.approved(), round.pipelineStatus(),
+                round.comments().stream().map(comment -> "[" + project + "] " + comment).toList());
+    }
+
+    /**
+     * Several repositories, ONE round: the task is as far along as its least finished repository. Approved only
+     * when every request is, and the pipeline is reported as the single worst one — a concatenation would read
+     * as "success" to the caller's own check while one repository was still building.
+     */
+    private static ReviewFacts merged(List<ReviewFacts> rounds) {
+        if (rounds.size() == 1) {
+            return rounds.get(0);
+        }
+        return new ReviewFacts(true,
+                rounds.stream().allMatch(ReviewFacts::approved),
+                worstPipeline(rounds),
+                rounds.stream().flatMap(round -> round.comments().stream()).toList());
+    }
+
+    private static String worstPipeline(List<ReviewFacts> rounds) {
+        // A host with no pipeline at all answers "none", so the merged word stays one a human can read: an
+        // empty slot in "pipeline , no unresolved comments" says nothing about which repository has none.
+        List<String> statuses = rounds.stream()
+                .map(round -> round.pipelineStatus() == null || round.pipelineStatus().isBlank()
+                        ? "none" : round.pipelineStatus())
+                .toList();
+        return statuses.stream().filter(status -> status.toLowerCase().contains("fail")).findFirst()
+                .orElseGet(() -> statuses.stream()
+                        .filter(status -> !status.toLowerCase().contains("success"))
+                        .findFirst()
+                        .orElse("success"));
     }
 
     /**

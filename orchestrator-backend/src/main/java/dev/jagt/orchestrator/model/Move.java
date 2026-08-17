@@ -76,7 +76,8 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         };
     }
 
-    private static Owner ownerOf(TaskStatus status) {
+    /** Whose turn a status means. Public because a view that adds up time per owner must not map it a second way. */
+    public static Owner ownerOf(TaskStatus status) {
         return switch (status) {
             case NEW, IN_PROGRESS, SHIPPING -> Owner.AGENT;
             case CI_POLLING -> Owner.CI;

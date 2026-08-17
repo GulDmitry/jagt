@@ -6,8 +6,11 @@ import dev.jagt.orchestrator.service.GitService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * The throwaway outside world an e2e run needs: a local origin + a clone to cut worktrees from, the
@@ -65,20 +68,29 @@ final class E2eWorkspace {
 
     static void writeConfig(Path configFile, Path projectPath, String viewMode, boolean autoReview)
             throws IOException {
+        writeConfig(configFile, new LinkedHashMap<>(Map.of("proj", projectPath)), viewMode, autoReview);
+    }
+
+    static void writeConfig(Path configFile, Map<String, Path> projects, String viewMode, boolean autoReview)
+            throws IOException {
         Files.createDirectories(configFile.getParent());
+        String configured = projects.entrySet().stream()
+                .map(project -> """
+                            "%s": {
+                              "path": "%s",
+                              "baseBranch": "origin/main",
+                              "deployBranch": "dev"
+                            }""".formatted(project.getKey(), project.getValue()))
+                .collect(Collectors.joining(",\n"));
         Files.writeString(configFile, """
                 {
                   "projects": {
-                    "proj": {
-                      "path": "%s",
-                      "baseBranch": "origin/main",
-                      "deployBranch": "dev"
-                    }
+                %s
                   },
                   "viewer": { "tmuxSession": "%s", "viewMode": "%s" },
                   "autoReview": { "enabled": %s }
                 }
-                """.formatted(projectPath, TMUX_SESSION, viewMode, autoReview));
+                """.formatted(configured, TMUX_SESSION, viewMode, autoReview));
     }
 
     /**

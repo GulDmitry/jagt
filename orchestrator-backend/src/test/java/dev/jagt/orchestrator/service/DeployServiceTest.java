@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -172,5 +174,21 @@ class DeployServiceTest {
         assertThatThrownBy(() -> deploys.deploy("ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("deployBranch");
+    }
+    @Test
+    void refusesToDeployATaskThatSpansRepositoriesRatherThanLandHalfOfIt(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        GitService git = mock(GitService.class);
+        DeployService deploys = new DeployService(state, mock(ConfigService.class), git, editor);
+
+        assertThatThrownBy(() -> deploys.deploy("a1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("REFUSED")
+                .hasMessageContaining("api, web");
+
+        verifyNoInteractions(git);
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
     }
 }

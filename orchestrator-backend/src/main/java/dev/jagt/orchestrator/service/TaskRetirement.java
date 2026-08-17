@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.platform.EditorDriver;
 import lombok.RequiredArgsConstructor;
@@ -28,24 +29,33 @@ public class TaskRetirement {
         // First: removing a worktree under a live process's cwd leaves a zombie agent grinding in a deleted
         // directory.
         sessions.killWindows(taskId);
-        ProjectConfig project = configService.load().projects().get(task.project());
-        if (project != null) {
+        // EVERY repository, not just the session's: the others hold a checkout of their own — and copies of the
+        // local files worktree.copyGlobs brought in — which nothing else would ever delete.
+        boolean anyProjectMissing = false;
+        var projects = configService.load().projects();
+        for (TaskRepo repo : task.repos()) {
+            // Needs no project config, and a project deleted from config.json is exactly when a stale editor
+            // registration would otherwise be left behind.
+            editorDriver.forgetProject(Path.of(repo.worktreePath()));
+            ProjectConfig project = projects.get(repo.project());
+            if (project == null) {
+                anyProjectMissing = true;
+                log.warn("Project '{}' of task {} no longer in config.json; skipping worktree removal",
+                        repo.project(), taskId);
+                continue;
+            }
             Path projectPath = Path.of(project.path());
-            gitService.removeWorktree(projectPath, Path.of(task.worktreePath()), null);
+            gitService.removeWorktree(projectPath, Path.of(repo.worktreePath()), null);
             // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.
             gitService.removeDeployWorktreeIfPresent(projectPath, taskId);
             editorDriver.forgetProject(GitService.deployWorktreePath(projectPath, taskId));
-        } else {
-            log.warn("Project '{}' of task {} no longer in config.json; skipping worktree removal",
-                    task.project(), taskId);
         }
-        editorDriver.forgetProject(Path.of(task.worktreePath()));
         stateService.removeTask(taskId);
         // Reserved by default: a viewer placed by hand survives task cycles.
         boolean closedViewer = sessions.closeViewerIfNoTasksLeft();
         return "Task " + taskId + " removed: worktree deleted, state entry dropped. Branch '" + taskId
                 + "' was kept"
-                + (project == null ? " (worktree left on disk: project missing from config.json)" : "")
+                + (anyProjectMissing ? " (worktree left on disk: project missing from config.json)" : "")
                 + (closedViewer ? ". Last task gone — the agents window was closed." : "");
     }
 }

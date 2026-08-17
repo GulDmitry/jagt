@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import static dev.jagt.orchestrator.mcp.tools.ToolArgs.text;
+import static dev.jagt.orchestrator.mcp.tools.ToolArgs.texts;
 
 /** A task from nothing to nothing: created, listed, retired. */
 @Component
@@ -30,7 +31,8 @@ public class TaskLifecycleTools implements McpTools {
                   "type": "object",
                   "properties": {
                     "taskId": {"type": "string", "description": "Task id, e.g. ABC-123 (letters, digits, - and _). Becomes the branch name, worktree prefix and tmux window name."},
-                    "projectKey": {"type": "string", "description": "Project key from config.json."},
+                    "projectKey": {"type": "string", "description": "Project key from config.json — where the agent's session runs."},
+                    "alsoProjects": {"type": "array", "items": {"type": "string"}, "description": "Further project keys the SAME session works in: one worktree each, one branch name, one review round per repository. For a change that spans repositories (a service and its client); omit for ordinary work."},
                     "instructions": {"type": "string", "description": "Optional initial instructions, written to task_context.md in the new worktree."},
                     "title": {"type": "string", "description": "The Jira ticket title (shown in the dashboard while the task is in development). Fetch it when delegating."},
                     "ticketUrl": {"type": "string", "description": "Canonical web link to the ticket (shown as the dashboard's clickable ticket line). Fetch it when delegating."},
@@ -42,6 +44,7 @@ public class TaskLifecycleTools implements McpTools {
                 }""",
                 (args, caller) -> initialize(caller,
                         NewTask.builder(text(args, "taskId"), text(args, "projectKey"))
+                                .alsoIn(texts(args, "alsoProjects"))
                                 .instructions(text(args, "instructions"))
                                 .mode(text(args, "mode"))
                                 .branchStrategy(text(args, "branchStrategy"))

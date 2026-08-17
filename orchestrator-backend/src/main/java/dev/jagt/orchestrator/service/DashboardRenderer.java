@@ -71,22 +71,13 @@ public class DashboardRenderer {
             // duration is time in THIS status, not since the last activity — a keep-alive resets that stamp.
             out.append("                    → ").append(task.owner().label()).append(" · ")
                     .append(task.hint()).append("  (")
-                    .append(compactDuration(System.currentTimeMillis() - task.statusSince()))
+                    .append(DurationFormat.compact(System.currentTimeMillis() - task.statusSince()))
                     .append(" in ").append(task.status()).append(")\n");
         }
         if (tasks.isEmpty()) {
             out.append("(no tasks)\n");
         }
         return out.toString();
-    }
-
-    /** Coarse on purpose: one glance should say "minutes" or "days", and a second column of digits would not. */
-    static String compactDuration(long millis) {
-        long minutes = Math.max(0, millis) / 60_000;
-        if (minutes < 60) {
-            return minutes + "m";
-        }
-        return minutes < 60 * 24 ? minutes / 60 + "h" : minutes / (60 * 24) + "d";
     }
 
     static String stamp(long epochMillis) {

@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -27,7 +28,7 @@ import java.util.Set;
 public class GrammarDispatch {
 
     private static final Set<String> BRANCH_STRATEGIES = Set.of("recreate", "resume", "fresh");
-    private static final String DO_USAGE = "do <ticket|url> [project] [plan] [from <branch>] [notes…]";
+    private static final String DO_USAGE = "do <ticket|url> [project[,project…]] [plan] [from <branch>] [notes…]";
 
     private final StateViews views;
     private final CommandService commands;
@@ -45,7 +46,7 @@ public class GrammarDispatch {
         try {
             return switch (tok.get(0)) {
                 case "status" -> "";
-                case "stats" -> views.usageStats();
+                case "stats" -> views.stats();
                 case "help" -> CommandReference.text();
                 case "do" -> launcher.launch(parseDoArgs(tok));
                 case "resume" -> resume(tok);
@@ -97,7 +98,7 @@ public class GrammarDispatch {
             String head = rest.get(0);
             if (mode == null && head.equals("plan")) {
                 mode = "plan";
-            } else if (project == null && projectKeys.contains(head)) {
+            } else if (project == null && isProjects(head, projectKeys)) {
                 project = head;
             } else if (strategy == null && BRANCH_STRATEGIES.contains(head)) {
                 strategy = head;
@@ -114,6 +115,16 @@ public class GrammarDispatch {
         }
         return new LaunchRequest(ref, project, mode, strategy, baseBranch,
                 String.join(" ", rest).strip()).normalized();
+    }
+
+    /**
+     * One project key or several comma-separated, EVERY one of them configured — the token is a project only
+     * then, so a note that happens to contain a comma is still a note.
+     */
+    private static boolean isProjects(String token, Set<String> known) {
+        List<String> named = Arrays.stream(token.split(",")).map(String::strip)
+                .filter(key -> !key.isEmpty()).toList();
+        return !named.isEmpty() && known.containsAll(named);
     }
 
     private static String arg(List<String> tok, int i, String usage) {

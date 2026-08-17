@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.agent.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
+import dev.jagt.orchestrator.model.NewRepo;
 import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskState;
@@ -12,7 +13,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -35,11 +38,14 @@ public class TaskProvisioning {
     private final AgentSessions agentSessions;
     private final WorktreeSetup worktreeSetup;
 
-    /** The configured project whose repo already has a branch named taskId, or null if none. */
-    public String existingBranchProject(String taskId, String projectKey) {
+    /**
+     * The configured project whose repo already has a branch named taskId, or null if none. An empty
+     * {@code projectKeys} asks every configured project, which is what a task with no project named yet needs.
+     */
+    public String existingBranchProject(String taskId, Collection<String> projectKeys) {
         ConfigService.ConfigFile config = configService.load();
-        Set<String> keys = projectKey != null && !projectKey.isBlank()
-                ? Set.of(projectKey) : config.projects().keySet();
+        Collection<String> keys = projectKeys == null || projectKeys.isEmpty()
+                ? config.projects().keySet() : projectKeys;
         return keys.stream()
                 .filter(config.projects()::containsKey)
                 .filter(k -> gitService.branchExists(
@@ -49,9 +55,7 @@ public class TaskProvisioning {
 
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();
-        String projectKey = request.projectKey();
         requireSafeId(taskId, "taskId");
-        requireSafeId(projectKey, "projectKey");
         boolean plan = AgentSessions.planMode(request.mode());
         GitService.BranchStrategy strategy = parseBranchStrategy(request.branchStrategy());
         if (stateService.task(taskId).isPresent()) {
@@ -59,69 +63,113 @@ public class TaskProvisioning {
                     + "Use open_task_tab to respawn its agent or remove_task to retire it first.");
         }
         ConfigService.ConfigFile config = configService.load();
-        ProjectConfig project = config.projects().get(projectKey);
-        if (project == null) {
-            throw new IllegalArgumentException(
-                    "Unknown project '" + projectKey + "'. Known projects: " + config.projects().keySet());
-        }
-        Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
-        Path worktreePath = projectPath.getParent().resolve(taskId + "-" + projectKey);
-        String override = branchOverride(request.baseBranch(), projectPath, strategy);
-        String baseBranch = override != null ? override : project.baseBranch();
-
-        gitService.createWorktree(projectPath, worktreePath, taskId, baseBranch, strategy);
-        String remoteUrl;
-        try {
-            remoteUrl = gitService.remoteUrl(projectPath);
-            worktreeSetup.fill(request, project, projectPath, worktreePath,
-                    gitService.gitCommonDir(projectPath), baseBranch, remoteUrl);
-        } catch (RuntimeException e) {
-            // Compensate: without this, the taskId is burned (branch + worktree exist,
-            // nothing registered) and a retry hits "branch already exists".
-            gitService.removeWorktree(projectPath, worktreePath, taskId);
-            throw e;
-        }
+        List<NewRepo> repos = resolveRepos(request, config, strategy);
+        NewRepo session = repos.get(0);
+        cutWorktrees(request, repos, strategy);
 
         String alias = nextAlias(taskId);
-        stateService.putTask(taskId, TaskState.builder(projectKey, worktreePath.toString(), TaskStatus.NEW)
-                .lastActiveTimestamp(System.currentTimeMillis()).alias(alias).remoteUrl(remoteUrl)
+        stateService.putTask(taskId, TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
+                        TaskStatus.NEW)
+                .lastActiveTimestamp(System.currentTimeMillis()).alias(alias)
                 .title(request.title())
                 .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank() ? null : request.ticketUrl())
                 // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
-                .baseBranch(override)
+                .baseBranch(branchOverride(request.baseBranch()))
                 .autoReview(config.autoReview().enabledOrDefault())
                 .build());
 
         try {
-            agentSessions.startAgent(taskId, alias, worktreePath, plan);
+            agentSessions.startAgent(taskId, alias, session.worktreePath(), plan);
         } catch (RuntimeException e) {
-            return "Task " + taskId + " registered and worktree created at " + worktreePath
+            return "Task " + taskId + " registered and worktree created at " + session.worktreePath()
                     + ", but the agent session failed to start: " + e.getMessage()
                     + " Fix the cause and call open_task_tab(\"" + taskId + "\") — do NOT call initialize_task again.";
         }
 
         return taskId + " is " + alias + " — agent running on " + taskId
-                + (strategy == GitService.BranchStrategy.RESUME ? " (resumed)" : " from " + baseBranch) + "."
+                + (strategy == GitService.BranchStrategy.RESUME ? " (resumed)" : " from " + session.baseBranch())
+                + alsoIn(repos) + "."
                 + (plan ? " Plan mode: approve its plan in the agent window (focus " + alias + ")." : "");
     }
 
-    /**
-     * The human's chosen base branch, normalized to a bare name, or null when they named none. Checked against
-     * the REMOTE before anything is created: the worktree is cut from {@code origin/<base>}, so a typo would
-     * otherwise surface as a raw git failure after the branch and directory already exist.
-     */
-    private String branchOverride(String requested, Path projectPath, GitService.BranchStrategy strategy) {
-        if (requested == null || requested.isBlank()) {
-            return null;
+    /** Every repository the task will work in, validated to the last field before anything is created. */
+    private List<NewRepo> resolveRepos(NewTask request, ConfigService.ConfigFile config,
+                                       GitService.BranchStrategy strategy) {
+        List<NewRepo> repos = new ArrayList<>();
+        for (String projectKey : request.projectKeys()) {
+            requireSafeId(projectKey, "projectKey");
+            ProjectConfig project = config.projects().get(projectKey);
+            if (project == null) {
+                throw new IllegalArgumentException(
+                        "Unknown project '" + projectKey + "'. Known projects: " + config.projects().keySet());
+            }
+            Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
+            String override = branchOverride(request.baseBranch());
+            if (override != null) {
+                requireOnOrigin(override, projectKey, projectPath, strategy);
+            }
+            repos.add(new NewRepo(projectKey, project, projectPath,
+                    projectPath.getParent().resolve(request.taskId() + "-" + projectKey),
+                    gitService.gitCommonDir(projectPath),
+                    override != null ? override : project.baseBranch(),
+                    gitService.remoteUrl(projectPath), repos.isEmpty()));
         }
-        String branch = requested.strip().replaceFirst("^origin/", "");
+        if (repos.isEmpty()) {
+            throw new IllegalArgumentException("A task needs at least one project");
+        }
+        return List.copyOf(repos);
+    }
+
+    /**
+     * A half-created task burns its id — the branch and directory exist while nothing is registered, so a retry
+     * hits "branch already exists". With several repositories the same is true of the ones already cut, so a
+     * failure anywhere unwinds all of them.
+     */
+    private void cutWorktrees(NewTask request, List<NewRepo> repos, GitService.BranchStrategy strategy) {
+        List<NewRepo> cut = new ArrayList<>();
+        try {
+            for (NewRepo repo : repos) {
+                gitService.createWorktree(repo.projectPath(), repo.worktreePath(), request.taskId(),
+                        repo.baseBranch(), strategy);
+                cut.add(repo);
+                worktreeSetup.fill(request, repo, repos);
+            }
+        } catch (RuntimeException e) {
+            // The branch goes with the worktree only where THIS call created it. A resumed task's branch was
+            // already there with the human's commits, and force-deleting it would take work nothing can restore.
+            String branchToDelete = strategy == GitService.BranchStrategy.RESUME ? null : request.taskId();
+            cut.forEach(repo -> gitService.removeWorktree(repo.projectPath(), repo.worktreePath(),
+                    branchToDelete));
+            throw e;
+        }
+    }
+
+    /** Nothing for ordinary single-repo work; the sibling repositories named when there are any. */
+    private static String alsoIn(List<NewRepo> repos) {
+        return repos.size() < 2 ? "" : ", also in " + repos.stream().skip(1).map(NewRepo::project)
+                .collect(Collectors.joining(", "));
+    }
+
+    /** The human's chosen base branch as a bare name, or null when they named none. */
+    private static String branchOverride(String requested) {
+        return requested == null || requested.isBlank()
+                ? null
+                : requested.strip().replaceFirst("^origin/", "");
+    }
+
+    /**
+     * Checked against the REMOTE before anything is created: the worktree is cut from {@code origin/<base>}, so
+     * a typo would otherwise surface as a raw git failure after the branch and directory already exist.
+     */
+    private void requireOnOrigin(String branch, String projectKey, Path projectPath,
+                                 GitService.BranchStrategy strategy) {
         // A RESUMED task is not cut from anything — the branch is only remembered as its review target, and
         // refusing the resume over it would strand a task whose request is open on this very branch.
         if (strategy != GitService.BranchStrategy.RESUME && !gitService.remoteBranchExists(projectPath, branch)) {
-            throw new IllegalArgumentException("Base branch '" + branch + "' does not exist on origin — the"
-                    + " worktree is cut from origin/" + branch + ", so check the name (or push it first).");
+            throw new IllegalArgumentException("Base branch '" + branch + "' does not exist on "
+                    + projectKey + "'s origin — the worktree is cut from origin/" + branch + ", so check the"
+                    + " name (or push it there first).");
         }
-        return branch;
     }
 
     /** First letter of the ticket + smallest free ordinal: ABC-123 -> a1, next ABC task -> a2. */

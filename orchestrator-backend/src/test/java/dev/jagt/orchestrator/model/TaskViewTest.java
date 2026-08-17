@@ -4,7 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * The projection is what a surface renders, so anything it hands over as a LINK has to be one. Neither URL is
@@ -59,5 +62,27 @@ class TaskViewTest {
     @Test
     void stillSaysSomethingWhenTheStoredRequestLinkWasUnusable() {
         assertThat(viewOf(null, "javascript:alert(1)").detail()).isEqualTo("javascript:alert(1)");
+    }
+    @Test
+    void carriesEveryRepositoryWithItsOwnRequestSoNoSurfaceHasToGuessWhichDiffIsWhich() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
+                new TaskRepo("api", "/api-wt", "git@host:g/api.git", "https://host/api/-/merge_requests/1", null),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
+                TaskStatus.CI_POLLING).alias("a1").build(), false);
+
+        assertThat(view.repos()).extracting(TaskView.RepoView::project, TaskView.RepoView::reviewRequestUrl)
+                .containsExactly(tuple("api", "https://host/api/-/merge_requests/1"),
+                        tuple("web", "https://host/web/-/merge_requests/2"));
+        assertThat(view.project()).isEqualTo("api");
+    }
+
+    @Test
+    void offersASweepAsSoonAsANYRepositoryHasARequestOpen() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
+                new TaskRepo("api", "/api-wt", "git@host:g/api.git", null, null),
+                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
+                TaskStatus.CI_POLLING).alias("a1").build(), false);
+
+        assertThat(view.actions()).extracting(TaskView.ActionView::id).contains("review");
     }
 }

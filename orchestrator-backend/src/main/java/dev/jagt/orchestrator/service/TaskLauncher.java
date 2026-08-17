@@ -1,10 +1,11 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.NewTask;
+import dev.jagt.orchestrator.model.TicketFacts;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,15 +28,15 @@ public class TaskLauncher {
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TaskLauncher.class);
 
     private final TaskProvisioning provisioning;
-    private final MeteredAssistant assistant;
+    private final TicketReader tickets;
     private final ConfigService configService;
     private final TaskResume resumes;
     private final TicketTitleBackfill titles;
 
-    public TaskLauncher(TaskProvisioning provisioning, MeteredAssistant assistant, ConfigService configService,
+    public TaskLauncher(TaskProvisioning provisioning, TicketReader tickets, ConfigService configService,
                         TaskResume resumes, TicketTitleBackfill titles) {
         this.provisioning = provisioning;
-        this.assistant = assistant;
+        this.tickets = tickets;
         this.configService = configService;
         this.resumes = resumes;
         this.titles = titles;
@@ -55,7 +56,8 @@ public class TaskLauncher {
         // Warn before spending a ticket read on a task that would only collide later; a chosen strategy
         // means the collision is intended, so let it through.
         if (bareKey && strategy == null) {
-            String existing = provisioning.existingBranchProject(ref, project);
+            String existing = provisioning.existingBranchProject(ref,
+                    project == null ? List.of() : resolveProjects(project));
             if (existing != null) {
                 return "branch '" + ref + "' already exists in " + existing + " (previous run of this"
                         + " ticket). Retry with `do " + ref + " recreate` (discard old work, start fresh)"
@@ -65,77 +67,56 @@ public class TaskLauncher {
 
         // Fast path: a bare key + explicit project needs no read — the key IS the task id.
         if (bareKey && project != null) {
-            String result = provisioning.initializeTask(newTask(ref, resolveProject(project),
+            String result = provisioning.initializeTask(newTask(ref, resolveProjects(project),
                     readAndImplement(ref, request), request).build());
             titles.of(ref);
             return result;
         }
-        // Otherwise read the item. `ref` may be a KEY or a URL to any tracker — the assistant follows it
-        // and returns the canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
-        var read = assistant.readTicket(ref);       // the session total is booked by the meter itself
+        // Otherwise read the item. `ref` may be a KEY or a URL to any tracker, and the read returns the
+        // canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
+        var read = tickets.read(ref);
         var facts = read.facts();
         if (facts.isPresent() && !facts.get().exists()) {
             return "error: could not read " + ref + " (bad/inaccessible URL or unknown key?)";
         }
         if (facts.isPresent()) {
             TicketFacts f = facts.get();
-            // Name the task by the canonical key the assistant read back; if it returned none but the
-            // caller already gave a bare key, that key is a fine task id (a URL has no such fallback).
+            // Name the task by the canonical key the read gave back; if it returned none but the caller
+            // already gave a bare key, that key is a fine task id (a URL has no such fallback).
             String taskId = f.key() != null && !f.key().isBlank() ? f.key() : (bareKey ? ref : null);
             if (taskId == null) {
-                return "error: read " + ref + " but the assistant returned no issue key to name the task";
+                return "error: read " + ref + " but got no issue key back to name the task";
             }
-            String resolved = project != null ? resolveProject(project) : resolveByLabels(f);
+            List<String> resolved = project != null
+                    ? resolveProjects(project)
+                    : List.of(resolveByLabels(f));
             String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
                     + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
             String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
                     .title(f.title()).ticketUrl(f.url()).build());
             // Only NOW does the task exist, so only now can the read that named it be charged to it —
             // charging earlier silently dropped the most expensive call in a task's life.
-            assistant.chargeTask(taskId, read.usage());
+            tickets.charge(taskId, read.usage());
             return result;
         }
-        // Assistant unavailable: only a bare key can proceed — a URL has no derivable task id without it.
+        // The read is unavailable, so only a bare key can proceed — a URL has no derivable task id without it.
         if (!bareKey) {
-            return "error: assistant unavailable — pass an issue key (not a URL), or add the project";
+            return "error: could not read " + ref + " — pass an issue key (not a URL), or name the project";
         }
-        String result = provisioning.initializeTask(newTask(ref, resolveProject(project),
+        String result = provisioning.initializeTask(newTask(ref, resolveProjects(project),
                 readAndImplement(ref, request), request).build());
-        // The read FAILED but was still paid for, and the key alone was enough to create the task — so the
-        // one case where money bought nothing must not be the one case the task reports as free.
-        assistant.chargeTask(ref, read.usage());
+        // The read FAILED but may still have been paid for, and the key alone was enough to create the task —
+        // so the one case where money bought nothing must not be the one case the task reports as free.
+        tickets.charge(ref, read.usage());
         return result;
     }
 
     /**
-     * Reopened review request: the URL is the ONLY input, because the request already carries every answer —
-     * its SOURCE branch is the task (a jagt task IS its branch) and its TARGET is the base that the next ship
-     * must update rather than open a second request against. A ticket is NOT accepted here: when it disagrees
-     * with the source branch, `ship` pushes one branch and updates the request of another.
+     * Reopened review request. Everything it takes is in the request itself, so this only hands the URL on —
+     * see {@link TaskResume}.
      */
     public String resume(String reviewRequestUrl) {
-        var read = assistant.readMergeRequest(reviewRequestUrl);
-        var request = read.facts();
-        if (request.isEmpty() || !request.get().exists()) {
-            return "error: could not read the review request (or not found): " + reviewRequestUrl;
-        }
-        // The read also carries the title, so a resumed task shows one on the board just like a `do` task.
-        String taskId = request.get().sourceBranch();
-        if (taskId == null || taskId.isBlank()) {
-            return "error: the review request names no source branch: " + reviewRequestUrl;
-        }
-        // Someone else's branch is not bound by jagt's naming, and a task IS its branch — so say which branch
-        // and why, instead of letting the generic id check report a regex the human never typed.
-        if (!TaskProvisioning.isSafeId(taskId)) {
-            return "error: source branch '" + taskId + "' cannot be a jagt task — a task IS its branch, and"
-                    + " that name also becomes a directory and a tmux window (allowed: letters, digits, '-',"
-                    + " '_'). Work in the branch directly, or start a task of your own with `do <ticket> from "
-                    + taskId + "`.";
-        }
-        String result = resumes.resume(taskId, reviewRequestUrl, request.get().title(),
-                request.get().targetBranch());
-        assistant.chargeTask(taskId, read.usage());       // the task exists only after resumeTask
-        return result;
+        return resumes.resume(reviewRequestUrl);
     }
 
     /** Picks the jagt project whose configured labels intersect the ticket's labels (or tracker project key). */
@@ -167,23 +148,39 @@ public class TaskLauncher {
 
     /** The configured project to use: the named one, or the only one there is. */
     public String resolveProject(String project) {
+        return resolveProjects(project).get(0);
+    }
+
+    /**
+     * The projects to work in: those named (comma-separated, in the order given — the FIRST is where the
+     * agent's session runs), or the only one configured. One piece of work spanning a service and its client
+     * is one task, so the answer is a list; naming one is the ordinary case, not a special one.
+     */
+    public List<String> resolveProjects(String project) {
         Set<String> keys = configService.load().projects().keySet();
         if (project != null && !project.isBlank()) {
-            if (!keys.contains(project)) {
-                throw new IllegalArgumentException("unknown project '" + project + "'. Configured: " + keys);
+            List<String> named = Arrays.stream(project.split(",")).map(String::strip)
+                    .filter(key -> !key.isEmpty()).distinct().toList();
+            List<String> unknown = named.stream().filter(key -> !keys.contains(key)).toList();
+            if (!unknown.isEmpty()) {
+                throw new IllegalArgumentException("unknown project " + unknown + ". Configured: " + keys);
             }
-            return project;
+            if (named.isEmpty()) {
+                throw new IllegalArgumentException("no project named. Configured: " + keys);
+            }
+            return named;
         }
         if (keys.size() == 1) {
-            return keys.iterator().next();
+            return List.of(keys.iterator().next());
         }
         throw new IllegalArgumentException("multiple projects " + keys + " — specify one");
     }
 
     /** The modifiers that come from the human, threaded into every creation path from one place. */
-    private static NewTask.Builder newTask(String taskId, String projectKey, String instructions,
+    private static NewTask.Builder newTask(String taskId, List<String> projectKeys, String instructions,
                                            LaunchRequest request) {
-        return NewTask.builder(taskId, projectKey)
+        return NewTask.builder(taskId, projectKeys.get(0))
+                .alsoIn(projectKeys.subList(1, projectKeys.size()))
                 .instructions(instructions)
                 .mode(request.mode())
                 .branchStrategy(request.strategy())

@@ -98,6 +98,15 @@ public class DeployService {
      * branch and it is not that one.
      */
     private ProjectConfig deployTarget(TaskState task) {
+        if (task.repos().size() > 1) {
+            // Half a change on a shared branch is worse than none: the repositories move together or not at
+            // all, and jagt cannot promise that yet — one merge landing while the next conflicts would leave
+            // the deploy branch carrying one side of a contract.
+            throw new IllegalArgumentException("REFUSED: this task works in " + task.repos().size()
+                    + " repositories (" + String.join(", ", task.projects()) + ") and a deploy writes a shared"
+                    + " branch — deploying one of them would land half the change. Merge them yourself this"
+                    + " time; jagt only deploys a single-repository task.");
+        }
         ProjectConfig project = configService.project(task.project());
         if (project.deployBranch() == null || project.deployBranch().isBlank()) {
             throw new IllegalArgumentException("Project '" + task.project()
