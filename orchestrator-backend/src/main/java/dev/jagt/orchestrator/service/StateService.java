@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.model.ActionOrigin;
 import dev.jagt.orchestrator.model.StatusChange;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
@@ -58,6 +61,16 @@ public class StateService {
      * rather than invented twice. Copy-on-write: listeners are registered at startup and read on every write.
      */
     private final List<Consumer<StateFile>> changeListeners = new CopyOnWriteArrayList<>();
+    /**
+     * The last parse, keyed by the file version it came from. Reading is the hot path — a single dashboard
+     * render asks a dozen times — and re-parsing per accessor also means one decision can straddle two
+     * versions of the file. Handed out as a COPY, always: callers mutate the task map in place.
+     */
+    private StateFile cached;
+    private FileVersion cachedVersion;
+
+    private record FileVersion(FileTime modified, long size) {
+    }
 
     public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
         // A missing primitive defaults to 0/false instead of failing the whole load: adding a `long` to
@@ -146,18 +159,27 @@ public class StateService {
         return found.get();
     }
 
-    /** Resolves the calling agent's task from the X-Working-Directory header value. */
+    /**
+     * Resolves the calling agent's task from the X-Working-Directory header value. ANY of the task's
+     * repositories answers, not just the session's own: one piece of work can span several, and a tool called
+     * from the directory the agent is currently editing must reach the task that owns it.
+     */
     public Optional<Map.Entry<String, TaskState>> findByWorktree(String cwd) {
         if (cwd == null || cwd.isBlank()) {
             return Optional.empty();
         }
         Path callerPath = canonical(Path.of(cwd));
         return tasks().entrySet().stream()
-                .filter(e -> {
-                    Path worktree = canonical(Path.of(e.getValue().worktreePath()));
-                    return callerPath.equals(worktree) || callerPath.startsWith(worktree);
-                })
+                .filter(e -> e.getValue().repos().stream().anyMatch(repo -> holds(repo, callerPath)))
                 .findFirst();
+    }
+
+    private static boolean holds(TaskRepo repo, Path callerPath) {
+        if (repo.worktreePath() == null || repo.worktreePath().isBlank()) {
+            return false;
+        }
+        Path worktree = canonical(Path.of(repo.worktreePath()));
+        return callerPath.equals(worktree) || callerPath.startsWith(worktree);
     }
 
     /**
@@ -233,12 +255,55 @@ public class StateService {
 
     private StateFile readUnlocked() {
         if (!Files.exists(stateFile)) {
+            cache(null, null);
             return new StateFile(null);
         }
+        FileVersion version = versionOnDisk();
+        if (cached != null && cachedVersion != null && cachedVersion.equals(version)) {
+            return new StateFile(cached.tasks());
+        }
+        StateFile parsed;
         try {
-            return parse(stateFile);
+            parsed = parse(stateFile);
         } catch (RuntimeException | IOException primaryFailure) {
-            return recoverFromBackup(primaryFailure);
+            cache(null, null);
+            return putBack(recoverFromBackup(primaryFailure));
+        }
+        cache(parsed, version);
+        return parsed;
+    }
+
+    /**
+     * A recovery has just moved the unreadable primary aside, so there is no state file at all — and the very
+     * next read would answer "no tasks" over a backup that still holds them, which is the one outcome this
+     * class exists to prevent. Best effort: a recovery that cannot be persisted is still worth returning.
+     */
+    private StateFile putBack(StateFile recovered) {
+        if (Files.exists(stateFile)) {
+            // The unreadable file could not be moved aside; writing now would copy it over the backup first.
+            return recovered;
+        }
+        try {
+            writeUnlocked(recovered);
+        } catch (RuntimeException e) {
+            log.error("Recovered {} task(s) but could not write them back to {}: {}",
+                    recovered.tasks().size(), stateFile, e.getMessage());
+        }
+        return recovered;
+    }
+
+    private void cache(StateFile state, FileVersion version) {
+        cached = state == null || version == null ? null : new StateFile(state.tasks());
+        cachedVersion = version;
+    }
+
+    /** Null when the attributes cannot be read, which simply keeps every read a re-parse. */
+    private FileVersion versionOnDisk() {
+        try {
+            BasicFileAttributes attributes = Files.readAttributes(stateFile, BasicFileAttributes.class);
+            return new FileVersion(attributes.lastModifiedTime(), attributes.size());
+        } catch (IOException e) {
+            return null;
         }
     }
 
@@ -288,8 +353,12 @@ public class StateService {
             Files.writeString(temp, mapper.writerWithDefaultPrettyPrinter().writeValueAsString(state));
             Files.move(temp, stateFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
+            cache(null, null);
             throw new UncheckedIOException("Cannot write state file " + stateFile, e);
         }
+        // Own writes never rely on the version key: two of them within one filesystem timestamp tick are
+        // indistinguishable by it, and this is the only writer that can rewrite the file that fast.
+        cache(state, versionOnDisk());
     }
 
     /** Best-effort: a failed backup must not stop the write — the live file matters more than its copy. */

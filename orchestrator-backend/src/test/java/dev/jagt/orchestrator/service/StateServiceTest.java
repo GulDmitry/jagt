@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.ActionOrigin;
 import dev.jagt.orchestrator.model.StatusChange;
+import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.model.TokenUsage;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +47,18 @@ class StateServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
         assertThat(seenByListener).containsExactly("[ABC-1] on disk: [ABC-1]");
+    }
+
+    @Test
+    void resolvesACallerFromAnyRepositoryItsTaskWorksIn(@TempDir Path root) throws IOException {
+        Path api = Files.createDirectories(root.resolve("ABC-1-alpha"));
+        Path client = Files.createDirectories(root.resolve("ABC-1-beta"));
+        StateService state = stateIn(root, root.resolve("state.json"));
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("alpha", api.toString()),
+                TaskRepo.of("beta", client.toString())), TaskStatus.IN_PROGRESS).build());
+
+        assertThat(state.findByWorktree(client.toString())).get()
+                .extracting(Map.Entry::getKey).isEqualTo("ABC-1");
     }
 
     @Test
@@ -117,6 +131,21 @@ class StateServiceTest {
     }
 
     @Test
+    void putsTheRecoveredTasksBackSoTheNextReaderStillFindsThem(@TempDir Path root) throws IOException {
+        // The recovery moves the unreadable file aside, which leaves NO state file: without writing the
+        // recovered tasks back, the very next read answers "no tasks" and the next write buries the backup.
+        Path stateFile = root.resolve("state.json");
+        StateService state = stateIn(root, stateFile);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
+        Files.writeString(stateFile, "{\"tasks\": {\"ABC-1\": {truncated…");
+
+        stateIn(root, stateFile).tasks();
+
+        assertThat(stateIn(root, stateFile).tasks()).containsOnlyKeys("ABC-1");
+    }
+
+    @Test
     void refusesToStartWithAnEmptyTaskListOverAnUnreadableStateFile(@TempDir Path root) throws IOException {
         // Silently starting empty is the one unacceptable outcome: the next write would overwrite the file
         // the human might still salvage by hand.
@@ -126,6 +155,40 @@ class StateServiceTest {
         assertThatThrownBy(() -> stateIn(root, stateFile).tasks())
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("no usable backup");
+    }
+
+    @Test
+    void answersFromTheLastParseWhileTheFileOnDiskHasNotMoved(@TempDir Path root) throws IOException {
+        Path stateFile = root.resolve("state.json");
+        StateService state = stateIn(root, stateFile);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+        FileTime written = Files.getLastModifiedTime(stateFile);
+        Files.writeString(stateFile, "x".repeat((int) Files.size(stateFile)));
+        Files.setLastModifiedTime(stateFile, written);
+
+        assertThat(state.tasks()).containsOnlyKeys("ABC-1");
+    }
+
+    @Test
+    void picksUpAStateFileThatSomethingElseRewrote(@TempDir Path root) throws IOException {
+        Path stateFile = root.resolve("state.json");
+        StateService state = stateIn(root, stateFile);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        Files.writeString(stateFile, """
+                {"tasks":{"ABC-2":{"project":"proj","worktreePath":"/wt","status":"NEW","alias":"a2"}}}""");
+
+        assertThat(state.tasks()).containsOnlyKeys("ABC-2");
+    }
+
+    @Test
+    void keepsItsOwnCopyWhenACallerMutatesTheTasksItWasHanded(@TempDir Path root) {
+        StateService state = stateIn(root, root.resolve("state.json"));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
+
+        state.tasks().clear();
+
+        assertThat(state.tasks()).containsOnlyKeys("ABC-1");
     }
 
     @Test
