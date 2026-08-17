@@ -11,8 +11,10 @@ default:
   image: eclipse-temurin:25-jdk
   before_script:
     - cd orchestrator-backend
-    # Gradle's home inside the project so the cache below can carry it between jobs.
+    # Gradle's home inside the project so the cache below can carry it between jobs. The board suite's browser
+    # too — a cache path outside the project directory is not carried anywhere.
     - export GRADLE_USER_HOME="$CI_PROJECT_DIR/.gradle-home"
+    - export PLAYWRIGHT_BROWSERS_PATH="$CI_PROJECT_DIR/.gradle-home/ms-playwright"
   cache:
     # Keyed by the wrapper: a Gradle upgrade gets a fresh cache instead of a corrupted one.
     key:
@@ -21,6 +23,7 @@ default:
     paths:
       - .gradle-home/caches
       - .gradle-home/wrapper
+      - .gradle-home/ms-playwright
 
 # Runs everywhere, needs nothing: this is the gate that must stay fast.
 unit:
@@ -47,6 +50,19 @@ linux:
     paths:
       - orchestrator-backend/build/reports/tests/e2eTest
       - orchestrator-backend/build/reports/tests/linuxDriverTest
+
+# The board in a real browser: the page's own logic (columns, buttons, the pushed repaint, the palette) is
+# asserted nowhere else, and only a browser runs it.
+board:
+  stage: test
+  script:
+    - sh scripts/linux-test-deps.sh
+    - ./gradlew --no-daemon boardTest
+  artifacts:
+    when: on_failure
+    expire_in: 1 week
+    paths:
+      - orchestrator-backend/build/reports/tests/boardTest
 
 # The layout of a full-screen TUI can only be asserted through a real PTY — hence tmux, not a virtual terminal.
 smoke:

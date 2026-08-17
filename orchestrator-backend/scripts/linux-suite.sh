@@ -10,7 +10,8 @@
 # What it runs, in order:
 #   1. `test`            — the hermetic unit suite, on a Linux JVM (Java 25, aarch64 or x86_64)
 #   2. `e2eTest`         — the task-flow matrix with real git + real tmux (GUI drivers are doubles there)
-#   3. `linuxDriverTest` — the Linux DRIVERS against real binaries: notify-send over a session D-Bus with a
+#   3. `boardTest`       — the web board in a headless Chromium (Playwright's own, downloaded on first run)
+#   4. `linuxDriverTest` — the Linux DRIVERS against real binaries: notify-send over a session D-Bus with a
 #                          notification daemon, and kitty on an Xvfb display answering remote control
 #
 # What it CANNOT answer, and therefore does not pretend to: IntelliJ (`idea`), the macOS AppleScript raise,
@@ -25,7 +26,7 @@ BACKEND_DIR="$REPO_ROOT/orchestrator-backend"
 IMAGE=jagt-linux-suite
 CACHE_VOLUME=jagt-gradle-home
 TASKS=("$@")
-if [[ ${#TASKS[@]} -eq 0 ]]; then TASKS=(test e2eTest linuxDriverTest); fi
+if [[ ${#TASKS[@]} -eq 0 ]]; then TASKS=(test e2eTest boardTest linuxDriverTest); fi
 
 command -v docker >/dev/null || { echo "docker is required"; exit 2; }
 

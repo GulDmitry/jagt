@@ -81,6 +81,43 @@ sourceSets {
     }
 }
 
+// Needs a browser, so it stays out of `check`, which must remain hermetic.
+sourceSets {
+    boardTest {
+        java.srcDirs = ['src/boardTest/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+dependencies {
+    // Playwright brings its OWN Chromium, downloaded on first run: the suite asks the host for no browser, so
+    // a Mac and a runner execute the same thing. The shared libraries it links against come from
+    // scripts/linux-test-deps.sh.
+    boardTestImplementation 'com.microsoft.playwright:playwright:1.62.0'
+}
+
+tasks.register('playwrightChromium', JavaExec) {
+    description = 'Installs the Chromium the board suite drives (a no-op once it is in the local cache).'
+    group = 'verification'
+    classpath = sourceSets.boardTest.runtimeClasspath
+    mainClass = 'com.microsoft.playwright.CLI'
+    args 'install', 'chromium'
+}
+
+tasks.register('boardTest', Test) {
+    description = 'Drives the web board in a headless Chromium.'
+    group = 'verification'
+    testClassesDirs = sourceSets.boardTest.output.classesDirs
+    classpath = sourceSets.boardTest.runtimeClasspath
+    useJUnitPlatform()
+    dependsOn tasks.named('playwrightChromium')
+    // Left to itself the client installs every browser it supports — a quarter of a gigabyte for a suite that
+    // drives one.
+    environment 'PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD', '1'
+    shouldRunAfter tasks.named('test')
+}
+
 tasks.register('linuxDriverTest', Test) {
     description = 'Exercises the Linux platform drivers against real notify-send/kitty (container only).'
     group = 'verification'

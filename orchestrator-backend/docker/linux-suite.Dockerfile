@@ -22,7 +22,9 @@ RUN git config --global user.email "linux-suite@example.com" \
     && git config --global --add safe.directory '*'
 
 # Gradle's caches live on a named volume (see the script), so a rerun does not re-download the distribution.
+# The board suite's browser goes on the same volume, or every run pays for it again.
 ENV GRADLE_USER_HOME=/gradle-home
+ENV PLAYWRIGHT_BROWSERS_PATH=/gradle-home/ms-playwright
 ENV JAGT_IN_CONTAINER=1
 
 WORKDIR /jagt/orchestrator-backend

@@ -67,6 +67,33 @@ jobs:
             /tmp/jagt-xvfb.log
             /tmp/jagt-dunst.log
 
+  board:
+    name: web board (headless Chromium)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: gradle
+      # The libraries Chromium links against come from the same list every other Linux job installs.
+      - name: install what the suites shell out to
+        run: sudo scripts/linux-test-deps.sh
+      # Playwright's own Chromium is cached between runs; the suite installs it when the cache is cold. The
+      # restore key keeps an unrelated build.gradle edit from paying for the browser again.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('orchestrator-backend/build.gradle') }}
+          restore-keys: playwright-
+      - run: ./gradlew --no-daemon boardTest
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: board-test-report
+          path: orchestrator-backend/build/reports/tests/boardTest
+
   smoke:
     name: TUI layout + push-repaint (real PTY)
     runs-on: ubuntu-24.04

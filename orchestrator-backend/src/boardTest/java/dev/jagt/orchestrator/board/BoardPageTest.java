@@ -1,0 +1,419 @@
+package dev.jagt.orchestrator.board;
+
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Page;
+import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.model.LaunchRequest;
+import dev.jagt.orchestrator.model.TaskAction;
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.platform.TtydWebTerminal;
+import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
+import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
+import dev.jagt.orchestrator.service.Refusal;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskLauncher;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+/**
+ * The board itself, in a browser: the columns it groups tasks into, the buttons it offers, what a click posts,
+ * what a refusal reads like, the push that repaints it and the command palette. Nothing here asserts a rule of
+ * jagt's own — the projection and the gate have their own tests — only that the page renders what the server
+ * says and asks for exactly what the human clicked.
+ *
+ * <p>Three write paths are mocked because a real one would act on the developer's machine rather than on the
+ * test: an action reaches git and tmux, a launch creates a worktree, and free text spends a model call. The
+ * recent-projects cleaner is mocked for the same reason — its schedule rewrites the real IDE's own file.
+ *
+ * <p>Every seeded task is stamped as active NOW, because a task that has been silent for five minutes earns its
+ * human a desktop alert.
+ */
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "orchestrator.open-warp-window=false")
+class BoardPageTest {
+
+    @TempDir
+    static Path root;
+
+    private static Playwright playwright;
+    private static Browser browser;
+
+    @LocalServerPort
+    private int port;
+
+    @Autowired
+    private StateService state;
+
+    @MockitoBean
+    private CommandService commands;
+    @MockitoBean
+    private TaskLauncher launcher;
+    @MockitoBean
+    private NaturalLanguageDispatch naturalLanguage;
+    @MockitoBean
+    private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
+    @MockitoBean
+    private TtydWebTerminal webTerminal;
+
+    private BrowserContext session;
+
+    @DynamicPropertySource
+    static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
+        registry.add("orchestrator.root", () -> root.toString());
+        registry.add("orchestrator.config-file", () -> root.resolve("config.json").toString());
+        registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
+    }
+
+    @BeforeAll
+    static void startTheBrowserAndNameTheProjectsTheBoardOffers() throws IOException {
+        Files.writeString(root.resolve("config.json"), """
+                {
+                  "projects": {
+                    "alpha": {"path": "%s", "baseBranch": "origin/main", "deployBranch": "dev"},
+                    "beta": {"path": "%s", "baseBranch": "origin/main", "deployBranch": "dev"}
+                  },
+                  "autoReview": {"enabled": false}
+                }
+                """.formatted(root.resolve("alpha"), root.resolve("beta")));
+        playwright = Playwright.create();
+        browser = playwright.chromium().launch();
+    }
+
+    @AfterAll
+    static void stopTheBrowser() {
+        browser.close();
+        playwright.close();
+    }
+
+    @BeforeEach
+    void emptyTheBoard() throws IOException {
+        Files.deleteIfExists(root.resolve("state.json"));
+        Files.deleteIfExists(root.resolve("state.json.bak"));
+        session = browser.newContext();
+    }
+
+    @AfterEach
+    void closeTheTab() {
+        session.close();
+    }
+
+    @Test
+    void onlyThePhasesThatHaveATaskGetAColumn() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.REVIEW_PENDING).alias("a2").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-3", TaskState.builder("beta", root.resolve("ABC-3-beta").toString(),
+                TaskStatus.DEPLOYED).alias("b1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("#board > section > h2"))
+                .hasText(new String[]{"build 1", "review 1", "deploy 1"});
+    }
+
+    @Test
+    void anEmptyBoardSaysWhereATaskComesFrom() {
+        Page page = open();
+
+        assertThat(page.locator("#empty")).containsText("No tasks.");
+    }
+
+    @Test
+    void aCardShowsTheTaskAsTheProjectionDescribesIt() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.REVIEWED).alias("a1").title("Widget layout is off")
+                .mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .alias")).hasText("a1");
+        assertThat(page.locator("article .id")).hasText("ABC-1");
+        assertThat(page.locator("article .badge")).hasText("your move");
+        assertThat(page.locator("article .title")).hasText("Widget layout is off");
+        assertThat(page.locator("article .hint")).hasText("your move: deploy or done");
+        assertThat(page.locator("article .links a")).hasText(new String[]{"review request"});
+        assertThat(page.locator("article .detail")).hasCount(0);
+    }
+
+    @Test
+    void showsAHandEditedAliasAsTextRatherThanAsMarkup() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1<b>x</b>").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .alias")).hasText("a1<b>x</b>");
+        assertThat(page.locator("article .alias b")).hasCount(0);
+    }
+
+    @Test
+    void aCardOffersTheActionsTheProjectionListsAndMarksTheObviousOne() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.REVIEWED).alias("a1")
+                .mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .actions button")).hasText(
+                new String[]{"Check review", "Deploy", "Focus", "Open IDE", "Diff", "Respawn", "Done"});
+        assertThat(page.locator("article .actions button.primary")).hasText("Deploy");
+    }
+
+    @Test
+    void clickingAnActionRunsItAndShowsTheSentenceItAnswered() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1 — its window is in front.");
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
+
+        assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-1 — its window is in front.");
+        verify(commands).execute("ABC-1", TaskAction.FOCUS);
+    }
+
+    @Test
+    void focusShowsTheAgentsSessionOverTheBoardWhenATerminalServesIt() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
+        when(webTerminal.serve("jagt")).thenReturn(OptionalInt.of(8291));
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
+
+        assertThat(page.locator("#terminal")).isVisible();
+        assertThat(page.locator("#terminal-frame")).hasAttribute("src", "http://localhost:8291");
+        assertThat(page.locator("#terminal-title")).containsText("a1");
+    }
+
+    @Test
+    void focusOpensNoPanelWhenNoTerminalIsConfigured() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
+
+        Page page = open();
+        page.waitForResponse(response -> response.url().endsWith("/api/tasks"), () ->
+                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true))
+                        .click());
+
+        verify(webTerminal).serve("jagt");
+        assertThat(page.locator("#terminal")).isHidden();
+    }
+
+    @Test
+    void closingTheTerminalPanelDetachesItFromTheSession() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
+        when(webTerminal.serve("jagt")).thenReturn(OptionalInt.of(8291));
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
+        page.locator("#close-terminal").click();
+
+        assertThat(page.locator("#terminal")).isHidden();
+        assertThat(page.locator("#terminal-frame")).hasAttribute("src", "about:blank");
+    }
+
+    @Test
+    void closingATaskAsksBeforeAnythingRuns() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        CompletableFuture<String> asked = new CompletableFuture<>();
+
+        Page page = open();
+        page.onDialog(dialog -> {
+            asked.complete(dialog.message());
+            dialog.dismiss();
+        });
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Done").setExact(true)).click();
+
+        org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS)).startsWith("Done ABC-1?");
+        verifyNoInteractions(commands);
+    }
+
+    @Test
+    void aRefusedActionAlsoSaysTheBoardHasCaughtUp() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.SHIP)).thenThrow(new Refusal(
+                Refusal.Code.ACTION_NOT_AVAILABLE, "Ship is not available for ABC-1 (it is DEPLOYED)"));
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Ship").setExact(true)).click();
+
+        assertThat(page.locator("#toasts .toast.error"))
+                .containsText("Ship is not available for ABC-1 (it is DEPLOYED)");
+        assertThat(page.locator("#toasts .toast.error")).containsText("The board is up to date now.");
+    }
+
+    @Test
+    void aStateChangeRepaintsAnOpenBoardWithNobodyReloadingIt() {
+        Page page = open();
+
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        assertThat(page.locator("article .alias")).hasText("a1");
+    }
+
+    @Test
+    void theHeaderCountsTheTasksWhoseTurnItIs() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.REVIEWED).alias("a2").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("#waiting")).hasText("1 waiting on you");
+    }
+
+    @Test
+    void waitingOnMeLeavesOnlyTheTasksWhoseTurnItIs() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.REVIEWED).alias("a2").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("#mine").check();
+
+        assertThat(page.locator("article .alias")).hasText(new String[]{"a2"});
+    }
+
+    @Test
+    void draftedReviewRepliesAreAnnouncedOnTheCard() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nagreed, fixed\n");
+        state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a1").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .drafts")).containsText("drafted review replies");
+    }
+
+    @Test
+    void thePaletteConfirmsALineItCanRunAsTyped() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("ship a1");
+
+        assertThat(page.locator("#palette-state")).containsText("runs as typed");
+    }
+
+    @Test
+    void thePaletteExecutesACommandItUnderstandsWithoutPayingForTheModel() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("Shipped ABC-1 — review request updated.");
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("ship a1");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#toasts .toast")).hasText("Shipped ABC-1 — review request updated.");
+        verifyNoInteractions(naturalLanguage);
+    }
+
+    @Test
+    void thePaletteSaysSoBeforeRunningWhenItCannotFindTheTask() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("ship nope");
+
+        assertThat(page.locator("#palette-state")).hasClass(Pattern.compile("\\bbad\\b"));
+        assertThat(page.locator("#palette-state")).containsText("no task");
+    }
+
+    @Test
+    void freeTextIsInterpretedAndTheBoardLeadsWithHowItWasUnderstood() {
+        when(naturalLanguage.interpret("send the widget work out for review"))
+                .thenReturn("understood as `ship a1` — Shipped ABC-1.");
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("send the widget work out for review");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#toasts .toast")).hasText("understood as `ship a1` — Shipped ABC-1.");
+    }
+
+    @Test
+    void startingATaskWithoutPickingAProjectLeavesTheChoiceToTheTicketRead() {
+        when(launcher.launch(any())).thenReturn("Started ABC-9.");
+
+        Page page = open();
+        page.locator("#ref").fill("ABC-9");
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, null, null, null));
+    }
+
+    @Test
+    void startingATaskWithAPickedProjectSendsThatProject() {
+        when(launcher.launch(any())).thenReturn("Started ABC-9 in beta.");
+
+        Page page = open();
+        page.locator("#ref").fill("ABC-9");
+        page.locator("#project").selectOption("beta");
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
+        verify(launcher).launch(new LaunchRequest("ABC-9", "beta", null, null, null, null));
+    }
+
+    private static long now() {
+        return System.currentTimeMillis();
+    }
+
+    /**
+     * A tab whose event stream is already connected, so a state change made after it cannot be missed.
+     */
+    private Page open() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        return page;
+    }
+}
