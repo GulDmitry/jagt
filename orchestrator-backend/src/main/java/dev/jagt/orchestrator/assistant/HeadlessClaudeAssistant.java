@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.assistant;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.ReviewFacts;
+import dev.jagt.orchestrator.model.TicketFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import lombok.extern.slf4j.Slf4j;

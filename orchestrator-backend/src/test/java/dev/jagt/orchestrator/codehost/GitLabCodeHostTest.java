@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.codehost;
 
 import dev.jagt.orchestrator.config.CodeHostProperties;
+import dev.jagt.orchestrator.http.JsonHttp;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import org.junit.jupiter.api.Test;

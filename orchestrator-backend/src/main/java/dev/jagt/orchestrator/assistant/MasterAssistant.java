@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.assistant;
 
 import dev.jagt.orchestrator.model.ReviewFacts;
+import dev.jagt.orchestrator.model.TicketFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -15,15 +15,6 @@ import java.util.function.Function;
  * callers fall back to explicit input.
  */
 public interface MasterAssistant {
-
-    /**
-     * Facts distilled from a work item in whatever issue tracker the session's MCP exposes. The input may
-     * be an issue key OR a URL to it; {@code key} is read back from the item, NOT parsed from the URL.
-     * {@code url} may be empty when the tracker exposes none. {@code exists=false} means it could not be read.
-     */
-    record TicketFacts(boolean exists, String key, String title, String trackerProject, List<String> labels,
-                       String url) {
-    }
 
     /**
      * Free text mapped onto ONE command of the console grammar — a PROPOSAL, never an execution: the caller
@@ -57,7 +48,10 @@ public interface MasterAssistant {
         }
     }
 
-    /** Reads a work item given an issue KEY or a URL to it (any tracker); returns its canonical key + facts. */
+    /**
+     * Reads a work item given an issue KEY or a URL to it in any tracker at all — following the URL is what
+     * this read is for, and what no configured API can do.
+     */
     Answer<TicketFacts> readTicket(String ticketRef);
 
     /** Reads an MR by URL so `resume` can recover its source branch (= the task), its target and project. */

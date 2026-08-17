@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.codehost;
+package dev.jagt.orchestrator.http;
 
 import tools.jackson.databind.JsonNode;
 
@@ -6,12 +6,12 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * A JSON-over-HTTP port, so a code host is testable without a socket: the host implementations hold the part
- * worth testing (URL shapes, which API fields mean "approved", how a note becomes a relay line, what a create
- * call sends), and this hides the transport they all share.
+ * A JSON-over-HTTP port, so an outside integration is testable without a socket: an implementation of one holds
+ * the part worth testing (URL shapes, which API fields mean "approved", how a note becomes a relay line, what a
+ * create call sends), and this hides the transport they all share.
  *
- * <p>Deliberately only the three verbs a `CodeHost` is allowed to use — there is no DELETE here, and adding
- * one would need a reason that survives {@link CodeHost}'s "one write only" rule.
+ * <p>Deliberately read plus the two writes a create-or-update needs — there is no DELETE here, and adding one
+ * would need a reason that survives the "an integration may write exactly one thing" rule its callers live by.
  */
 public interface JsonHttp {
 

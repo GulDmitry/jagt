@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.codehost;
+package dev.jagt.orchestrator.http;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -18,7 +18,7 @@ import java.util.Optional;
 @Slf4j
 public class RestClientJsonHttp implements JsonHttp {
 
-    /** A code-host call runs on the auto-review tick or inside `ship`, so it must fail fast, not hold either. */
+    /** A call runs on the auto-review tick or inside `ship`, so it must fail fast rather than hold either. */
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
 
     private final RestClient client;
@@ -65,7 +65,7 @@ public class RestClientJsonHttp implements JsonHttp {
             // Includes 4xx/5xx (RestClient throws by default) and transport failures. Callers degrade to
             // "unreadable" / "not created", which the human sees — swallowing the cause would look like an
             // empty review or a silently missing merge request.
-            log.warn("Code-host {} {} failed: {}", body == null ? "GET" : update ? "PUT" : "POST", url,
+            log.warn("{} {} failed: {}", body == null ? "GET" : update ? "PUT" : "POST", url,
                     e.toString());
             return Optional.empty();
         }

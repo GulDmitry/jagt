@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.model.TicketFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -22,14 +22,14 @@ import static org.mockito.Mockito.when;
 /** A task with no title reads as a bare id on the board, and this is what fills it in afterwards. */
 class TicketTitleBackfillTest {
 
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
+    private final TicketReader tickets = mock(TicketReader.class);
     private final StateService stateService = mock(StateService.class);
     private final TicketTitleBackfill backfill =
-            new TicketTitleBackfill(assistant, stateService, Runnable::run);
+            new TicketTitleBackfill(tickets, stateService, Runnable::run);
 
     @Test
     void storesTheTitleAndTicketLinkItRead() {
-        when(assistant.readTicket("ABC-7")).thenReturn(new Answer<>(Optional.of(
+        when(tickets.read("ABC-7")).thenReturn(new Answer<>(Optional.of(
                 new TicketFacts(true, "ABC-7", "Widget layout is off", null, null, "https://tracker/ABC-7")),
                 TokenUsage.NONE));
 
@@ -45,17 +45,17 @@ class TicketTitleBackfillTest {
 
     @Test
     void chargesTheReadToTheTaskEvenWhenItCameBackEmpty() {
-        when(assistant.readTicket("ABC-8")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
+        when(tickets.read("ABC-8")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
         backfill.of("ABC-8");
 
-        verify(assistant).chargeTask("ABC-8", TokenUsage.NONE);
+        verify(tickets).charge("ABC-8", TokenUsage.NONE);
         verify(stateService, never()).updateTask(any(), any());
     }
 
     @Test
     void leavesTheTaskAloneWhenTheReadThrows() {
-        when(assistant.readTicket("ABC-9")).thenThrow(new IllegalStateException("tracker down"));
+        when(tickets.read("ABC-9")).thenThrow(new IllegalStateException("tracker down"));
 
         backfill.of("ABC-9");
 

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.codehost;
 
 import dev.jagt.orchestrator.config.CodeHostProperties;
+import dev.jagt.orchestrator.http.JsonHttp;
 import dev.jagt.orchestrator.model.GitRemote;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
@@ -38,8 +39,6 @@ public class GitLabCodeHost implements CodeHost {
     private static final int PAGE_SIZE = 100;
     /** A guard against an endless follow-the-pages loop, not a real limit: 1000 discussions is already absurd. */
     private static final int MAX_PAGES = 10;
-    /** Bot reviewers write essays; the agent needs the substance, the relay file does not need the whole novel. */
-    private static final int MAX_COMMENT_CHARS = 2000;
 
     private final JsonHttp http;
     private final CodeHostProperties config;
@@ -177,18 +176,12 @@ public class GitLabCodeHost implements CodeHost {
         if (!unresolved || note.path("system").asBoolean(false)) {
             return Optional.empty();
         }
-        String author = note.path("author").path("username").asString("someone");
         JsonNode position = note.path("position");
-        String file = position.path("new_path").asString(position.path("old_path").asString(""));
-        long line = position.path("new_line").asLong(position.path("old_line").asLong(0));
-        String where = file.isBlank() ? "" : " (" + file + (line > 0 ? ":" + line : "") + ")";
-        return Optional.of(author + where + ": " + oneLine(note.path("body").asString("")));
-    }
-
-    /** The brief lists one comment per line, so a note's own line breaks would shred that list. */
-    private static String oneLine(String body) {
-        String flat = body.replaceAll("\\s*\\R\\s*", " ").strip();
-        return flat.length() <= MAX_COMMENT_CHARS ? flat : flat.substring(0, MAX_COMMENT_CHARS) + " […]";
+        return Optional.of(RelayLine.of(
+                note.path("author").path("username").asString("someone"),
+                position.path("new_path").asString(position.path("old_path").asString("")),
+                position.path("new_line").asLong(position.path("old_line").asLong(0)),
+                note.path("body").asString("")));
     }
 
     /** {@code approved} is EE-only, so fall back to "somebody is in approved_by" — the CE-safe reading. */

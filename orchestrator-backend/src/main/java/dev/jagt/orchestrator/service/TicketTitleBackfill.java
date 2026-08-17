@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant.TicketFacts;
+import dev.jagt.orchestrator.model.TicketFacts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -17,17 +17,17 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class TicketTitleBackfill {
 
-    private final MeteredAssistant assistant;
+    private final TicketReader tickets;
     private final StateService stateService;
     private final Executor background;
 
     @Autowired
-    public TicketTitleBackfill(MeteredAssistant assistant, StateService stateService) {
-        this(assistant, stateService, Executors.newVirtualThreadPerTaskExecutor());
+    public TicketTitleBackfill(TicketReader tickets, StateService stateService) {
+        this(tickets, stateService, Executors.newVirtualThreadPerTaskExecutor());
     }
 
-    TicketTitleBackfill(MeteredAssistant assistant, StateService stateService, Executor background) {
-        this.assistant = assistant;
+    TicketTitleBackfill(TicketReader tickets, StateService stateService, Executor background) {
+        this.tickets = tickets;
         this.stateService = stateService;
         this.background = background;
     }
@@ -35,8 +35,8 @@ public class TicketTitleBackfill {
     public void of(String taskId) {
         background.execute(() -> {
             try {
-                var read = assistant.readTicket(taskId);
-                assistant.chargeTask(taskId, read.usage());
+                var read = tickets.read(taskId);
+                tickets.charge(taskId, read.usage());
                 read.facts().filter(TicketFacts::exists).ifPresent(facts -> stateService.updateTask(taskId,
                         task -> task.withTicket(facts.title(), facts.url())));
             } catch (RuntimeException e) {
