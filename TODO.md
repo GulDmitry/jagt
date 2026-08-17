@@ -8,11 +8,7 @@ CLAUDE.md, not here; if an entry below has hardened into a rule, it belongs ther
 
 | # | step | why it earns its place | est. |
 |---|------|------------------------|------|
-| 1 | Board tests in a browser (headless chromium), as a fourth CI job | the board has NO automated coverage: columns, action buttons, the SSE update and the ⌘K palette are checked by hand today. A runner already has chromium, so it is the same steps in both pipelines | 1 d |
-| 2 | Embed the agent terminal in the board (ttyd) | makes `focus` a click instead of a window switch; a new install requirement, so it goes in README's Prerequisites | 1 d |
-| 3 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
-| 4 | A second `CodeHost` (GitHub) + a `Tracker` seam for the ticket read | both seams have ONE implementation, and `do` spawning a model is the last per-task model cost | 2-3 d |
-| 5 | Extend the e2e matrix over `ship`/`review`/`deploy`/`resume` | the matrix covers CREATE→PROVISION→LAUNCH→TEARDOWN; the interesting oracle (status transitions, history, the replies relay) needs a fake `CodeHost` bean and a stub script that reports back over `POST /mcp` | 1-2 d |
+| 1 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
 
 Nothing here is blocked on access any more: measuring the `CodeHost` payoff was step 1 and it is done — see the
 record.
@@ -23,31 +19,41 @@ the container run left open (the `@Disabled` test in `LinuxKittyTerminalDriverLi
 
 ## Open questions
 
-### One task = one repository
-A ticket that touches two repos (backend + frontend) has no representation: it becomes two unrelated tasks,
-each with its own branch, review request, review cycle and alias, and nothing ties them together — not the
-board, not `ship`, not `deploy`. The human keeps the relationship in their head.
-A shape question, not a feature: does a task grow a LIST of (project, worktree, branch) tuples, or does jagt
-gain a "change set" that groups tasks? The first breaks the "one worktree = one agent" assumption that
-`X-Working-Directory` scoping rests on; the second keeps every current invariant and adds a grouping layer,
-which is probably the answer — a group's state is then a function of its members' `Move`s.
+### One task = many repositories — decided, half built
+The shape question is ANSWERED: a task holds a LIST of repositories and still runs ONE session, so what
+multiplies is worktrees, not agents (`model/TaskRepo`; the alternative — a "change set" grouping N tasks — would
+have given a cross-repo change two agents that cannot see each other's half of it). Two slices are in:
+- the model, with per-repo review request and deploy commit, and `state.json` read in both shapes;
+- `StateService.findByWorktree` answers from ANY of a task's repositories, so a tool called in the directory the
+  agent is editing reaches the task that owns it.
+
+The flow followed in a third slice (see the record): `do <ticket> proj1,proj2` and a multi-select on the board,
+one worktree per repository, `ship` per repository, one merged review round, `done` removing every worktree, and
+a card that names them all.
+
+What is left is exactly ONE verb: `deploy`/`revert` across repositories, which is refused today rather than
+half-done. It is not a loop — it is the question of what "deployed" means when the second merge conflicts after
+the first has been pushed to a shared branch. Two candidate answers, neither cheap: land them in order and stop
+at the first conflict (the task is then half live, and only the human can decide whether to revert the first or
+finish the second), or refuse unless every repository merges cleanly in a dry run first (safer, and still not
+atomic — a shared branch can move between the check and the push). Until one is chosen, jagt says so.
 
 ### Secrets are copied into every worktree and only the happy path cleans them up
 `worktree.copyGlobs` deliberately copies gitignored local files — `.env`, `*.pem`, keystores — into each
 worktree so the app can actually run there. It means N copies of production-ish credentials in sibling
 directories, readable by every agent process, removed only when `done` succeeds in deleting the worktree.
 `WorktreeOrphanScanner` REPORTS the leftovers with a count of copied secrets per orphan (startup ping +
-`GET /orphans`) and deletes nothing, since an orphan can hold uncommitted work. Two questions still open,
-both about the copying itself:
-- should the default set be narrower than "any `*.pem`"? One key covers .env, keys, certs and keystores for
-  every project.
-- `**/.env` does NOT match a root-level `.env` (Java's glob needs a directory component), so a repo whose
-  `.env` sits at the top gets nothing copied and the app fails to start for a reason that looks like anything
-  but a glob. Either document it in `config.json.dist` or ship `["**/.env", ".env"]`.
+`GET /orphans`) and deletes nothing, since an orphan can hold uncommitted work. One question still open about
+the copying itself: should the default set be narrower than "any `*.pem`"? One key covers .env, keys, certs and
+keystores for every project.
 
-### Cycle-time statistics over the status history
-`TaskState.history` now holds every transition, so "this ticket spent 6 h waiting on me" and "review rounds
-average 3" are cheap to compute. It is a `stats`-shaped question, not a card-shaped one.
+### `resume` is the last per-task model call
+`CodeHost` has two implementations now, so the reason to wait is gone: `resume` needs a request's SOURCE branch,
+TARGET and title, all one read away on both hosts (GitLab already fetches the request detail that carries them;
+GitHub's review query would only grow three fields), and `TaskResume` — which now owns that read — would route
+it exactly as `ReviewReader` routes a round. What is left after that is the ⌘K palette, which is a model call by
+DESIGN. The shape to add: `Optional<MergeRequestFacts> readRequest(String url)` on `CodeHost`, and
+`MergeRequestFacts` moved out of `MasterAssistant` into `model` the way `TicketFacts` just was.
 
 ### The notification path says nothing about drafted replies
 `UserNotifier` fires on the REVIEW_PENDING transition — exactly when `review_replies.md` appears — but the
@@ -63,21 +69,6 @@ out to be common, and the 6-minute review sweep is the candidate.
 ### Review findings not yet fixed (from the full-codebase pass, 2026-08-13)
 Ranked; the two that were fixed in that pass (a non-http link reaching the board's `href`, and the
 window-elapsed markers leaking one string per task retired while CI_POLLING) are not listed.
-- **The board builds three fragments with `innerHTML`/`insertAdjacentHTML`** — the alias/id pair, and the
-  project + relative-time + tokens row. Safe only because ids, aliases and project keys are `SAFE_ID`-shaped
-  everywhere they enter, which is a coupling invisible at the interpolation site — and `state.json` is
-  documented as hand-editable. Build them with `textContent` like the rest of the card. (Left alone because
-  `app.js` was mid-edit in another session.)
-- **`StateService` re-reads and re-parses the file on every accessor**, so one user action costs several reads
-  and a decision can straddle two versions of it (`canonicalTaskId` → `task()` → `tasks()` are three separate
-  reads). Writes are atomic and every gate re-checks at execution, so the impact today is a stale MESSAGE, not
-  a wrong write. A read cached on (mtime, size) inside the existing lock fixes both, and keeps a hand edit
-  visible.
-- **The SSE broadcast runs on the caller's thread** — the one serving an agent's MCP call — and sends to every
-  browser synchronously, so a stuck tab can add latency to a tool call. A single-thread executor for the
-  broadcast decouples them.
-- Cosmetic: the board pushes an EMPTY detail `div` when the detail is just the request link (the link is
-  rendered separately); `McpProtocolService` can answer `-32603` with a null message when the cause had none.
 
 ### What CI found that no local run could (2026-08-13)
 Both failures were the same shape — code that assumed the machine it grew up on — and both are fixed with a
@@ -104,21 +95,195 @@ whether the tracker is Jira or Linear or what the human named it. It would have 
 (`assistant.mcpServers: ["…"]`, empty = inherit everything). Given the measured ~7k tokens the MCP surface
 costs, this is a determinism nicety, NOT a cost lever.
 
-### Verify what a live agent session does when the backend restarts under it (HTTP transport)
-The stdio bridge retried `ECONNREFUSED` for ~15 s, which is what let a session survive a jar rebuild — agents
-mark an MCP server as failed on the first error. With Claude pointed straight at the HTTP endpoint that
-behaviour belongs to the client, and it is NOT verified: a one-shot `-p` session cannot span a restart.
-Measured instead, and worth knowing: a session STARTED while the backend is down has no jagt tools, and the
-model then answers "No tasks found." — a lie dressed as data. The sub-agent prompt now forbids that ("if a
-`jagt-orchestrator` tool is missing or fails, say the backend is DOWN and stop"), but the reconnect question
-needs one interactive session: start an agent, restart the jar, ask it to call `update_agent_status`.
-If it turns out a live session does not recover, the fix is not to bring the proxy back for everyone — it is
-either a client-side setting or a runtime that keeps the bridge, which is exactly what the seam is for.
-
 ## The record — what shipped, and the finding worth keeping
 
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
 themselves are in CLAUDE.md.
+
+### One session, many repositories — the flow follows the model — 2026-08-17
+
+`do ABC-1 api,web` (or several picked on the board) cuts a worktree per repository under ONE task and ONE agent
+session: the session runs in the first, edits the others in place, and its briefing lists them because the
+one-worktree rule it used to read would have made it refuse the work it was given. `ship` then commits, pushes
+and opens a request PER repository, each targeting that repository's own base branch; `done` deletes every
+worktree, not just the session's — the others hold checkouts and the local files `worktree.copyGlobs` copied in,
+and nothing else would ever have removed them.
+
+The decisions worth keeping, each because the obvious alternative is worse:
+- **The round is merged, not per repository.** A sweep reads every request and answers as the LEAST finished one:
+  approved only when all are, the pipeline reported as the single worst, comments prefixed with the repository
+  they came from. Reading only the session's request would let a green half advance the whole task, which is the
+  same class of bug as a truncated link — and a status per repository would be a second state machine.
+- **A ship is all-or-nothing about the host.** With one repository unhosted the whole task falls back to the
+  prose relay: half pushed by jagt and half asked of the agent is a state neither of them can describe.
+- **`deploy`/`revert` REFUSE a multi-repo task** instead of looping. A shared branch cannot be written half way,
+  and what to do when the second merge conflicts after the first is pushed is a decision nobody has made yet —
+  so the refusal names the repositories and hands it back.
+- **The projection grew a list, not a second shape.** `TaskView.repos` always has an entry, so a surface renders
+  one card for one repository or three, and the single-repo card looks exactly as it did.
+- A creation that fails part way unwinds every worktree it had already cut: a half-created task burns its id, and
+  with N repositories it would burn it N times over.
+
+### A live session outlives the backend on the HTTP transport — 2026-08-17
+
+Measured, not argued: a real Claude session in a worktree, pointed at `POST /mcp`, kept working across a jar
+restart — the tool call after it answered from the new process, with no reconnect and no prompt. The harsher
+case is the one worth knowing: a call made WHILE the backend was down answered "Unable to connect. Is the
+computer able to access the url?", and the next call after the restart succeeded, so a failed call does not
+retire the server for the session. Nothing depends on the stdio bridge's `ECONNREFUSED` retry any more, and
+the reason it holds is on the server side: `/mcp` issues no session id, so there is no state a restart can
+invalidate. Keep it that way — a session-bearing transport would put this back on the client's goodwill.
+
+### The e2e matrix reaches past teardown — ship, round, deploy, revert, resume — 2026-08-17
+
+`TaskFlowMatrixTest` only ever asserted CREATE→TEARDOWN, so everything a human actually presses was covered by
+unit tests and by hand. There are TWO matrices now, and the split is the decision worth keeping: the viewer
+combinations still run creation and teardown four times, while `ReviewRoundCase` × `ReviewAndDeployFlowTest`
+runs the flow BETWEEN them once — a round does not vary with how terminals are arranged, and running it four
+times over would only pay for that twice.
+
+Three things it does differently from the older matrix, each because the alternative proved weaker:
+- The verbs go through the board's own HTTP endpoints instead of the services, so `Move`'s legality gate, the
+  refusal path and the ORIGIN stamping are all in the assertion — the history now proves that `board` moved the
+  task and `mcp` was the agent, which no unit test can see.
+- The agent side is a real `POST /mcp` with the worktree header rather than a call into `AgentStatusReports`.
+  That is also what closed the loop the roadmap wanted from a stub script, without a script: the test IS the
+  agent, and nothing waits on tmux timing.
+- Two doubles only: `FakeCodeHost`, and `MasterAssistant` — the latter because reading a review REQUEST has no
+  host seam at all (`resume` spends a model call even with a code host configured, which is a gap worth closing
+  with the GitHub work, not a test artifact).
+
+It paid for itself on the first run: an MR link longer than one dashboard line was stored TRUNCATED, because the
+link was read out of the abbreviated message rather than the one the agent sent — a dead link on the board, and
+a URL a configured host then refuses to read. Fixed where the abbreviation is only for the dashboard, with a
+RED-verified unit test.
+
+### Three small ones — 2026-08-17
+- `StateService.findByWorktree` answers from ANY of a task's repositories. Slice 2 of one-session-many-projects,
+  and the promise the model already made in prose.
+- The card's last three interpolated fragments are built as DOM (one `span(className, text)`): ids, aliases and
+  project keys come out of a file the human is invited to edit, and "they are SAFE_ID-shaped" was a coupling
+  invisible from the interpolation site.
+- A `**/` prefix in `worktree.copyGlobs` now matches at the repository ROOT too. Java's glob wants a directory
+  component there, so the default `["**/.env"]` skipped the `.env` of every single-module repo and the app failed
+  to start for a reason that looks like anything but a glob. The rule is ONE helper, shared with the orphan
+  report, so what gets copied and what gets counted as left behind cannot drift.
+
+Two the review caught, both worth keeping:
+- Copying now SKIPS a path the worktree already has. Whatever the checkout produced is a file git TRACKS, so it
+  is not the one the app is missing — and overwriting it starts every worktree with an uncommitted change to a
+  tracked file that the agent would commit on `ship`. The root-match widening made that reachable for the exact
+  shape it bites: a repo whose root `.env` is committed and whose `.env.local` is the ignored one.
+- The orphan report asks every repository of a live task, not just the first — otherwise a multi-repo task gets
+  its second worktree announced as rotting, with a secret count and "delete them yourself", while its agent is
+  editing it.
+
+And one that needed NO change: a `javascript:` URL cannot reach the board's `href`, because `TaskView.webLink`
+drops any non-http(s) link server-side. A second check in the page would have been a second source of truth for
+one rule — and the test for it stayed green with the page's own guard removed, which is how that was noticed.
+
+All five RED-verified with the fix reverted.
+
+### The agent's terminal opens inside the board — 2026-08-17
+`orchestrator.web-terminal.enabled` (off by default — it is one more binary to install) makes a Focus click open
+the task's tmux session in a dialog over the board, writable, so answering an agent's question no longer means
+hunting for another window. Decisions worth keeping:
+- **One ttyd per tmux SESSION, not per task.** A task is a WINDOW inside the session, so a server per task would
+  be N processes and N ports for one view; `focus` selects the window and the panel follows, because a session
+  has one current window. The price is that the panel and the native viewer always show the SAME task — the
+  per-task alternative needs a grouped session plus a server each, which is not worth it.
+- **Not a `TerminalDriver`, and not a sixth seam.** As a driver it would REPLACE kitty/warp instead of adding a
+  view, and `focus`'s own sentence ("raised the agents window") would be a lie in a browser. So it is one class
+  nothing else names, and a second web terminal is when an interface gets extracted.
+- **Writable is the point, and a bound address is NOT the access control** — the finding that mattered, caught in
+  review before this shipped. A websocket handshake is exempt from same-origin rules, so with `--writable` alone
+  any page the human happens to have open can connect to `ws://127.0.0.1:<port>/ws` and run shell commands in
+  the agents' session; loopback is precisely what that page can reach. `--check-origin` closes it and costs the
+  panel nothing, because the frame loads ttyd's own page, so its Origin IS the Host. Verified on the real
+  binary: a foreign Origin gets the connection dropped, the served page's own gets 101.
+  The address still decides who may ask for that page, hence `127.0.0.1` by default. ttyd's `-i` documents an
+  interface NAME; libwebsockets 5 also parses a numeric address (verified), so an address ships and the loopback
+  name (`lo`, `lo0`) is the documented escape hatch.
+- **`--exit-no-conn` instead of reaping.** A server per session that jagt has to clean up needs to hear about
+  `done`, which means another collaborator in `AgentSessions` or `TaskRetirement` — both already at five. Let
+  the server end with the last viewer instead: no orphan holds a port, and `tab-per-task` cannot accumulate one
+  process per task ever focused. The port is then the first FREE one from the configured value, so a ttyd
+  orphaned by a `kill -9` moves the next one along rather than disabling Focus until a reboot.
+- **The API answers with a PORT, not a URL.** jagt does not know which name the browser reached it under, and a
+  URL built from the bind address hands a second machine its own loopback. The page composes
+  `http://<its own hostname>:<port>` — which also deleted the "is this bind value a routable host" guesswork
+  (`0.0.0.0` had produced an address no browser accepts).
+- The frame is unloaded on close, because tmux sizes every window to its SMALLEST attached client: a forgotten
+  iframe would shrink the agent's terminal for whoever is actually watching it.
+- One deliberate hole: tier 2 (⌘K free text → `/api/interpret`) executes `focus` server-side and answers with a
+  sentence, so no panel opens — the button and a parsed `focus a1` both open one. Deciding which verb ran from
+  prose would be guessing, and the sentence is the contract there.
+- Covered by the browser suite against a stubbed terminal (panel opens, the frame carries the address, closing
+  detaches it); the REAL binary was verified by hand — page, origin rules, tmux attach in a live browser, and
+  the shutdown reap — but no automated test starts a ttyd, since that needs the binary plus a live session.
+
+### A second code host, and the ticket read stopped costing money — 2026-08-17
+`CodeHost` has two implementations (`gitlab`, `github`) and there is a second seam beside it: `Tracker`
+(`orchestrator.tracker.type`, `jira` today), routed by `service/TicketReader` the way `ReviewReader` routes a
+host. With both wired, a task's whole life costs nothing in model calls except the ⌘K palette and `resume`.
+
+What the second implementation taught, which one never could:
+- **A seam must not assume a protocol.** GitHub's review read is one GraphQL query, and not by preference:
+  whether a review thread is RESOLVED exists NOWHERE in its REST API, and a round that cannot tell resolved
+  from open re-relays every comment it ever saw, every round, forever. One query also makes "a partial read
+  must fail whole" trivial.
+- **A seam must not assume the API lives where the human does.** GitLab reads its own API under the web root;
+  github.com serves it from `api.github.com` and an Enterprise install from `<root>/api/v3`. `base-url` stayed
+  the WEB root (it is what decides which URLs a host may claim) and each host derives its endpoints.
+- **Two flags turned out to be GitLab's, not "a review request's".** Squash and delete-branch-on-merge are
+  REPOSITORY settings on GitHub, so `GitHubCodeHost` writes neither — a `CodeHost` configures no repository.
+- **The review MODEL differs, not just the API.** Two GitHub facts the first implementation got wrong, both
+  found in review and both RED-verified: a reviewer's substance usually sits in the review BODY rather than in
+  inline threads (a round read from threads alone reported "no unresolved comments", and the sweep then advised
+  `deploy` while the host was blocking the merge — so review bodies are relayed first and a CHANGES_REQUESTED
+  decision can never come back empty), and `reviewDecision` is only populated where the repository REQUIRES a
+  review, so an approval on an unprotected repo needs the reviewers' latest states as the fallback — exactly the
+  shape of GitLab's EE-only `approved` field needing `approved_by`.
+- **Pagination is not optional on a connection that counts what is already done.** GitHub's `reviewThreads`
+  includes RESOLVED threads, so a long-lived request with a bot reviewer crosses one page while having three
+  open threads; refusing to relay a truncated round would then make that task permanently unreviewable, since
+  there is deliberately no paid fallback. It follows the cursor, capped like GitLab's page loop.
+- The read/relay format was the one thing worth sharing (`codehost/RelayLine`): an agent must not learn a
+  second comment format because the review moved hosts.
+- `JsonHttp` moved out of `codehost` into `…http`: a tracker reads over the same transport, and the port was
+  never code-host-specific. It is NOT a seventh seam — it exists so every host and tracker is testable with a
+  fake instead of a socket.
+- Jira is read over the `v2` API deliberately: Cloud and Data Center both serve it, and the three fields a
+  launch needs are identical in v2 and v3, so asking for the newer one would drop every self-hosted install
+  for nothing. Auth follows what the token IS — with a `user` it is that account's basic credentials (Cloud),
+  without one a bearer token (a self-hosted PAT).
+- `resume`'s read MOVED into `TaskResume`, which is where it belonged: the request is the only input, so the
+  service that resumes should be the one that reads it. That also kept `TaskLauncher` at five collaborators
+  when `TicketReader` replaced its assistant — the ceiling doing its job rather than being argued with.
+- A conditional-wiring test exists for the same reason `LinuxProfileContextTest` does
+  (`OutsideReadsContextTest`): a typo'd `@ConditionalOnProperty` yields NO bean, every read silently falls back
+  to the paid one, and the symptom is a bill.
+
+### The board is tested in a browser — 2026-08-17
+`./gradlew boardTest` (own source set, out of `check`, a fourth job in both pipelines) boots the app on a random
+port and drives the real page: which phases get a column, which buttons a card offers, what a click POSTs, the
+refusal wording, the SSE repaint, the palette's client-side verdict, the "waiting on me" filter, the drafted-reply
+banner, and that a picked project is sent while an untouched one is not. 17 cases in ~5 s (the terminal panel
+brought three more), and three of them were verified RED by breaking the page (dropping the `changed` listener,
+rendering empty phases, emptying `STALE_VIEW`).
+
+Decisions worth keeping:
+- **Playwright brings its own Chromium** rather than using the host's. The roadmap entry assumed "a runner
+  already has chromium" — a runner does, the `eclipse-temurin` image does not, and on Ubuntu the `chromium`
+  package is a snap stub, so "install a browser" is not a portable step. A private browser makes a Mac and a
+  runner drive the same build; only its shared libraries come from apt, in `scripts/linux-test-deps.sh` (the t64
+  names, Ubuntu 24.04+).
+- `Playwright.create()` installs EVERY browser it supports (~280 MB) unless told otherwise, so the suite runs
+  with `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` and a `playwrightChromium` task installs the one it drives.
+- The three write paths are mocked (`CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`) — everything
+  else, including the projection and the event stream, is the real thing. Asserting through the SERVER (seed
+  `StateService`, stub one command, read the DOM) is what keeps these tests about the page rather than about
+  JavaScript internals.
 
 ### The CodeHost payoff — MEASURED against a real host, 2026-08-17
 

@@ -26,6 +26,15 @@ projectSelect.onchange = () => { projectPicked = true; };
 let verbs = [];
 let busy = new Set();
 
+// Every piece of a card is BUILT, never interpolated into markup: ids, aliases and project keys come out of a
+// state file the human is invited to edit by hand, and an assumption about their shape is invisible from here.
+const span = (className, text) => {
+  const node = document.createElement('span');
+  if (className) node.className = className;
+  node.textContent = text;
+  return node;
+};
+
 const relative = (millis) => {
   const seconds = Math.max(0, Math.round((Date.now() - millis) / 1000));
   if (seconds < 60) return `${seconds}s ago`;
@@ -34,7 +43,7 @@ const relative = (millis) => {
   return `${Math.round(seconds / 86400)}d ago`;
 };
 
-// FLOOR everywhere, matching DashboardRenderer.compactDuration exactly: with `orchestrator.ui=both` the two
+// FLOOR everywhere, matching DurationFormat.compact exactly: with `orchestrator.ui=both` the two
 // surfaces sit side by side, and 90 minutes reading "1h" here and "2h" there is the drift the shared
 // projection exists to prevent — sharing the data is not enough if a derived number is formatted twice.
 const duration = (millis) => {
@@ -112,6 +121,12 @@ async function load() {
   }
 }
 
+// The order they were picked in does not survive a multi-select, so it is the CONFIGURED order that decides
+// which repository the agent's session runs in — the same answer for the console's `sng,sobrado`.
+function pickedProjects() {
+  return [...projectSelect.selectedOptions].map((option) => option.value).join(',');
+}
+
 function fillProjects() {
   const signature = projects.join('\n');
   if (renderedProjects === signature) {
@@ -126,6 +141,12 @@ function fillProjects() {
     projectSelect.value = chosen;
   } else {
     projectPicked = false;
+  }
+  // A list that allows several picks starts with NONE selected, where a dropdown would have shown its first
+  // option — and an empty box reads as "no projects configured". Showing one costs nothing: what is SENT is
+  // still gated on the human having picked.
+  if (projects.length && projectSelect.selectedIndex < 0) {
+    projectSelect.selectedIndex = 0;
   }
 }
 
@@ -152,7 +173,7 @@ function render() {
     if (!inPhase.length) return null;
     const section = document.createElement('section');
     const heading = document.createElement('h2');
-    heading.innerHTML = `${label} <span class="count">${inPhase.length}</span>`;
+    heading.append(`${label} `, span('count', inPhase.length));
     section.append(heading, ...inPhase.map(card));
     return section;
   }).filter(Boolean));
@@ -165,7 +186,7 @@ function card(task) {
 
   const top = document.createElement('div');
   top.className = 'card-top';
-  top.innerHTML = `<span class="alias">${task.alias || '-'}</span><span class="id">${task.id}</span>`;
+  top.append(span('alias', task.alias || '-'), span('id', task.id));
   const badge = document.createElement('span');
   badge.className = `badge ${owner}`;
   badge.textContent = task.owner === 'YOU' ? 'your move' : task.owner.toLowerCase();
@@ -183,9 +204,10 @@ function card(task) {
   status.className = 'status';
   status.textContent = `${task.status} · ${duration(Date.now() - task.statusSince)}`;
   status.title = timeline(task);
-  meta.append(status);
-  meta.insertAdjacentHTML('beforeend', `<span>${task.project}</span>`
-    + `<span>${relative(task.lastActiveAt)}</span>`);
+  // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
+  const repos = task.repos || [];
+  const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
+  meta.append(status, span(null, where), span(null, relative(task.lastActiveAt)));
 
   const hint = document.createElement('div');
   hint.className = 'hint';
@@ -193,12 +215,11 @@ function card(task) {
 
   const article_children = [top, title, meta, hint];
 
-  if (task.detail) {
+  // A detail that is nothing but a URL is the request, and that already has its own row below.
+  if (task.detail && !/^https?:/.test(task.detail)) {
     const detail = document.createElement('div');
-    const problem = /^(PROBLEM|NEEDS)/.test(task.detail);
-    detail.className = problem ? 'detail problem' : 'detail';
+    detail.className = /^(PROBLEM|NEEDS)/.test(task.detail) ? 'detail problem' : 'detail';
     detail.textContent = task.detail;
-    if (!problem && /^https?:/.test(task.detail)) detail.textContent = '';
     article_children.push(detail);
   }
 
@@ -215,7 +236,15 @@ function card(task) {
   const links = document.createElement('div');
   links.className = 'links';
   if (task.ticketUrl) links.append(link(task.ticketUrl, 'ticket'));
-  if (task.reviewRequestUrl) links.append(link(task.reviewRequestUrl, 'review request'));
+  if (repos.length > 1) {
+    // Each repository has its own request, its own reviewers and its own diff, so one link cannot stand for
+    // the task: an unlabelled second link would be indistinguishable from the first.
+    for (const repo of repos.filter((r) => r.reviewRequestUrl)) {
+      links.append(link(repo.reviewRequestUrl, `${repo.project} request`));
+    }
+  } else if (task.reviewRequestUrl) {
+    links.append(link(task.reviewRequestUrl, 'review request'));
+  }
   if (links.children.length) article_children.push(links);
 
   const actions = document.createElement('div');
@@ -255,6 +284,7 @@ async function run(task, action) {
   try {
     const result = await api(`/api/tasks/${encodeURIComponent(task.id)}/actions/${action.id}`, {method: 'POST'});
     toast(result.message);
+    if (action.id === 'focus') await openTerminal(task);
   } catch (e) {
     toast(refusal(e), true);
   } finally {
@@ -286,7 +316,7 @@ launchForm.onsubmit = async (event) => {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         ref: document.getElementById('ref').value,
-        project: projectPicked ? projectSelect.value : '',
+        project: projectPicked ? pickedProjects() : '',
         mode: document.getElementById('plan').checked ? 'plan' : null,
         baseBranch: document.getElementById('base-branch').value,
         notes: document.getElementById('notes').value,
@@ -404,7 +434,7 @@ async function runParsed(parsed) {
     return `${verb.id} ${task.alias || task.id}`;
   }
   if (verb.id === 'help') { showReport('help — command reference', await text('/api/help')); return 'help'; }
-  if (verb.id === 'stats') { showReport('stats — token spend', await text('/api/stats')); return 'stats'; }
+  if (verb.id === 'stats') { showReport('stats — spend and cycle time', await text('/api/stats')); return 'stats'; }
   if (verb.id === 'do') {
     if (!argument) { document.getElementById('ref').focus(); return 'do'; }
     const result = await api('/api/tasks', {
@@ -502,6 +532,35 @@ async function text(path, options) {
   return body;
 }
 
+// Focus, rendered rather than announced: the action selects the agent's tmux window whatever surface asked, and
+// when a web terminal serves that session the board shows it right here. With none configured there is nothing
+// to open and the sentence in the toast — which window the session is in — is the whole answer.
+const terminalDialog = document.getElementById('terminal');
+const terminalFrame = document.getElementById('terminal-frame');
+
+async function openTerminal(task) {
+  let port;
+  try {
+    ({port} = await api(`/api/tasks/${encodeURIComponent(task.id)}/terminal`, {method: 'POST'}));
+  } catch (e) {
+    toast(refusal(e), true);      // no port is silence; a refusal is not, or a gone task reads as "not set up"
+    return;
+  }
+  if (!port) return;
+  // The server answers with a port only: the host is whatever name this page reached jagt under, and the
+  // terminal runs on the same machine — an address chosen there would be jagt's own loopback, not ours.
+  const url = `http://${location.hostname}:${port}`;
+  document.getElementById('terminal-title').textContent = `${task.alias || task.id} · ${task.id}`;
+  // Re-pointing the frame at the same address attaches a second client for nothing.
+  if (terminalFrame.getAttribute('src') !== url) terminalFrame.src = url;
+  if (!terminalDialog.open) terminalDialog.showModal();
+}
+
+document.getElementById('close-terminal').onclick = () => terminalDialog.close();
+// A loaded frame stays attached, and tmux sizes every window to its smallest client — including one nobody
+// is looking at.
+terminalDialog.addEventListener('close', () => { terminalFrame.src = 'about:blank'; });
+
 // `resume`: take over a review request that already exists (reopened, or someone else's work).
 const resumeForm = document.getElementById('resume');
 document.getElementById('resume-task').onclick = () =>
@@ -531,7 +590,7 @@ resumeForm.onsubmit = async (event) => {
   }
 };
 
-document.getElementById('show-stats').onclick = () => openReport('stats — token spend', '/api/stats');
+document.getElementById('show-stats').onclick = () => openReport('stats — spend and cycle time', '/api/stats');
 document.getElementById('show-help').onclick = () => openReport('help — command reference', '/api/help');
 // The orphan report is the same plain text /orphans has always served; it just no longer costs you a tab.
 document.getElementById('show-orphans').onclick = () => openReport('orphaned worktrees', '/orphans');

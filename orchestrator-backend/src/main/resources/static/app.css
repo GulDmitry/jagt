@@ -82,6 +82,16 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45;
 }
 
+/* The agent's session, over the board like the reports: nearly the whole viewport, because an agent CLI
+   redraws itself into whatever it is given and a narrow frame turns its output into soup. */
+#terminal {
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text);
+  padding: 0; width: min(1280px, 94vw); height: 86vh; max-width: none; max-height: none; overflow: hidden;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
+}
+#terminal::backdrop { background: rgb(0 0 0 / 45%); }
+#terminal-frame { display: block; width: 100%; height: calc(86vh - 46px); border: 0; background: #000; }
+
 main { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; padding: 16px; }
 section { min-width: 0; }
 section h2 {

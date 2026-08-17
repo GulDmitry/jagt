@@ -39,14 +39,17 @@ jagt orchestrates four kinds of tool. Each is an **abstraction, not a brand** �
 them; it relies only on whatever MCP your session exposes, so the concrete vendor is yours to pick.
 
 - **Issue tracker** — where tickets live. Jira, Linear, GitHub Issues, or a plain URL to anything: a ticket
-  is just an id, a title, and (maybe) a link to open.
+  is just an id, a title, and (maybe) a link to open. Optionally jagt also READS one directly
+  (`orchestrator.tracker.type=jira`) so starting a task costs no model call; it never writes there.
 - **Version-control host** — where branches, pushes, and review requests live. GitLab, GitHub, Bitbucket —
   any `http(s)` git remote and its merge/pull requests. Optionally jagt also READS one directly
-  (`orchestrator.code-host.type=gitlab`) so review sweeps cost no model call; it never writes there.
+  (`orchestrator.code-host.type=gitlab|github`) so review sweeps cost no model call; it never writes there.
 - **AI coding agent** — the per-ticket worker session. Claude Code (default) or Codex today, any MCP-capable
   CLI in principle: one runtime class each. Note that a Codex worktree gets jagt's MCP proxy but not your own
   MCP servers (Codex reads them from `$CODEX_HOME`, which jagt points at the worktree).
-- **Terminal** — the window your agents run in, and where you drive the Master console. kitty or Warp.
+- **Terminal** — the window your agents run in, and where you drive the Master console. kitty or Warp. The
+  board can also show an agent's session inside itself (`orchestrator.web-terminal`, off by default), so
+  `focus` is a click instead of a window switch.
 
 Plus an **editor** (IntelliJ IDEA today) and a **desktop notifier** for the human checkpoints. Every one of
 these is a swappable strategy: add a vendor by implementing an interface and naming it in config — never by
@@ -99,6 +102,7 @@ service.
 | IntelliJ IDEA | JetBrains Toolbox | the `ide` review checkpoint |
 | kitty | `brew install kitty` | default agents terminal (swap it in config) |
 | terminal-notifier | `brew install terminal-notifier` | reliable notifications (osascript fallback is often silently suppressed) |
+| ttyd | `brew install ttyd` | ONLY for `orchestrator.web-terminal.enabled=true` — the agent's session shown inside the board |
 
 ### Linux
 
@@ -111,6 +115,7 @@ service.
 | git | `apt install git` | worktrees |
 | kitty | `apt install kitty` | agents terminal |
 | libnotify | `apt install libnotify-bin` | desktop notifications (`notify-send`) |
+| ttyd | `apt install ttyd` | ONLY for `orchestrator.web-terminal.enabled=true` — the agent's session shown inside the board |
 | an editor CLI | IntelliJ `idea` or VS Code `code` on PATH | the `ide` review checkpoint |
 
 Then set `orchestrator.platform: linux` in `application.yml` (it selects the notifier and the terminal
@@ -152,6 +157,12 @@ request that already exists (reopened, or someone else's work): its branch comes
 on it and the request is linked, not reopened. `Stats`, `Help` and `Orphans` are the same commands
 too — they open OVER the board in a dialog instead of taking you to another page.
 
+**Focus** always selects the agent's tmux window. Where you then look at it is the difference between the two
+surfaces: install ttyd and set `orchestrator.web-terminal.enabled: true`, and the board opens that session
+**over the board itself** — a real terminal you can type into, so answering an agent's question no longer means
+finding another window. Close the panel and the agent keeps working; it is only a view. With no web terminal
+configured, `focus` does what it always did and tells you which window the session is in.
+
 The one console verb the board deliberately does NOT have is `quit`: stopping the backend belongs to whoever
 started the process (Ctrl-C, or kill it), not to a button in a browser. Nothing is lost either way — agents live
 in tmux and keep working when the backend goes away.
@@ -175,8 +186,9 @@ status, and points at drafted review replies when the agent has written any. Tal
 |---------|--------|
 | `do <ticket> [plan] [notes]` | fetch the ticket, spin up a sub-agent in an isolated worktree; `plan` = plan mode |
 | `do <ticket> from <branch>` | same, but the worktree is cut from `<branch>` and its merge request targets `<branch>` instead of the project's `baseBranch` — for stacking a task on a parent feature branch. The branch must already exist on `origin`; `deploy` is unaffected (it still merges into `deployBranch`) |
+| `do <ticket> <projA>,<projB>` | one change that moves two repositories: ONE task and ONE agent session, with a worktree in each (the session runs in the first named and edits the others in place). `ship` opens a request per repository and `review` reports them as one round — as far along as the least finished one. `deploy` is refused for such a task: a shared branch cannot be written half way. On the board, pick several projects in the launch row |
 | `status` | show the task dashboard |
-| `stats` | token spend of jagt's **own** model calls, per task (a sub-agent's session is invisible to jagt) |
+| `stats` | token spend of jagt's **own** model calls, per task (a sub-agent's session is invisible to jagt), then cycle time: how long each task has been waiting on you, on its agent and on the code host, and how many rounds it has been out for review |
 | `focus <ticket>` | jump to the agent's session — **talk to the agent directly there** |
 | `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (a task started `from <branch>` diffs against that branch instead; falls back to `baseBranch`) — does not auto-refresh |
 | `review <ticket>` | pull the MR's pipeline + comments; the agent fixes locally and drafts replies (nothing pushed) |
@@ -248,20 +260,36 @@ future automation):
 
 ## Development
 
+### The suites
+
+| task | what it needs | what it answers |
+|---|---|---|
+| `./gradlew test` | nothing (hermetic) | the fast gate; runs everywhere |
+| `./gradlew e2eTest` | git + tmux | the task flow over real worktrees, one row per `TaskFlowCase` |
+| `./gradlew boardTest` | a Chromium (installed on first run) | the web board in a browser: columns, action buttons, the pushed repaint, the palette |
+| `./gradlew linuxDriverTest` | Linux + notify-send/kitty + a display | the Linux drivers against the real binaries |
+| `scripts/dashboard-layout-smoke.sh`, `scripts/tui-push-repaint-smoke.sh` | tmux + a built jar | the console's layout through a real PTY |
+
+Only `test` is in `check`; the others are asked for by name, because each needs something a hermetic run must
+not depend on. `boardTest` downloads a private Chromium into `~/.cache/ms-playwright` the first time and needs
+no browser from the machine.
+
 ### Testing on Linux from a Mac (containers)
 
 `orchestrator-backend/scripts/linux-suite.sh` runs the suites on a REAL Linux without a second machine — the
-container is one. Three tasks, in order: the unit suite on a Linux JVM, the `e2eTest` task-flow matrix with
-real git + real tmux, and `linuxDriverTest` — the Linux drivers against the real binaries (`notify-send` over
-a session D-Bus with a notification daemon, kitty on an Xvfb display answering remote control). Needs Docker,
-nothing else; it leaves only an image and a Gradle cache volume behind.
+container is one. Four tasks, in order: the unit suite on a Linux JVM, the `e2eTest` task-flow matrix with
+real git + real tmux, `boardTest` in a headless Chromium, and `linuxDriverTest` — the Linux drivers against the
+real binaries (`notify-send` over a session D-Bus with a notification daemon, kitty on an Xvfb display
+answering remote control). Needs Docker, nothing else; it leaves only an image and a Gradle cache volume
+behind.
 
 It earns its keep: the first run found that `tmux-command` shipped as `/opt/homebrew/bin/tmux`, so every task
 on Linux died with "Failed to start command" before its agent started.
 
 **CI runs the same thing.** `.github/workflows/ci.yml` and `.gitlab-ci.yml` call the SAME scripts — no
 CI-only code path, so a green pipeline and a green laptop mean the same: `unit` (hermetic), `linux`
-(`scripts/linux-test-deps.sh` → `scripts/with-linux-desktop.sh ./gradlew e2eTest linuxDriverTest`) and
+(`scripts/linux-test-deps.sh` → `scripts/with-linux-desktop.sh ./gradlew e2eTest linuxDriverTest`), `board`
+(the same deps script → `./gradlew boardTest`) and
 `smoke` (the two real-PTY tmux scripts against the built jar). GitHub additionally runs the unit suite and the
 layout smoke on macOS, the platform jagt is developed on. Neither pipeline needs Docker or a privileged runner
 — the container image exists for developers on a Mac, and installs its packages from that same deps script.
@@ -294,7 +322,7 @@ Keys are grouped into logical sections; a whole section may be omitted (each key
 | `autoReview.minIntervalMinutes` | poll interval at the window START — tightest cadence (default `10`) |
 | `autoReview.maxIntervalMinutes` | poll interval at the window END — the cap, ≈ hourly; interval ramps linearly min→max (default `60`) |
 | `agent.outputStyle` | optional output style for the agent (Claude Code), e.g. `acme:engineer` (default empty = the agent's own style) |
-| `worktree.copyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs) |
+| `worktree.copyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs). A `**/` prefix also matches at the repository ROOT, so `**/.env` covers both `app/.env` and a single-module repo's own `.env` — Java's glob alone would skip the second |
 | `projects.<key>.path` | absolute path to the base repository |
 | `projects.<key>.baseBranch` | default branch new task branches start from, e.g. `origin/main` (read-only; jagt never pushes here). Per task, `do <ticket> from <branch>` overrides it |
 | `projects.<key>.deployBranch` | target of `deploy`, e.g. `dev` (omit to disable deploy) |
@@ -309,6 +337,10 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.notify-send-command` | Linux only: the `notify-send` binary (default `notify-send`) |
 | `orchestrator.terminal` | agents viewer: `kitty` (default) or `warp`; both run over tmux |
 | `orchestrator.kitty-font-size` | viewer font size for the kitty terminal (blank keeps kitty.conf's own) |
+| `orchestrator.web-terminal.enabled` | show the agent's session inside the board when you press Focus (default `false`; needs ttyd installed) |
+| `orchestrator.web-terminal.command` | the ttyd binary (default `ttyd`, resolved like `tmux-command`) |
+| `orchestrator.web-terminal.port` | where a terminal server starts looking for a free port (default `8291`) |
+| `orchestrator.web-terminal.bind` | address it listens on (default `127.0.0.1`). The terminal is writable, so reaching it is reaching a shell: only the page ttyd serves may open a socket into the session (`--check-origin`), and this decides who can ask for that page at all — widen it only on a network you trust. Blank = every interface; a very old libwebsockets may want the loopback interface name (`lo`, `lo0`) instead of an address. The panel always asks for that port on the host you opened the board under, so a board opened from a second machine needs a bind that machine can reach |
 | `orchestrator.editor-command` | editor launcher list (default `[/Applications/IntelliJ IDEA.app/Contents/MacOS/idea]`; e.g. `[code]`) |
 | `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` |
 | `orchestrator.agent` | which AI agent runtime — `claude` (default) or `codex`; the pluggable seam, one class per CLI (plus `stub` for the e2e matrix) |
@@ -318,9 +350,13 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.assistant.model` | model for every master-assistant read — ticket, MR, review sweep (default `haiku`: ~$0.06 a call vs ~$0.41 on the inherited default; blank = your default) |
 | `orchestrator.assistant.permission-mode` | lifts the headless permission gate so the ticket-read can call MCP (default `bypassPermissions`) |
 | `orchestrator.assistant.allowed-tools` | comma-separated `mcp__<server>` allow-list; scopes the bypass, takes precedence over permission-mode |
-| `orchestrator.code-host.type` | read review sweeps over the host's REST API instead of a paid model call: `gitlab`, or blank = off (default). Worth setting if `autoReview` is on: measured against a real host, 24 h of polling costs $3-$7 per request without it, and the model read returned 5 of 9 unresolved comments on a large round |
-| `orchestrator.code-host.base-url` | the host root, e.g. `https://gitlab.example.com`; a review URL is only read under this prefix |
+| `orchestrator.code-host.type` | read review sweeps over the host's own API instead of a paid model call: `gitlab`, `github`, or blank = off (default). Worth setting if `autoReview` is on: measured against a real host, 24 h of polling costs $3-$7 per request without it, and the model read returned 5 of 9 unresolved comments on a large round |
+| `orchestrator.code-host.base-url` | the host's WEB root, e.g. `https://gitlab.example.com` or `https://github.com`; a review URL is only read under this prefix, and the API endpoints are derived from it (github.com serves its API from another host, an Enterprise install from its own) |
 | `orchestrator.code-host.token` | read-only API token (env, e.g. `CODE_HOST_TOKEN`) — jagt only GETs: never a push, merge or comment |
+| `orchestrator.tracker.type` | read a ticket over the tracker's own API instead of a paid model call: `jira`, or blank = off (default). This is the per-task read `do <ticket>` cannot skip, so it is the other half of the model bill |
+| `orchestrator.tracker.base-url` | the tracker root, e.g. `https://tracker.example.com`; a ticket URL is only read under this prefix |
+| `orchestrator.tracker.user` | the account an API token belongs to (Jira Cloud); blank = the token is sent on its own, which is what a self-hosted personal access token wants |
+| `orchestrator.tracker.token` | read-only API token (env, e.g. `TRACKER_TOKEN`) — jagt never transitions, comments on or assigns an issue |
 | `orchestrator.stub.script` | only for `orchestrator.agent=stub` (the scripted runtime used by `./gradlew e2eTest`): executable run instead of an agent |
 | `orchestrator.agent-disabled-plugins` | plugins disabled per agent worktree (default empty) |
 | `orchestrator.agent-prompt` | bootstrap prompt every sub-agent starts with |
@@ -347,6 +383,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | Parts of the board answer HTTP 500 (`/status`, `/stats`, `/orphans`) while `/` and `/state` still work | you rebuilt while jagt was running: `./gradlew build` rewrites `jagt.jar` in place, so the JVM keeps reading a file that changed — anything not yet loaded dies with `NoClassDefFoundError` | restart it, and run the staged copy so it cannot happen again: `./gradlew stageJar && java -jar build/libs/jagt-run.jar`. jagt also notices this itself within a minute and says so |
 | You cannot find the backend's log | the board (`ui=web`) logs to the console AND to a file; the console UI (`ui=tui`/`both`) owns the terminal, so it stays quiet and only the file gets them: `jagt-backend.log` next to where you started the jar (override with `LOG_FILE`) | `tail -f jagt-backend.log`, or `--logging.threshold.console=off`/`=INFO` to decide it yourself |
 | The jar exits at once and says nothing | before, a startup failure was logged only to the file and Boot suppressed the trace, so you got a bare prompt back — now the reason is printed on the console. The usual one is a port already held by an older jagt still serving the board | `lsof -ti tcp:8290 \| xargs kill`, or start elsewhere with `--server.port=<port>` |
+| Focus shows no terminal in the board | either no web terminal is configured (the default), or ttyd could not start — a port already taken, or a `bind` address it cannot resolve | `grep ttyd jagt-backend.log` names the exact command and ttyd's exit code. Install ttyd, or move `orchestrator.web-terminal.port`. Focus itself still worked: the session is in the window the toast named |
 | Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Installation → macOS** |
 | `state.json` got corrupted (bad hand edit, half-written by another tool) | every write keeps the previous version as `state.json.bak` | jagt recovers the tasks from the backup by itself, moves the bad file to `state.json.corrupt` and says so in the log. If the backup is gone too it REFUSES to start with an empty task list — fix or move the file yourself, nothing is silently overwritten |
 | A worktree directory nobody is using is still on disk | a crashed or abandoned task, or a `done` that could not delete it | jagt pings you once at startup and lists them with `curl -s localhost:8290/orphans`, including how many copied secret files (`worktree.copyGlobs`) are still inside. It never deletes them — they can hold uncommitted work, so that call is yours |

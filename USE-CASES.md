@@ -10,8 +10,28 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | New ticket, normal | `do ABC-1` | Branch `ABC-1` cut from the project's base branch, worktree, agent. |
 | Project not obvious from the ticket | `do ABC-1 <project>` | Same, without the label lookup. |
 | Work must sit on someone else's branch | `do ABC-1 from feature/parent` | Branch cut from `feature/parent`; the merge request will TARGET it. Deploy still goes to `deployBranch`. |
+| One change moves two repositories (a service and its client) | `do ABC-1 api,web` | ONE task, ONE agent session, a worktree per repository named `ABC-1-<project>`. The session runs in the first named; its briefing lists the others as its own to edit. On the board: pick several projects (ctrl/cmd-click). |
+| A multi-repo task reaches review | `ship ABC-1` | A commit, a push and a request PER repository, each targeting that repository's own base branch. The sentence names each one. |
+| One of its repositories has no code host configured | `ship ABC-1` | The WHOLE task falls back to instructing the agent — half pushed by jagt and half by the agent is a state neither can describe. |
+| A multi-repo task is ready to deploy | — | Refused by name: a shared branch cannot be written half way. Merge them yourself, then `done`. |
 | Ticket unreadable / no tracker | `do ABC-1 <project>` | The read is skipped; the task carries no title. |
+| A tracker is configured and the ref is its own (`ABC-1`, `…/browse/ABC-1`) | `do ABC-1` | Title, labels and project are read over the tracker's API — no model call, no tokens. |
+| A tracker is configured but the ref points somewhere else | `do <url>` | The headless assistant follows the URL (paid). Following a link into a tracker jagt was never pointed at is the one thing it still does that no configured API can. |
+| The configured tracker refuses the read (expired token, no access) | `do ABC-1` | Refused — jagt does NOT retry it through a paid model read, or an expired token would quietly cost money on every launch. A bare key still starts the task; only its title is missing. |
+| The app needs a gitignored `.env` (or key, cert) to start | nothing — `worktree.copyGlobs` | Copied from the base repo to the same relative path, root-level files included (`**/x` matches the root too). A path the checkout already produced is left alone: git tracks it, so it is not the file that was missing, and overwriting it would leave every worktree with an uncommitted change to a tracked file. |
 | On the board | the launch row, always open | Ticket, project, base branch, notes and Start. The project list comes from `config.json` on every load — no button to press first. It opens on the first project rather than a placeholder; a project is sent only if you actually pick one, so an untouched list still gets the ticket read and the label lookup. |
+
+## Looking at an agent
+
+| Situation | What to run | What happens |
+|---|---|---|
+| The agent is asking something | `focus <task>` | Its tmux window is selected. In the console that raises the terminal the viewer runs in; on the board, with `orchestrator.web-terminal` on, the session opens OVER the board and you type into it there. |
+| No web terminal configured | Focus, on the board | The same selection, and the sentence names the window the session is in — there is nothing to embed. |
+| Panel closed by mistake | — | Nothing stops. The agent lives in tmux; the terminal server ends with the last panel watching it, and Focus starts another. |
+| The board is open from a second machine | — | The panel asks that machine for the terminal's port, so it only answers where the server listens: loopback by default, i.e. the machine jagt runs on. |
+| Panel open on one task, Focus pressed on another | Focus | The panel follows: in viewMode `shared` every task is a window of ONE session, and a session has one current window — for the embedded view and the native viewer alike. |
+| ttyd not installed, or its port taken | — | Focus still selects the window; the panel simply does not open, and the log carries ttyd's own exit code. |
+| The backend restarts while an agent session is live (HTTP transport) | — | Nothing to do: the next tool call reaches the new process. A call made while it was down answers "Unable to connect", and the one after the restart succeeds — a failed call does not retire the server for the session. |
 
 ## Review requests
 
@@ -23,6 +43,10 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | A new ticket whose work happens to live on an older task's branch | `do <new-ticket> from <that-branch>` | A new task/branch of its own; the old request stays with the old branch. |
 | The request's source branch is not a legal task name (`feature/x`) | — | Refused with that branch named: a task IS its branch, and the name becomes a directory and a tmux window too. |
 | Request unreadable (no code host, assistant failed) | — | Refused. A guessed branch name would point the task at a branch the request does not track. |
+| The review lives on GitHub (`code-host.type=github`) | `review <task>` / the auto-poll | Threads, the approval decision and the head commit's check rollup come from one GraphQL query — REST cannot say whether a thread is resolved, and a round that cannot tell would re-relay every comment forever. |
+| A GitHub reviewer wrote the request in the review body, with no inline thread | `review <task>` | Relayed all the same — review bodies come first in the round, and a "changes requested" decision never comes back as "nothing to answer" (which would advise `deploy`). |
+| A GitHub repository requires no review, and someone approved | `review <task>` | Counted as approved: the host reports no decision at all on an unprotected repo, so the reviewers' own latest states are read instead. |
+| A ship opens the request on GitHub | `ship <task>` | Squash and delete-branch-on-merge are NOT sent: they are repository settings there, and jagt configures no repository. Set them once on the repo. |
 | The branch is still checked out somewhere (the base repo, an editor, an old worktree) | free it, then `resume` again | Refused by NAME: git allows one checkout per branch, so the message says which directory holds it and the `git -C <dir> switch` that frees it. Nothing is registered, so the retry is clean. jagt will not switch a checkout that may hold uncommitted work. |
 
 ## Review rounds
@@ -51,3 +75,5 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Done | `done <task>` | Kills the agent window, reaps its language server. The branch survives. |
 | Merged task branches pile up | your own git, per branch | jagt has no `prune`: a cross-project bulk delete was removed deliberately. Cleanup is one task's own business. |
 | Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be MAPPED onto a live one (`done <task>` is the near neighbour, and it kills a worktree). |
+| "Is it me holding these up?" | `stats` | Second section: per task, how long it has been on you, on its agent and on the code host, plus the rounds it has been out for review — and one line naming the slowest of the three. |
+| The same numbers, a week later | — | Not available: `done` removes the task, so its history goes with it. `stats` describes the OPEN work, never throughput over time. |

@@ -25,7 +25,7 @@
   <label class="control checkbox"><input type="checkbox" id="mine"> waiting on me</label>
   <button id="resume-task" title="take over an existing review request: resume its branch and link it">Resume</button>
   <button id="open-palette" title="⌘K / Ctrl-K — say what you want in words">Ask</button>
-  <button id="show-stats" title="token spend of jagt's own model calls, per task">Stats</button>
+  <button id="show-stats" title="what jagt's own model calls cost, and where each task's time went">Stats</button>
   <button id="show-help" title="the command grammar — the same reference the console prints">Help</button>
   <button id="show-orphans" title="worktree directories no task owns — jagt only reports them">Orphans</button>
   <span id="live" class="dot" title="live updates"></span>
@@ -33,7 +33,8 @@
 
 <form id="launch">
   <input id="ref" name="ref" placeholder="ABC-42 or a ticket URL" autocomplete="off" required>
-  <select id="project" name="project"></select>
+  <!-- Several picked = one task, one agent session, a worktree in each: the work spans the repositories. -->
+  <select id="project" name="project" multiple size="1" title="one project, or several for work that spans them"></select>
   <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">
   <label class="checkbox"><input type="checkbox" id="plan"> plan first</label>
   <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
@@ -62,6 +63,16 @@
     <button id="close-report" autofocus>Close</button>
   </header>
   <pre id="report-body"></pre>
+</dialog>
+
+<dialog id="terminal">
+  <header class="report-head">
+    <strong id="terminal-title"></strong>
+    <span class="grow"></span>
+    <span class="muted">click inside to talk to the agent</span>
+    <button id="close-terminal" autofocus>Close</button>
+  </header>
+  <iframe id="terminal-frame" title="agent terminal"></iframe>
 </dialog>
 
 <main id="board"></main>

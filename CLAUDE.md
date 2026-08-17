@@ -13,16 +13,21 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   Outside writes are the sub-agent's job via its own MCP (push, merge request, review replies) — the ONE
   exception the backend may ever do itself is opening a task's review request over `CodeHost`, and today
   nothing calls it. Outside READS have two paths — a one-shot headless agent
-  that inherits the human's own MCP (see Master assistant), and, when configured, the read-only `CodeHost`
-  REST seam (see PLUGGABLE BY DESIGN). The REST path is opt-in and needs a token in the environment
-  (`orchestrator.code-host.*`); with none configured the backend holds no credential at all.
+  that inherits the human's own MCP (see Master assistant), and, when configured, the read-only `CodeHost` /
+  `Tracker` seams (see PLUGGABLE BY DESIGN). Both are opt-in and need a token in the environment
+  (`orchestrator.code-host.*`, `orchestrator.tracker.*`); with neither configured the backend holds no
+  credential at all.
 - HOW AN AGENT REACHES THE MCP SERVER IS PART OF THE `AgentRuntime` SEAM, and there are exactly two paths
   (`agent/McpEndpoint` documents both): HTTP — the CLI is pointed at `orchestrator.mcp-url` and carries
   `X-Working-Directory: <worktree>` itself, nothing running in between; or stdio — the CLI can only SPAWN a
   server, so the runtime calls `AbstractAgentRuntime.linkStdioProxy` and gets `mcp_client.js`, the standard
   Node bridge that POSTs the same header. Prefer HTTP: verified against a real session, and it is what took
   Node out of jagt's requirements. `mcp_client.js` exists only for the stdio path (Codex today, whose config
-  has no verified remote-server form) — do NOT link it for everybody again.
+  has no verified remote-server form) — do NOT link it for everybody again. A LIVE session survives a backend
+  restart on the HTTP path (measured 2026-08-17 against a real Claude session): the server keeps no session id,
+  so the next tool call simply reaches the new process, and a call that failed with the backend down does not
+  retire the server for the rest of the session — the very next one succeeds. The stdio proxy's
+  `ECONNREFUSED` retry is therefore not what a restart depends on.
 - `.mcp.json` — Claude Code's project MCP config, GENERATED per worktree by `ClaudeAgentRuntime` (not
   symlinked: the header value IS that worktree's path). The committed ROOT `.mcp.json` is the same server for a
   dev session working ON jagt, with no header — that session is not a task, so the backend treats it as Master.
@@ -93,6 +98,22 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill), not to a browser
     button, and nothing is lost by that since agents live in tmux. A shutdown endpoint was built and removed;
     do not add one back.
+  - THE EMBEDDED TERMINAL IS A RENDERING OF `focus`, NEVER A SECOND VERB. With `orchestrator.web-terminal
+    .enabled` a Focus click on the board also opens the task's tmux session in a `<dialog>`:
+    `platform/TtydWebTerminal` serves ONE ttyd per tmux SESSION (not per task — a task is a window inside one),
+    and `POST /api/tasks/{id}/terminal` hands back its address, `null` meaning none is configured. It selects
+    no window and executes nothing; the action itself still goes through `CommandService`, so the console keeps
+    raising the native viewer and the card grows no button outside `Move.actions()`. Four things it owes, none
+    of them optional: the terminal is WRITABLE, because a view you cannot answer the agent in is pointless — and
+    a writable terminal is a SHELL, so `--check-origin` is what makes the served page the only origin that may
+    open a socket (a websocket handshake is exempt from same-origin rules, so without it any page the human
+    visits can drive the agents' session over loopback; the bind address is NOT that defence and never was).
+    `--exit-no-conn` ends the server with the last viewer, so a `done` that kills a tmux session cannot leave a
+    ttyd behind and no port leaks; the port is the first FREE one from `web-terminal.port`, so a server orphaned
+    by a `kill -9` moves the next one along instead of killing the feature. The frame is UNLOADED on close,
+    since tmux sizes every window to its smallest attached client, including one nobody is looking at. And ttyd
+    stays ONE class, not a sixth seam — a second web terminal is an interface extraction, and nothing outside
+    it names ttyd.
   - "how is an action executed" is `service/CommandService` (validates against `Move` first, so a stale board
     tab is refused with a sentence, not with a git error three layers down), and "how is a task started" is
     `service/TaskLauncher`. The console parses a command line, the controller parses JSON; neither owns rules.
@@ -201,7 +222,25 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `mcp/CallerScope`, and its wiring into each tool is what `McpToolScopeTest` pins — the rule was real for three
   tools and MISSING from four until 2026-08-14, so a new tool taking a taskId gets a row in that test, not a
   promise); `initialize_task`/`remove_task`/`deploy_task`/`revert_task` are Master-only. Task ids are validated
-  (`[A-Za-z0-9][A-Za-z0-9_-]*`) — they become branch/dir/tmux names.
+  (`[A-Za-z0-9][A-Za-z0-9_-]*`) — they become branch/dir/tmux names. A task's OWN repositories are ONE scope, not
+  several: `StateService.findByWorktree` answers from any of them, so a multi-repo task stays one caller however
+  many worktrees it holds — narrowing that back to the primary worktree silently breaks every tool the agent
+  calls from a sibling repo.
+- ONE SESSION, MANY REPOSITORIES — what multiplies is WORKTREES, never agents. A task holds a LIST
+  (`model/TaskRepo`, `repos.get(0)` = where the session runs) and every per-repo step iterates it: creation cuts
+  a worktree each (`TaskProvisioning.resolveRepos` validates ALL of them before cutting ANY, and a failure part
+  way unwinds the ones already cut), `ship` commits/pushes/opens a request per repository against THAT
+  repository's own base branch, `done` deletes every worktree — the siblings hold checkouts and copied secrets
+  nothing else would remove. Three rules that are not obvious from the loop:
+  - The review round is MERGED, and it answers as the least finished repository (`ReviewSweepService.merged`):
+    approved only when all are, the pipeline the single WORST one — never a concatenation, which reads as
+    "success" to the caller's own check — and each comment prefixed with the repository it came from. Reading
+    only the session's request would let a green half advance the whole task.
+  - `ship` is all-or-nothing about hosting: one repository without a `CodeHost` sends the WHOLE task down the
+    prose relay, because half pushed by jagt and half asked of the agent is a state nobody can describe.
+  - `deploy`/`revert` REFUSE a multi-repo task by name. A shared branch cannot be written half way, and nothing
+    has decided what "deployed" means when the second merge conflicts after the first is pushed. Do not turn the
+    refusal into a loop without answering that first.
 - The MCP transport must never emit non-JSON-RPC bytes: malformed JSON → `-32700` from the controller,
   HTTP errors → synthesized JSON-RPC error in `mcp_client.js` (never forward Spring error pages).
   The proxy retries ONLY `ECONNREFUSED` (request never sent) — other failures may have executed a
@@ -259,7 +298,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   … — any MCP-capable CLI). Everything OS- or agent-specific lives behind a STRATEGY INTERFACE, selected by
   config, so adding a new one is "implement the interface + register a config value" — NEVER a hardcoded
   `if claude`/`if macos` sprinkled through the flow. The agent-agnostic task flow (create worktree →
-  provision → launch → talk over MCP) must stay free of any single agent's assumptions. The five seams:
+  provision → launch → talk over MCP) must stay free of any single agent's assumptions. The six seams:
   - `UserNotifier` (`orchestrator.platform`, default macos), `TerminalDriver` (`orchestrator.terminal`,
     default `kitty`; `warp` too), `EditorDriver` (`orchestrator.editor-command`) — in `…platform`.
   - `AgentRuntime` (`…agent`, `orchestrator.agent`, `claude` default, `codex` the second impl) — the
@@ -269,15 +308,38 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     differs per agent (Claude `.mcp.json` + `.claude/settings.local.json`, Codex `.codex/config.toml` with
     `CODEX_HOME` pointed at the worktree) and belongs in each `AgentRuntime`. Nothing outside the runtime may
     name an agent's files — `WorktreeSetup` only calls `provisionWorktree`, and `AgentSessions` `displayName`.
-  - `CodeHost` (`…codehost`, `orchestrator.code-host.type`, default none) — REST reads of a review request, so
-    the sweep costs no model call, plus EXACTLY ONE write: `createOrUpdateMergeRequest` (opening the artifact a
-    human then reviews). Never a push, a merge, a comment or an approval — those belong to the human's gates or
+  - `CodeHost` (`…codehost`, `orchestrator.code-host.type`, default none; `gitlab` and `github`) — reads of a
+    review request, so the sweep costs no model call, plus EXACTLY ONE write: `createOrUpdateMergeRequest`
+    (opening the artifact a human then reviews). Never a push, a merge, a comment or an approval — those belong to the human's gates or
     to the agent's own MCP; a `CodeHost` that merges is a bug. The write is idempotent per (source, target) and
     NEVER retitles an open request (`ship` reruns every review round, and the human may have edited the title).
     `ReviewReader` deliberately does NOT fall back to the paid headless read when a configured host fails: that
     would spend money invisibly and hide the misconfiguration. A partial REST read must fail whole — "no
     unresolved comments + green pipeline" ADVANCES a task. The one caller of the write is `ShipService`, and
     only when a host is configured — with none, `ship` keeps relaying the prose to the agent.
+    WHICH PROTOCOL a host speaks is ITS business, not the seam's: GitHub's read is one GraphQL query because
+    thread resolution exists nowhere in its REST API, and a round that cannot tell resolved from open relays
+    every comment it ever saw, forever. Two GitHub facts that a reader will not guess and that make the
+    difference between advising `deploy` and advising a fix: the substance of a review usually sits in the
+    review BODY rather than in inline threads (so a round read from threads alone can miss the whole request,
+    and a CHANGES_REQUESTED decision must never come back with an empty comment list), and `reviewDecision` is
+    only populated where the repository REQUIRES a review — on an unprotected repo it is null however many
+    people clicked Approve, so the reviewers' own latest states are the fallback. Its `base-url` is the WEB root (the prefix that decides which URLs the
+    host may claim) and each host derives its own API endpoints from it — github.com serves its API from
+    another host entirely. Two flags have no GitHub counterpart on purpose: squash and delete-branch-on-merge
+    are REPOSITORY settings there, and a `CodeHost` configures no repository. The relay LINE is shared
+    (`codehost/RelayLine`), so an agent never has to learn a second format for a round.
+  - `Tracker` (`…tracker`, `orchestrator.tracker.type`, default none; `jira`) — reads the ONE ticket a launch
+    needs (title, labels, project) so `do <ticket>` costs no model call either. Read-only, in the strong sense:
+    a tracker that transitions, comments or assigns is a bug — an issue's state is the human's to move.
+    `service/TicketReader` routes it exactly as `ReviewReader` routes a host, including the no-fallback rule (a
+    tracker that CLAIMED the ref owns it; paying a model to retry the same read spends money invisibly and
+    hides the misconfiguration). The assistant keeps ONE thing no configured tracker can do: follow a URL into
+    a tracker jagt was never pointed at. Jira is read over the `v2` API on purpose — Cloud and Data Center both
+    serve it, and the three fields read here are identical in v2 and v3.
+  - `JsonHttp` (`…http`) is the transport BOTH of those read over, and it is not a seventh seam: it exists so a
+    host or a tracker is testable without a socket (every implementation's test drives a fake of it), and it
+    carries only the verbs a create-or-update needs.
   - The shared system-knowledge file is `AGENTS.md` (the cross-agent convention, `AgentRuntime
     .SYSTEM_KNOWLEDGE_FILE`); Claude reads `CLAUDE.md`, so its runtime symlinks `CLAUDE.md` → `AGENTS.md` —
     one file, never two copies to drift. A new agent = one `AgentRuntime` impl; a Linux port = new
@@ -326,16 +388,18 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   or re-create the task to pick up a changed allow-list.
 
 ## Master assistant (headless one-shot)
-- The backend has no tracker client, but `do <ticket>` needs the ticket read BEFORE a worktree/agent exists.
-  The review sweep also goes through here UNLESS a `CodeHost` is configured — with one, `ReviewReader` takes
-  the free REST path and this assistant is never spawned for that poll (the dominant per-task cost).
+- It is now the FALLBACK, not the path: `do <ticket>` needs the ticket read before a worktree/agent exists, and
+  `service/TicketReader` takes a configured `Tracker` first, `ReviewReader` a configured `CodeHost` first. With
+  both wired the only calls left are `resume` (the request's source branch — see the open question in TODO.md)
+  and the ⌘K palette. What the assistant keeps that no configured API has: it FOLLOWS A URL into a tracker jagt
+  was never pointed at, which is why it stays.
   `HeadlessClaudeAssistant` (`MasterAssistant`) spawns a one-shot
   `claude "<prompt>" -p --setting-sources user,project,local --json-schema '<schema>'` (stdin
   `/dev/null` via `ProcessRunner`). It hardcodes NO MCP server or path — `--setting-sources` makes the
   child inherit the human's OWN MCP (portable, OS-independent); `--json-schema` forces deterministic
   JSON. Runs from `java.io.tmpdir` so only user-level MCP loads (no jagt project MCP → fewer tokens).
   Project is resolved by intersecting the ticket's labels with each project's `labels`
-  (`MasterShell.projectsMatching`); the title is cached for the commit. Any failure → empty → `do`
+  (`TaskLauncher.projectsMatching`); the title is cached for the commit. Any failure → empty → `do`
   falls back to an explicit project. Headless `-p` does NOT auto-load plugin MCP without
   `--setting-sources` (verified: default `-p` sees zero Jira tools), and narrowing it to `project` is
   equally fatal — the call runs from the temp dir, where project scope alone resolves to ZERO MCP servers
@@ -414,6 +478,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   NAMED as uncovered rather than faked.
 - Unit tests: `cd orchestrator-backend && ./gradlew test`. EVERY fixed bug gets a regression unit test
   (sob-ai:unit-testing rules), verified RED by actually reverting the fix and running the test.
+- THE BOARD IS TESTED IN A BROWSER: `./gradlew boardTest` (source set `src/boardTest/java`, NOT in `check`)
+  boots the app on a random port and drives the real page in Playwright's own headless Chromium — the page's
+  logic (which phases get a column, which buttons a card offers, what a click POSTs, the SSE repaint, the ⌘K
+  palette's client-side verdict) runs nowhere else and was hand-checked until 2026-08-17. Three write paths are
+  `@MockitoBean`s because a real one would act on the developer's machine: `CommandService`, `TaskLauncher`,
+  `NaturalLanguageDispatch`. The browser is Playwright's, never the machine's, so a Mac and a runner drive the
+  same build; its shared libraries are in `scripts/linux-test-deps.sh` — the ONE list, not a second one.
+  Run it after ANY change to `static/`, and assert through the SERVER (seed `StateService`, stub a command),
+  never by evaluating JS in the page.
 - E2E matrix: `./gradlew e2eTest` (own source set `src/e2e/java`, NOT in `test`/`check` — it needs git + tmux
   and drives real worktrees, so the fast hermetic gate stays fast). It runs the flow once per `TaskFlowCase`
   with `orchestrator.agent=stub` (`StubAgentRuntime` — the ONE non-deterministic participant replaced; every
@@ -424,6 +497,13 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   a flow returns, and `./gradlew test` cannot see it: reword a message and CI is the first thing that notices,
   so run `e2eTest` before pushing one. Row 1 leaves the branch behind when it fails, so rows 2-4 then fail with
   "branch already exists" — fix the FIRST row and re-run before reading the rest as four bugs.
+  TWO matrices, on purpose: `TaskFlowCase` × `TaskFlowMatrixTest` is CREATE→TEARDOWN across the viewer
+  combinations, and `ReviewRoundCase` × `ReviewAndDeployFlowTest` is everything between — ship, a round, deploy,
+  revert, resume — on ONE combination, because a review round does not vary with how terminals are arranged.
+  There the verbs go through the board's own HTTP endpoints and the agent reports over `POST /mcp` with its
+  worktree header, so origins (`board` vs `mcp`) are asserted end to end and a surface cannot drift from the
+  core. Its two doubles are `FakeCodeHost` and `MasterAssistant` — the second only because reading a review
+  REQUEST (`resume`) has no host seam behind it, so the alternative to a double is a paid call.
 
 ## Code quality — the test is the litmus of the production code
 - A test is the embodiment of the main code's cleanliness. If a test needs ~5+ objects set up, or its
