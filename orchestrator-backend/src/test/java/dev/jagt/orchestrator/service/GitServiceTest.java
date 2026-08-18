@@ -372,6 +372,69 @@ class GitServiceTest {
                 List.of("git", "branch", "--show-current")).stdout().strip()).isEqualTo("ABC-1");
     }
 
+    /** The switch is jagt's, so undoing it is too: a creation that fails afterwards owes the checkout back. */
+    @Test
+    void putsTheCheckoutBackWhenTheWorktreeItWasFreedForCannotBeCut(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        GitService git = new GitService(runner);
+
+        // A FILE where the worktree's parent directory would go: git cannot create anything under it, and
+        // unlike a read-only directory that holds for root too — the container harness runs as one.
+        Path notADirectory = Files.writeString(dir.resolve("in-the-way"), "");
+
+        assertThatThrownBy(() -> git.createWorktree(repo, notADirectory.resolve("wt"), "ABC-1", "origin/main",
+                GitService.BranchStrategy.RESUME))
+                .isInstanceOf(RuntimeException.class);
+
+        assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "branch", "--show-current"))
+                .stdout().strip()).isEqualTo("ABC-1");
+    }
+
+    @Test
+    void leavesTheFilesOfTheFreedCheckoutExactlyAsTheyWere(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Files.writeString(repo.resolve("f.txt"), "the branch's own content");
+        runner.run(repo, Duration.ofSeconds(30), List.of("git", "add", "."));
+        runner.run(repo, Duration.ofSeconds(30), List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "on the branch only"));
+        GitService git = new GitService(runner);
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RESUME);
+
+        assertThat(repo.resolve("f.txt")).content().isEqualTo("the branch's own content");
+    }
+
+    /** Only what jagt detached is jagt's to move back: anything else is a checkout the human is standing in. */
+    @Test
+    void leavesARepositoryOnItsOwnBranchAloneWhenAskedToReattach(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
+        GitService git = new GitService(runner);
+
+        git.reattach(repo, "ABC-1");
+
+        assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "branch", "--show-current"))
+                .stdout().strip()).isEqualTo("main");
+    }
+
+    @Test
+    void putsTheCheckoutBackWhenRecreatingTheBranchLeavesTheWorktreeUncut(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Path notADirectory = Files.writeString(dir.resolve("in-the-way"), "");
+        GitService git = new GitService(runner);
+
+        assertThatThrownBy(() -> git.createWorktree(repo, notADirectory.resolve("wt"), "ABC-1", "origin/main",
+                GitService.BranchStrategy.RECREATE))
+                .isInstanceOf(RuntimeException.class);
+
+        assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "symbolic-ref", "-q", "HEAD"))
+                .exitCode()).as("the repository is on a branch, not left detached").isZero();
+    }
+
     @Test
     void refusesWhenAnotherWorktreeHoldsTheBranch(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();

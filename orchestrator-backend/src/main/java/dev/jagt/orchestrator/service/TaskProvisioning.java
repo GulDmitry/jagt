@@ -140,6 +140,12 @@ public class TaskProvisioning {
             String branchToDelete = strategy == GitService.BranchStrategy.RESUME ? null : request.taskId();
             cut.forEach(repo -> gitService.removeWorktree(repo.projectPath(), repo.worktreePath(),
                     branchToDelete));
+            // A resumed branch survives, so a repository jagt detached to free it can go back — and it must:
+            // the task does not exist afterwards, and nothing else would ever return that checkout. `reattach`
+            // decides per repository whether there is anything to undo; one that was never detached is left be.
+            if (branchToDelete == null) {
+                repos.forEach(repo -> gitService.reattach(repo.projectPath(), request.taskId()));
+            }
             throw e;
         }
     }

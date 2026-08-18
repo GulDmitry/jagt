@@ -59,10 +59,17 @@ public class GitService {
                             + " branchStrategy: 'recreate' (old work merged/obsolete -> delete branch, start fresh"
                             + " from " + base + ") or 'resume' (continue the existing branch and its commits).");
                     case RECREATE -> {
+                        // The restore guards everything that follows, not just the delete: a `worktree add`
+                        // that fails afterwards would otherwise leave the repository detached with the branch
+                        // it was on already gone.
                         Runnable restore = freeCheckout(projectPath, branch);
-                        run(restore, () -> processRunner.run(projectPath, GIT_TIMEOUT,
-                                        List.of("git", "branch", "-D", branch))
-                                .expectSuccess("git branch -D " + branch));
+                        run(restore, () -> {
+                            processRunner.run(projectPath, GIT_TIMEOUT,
+                                            List.of("git", "branch", "-D", branch))
+                                    .expectSuccess("git branch -D " + branch);
+                            cutFrom(projectPath, worktreePath, branch, base);
+                        });
+                        return;
                     }
                     case RESUME -> {
                         Runnable restore = freeCheckout(projectPath, branch);
@@ -76,10 +83,7 @@ public class GitService {
                     }
                 }
             }
-            processRunner.run(projectPath, GIT_TIMEOUT,
-                            List.of("git", "worktree", "add", "-b", branch, worktreePath.toString(), base))
-                    .expectSuccess("git worktree add " + worktreePath);
-            detachUpstream(projectPath, branch);
+            cutFrom(projectPath, worktreePath, branch, base);
         });
     }
 
@@ -93,11 +97,13 @@ public class GitService {
      * editor open on that directory sees no change, and a per-task base with no local branch is no obstacle.
      */
     private Runnable freeCheckout(Path projectPath, String branch) {
-        // An unpruned registration for a directory somebody deleted by hand would otherwise be reported as the
-        // checkout to go and free.
-        processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
         Optional<Path> checkout = checkoutOf(projectPath, branch);
-        if (checkout.isEmpty()) {
+        // A registration whose directory somebody deleted by hand holds nothing. Pruning is scoped to that
+        // discovery: an unconditional prune would also unregister a worktree whose mount happens to be away.
+        if (checkout.filter(Files::isDirectory).isEmpty()) {
+            if (checkout.isPresent()) {
+                processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
+            }
             return () -> { };
         }
         Path held = checkout.get();
@@ -123,18 +129,36 @@ public class GitService {
     }
 
     /**
-     * Puts a repository jagt detached back on {@code branch}, answering what stopped it or null when it worked.
-     * The caller decides what to do with that: creation unwinds further than one git call, and a human left on a
-     * detached HEAD they never chose has to be told.
+     * Puts a repository jagt detached back on {@code branch}, and answers what stopped it (null when it worked or
+     * when there was nothing to undo). Only a repository standing DETACHED AT THAT BRANCH'S TIP is touched: that
+     * is the state {@code freeCheckout} leaves, and anything else — a branch of its own, a bisect, a checkout the
+     * human moved since — is not jagt's to move.
      */
     public String reattach(Path repository, String branch) {
-        var switched = processRunner.run(repository, GIT_TIMEOUT, List.of("git", "switch", branch));
-        if (switched.exitCode() == 0) {
-            return null;
+        return withRepoLock(repository, () -> {
+            if (!detachedAt(repository, branch)) {
+                return null;
+            }
+            var switched = processRunner.run(repository, GIT_TIMEOUT, List.of("git", "switch", branch));
+            if (switched.exitCode() == 0) {
+                return null;
+            }
+            String why = switched.stderr().isBlank() ? switched.stdout().strip() : switched.stderr().strip();
+            log.warn("Could not put {} back on '{}': {}", repository, branch, why);
+            return why;
+        });
+    }
+
+    private boolean detachedAt(Path repository, String branch) {
+        if (processRunner.run(repository, GIT_TIMEOUT, List.of("git", "symbolic-ref", "-q", "HEAD"))
+                .exitCode() == 0) {
+            return false;                                        // on a branch: nothing jagt detached
         }
-        String why = switched.stderr().isBlank() ? switched.stdout().strip() : switched.stderr().strip();
-        log.warn("Could not put {} back on '{}': {}", repository, branch, why);
-        return why;
+        String head = processRunner.run(repository, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
+                .stdout().strip();
+        String tip = processRunner.run(repository, GIT_TIMEOUT, List.of("git", "rev-parse", branch))
+                .stdout().strip();
+        return !head.isBlank() && head.equals(tip);
     }
 
     /** Undoes the checkout jagt moved when the step it moved it FOR does not land. */
@@ -142,9 +166,21 @@ public class GitService {
         try {
             step.run();
         } catch (RuntimeException e) {
-            restoreOnFailure.run();
+            try {
+                restoreOnFailure.run();
+            } catch (RuntimeException restoreFailed) {
+                // The step's failure is the answer the human needs; a restore that also failed rides along.
+                e.addSuppressed(restoreFailed);
+            }
             throw e;
         }
+    }
+
+    private void cutFrom(Path projectPath, Path worktreePath, String branch, String base) {
+        processRunner.run(projectPath, GIT_TIMEOUT,
+                        List.of("git", "worktree", "add", "-b", branch, worktreePath.toString(), base))
+                .expectSuccess("git worktree add " + worktreePath);
+        detachUpstream(projectPath, branch);
     }
 
     /** Which worktree (the base repo included) has {@code branch} checked out, if any. */
