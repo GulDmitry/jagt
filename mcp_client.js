@@ -15,7 +15,9 @@
  */
 const readline = require('node:readline');
 
-const SERVER_URL = process.env.MCP_SERVER_URL || 'http://localhost:8290/mcp';
+// 127.0.0.1, not localhost: the server binds IPv4 loopback, and `localhost` resolves ::1 first on macOS —
+// which costs a refused connection per call, or every call on a Node without happy-eyeballs.
+const SERVER_URL = process.env.MCP_SERVER_URL || 'http://127.0.0.1:8290/mcp';
 const CWD = process.cwd();
 
 // A backend restart must not kill the session's MCP connection: agents tend to

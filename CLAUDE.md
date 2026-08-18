@@ -154,6 +154,10 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
 - Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at
   SHIPPING is therefore offered SHIP and the gate refuses at execution time if its agent is alive.
+- THE BOARD LISTENS ON LOOPBACK (`server.address: 127.0.0.1`), because it asks for no password and can deploy,
+  close a task, start an agent and — with the web terminal on — hand out a writable shell. Widening it is a
+  config line the human writes themselves, and ttyd was already bound this way; a board on 0.0.0.0 with no auth
+  was the asymmetry.
 - The board is vanilla HTML/CSS/JS under `src/main/resources/static` — NO build step, NO CDN, no external
   asset of any kind (it must work with the machine offline and stay inside the one jar).
 - NEITHER surface polls for state: `StateService.onChange` is the one event both use — `TaskEventStream`
@@ -167,11 +171,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   one already in force — INFO for work nobody watched, nothing for a button a human pressed — so an in-memory
   ring buffer or a jagt-owned log file would be a second answer to "what happened" AND would not survive the
   restart after which a human looks. It deliberately shows only work that named a task: `state.json` history
-  already carries the status transitions with who asked for them. The coupling to watch: `ui/ConsoleLogging`
-  tries to blank `logging.structured.format.file` for the console surfaces and currently FAILS to (its
-  `addLast` source loses to `application.yml`, verified 2026-08-18) — making that override work would leave the
-  file plain text and `activity` with nothing to parse. It answers "not structured JSON" rather than lying, but
-  the two settings are one decision.
+  already carries the status transitions with who asked for them. ONE RUN, ONE LOG: `ui/SessionLog` empties the
+  file and deletes the archives beside it before the appender opens it, so the report is this session's work and
+  nothing older — the owner's call (2026-08-18), and the reason nothing gzipped is read back. The file stays
+  structured on EVERY surface: `ConsoleLogging` used to try blanking `logging.structured.format.file` for the
+  console UIs, which would leave `activity` nothing to parse, and that dead override is gone.
 - Drafted review replies are a FILE, not state: `TaskViews` stats `review_replies.md` in the worktree and puts
   a boolean on the projection (presence, not a count — the agent's brief prescribes no per-comment marker, so
   a number would be a guess). Both surfaces announce it, because a human who does not know the convention

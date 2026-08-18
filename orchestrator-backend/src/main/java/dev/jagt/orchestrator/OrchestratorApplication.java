@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.ui.ConsoleLogging;
+import dev.jagt.orchestrator.ui.SessionLog;
 import dev.jagt.orchestrator.ui.StartupFailure;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -34,7 +35,7 @@ public class OrchestratorApplication {
      */
     static SpringApplication application() {
         SpringApplication application = new SpringApplication(OrchestratorApplication.class);
-        application.addListeners(new ConsoleLogging());
+        application.addListeners(new ConsoleLogging(), new SessionLog());
         return application;
     }
 }

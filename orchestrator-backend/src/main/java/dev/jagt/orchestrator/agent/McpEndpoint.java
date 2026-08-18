@@ -31,7 +31,7 @@ public class McpEndpoint {
     public McpEndpoint(
             // Derived from the running port by default, so moving the backend does not silently point every
             // agent at a port nothing listens on.
-            @Value("${orchestrator.mcp-url:http://localhost:${server.port:8290}/mcp}") String url) {
+            @Value("${orchestrator.mcp-url:http://127.0.0.1:${server.port:8290}/mcp}") String url) {
         this.url = url;
     }
 

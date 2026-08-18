@@ -93,15 +93,28 @@ final class E2eWorkspace {
                 """.formatted(configured, TMUX_SESSION, viewMode, autoReview));
     }
 
+    /** The deploy branch back where {@link #createRepositoryWithOrigin} left it: a copy of main, nothing merged. */
+    static void resetDeployBranch(Path repo) {
+        gitQuietly(repo, "push", "--force", "origin", "origin/main:refs/heads/dev");
+    }
+
+    /** A commit on the shared branch that no task made, so the next deploy of that file has to conflict. */
+    static void commitOnDeployBranch(Path repo, String file, String content) throws Exception {
+        git(repo, "fetch", "origin");
+        git(repo, "checkout", "-B", "e2e-deploy-side", "origin/dev");
+        Files.writeString(repo.resolve(file), content);
+        git(repo, "add", file);
+        git(repo, "commit", "-m", "Someone else changed " + file);
+        git(repo, "push", "origin", "e2e-deploy-side:dev");
+        git(repo, "checkout", "main");
+    }
+
     /**
      * Unregisters a task's branches everywhere a run could have left them — including the origin, since the
      * next case pushes the same name and an unrelated history is refused, not forced. A deploy that conflicted
      * KEEPS its worktree on purpose, and a case that failed mid-deploy would hand that half-state to the next
      * one, so those go too. Best-effort: a case that failed early may hold nothing, and a cleanup failure must
-     * not mask the real one.
-     *
-     * <p>What it does NOT undo is the deploy branch itself: a merge and its revert stay on it, so a second
-     * deploying case needs a repository of its own rather than this teardown.
+     * not mask the real one. The deploy branch is a separate call ({@link #resetDeployBranch}).
      */
     static void forgetTask(Path repo, Path worktree, String branch) {
         gitQuietly(repo, "worktree", "remove", "--force", worktree.toString());

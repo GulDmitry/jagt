@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
 import dev.jagt.orchestrator.platform.TerminalDriver;
 import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.service.GitService;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -60,10 +61,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
  * that one covers creation and teardown across the viewer combinations, this one everything in between on a
  * single combination — a review round does not vary with how terminals are arranged.
  *
- * <p>Named rather than covered here, so the gap is not read as coverage: the conflicted deploy — its half-state
- * and the finish-after-resolve path. What is delicate there is which git exit code means a conflict at all, and
- * that is asserted against real conflicting commits in {@code GitServiceTest}, which needs no task, no worktree
- * and no host to do it.
+ * <p>The conflicted deploy is covered here too — the half-state sentence and the finish-after-resolve push —
+ * because only a real merge produces them. Which git exit code means a conflict AT ALL stays in
+ * {@code GitServiceTest}, which needs no task, no worktree and no host to assert it.
  */
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -139,6 +139,10 @@ class ReviewAndDeployFlowTest {
         stateService.removeTask(TASK);
         E2eWorkspace.forgetTask(repo(), worktree(), TASK);
         E2eWorkspace.forgetTask(webRepo(), webWorktree(), TASK);
+        // The deploy branch too: a flow that landed (or conflicted on) a change leaves it there, and the next
+        // flow's own deploy would then be merging into someone else's history.
+        E2eWorkspace.resetDeployBranch(repo());
+        E2eWorkspace.resetDeployBranch(webRepo());
         E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
     }
 
@@ -210,6 +214,46 @@ class ReviewAndDeployFlowTest {
         assertThat(worktree()).doesNotExist();
         assertThat(stateService.task(TASK)).isEmpty();
         assertThat(E2eWorkspace.git(repo(), "branch", "--list", TASK)).contains(TASK);
+    }
+
+    /**
+     * The half-state, which only a real merge can produce: the first repository is pushed to the shared branch
+     * and the second conflicts, so the sentence has to name BOTH sides and a second `deploy` must finish the one
+     * that is waiting without touching the one already live.
+     */
+    @Test
+    void stopsAtTheRepositoryThatConflictsAndFinishesItOnTheNextDeploy() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), new LinkedHashMap<>(Map.of(
+                "proj", repo(), "web", webRepo())), "shared", false);
+
+        provisioning.initializeTask(NewTask.builder(TASK, "proj").alsoIn(List.of("web"))
+                .instructions("Move both sides of the contract").title(TITLE).build());
+        Files.writeString(worktree().resolve("widget.txt"), "api side\n");
+        Files.writeString(webWorktree().resolve("widget.txt"), "web side\n");
+        agentReports("REVIEW_PENDING", "both sides done");
+        act("ship");
+        host.answers(new ReviewFacts(true, true, "success", List.of()));
+        act("sweep");
+        E2eWorkspace.commitOnDeployBranch(webRepo(), "widget.txt", "someone else's line\n");
+
+        String conflicted = act("deploy");
+
+        assertThat(conflicted).contains("CONFLICT merging web into dev",
+                "Live on the deploy branch: proj", "NOT deployed: web");
+        assertThat(task().status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", "dev"))
+                .contains("Merge branch '" + TASK + "' into dev");
+        assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
+                .doesNotContain("Merge branch '" + TASK + "' into dev");
+
+        Path resolveIn = GitService.deployWorktreePath(webRepo(), TASK);
+        Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
+        E2eWorkspace.git(resolveIn, "add", "widget.txt");
+
+        assertThat(act("deploy")).contains("DEPLOYED");
+        assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
+                .contains("Merge branch '" + TASK + "' into dev");
+        assertThat(task().status()).isEqualTo(TaskStatus.DEPLOYED);
     }
 
     @Test

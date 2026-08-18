@@ -1,6 +1,9 @@
 server:
   # Change this and mcp_client.js needs MCP_SERVER_URL to match.
   port: 8290
+  # Loopback: the board needs no password to deploy, close a task or start an agent, and the embedded terminal
+  # is a shell. Set 0.0.0.0 only if you accept that everyone who can reach the port can do all of it.
+  address: 127.0.0.1
 
 spring:
   application:

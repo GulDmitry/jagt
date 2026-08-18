@@ -30,6 +30,26 @@ maintain a per-install server list — DEFERRED until then.
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
 themselves are in CLAUDE.md.
 
+### Three answers from a backlog refinement — 2026-08-18
+The backlog had nothing buildable left, so the questions came out of the code instead. Four asked, three acted on
+(a second `Tracker` implementation was declined for now — the seam reads three fields of one ticket, so the risk
+of it being wrong is small).
+
+- **The board listens on loopback.** It was on every interface with no authentication, while ttyd — the thing
+  CLAUDE.md already argues about — was bound to `127.0.0.1`. A board that can deploy, close a task and start an
+  agent is the bigger surface of the two, so `server.address: 127.0.0.1` is the default and widening it is a line
+  the human writes.
+- **One run, one log.** `activity` reads the log back, and the owner's call was that older runs are noise: no
+  archives, nothing gzipped, a new session starts a new record. `ui/SessionLog` empties the file and deletes the
+  archives beside it in the same gap `ConsoleLogging` uses, before the appender opens it. That also killed a dead
+  override: `ConsoleLogging` tried to blank the structured format for the console surfaces, which — had it ever
+  worked — would have left `activity` nothing to parse.
+- **The multi-repo half-state is asserted end to end.** Unit tests had the branching, but the sentence that tells
+  a human which repository is live and which is not was only checked against mocks. The e2e case pushes a
+  conflicting commit to one repository's deploy branch, deploys, and reads the sentence back — then resolves in
+  the deploy worktree and deploys again to prove the second run finishes the waiting repository without touching
+  the live one. It also exposed a harness gap: flows shared the deploy branch, so one is reset after each.
+
 ### Ctrl-C on the backend closed every IDE window — 2026-08-18
 Reported as "maybe I imagined it", and it was real. `runDetached` was detached in name only: a child stays in
 jagt's process group, the terminal sends SIGINT to the whole group, IntelliJ treats SIGINT as a graceful

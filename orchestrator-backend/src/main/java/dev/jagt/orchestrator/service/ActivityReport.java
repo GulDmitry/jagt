@@ -21,8 +21,9 @@ import java.util.stream.Stream;
 /**
  * What jagt did with nobody watching, read back from the log it already writes: the auto-review poll firing,
  * what a sweep found, every instruction relayed into a worktree, every status an agent reported for itself.
- * There is no second store on purpose — a log line and a copy of it in memory are two answers to one question,
- * and the file survives the restart after which a human actually wants to look.
+ * There is no second store on purpose: a log line and a copy of it in memory are two answers to one question.
+ * The file itself is this run's only ({@code ui/SessionLog} clears it at startup), so what this shows is always
+ * the session the human is looking at.
  *
  * <p>Only entries that name a task are kept. A line without one is jagt talking about itself (a port, a
  * scheduler tick), and the value of this view is the work that changed NO status — which {@code state.json}
