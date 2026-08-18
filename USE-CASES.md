@@ -39,6 +39,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | You want the board from a second machine | `--server.address=0.0.0.0` | Refused by default, and deliberately: the board needs no password to deploy, close a task or start an agent. Widen the bind only on a network you trust, and remember the embedded terminal is a shell (`web-terminal.bind` decides that one separately). |
 | Panel open on one task, Focus pressed on another | Focus | The panel follows: in viewMode `shared` every task is a window of ONE session, and a session has one current window — for the embedded view and the native viewer alike. |
 | ttyd not installed, or its port taken | — | Focus still selects the window; the panel simply does not open, and the log carries ttyd's own exit code. |
+| A task at SHIPPING | — | The status and the move line are the whole answer; the detail line stays empty. A third wording of "the agent is pushing" told nobody anything. |
 | The backend restarts while an agent session is live (HTTP transport) | — | Nothing to do: the next tool call reaches the new process. A call made while it was down answers "Unable to connect", and the one after the restart succeeds — a failed call does not retire the server for the session. |
 
 ## Review requests

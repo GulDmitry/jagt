@@ -19,7 +19,6 @@ public final class DashboardLine {
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "checks failed");
             case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict — resolve in the deploy worktree");
-            case SHIPPING -> "SHIPPING: agent committing & pushing… (focus to watch)";
             case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED ->
                     orDefault(task.mrUrl(), "review request link missing");
             // A question OUTRANKS the request link: a review round can end with the agent asking instead of
@@ -34,7 +33,7 @@ public final class DashboardLine {
                 case PLAIN -> hasMr(task) ? task.mrUrl() : "";
             };
             case NEW, IN_PROGRESS -> awaiting ? needsInput(message) : "";
-            case DONE -> "";
+            case SHIPPING, DONE -> "";
         };
     }
 

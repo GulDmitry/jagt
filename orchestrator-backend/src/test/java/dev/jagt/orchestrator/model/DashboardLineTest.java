@@ -62,10 +62,10 @@ class DashboardLineTest {
     }
 
     @Test
-    void showsShippingWhileTheAgentPushes() {
+    void addsNoDetailWhileTheAgentPushes() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.SHIPPING).message("shipping").alias("a1").title("title").build();
 
-        assertThat(DashboardLine.forTask("ABC-1", task)).startsWith("SHIPPING");
+        assertThat(DashboardLine.forTask("ABC-1", task)).isEmpty();
     }
 
     @Test
