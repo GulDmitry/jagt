@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 class WorktreeOrphanScannerTest {
 
     @Test
-    void reportsALeftoverWorktreeAndTheSecretsStillSittingInIt(@TempDir Path root) throws IOException {
+    void findsALeftoverWorktreeAndCountsTheSecretsStillSittingInIt(@TempDir Path root) throws IOException {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path orphan = Files.createDirectories(root.resolve("ABC-40-demo"));
         Files.createDirectories(orphan.resolve("app"));
@@ -41,7 +41,6 @@ class WorktreeOrphanScannerTest {
             assertThat(found.projectKey()).isEqualTo("demo");
             assertThat(found.secretFiles()).isEqualTo(2);
         });
-        assertThat(scanner.report()).contains("ABC-40-demo", "2 copied secret file(s)", "never deletes");
     }
 
     @Test
@@ -68,7 +67,7 @@ class WorktreeOrphanScannerTest {
     }
 
     @Test
-    void leavesTheWorktreeOfALiveTaskAloneAndSaysSoWhenThereIsNothingToReport(@TempDir Path root)
+    void leavesTheWorktreeOfALiveTaskAlone(@TempDir Path root)
             throws IOException {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
@@ -76,7 +75,6 @@ class WorktreeOrphanScannerTest {
                 Map.of("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build()));
 
         assertThat(scanner.scan()).isEmpty();
-        assertThat(scanner.report()).contains("no orphaned worktrees");
     }
 
     @Test

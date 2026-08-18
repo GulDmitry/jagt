@@ -25,12 +25,20 @@ import static org.mockito.Mockito.when;
  */
 class GrammarDispatchTest {
 
+    private final StateViews views = mock(StateViews.class);
     private final ConfigService config = mock(ConfigService.class);
     private final TaskLauncher launcher = mock(TaskLauncher.class);
     private final CommandService commands = mock(CommandService.class);
     private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
-    private final GrammarDispatch grammar = new GrammarDispatch(mock(StateViews.class),
-            commands, launcher, naturalLanguage, config);
+    private final GrammarDispatch grammar = new GrammarDispatch(views, commands, launcher, naturalLanguage,
+            config);
+
+    @Test
+    void answersTheActivityVerbFromTheSameViewTheBoardServes() {
+        when(views.activity()).thenReturn("what jagt did on its own — newest first");
+
+        assertThat(grammar.run("activity")).contains("what jagt did on its own");
+    }
 
     @Test
     void runsTheSweepForTheVerbItWasRenamedFrom() {

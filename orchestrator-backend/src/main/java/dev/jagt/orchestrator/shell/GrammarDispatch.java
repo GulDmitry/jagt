@@ -49,6 +49,7 @@ public class GrammarDispatch {
             return switch (tok.get(0).toLowerCase(Locale.ROOT)) {
                 case "status" -> "";
                 case "stats" -> views.stats();
+                case "activity" -> views.activity();
                 case "help" -> CommandReference.text();
                 case "do" -> launcher.launch(parseDoArgs(tok));
                 case "resume" -> resume(tok);

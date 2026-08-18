@@ -17,7 +17,7 @@ public final class CommandReference {
     /** Most-used first; a verb missing here sorts to the end rather than being dropped. */
     private static final java.util.List<String> BY_USE = java.util.List.of(
             "sweep", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
-            "revert", "done", "help");
+            "revert", "done", "activity", "help");
 
     private CommandReference() {
     }
@@ -33,6 +33,8 @@ public final class CommandReference {
                 java.util.List.of()));
         verbs.add(new Verb("stats", "what jagt's own model calls cost, and where each task's time went", false,
                 java.util.List.of()));
+        verbs.add(new Verb("activity", "what jagt did on its own, newest first", false,
+                java.util.List.of()));
         verbs.add(new Verb("help", "this command reference", false, java.util.List.of()));
         verbs.sort(java.util.Comparator.comparingInt(verb -> {
             int rank = BY_USE.indexOf(verb.id());
@@ -46,6 +48,7 @@ public final class CommandReference {
                 "commands (task = ticket id or alias):",
                 "  status                       show the dashboard",
                 "  stats                        model spend per task, and where each task's time went",
+                "  activity                     what jagt did unattended (polls, relays, agent reports)",
                 "  do <ticket> [project] [plan] spin up a sub-agent in a worktree",
                 "    … [proj1,proj2]            one session, a worktree in EACH: work that spans repositories",
                 "    … [from <branch>]          cut the worktree from <branch> and target its request at it",

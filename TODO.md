@@ -5,75 +5,9 @@ compact record of what shipped — kept only where the DECISION is worth re-read
 CLAUDE.md, not here; if an entry below has hardened into a rule, it belongs there instead.
 
 There is no numbered roadmap any more (reviewed 2026-08-18): every step it carried has shipped, the last being
-`review` → `sweep`. What is left is four items whose DECISION is made and whose plan is written down, plus two
-questions deliberately deferred, each naming the trigger that would reopen it. Nothing here is vague on purpose:
-an entry that cannot say how to do it does not belong.
-
-## Decided, not built — each carries the plan for building it
-
-### Multi-repo `deploy`/`revert`: land in order, stop at the first conflict
-The last unbuilt part of one-session-many-repositories; everything else shipped (see the record). `deploy` and
-`revert` refuse a multi-repo task today. The decision (owner's, 2026-08-18) is the honest half-state, NOT a dry
-run: merge and push repository by repository, and the moment one conflicts, stop and hand the task back naming
-exactly what landed and what did not. A dry run was rejected because it is not atomic either — a shared branch
-can move between the check and the push — so it would buy rarity, not a guarantee, at the price of a second
-merge of everything.
-
-How to build it:
-- `DeployService` iterates `TaskState.repos()` in list order (`repos.get(0)` first, so the order a human sees on
-  the card is the order the branches land in), records each repository's merge commit as it succeeds, and stops
-  at the first `MergeConflictException` without touching the rest.
-- The task goes to DEPLOY_CONFLICT with a message naming BOTH sides: which repositories are live on the deploy
-  branch and which are not. That message is the only place a human learns the task is half deployed, so it must
-  never be abbreviated to "conflict".
-- `revert` follows the same rule from the other end: it reverts the merge commits that EXIST, in reverse order,
-  and refuses per repository exactly as it already does when a commit is missing or already reverted — a
-  repository that never landed is not an error, it is nothing to undo.
-- The gate stays: a repository with no recorded merge commit is never guessed at, and `deployBranch` ==
-  `baseBranch` still refuses first.
-- Coverage is a ROW in `ReviewRoundCase`-style data, not a new test class: a two-repository task where the
-  second merge conflicts, asserting the sentence names both repositories and that the first stayed pushed.
-
-### Orphan worktrees belong in the log, not on the board — DECIDED 2026-08-18
-The owner's call: the board is dense and a directory nobody owns is housekeeping, not something a human acts on
-mid-flight. Scope, decided: drop the `Orphans` button and its `<dialog>`, drop `GET /orphans`, drop the console
-verb — all three, so neither surface keeps a capability the other lost. `WorktreeOrphanScanner` keeps doing
-exactly what it does today (LOOK, never delete, because an orphan can hold uncommitted work) and reports at WARN
-with the count of copied secret files per directory. The startup desktop notification STAYS: whoever never opens
-the log is the person that ping is for. Its listener must keep catching everything — a diagnostic that throws
-during `ApplicationReadyEvent` would stop the backend from starting.
-
-### The diff tool is already its own config — but its default is an absolute macOS path
-Raised 2026-08-18, and half of it needs no work: `ide <task> diff` does NOT have to use the IDE. It runs
-`orchestrator.editor-diff-command` (a separate list from `orchestrator.editor-command`, README documents both),
-two paths appended, so pointing it at any difftool — `difft`, `meld`, `code --diff` — is a config line today.
-What IS wrong is the DEFAULT: `application.yml` ships
-`["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea", "diff"]`, and `editor-command` the same absolute path.
-That contradicts the rule the rest of jagt follows — an external binary is configured by BARE NAME and resolved
-by `platform/Executables` (PATH first, then the known install dirs), which is exactly why `tmux-command` stopped
-defaulting to `/opt/homebrew/bin/tmux`. So: default both to `idea` (plus `diff`), resolve them through
-`Executables` the way the terminal binary is, and keep the absolute path as the commented example for whoever
-has no `idea` launcher on PATH. Worth checking while there: whether a missing launcher fails with a sentence
-naming the config key, since `ide` is allowed to throw at the human.
-
-### An activity log of what jagt did on its own — DECIDED 2026-08-18: read the tail of the log it already writes
-With `autoReview` polling on a timer the system acts while nobody is looking, and the only trace today is a
-terminal nobody is watching. Decided: NO new store. jagt already logs exactly this and only this — INFO for
-hidden work, nothing for a button a human pressed (see the record) — as structured ECS JSON to
-`logging.file.name` (default `jagt-backend.log`). The feature is a READER of that file.
-
-How to build it:
-- read the LAST N lines of the configured log file, newest first, and keep only the events that name a task
-  (the structured fields are already there: `task`, `alias`, `status`, `outcome`); a poll that found nothing is
-  one line and must stay one line.
-- no file configured, or unreadable? Say that in the dialog. Inventing an in-memory copy would be a second
-  answer to "what happened", which is the thing this decision avoids.
-- surface it on BOTH: a `<dialog>` like the other reports on the board, and a verb in the console — a report
-  that exists in one surface only is the bug parity exists to catch.
-- it must not restate what `state.json` history already carries (status transitions with who asked). If an entry
-  would only repeat a transition, drop it: the log's value is the work that changed NO status.
-- the reader is one small class with the file as its only input, so its test writes a few lines and asserts what
-  comes back — no scheduler, no state.
+`review` → `sweep`. Nothing is decided-but-unbuilt right now — what is left is two questions deliberately
+deferred, each naming the trigger that would reopen it. Nothing here is vague on purpose: an entry that cannot
+say how to do it does not belong.
 
 ## Open questions — both DEFERRED, with the trigger that would reopen them
 
@@ -95,6 +29,60 @@ maintain a per-install server list — DEFERRED until then.
 
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
 themselves are in CLAUDE.md.
+
+### Multi-repo `deploy`/`revert` — land in order, stop at the first conflict — 2026-08-18
+
+The refusal is gone: `deploy` merges and pushes repository by repository in the order the task holds them,
+recording each merge commit as it lands, and stops at the first conflict. A dry run was rejected before any of it
+was written — a shared branch can move between the check and the push, so it would have bought rarity rather than
+a guarantee, at the price of merging everything twice.
+
+The three findings worth keeping, each one a thing the plan did not say:
+- **Sibling repositories DERIVE THE SAME deploy worktree path** (`<taskId>-deploy`, next to the repository), so
+  the directory a conflict leaves behind cannot say whose conflict it is. Resuming asks git which repository cut
+  it (`GitService.deployWorktreeOwner`). Naming the path per project instead would have been the obvious fix and
+  the wrong one: `WorktreeOrphanScanner` and the editor's dead-entry sweep both know that name.
+- **A recorded merge commit cannot mean "already landed".** It outlives the round that made it, so a task
+  shipped and deployed a second time carries stale commits in every repository — resuming from "the first one
+  without a commit" would have skipped the whole task.
+- **`revert` FORGETS each merge commit as it takes it out**, walking backwards. That is what makes a half-failed
+  revert repeatable instead of a second guess: the repeat sees only what is still live, and REVERTED waits until
+  everything that landed is out.
+
+The single-repository sentences are unchanged to the byte, which is what the e2e flow asserts; the multi-repo
+ones name every repository, and the conflict names BOTH sides — live on the deploy branch, and not deployed.
+
+### The editor launcher is a bare name now — 2026-08-18
+
+`editor-command` and `editor-diff-command` shipped an absolute `/Applications/IntelliJ IDEA.app/…` path, against
+the rule the rest of jagt follows since `tmux-command` stopped defaulting to a Homebrew prefix. Both default to
+`idea` (plus `diff`) and resolve through `Executables`; the absolute path stays as the commented example.
+
+Two things the fix needed beyond the default: only the LAUNCHER of a command list is resolved — an argument is
+not a binary — and a launcher nowhere to be found now fails with the config KEY to set, since the alternative is
+a spawn error naming a binary the human never typed. What needed no work at all: `ide <task> diff` was already
+pointable at any difftool, `[difft]` or `[code, --diff]`, and always had been.
+
+### Orphans went to the log, and the log came back as a report — 2026-08-18
+
+Two changes that are one idea: the thing a human does not act on mid-flight left the board, and the thing they
+DO want after an unattended hour arrived — read out of the log jagt already writes rather than out of a new
+store.
+
+- **Orphan worktrees are log-only now.** The board button, its dialog, `GET /orphans` and
+  `StateViews.orphanedWorktrees` are gone (all of them at once — half a removal is exactly the console-only
+  capability parity forbids), and `WorktreeOrphanScanner` WARNs one line per directory with its copied-secret
+  count. The startup desktop ping stays: it is for whoever never opens the log. Nothing about the scan changed —
+  it still only LOOKS, because an orphan can hold uncommitted work.
+- **`activity` is a READER, not a recorder.** `ActivityReport` tails `logging.file.name`, parses the ECS lines
+  and keeps the ones carrying a `task` key-value, newest first. Three things it answers instead of showing an
+  empty list, because each is a different mistake: no log file configured, a log that is not structured JSON
+  (so the fields cannot be read back), and a tail with no task in it at all.
+- What made this cheap is a convention that already existed: INFO for work nobody watched, nothing for a button
+  a human pressed. Had jagt logged the human's commands too, the report would have been a duplicate of
+  `state.json` history rather than the half history cannot show.
+- The alternatives were considered and rejected: an in-memory ring buffer loses exactly the overnight trail
+  someone opens this for, and a jagt-owned second file is a second answer to "what happened".
 
 ### The board's transport is SSE, and the host poll stays a poll — 2026-08-18
 Asked whether long polling should become something modern, and the premise needed correcting first: the board
@@ -195,9 +183,9 @@ The decisions worth keeping, each because the obvious alternative is worse:
   same class of bug as a truncated link — and a status per repository would be a second state machine.
 - **A ship is all-or-nothing about the host.** With one repository unhosted the whole task falls back to the
   prose relay: half pushed by jagt and half asked of the agent is a state neither of them can describe.
-- **`deploy`/`revert` REFUSE a multi-repo task** instead of looping. A shared branch cannot be written half way,
-  and what to do when the second merge conflicts after the first is pushed is a decision nobody has made yet —
-  so the refusal names the repositories and hands it back.
+- **`deploy`/`revert` REFUSED a multi-repo task at first**, because what to do when the second merge conflicts
+  after the first is pushed was a decision nobody had made. It was made later the same week — land in order, stop
+  at the first conflict, name both sides — and the refusal went with it (see the entry above).
 - **The projection grew a list, not a second shape.** `TaskView.repos` always has an entry, so a surface renders
   one card for one repository or three, and the single-repo card looks exactly as it did.
 - A creation that fails part way unwinds every worktree it had already cut: a half-created task burns its id, and

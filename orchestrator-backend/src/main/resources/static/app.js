@@ -438,6 +438,10 @@ async function runParsed(parsed) {
   }
   if (verb.id === 'help') { showReport('help — command reference', await text('/api/help')); return 'help'; }
   if (verb.id === 'stats') { showReport('stats — spend and cycle time', await text('/api/stats')); return 'stats'; }
+  if (verb.id === 'activity') {
+    showReport('activity — what jagt did on its own', await text('/api/activity'));
+    return 'activity';
+  }
   if (verb.id === 'do') {
     if (!argument) { document.getElementById('ref').focus(); return 'do'; }
     const result = await api('/api/tasks', {
@@ -522,7 +526,7 @@ const report = document.getElementById('report');
 const reportTitle = document.getElementById('report-title');
 const reportBody = document.getElementById('report-body');
 
-// One dialog for every plain-text answer the backend gives (help, stats, orphans). A native <dialog>
+// One dialog for every plain-text answer the backend gives (help, stats, activity). A native <dialog>
 // costs nothing, dims the board itself, closes on Escape, and — unlike a new tab — cannot be lost behind the
 // window you were already reading.
 function showReport(title, text) {
@@ -602,8 +606,8 @@ resumeForm.onsubmit = async (event) => {
 
 document.getElementById('show-stats').onclick = () => openReport('stats — spend and cycle time', '/api/stats');
 document.getElementById('show-help').onclick = () => openReport('help — command reference', '/api/help');
-// The orphan report is the same plain text /orphans has always served; it just no longer costs you a tab.
-document.getElementById('show-orphans').onclick = () => openReport('orphaned worktrees', '/orphans');
+document.getElementById('show-activity').onclick =
+  () => openReport('activity — what jagt did on its own', '/api/activity');
 
 async function openReport(title, path) {
   try {

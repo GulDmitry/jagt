@@ -18,7 +18,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * The symptom this exists for: `./gradlew build` rewrites the jar in place, so a running jagt keeps reading a
- * file that changed, and every class loaded afterwards fails — /status, /stats and /orphans answer 500 while
+ * file that changed, and every class loaded afterwards fails — /status and /stats answer 500 while
  * the board still renders. Twice that looked like a bug in those endpoints.
  */
 class RunningJarWatchTest {

@@ -30,7 +30,7 @@ public class WebOperatorUi implements OperatorUi {
         // and with the board as the default surface that left a human staring at an empty terminal with no
         // banner, no address and no sign of life. This is the one thing that has to reach the console.
         System.out.println("jagt board → http://localhost:" + port
-                + "   (plain text: /status /stats /orphans · console UI: --orchestrator.ui=tui · Ctrl-C stops)");
+                + "   (plain text: /status /stats · console UI: --orchestrator.ui=tui · Ctrl-C stops)");
         log.info("Board serving on http://localhost:{}", port);
     }
 

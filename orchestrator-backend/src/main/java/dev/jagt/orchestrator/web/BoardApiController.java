@@ -54,6 +54,12 @@ public class BoardApiController {
         return CommandReference.verbs();
     }
 
+    /** What jagt did with nobody watching — the same text the console prints for `activity`. */
+    @GetMapping(value = "/activity", produces = MediaType.TEXT_PLAIN_VALUE)
+    public String activity() {
+        return views.activity();
+    }
+
     /** The command grammar — the same text the console prints for `help` (see {@link CommandReference}). */
     @GetMapping(value = "/help", produces = MediaType.TEXT_PLAIN_VALUE)
     public String help() {

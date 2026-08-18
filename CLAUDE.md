@@ -92,7 +92,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   - PARITY IS AN INVARIANT, not an aspiration: a capability that exists in ONE surface only is a bug. Per-task
     verbs come from `Move.actions()`, so a new action appears on both at once; everything else needs an explicit
     counterpart, and the ones that were console-only were exactly the ones nobody noticed missing (`resume`,
-    `stats`, `help`, `orphans` — all added 2026-08-13). Shared text lives in `service/CommandReference`
+    `stats`, `help` — added 2026-08-13; `activity` in 2026-08-18). Shared text lives in `service/CommandReference`
     (the grammar) and `StateViews` (dashboard + stats), so neither surface renders its own version. The reports
     open in a `<dialog>` over the board, never a new page. ONE deliberate exception to parity: `quit` is
     console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill), not to a browser
@@ -161,6 +161,17 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   to the UI thread; the listener runs on whichever thread served the agent's MCP call — never paint from
   there). The SSE event carries no payload on purpose: a payload would be a second serialization that could
   disagree with `/api/tasks`. The periodic tick survives in both only for the relative "ACTIVE" clock.
+- WHAT JAGT DID UNATTENDED IS READ BACK FROM ITS OWN LOG, never from a second store: `service/ActivityReport`
+  tails `logging.file.name` (structured ECS JSON), keeps the entries that carry a `task` key-value and renders
+  them newest first for the `activity` verb and the board's Activity dialog. The convention it depends on is the
+  one already in force — INFO for work nobody watched, nothing for a button a human pressed — so an in-memory
+  ring buffer or a jagt-owned log file would be a second answer to "what happened" AND would not survive the
+  restart after which a human looks. It deliberately shows only work that named a task: `state.json` history
+  already carries the status transitions with who asked for them. The coupling to watch: `ui/ConsoleLogging`
+  tries to blank `logging.structured.format.file` for the console surfaces and currently FAILS to (its
+  `addLast` source loses to `application.yml`, verified 2026-08-18) — making that override work would leave the
+  file plain text and `activity` with nothing to parse. It answers "not structured JSON" rather than lying, but
+  the two settings are one decision.
 - Drafted review replies are a FILE, not state: `TaskViews` stats `review_replies.md` in the worktree and puts
   a boolean on the projection (presence, not a count — the agent's brief prescribes no per-comment marker, so
   a number would be a guess). Both surfaces announce it, because a human who does not know the convention
@@ -247,9 +258,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     only the session's request would let a green half advance the whole task.
   - `ship` is all-or-nothing about hosting: one repository without a `CodeHost` sends the WHOLE task down the
     prose relay, because half pushed by jagt and half asked of the agent is a state nobody can describe.
-  - `deploy`/`revert` REFUSE a multi-repo task by name. A shared branch cannot be written half way, and nothing
-    has decided what "deployed" means when the second merge conflicts after the first is pushed. Do not turn the
-    refusal into a loop without answering that first.
+  - `deploy` LANDS IN ORDER AND STOPS AT THE FIRST CONFLICT, and the sentence names BOTH sides — what is live on
+    the deploy branch and what is not. A shared branch cannot be written atomically whatever jagt does (it can
+    move between a check and a push), so the honest half-state beats a dry run that only makes the same failure
+    rarer at twice the merges. Every `deployTarget` is validated before the FIRST push. Repeating the verb
+    resumes at the repository the conflict left a deploy worktree for — asked of git
+    (`GitService.deployWorktreeOwner`), because sibling repositories DERIVE THE SAME deploy worktree path and a
+    recorded merge commit outlives the round that made it. `revert` walks back the other way: reverse order, only
+    the repositories that have a merge commit, each one FORGETTING it as it comes out, so a repeat touches only
+    what is still live — and REVERTED is set only when everything that landed is out.
 - The MCP transport must never emit non-JSON-RPC bytes: malformed JSON → `-32700` from the controller,
   HTTP errors → synthesized JSON-RPC error in `mcp_client.js` (never forward Spring error pages).
   The proxy retries ONLY `ECONNREFUSED` (request never sent) — other failures may have executed a
@@ -260,8 +277,10 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   no usable backup it THROWS: starting with an empty task list over an existing state file would destroy the
   human's data on the next write. Never make that path "fail soft".
 - `WorktreeOrphanScanner` only ever LOOKS: worktree directories no task owns can hold uncommitted work AND
-  copies of secrets (`worktree.copyGlobs`), so it reports them (startup ping + `GET /orphans`) and deletes
-  nothing. Its startup listener catches everything — an `ApplicationReadyEvent` listener that throws fails the
+  copies of secrets (`worktree.copyGlobs`), so it WARNs one line each at startup, plus one desktop ping, and
+  deletes nothing. NO surface offers it — the board dialog and `GET /orphans` were removed on the owner's
+  instruction (2026-08-18), and the console never had a verb for it: housekeeping is not something a human acts
+  on mid-flight, and the board is dense enough. Do not add either back. Its startup listener catches everything — an `ApplicationReadyEvent` listener that throws fails the
   whole boot, and a diagnostic must never be able to stop the backend from starting.
 - Every MCP tool call from a registered worktree bumps `lastActiveTimestamp` (Watchdog keep-alive).
 - Tomcat's "Error setting socket options" (`SocketException` at `setSoLinger`) is a connection the peer aborted
@@ -474,6 +493,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   process has neither prefix on PATH). `tmux-command` used to default to `/opt/homebrew/bin/tmux`, which made
   every task on Linux fail at "Failed to start command"; the agent CLI is deliberately NOT resolved (it runs
   inside the agent's tmux window under the human's own PATH, and the string is what they read on screen).
+  `editor-command`/`editor-diff-command` are LISTS, so only the launcher is resolved and the arguments stay the
+  human's; a launcher nowhere to be found fails with the config KEY to set, not with the binary they never chose.
 - ONE SET OF STEPS FOR EVERY HOST: `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites by
   calling the same scripts (`scripts/linux-test-deps.sh` = the package list, `scripts/with-linux-desktop.sh` =
   Xvfb + session bus + notification daemon, then the smoke scripts). A step that exists in one pipeline only,
@@ -572,7 +593,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   real error (e.g. "Port 8290 already in use") behind a confusing logback/Spring trace. It is expected and
   harmless: the OLD instance dies, just restart from the freshly built jar. The SAME cause has a second face
   that looks nothing like it: a jagt that keeps RUNNING while you rebuild answers 500 on whatever it had not
-  loaded yet (`/status`, `/stats`, `/orphans` first, while the board still renders) — diagnosed twice as an
+  loaded yet (`/status`, `/stats` first, while the board still renders) — diagnosed twice as an
   endpoint bug before the inode was checked. Avoid both by running the staged copy (`./gradlew stageJar`,
   then `build/libs/jagt-run.jar` — a symlink to a per-build `jagt-run-<stamp>.jar`, so re-staging while an
   instance runs cannot touch the inode it holds; a fixed staged name had the same bug and reproduced it once);

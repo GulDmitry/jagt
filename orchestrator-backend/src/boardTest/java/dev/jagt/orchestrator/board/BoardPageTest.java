@@ -90,6 +90,7 @@ class BoardPageTest {
         registry.add("orchestrator.root", () -> root.toString());
         registry.add("orchestrator.config-file", () -> root.resolve("config.json").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
+        registry.add("logging.file.name", () -> root.resolve("jagt.log").toString());
     }
 
     @BeforeAll
@@ -407,6 +408,19 @@ class BoardPageTest {
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
         verify(launcher).launch(new LaunchRequest("ABC-9", null, null, null, null, null));
+    }
+
+    @Test
+    void showsWhatJagtDidOnItsOwnReadBackFromItsLog() throws IOException {
+        Files.writeString(root.resolve("jagt.log"), """
+                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 comment(s) relayed","task":"ABC-1"}
+                """, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+
+        Page page = open();
+        page.locator("#show-activity").click();
+
+        assertThat(page.locator("#report-title")).containsText("activity");
+        assertThat(page.locator("#report-body")).containsText("2 comment(s) relayed");
     }
 
     @Test

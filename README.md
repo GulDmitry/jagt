@@ -154,7 +154,7 @@ says when the agent has left **drafted review replies** in its worktree — read
 the obvious one highlighted: open the IDE, focus the agent's terminal, ship, check the review, deploy, close.
 `New task` does what `do ABC-42` does, and `Resume` does what `resume <request-url>` does — take over a review
 request that already exists (reopened, or someone else's work): its branch comes back with the commits already
-on it and the request is linked, not reopened. `Stats`, `Help` and `Orphans` are the same commands
+on it and the request is linked, not reopened. `Stats`, `Help` and `Activity` are the same commands
 too — they open OVER the board in a dialog instead of taking you to another page.
 
 **Focus** always selects the agent's tmux window. Where you then look at it is the difference between the two
@@ -207,7 +207,7 @@ EXECUTED as typed, without a model call. Only real prose reaches the model. Cost
 The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
 with **Shift+←/→** or by clicking a task in the status bar. Every task also gets a short alias (`p1`, `s2`)
 you can use in any command instead of the ticket id. Plain text any time: `curl -s localhost:8290/status`,
-`curl -s localhost:8290/stats`, `curl -s localhost:8290/orphans`.
+`curl -s localhost:8290/stats`, `curl -s localhost:8290/api/activity`.
 Closing the terminal window only detaches the viewer — agents keep running; kill them explicitly with `done`.
 
 ### The ideal flow
@@ -341,8 +341,8 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.web-terminal.command` | the ttyd binary (default `ttyd`, resolved like `tmux-command`) |
 | `orchestrator.web-terminal.port` | where a terminal server starts looking for a free port (default `8291`) |
 | `orchestrator.web-terminal.bind` | address it listens on (default `127.0.0.1`). The terminal is writable, so reaching it is reaching a shell: only the page ttyd serves may open a socket into the session (`--check-origin`), and this decides who can ask for that page at all — widen it only on a network you trust. Blank = every interface; a very old libwebsockets may want the loopback interface name (`lo`, `lo0`) instead of an address. The panel always asks for that port on the host you opened the board under, so a board opened from a second machine needs a bind that machine can reach |
-| `orchestrator.editor-command` | editor launcher list (default `[/Applications/IntelliJ IDEA.app/Contents/MacOS/idea]`; e.g. `[code]`) |
-| `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` |
+| `orchestrator.editor-command` | editor launcher list (default `[idea]`; e.g. `[code]`). The launcher is resolved like `tmux-command`; with none found, `ide` says so and names this key |
+| `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` (default `[idea, diff]`) — any difftool takes the two paths, e.g. `[difft]` or `[code, --diff]` |
 | `orchestrator.agent` | which AI agent runtime — `claude` (default) or `codex`; the pluggable seam, one class per CLI (plus `stub` for the e2e matrix) |
 | `orchestrator.claude-command` | the `claude` binary — the agent runtime AND the master assistant's headless reads (default `claude`) |
 | `orchestrator.codex.command` | the `codex` binary for `orchestrator.agent=codex` (default `codex`) |
@@ -380,10 +380,10 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `deploy` says `MERGE CONFLICT` | task branch and `deployBranch` changed the same lines; jagt merges in a throwaway worktree, so nothing is pushed and the task goes `DEPLOY_CONFLICT` | `ide <ticket>` opens that **deploy** worktree (not the task's) — resolve the conflicts, `git add` them, then `deploy <ticket>` again; jagt finishes the commit + push. Your task branch and its review request are untouched |
 | `revert` says it has no record of the merge commit | the task was deployed before jagt stored it (`deployCommit`) | jagt will not guess which merge to revert on a shared branch. Find it — `git log --merges --grep <ticket> origin/<deployBranch>` — then `git revert -m 1 <sha>` and push. Deploys made from now on are revertible with one command |
 | `revert` says the revert conflicts | someone changed the same lines on `deployBranch` after the deploy | jagt aborts and pushes nothing (the revert worktree is cleaned up, unlike a deploy conflict — what needs deciding is whether reverting is still right). Do it by hand: `git revert -m 1 <sha>`, resolve, push |
-| Parts of the board answer HTTP 500 (`/status`, `/stats`, `/orphans`) while `/` and `/state` still work | you rebuilt while jagt was running: `./gradlew build` rewrites `jagt.jar` in place, so the JVM keeps reading a file that changed — anything not yet loaded dies with `NoClassDefFoundError` | restart it, and run the staged copy so it cannot happen again: `./gradlew stageJar && java -jar build/libs/jagt-run.jar`. jagt also notices this itself within a minute and says so |
+| Parts of the board answer HTTP 500 (`/status`, `/stats`) while `/` and `/state` still work | you rebuilt while jagt was running: `./gradlew build` rewrites `jagt.jar` in place, so the JVM keeps reading a file that changed — anything not yet loaded dies with `NoClassDefFoundError` | restart it, and run the staged copy so it cannot happen again: `./gradlew stageJar && java -jar build/libs/jagt-run.jar`. jagt also notices this itself within a minute and says so |
 | You cannot find the backend's log | the board (`ui=web`) logs to the console AND to a file; the console UI (`ui=tui`/`both`) owns the terminal, so it stays quiet and only the file gets them: `jagt-backend.log` next to where you started the jar (override with `LOG_FILE`) | `tail -f jagt-backend.log`, or `--logging.threshold.console=off`/`=INFO` to decide it yourself |
 | The jar exits at once and says nothing | before, a startup failure was logged only to the file and Boot suppressed the trace, so you got a bare prompt back — now the reason is printed on the console. The usual one is a port already held by an older jagt still serving the board | `lsof -ti tcp:8290 \| xargs kill`, or start elsewhere with `--server.port=<port>` |
 | Focus shows no terminal in the board | either no web terminal is configured (the default), or ttyd could not start — a port already taken, or a `bind` address it cannot resolve | `grep ttyd jagt-backend.log` names the exact command and ttyd's exit code. Install ttyd, or move `orchestrator.web-terminal.port`. Focus itself still worked: the session is in the window the toast named |
 | Nothing pastes / dictation dropped in a kitty window | non-UTF-8 shell locale | see the UTF-8 locale note under **Installation → macOS** |
 | `state.json` got corrupted (bad hand edit, half-written by another tool) | every write keeps the previous version as `state.json.bak` | jagt recovers the tasks from the backup by itself, moves the bad file to `state.json.corrupt` and says so in the log. If the backup is gone too it REFUSES to start with an empty task list — fix or move the file yourself, nothing is silently overwritten |
-| A worktree directory nobody is using is still on disk | a crashed or abandoned task, or a `done` that could not delete it | jagt pings you once at startup and lists them with `curl -s localhost:8290/orphans`, including how many copied secret files (`worktree.copyGlobs`) are still inside. It never deletes them — they can hold uncommitted work, so that call is yours |
+| A worktree directory nobody is using is still on disk | a crashed or abandoned task, or a `done` that could not delete it | jagt pings you once at startup and WARNs in the log, naming each directory and how many copied secret files (`worktree.copyGlobs`) are inside. No surface lists them: it never deletes them either — they can hold uncommitted work, so that call is yours |

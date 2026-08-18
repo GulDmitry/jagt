@@ -24,7 +24,8 @@ import java.util.TreeSet;
 import java.util.stream.Stream;
 
 /**
- * Finds worktree directories that no task owns any more, and REPORTS them — it never deletes anything.
+ * Finds worktree directories that no task owns any more and WARNS about them once at startup — it never
+ * deletes anything, and no surface offers it: housekeeping is not something a human acts on mid-flight.
  *
  * <p>Why it matters beyond tidiness: {@code worktree.copyGlobs} deliberately copies gitignored local files
  * ({@code .env}, keys, certs) into every worktree so the app can run there, and those copies are removed only
@@ -53,8 +54,8 @@ public class WorktreeOrphanScanner {
     private final UserNotifier userNotifier;
 
     /**
-     * One ping at startup when something is rotting, because a log line alone would be invisible: the Master
-     * TUI takes over the screen the moment it starts. The details live in {@link #report()}.
+     * One WARN per leftover directory, plus a single desktop ping: the log carries the detail, and the ping is
+     * for whoever never opens it — the Master TUI takes over the screen the moment it starts.
      */
     @EventListener(ApplicationReadyEvent.class)
     public void reportOnStartup() {
@@ -72,11 +73,12 @@ public class WorktreeOrphanScanner {
             return;
         }
         int secrets = orphans.stream().mapToInt(Orphan::secretFiles).sum();
-        orphans.forEach(orphan -> log.warn("Orphaned worktree {} ({} copied secret file(s)) — no task owns it",
-                orphan.path(), orphan.secretFiles()));
+        // Nothing deletes these: an orphan can hold uncommitted work as well as the copied secrets.
+        orphans.forEach(orphan -> log.warn("Orphaned worktree {} ({} copied secret file(s)) — no task owns it,"
+                + " delete it yourself once you are sure", orphan.path(), orphan.secretFiles()));
         userNotifier.notify("jagt · " + orphans.size() + " orphaned worktree(s)",
-                secrets > 0 ? secrets + " copied secret file(s) left on disk — see /orphans"
-                        : "left over from a crashed or abandoned task — see /orphans");
+                secrets > 0 ? secrets + " copied secret file(s) left on disk — see the log"
+                        : "left over from a crashed or abandoned task — see the log");
     }
 
     /** Every leftover worktree directory across all configured projects, deduplicated by path. */
@@ -101,20 +103,6 @@ public class WorktreeOrphanScanner {
             }
         });
         return List.copyOf(found.values());
-    }
-
-    public String report() {
-        List<Orphan> orphans = scan();
-        if (orphans.isEmpty()) {
-            return "no orphaned worktrees — every directory on disk belongs to a task in state.json.\n";
-        }
-        StringBuilder out = new StringBuilder("orphaned worktrees — directories no task owns."
-                + " jagt never deletes these:\n\n");
-        orphans.forEach(orphan -> out.append(String.format("  %-60s %-10s %s%n", orphan.path(),
-                orphan.projectKey(),
-                orphan.secretFiles() == 0 ? "-" : orphan.secretFiles() + " copied secret file(s)")));
-        return out + "\nDelete them yourself once you are sure: an orphan can still hold uncommitted work,"
-                + " and the secret copies came from this project's worktree.copyGlobs.\n";
     }
 
     /**

@@ -56,7 +56,7 @@ public class RunningJarWatch {
         }
         reported = true;                       // once: the condition does not go away until a restart
         log.warn("The jar this jagt is running from was rewritten underneath it ({}). Classes not yet loaded"
-                + " will fail with NoClassDefFoundError — /status, /stats and /orphans typically go 500 first."
+                + " will fail with NoClassDefFoundError — /status and /stats typically go 500 first."
                 + " Restart from a copy the build does not touch: ./gradlew stageJar && java -jar"
                 + " build/libs/jagt-run.jar. Agents keep running in tmux.", jar);
         userNotifier.notify("jagt · restart needed",
