@@ -28,7 +28,7 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
-                new AssistantProperties("user,project,local", null, "bypassPermissions", List.of()));
+                AssistantProperties.empty().withPermissionMode("bypassPermissions"));
 
         assistant.readTicket("ABC-42");
 
@@ -45,8 +45,8 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
-                new AssistantProperties("user,project,local", null, "bypassPermissions",
-                        List.of("mcp__acme_jira", "mcp__acme_gitlab")));
+                AssistantProperties.empty().withPermissionMode("bypassPermissions")
+                        .withAllowedTools(List.of("mcp__acme_jira", "mcp__acme_gitlab")));
 
         assistant.readTicket("ABC-42");
 
@@ -57,6 +57,44 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void loadsOnlyTheDeclaredMcpServersInsteadOfWhateverTheHumanHasInstalled() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        OrchestratorProperties properties = mock(OrchestratorProperties.class);
+        when(properties.claudeCommand()).thenReturn("claude");
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, properties,
+                AssistantProperties.empty()
+                        .withMcpConfig("{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"));
+
+        assistant.readTicket("ABC-42");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--mcp-config",
+                "{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}");
+        assertThat(command.getValue()).contains("--strict-mcp-config");
+        assertThat(command.getValue()).containsSequence("--setting-sources", "user,project,local");
+    }
+
+    @Test
+    void inheritsTheHumansOwnMcpServersWhenTheInstallDeclaresNone() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        OrchestratorProperties properties = mock(OrchestratorProperties.class);
+        when(properties.claudeCommand()).thenReturn("claude");
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, properties, AssistantProperties.empty());
+
+        assistant.readTicket("ABC-42");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--setting-sources", "user,project,local");
+        assertThat(command.getValue()).doesNotContain("--strict-mcp-config");
+    }
+
+    @Test
     void runsTheConfiguredModelInsteadOfWhateverTheHumansDefaultCostsToday() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
@@ -64,7 +102,7 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
-                new AssistantProperties("user,project,local", "haiku", null, List.of()));
+                AssistantProperties.empty().withModel("haiku"));
 
         assistant.readTicket("ABC-42");
 
@@ -81,7 +119,7 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
-                new AssistantProperties("user,project,local", "", null, List.of()));
+                AssistantProperties.empty().withModel(""));
 
         assistant.readTicket("ABC-42");
 
@@ -98,7 +136,7 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new ProcessRunner.ProcessResult(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
-                new AssistantProperties("project", null, null, List.of()));
+                AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
 
@@ -120,7 +158,7 @@ class HeadlessClaudeAssistantTest {
                  "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
                 "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}""", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
-                new AssistantProperties("project", null, null, List.of()));
+                AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-42").facts();
 
@@ -141,7 +179,7 @@ class HeadlessClaudeAssistantTest {
                  "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
                 \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}""", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
-                new AssistantProperties("project", null, null, List.of()));
+                AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-7").facts();
 
@@ -162,7 +200,7 @@ class HeadlessClaudeAssistantTest {
                 "cache_read_input_tokens":0,"output_tokens":40},
                  "result":"the tracker MCP is not available"}""", ""));
         var assistant = new HeadlessClaudeAssistant(runner, properties,
-                new AssistantProperties("project", null, null, List.of()));
+                AssistantProperties.empty());
 
         var answer = assistant.readReview("https://host/mr/9");
 

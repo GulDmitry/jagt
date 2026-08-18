@@ -25,6 +25,10 @@ import java.util.Optional;
  * own MCP config (so whatever issue-tracker / code-host MCP the human already has, this call gets), and
  * {@code --json-schema} forces a deterministic JSON answer. Runs from the temp dir so only the
  * human's user-level MCP loads (no jagt project MCP), keeping the context — and tokens — small.
+ * <p>An install that would rather not depend on whichever servers the human has installed today declares
+ * them itself; only the SERVERS stop being inherited, so a declared file's {@code ${ENV}} placeholders and
+ * the model still resolve as before. Declared servers lose their plugin scope in tool names, so an
+ * allow-list written for the inherited spelling stops matching.
  */
 @Component
 @RequiredArgsConstructor
@@ -159,11 +163,14 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 // The JSON envelope wraps the answer together with the call's token usage and cost, so the
                 // spend is measurable. Plain text output would hide the price of every read.
                 "--output-format", "json"));
-        if (withMcp) {
-            cmd.addAll(List.of("--setting-sources", assistant.settingSources()));
-        } else {
+        if (!withMcp) {
             // An empty --mcp-config with --strict-mcp-config: no servers, no tool schemas, nothing to approve.
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
+        } else if (!assistant.mcpConfig().isBlank()) {
+            cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", assistant.mcpConfig(),
+                    "--setting-sources", assistant.settingSources()));
+        } else {
+            cmd.addAll(List.of("--setting-sources", assistant.settingSources()));
         }
         if (assistant.model() != null && !assistant.model().isBlank()) {
             cmd.add("--model");

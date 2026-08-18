@@ -11,8 +11,8 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   Git lock, MCP HTTP server (`POST /mcp`), Watchdog, auto-review scheduler, macOS automation (osascript).
   Run the jar in a real terminal (see Build & run) — the process IS the Master TUI.
   Outside writes are the sub-agent's job via its own MCP (push, merge request, review replies) — the ONE
-  exception the backend may ever do itself is opening a task's review request over `CodeHost`, and today
-  nothing calls it. Outside READS have two paths — a one-shot headless agent
+  exception the backend may ever do itself is opening a task's review request over `CodeHost` (`ShipService`,
+  and only with a host configured). Outside READS have two paths — a one-shot headless agent
   that inherits the human's own MCP (see Master assistant), and, when configured, the read-only `CodeHost` /
   `Tracker` seams (see PLUGGABLE BY DESIGN). Both are opt-in and need a token in the environment
   (`orchestrator.code-host.*`, `orchestrator.tracker.*`); with neither configured the backend holds no
@@ -492,6 +492,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `--setting-sources` (verified: default `-p` sees zero Jira tools), and narrowing it to `project` is
   equally fatal — the call runs from the temp dir, where project scope alone resolves to ZERO MCP servers
   (verified 2026-08-13). Keep `user` in the list; the ~7k tokens it costs are what buys the tracker tools.
+  INHERITING IS ALSO THE CHEAPER SHAPE, which is the opposite of what it looks like: an install may DECLARE the
+  servers instead (`assistant.mcp-config` → `--strict-mcp-config`, no credential in jagt because such a file
+  carries `${ENV}` placeholders), and that is a determinism knob ONLY — measured 2026-08-18,
+  $0.09 cold against $0.04, because the inherited prefix rides the prompt cache the human's own sessions keep
+  warm while a jagt-private one is cold on almost every call. It pins the SERVERS and nothing else — settings are
+  still loaded, or a declared file's `${ENV}` placeholders and the model would stop resolving (verified). Declared
+  servers lose their plugin scope in tool names, so an `allowed-tools` written for the inherited spelling silently
+  stops matching, and jagt cannot detect that without parsing the declaration: it is documented, not guarded.
 - EVERY assistant call is METERED, because it is the only place jagt spends model money. `--output-format
   json` wraps the schema-validated answer (`structured_output`, or `result` as a string) together with
   `usage` + `total_cost_usd`; `UsageTracker` books it to the task that triggered it (persisted in
@@ -581,6 +589,12 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `LinuxKittyTerminalDriverLinuxTest` documents the lead and no pipeline pretends to cover them.
 - Unit tests: `cd orchestrator-backend && ./gradlew test`. EVERY fixed bug gets a regression unit test
   (sob-ai:unit-testing rules), verified RED by actually reverting the fix and running the test.
+- THE UNIT SUITE RUNS CONCURRENTLY (JUnit parallel, methods AND classes), which the self-contained style
+  already allowed: no `@BeforeAll`, no mutable statics, every file under a `@TempDir`. A new test must keep
+  that, and anything competing for a MACHINE-WIDE resource declares it — the two that pick a loopback port
+  carry `@ResourceLock("loopback-ports")` + `@Execution(SAME_THREAD)`, because a port freed to be probed is a
+  port another thread can take first. Only this suite: `e2eTest` shares branches and tmux sessions between
+  rows, and `boardTest` seeds one application's state.
 - THE BOARD IS TESTED IN A BROWSER: `./gradlew boardTest` (source set `src/boardTest/java`, NOT in `check`)
   boots the app on a random port and drives the real page in Playwright's own headless Chromium — the page's
   logic (which phases get a column, which buttons a card offers, what a click POSTs, the SSE repaint, the ⌘K

@@ -67,6 +67,10 @@ orchestrator:
     # Nothing can answer a permission prompt in a headless call, and a blocked tool fails silently.
     permission-mode: bypassPermissions
     # allowed-tools: mcp__your-jira-mcp,mcp__your-gitlab-mcp   # takes precedence over permission-mode
+    # Declare the servers instead of inheriting them — one path, or the JSON itself. Settings still load, so a
+    # declared file's ${ENV} placeholders and the model resolve as usual; only the server list is pinned.
+    # Measured cold: it costs MORE than inheriting, which rides the prompt cache the human's own sessions keep warm.
+    # mcp-config: /path/to/mcp-servers.json
   # Blank type = not wired, and reading a ticket falls back to a paid headless read.
   tracker:
     type: ${TRACKER_TYPE:}            # jira; blank = disabled

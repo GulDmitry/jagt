@@ -1,22 +1,26 @@
 # jagt — TODO
 
-Two open questions, then one line per decision. Rules live in CLAUDE.md; situations in USE-CASES.md.
+One line per decision. Rules live in CLAUDE.md; situations in USE-CASES.md.
 
 ## Open
 
-- **A killed model call is unmeasurable.** A timeout destroys the process before its usage envelope is read;
-  capturing it needs `--output-format stream-json`. Deferred until timeouts are actually common.
-- **`assistant.mcpServers` allowlist.** Server names cannot be guessed, so it would have to be per-install
-  config. Deferred: determinism, not cost (~7k tokens).
-
-Nothing else is pending. A second `Tracker` implementation was declined 2026-08-18 (the seam reads three fields
-of one ticket, so the risk it is wrong is small).
+Nothing. A second `Tracker` implementation was declined 2026-08-18 (the seam reads three fields of one ticket,
+so the risk it is wrong is small).
 
 ## Decided
 
 Newest first. Where a decision hardened into a rule, the rule is in CLAUDE.md and this is only the date.
 
 ### 2026-08-18
+- `assistant.mcp-config` declares the servers a read may load instead of inheriting the human's own. No
+  extraction needed: the servers were already a plain file with `${ENV}` placeholders and no secrets in it, so
+  jagt points at it and still holds no credential. It buys determinism and NOT money — measured cold, $0.09
+  against $0.04, because the inherited config rides the prompt cache the human's own sessions keep warm and a
+  jagt-private prefix is cold on almost every call. It pins the servers ONLY: dropping the settings with them
+  would break the `${ENV}` placeholders the safety of the whole shape rests on. One value, not a list — a list
+  would be bound by splitting an inline declaration on commas.
+- A killed model call stays unmeasured: `--output-format stream-json` was declined. The log already says the
+  cost is unknown, which is the whole of what a human does with it.
 - Board binds `127.0.0.1`: no password, and it can deploy, close tasks and start agents. Widening is config.
 - One run, one log (`ui/SessionLog`): `activity` reads the log back, so older runs would read as today's work.
   Never clears a file a running instance owns — the port is probed first.
