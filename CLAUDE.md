@@ -207,6 +207,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   and posting the drafted `review_replies.md` is still relayed to the agent — a reply needs the thread it
   answers, which `ReviewFacts` does not carry — but as a FOLLOW-UP, never on the critical path. With no host
   configured the old prose relay is kept verbatim: an unconfigured setup must behave as it always did.
+- A BRANCH THE BASE REPOSITORY STILL HOLDS IS FREED, NOT REFUSED (`GitService.freeCheckout`): git allows one
+  checkout per branch, nobody works in the base repository, and a task blocked on a checkout nobody remembers
+  making is worse than a WARN naming what it was on. Four things that are not incidental: it detaches the
+  repository IN PLACE — no other ref, so the files an editor has open do not change under it, and a per-task base
+  with no local branch is no obstacle; it runs INSIDE the recreate/resume arms, never before the strategy switch,
+  because a refusal must leave the repository where it was; the detach is UNDONE when what it was freed for does
+  not land, in `createWorktree` and again in `TaskProvisioning`'s unwind (a resumed branch survives, so there is
+  something to go back to); and it ignores UNTRACKED files, since only tracked changes are carried. Two cases
+  stay refusals: tracked changes in that checkout, and a branch held by ANOTHER worktree (another task's).
 - CRITICAL git safety: the ONLY writes to a shared branch anywhere are `deploy` (task branch ->
   `deployBranch`, via `GitService.mergeIntoAndPush`) and its undo `revert` (`revertMergeAndPush`: reverts the
   merge commit deploy recorded, ADDS a commit, never rewrites history, never force-pushes). Both are
@@ -215,7 +224,16 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   existed — the human gets the by-hand `git revert -m 1` recipe, jagt will NOT search the log), the commit is
   not on the branch, it was already reverted, or the revert conflicts (aborted + cleaned up; unlike a deploy
   conflict there is no half-state worth keeping). `ship` creates/updates a merge REQUEST only —
-  never merges. The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
+  never merges. WHAT A REVIEWER SAID IS NOT A GATE ON `deploy` (owner's call, 2026-08-18): `Move.deployable` asks
+  only whether a request is open — plus DEPLOY_CONFLICT, which is finished by deploying again — because deploy
+  merges the task BRANCH and git's only precondition is commits on it. Gating the button on REVIEWED/APPROVED
+  meant a human looking at a REVIEW_PENDING card could not land a request they had decided to land. What stays
+  excluded is what could only race or refuse: NEW (nothing on the branch), SHIPPING (a push in flight),
+  IN_PROGRESS (an agent committing INTO the branch this would merge), REVERTED (a revert ADDS a commit, so the
+  branch holds nothing the deploy branch lacks — the answer could only be "nothing to deploy"), DONE. The BOARD
+  names the writes it is asking for before it makes them — one `project → branch` line per repository, read from
+  `TaskView.RepoView.deployBranch`, because "the deploy branch" is not something a human can check.
+  The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
   pushes/merges to it — and that holds for a PER-TASK base too (`do <ticket> from <branch>`, persisted as
   `TaskState.baseBranch`): it moves what the worktree is cut from and what the merge request TARGETS, never
   what anything merges into. `deploy` stays on `deployBranch` whatever a task's base is; read the effective
@@ -308,6 +326,20 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   an explicit human `ship`; the loop never ships, deploys, pushes or posts on its own. Every round hands the
   human two artifacts to inspect via `ide <alias>` — the local diff and the drafted replies. Do not erode
   this: the human-in-the-loop gate lives in the OUTCOME, not in who triggered the sweep.
+- WORK THAT RUNS UNATTENDED MUST BE VISIBLE WHILE IT WAITS, not only after it acts. `AutoReviewCadence` is the
+  WHOLE auto-review policy — enabled, the interval ramp, AND `watch(task, now)` answering what a human is owed
+  about one task (`model/AutoReviewWatch`: watching + the absolute next-poll stamp, window elapsed, off for this
+  task, or nothing). `AutoReviewScheduler.decide` is a translation of that same watch, so a card cannot promise a
+  poll the scheduler will not make. Both surfaces show it — the console's dashboard header carries
+  `cadence.summary()` and each task a `└ auto-review:` line; the board has the chip (`Board.autoReview`) and a
+  per-card line. Whether polling runs at all is a property of the INSTALL, so it is stated ONCE per surface and
+  never repeated per card; the one per-task exception is a task whose own `autoReview` is false while the install
+  polls, which would otherwise sit still with nothing saying why. The countdown is an ABSOLUTE stamp on the wire
+  and formatted per surface (`DurationFormat.countdown` / the page's own mirror), exactly as the two clocks on a
+  card already are — a remaining-duration would be stale the moment it was fetched. It is a FLOOR, not a promise:
+  the scan runs every 60s, so a poll shown as due happens within the next tick. One more rule the surfaces share:
+  `TaskViews.snapshot()` reads the configuration ONCE per render and hands back the tasks WITH the policy that
+  explains them — the console redraws on every keystroke, and two reads could disagree inside one frame.
 - A REVIEW ROUND IS A JUDGEMENT, NOT A WORK ORDER. Relay a bare list of comments and the agent implements all
   of them — including the ones wrong about the architecture, which the reviewer could not see from the diff —
   and the human then reads agreement into code that was only obedient. `ReviewSweepService.brief` therefore
@@ -489,6 +521,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   dashboard renders and what a merge conflict means, and two comments still naming libraries deleted months
   before (Spring Shell, JLine). ONE MORE RULE FOR THIS REPO: a file may only speak its own layer — the build
   file knows about the build, a seam interface states its contract and never one implementation's mechanism.
+- EVERY TEXT JAGT WRITES IS READ BY AN ENGINEER IN A HURRY: shortest form that still answers, lowest cognitive
+  load, no story. One fact per line; a decision is the decision plus at most one clause of why, not the road to
+  it. This binds command sentences, docs, TODO entries, prompts and commit messages alike — TODO.md was 670 lines
+  of prose for 40 decisions before it was cut to one line each (2026-08-18), and the owner's complaint was that
+  nobody can read it. If an entry needs three paragraphs, the code needs the explanation, not the file.
 - `USE-CASES.md` is the one-line answer per SITUATION ("the request does not target the base branch → …").
   When a case turns out to be non-obvious — or a session re-derives one that was already decided — append a
   row there instead of only fixing the code. CLAUDE.md keeps the rules; USE-CASES.md keeps the answers.
@@ -601,11 +638,20 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   sob-ai:unit-testing skill (hand off to an agent). If it reports a test as compositionally heavy / high
   cognitive load / too much setup, that is a signal to REFACTOR THE PRODUCTION CODE until the test is
   light — then re-run. Deliver only when tests are BOTH light and green AND reviewed (next bullet).
-- CODE REVIEW IS MANDATORY AFTER EVERY CODE CHANGE, BEFORE COMMITTING: run the `code-review` skill (or the
-  `oh-my-claudecode:code-reviewer` agent) on the working diff. Fix every real finding (or explicitly note
-  why it's a non-issue), then re-review if the fixes are non-trivial. No commit lands unreviewed — this is
-  a hard gate, not a suggestion. (A shell hook can only *remind*; it cannot invoke a skill, so this is
-  enforced here as a workflow rule, not in settings.json.)
+- CODE REVIEW IS MANDATORY AFTER EVERY CODE CHANGE, BEFORE COMMITTING, AND IT IS SCOPED TO WHAT THIS SESSION
+  TOUCHED — never to "the working diff" and never to the branch. Several sessions work in this tree at once, so
+  the tree and the index hold their changes too, and `/code-review` with no target reviews the whole branch since
+  it left the remote PLUS everything uncommitted, whoever wrote it. State the scope, and state a LEVEL every time
+  (the last one typed is remembered and silently applied to the next call that omits it):
+  - before committing: `/code-review medium <the paths you changed>` — the same explicit paths you stage, and for
+    the same reason nothing here is staged with `git add -A`.
+  - after committing: `/code-review medium <sha>^..<sha>` — a ref range is the only scope another session cannot
+    widen while the review runs.
+  Stay at `medium` unless the change is genuinely subtle: every level above it fans out eight to ten finder
+  subagents plus one verifier per candidate location, and each of them re-reads the changed files and the whole
+  of this file. Fix every real finding (or explicitly note why it's a non-issue), then re-review if the fixes are
+  non-trivial. No commit lands unreviewed — this is a hard gate, not a suggestion. (A shell hook can only
+  *remind*; it cannot invoke a skill, so this is enforced here as a workflow rule, not in settings.json.)
 
 ## Build & run
 - Default run is the WEB BOARD: `./gradlew build stageJar` then `java -jar build/libs/jagt-run.jar` serves it
