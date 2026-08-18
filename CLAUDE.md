@@ -327,14 +327,19 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   the reviewer's to settle, and resolving it would read as agreement. During the round the agent posts nothing
   at all — `review_replies.md` holds DRAFTS until the human ships.
 - NO GIT HOOKS, EVER — never propose, add, or rely on any git hook anywhere; enforce invariants in code + prompts.
-- A DETACHED LAUNCH MUST IGNORE THE TERMINAL'S SIGNALS. `ProcessBuilder.start()` does not leave jagt's process
-  group, and the terminal delivers Ctrl-C to the whole GROUP — so stopping the backend used to SIGINT the IDE
-  jagt had started, and one IntelliJ process hosts EVERY project window (measured 2026-08-18: same pgid, child
-  dead on SIGINT). `ProcessRunner.detachedFrom` wraps the command in `sh -c "trap '' INT QUIT HUP; exec \"$@\""`,
-  because an IGNORED disposition survives `exec` and `exec` keeps the returned `Process` pointing at the app
-  itself. macOS has no `setsid`, which is why it is a trap and not a flag. Agents were never at risk (the tmux
-  server is already its own session) and kitty daemonizes itself with `--detach`; what WAS at risk is everything
-  started through `runDetached` — the editor and ttyd.
+- A DETACHED LAUNCH GETS ITS OWN SESSION, NEVER AN IGNORED SIGNAL. `ProcessBuilder.start()` does not leave
+  jagt's process group and the terminal delivers Ctrl-C to the whole GROUP, so stopping the backend used to
+  SIGINT the IDE jagt had started — one IntelliJ process hosts EVERY project window (measured 2026-08-18: same
+  pgid, child dead on SIGINT). `ProcessRunner.detachedFrom` therefore runs the command under `setsid`, or under
+  `perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV'` where there is no `setsid` binary (macOS ships none). The
+  first attempt was `sh -c "trap '' INT QUIT HUP; exec …"` and it is the WRONG fix, do not go back to it: an
+  ignored disposition is inherited by every descendant, so the IDE's own Stop button (a SIGINT), Ctrl-C in its
+  embedded terminal and `kill -QUIT` thread dumps all stopped working for everything it spawned. Both wrappers
+  `exec`, so the returned `Process` is still the app and `destroy()` reaches it. Agents were never at risk (the
+  tmux server is already its own session) and kitty daemonizes itself with `--detach`; what WAS at risk is
+  everything started through `runDetached` — the editor and ttyd. A wrapper that always starts also means a
+  missing binary is no longer an `IOException`, so `runDetached` FAILS the launch when the wrapper exits
+  non-zero at once — without that, no ttyd installed reads as "no web terminal configured".
 - NO GUI/keystroke automation, ever: System Events keystrokes race with the human typing (they land in
   whatever is focused). Agent terminals are tmux windows (`TmuxService`); visibility comes from one Warp
   window opened via `open warp://launch/jagt-agents` (launch config generated into

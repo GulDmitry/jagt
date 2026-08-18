@@ -37,10 +37,21 @@ shutdown, and one IntelliJ process holds every project window. The reason it loo
 keeping: if the IDE was ALREADY running when `ide` was typed, the launcher hands the path to that instance and
 exits, so nothing dies — the symptom only appears when jagt is what started the IDE.
 
-Fixed where the launch happens, not where the shutdown does: the command is wrapped in
-`sh -c "trap '' INT QUIT HUP; exec ..."`, since an ignored disposition survives `exec`. Measured both halves
-before and after (same pgid; child dead on SIGINT, then alive), and the test sends a real SIGINT rather than
-asserting the wrapper's argv.
+Fixed where the launch happens, not where the shutdown does — but the FIRST fix was wrong in a way worth
+keeping: `sh -c "trap '' INT QUIT HUP; exec …"` does stop Ctrl-C reaching the IDE, and an ignored disposition is
+inherited by every descendant, so the IDE's own Stop button (SIGINT), Ctrl-C in its embedded terminal and
+`kill -QUIT` thread dumps died with it. Review caught it before it shipped. The launch now gets its own SESSION
+instead (`setsid`, or `perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV'` on macOS, which has no `setsid`):
+out of jagt's process group, dispositions untouched.
+
+Two things measured rather than argued: the child's pgid differs from ours while `ps -o comm=` still shows the
+app (so `exec` holds and `destroy()` reaches it), and a DIRECT SIGINT still kills it. The second is the
+assertion that would have caught the first fix.
+
+A wrapper that always starts has one more consequence, also from review: a missing binary stopped being an
+`IOException`, which turned "ttyd is not installed" into "no web terminal is configured". `runDetached` now
+fails a launch whose wrapper exits non-zero within 200 ms, and a launcher that hands off to a running instance
+exits zero, so it stays a success.
 
 ### Multi-repo `deploy`/`revert` — land in order, stop at the first conflict — 2026-08-18
 
