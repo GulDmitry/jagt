@@ -28,6 +28,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | The configured tracker refuses the read (expired token, no access) | `do ABC-1` | Refused — jagt does NOT retry it through a paid model read, or an expired token would quietly cost money on every launch. A bare key still starts the task; only its title is missing. |
 | The app needs a gitignored `.env` (or key, cert) to start | nothing — `worktree.copyGlobs` | Copied from the base repo to the same relative path, root-level files included (`**/x` matches the root too). A path the checkout already produced is left alone: git tracks it, so it is not the file that was missing, and overwriting it would leave every worktree with an uncommitted change to a tracked file. |
 | On the board | the launch row, always open | Ticket, project, base branch, notes and Start. The project list comes from `config.json` on every load — no button to press first. It opens on the first project rather than a placeholder; a project is sent only if you actually pick one, so an untouched list still gets the ticket read and the label lookup. |
+| The repository ships its own `CLAUDE.md` or `AGENTS.md` | `do <ticket>` | Kept untouched; the briefing goes to `CLAUDE.local.md` instead. Claude loads both. Other agents refuse the task rather than start unbriefed. |
 
 ## Looking at an agent
 

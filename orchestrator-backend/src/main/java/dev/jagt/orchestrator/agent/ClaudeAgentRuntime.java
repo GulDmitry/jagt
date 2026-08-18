@@ -16,11 +16,17 @@ import java.util.stream.Collectors;
  * a generated {@code .claude/settings.local.json} that pre-approves what an unwatched session must not stop
  * on, and {@code CLAUDE.md} as a symlink to the shared {@link AgentRuntime#SYSTEM_KNOWLEDGE_FILE} — Claude
  * reads its own filename, jagt keeps writing one file.
+ *
+ * <p>Where the repository ships either of those two names, the briefing moves to {@code CLAUDE.local.md}
+ * instead: it is loaded just the same, and it is the one name a project never versions.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent", havingValue = "claude", matchIfMissing = true)
 @RequiredArgsConstructor
 public class ClaudeAgentRuntime extends AbstractAgentRuntime {
+
+    private static final String CLAUDE_MEMORY_FILE = "CLAUDE.md";
+    private static final String LOCAL_MEMORY_FILE = "CLAUDE.local.md";
 
     private final OrchestratorProperties properties;
     private final McpEndpoint mcp;
@@ -38,12 +44,37 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public Path systemKnowledgeFile(Path worktree) {
+        if (rootNamesFree(worktree)) {
+            return worktree.resolve(SYSTEM_KNOWLEDGE_FILE);
+        }
+        Path local = worktree.resolve(LOCAL_MEMORY_FILE);
+        if (broughtByCheckout(local)) {
+            throw new IllegalStateException("Cannot brief the agent: the repository ships " + LOCAL_MEMORY_FILE
+                    + " as well as its own memory file, so jagt has no name left to write.");
+        }
+        return local;
+    }
+
+    @Override
     protected void wireAgent(AgentWorktree worktree) {
         write(worktree.path().resolve(".mcp.json"), mcpJson(mcp.url(),
                 mcp.callerHeaderValue(worktree.path())));
-        symlink(worktree.path().resolve("CLAUDE.md"), worktree.path().resolve(SYSTEM_KNOWLEDGE_FILE));
+        if (rootNamesFree(worktree.path())) {
+            symlink(worktree.path().resolve(CLAUDE_MEMORY_FILE),
+                    worktree.path().resolve(SYSTEM_KNOWLEDGE_FILE));
+        }
         write(worktree.path().resolve(".claude").resolve("settings.local.json"),
                 settingsJson(worktree.outputStyle(), worktree.disabledPlugins()));
+    }
+
+    /**
+     * Both names, because the pair is one layout: the alias is worthless when the file it points at cannot be
+     * written, and writing that file is pointless when no name Claude reads can point at it.
+     */
+    private static boolean rootNamesFree(Path worktree) {
+        return !broughtByCheckout(worktree.resolve(SYSTEM_KNOWLEDGE_FILE))
+                && !broughtByCheckout(worktree.resolve(CLAUDE_MEMORY_FILE));
     }
 
     /**

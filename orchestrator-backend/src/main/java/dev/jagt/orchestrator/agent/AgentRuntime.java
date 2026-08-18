@@ -33,6 +33,15 @@ public interface AgentRuntime {
     String launchCommand(Path worktree, boolean planMode);
 
     /**
+     * Where in {@code worktree} this agent's system knowledge is written. A fresh worktree holds nothing but
+     * the checkout, so a regular file already sitting on one of these names is the PROJECT's own — jagt never
+     * takes it: the agent would lose the instructions the repository ships, and the next {@code ship} would
+     * commit the loss. A runtime whose names are all taken refuses rather than start an agent without the
+     * safety rules this file carries.
+     */
+    Path systemKnowledgeFile(Path worktree);
+
+    /**
      * Writes what this agent needs to run in a fresh worktree: the config that declares jagt's MCP proxy
      * (Claude {@code .mcp.json}, Codex {@code config.toml}, …), whatever lifts its permission prompts (nobody
      * watches the tmux window to answer one), and its alias for {@link #SYSTEM_KNOWLEDGE_FILE}. Called once

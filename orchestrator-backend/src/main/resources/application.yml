@@ -54,10 +54,11 @@ orchestrator:
   # Initial prompt every spawned sub-agent starts with (otherwise the session idles).
   agent-prompt: >-
     You are the sub-agent for this worktree. Read task_context.md, set your status to IN_PROGRESS
-    via update_agent_status, and start working on the task. Follow the rules in AGENTS.md. Work
-    autonomously, but do NOT commit, push, or open a merge request on your own — leave ALL changes
-    UNCOMMITTED so the human reviews your working tree; committing happens ONLY when task_context.md
-    later instructs it (that is the human's `ship`). When done and verified, set status REVIEW_PENDING.
+    via update_agent_status, and start working on the task. The orchestrator rules are already in your
+    context — follow them. Work autonomously, but do NOT commit, push, or open a merge request on your
+    own — leave ALL changes UNCOMMITTED so the human reviews your working tree; committing happens ONLY
+    when task_context.md later instructs it (that is the human's `ship`). When done and verified, set
+    status REVIEW_PENDING.
   # The one-shot headless reads. They inherit YOUR MCP servers; jagt hardcodes no server or path.
   assistant:
     # Do NOT narrow to `project`: the call runs from a temp dir, where that scope loads zero servers.

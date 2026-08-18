@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ClaudeAgentRuntimeTest {
 
@@ -78,6 +79,48 @@ class ClaudeAgentRuntimeTest {
         Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "system knowledge");
 
         assertThat(Files.readString(worktree.resolve("CLAUDE.md"))).isEqualTo("system knowledge");
+    }
+
+    @Test
+    void writesTheBriefingBesideTheRepositorysOwnClaudeMdInsteadOfReplacingIt(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+        Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
+
+        ClaudeAgentRuntime runtime = runtime("claude", "go");
+        Path briefing = runtime.systemKnowledgeFile(worktree);
+        runtime.provisionWorktree(new AgentWorktree(worktree, root, null, null));
+
+        assertThat(briefing).isEqualTo(worktree.resolve("CLAUDE.local.md"));
+        assertThat(Files.readString(worktree.resolve("CLAUDE.md"))).isEqualTo("project rules");
+    }
+
+    @Test
+    void writesTheBriefingBesideTheRepositorysOwnAgentsMdInsteadOfReplacingIt(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+        Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
+
+        ClaudeAgentRuntime runtime = runtime("claude", "go");
+        Path briefing = runtime.systemKnowledgeFile(worktree);
+        runtime.provisionWorktree(new AgentWorktree(worktree, root, null, null));
+
+        assertThat(briefing).isEqualTo(worktree.resolve("CLAUDE.local.md"));
+        assertThat(Files.readString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)))
+                .isEqualTo("project rules");
+    }
+
+    @Test
+    void refusesToStartAnAgentWhenTheRepositoryOwnsEveryNameTheBriefingCouldTake(@TempDir Path root)
+            throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+        Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
+        Files.writeString(worktree.resolve("CLAUDE.local.md"), "personal rules");
+
+        assertThatThrownBy(() -> runtime("claude", "go").systemKnowledgeFile(worktree))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("CLAUDE.local.md");
     }
 
     @Test

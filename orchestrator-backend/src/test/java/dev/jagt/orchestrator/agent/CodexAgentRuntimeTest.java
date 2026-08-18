@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CodexAgentRuntimeTest {
 
@@ -27,6 +28,30 @@ class CodexAgentRuntimeTest {
     void runsReadOnlyInPlanModeSoTheAgentCannotTouchFilesBeforeTheHumanApproves() {
         assertThat(runtime("go").launchCommand(Path.of("/wt/ABC-1-proj"), true))
                 .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.codex' codex --sandbox read-only 'go'");
+    }
+
+    @Test
+    void refusesToStartAnAgentWhoseOnlyMemoryFileTheRepositoryAlreadyOwns(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+        Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
+
+        assertThatThrownBy(() -> runtime("go").systemKnowledgeFile(worktree))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(AgentRuntime.SYSTEM_KNOWLEDGE_FILE);
+    }
+
+    @Test
+    void refusesToWireAnAgentOntoAScriptTheRepositoryAlreadyShipsUnderThatName(@TempDir Path root)
+            throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+        Files.writeString(worktree.resolve("mcp_client.js"), "the project's own script");
+
+        assertThatThrownBy(() -> runtime("go")
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("mcp_client.js");
     }
 
     @Test

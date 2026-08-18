@@ -43,7 +43,7 @@ public final class WorktreeFiles {
      */
     public static void excludeOrchestratorPlumbing(Path gitCommonDir) {
         List<String> entries = List.of("mcp_client.js", ".mcp.json", "AGENTS.md", "CLAUDE.md",
-                "task_context.md", "review_replies.md", ".claude/", ".codex/", ".run/");
+                "CLAUDE.local.md", "task_context.md", "review_replies.md", ".claude/", ".codex/", ".run/");
         try {
             Path exclude = gitCommonDir.resolve("info").resolve("exclude");
             Files.createDirectories(exclude.getParent());

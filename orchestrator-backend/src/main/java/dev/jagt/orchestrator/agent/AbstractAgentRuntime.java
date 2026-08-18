@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.agent;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
 /**
@@ -13,8 +14,23 @@ import java.nio.file.Path;
 public abstract class AbstractAgentRuntime implements AgentRuntime {
 
     @Override
+    public Path systemKnowledgeFile(Path worktree) {
+        Path file = worktree.resolve(SYSTEM_KNOWLEDGE_FILE);
+        if (broughtByCheckout(file)) {
+            throw new IllegalStateException("Cannot brief the agent: " + SYSTEM_KNOWLEDGE_FILE
+                    + " belongs to the repository, and this agent reads no other name.");
+        }
+        return file;
+    }
+
+    @Override
     public final void provisionWorktree(AgentWorktree worktree) {
         wireAgent(worktree);
+    }
+
+    /** A fresh worktree holds nothing but the checkout; jagt's own plumbing is written as links. */
+    protected static boolean broughtByCheckout(Path file) {
+        return Files.exists(file, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(file);
     }
 
     /**
@@ -41,6 +57,10 @@ public abstract class AbstractAgentRuntime implements AgentRuntime {
 
     /** Replaces an existing link, so re-provisioning a worktree is idempotent. */
     protected static void symlink(Path link, Path target) {
+        if (broughtByCheckout(link)) {
+            throw new IllegalStateException("Cannot wire the agent: the repository ships its own "
+                    + link.getFileName() + ", and jagt needs that name.");
+        }
         try {
             Files.deleteIfExists(link);
             Files.createSymbolicLink(link, target);

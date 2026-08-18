@@ -430,8 +430,17 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     carries only the verbs a create-or-update needs.
   - The shared system-knowledge file is `AGENTS.md` (the cross-agent convention, `AgentRuntime
     .SYSTEM_KNOWLEDGE_FILE`); Claude reads `CLAUDE.md`, so its runtime symlinks `CLAUDE.md` → `AGENTS.md` —
-    one file, never two copies to drift. A new agent = one `AgentRuntime` impl; a Linux port = new
-    `UserNotifier`/`TerminalDriver`/`EditorDriver` impls. Nothing else should need to change.
+    one file, never two copies to drift. WHICH NAME IS FREE IS THE RUNTIME'S TO ANSWER
+    (`AgentRuntime.systemKnowledgeFile`, asked BEFORE provisioning — afterwards jagt's own links are
+    indistinguishable from a checkout): a regular file already on one of those names came out of the checkout,
+    so it is the PROJECT's, and taking it costs the agent the instructions the repository ships AND makes the
+    next `ship` commit the loss (jagt tracks `CLAUDE.md`; so does one configured project). Claude's answer is
+    then `CLAUDE.local.md` — loaded exactly the same (verified 2026-08-18), and the one name a repository does
+    not version; every other runtime REFUSES, because an agent started without the safety rules that file
+    carries is worse than a task that would not start. The bootstrap prompt therefore names NO file — which
+    one holds the briefing varies, and a prompt that says `AGENTS.md` is wrong exactly where the fallback
+    applies. A new agent = one `AgentRuntime` impl; a Linux port =
+    new `UserNotifier`/`TerminalDriver`/`EditorDriver` impls. Nothing else should need to change.
 - kitty is ONE driver, not one per OS: `AbstractKittyTerminalDriver` (in `…platform`) holds everything —
   remote control, the per-session socket, tabs, reveal, close — and each platform subclass supplies exactly two
   things, `bringToFront()` and `platformOptions()`. macOS needs AppleScript to raise the app (Cocoa) and the

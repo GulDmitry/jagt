@@ -31,6 +31,9 @@ public class WorktreeSetup {
      */
     public void fill(NewTask request, NewRepo repo, List<NewRepo> repos) {
         Path worktreePath = repo.worktreePath();
+        // Asked while the worktree still holds nothing but the checkout: after provisioning, jagt's own links
+        // are indistinguishable from a file the repository ships.
+        Path systemKnowledge = agentRuntime.systemKnowledgeFile(worktreePath);
         WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir());
         // Which files exist and what is in them belongs to the runtime: nothing here may learn what a given
         // agent's MCP config is called.
@@ -39,8 +42,7 @@ public class WorktreeSetup {
         WorktreeFiles.copyIdeProjectFiles(repo.projectPath(), worktreePath);
         WorktreeFiles.copyLocalFiles(repo.projectPath(), worktreePath,
                 configService.load().worktree().copyGlobsOrDefault());
-        WorktreeFiles.write(worktreePath.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE),
-                briefing.of(request, repo, repos));
+        WorktreeFiles.write(systemKnowledge, briefing.of(request, repo, repos));
         // The instructions live where the session reads them, and a relay writes to that same one worktree.
         if (repo.primary() && request.instructions() != null && !request.instructions().isBlank()) {
             WorktreeFiles.write(worktreePath.resolve("task_context.md"), request.instructions());
