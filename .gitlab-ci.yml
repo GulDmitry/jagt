@@ -74,3 +74,14 @@ smoke:
     - ./gradlew --no-daemon bootJar
     - scripts/dashboard-layout-smoke.sh build/libs/jagt.jar
     - scripts/tui-push-repaint-smoke.sh build/libs/jagt.jar
+
+# The jar as a downloadable artifact. Attaching one to a RELEASE is GitHub-only by decision (2026-08-18): the
+# owner wants the per-run artifact everywhere and no published release yet, so there is nothing to mirror here.
+jar:
+  stage: test
+  script:
+    - ./gradlew --no-daemon bootJar
+  artifacts:
+    expire_in: 30 days
+    paths:
+      - orchestrator-backend/build/libs/jagt.jar

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'dev.jagt'
-version = '0.2.0'
+version = '0.6.0'
 description = 'Stateful multi-agent dev orchestrator (macOS / Warp / Claude Code)'
 
 java {
@@ -27,6 +27,12 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.register('printVersion') {
+    doLast {
+        println project.version
+    }
 }
 
 tasks.withType(Test).configureEach {

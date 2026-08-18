@@ -6,6 +6,7 @@ name: ci
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
@@ -35,6 +36,47 @@ jobs:
         with:
           name: unit-test-report
           path: orchestrator-backend/build/reports/tests/test
+
+  # The jar itself, downloadable: every run keeps it for 30 days, and a `v*` tag also attaches it to a GitHub
+  # release, which is the only URL somebody without a GitHub login can fetch. One fat jar, no platform in it.
+  jar:
+    name: runnable jar
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: temurin
+          cache: gradle
+      - run: ./gradlew --no-daemon bootJar
+      - name: name it after the version it is
+        id: jar
+        run: |
+          version=$(./gradlew --no-daemon -q printVersion)
+          cp build/libs/jagt.jar "build/libs/jagt-$version.jar"
+          echo "asset=orchestrator-backend/build/libs/jagt-$version.jar" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jagt-jar
+          path: ${{ steps.jar.outputs.asset }}
+          retention-days: 30
+      # gh, not a third-party action: it ships on the runner and needs no token beyond the one already here.
+      # The path is absolute here on purpose: every `run:` step starts in orchestrator-backend, while the
+      # artifact action wants it workspace-relative.
+      - name: attach it to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ASSET: ${{ github.workspace }}/${{ steps.jar.outputs.asset }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$ASSET" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$ASSET" --generate-notes --verify-tag
+          fi
 
   linux:
     name: e2e matrix + Linux drivers
