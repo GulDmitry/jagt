@@ -129,7 +129,7 @@ class DashboardRendererTest {
         String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state)).render();
 
         // Indented: the TUI colours any unindented line as a task row, and this is not one.
-        assertThat(out).contains("\n  auto-review on · every 10–60m over 24h\n");
+        assertThat(out).contains("\n  auto-review on\n");
         assertThat(out).contains("└ auto-review · next poll in 10m");
     }
 

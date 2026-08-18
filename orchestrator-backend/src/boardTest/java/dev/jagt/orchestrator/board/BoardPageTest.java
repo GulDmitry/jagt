@@ -141,7 +141,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("#auto-review")).hasText("auto-review on · every 10–60m over 24h");
+        assertThat(page.locator("#auto-review")).hasText("auto-review on");
         assertThat(page.locator("#auto-review")).hasClass(java.util.regex.Pattern.compile("on"));
         assertThat(page.locator("article .watch")).hasText("auto-review · next poll in 10m");
     }

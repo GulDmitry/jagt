@@ -82,6 +82,6 @@ class BoardApiControllerTest {
         var board = api.tasks();
 
         assertThat(board.autoReviewEnabled()).isTrue();
-        assertThat(board.autoReview()).isEqualTo("auto-review on · every 10–60m over 24h");
+        assertThat(board.autoReview()).isEqualTo("auto-review on");
     }
 }

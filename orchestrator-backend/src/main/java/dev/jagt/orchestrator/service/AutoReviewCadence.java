@@ -61,9 +61,7 @@ public final class AutoReviewCadence {
 
     /** How the cadence reads to a human, in the one place both surfaces take the words from. */
     public String summary() {
-        return enabled
-                ? "auto-review on · every " + minMinutes + "–" + maxMinutes + "m over " + window.toHours() + "h"
-                : "auto-review off";
+        return enabled ? "auto-review on" : "auto-review off";
     }
 
     /** The wait before the next poll for a request open this long, or {@code null} once the window has
