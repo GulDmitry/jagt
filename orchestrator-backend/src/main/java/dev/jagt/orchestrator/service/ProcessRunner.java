@@ -32,10 +32,14 @@ public class ProcessRunner {
      * For GUI launchers (`idea diff`, editors) whose CLI blocks until the IDE is ready or the window
      * closes — waiting would time out and then destroy the very window it opened. Only a failure to
      * START (bad binary) is reported; the launched app's own errors are its business.
+     *
+     * <p>The launch survives the Ctrl-C that stops the backend. A child stays in jagt's process group, and the
+     * terminal delivers SIGINT to the whole group — so an IDE jagt started (one process hosting every project
+     * window) closed all of them when the human stopped jagt. {@link #detachedFrom} is what prevents it.
      */
     public Process runDetached(Path workingDir, List<String> command) {
         try {
-            ProcessBuilder builder = new ProcessBuilder(command);
+            ProcessBuilder builder = new ProcessBuilder(detachedFrom(command));
             if (workingDir != null) {
                 builder.directory(workingDir.toFile());
             }
@@ -46,6 +50,18 @@ public class ProcessRunner {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to launch: " + String.join(" ", command), e);
         }
+    }
+
+    /**
+     * The command with the terminal's job-control signals ignored: a disposition set to IGNORE survives
+     * {@code exec}, so the launched app never sees the Ctrl-C, Ctrl-\\ or terminal hang-up meant for jagt. The
+     * shell {@code exec}s, so the returned process IS the app rather than a wrapper around it.
+     */
+    static List<String> detachedFrom(List<String> command) {
+        List<String> wrapped = new java.util.ArrayList<>(
+                List.of("/bin/sh", "-c", "trap '' INT QUIT HUP; exec \"$@\"", "sh"));
+        wrapped.addAll(command);
+        return List.copyOf(wrapped);
     }
 
     public ProcessResult run(Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {

@@ -261,12 +261,22 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   - `deploy` LANDS IN ORDER AND STOPS AT THE FIRST CONFLICT, and the sentence names BOTH sides — what is live on
     the deploy branch and what is not. A shared branch cannot be written atomically whatever jagt does (it can
     move between a check and a push), so the honest half-state beats a dry run that only makes the same failure
-    rarer at twice the merges. Every `deployTarget` is validated before the FIRST push. Repeating the verb
-    resumes at the repository the conflict left a deploy worktree for — asked of git
-    (`GitService.deployWorktreeOwner`), because sibling repositories DERIVE THE SAME deploy worktree path and a
-    recorded merge commit outlives the round that made it. `revert` walks back the other way: reverse order, only
-    the repositories that have a merge commit, each one FORGETTING it as it comes out, so a repeat touches only
-    what is still live — and REVERTED is set only when everything that landed is out.
+    rarer at twice the merges. Every repository is checked deployable before the FIRST push, and the half-state is
+    read from WHERE THE SEQUENCE STOPPED, never from the recorded merge commits — those outlive the round that
+    made them, so after a second ship every repository would read as live. SIBLING REPOSITORIES DERIVE THE SAME
+    DEPLOY WORKTREE PATH (`<taskId>-deploy`, next to the repository), so the directory alone never decides
+    anything: `GitService.hasDeployWorktree` asks git who cut it, `mergeIntoAndPush` REFUSES to finish a worktree
+    another repository owns (it would push that repository's work to this one's remote), and only a task handed
+    back at DEPLOY_CONFLICT resumes at one — a leftover from any other round would make the deploy skip the
+    repositories before it and still call the task deployed. NOTHING TO DEPLOY IS NOT A FAILURE
+    (`GitService.NothingToDeployException`): a repository whose branch adds nothing — never touched by the change,
+    or already on the branch — is passed over and named, which is also what makes starting the sequence over
+    harmless when no worktree answers. A stop for any OTHER reason leaves the status alone (there is nothing to
+    resolve in a worktree) but still names what landed. `revert` walks back the other way: reverse order, only the
+    repositories that have a merge commit, each one FORGETTING it as it comes out, so a repeat touches only what
+    is still live — and REVERTED is set only when everything that landed is out. Both half-states are STAMPED on
+    the task, not just thrown: a sentence in a console nobody scrolled back to is not a record of a shared branch
+    holding half a change.
 - The MCP transport must never emit non-JSON-RPC bytes: malformed JSON → `-32700` from the controller,
   HTTP errors → synthesized JSON-RPC error in `mcp_client.js` (never forward Spring error pages).
   The proxy retries ONLY `ECONNREFUSED` (request never sent) — other failures may have executed a
@@ -317,6 +327,14 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   the reviewer's to settle, and resolving it would read as agreement. During the round the agent posts nothing
   at all — `review_replies.md` holds DRAFTS until the human ships.
 - NO GIT HOOKS, EVER — never propose, add, or rely on any git hook anywhere; enforce invariants in code + prompts.
+- A DETACHED LAUNCH MUST IGNORE THE TERMINAL'S SIGNALS. `ProcessBuilder.start()` does not leave jagt's process
+  group, and the terminal delivers Ctrl-C to the whole GROUP — so stopping the backend used to SIGINT the IDE
+  jagt had started, and one IntelliJ process hosts EVERY project window (measured 2026-08-18: same pgid, child
+  dead on SIGINT). `ProcessRunner.detachedFrom` wraps the command in `sh -c "trap '' INT QUIT HUP; exec \"$@\""`,
+  because an IGNORED disposition survives `exec` and `exec` keeps the returned `Process` pointing at the app
+  itself. macOS has no `setsid`, which is why it is a trap and not a flag. Agents were never at risk (the tmux
+  server is already its own session) and kitty daemonizes itself with `--detach`; what WAS at risk is everything
+  started through `runDetached` — the editor and ttyd.
 - NO GUI/keystroke automation, ever: System Events keystrokes race with the human typing (they land in
   whatever is focused). Agent terminals are tmux windows (`TmuxService`); visibility comes from one Warp
   window opened via `open warp://launch/jagt-agents` (launch config generated into

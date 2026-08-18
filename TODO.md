@@ -30,6 +30,18 @@ maintain a per-install server list — DEFERRED until then.
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
 themselves are in CLAUDE.md.
 
+### Ctrl-C on the backend closed every IDE window — 2026-08-18
+Reported as "maybe I imagined it", and it was real. `runDetached` was detached in name only: a child stays in
+jagt's process group, the terminal sends SIGINT to the whole group, IntelliJ treats SIGINT as a graceful
+shutdown, and one IntelliJ process holds every project window. The reason it looked unreproducible is worth
+keeping: if the IDE was ALREADY running when `ide` was typed, the launcher hands the path to that instance and
+exits, so nothing dies — the symptom only appears when jagt is what started the IDE.
+
+Fixed where the launch happens, not where the shutdown does: the command is wrapped in
+`sh -c "trap '' INT QUIT HUP; exec ..."`, since an ignored disposition survives `exec`. Measured both halves
+before and after (same pgid; child dead on SIGINT, then alive), and the test sends a real SIGINT rather than
+asserting the wrapper's argv.
+
 ### Multi-repo `deploy`/`revert` — land in order, stop at the first conflict — 2026-08-18
 
 The refusal is gone: `deploy` merges and pushes repository by repository in the order the task holds them,
@@ -37,14 +49,24 @@ recording each merge commit as it lands, and stops at the first conflict. A dry 
 was written — a shared branch can move between the check and the push, so it would have bought rarity rather than
 a guarantee, at the price of merging everything twice.
 
-The three findings worth keeping, each one a thing the plan did not say:
+The four findings worth keeping, each one a thing the plan did not say:
+- **"Nothing to deploy" had to stop being a failure**, and review is what caught it: a two-repository task whose
+  change only touched one of them landed the first, then died on the second with "no commits beyond dev" —
+  status untouched, one side live on a shared branch, and `revert` refusing because the task was never DEPLOYED.
+  A dead end for the most ordinary multi-repo shape there is. It is a typed exception now
+  (`GitService.NothingToDeployException`), passed over and named, which incidentally makes every "start the
+  sequence over" case harmless: a repository already on the branch has nothing to add.
 - **Sibling repositories DERIVE THE SAME deploy worktree path** (`<taskId>-deploy`, next to the repository), so
-  the directory a conflict leaves behind cannot say whose conflict it is. Resuming asks git which repository cut
-  it (`GitService.deployWorktreeOwner`). Naming the path per project instead would have been the obvious fix and
-  the wrong one: `WorktreeOrphanScanner` and the editor's dead-entry sweep both know that name.
+  the directory alone never decides anything: git is asked who cut it (`GitService.hasDeployWorktree`), a merge
+  REFUSES to finish a worktree another repository owns — that would push their work to this remote, which is the
+  worst outcome in the change and the second review pass is what found it — and only a task handed back at
+  DEPLOY_CONFLICT resumes at one, since a leftover from any other round would skip the repositories before it and
+  still call the task deployed. Naming the path per project would have been the obvious fix and the wrong one:
+  `WorktreeOrphanScanner` and the editor's dead-entry sweep both know that name.
 - **A recorded merge commit cannot mean "already landed".** It outlives the round that made it, so a task
-  shipped and deployed a second time carries stale commits in every repository — resuming from "the first one
-  without a commit" would have skipped the whole task.
+  shipped and deployed a second time carries stale commits in every repository — which rules it out both as the
+  resume marker and as the source of the half-state (that one is read from where the sequence stopped, or a
+  second round's first conflict would announce every repository as live and nothing as missing).
 - **`revert` FORGETS each merge commit as it takes it out**, walking backwards. That is what makes a half-failed
   revert repeatable instead of a second guess: the repeat sees only what is still live, and REVERTED waits until
   everything that landed is out.
