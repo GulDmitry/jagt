@@ -317,7 +317,7 @@ Keys are grouped into logical sections; a whole section may be omitted (each key
 | `codeReview.postReviewReplies` | on `ship`, auto-post the agent's replies to the request's threads (default `true`); `false` keeps them in `review_replies.md` |
 | `codeReview.reviewReplyAuthors` | non-empty = auto-post replies ONLY to threads whose author matches one (e.g. `["coderabbit"]`); empty = all authors |
 | `codeReview.mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created requests (default both `true`) |
-| `autoReview.enabled` | after `ship`, poll the request automatically (approval → `APPROVED`; comments → drafted for you, never posted). Default `false` (opt-in) |
+| `autoReview.enabled` | after `ship`, poll the request automatically (approval → `APPROVED`; comments → drafted for you, never posted). Default `false` (opt-in). Both surfaces show whether it is on and, per task out for review, when the next poll is due |
 | `autoReview.windowHours` | how long auto-polling runs after the request opens; then it stops and pings you to `sweep` manually (default `24`) |
 | `autoReview.minIntervalMinutes` | poll interval at the window START — tightest cadence (default `10`) |
 | `autoReview.maxIntervalMinutes` | poll interval at the window END — the cap, ≈ hourly; interval ramps linearly min→max (default `60`) |

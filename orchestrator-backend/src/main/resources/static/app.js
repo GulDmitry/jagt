@@ -18,6 +18,7 @@ const live = document.getElementById('live');
 const projectSelect = document.getElementById('project');
 let tasks = [];
 let projects = [];
+let autoReview = {summary: '', enabled: false};
 let renderedProjects = null;
 // An untouched default is not a decision, and naming a project SKIPS the ticket read — the escape hatch a
 // typed `do ABC-1 <project>` deliberately takes. So the list opens on a real project, and only a pick is sent.
@@ -51,6 +52,27 @@ const duration = (millis) => {
   if (minutes < 60) return `${minutes}m`;
   if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
   return `${Math.floor(minutes / 1440)}d`;
+};
+
+// A countdown is watched ticking, unlike an age in a column: seconds matter while the wait is under a minute.
+const countdown = (millis) => {
+  const seconds = Math.max(0, Math.floor(millis / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  // CEILING, mirroring DurationFormat.countdown: a ten-minute wait must not read "9m" for its first minute.
+  const minutes = Math.ceil(seconds / 60);
+  return minutes < 60 ? `${minutes}m` : `${Math.ceil(minutes / 60)}h`;
+};
+
+// What the unattended poller is about to do with this task, or nothing when it is not its business. The WORDS are
+// the server's (watch.note), so the console and this cannot drift; only the countdown is formatted here, from the
+// absolute stamp, so the slow repaint keeps it honest without another fetch.
+const watchLine = (watch) => {
+  if (!watch || !watch.note) return null;
+  if (watch.state === 'WATCHING') {
+    const remaining = watch.nextPollAt - Date.now();
+    return {text: `${watch.note} ${remaining <= 0 ? 'due now' : `in ${countdown(remaining)}`}`};
+  }
+  return {text: watch.note, stalled: true};
 };
 
 // The transitions the task actually went through, as a tooltip: the card stays one line, the record is one
@@ -114,6 +136,7 @@ async function load() {
     const data = await api('/api/tasks');
     tasks = data.tasks;
     projects = data.projects || [];
+    autoReview = {summary: data.autoReview, enabled: data.autoReviewEnabled};
     fillProjects();
     render();
   } catch (e) {
@@ -159,6 +182,9 @@ function render() {
   const waitingLabel = document.getElementById('waiting');
   waitingLabel.hidden = waiting === 0;
   waitingLabel.textContent = `${waiting} waiting on you`;
+  const chip = document.getElementById('auto-review');
+  chip.textContent = autoReview.summary || '';
+  chip.classList.toggle('on', autoReview.enabled);
   document.getElementById('empty').hidden = tasks.length > 0;
   // Only phases that HAVE tasks get a column. `done` deletes the task outright, so a DONE column could never
   // hold anything — it just sat there reading "done 0" — and five empty columns are noise on a board of two.
@@ -228,6 +254,15 @@ function card(task) {
     article_children.push(drafts);
   }
 
+  const watch = watchLine(task.autoReview);
+  if (watch) {
+    const node = document.createElement('div');
+    node.className = watch.stalled ? 'watch stalled' : 'watch';
+    node.textContent = watch.text;
+    node.title = autoReview.summary;
+    article_children.push(node);
+  }
+
   const links = document.createElement('div');
   links.className = 'links';
   if (task.ticketUrl) links.append(link(task.ticketUrl, 'ticket'));
@@ -267,11 +302,26 @@ function link(href, text) {
   return anchor;
 }
 
+// A deploy is the one click that writes a branch other people build on, so the question names the exact writes
+// it is asking for — one line per repository, since a task can move several and each has its own target.
+const deployQuestion = (task) => {
+  const lands = (task.repos || []).map((repo) =>
+    `${repo.project} → ${repo.deployBranch || 'no deployBranch in config.json'}`);
+  // A deploy lands what was SHIPPED. After a round the agent's fixes sit uncommitted in the worktree and its
+  // drafted answers are unposted, and only `ship` moves either — so the question says so rather than letting a
+  // click quietly deploy the previous round and mark the task DEPLOYED.
+  const unshipped = task.status === 'REVIEW_PENDING' || task.draftedReplies
+    ? '\n\nCareful: this task has work that was never shipped — the deploy lands the last SHIP, not the agent\u2019s'
+      + ' latest changes, and drafted replies stay unposted. Ship first to include them.'
+    : '';
+  return `Deploy ${task.id}?\n\nThis merges and pushes:\n${lands.join('\n')}${unshipped}`;
+};
+
 async function run(task, action) {
   // `done` destroys a worktree and `deploy` writes to a shared branch: ask, exactly like the console makes
   // you type the word.
-  if ((action.id === 'done' || action.id === 'deploy')
-      && !confirm(`${action.label} ${task.id}?\n\n${action.hint}`)) {
+  const question = action.id === 'deploy' ? deployQuestion(task) : `${action.label} ${task.id}?\n\n${action.hint}`;
+  if ((action.id === 'done' || action.id === 'deploy') && !confirm(question)) {
     return;
   }
   busy.add(task.id);

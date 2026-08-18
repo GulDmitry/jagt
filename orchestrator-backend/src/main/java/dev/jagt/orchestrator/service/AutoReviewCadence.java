@@ -1,28 +1,69 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.AutoReviewWatch;
+import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.model.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 
 import java.time.Duration;
 
 /**
- * The auto-review poll cadence: how long to wait before the next poll given how long the request has been
- * open. Pure and total so it is unit-tested, not improvised. The interval escalates LINEARLY from
- * {@code min} at the window start to {@code max} at the window end (capped at {@code max} = hourly by
- * default): poll often early, back off as the request ages. Past the window it returns {@code null} —
- * polling
- * stops (the scheduler pings the human once to sweep manually).
+ * The whole auto-review policy: whether polling runs at all, how long to wait before the next poll given how
+ * long the request has been open, and what that means for one task. Pure and total so it is unit-tested, not
+ * improvised. The interval escalates LINEARLY from {@code min} at the window start to {@code max} at the window
+ * end (capped at {@code max} = hourly by default): poll often early, back off as the request ages. Past the
+ * window it returns {@code null} — polling stops (the scheduler pings the human once to sweep manually).
+ *
+ * <p>The poller and every human surface ask the SAME object, so a dashboard cannot advertise a poll the
+ * scheduler will not make.
  */
 @RequiredArgsConstructor
 public final class AutoReviewCadence {
 
+    private final boolean enabled;
     private final Duration window;
     private final long minMinutes;
     private final long maxMinutes;
 
     public static AutoReviewCadence from(AutoReviewConfig cfg) {
-        return new AutoReviewCadence(Duration.ofHours(cfg.windowHoursOrDefault()),
+        return new AutoReviewCadence(cfg.enabledOrDefault(), Duration.ofHours(cfg.windowHoursOrDefault()),
                 cfg.minIntervalMinutesOrDefault(), cfg.maxIntervalMinutesOrDefault());
+    }
+
+    public boolean enabled() {
+        return enabled;
+    }
+
+    /** What a human is owed about this task: is anything watching it, and when will it next look. */
+    public AutoReviewWatch watch(TaskState task, long now) {
+        if (!enabled || task.status() != TaskStatus.CI_POLLING) {
+            return AutoReviewWatch.none();
+        }
+        if (!task.autoReviewEnabled(true)) {
+            return AutoReviewWatch.offForTask();
+        }
+        // ANY repository's request, the same question the sweep and the projection ask.
+        if (!task.hasReviewRequest()) {
+            return AutoReviewWatch.none();
+        }
+        // A request with no round stamp cannot be timed, so nothing will ever poll it — said out loud rather than
+        // rendered as silence, which is what a state.json written before the stamp existed would otherwise look
+        // like.
+        if (task.mrCreatedAt() == 0) {
+            return AutoReviewWatch.noRound();
+        }
+        Duration interval = pollInterval(Duration.ofMillis(now - task.mrCreatedAt()));
+        return interval == null
+                ? AutoReviewWatch.windowElapsed()
+                : AutoReviewWatch.watching(task.lastPolledAt() + interval.toMillis());
+    }
+
+    /** How the cadence reads to a human, in the one place both surfaces take the words from. */
+    public String summary() {
+        return enabled
+                ? "auto-review on · every " + minMinutes + "–" + maxMinutes + "m over " + window.toHours() + "h"
+                : "auto-review off";
     }
 
     /** The wait before the next poll for a request open this long, or {@code null} once the window has

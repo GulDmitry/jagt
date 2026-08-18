@@ -116,11 +116,73 @@ class DashboardRendererTest {
         assertThat(rendererFor(state).render()).doesNotContain("└");
     }
 
+    @Test
+    void saysWhenTheUnattendedPollWillNextLookAtATaskOutForReview(@TempDir Path root) {
+        StateService state = stateIn(root);
+        long shipped = System.currentTimeMillis();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(shipped).lastPolledAt(shipped).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withAutoReview(new ConfigService.ConfigFile.AutoReviewConfig(true, null, null, null)));
+
+        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state)).render();
+
+        // Indented: the TUI colours any unindented line as a task row, and this is not one.
+        assertThat(out).contains("\n  auto-review on · every 10–60m over 24h\n");
+        assertThat(out).contains("└ auto-review · next poll in 10m");
+    }
+
+    @Test
+    void saysWhenNothingWillPollATaskAnyMore(@TempDir Path root) {
+        StateService state = stateIn(root);
+        long shipped = System.currentTimeMillis() - java.time.Duration.ofHours(25).toMillis();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(shipped).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withAutoReview(new ConfigService.ConfigFile.AutoReviewConfig(true, null, null, null)));
+
+        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state)).render();
+
+        assertThat(out).contains("└ auto-review · window elapsed");
+    }
+
+    @Test
+    void namesTheTaskThatNothingPollsWhileTheRestAreWatched(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(System.currentTimeMillis())
+                .autoReview(false).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withAutoReview(new ConfigService.ConfigFile.AutoReviewConfig(true, null, null, null)));
+
+        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state)).render();
+
+        assertThat(out).contains("└ auto-review · off for this task");
+    }
+
+    /** With polling off, the header has to say so — silence is what a human cannot tell apart from waiting. */
+    @Test
+    void saysThatNothingPollsAtAllWhenAutoReviewIsSwitchedOff(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(System.currentTimeMillis()).build());
+
+        String out = rendererFor(state).render();
+
+        assertThat(out).contains("auto-review off");
+        assertThat(out).doesNotContain("next poll");
+    }
+
     private static DashboardRenderer rendererFor(StateService state) {
         return rendererFor(state, new UsageTracker(state));
     }
 
     private static DashboardRenderer rendererFor(StateService state, UsageTracker tracker) {
-        return new DashboardRenderer(new TaskViews(state), tracker);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        return new DashboardRenderer(new TaskViews(state, config), tracker);
     }
 }

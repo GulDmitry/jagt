@@ -28,7 +28,7 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         if (hasReviewRequest) {
             actions.add(TaskAction.SWEEP);
         }
-        if (deployable(status)) {
+        if (deployable(status, hasReviewRequest)) {
             actions.add(TaskAction.DEPLOY);
         }
         // Offered whenever a deploy is the last thing that happened. Whether jagt KNOWS the merge commit is
@@ -60,9 +60,23 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
                 || (status == TaskStatus.SHIPPING && !agentLive) || anotherRound;
     }
 
-    private static boolean deployable(TaskStatus status) {
-        return status == TaskStatus.REVIEWED || status == TaskStatus.APPROVED
-                || status == TaskStatus.DEPLOY_CONFLICT;
+    /**
+     * WHAT A REVIEWER SAID IS NOT A GATE ON DEPLOY, and it never was below this line: `deploy` merges the task
+     * BRANCH and git's only precondition is commits on it. So an open request is the rule, not the verdict — a
+     * human looking at a REVIEW_PENDING card can land a request they have decided to land.
+     *
+     * <p>What is excluded is excluded because the deploy could only fail or race: NEW has nothing on the branch,
+     * DONE is closed, SHIPPING is a push in flight, IN_PROGRESS is an agent committing INTO the branch this would
+     * merge, and REVERTED has no commits the deploy branch does not already carry (a revert ADDS one), so it
+     * could only ever answer "nothing to deploy". DEPLOY_CONFLICT is in whatever else is true: a stalled deploy
+     * is finished by deploying again.
+     */
+    private static boolean deployable(TaskStatus status, boolean hasReviewRequest) {
+        return switch (status) {
+            case DEPLOY_CONFLICT -> true;
+            case REVIEW_PENDING, CI_POLLING, CI_FAILED, REVIEWED, APPROVED, DEPLOYED -> hasReviewRequest;
+            case NEW, IN_PROGRESS, SHIPPING, REVERTED, DONE -> false;
+        };
     }
 
     private static Phase phaseOf(TaskStatus status) {
@@ -99,7 +113,10 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
                 case PLAIN -> TaskAction.SHIP;
             };
             case CI_POLLING, CI_FAILED -> hasReviewRequest ? TaskAction.SWEEP : TaskAction.FOCUS;
-            case REVIEWED, APPROVED, DEPLOY_CONFLICT -> TaskAction.DEPLOY;
+            // Not unconditional: with no request there is nothing to land, and a primary the action list omits
+            // would leave the board with no highlighted button at all.
+            case REVIEWED, APPROVED -> hasReviewRequest ? TaskAction.DEPLOY : TaskAction.DONE;
+            case DEPLOY_CONFLICT -> TaskAction.DEPLOY;
             case DEPLOYED -> TaskAction.DONE;
             // Not DONE: something was rolled back, so the expected next move is a fix, not a close.
             case REVERTED -> hasReviewRequest ? TaskAction.SHIP : TaskAction.FOCUS;

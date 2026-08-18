@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 
 class AutoReviewSchedulerTest {
 
-    private static final AutoReviewCadence CADENCE = new AutoReviewCadence(Duration.ofHours(24), 10, 60);
+    private static final AutoReviewCadence CADENCE = new AutoReviewCadence(true, Duration.ofHours(24), 10, 60);
     private static final long NOW = 1_000_000_000_000L;
 
     private static TaskState.Builder polling() {

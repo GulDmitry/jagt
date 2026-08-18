@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.AutoReviewWatch;
 import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.model.TokenUsage;
 import lombok.RequiredArgsConstructor;
@@ -44,10 +45,15 @@ public class DashboardRenderer {
     private final UsageTracker usageTracker;
 
     public String render() {
-        List<TaskView> tasks = taskViews.all();
+        TaskViews.Snapshot snapshot = taskViews.snapshot();
+        List<TaskView> tasks = snapshot.tasks();
         StringBuilder out = new StringBuilder();
         out.append("jagt orchestrator — ").append(tasks.size()).append(" task(s)   updated ")
-                .append(LocalTime.now().format(CLOCK)).append(sessionSpend()).append('\n').append('\n');
+                .append(LocalTime.now().format(CLOCK)).append(sessionSpend()).append('\n');
+        // On the line that used to be blank: an 80-column header has no room left, and a wrapped header costs a
+        // dashboard row (see sessionSpend). INDENTED, because the TUI decides what to colour as a task row by
+        // whether a line starts with a space.
+        out.append("  ").append(snapshot.cadence().summary()).append('\n');
         out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE ▼", "TOKENS",
                 "TITLE"));
         for (TaskView task : tasks) {
@@ -67,6 +73,10 @@ public class DashboardRenderer {
                         .append(task.alias() == null ? task.id() : task.alias())
                         .append("` before you ship\n");
             }
+            String watch = autoReviewLine(task.autoReview());
+            if (!watch.isEmpty()) {
+                out.append("                    └ ").append(watch).append('\n');
+            }
             // Lead with WHOSE move it is: on a board of five tasks that is the fact a human scans for. The
             // duration is time in THIS status, not since the last activity — a keep-alive resets that stamp.
             out.append("                    → ").append(task.owner().label()).append(" · ")
@@ -78,6 +88,25 @@ public class DashboardRenderer {
             out.append("(no tasks)\n");
         }
         return out.toString();
+    }
+
+    /**
+     * What the poller is about to do with this task, or nothing when it is not its business. The words are the
+     * projection's own ({@link AutoReviewWatch#note}); only the countdown is rendered here, from the absolute
+     * stamp, so it is right however long ago the projection was built.
+     */
+    private static String autoReviewLine(AutoReviewWatch watch) {
+        if (watch.state() == AutoReviewWatch.State.NONE) {
+            return "";
+        }
+        return watch.state() == AutoReviewWatch.State.WATCHING
+                ? watch.note() + " " + due(watch.nextPollAt())
+                : watch.note();
+    }
+
+    private static String due(long nextPollAt) {
+        long remaining = nextPollAt - System.currentTimeMillis();
+        return remaining <= 0 ? "due now" : "in " + DurationFormat.countdown(remaining);
     }
 
     static String stamp(long epochMillis) {

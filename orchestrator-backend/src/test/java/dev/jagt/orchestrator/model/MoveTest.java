@@ -90,13 +90,49 @@ class MoveTest {
         assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE).actions()).doesNotContain(TaskAction.SWEEP);
     }
 
+    /** The reviewer's verdict is the human's business, not a gate: an open request is something to land. */
     @Test
-    void offersDeployOnlyWhenTheChangeIsReadyOrStuckOnItsWayOut() {
-        assertThat(Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE).actions()).contains(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.APPROVED, true, RoundState.NONE).actions()).contains(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.DEPLOY_CONFLICT, true, RoundState.NONE).actions()).contains(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE).actions()).doesNotContain(TaskAction.DEPLOY);
-        assertThat(Move.forTask(TaskStatus.DEPLOYED, true, RoundState.NONE).actions()).doesNotContain(TaskAction.DEPLOY);
+    void offersDeployOnAnyTaskWithARequestOpenWhateverTheReviewSaid() {
+        assertThat(Move.forTask(TaskStatus.REVIEW_PENDING, true, RoundState.NONE).actions())
+                .contains(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE).actions())
+                .contains(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.APPROVED, true, RoundState.NONE).actions())
+                .contains(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.DEPLOYED, true, RoundState.NONE).actions())
+                .contains(TaskAction.DEPLOY);
+    }
+
+    /** A primary the action list does not contain leaves the board with nothing highlighted at all. */
+    @Test
+    void neverMakesDeployThePrimaryMoveOfATaskThatHasNoRequestToLand() {
+        Move move = Move.forTask(TaskStatus.REVIEWED, false, RoundState.NONE);
+
+        assertThat(move.actions()).doesNotContain(TaskAction.DEPLOY);
+        assertThat(move.actions()).contains(move.primary());
+    }
+
+    /**
+     * The exclusions are not "no request yet": an agent mid-round would have its branch merged out from under it,
+     * and a reverted deploy has nothing the deploy branch does not already carry, so it could only refuse.
+     */
+    @Test
+    void offersNoDeployWhereItCouldOnlyRaceTheAgentOrRefuse() {
+        assertThat(Move.forTask(TaskStatus.IN_PROGRESS, true, RoundState.NONE).actions())
+                .doesNotContain(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE).actions())
+                .doesNotContain(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.NEW, true, RoundState.NONE).actions())
+                .doesNotContain(TaskAction.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.SHIPPING, true, RoundState.NONE).actions())
+                .doesNotContain(TaskAction.DEPLOY);
+    }
+
+    /** A stalled deploy is finished by deploying again, whether or not a request was ever read. */
+    @Test
+    void offersDeployOnAStalledDeployWithNoRequestAtAll() {
+        assertThat(Move.forTask(TaskStatus.DEPLOY_CONFLICT, false, RoundState.NONE).actions())
+                .contains(TaskAction.DEPLOY);
     }
 
     @Test

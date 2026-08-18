@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.model;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * One task as a human surface sees it: identity, where it is, whose turn it is, what may be done, and the
@@ -35,6 +36,9 @@ public record TaskView(
         // Drafted review replies are sitting in the worktree's review_replies.md. Nothing else announces them:
         // a human who does not know the convention ships a round and posts (or drops) replies they never read.
         boolean draftedReplies,
+        // Whether anything is polling this task's request and when it will next look. A poll runs with nobody
+        // watching, so silence must not be the only thing a surface can show about it.
+        AutoReviewWatch autoReview,
         long tokens
 ) {
 
@@ -42,11 +46,16 @@ public record TaskView(
     public record ActionView(String id, String label, String hint, boolean primary) {
     }
 
-    /** One repository of the task: which project it is, and the review request open for it. */
-    public record RepoView(String project, String reviewRequestUrl) {
+    /**
+     * One repository of the task: which project it is, the review request open for it, and the branch a deploy
+     * would push it to. The branch is named so a surface asking a human to confirm a shared-branch write can say
+     * WHICH branch, per repository, instead of "the deploy branch". Null when the project configures none.
+     */
+    public record RepoView(String project, String reviewRequestUrl, String deployBranch) {
     }
 
-    public static TaskView of(String id, TaskState task, boolean draftedReplies) {
+    public static TaskView of(String id, TaskState task, boolean draftedReplies, AutoReviewWatch autoReview,
+                              Map<String, String> deployBranches) {
         Move move = Move.forTask(task.status(), task.hasReviewRequest(),
                 RoundState.of(task.message(), draftedReplies));
         List<ActionView> actions = move.actions().stream()
@@ -58,10 +67,12 @@ public record TaskView(
                 move.primary() == null ? null : move.primary().id(),
                 DashboardLine.forTask(id, task), webLink(task.ticketUrl()), webLink(task.mrUrl()),
                 task.repos().stream()
-                        .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl())))
+                        .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl()),
+                                deployBranches.get(repo.project())))
                         .toList(),
                 task.lastActiveTimestamp(),
-                task.statusSince(), task.history(), draftedReplies, task.usageOrNone().total());
+                task.statusSince(), task.history(), draftedReplies, autoReview,
+                task.usageOrNone().total());
     }
 
     /**

@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.web;
 
 import dev.jagt.orchestrator.model.TaskView;
 import dev.jagt.orchestrator.service.CommandReference;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateViews;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -25,7 +24,8 @@ import java.util.List;
 public class BoardApiController {
 
     /** Everything one board render needs, in one round trip. */
-    public record Board(List<TaskView> tasks, Spend spend, List<String> projects) {
+    public record Board(List<TaskView> tasks, Spend spend, List<String> projects, String autoReview,
+                        boolean autoReviewEnabled) {
     }
 
     /** What jagt's own model calls have cost this session — the number the console shows in its header. */
@@ -33,7 +33,6 @@ public class BoardApiController {
     }
 
     private final TaskViews taskViews;
-    private final ConfigService configService;
     private final UsageTracker usageTracker;
     private final TaskEventStream events;
     private final StateViews views;
@@ -41,8 +40,11 @@ public class BoardApiController {
     @GetMapping("/tasks")
     public Board tasks() {
         var session = usageTracker.session();
-        return new Board(taskViews.all(), new Spend(session.calls(), session.total()),
-                List.copyOf(configService.load().projects().keySet()));
+        // Whether polling runs at all is a property of the INSTALL, so it is answered once per render rather
+        // than repeated on every card — a board with no task out for review must still be able to say it.
+        var snapshot = taskViews.snapshot();
+        return new Board(snapshot.tasks(), new Spend(session.calls(), session.total()), snapshot.projects(),
+                snapshot.cadence().summary(), snapshot.cadence().enabled());
     }
 
     /**

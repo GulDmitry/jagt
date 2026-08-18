@@ -39,7 +39,9 @@ class NaturalLanguageDispatchTest {
     private final TaskLauncher launcher = mock(TaskLauncher.class);
 
     private NaturalLanguageDispatch dispatchWith(StateService state) {
-        return new NaturalLanguageDispatch(assistant, state, new TaskViews(state), commands, launcher);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        return new NaturalLanguageDispatch(assistant, state, new TaskViews(state, config), commands, launcher);
     }
 
     private static StateService stateWithOneTask(Path root) {

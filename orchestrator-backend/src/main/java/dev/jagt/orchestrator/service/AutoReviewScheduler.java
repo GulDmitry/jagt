@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.ActionOrigin;
+import dev.jagt.orchestrator.model.AutoReviewWatch;
 import dev.jagt.orchestrator.model.TaskLabel;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
@@ -10,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -68,11 +68,10 @@ public class AutoReviewScheduler {
 
     @Scheduled(fixedRate = 60_000)
     public void scan() {
-        var cfg = configService.load().autoReview();
-        if (!cfg.enabledOrDefault()) {
+        AutoReviewCadence cadence = AutoReviewCadence.from(configService.load().autoReview());
+        if (!cadence.enabled()) {
             return;
         }
-        AutoReviewCadence cadence = AutoReviewCadence.from(cfg);
         long now = System.currentTimeMillis();
         var tasks = stateService.tasks();
         // A task RETIRED while still CI_POLLING never leaves that status, so the branch below would keep its
@@ -98,19 +97,17 @@ public class AutoReviewScheduler {
         });
     }
 
-    /** Pure poll decision for a task the caller has already confirmed is CI_POLLING under an enabled config. */
+    /**
+     * Pure poll decision, taken from the WATCH every human surface shows — so a card promising a poll in four
+     * minutes and a scheduler that would not make one cannot happen.
+     */
     static Action decide(TaskState task, AutoReviewCadence cadence, long now) {
-        if (task.status() != TaskStatus.CI_POLLING || !task.autoReviewEnabled(true)) {
-            return Action.SKIP;
-        }
-        if (task.mrUrl() == null || task.mrUrl().isBlank() || task.mrCreatedAt() == 0) {
-            return Action.SKIP;
-        }
-        Duration interval = cadence.pollInterval(Duration.ofMillis(now - task.mrCreatedAt()));
-        if (interval == null) {
-            return Action.WINDOW_ELAPSED;
-        }
-        return now - task.lastPolledAt() >= interval.toMillis() ? Action.POLL : Action.SKIP;
+        AutoReviewWatch watch = cadence.watch(task, now);
+        return switch (watch.state()) {
+            case WINDOW_ELAPSED -> Action.WINDOW_ELAPSED;
+            case WATCHING -> watch.nextPollAt() <= now ? Action.POLL : Action.SKIP;
+            case NONE, OFF_FOR_TASK, NO_ROUND -> Action.SKIP;
+        };
     }
 
     private void poll(String taskId, String alias) {

@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.web;
 
 import dev.jagt.orchestrator.service.StateViews;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
 import org.junit.jupiter.api.Test;
@@ -15,10 +14,9 @@ import static org.mockito.Mockito.when;
 class BoardApiControllerTest {
 
     private final TaskViews taskViews = mock(TaskViews.class);
-    private final ConfigService configService = mock(ConfigService.class);
     private final UsageTracker usageTracker = mock(UsageTracker.class);
     private final StateViews views = mock(StateViews.class);
-    private final BoardApiController api = new BoardApiController(taskViews, configService, usageTracker,
+    private final BoardApiController api = new BoardApiController(taskViews, usageTracker,
             mock(TaskEventStream.class), views);
 
     /**
@@ -61,16 +59,29 @@ class BoardApiControllerTest {
 
     @Test
     void reportsTheSessionSpendAndTheProjectsAlongsideTheTasks() {
-        when(taskViews.all()).thenReturn(List.of());
         when(usageTracker.session()).thenReturn(dev.jagt.orchestrator.model.TokenUsage.ofCall(1000, 0, 50, 0.1));
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
-                java.util.Map.of("demo", new dev.jagt.orchestrator.model.ProjectConfig("/p", "origin/main",
-                        "dev", List.of()))));
+        when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
+                new dev.jagt.orchestrator.service.AutoReviewCadence(false, java.time.Duration.ofHours(24), 10, 60),
+                List.of("demo")));
 
         var board = api.tasks();
 
         assertThat(board.spend().calls()).isEqualTo(1);
         assertThat(board.spend().tokens()).isEqualTo(1050);
         assertThat(board.projects()).containsExactly("demo");
+    }
+
+    /** A board with nothing out for review still has to say whether anything would be polled. */
+    @Test
+    void saysWhetherTheUnattendedPollRunsAtAllEvenWithNoTasks() {
+        when(usageTracker.session()).thenReturn(dev.jagt.orchestrator.model.TokenUsage.NONE);
+        when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
+                new dev.jagt.orchestrator.service.AutoReviewCadence(true, java.time.Duration.ofHours(24), 10, 60),
+                List.of()));
+
+        var board = api.tasks();
+
+        assertThat(board.autoReviewEnabled()).isTrue();
+        assertThat(board.autoReview()).isEqualTo("auto-review on · every 10–60m over 24h");
     }
 }

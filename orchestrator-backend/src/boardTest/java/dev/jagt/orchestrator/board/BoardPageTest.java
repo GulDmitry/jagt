@@ -32,6 +32,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -82,6 +83,10 @@ class BoardPageTest {
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
     @MockitoBean
     private TtydWebTerminal webTerminal;
+    /** Polling is ON in the config so the page can show what it looks like; the poller itself would read a
+     *  review request for real and, with no code host, pay a model to do it. */
+    @MockitoBean
+    private dev.jagt.orchestrator.service.AutoReviewScheduler autoReviewScheduler;
 
     private BrowserContext session;
 
@@ -101,7 +106,7 @@ class BoardPageTest {
                     "alpha": {"path": "%s", "baseBranch": "origin/main", "deployBranch": "dev"},
                     "beta": {"path": "%s", "baseBranch": "origin/main", "deployBranch": "dev"}
                   },
-                  "autoReview": {"enabled": false}
+                  "autoReview": {"enabled": true}
                 }
                 """.formatted(root.resolve("alpha"), root.resolve("beta")));
         playwright = Playwright.create();
@@ -124,6 +129,32 @@ class BoardPageTest {
     @AfterEach
     void closeTheTab() {
         session.close();
+    }
+
+    @Test
+    void saysThatTheUnattendedPollIsOnAndWhenItWillNextLookAtATask() {
+        long shipped = now();
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").lastActiveTimestamp(shipped)
+                .mrUrl("https://host/alpha/-/merge_requests/1").mrCreatedAt(shipped).lastPolledAt(shipped)
+                .build());
+
+        Page page = open();
+
+        assertThat(page.locator("#auto-review")).hasText("auto-review on · every 10–60m over 24h");
+        assertThat(page.locator("#auto-review")).hasClass(java.util.regex.Pattern.compile("on"));
+        assertThat(page.locator("article .watch")).hasText("auto-review · next poll in 10m");
+    }
+
+    @Test
+    void saysNothingAboutAPollForATaskThatIsNotOutForReview() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article")).hasCount(1);
+        assertThat(page.locator("article .watch")).hasCount(0);
     }
 
     @Test
@@ -261,6 +292,53 @@ class BoardPageTest {
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Done").setExact(true)).click();
 
         org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS)).startsWith("Done ABC-1?");
+        verifyNoInteractions(commands);
+    }
+
+    /** The one click that writes a branch other people build on says exactly which branches, per repository. */
+    @Test
+    void deployingNamesEveryRepositoryAndTheBranchItWouldBePushedTo() throws Exception {
+        state.putTask("ABC-1", TaskState.builder(List.of(
+                        dev.jagt.orchestrator.model.TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString()),
+                        new dev.jagt.orchestrator.model.TaskRepo("beta", root.resolve("ABC-1-beta").toString(),
+                                null, "https://host.example/mr/8", null)),
+                TaskStatus.REVIEW_PENDING).alias("a1").lastActiveTimestamp(now()).build());
+        CompletableFuture<String> asked = new CompletableFuture<>();
+
+        Page page = open();
+        page.onDialog(dialog -> {
+            asked.complete(dialog.message());
+            dialog.dismiss();
+        });
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Deploy").setExact(true)).click();
+
+        String question = asked.get(5, TimeUnit.SECONDS);
+        org.assertj.core.api.Assertions.assertThat(question)
+                .startsWith("Deploy ABC-1?")
+                .contains("This merges and pushes:")
+                .contains("alpha → dev")
+                .contains("beta → dev");
+        verifyNoInteractions(commands);
+    }
+
+    /** A deploy lands what was SHIPPED, and a round that came back is not that — the question has to say so. */
+    @Test
+    void deployingWarnsWhenTheTaskHasWorkThatWasNeverShipped() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/9")
+                .lastActiveTimestamp(now()).build());
+        CompletableFuture<String> asked = new CompletableFuture<>();
+
+        Page page = open();
+        page.onDialog(dialog -> {
+            asked.complete(dialog.message());
+            dialog.dismiss();
+        });
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Deploy").setExact(true)).click();
+
+        org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
+                .contains("never shipped")
+                .contains("lands the last SHIP");
         verifyNoInteractions(commands);
     }
 

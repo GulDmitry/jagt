@@ -5,6 +5,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -19,7 +20,7 @@ class TaskViewTest {
 
     private static TaskView viewOf(String ticketUrl, String reviewRequestUrl) {
         return TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                .alias("a1").ticketUrl(ticketUrl).mrUrl(reviewRequestUrl).build(), false);
+                .alias("a1").ticketUrl(ticketUrl).mrUrl(reviewRequestUrl).build(), false, AutoReviewWatch.none(), Map.of("proj", "dev", "api", "dev", "web", "dev"));
     }
 
     @ParameterizedTest
@@ -68,7 +69,7 @@ class TaskViewTest {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
                 new TaskRepo("api", "/api-wt", "git@host:g/api.git", "https://host/api/-/merge_requests/1", null),
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
-                TaskStatus.CI_POLLING).alias("a1").build(), false);
+                TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(), Map.of("proj", "dev", "api", "dev", "web", "dev"));
 
         assertThat(view.repos()).extracting(TaskView.RepoView::project, TaskView.RepoView::reviewRequestUrl)
                 .containsExactly(tuple("api", "https://host/api/-/merge_requests/1"),
@@ -81,7 +82,7 @@ class TaskViewTest {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
                 new TaskRepo("api", "/api-wt", "git@host:g/api.git", null, null),
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
-                TaskStatus.CI_POLLING).alias("a1").build(), false);
+                TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(), Map.of("proj", "dev", "api", "dev", "web", "dev"));
 
         assertThat(view.actions()).extracting(TaskView.ActionView::id).contains("sweep");
     }

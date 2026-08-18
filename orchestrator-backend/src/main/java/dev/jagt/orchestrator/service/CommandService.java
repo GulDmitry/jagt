@@ -41,7 +41,9 @@ public class CommandService {
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
         TaskState task = stateService.task(taskId).orElseThrow(() -> new Refusal(Refusal.Code.NO_SUCH_TASK,
                 "No task " + taskIdOrAlias + " — it may have been closed since this page loaded."));
-        Move move = Move.forTask(task.status(), task.mrUrl() != null && !task.mrUrl().isBlank(),
+        // ANY repository's request, exactly as the projection asks it: a multi-repo task whose primary has none
+        // would otherwise be offered a button this gate then refuses.
+        Move move = Move.forTask(task.status(), task.hasReviewRequest(),
                 RoundState.of(task.message(), WorktreeFiles.draftedReplies(task)));
         if (!move.actions().contains(action)) {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "

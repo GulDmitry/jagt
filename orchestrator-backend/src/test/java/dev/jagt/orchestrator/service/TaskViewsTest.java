@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 class TaskViewsTest {
 
     private final StateService stateService = mock(StateService.class);
+    private final ConfigService configService = mock(ConfigService.class);
 
     @Test
     void announcesTheDraftedRepliesWaitingInTheWorktree(@TempDir Path worktree) throws Exception {
@@ -23,7 +24,9 @@ class TaskViewsTest {
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
 
-        var views = new TaskViews(stateService).all();
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        var views = new TaskViews(stateService, configService).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(true);
     }
@@ -33,9 +36,28 @@ class TaskViewsTest {
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
 
-        var views = new TaskViews(stateService).all();
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        var views = new TaskViews(stateService, configService).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
+    }
+
+    /**
+     * The console redraws through here on every keystroke, and config.json is hand-edited while jagt runs — a
+     * half-saved file must not throw out of the render loop.
+     */
+    @Test
+    void keepsRenderingWhenTheConfigurationCannotBeRead() {
+        when(stateService.tasks()).thenReturn(Map.of("ABC-1",
+                TaskState.builder("proj", "/nowhere/ABC-1-proj", TaskStatus.CI_POLLING).build()));
+        when(configService.load()).thenThrow(new IllegalStateException("config.json is not valid JSON"));
+
+        var snapshot = new TaskViews(stateService, configService).snapshot();
+
+        assertThat(snapshot.tasks()).hasSize(1);
+        assertThat(snapshot.cadence().enabled()).isFalse();
+        assertThat(snapshot.projects()).isEmpty();
     }
 
     @Test
@@ -43,7 +65,9 @@ class TaskViewsTest {
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("proj", "/nowhere/ABC-1-proj", TaskStatus.DONE).build()));
 
-        var views = new TaskViews(stateService).all();
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        var views = new TaskViews(stateService, configService).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
     }
