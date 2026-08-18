@@ -50,28 +50,28 @@ public class GitService {
             boolean branchExists = processRunner.run(projectPath, GIT_TIMEOUT,
                     List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0;
             if (branchExists) {
-                checkoutOf(projectPath, branch).ifPresent(held -> {
-                    throw new IllegalStateException("Branch '" + branch + "' is checked out at " + held
-                            + ", and git allows one checkout per branch — so no worktree can take it. Free it"
-                            + " there (`git -C " + held + " switch <other-branch>`) and run this again; nothing"
-                            + " was registered. jagt will not switch a checkout that may hold your uncommitted"
-                            + " work.");
-                });
                 switch (strategy) {
                     // A reopened ticket after a squash merge looks "unmerged" to git, an
-                    // aborted task may hold unpushed work — deleting silently is never safe.
+                    // aborted task may hold unpushed work — deleting silently is never safe. Nothing is freed
+                    // on this path: a refusal must leave the human's repository where it was.
                     case FRESH -> throw new IllegalArgumentException("Branch '" + branch
                             + "' already exists (previous run of this ticket). Decide what to do and retry with"
                             + " branchStrategy: 'recreate' (old work merged/obsolete -> delete branch, start fresh"
                             + " from " + base + ") or 'resume' (continue the existing branch and its commits).");
-                    case RECREATE -> processRunner.run(projectPath, GIT_TIMEOUT,
-                                    List.of("git", "branch", "-D", branch))
-                            .expectSuccess("git branch -D " + branch);
+                    case RECREATE -> {
+                        Runnable restore = freeCheckout(projectPath, branch);
+                        run(restore, () -> processRunner.run(projectPath, GIT_TIMEOUT,
+                                        List.of("git", "branch", "-D", branch))
+                                .expectSuccess("git branch -D " + branch));
+                    }
                     case RESUME -> {
-                        processRunner.run(projectPath, GIT_TIMEOUT,
-                                        List.of("git", "worktree", "add", worktreePath.toString(), branch))
-                                .expectSuccess("git worktree add (resume) " + worktreePath);
-                        detachUpstream(projectPath, branch);
+                        Runnable restore = freeCheckout(projectPath, branch);
+                        run(restore, () -> {
+                            processRunner.run(projectPath, GIT_TIMEOUT,
+                                            List.of("git", "worktree", "add", worktreePath.toString(), branch))
+                                    .expectSuccess("git worktree add (resume) " + worktreePath);
+                            detachUpstream(projectPath, branch);
+                        });
                         return;
                     }
                 }
@@ -81,6 +81,70 @@ public class GitService {
                     .expectSuccess("git worktree add " + worktreePath);
             detachUpstream(projectPath, branch);
         });
+    }
+
+    /**
+     * Frees {@code branch} for a worktree by detaching the project's OWN repository where it stands, and answers
+     * how to put that repository back if what follows fails. Nobody works in the base repository, so a task
+     * blocked on a checkout nobody remembers making is worse than a warning — but another worktree belongs to
+     * another task, and a switch would carry TRACKED changes with it, so both of those refuse instead.
+     *
+     * <p>Detached IN PLACE, never moved to another ref: the files stay exactly as the human left them, so an
+     * editor open on that directory sees no change, and a per-task base with no local branch is no obstacle.
+     */
+    private Runnable freeCheckout(Path projectPath, String branch) {
+        // An unpruned registration for a directory somebody deleted by hand would otherwise be reported as the
+        // checkout to go and free.
+        processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
+        Optional<Path> checkout = checkoutOf(projectPath, branch);
+        if (checkout.isEmpty()) {
+            return () -> { };
+        }
+        Path held = checkout.get();
+        if (!sameDirectory(held, projectPath)) {
+            throw new IllegalStateException("Branch '" + branch + "' is checked out at " + held
+                    + " — free it there (`git -C " + held + " switch --detach`), then run this again.");
+        }
+        if (!processRunner.run(held, GIT_TIMEOUT,
+                        List.of("git", "status", "--porcelain", "--untracked-files=no"))
+                .expectSuccess("git status in " + held).stdout().isBlank()) {
+            throw new IllegalStateException("Branch '" + branch + "' is checked out at " + held
+                    + " with uncommitted changes — commit or stash them, then run this again.");
+        }
+        var switched = processRunner.run(held, GIT_TIMEOUT, List.of("git", "switch", "--detach"));
+        if (switched.exitCode() != 0) {
+            throw new IllegalStateException("Branch '" + branch + "' is checked out at " + held
+                    + " and freeing it failed: " + switched.stderr().strip());
+        }
+        log.atWarn().addKeyValue("task", branch)
+                .log("{} was on '{}', which this task needs — detached it there, files untouched. The branch"
+                        + " itself moves to the task's worktree.", held, branch);
+        return () -> reattach(held, branch);
+    }
+
+    /**
+     * Puts a repository jagt detached back on {@code branch}, answering what stopped it or null when it worked.
+     * The caller decides what to do with that: creation unwinds further than one git call, and a human left on a
+     * detached HEAD they never chose has to be told.
+     */
+    public String reattach(Path repository, String branch) {
+        var switched = processRunner.run(repository, GIT_TIMEOUT, List.of("git", "switch", branch));
+        if (switched.exitCode() == 0) {
+            return null;
+        }
+        String why = switched.stderr().isBlank() ? switched.stdout().strip() : switched.stderr().strip();
+        log.warn("Could not put {} back on '{}': {}", repository, branch, why);
+        return why;
+    }
+
+    /** Undoes the checkout jagt moved when the step it moved it FOR does not land. */
+    private static void run(Runnable restoreOnFailure, Runnable step) {
+        try {
+            step.run();
+        } catch (RuntimeException e) {
+            restoreOnFailure.run();
+            throw e;
+        }
     }
 
     /** Which worktree (the base repo included) has {@code branch} checked out, if any. */

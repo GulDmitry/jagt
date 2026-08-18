@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -284,12 +285,110 @@ class GitServiceTest {
     }
 
     /**
-     * The reported case: the base repo itself still had the ticket's branch checked out (an editor was open on
-     * it), so git refused the worktree with its own message and the human was left guessing what to free.
+     * The reported case: the base repository itself sat on the ticket's branch, and git allows one checkout per
+     * branch. Nobody works in that repository, so it is put back on the base branch instead of stopping a task.
      */
     @Test
-    void namesTheCheckoutHoldingTheBranchInsteadOfRelayingGitsRefusal(@TempDir Path dir) throws Exception {
+    void freesTheBaseRepositoryWhenItStillHoldsTheBranchThisTaskNeeds(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        GitService git = new GitService(runner);
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RESUME);
+
+        assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "worktree", "list")).stdout())
+                .contains("(detached HEAD)")                     // the base repository let the branch go
+                .containsPattern("wt +\\w+ \\[ABC-1]");           // and the task's worktree has it
+    }
+
+    @Test
+    void refusesWhenTheCheckoutHoldingTheBranchHasUncommittedWork(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Files.writeString(repo.resolve("f.txt"), "work nobody committed");
+        GitService git = new GitService(runner);
+
+        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
+                GitService.BranchStrategy.RESUME))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("uncommitted changes");
+        assertThat(dir.resolve("wt")).doesNotExist();
+        assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "branch", "--show-current"))
+                .stdout().strip()).isEqualTo("ABC-1");
+    }
+
+    /** `git branch -D` cannot delete a checked-out branch, so this is the strategy freeing exists for. */
+    @Test
+    void freesTheBaseRepositoryBeforeDeletingTheBranchItStillHolds(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        GitService git = new GitService(runner);
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RECREATE);
+
+        assertThat(dir.resolve("wt")).isDirectory();
+        assertThat(runner.run(repo, Duration.ofSeconds(30),
+                List.of("git", "log", "-1", "--format=%s", "ABC-1")).stdout()).contains("init");
+    }
+
+    /** A refusal must leave the human's own repository exactly where it was. */
+    @Test
+    void leavesTheCheckoutAloneWhenItRefusesAnExistingBranch(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        GitService git = new GitService(runner);
+
+        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
+                GitService.BranchStrategy.FRESH))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "branch", "--show-current"))
+                .stdout().strip()).isEqualTo("ABC-1");
+    }
+
+    @Test
+    void freesACheckoutThatOnlyHasUntrackedFilesInIt(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Files.writeString(repo.resolve("scratch.txt"), "never added to git");
+        GitService git = new GitService(runner);
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RESUME);
+
+        assertThat(dir.resolve("wt")).isDirectory();
+        assertThat(repo.resolve("scratch.txt")).exists();
+    }
+
+    @Test
+    void resumesTheBranchWhenTheRequestTargetsABaseThatNoLongerExists(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        GitService git = new GitService(runner);
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/deleted-base",
+                GitService.BranchStrategy.RESUME);
+
+        assertThat(dir.resolve("wt")).isDirectory();
+        assertThat(runner.run(dir.resolve("wt"), Duration.ofSeconds(30),
+                List.of("git", "branch", "--show-current")).stdout().strip()).isEqualTo("ABC-1");
+    }
+
+    @Test
+    void refusesWhenAnotherWorktreeHoldsTheBranch(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
+        runner.run(repo, Duration.ofSeconds(30),
+                List.of("git", "worktree", "add", "-q", dir.resolve("elsewhere").toString(), "ABC-1"));
+        GitService git = new GitService(runner);
+
+        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
+                GitService.BranchStrategy.RESUME))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("elsewhere");
+        assertThat(dir.resolve("wt")).doesNotExist();
+    }
+
+    private static Path repositoryOnItsOwnBranch(ProcessRunner runner, Path dir) throws IOException {
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -297,20 +396,11 @@ class GitServiceTest {
         runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
         Files.writeString(repo.resolve("f.txt"), "base");
         runner.run(repo, timeout, List.of("git", "add", "."));
-        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        // Left ON the branch, which is what an editor holding it looks like.
         runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
-        GitService git = new GitService(runner);
-
-        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
-                GitService.BranchStrategy.RESUME))
-                .isInstanceOf(IllegalStateException.class)
-                // git answers with the real path, which on macOS is the /private prefix of a temp dir.
-                .hasMessageContaining("is checked out at ").hasMessageContaining(repo.getFileName().toString())
-                .hasMessageContaining("switch <other-branch>")
-                .hasMessageContaining("nothing was registered");
-        assertThat(dir.resolve("wt")).doesNotExist();
+        return repo;
     }
 
     @Test
