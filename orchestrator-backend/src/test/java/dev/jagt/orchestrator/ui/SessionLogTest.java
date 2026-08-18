@@ -2,6 +2,9 @@ package dev.jagt.orchestrator.ui;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
 import org.springframework.boot.support.EnvironmentPostProcessorApplicationListener;
 import org.springframework.mock.env.MockEnvironment;
@@ -20,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * neither the file nor the archives beside it, and nothing at all when the file belongs to a jagt that is
  * still running.
  */
+@Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("loopback-ports")
 class SessionLogTest {
 
     @Test

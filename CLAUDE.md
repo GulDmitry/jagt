@@ -531,9 +531,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   file knows about the build, a seam interface states its contract and never one implementation's mechanism.
 - EVERY TEXT JAGT WRITES IS READ BY AN ENGINEER IN A HURRY: shortest form that still answers, lowest cognitive
   load, no story. One fact per line; a decision is the decision plus at most one clause of why, not the road to
-  it. This binds command sentences, docs, TODO entries, prompts and commit messages alike — TODO.md was 670 lines
-  of prose for 40 decisions before it was cut to one line each (2026-08-18), and the owner's complaint was that
-  nobody can read it. If an entry needs three paragraphs, the code needs the explanation, not the file.
+  it. This binds command sentences, docs, prompts and commit messages alike — TODO.md was 670 lines of prose for
+  40 decisions before it was emptied (2026-08-18), and the owner's complaint was that nobody can read it. A
+  DECIDED decision is not a TODO: it lives in the code, with the rule in CLAUDE.md and the road to it in git
+  history — TODO.md holds only what is still open, and holding nothing is its normal state. If an entry needs
+  three paragraphs, the code needs the explanation, not the file.
 - `USE-CASES.md` is the one-line answer per SITUATION ("the request does not target the base branch → …").
   When a case turns out to be non-obvious — or a session re-derives one that was already decided — append a
   row there instead of only fixing the code. CLAUDE.md keeps the rules; USE-CASES.md keeps the answers.

@@ -24,8 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * would otherwise surface the first time somebody starts jagt on Linux, not here.
  *
  * <p>Being able to run this from macOS is the point of the seam: which driver Spring picks is a config
- * decision, not an OS one. It says nothing about the drivers' behaviour on a real desktop — that needs the
- * Linux build milestone in TODO.md.
+ * decision, not an OS one. It says nothing about the drivers' behaviour on a real desktop.
  */
 @SpringBootTest(properties = {"orchestrator.open-warp-window=false", "orchestrator.platform=linux"})
 class LinuxProfileContextTest {

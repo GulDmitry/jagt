@@ -4,6 +4,9 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.WebTerminalProperties;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import java.net.ServerSocket;
 import java.util.OptionalInt;
@@ -19,6 +22,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+@Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("loopback-ports")
 class TtydWebTerminalTest {
 
     private final ProcessRunner processes = mock(ProcessRunner.class);
