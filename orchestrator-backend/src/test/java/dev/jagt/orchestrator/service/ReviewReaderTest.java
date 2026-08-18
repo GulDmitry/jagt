@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
 import dev.jagt.orchestrator.codehost.CodeHost;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
 import org.junit.jupiter.api.Test;
@@ -66,6 +67,44 @@ class ReviewReaderTest {
                 .read("ABC-1", "https://git.example.com/g/p/-/merge_requests/7");
 
         assertThat(facts).isEmpty();
+        verifyNoInteractions(assistant);
+    }
+
+    @Test
+    void readsAnOpenRequestOverTheCodeHostWithoutSpendingATokenWhenItClaimsTheUrl() {
+        when(codeHost.supports("https://git.example.com/g/p/-/merge_requests/7")).thenReturn(true);
+        when(codeHost.readRequest("https://git.example.com/g/p/-/merge_requests/7"))
+                .thenReturn(Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "ABC-1 Widget layout")));
+
+        var read = new ReviewReader(List.of(codeHost), assistant)
+                .readRequest("https://git.example.com/g/p/-/merge_requests/7");
+
+        assertThat(read.facts()).contains(new MergeRequestFacts(true, "ABC-1", "main", "ABC-1 Widget layout"));
+        verifyNoInteractions(assistant);
+    }
+
+    @Test
+    void fallsBackToTheHeadlessReadOfARequestOnAHostNobodyConfigured() {
+        when(codeHost.supports("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(false);
+        when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
+                new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "t")), TokenUsage.NONE));
+
+        var read = new ReviewReader(List.of(codeHost), assistant)
+                .readRequest("https://other.example.com/g/p/-/merge_requests/7");
+
+        assertThat(read.facts()).contains(new MergeRequestFacts(true, "ABC-1", "main", "t"));
+    }
+
+    @Test
+    void neverPaysForARequestReadWhenTheClaimingHostFailedToReadIt() {
+        when(codeHost.supports("https://git.example.com/g/p/-/merge_requests/7")).thenReturn(true);
+        when(codeHost.readRequest("https://git.example.com/g/p/-/merge_requests/7"))
+                .thenReturn(Optional.empty());
+
+        var read = new ReviewReader(List.of(codeHost), assistant)
+                .readRequest("https://git.example.com/g/p/-/merge_requests/7");
+
+        assertThat(read.facts()).isEmpty();
         verifyNoInteractions(assistant);
     }
 }

@@ -7,8 +7,11 @@ import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,7 +78,7 @@ class AgentStatusReportsTest {
 
         assertThatThrownBy(() -> reports(state).report("CI_POLLING", "branch pushed", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("MR link");
+                .hasMessageContaining("request link");
     }
 
     @Test
@@ -101,7 +104,7 @@ class AgentStatusReportsTest {
 
         assertThatThrownBy(() -> reports(state).report("CI_POLLING", "waiting for the pipeline", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("MR link");
+                .hasMessageContaining("request link");
     }
 
     @Test
@@ -134,7 +137,7 @@ class AgentStatusReportsTest {
         assertThatThrownBy(() -> reports(state)
                 .report("CI_POLLING", "pushed, see the http docs for the request", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("MR link");
+                .hasMessageContaining("request link");
     }
 
     @Test
@@ -179,5 +182,34 @@ class AgentStatusReportsTest {
         reports(state).report("CI_POLLING", "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isEqualTo(12345L);
+    }
+
+    @Test
+    void tellsTheHumanAboutTheDraftedRepliesWaitingInTheWorktree(@TempDir Path root) throws IOException {
+        StateService state = stateIn(root);
+        Files.createDirectories(root.resolve("wt"));
+        Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").build());
+
+        reports(state).report("REVIEW_PENDING", "widget fixed", "ABC-1");
+
+        verify(notifier).notify(eq("jagt · ABC-1"), contains("review_replies.md"));
+    }
+
+    @Test
+    void doesNotRepeatTheDraftedRepliesWhenTheRoundChangedNothingAndTheAdviceAlreadySaysIt(@TempDir Path root)
+            throws IOException {
+        StateService state = stateIn(root);
+        Files.createDirectories(root.resolve("wt"));
+        Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: already handled\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").build());
+
+        reports(state).report("REVIEW_PENDING", "no changes: every comment already handled", "ABC-1");
+
+        ArgumentCaptor<String> banner = ArgumentCaptor.forClass(String.class);
+        verify(notifier).notify(eq("jagt · ABC-1"), banner.capture());
+        assertThat(banner.getValue()).containsOnlyOnce("drafted replies");
     }
 }

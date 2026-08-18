@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.codehost.CodeHost;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ReviewFacts;
@@ -10,9 +11,10 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * The code host of an end-to-end run: it records the one write a {@link CodeHost} may do and answers the
- * review round the case under test is built on. Parsing a real host's REST answers is that host's own unit
- * test; what a FLOW needs is a request that exists after a ship and reads back afterwards.
+ * The code host of an end-to-end run: it records the one write a {@link CodeHost} may do and answers what the
+ * case under test reads back — the review round, and the request a task is re-entered on. Parsing a real host's
+ * REST answers is that host's own unit test; what a FLOW needs is a request that exists after a ship and reads
+ * back afterwards.
  */
 class FakeCodeHost implements CodeHost {
 
@@ -22,6 +24,7 @@ class FakeCodeHost implements CodeHost {
     /** Written by the test, read by whichever request thread serves the verb it then drives. */
     private final List<MergeRequestSpec> writes = new CopyOnWriteArrayList<>();
     private volatile ReviewFacts round = NOT_FINISHED;
+    private volatile MergeRequestFacts request;
 
     FakeCodeHost(String requestUrl) {
         this.requestUrl = requestUrl;
@@ -36,6 +39,10 @@ class FakeCodeHost implements CodeHost {
         this.round = round;
     }
 
+    void answers(MergeRequestFacts request) {
+        this.request = request;
+    }
+
     List<MergeRequestSpec> writes() {
         return List.copyOf(writes);
     }
@@ -43,6 +50,7 @@ class FakeCodeHost implements CodeHost {
     void forgetEverything() {
         writes.clear();
         round = NOT_FINISHED;
+        request = null;
     }
 
     @Override
@@ -58,6 +66,11 @@ class FakeCodeHost implements CodeHost {
     @Override
     public Optional<ReviewFacts> readReview(String reviewRequestUrl) {
         return supports(reviewRequestUrl) ? Optional.ofNullable(round) : Optional.empty();
+    }
+
+    @Override
+    public Optional<MergeRequestFacts> readRequest(String reviewRequestUrl) {
+        return supports(reviewRequestUrl) ? Optional.ofNullable(request) : Optional.empty();
     }
 
     /** A throwaway origin is a local directory, so neither side has a host part to match on. */

@@ -211,4 +211,24 @@ class GitLabCodeHostTest {
 
         assertThat(tokenless.supports(MR_URL)).isFalse();
     }
+
+    @Test
+    void readsTheBranchesAndTitleOfAnOpenRequestForATaskResumingOnIt() {
+        when(http.get(eq(MR_API), anyMap())).thenReturn(Optional.of(json.readTree("""
+                {"iid": 42, "source_branch": "ABC-1", "target_branch": "release/2",
+                 "title": "ABC-1 Widget layout is off"}""")));
+
+        var request = host.readRequest(MR_URL).orElseThrow();
+
+        assertThat(request.sourceBranch()).isEqualTo("ABC-1");
+        assertThat(request.targetBranch()).isEqualTo("release/2");
+        assertThat(request.title()).isEqualTo("ABC-1 Widget layout is off");
+    }
+
+    @Test
+    void reportsNoRequestWhenItsDetailCannotBeFetched() {
+        when(http.get(eq(MR_API), anyMap())).thenReturn(Optional.empty());
+
+        assertThat(host.readRequest(MR_URL)).isEmpty();
+    }
 }

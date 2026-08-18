@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.codehost;
 import dev.jagt.orchestrator.config.CodeHostProperties;
 import dev.jagt.orchestrator.http.JsonHttp;
 import dev.jagt.orchestrator.model.GitRemote;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ReviewFacts;
@@ -126,9 +127,7 @@ public class GitLabCodeHost implements CodeHost {
         if (!url.matches()) {
             return Optional.empty();
         }
-        String mrApi = config.baseUrl() + "/api/v4/projects/"
-                + URLEncoder.encode(url.group("project"), StandardCharsets.UTF_8)
-                + "/merge_requests/" + url.group("iid");
+        String mrApi = mrApi(url);
         Optional<JsonNode> detail = get(mrApi);
         if (detail.isEmpty()) {
             return Optional.empty();
@@ -142,6 +141,24 @@ public class GitLabCodeHost implements CodeHost {
             return false;
         });
         return Optional.of(new ReviewFacts(true, approved, pipelineStatus(detail.get()), comments.get()));
+    }
+
+    @Override
+    public Optional<MergeRequestFacts> readRequest(String reviewRequestUrl) {
+        Matcher url = MR_URL.matcher(reviewRequestUrl == null ? "" : reviewRequestUrl);
+        if (!url.matches()) {
+            return Optional.empty();
+        }
+        return get(mrApi(url)).map(detail -> new MergeRequestFacts(true,
+                detail.path("source_branch").asString(""),
+                detail.path("target_branch").asString(""),
+                detail.path("title").asString("")));
+    }
+
+    private String mrApi(Matcher url) {
+        return config.baseUrl() + "/api/v4/projects/"
+                + URLEncoder.encode(url.group("project"), StandardCharsets.UTF_8)
+                + "/merge_requests/" + url.group("iid");
     }
 
     /** Empty = a page could not be read, which must fail the sweep rather than look like a clean review. */

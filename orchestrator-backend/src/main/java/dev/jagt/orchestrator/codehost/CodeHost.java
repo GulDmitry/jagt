@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.codehost;
 
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ReviewFacts;
@@ -25,6 +26,13 @@ public interface CodeHost {
 
     /** One review round. Empty = the read failed: transport, auth, or the request is gone. */
     Optional<ReviewFacts> readReview(String reviewRequestUrl);
+
+    /**
+     * The branches and title of a request already open, for a task that is being re-entered on it. Same
+     * emptiness rule as {@link #readReview}, and gated by the same {@link #supports}: a host that claims the URL
+     * and then fails must not send the caller anywhere else.
+     */
+    Optional<MergeRequestFacts> readRequest(String reviewRequestUrl);
 
     /**
      * Whether the repository behind that remote lives on THIS host — the write-side counterpart of

@@ -1,18 +1,16 @@
 package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant;
-import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.ActionOrigin;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.StatusChange;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.model.TokenUsage;
 import dev.jagt.orchestrator.platform.EditorDriver;
 import dev.jagt.orchestrator.platform.TerminalDriver;
 import dev.jagt.orchestrator.platform.UserNotifier;
@@ -46,12 +44,10 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 /**
  * What happens to a task AFTER an agent is done with it: ship, the review rounds it comes back for, deploy and
@@ -108,7 +104,7 @@ class ReviewAndDeployFlowTest {
     private EditorDriver editorDriver;
     @MockitoBean
     private UserNotifier userNotifier;
-    /** Reading a review request has no host seam behind it, so the alternative to a double is a paid call. */
+    /** Doubled so that a flow which stopped routing its reads through the host fails instead of paying. */
     @MockitoBean
     private MasterAssistant assistant;
 
@@ -153,10 +149,10 @@ class ReviewAndDeployFlowTest {
         shipTheFirstRound();
         host.answers(round.round());
 
-        assertThat(act("review")).contains(round.sentence());
+        assertThat(act("sweep")).contains(round.sentence());
 
         assertThat(task().status()).isEqualTo(round.expected());
-        assertThat(Files.readString(worktree().resolve("task_context.md")).contains("Review round for MR"))
+        assertThat(Files.readString(worktree().resolve("task_context.md")).contains("Review round for"))
                 .as("the agent was handed this round").isEqualTo(round.briefed());
     }
 
@@ -173,7 +169,7 @@ class ReviewAndDeployFlowTest {
                 .contains(TASK + " " + TITLE);
 
         host.answers(new ReviewFacts(true, false, "success", List.of("bot (Widget.java:12): tighten this")));
-        act("review");
+        act("sweep");
         assertThat(Files.readString(worktree().resolve("task_context.md")))
                 .contains("bot (Widget.java:12): tighten this", "Do NOT push or post anything yourself");
 
@@ -190,7 +186,7 @@ class ReviewAndDeployFlowTest {
                 .contains("there is NOTHING to commit or push");
 
         host.answers(new ReviewFacts(true, true, "success", List.of()));
-        assertThat(act("review")).contains("MR approved");
+        assertThat(act("sweep")).contains("request approved");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
         assertThat(act("deploy")).contains("Merged branch " + TASK + " into dev", "status -> DEPLOYED");
@@ -238,7 +234,7 @@ class ReviewAndDeployFlowTest {
                 .containsExactly(TaskStatus.NEW, TaskStatus.REVIEW_PENDING, TaskStatus.CI_POLLING);
 
         host.answers(new ReviewFacts(true, true, "success", List.of()));
-        act("review");
+        act("sweep");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
         assertThat(refused("deploy")).contains("REFUSED", "proj, web");
@@ -248,9 +244,7 @@ class ReviewAndDeployFlowTest {
     @Test
     void resumeAdoptsAnOpenRequestOnTheBranchThatIsAlreadyThere() throws Exception {
         E2eWorkspace.git(repo(), "branch", TASK, "main");
-        when(assistant.readMergeRequest(anyString())).thenReturn(new Answer<>(
-                Optional.of(new MergeRequestFacts(true, TASK, "main", "proj", TASK + " " + TITLE)),
-                TokenUsage.NONE));
+        host.answers(new MergeRequestFacts(true, TASK, "main", TASK + " " + TITLE));
 
         String resumed = post("/api/tasks/resume",
                 "{\"reviewRequestUrl\": \"" + host.requestUrl() + "\"}", Map.of());
@@ -261,6 +255,7 @@ class ReviewAndDeployFlowTest {
         assertThat(task().baseBranch()).isEqualTo("main");
         assertThat(task().title()).isEqualTo(TITLE);
         assertThat(worktree().resolve("task_context.md")).exists();
+        verifyNoInteractions(assistant);
     }
 
     private String shipTheFirstRound() throws Exception {

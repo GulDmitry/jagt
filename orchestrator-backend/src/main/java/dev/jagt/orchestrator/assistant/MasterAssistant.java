@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.assistant;
 
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TicketFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
@@ -22,11 +23,6 @@ public interface MasterAssistant {
      * "none") means nothing matched, and {@code reason} then says why in one line for the human.
      */
     record CommandProposal(String command, String task, String ticket, String reason) {
-    }
-
-    /** Facts about an existing merge request. {@code exists=false} means the URL resolved to nothing. */
-    record MergeRequestFacts(boolean exists, String sourceBranch, String targetBranch,
-                             String projectPath, String title) {
     }
 
     /**
@@ -54,10 +50,13 @@ public interface MasterAssistant {
      */
     Answer<TicketFacts> readTicket(String ticketRef);
 
-    /** Reads an MR by URL so `resume` can recover its source branch (= the task), its target and project. */
+    /**
+     * Reads a review request by URL so `resume` can recover the branch it is built on and the branch it
+     * targets. The FALLBACK read: it follows a URL no configured host claims, which is what keeps it here.
+     */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
 
-    /** The `review` sweep: pipeline state + unresolved comments of an MR (a slow, multi-call read). */
+    /** The sweep: checks state + unresolved comments of a review request (a slow, multi-call read). */
     Answer<ReviewFacts> readReview(String mrUrl);
 
     /**

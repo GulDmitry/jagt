@@ -9,8 +9,8 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Path;
 
 /**
- * Re-enters a task on its EXISTING branch with an already-open review request, at CI_POLLING — so `review` and
- * `deploy` continue on that request instead of the next `ship` opening a second one.
+ * Re-enters a task on its EXISTING branch with an already-open review request, at CI_POLLING — so `sweep`
+ * and `deploy` continue on that request instead of the next `ship` opening a second one.
  *
  * <p>The request is the ONLY input, because it carries every answer itself: its SOURCE branch is the task (a
  * jagt task IS its branch) and its TARGET is the base the next ship must update rather than open a second
@@ -25,11 +25,11 @@ public class TaskResume {
     private final AgentStatusReports statusReports;
     private final ConfigService configService;
     private final GitService gitService;
-    private final MeteredAssistant assistant;
+    private final ReviewReader reviewReader;
 
     /** Resumes whatever {@code reviewRequestUrl} names, or answers why it cannot be resumed. */
     public String resume(String reviewRequestUrl) {
-        var read = assistant.readMergeRequest(reviewRequestUrl);
+        var read = reviewReader.readRequest(reviewRequestUrl);
         var request = read.facts();
         if (request.isEmpty() || !request.get().exists()) {
             return "error: could not read the review request (or not found): " + reviewRequestUrl;
@@ -47,17 +47,18 @@ public class TaskResume {
                     + taskId + "`.";
         }
         String result = link(taskId, reviewRequestUrl, request.get().title(), request.get().targetBranch());
-        assistant.chargeTask(taskId, read.usage());       // the task exists only now
+        reviewReader.charge(taskId, read.usage());       // the task exists only now
         return result;
     }
 
     String link(String taskId, String mrUrl, String title, String targetBranch) {
         if (mrUrl == null || !mrUrl.contains("http")) {
-            throw new IllegalArgumentException("resume needs the MR url: resume <ticket> <mr-url>");
+            throw new IllegalArgumentException("resume needs the request url: resume <ticket> <request-url>");
         }
         TaskProvisioning.requireSafeId(taskId, "taskId");
-        String instructions = "Reopened for review. Your branch is resumed with its existing commits and MR "
-                + mrUrl + " is open — there is NOTHING to build or commit right now. Do NOT re-implement, and"
+        String instructions = "Reopened for review. Your branch is resumed with its existing commits and"
+                + " review request " + mrUrl + " is open — there is NOTHING to build or commit right now."
+                + " Do NOT re-implement, and"
                 + " do NOT call update_agent_status: the Master has already set your status (CI_POLLING). Stay"
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
         provisioning.initializeTask(NewTask.builder(taskId, projectFor(mrUrl))
@@ -68,9 +69,9 @@ public class TaskResume {
                 // against the project default (the host matches source AND target).
                 .baseBranch(targetBranch)
                 .build());
-        statusReports.report("CI_POLLING", "MR: " + mrUrl, taskId);
-        return "Resumed " + taskId + " on its existing branch; linked MR " + mrUrl
-                + "; status CI_POLLING — run `review` or `deploy`.";
+        statusReports.report("CI_POLLING", "review request: " + mrUrl, taskId);
+        return "Resumed " + taskId + " on its existing branch; linked review request " + mrUrl
+                + "; status CI_POLLING — run `sweep` or `deploy`.";
     }
 
     private String projectFor(String mrUrl) {
@@ -80,6 +81,6 @@ public class TaskResume {
                 return e.getKey();
             }
         }
-        throw new IllegalArgumentException("no configured project matches MR url: " + mrUrl);
+        throw new IllegalArgumentException("no configured project matches request url: " + mrUrl);
     }
 }

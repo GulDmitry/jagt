@@ -37,15 +37,18 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 
 | Situation | What to run | What happens |
 |---|---|---|
-| Take over an existing request (reopened, or someone else's) | `resume <mr-url>` | The request is the only input: its SOURCE branch becomes the task, its TARGET becomes the base. Status CI_POLLING. |
-| The request does not target the base branch | `resume <mr-url>` | Nothing special — the request's own target is stored, so the next `ship` updates THAT request instead of opening a second one. |
+| Take over an existing request (reopened, or someone else's) | `resume <request-url>` | The request is the only input: its SOURCE branch becomes the task, its TARGET becomes the base. Status CI_POLLING. |
+| The request does not target the base branch | `resume <request-url>` | Nothing special — the request's own target is stored, so the next `ship` updates THAT request instead of opening a second one. |
 | The request's source branch already belongs to a task | — | Refused: a task IS its branch, so two tasks cannot share one. Work in the existing task (`focus`/`open_task_tab`), or `do <ticket>` for a new branch. |
 | A new ticket whose work happens to live on an older task's branch | `do <new-ticket> from <that-branch>` | A new task/branch of its own; the old request stays with the old branch. |
 | The request's source branch is not a legal task name (`feature/x`) | — | Refused with that branch named: a task IS its branch, and the name becomes a directory and a tmux window too. |
+| The request URL belongs to the configured code host | `resume <request-url>` | Its branches and title are read over that host's API — no model call, no tokens. |
+| The request lives on a host jagt was never pointed at | `resume <request-url>` | The headless assistant follows the URL (paid) — the same fallback a ticket read has. |
+| The configured host claims the URL and the read fails | — | Refused, NOT retried through a paid read: an expired token would otherwise cost money on every attempt while looking healthy. |
 | Request unreadable (no code host, assistant failed) | — | Refused. A guessed branch name would point the task at a branch the request does not track. |
-| The review lives on GitHub (`code-host.type=github`) | `review <task>` / the auto-poll | Threads, the approval decision and the head commit's check rollup come from one GraphQL query — REST cannot say whether a thread is resolved, and a round that cannot tell would re-relay every comment forever. |
-| A GitHub reviewer wrote the request in the review body, with no inline thread | `review <task>` | Relayed all the same — review bodies come first in the round, and a "changes requested" decision never comes back as "nothing to answer" (which would advise `deploy`). |
-| A GitHub repository requires no review, and someone approved | `review <task>` | Counted as approved: the host reports no decision at all on an unprotected repo, so the reviewers' own latest states are read instead. |
+| The review lives on GitHub (`code-host.type=github`) | `sweep <task>` / the auto-poll | Threads, the approval decision and the head commit's check rollup come from one GraphQL query — REST cannot say whether a thread is resolved, and a round that cannot tell would re-relay every comment forever. |
+| A GitHub reviewer wrote the request in the review body, with no inline thread | `sweep <task>` | Relayed all the same — review bodies come first in the round, and a "changes requested" decision never comes back as "nothing to answer" (which would advise `deploy`). |
+| A GitHub repository requires no review, and someone approved | `sweep <task>` | Counted as approved: the host reports no decision at all on an unprotected repo, so the reviewers' own latest states are read instead. |
 | A ship opens the request on GitHub | `ship <task>` | Squash and delete-branch-on-merge are NOT sent: they are repository settings there, and jagt configures no repository. Set them once on the repo. |
 | The branch is still checked out somewhere (the base repo, an editor, an old worktree) | free it, then `resume` again | Refused by NAME: git allows one checkout per branch, so the message says which directory holds it and the `git -C <dir> switch` that frees it. Nothing is registered, so the retry is clean. jagt will not switch a checkout that may hold uncommitted work. |
 
@@ -56,12 +59,13 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Comment is right | Fixes it locally. Never commits or pushes on its own. |
 | Comment is wrong | Changes nothing, replies with the one technical reason. Silent compliance is the failure mode this exists to prevent. |
 | Comment is unclear, or forces a design decision | Asks: `notify_user` + REVIEW_PENDING with message `awaiting: …`. The board shows NEEDS INPUT instead of the link. |
-| Pipeline red, no comments | Fixes the build locally, then REVIEW_PENDING — it cannot push, so it never sees the pipeline go green. |
+| Checks red, no comments | Fixes the build locally, then REVIEW_PENDING — it cannot push, so it never sees the checks go green. |
 | Every comment was already handled, or pushed back on | REVIEW_PENDING with message `no changes: …`. Nothing is highlighted, the line reads ANSWERED, and jagt does NOT advise a ship — there is no diff, and shipping would return the task to CI_POLLING for the poll to relay the same threads. |
-| Drafted replies exist | Both surfaces flag it; they are posted only after a human `ship`. |
+| Drafted replies exist | Both surfaces flag it, and the push notification names the file — a banner has nothing beside it to show them; they are posted only after a human `ship`. |
 | A thread the agent FIXED | Resolved at ship time, by the agent's own MCP — an unresolved thread is relayed by every later round. |
 | A thread the agent disagreed with or asked about | Left UNRESOLVED on purpose: resolving it would read as agreement, and settling it is the reviewer's move. |
-| The reviewer never resolves the threads | The task simply sits at REVIEW_PENDING (the auto-poll only watches CI_POLLING), so nothing is re-briefed and nothing is paid for. `review <task>` re-checks when you want. |
+| The reviewer never resolves the threads | The task simply sits at REVIEW_PENDING (the auto-poll only watches CI_POLLING), so nothing is re-briefed and nothing is paid for. `sweep <task>` re-checks when you want. |
+| You type `review <task>` out of habit | It runs the sweep: the verb was renamed and the old spelling still resolves, deliberately absent from `help` so only one word is advertised. |
 | A big round (tens of threads) and no `orchestrator.code-host` configured | Expect comments to go MISSING: the paid read returned 5 of 9 when measured, so configure the host before trusting a round. A read that loses them all reads as a clean review and advances the task. |
 
 ## Finishing

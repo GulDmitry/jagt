@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant;
 import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TicketFacts;
 import dev.jagt.orchestrator.model.AssistantCallKind;

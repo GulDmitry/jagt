@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.NewTask;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TokenUsage;
@@ -25,18 +25,18 @@ class TaskResumeTest {
     private final GitService git = mock(GitService.class);
     private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
+    private final ReviewReader reviewReader = mock(ReviewReader.class);
     private final TaskResume resume = new TaskResume(provisioning, mock(AgentStatusReports.class),
-            configService, git, assistant);
+            configService, git, reviewReader);
 
     @Test
     void takesTheTaskItsTitleAndItsBaseFromTheRequestBeingResumed() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("proj", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
         when(git.remoteUrl(Path.of("/p"))).thenReturn("git@host:group/proj.git");
-        when(assistant.readMergeRequest("https://host/group/proj/-/merge_requests/425"))
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "release/2",
-                        "group/proj", "PROJ-1 Excel export")), TokenUsage.NONE));
+                        "PROJ-1 Excel export")), TokenUsage.NONE));
 
         resume.resume("https://host/group/proj/-/merge_requests/425");
 
@@ -53,18 +53,18 @@ class TaskResumeTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("proj", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
         when(git.remoteUrl(Path.of("/p"))).thenReturn("git@host:group/proj.git");
-        when(assistant.readMergeRequest("https://host/group/proj/-/merge_requests/425"))
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "main",
-                        "group/proj", "PROJ-1 Excel export")), spent));
+                        "PROJ-1 Excel export")), spent));
 
         resume.resume("https://host/group/proj/-/merge_requests/425");
 
-        verify(assistant).chargeTask("PROJ-1", spent);
+        verify(reviewReader).charge("PROJ-1", spent);
     }
 
     @Test
     void refusesARequestItCouldNotRead() {
-        when(assistant.readMergeRequest("https://host/mr/1")).thenReturn(Answer.unavailable());
+        when(reviewReader.readRequest("https://host/mr/1")).thenReturn(Answer.unavailable());
 
         assertThat(resume.resume("https://host/mr/1")).contains("could not read the review request");
         verifyNoInteractions(git, provisioning);
@@ -77,8 +77,8 @@ class TaskResumeTest {
      */
     @Test
     void explainsWhyASlashedSourceBranchCannotBecomeATask() {
-        when(assistant.readMergeRequest("https://host/mr/426")).thenReturn(new Answer<>(
-                Optional.of(new MergeRequestFacts(true, "feature/widget-layout", "main", "group/proj",
+        when(reviewReader.readRequest("https://host/mr/426")).thenReturn(new Answer<>(
+                Optional.of(new MergeRequestFacts(true, "feature/widget-layout", "main",
                         "Widget layout is off")), TokenUsage.NONE));
 
         String result = resume.resume("https://host/mr/426");
@@ -89,8 +89,8 @@ class TaskResumeTest {
 
     @Test
     void refusesARequestThatNamesNoSourceBranch() {
-        when(assistant.readMergeRequest("https://host/mr/427")).thenReturn(new Answer<>(
-                Optional.of(new MergeRequestFacts(true, " ", "main", "group/proj", "t")), TokenUsage.NONE));
+        when(reviewReader.readRequest("https://host/mr/427")).thenReturn(new Answer<>(
+                Optional.of(new MergeRequestFacts(true, " ", "main", "t")), TokenUsage.NONE));
 
         assertThat(resume.resume("https://host/mr/427")).contains("names no source branch");
         verifyNoInteractions(git, provisioning);
@@ -112,7 +112,7 @@ class TaskResumeTest {
     void refusesToResumeWithoutTheRequestUrlItIsSupposedToLinkTo() {
         assertThatThrownBy(() -> resume.link("ABC-1", null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("resume needs the MR url");
+                .hasMessageContaining("resume needs the request url");
         verifyNoInteractions(git, provisioning);
     }
 }

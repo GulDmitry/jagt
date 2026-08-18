@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.AgentReport;
 import dev.jagt.orchestrator.model.Move;
 import dev.jagt.orchestrator.model.RoundState;
 import dev.jagt.orchestrator.model.TaskLabel;
@@ -41,18 +42,20 @@ public class AgentStatusReports {
         Optional<TaskState> current = stateService.task(taskId);
         // A message is cut down to one dashboard line, and a cut URL is a dead link.
         String url = extractUrl(message);
-        // The dashboard is the SSOT for "where is my MR" — a linkless CI_POLLING is a lie. An agent with a
-        // question hands the round back at REVIEW_PENDING instead, where the question IS what the board shows.
+        // The dashboard is the SSOT for "where is my request" — a linkless CI_POLLING is a lie. An agent with
+        // a question hands the round back at REVIEW_PENDING instead, where the question IS what the board shows.
         if (newStatus == TaskStatus.CI_POLLING && url == null) {
             throw new IllegalArgumentException(
-                    "CI_POLLING requires the MR link in the message, e.g. \"MR: https://...\"");
+                    "CI_POLLING requires the request link in the message, e.g."
+                            + " \"review request: https://...\"");
         }
         TaskStatus previous = current.map(TaskState::status).orElse(null);
         boolean updated = stateService.updateTask(taskId, t -> {
             TaskState next = t.withStatus(newStatus, shortMessage);
             if (url != null) {
                 next = next.withMrUrl(url);
-                // First time an MR is linked = the auto-review window start; never reset it on later rounds.
+                // First time a request is linked = the auto-review window start; never reset it on later
+                // rounds.
                 if (t.mrCreatedAt() == 0) {
                     next = next.withMrCreatedAt(System.currentTimeMillis());
                 }
@@ -81,12 +84,12 @@ public class AgentStatusReports {
      * of looping back to review.
      */
     public void markReviewed(String taskId) {
-        markOutcome(taskId, TaskStatus.REVIEWED, "reviewed — CI green, no unresolved comments");
+        markOutcome(taskId, TaskStatus.REVIEWED, "reviewed — checks green, no unresolved comments");
     }
 
     /** A real approval by a human, not merely "nothing left to address". */
     public void markApproved(String taskId) {
-        markOutcome(taskId, TaskStatus.APPROVED, "approved — CI green, MR approved");
+        markOutcome(taskId, TaskStatus.APPROVED, "approved — checks green, request approved");
     }
 
     public String notifyUser(String title, String message) {
@@ -107,7 +110,17 @@ public class AgentStatusReports {
     private void ping(String taskId, TaskStatus status, String message, Optional<TaskState> task) {
         RoundState round = RoundState.of(message, task.map(t -> t.withStatus(status, message))
                 .map(WorktreeFiles::draftedReplies).orElse(false));
-        userNotifier.notify("jagt · " + taskId, Move.forTask(status, true, round).hint());
+        userNotifier.notify("jagt · " + taskId, banner(Move.forTask(status, true, round).hint(), round));
+    }
+
+    /**
+     * The drafted replies are named here because a notification carries nothing else that would show them — and
+     * after a round that changed nothing, the advice is already about posting them.
+     */
+    private static String banner(String hint, RoundState round) {
+        return round.draftedReplies() && round.report() != AgentReport.NO_CHANGES
+                ? hint + " — drafted replies wait in review_replies.md"
+                : hint;
     }
 
     private static String extractUrl(String text) {

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.codehost;
 import dev.jagt.orchestrator.config.CodeHostProperties;
 import dev.jagt.orchestrator.http.JsonHttp;
 import dev.jagt.orchestrator.model.GitRemote;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ReviewFacts;
@@ -63,6 +64,13 @@ public class GitHubCodeHost implements CodeHost {
               }
             }""".formatted(MAX_REVIEWERS, THREADS_PER_PAGE, MAX_THREAD_COMMENTS);
 
+    private static final String REQUEST_QUERY = """
+            query($owner:String!,$repo:String!,$number:Int!){
+              repository(owner:$owner,name:$repo){
+                pullRequest(number:$number){headRefName baseRefName title}
+              }
+            }""";
+
     private final JsonHttp http;
     private final CodeHostProperties config;
 
@@ -105,7 +113,9 @@ public class GitHubCodeHost implements CodeHost {
         JsonNode pullRequest = null;
         String cursor = null;
         for (int page = 1; page <= MAX_THREAD_PAGES; page++) {
-            JsonNode current = pullRequest(url, cursor, reviewRequestUrl);
+            Map<String, Object> variables = variables(url);
+            variables.put("after", cursor);
+            JsonNode current = pullRequest(REVIEW_QUERY, variables, reviewRequestUrl);
             if (current == null) {
                 return Optional.empty();
             }
@@ -134,22 +144,30 @@ public class GitHubCodeHost implements CodeHost {
         return Optional.empty();
     }
 
-    /** One page of the review query, or null when nothing trustworthy came back. */
-    private JsonNode pullRequest(Matcher url, String cursor, String reviewRequestUrl) {
-        Map<String, Object> variables = new java.util.HashMap<>();
-        variables.put("owner", url.group("owner"));
-        variables.put("repo", repoName(url));
-        variables.put("number", Integer.parseInt(url.group("number")));
-        variables.put("after", cursor);
+    @Override
+    public Optional<MergeRequestFacts> readRequest(String reviewRequestUrl) {
+        Matcher url = PR_URL.matcher(reviewRequestUrl == null ? "" : reviewRequestUrl);
+        if (!url.matches()) {
+            return Optional.empty();
+        }
+        JsonNode pullRequest = pullRequest(REQUEST_QUERY, variables(url), reviewRequestUrl);
+        return pullRequest == null ? Optional.empty() : Optional.of(new MergeRequestFacts(true,
+                pullRequest.path("headRefName").asString(""),
+                pullRequest.path("baseRefName").asString(""),
+                pullRequest.path("title").asString("")));
+    }
+
+    /** Null when nothing trustworthy came back. */
+    private JsonNode pullRequest(String query, Map<String, Object> variables, String reviewRequestUrl) {
         Optional<JsonNode> answer = http.post(graphqlApi(), authHeaders(),
-                Map.of("query", REVIEW_QUERY, "variables", variables));
+                Map.of("query", query, "variables", variables));
         if (answer.isEmpty()) {
             return null;
         }
         // GraphQL answers a broken query, a missing scope or a deleted repository with HTTP 200 and an errors
         // array, so the status code alone would read a failed read as an empty one.
         if (!answer.get().path("errors").isEmpty()) {
-            log.warn("GitHub refused the review query for {}: {}", reviewRequestUrl,
+            log.warn("GitHub refused the query for {}: {}", reviewRequestUrl,
                     answer.get().path("errors").toString());
             return null;
         }
@@ -297,6 +315,15 @@ public class GitHubCodeHost implements CodeHost {
                         "head", spec.sourceBranch(),
                         "base", spec.targetBranch()))
                 .map(created -> new MergeRequestRef(created.path("html_url").asString(""), true));
+    }
+
+    /** Mutable: only the paged read has a cursor to add. */
+    private static Map<String, Object> variables(Matcher url) {
+        Map<String, Object> variables = new java.util.HashMap<>();
+        variables.put("owner", url.group("owner"));
+        variables.put("repo", repoName(url));
+        variables.put("number", Integer.parseInt(url.group("number")));
+        return variables;
     }
 
     /** github.com serves its API from api.github.com; an Enterprise host serves it under its own root. */

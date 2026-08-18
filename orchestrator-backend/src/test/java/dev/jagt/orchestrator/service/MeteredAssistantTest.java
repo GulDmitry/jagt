@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.assistant.MasterAssistant;
 import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.assistant.MasterAssistant.MergeRequestFacts;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.TicketFacts;
 import dev.jagt.orchestrator.model.AssistantCallKind;
 import dev.jagt.orchestrator.model.ReviewFacts;
@@ -39,7 +39,7 @@ class MeteredAssistantTest {
     void booksAMergeRequestReadUnderItsOwnKind() {
         TokenUsage spent = TokenUsage.ofCall(24_000, 0, 150, 0.05);
         when(port.readMergeRequest("http://mr/1")).thenReturn(new Answer<>(
-                Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "group/proj", "title")), spent));
+                Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "title")), spent));
 
         metered.readMergeRequest("http://mr/1");
 

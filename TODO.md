@@ -4,14 +4,10 @@ Backlog of ideas, not commitments. Structure: what is OPEN first, then the quest
 then a compact record of what shipped — kept only where the DECISION is worth re-reading. Invariants live in
 CLAUDE.md, not here; if an entry below has hardened into a rule, it belongs there instead.
 
-## Roadmap — what is left (reviewed 2026-08-17)
+## Roadmap — what is left (reviewed 2026-08-18)
 
-| # | step | why it earns its place | est. |
-|---|------|------------------------|------|
-| 1 | Rename `review` → `sweep` (keep `review` as a hidden alias) | the command reads as "do a review" but only pulls the pipeline + comments; with `autoReview` polling, the manual trigger is an escape hatch | 2 h |
-
-Nothing here is blocked on access any more: measuring the `CodeHost` payoff was step 1 and it is done — see the
-record.
+The numbered roadmap is EMPTY: every step it carried has shipped (the last one, `review` → `sweep`, is in the
+record). What is left is the open questions below, none of them blocked on access.
 
 Linux is answered as far as a container and a CI runner can answer it (see the record below); what remains is
 one desktop-only question — `reveal` raising the viewer above other applications, and the viewer close that
@@ -47,28 +43,11 @@ directories, readable by every agent process, removed only when `done` succeeds 
 the copying itself: should the default set be narrower than "any `*.pem`"? One key covers .env, keys, certs and
 keystores for every project.
 
-### `resume` is the last per-task model call
-`CodeHost` has two implementations now, so the reason to wait is gone: `resume` needs a request's SOURCE branch,
-TARGET and title, all one read away on both hosts (GitLab already fetches the request detail that carries them;
-GitHub's review query would only grow three fields), and `TaskResume` — which now owns that read — would route
-it exactly as `ReviewReader` routes a round. What is left after that is the ⌘K palette, which is a model call by
-DESIGN. The shape to add: `Optional<MergeRequestFacts> readRequest(String url)` on `CodeHost`, and
-`MergeRequestFacts` moved out of `MasterAssistant` into `model` the way `TicketFacts` just was.
-
-### The notification path says nothing about drafted replies
-`UserNotifier` fires on the REVIEW_PENDING transition — exactly when `review_replies.md` appears — but the
-banner does not mention it, and `postReviewReplies`/`reviewReplyAuthors` stay invisible until a `ship` acts on
-them. Both surfaces DO announce the file; only the push notification is silent about it.
-
 ### A killed model call is unmeasurable
 `ProcessRunner` destroys the process on timeout and throws, so there is no envelope and no usage: the tokens
 already burned are unknown, not zero (logged as UNMEASURED rather than guessed). Capturing them needs
 `--output-format stream-json` with usage accumulated from the message stream — worth it only if timeouts turn
 out to be common, and the 6-minute review sweep is the candidate.
-
-### Review findings not yet fixed (from the full-codebase pass, 2026-08-13)
-Ranked; the two that were fixed in that pass (a non-http link reaching the board's `href`, and the
-window-elapsed markers leaking one string per task retired while CI_POLLING) are not listed.
 
 ### What CI found that no local run could (2026-08-13)
 Both failures were the same shape — code that assumed the machine it grew up on — and both are fixed with a
@@ -85,10 +64,6 @@ RED-verified test. Worth remembering as a class:
   promising "never thrown"; and the suite depended on an ambient git identity, so it was green on any
   developer machine and red on every runner. The Test tasks now declare the identity they need.
 
-### Generic wording for the GitLab-leaning internal names (low priority)
-`mrUrl` / "MR" / `CI_POLLING` are GitLab-flavoured INTERNAL names. Fine as-is; user-facing text could say
-"review request" / "pipeline or checks". Not worth a churny rename until a non-GitLab host is wired.
-
 ### A minimal MCP config for the assistant, if determinism ever beats convenience
 `--strict-mcp-config --mcp-config <file>` works, but the server names CANNOT be guessed — jagt does not know
 whether the tracker is Jira or Linear or what the human named it. It would have to be config
@@ -99,6 +74,49 @@ costs, this is a determinism nicety, NOT a cost lever.
 
 Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
 themselves are in CLAUDE.md.
+
+### The sweep is called `sweep`, and the wording stopped naming GitLab — 2026-08-18
+
+`review <task>` is `sweep <task>`: the verb only ever pulled the checks and the unresolved comments, and with
+`autoReview` polling it is the escape hatch, not "do a review". Everything a human reads followed — "MR" is a
+"review request", a "pipeline" is "checks" — while `mrUrl`, `CI_POLLING` and `SweepResult.Kind.NO_MR` stay as
+they are: an internal name costs nothing and a rename of one churns every caller.
+
+The decisions worth keeping:
+- **The old spelling still resolves, and is advertised nowhere.** One map owns it (`TaskAction.RENAMED`), and
+  every surface where a human TYPES consults it: the console's grammar, the palette (the verb carries its
+  retired spellings, matched and offered nowhere) and a tier-2 proposal that echoed the word. Two spellings in
+  `help` would be two answers to one question.
+- **The buttons needed no change at all.** They come from `Move.actions()` and post `TaskAction.id()`, which is
+  what parity is for: the verb was renamed in the enum and both surfaces moved together.
+- **`byId` stays STRICT, and the alias lookup resolves retired spellings only.** Two findings from review, and
+  the same lesson twice: an alias that leaks into `byId` widens the WIRE surface (`POST …/actions/review` would
+  start answering, against that method's own contract), and a console default that resolves any action id turns
+  free text into a verb — `diff the last two commits` would have run `diff` on a task called "the" instead of
+  reaching the model.
+- The first version of that fallback was `byId(...).map(this::act).orElseGet(interpret)` — and a command whose
+  answer is null (every mocked one, and any future silent verb) fell through to the MODEL after already
+  executing. The test written for the alias is what caught it, before it was ever committed.
+- Review also caught the promise being HALF built: with the alias known only to the console, the palette
+  answered "“review” is not a command" and then paid a model to map a line the console runs for free — while
+  the README said it still worked. A compatibility alias is only as good as the least-informed surface.
+
+`checks` is not a cosmetic swap: GitHub reports check runs, and "pipeline failed" was the word for a thing that
+host does not have.
+
+### `resume` reads its request over the host, and the banner names the drafts — 2026-08-18
+
+`CodeHost.readRequest` joined the seam, so the only per-task model call left is gone: `ReviewReader` routes a
+request read exactly as it routes a round — configured host first, no fallback to the paid read when a host that
+CLAIMED the URL fails — and `TaskResume` takes the reader instead of the assistant. `MergeRequestFacts` moved to
+`model`; its `projectPath` went with the move, because nothing ever read it and every host would have had to
+produce it. The assistant keeps only what no configured API can do: follow a URL onto a host jagt was never
+pointed at. The e2e run therefore doubles `MasterAssistant` as a GUARD rather than a stub — a read that stops
+routing through the host now fails the flow instead of quietly paying for it.
+
+The push notification says the drafted replies are waiting, which both surfaces already did and the banner did
+not — announced only where the wording does not already carry it, since the advice after a no-change round IS
+about posting them.
 
 ### One session, many repositories — the flow follows the model — 2026-08-17
 
@@ -149,9 +167,8 @@ Three things it does differently from the older matrix, each because the alterna
 - The agent side is a real `POST /mcp` with the worktree header rather than a call into `AgentStatusReports`.
   That is also what closed the loop the roadmap wanted from a stub script, without a script: the test IS the
   agent, and nothing waits on tmux timing.
-- Two doubles only: `FakeCodeHost`, and `MasterAssistant` — the latter because reading a review REQUEST has no
-  host seam at all (`resume` spends a model call even with a code host configured, which is a gap worth closing
-  with the GitHub work, not a test artifact).
+- Two doubles only: `FakeCodeHost`, and `MasterAssistant` — the latter because reading a review REQUEST had no
+  host seam at all then; once it got one the double stayed as a GUARD, so a flow that pays for a read fails.
 
 It paid for itself on the first run: an MR link longer than one dashboard line was stored TRUNCATED, because the
 link was read out of the abbreviated message rather than the one the agent sent — a dead link on the board, and
@@ -225,7 +242,8 @@ hunting for another window. Decisions worth keeping:
 ### A second code host, and the ticket read stopped costing money — 2026-08-17
 `CodeHost` has two implementations (`gitlab`, `github`) and there is a second seam beside it: `Tracker`
 (`orchestrator.tracker.type`, `jira` today), routed by `service/TicketReader` the way `ReviewReader` routes a
-host. With both wired, a task's whole life costs nothing in model calls except the ⌘K palette and `resume`.
+host. With both wired, a task's whole life costs nothing in model calls except the ⌘K palette (and, until the
+request read got a seam of its own, `resume`).
 
 What the second implementation taught, which one never could:
 - **A seam must not assume a protocol.** GitHub's review read is one GraphQL query, and not by preference:

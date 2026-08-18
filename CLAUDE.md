@@ -136,6 +136,15 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `--setting-sources`): text→command needs no tools, and a loaded MCP server would be paid for in context.
   It answers with the interpretation FIRST ("understood as `ship a1` — …"), and a single unknown word is a
   typo, not a request — it never reaches the model.
+- A RENAMED VERB KEEPS ITS OLD SPELLING, AND ADVERTISES ONLY THE NEW ONE (`sweep`, typed as `review` since
+  2026-08-18). ONE map owns it — `TaskAction.RENAMED`, read through `byRetiredVerb` — and EVERY surface where a
+  human types has to consult it, or the promise is a lie in the one place it was made: the console's grammar,
+  the palette (`CommandReference.Verb.aliases`, which the page matches and offers nowhere) and a tier-2
+  proposal that echoed the word. Two things it deliberately is NOT: `byId` stays STRICT, because that one
+  answers a URL segment and a retired verb is not a wire id; and the lookup resolves retired spellings ONLY,
+  never a current id — the grammar's verb set is the switch, so `diff …` keeps reaching the model as free text
+  instead of being parsed as a verb it never was. `CommandReference` names just the current verb: two spellings
+  in `help` are two answers to one question.
 - NO LIMIT ON CONCURRENT TASKS, and this is a DECISION, not an omission. A cap (`agent.maxConcurrentTasks`
   + `TaskAdmission`) was built and then REMOVED on the owner's instruction: jagt runs on other people's
   machines, one of which has 100 GB of RAM, so a number picked here is wrong for almost everyone and refusing
@@ -213,7 +222,7 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   on the code host, REVIEW_PENDING/REVIEWED/APPROVED/DEPLOY_CONFLICT on the human), and watching those turns
   the alert into noise.
 - ONE review sweep per task at a time, whatever triggered it: the guard lives in `ReviewSweepService` because
-  the manual `review`, the auto-poll and any future UI button all pass through it (two sweeps = the headless
+  the manual `sweep`, the auto-poll and any future UI button all pass through it (two sweeps = the headless
   read paid twice + two briefs relayed for one review round). `AutoReviewScheduler` keeps its own separate
   guard, which solves a different problem: stopping 60s ticks from QUEUING behind a sweep that runs minutes.
 - All git ops in `GitService` under a per-repository `ReentrantLock` (index.lock races are per-repo;
@@ -309,9 +318,10 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     `CODEX_HOME` pointed at the worktree) and belongs in each `AgentRuntime`. Nothing outside the runtime may
     name an agent's files — `WorktreeSetup` only calls `provisionWorktree`, and `AgentSessions` `displayName`.
   - `CodeHost` (`…codehost`, `orchestrator.code-host.type`, default none; `gitlab` and `github`) — reads of a
-    review request, so the sweep costs no model call, plus EXACTLY ONE write: `createOrUpdateMergeRequest`
-    (opening the artifact a human then reviews). Never a push, a merge, a comment or an approval — those belong to the human's gates or
-    to the agent's own MCP; a `CodeHost` that merges is a bug. The write is idempotent per (source, target) and
+    review request (the ROUND a sweep decides on, and the BRANCHES a `resume` adopts, so neither costs a model
+    call) plus EXACTLY ONE write: `createOrUpdateMergeRequest` (opening the artifact a human then reviews).
+    Never a push, a merge, a comment or an approval — those belong to the human's gates or to the agent's own
+    MCP; a `CodeHost` that merges is a bug. The write is idempotent per (source, target) and
     NEVER retitles an open request (`ship` reruns every review round, and the human may have edited the title).
     `ReviewReader` deliberately does NOT fall back to the paid headless read when a configured host fails: that
     would spend money invisibly and hide the misconfiguration. A partial REST read must fail whole — "no
@@ -390,9 +400,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
 ## Master assistant (headless one-shot)
 - It is now the FALLBACK, not the path: `do <ticket>` needs the ticket read before a worktree/agent exists, and
   `service/TicketReader` takes a configured `Tracker` first, `ReviewReader` a configured `CodeHost` first. With
-  both wired the only calls left are `resume` (the request's source branch — see the open question in TODO.md)
-  and the ⌘K palette. What the assistant keeps that no configured API has: it FOLLOWS A URL into a tracker jagt
-  was never pointed at, which is why it stays.
+  both wired the only call left is the ⌘K palette, which is a model call by DESIGN. What the assistant keeps
+  that no configured API has: it FOLLOWS A URL into a tracker — or onto a code host — jagt was never pointed at,
+  which is why it stays.
   `HeadlessClaudeAssistant` (`MasterAssistant`) spawns a one-shot
   `claude "<prompt>" -p --setting-sources user,project,local --json-schema '<schema>'` (stdin
   `/dev/null` via `ProcessRunner`). It hardcodes NO MCP server or path — `--setting-sources` makes the
@@ -502,8 +512,9 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   revert, resume — on ONE combination, because a review round does not vary with how terminals are arranged.
   There the verbs go through the board's own HTTP endpoints and the agent reports over `POST /mcp` with its
   worktree header, so origins (`board` vs `mcp`) are asserted end to end and a surface cannot drift from the
-  core. Its two doubles are `FakeCodeHost` and `MasterAssistant` — the second only because reading a review
-  REQUEST (`resume`) has no host seam behind it, so the alternative to a double is a paid call.
+  core. Its two doubles are `FakeCodeHost` and `MasterAssistant` — the second is a GUARD rather than a
+  stub: nothing in these flows may reach a model any more, so a read that stopped routing through the host
+  fails the run instead of paying for it.
 
 ## Code quality — the test is the litmus of the production code
 - A test is the embodiment of the main code's cleanliness. If a test needs ~5+ objects set up, or its

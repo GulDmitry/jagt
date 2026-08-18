@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.assistant;
 
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.model.MergeRequestFacts;
 import dev.jagt.orchestrator.model.ReviewFacts;
 import dev.jagt.orchestrator.model.TicketFacts;
 import dev.jagt.orchestrator.model.TokenUsage;
@@ -45,9 +46,8 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "exists":{"type":"boolean"},\
             "sourceBranch":{"type":"string"},\
             "targetBranch":{"type":"string"},\
-            "projectPath":{"type":"string"},\
             "title":{"type":"string"}},\
-            "required":["exists","sourceBranch","targetBranch","projectPath","title"]}""";
+            "required":["exists","sourceBranch","targetBranch","title"]}""";
     private static final String REVIEW_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
@@ -100,13 +100,11 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
         String prompt = "Fetch the merge/pull request at " + mrUrl + " via the matching code-host MCP tools"
                 + " (GitLab MR, GitHub PR, Bitbucket PR — whichever the URL points to). Return exists=true"
-                + " with its source branch as sourceBranch, the branch it merges INTO as targetBranch, its"
-                + " project path (group/project) as projectPath, and its title. If it does not exist,"
-                + " exists=false with empty strings.";
+                + " with its source branch as sourceBranch, the branch it merges INTO as targetBranch, and its"
+                + " title. If it does not exist, exists=false with empty strings.";
         return ask(prompt, MR_SCHEMA, mrUrl).map(n -> new MergeRequestFacts(
                 n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
-                n.path("targetBranch").asString(""), n.path("projectPath").asString(""),
-                n.path("title").asString("")));
+                n.path("targetBranch").asString(""), n.path("title").asString("")));
     }
 
     @Override
@@ -115,7 +113,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             return Answer.unavailable();
         }
         String prompt = "Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
-                + " MCP tools. Return exists, approved (true only if the MR is actually APPROVED by a human"
+                + " MCP tools. Return exists, approved (true only if the request is actually APPROVED by a human"
                 + " reviewer — not merely mergeable), pipelineStatus (latest pipeline/checks result, e.g."
                 + " success/failed/none), and comments — every UNRESOLVED discussion note (bots like"
                 + " CodeRabbit + humans), each as one string \"author (file:line): body\". Empty array if none.";

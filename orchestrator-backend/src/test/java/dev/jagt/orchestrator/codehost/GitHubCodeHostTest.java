@@ -333,4 +333,18 @@ class GitHubCodeHostTest {
 
         assertThat(tokenless.supports(PR_URL)).isFalse();
     }
+
+    @Test
+    void readsTheBranchesAndTitleOfAnOpenRequestForATaskResumingOnIt() {
+        when(http.post(eq(GRAPHQL), anyMap(), anyMap())).thenReturn(Optional.of(json.readTree("""
+                {"data": {"repository": {"pullRequest": {
+                  "headRefName": "ABC-1", "baseRefName": "release/2",
+                  "title": "ABC-1 Widget layout is off"}}}}""")));
+
+        var request = host.readRequest(PR_URL).orElseThrow();
+
+        assertThat(request.sourceBranch()).isEqualTo("ABC-1");
+        assertThat(request.targetBranch()).isEqualTo("release/2");
+        assertThat(request.title()).isEqualTo("ABC-1 Widget layout is off");
+    }
 }
