@@ -85,6 +85,14 @@ not a binary — and a launcher nowhere to be found now fails with the config KE
 a spawn error naming a binary the human never typed. What needed no work at all: `ide <task> diff` was already
 pointable at any difftool, `[difft]` or `[code, --diff]`, and always had been.
 
+And the part that only a real machine could teach, within the hour: the default broke `ide` outright, because
+`Executables` knew PATH and bin directories only, and an IDE's launcher lives in
+`/Applications/<App>.app/Contents/MacOS/`. A bare-name rule that cannot find a GUI launcher is not a rule, it is
+a regression waiting for whoever has no `idea` on PATH — so the resolver now looks in the per-user script
+directories (Toolbox among them) and inside application bundles, verified against the owner's own machine rather
+than argued. The report also named the right escape hatch for a running instance:
+`--orchestrator.editor-command[0]=<path>` needs no rebuild.
+
 ### Orphans went to the log, and the log came back as a report — 2026-08-18
 
 Two changes that are one idea: the thing a human does not act on mid-flight left the board, and the thing they

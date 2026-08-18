@@ -35,17 +35,34 @@ public class CliEditorDriver implements EditorDriver {
     // closes; waiting would time out and then kill the window we just opened.
     @Override
     public void open(Path path) {
-        List<String> command = new ArrayList<>(properties.editorCommand());
+        List<String> command = launcher(properties.editorCommand(), "orchestrator.editor-command");
         command.add(path.toString());
         processRunner.runDetached(null, command);
     }
 
     @Override
     public void openDiff(Path left, Path right) {
-        List<String> command = new ArrayList<>(properties.editorDiffCommand());
+        List<String> command = launcher(properties.editorDiffCommand(), "orchestrator.editor-diff-command");
         command.add(left.toString());
         command.add(right.toString());
         processRunner.runDetached(null, command);
+    }
+
+    /**
+     * A launcher nobody has is the human's to fix, so the sentence names the key to set — not the binary they
+     * never chose, which is all a failed spawn could report.
+     */
+    private static List<String> launcher(List<String> configured, String configKey) {
+        if (configured == null || configured.isEmpty() || configured.getFirst().isBlank()) {
+            throw new IllegalStateException(configKey + " is empty — set it to the launcher of the editor you"
+                    + " want jagt to open worktrees with.");
+        }
+        String binary = configured.getFirst();
+        if (Executables.unresolved(binary)) {
+            throw new IllegalStateException(configKey + ": '" + binary + "' is not on PATH nor in the usual"
+                    + " install directories — install its launcher or set the key to a full path.");
+        }
+        return new ArrayList<>(configured);
     }
 
     /**

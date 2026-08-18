@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.platform;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +33,24 @@ class ExecutablesTest {
                 .isEqualTo("/opt/homebrew/bin/tmux");
         assertThat(Executables.resolve("tmux", "", present("/usr/bin/tmux")))
                 .isEqualTo("/usr/bin/tmux");
+    }
+
+    @Test
+    void findsADesktopLauncherInsideItsApplicationBundle() {
+        assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me",
+                present("/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"),
+                dir -> dir.toString().equals("/Applications")
+                        ? List.of(Path.of("/Applications/Notes.app"), Path.of("/Applications/IntelliJ IDEA.app"))
+                        : List.of()))
+                .isEqualTo("/Applications/IntelliJ IDEA.app/Contents/MacOS/idea");
+    }
+
+    @Test
+    void findsALauncherInAPerUserScriptDirectory() {
+        assertThat(Executables.resolve("idea", "/usr/bin", "/Users/me",
+                present("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea"),
+                dir -> List.of()))
+                .isEqualTo("/Users/me/Library/Application Support/JetBrains/Toolbox/scripts/idea");
     }
 
     @Test

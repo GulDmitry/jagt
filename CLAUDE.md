@@ -507,12 +507,17 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   run opens a Warp window that stays behind), use a throwaway tmux session + `ORCHESTRATOR_ROOT`, and
   kill the session / remove worktrees + branches afterwards.
 - NO ABSOLUTE macOS PATHS IN DEFAULTS: an external binary is configured by BARE NAME and resolved by
-  `platform/Executables` (PATH first, then the known install dirs — Homebrew included, because a GUI-launched
-  process has neither prefix on PATH). `tmux-command` used to default to `/opt/homebrew/bin/tmux`, which made
+  `platform/Executables` (PATH, then the known install dirs — Homebrew included, because a GUI-launched
+  process has neither prefix on PATH — then the per-user script dirs, then INSIDE APPLICATION BUNDLES).
+  `tmux-command` used to default to `/opt/homebrew/bin/tmux`, which made
   every task on Linux fail at "Failed to start command"; the agent CLI is deliberately NOT resolved (it runs
   inside the agent's tmux window under the human's own PATH, and the string is what they read on screen).
   `editor-command`/`editor-diff-command` are LISTS, so only the launcher is resolved and the arguments stay the
   human's; a launcher nowhere to be found fails with the config KEY to set, not with the binary they never chose.
+  THE BUNDLE STEP IS WHAT MAKES THE RULE APPLICABLE TO A DESKTOP APP AT ALL: an IDE's launcher lives in
+  `/Applications/<App>.app/Contents/MacOS/<name>` and lands in no bin directory, so defaulting `editor-command`
+  to `idea` without it broke `ide` on the owner's machine within the hour. A resolver that cannot find a GUI
+  launcher forces the absolute path back into the defaults — do not weaken it.
 - ONE SET OF STEPS FOR EVERY HOST: `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites by
   calling the same scripts (`scripts/linux-test-deps.sh` = the package list, `scripts/with-linux-desktop.sh` =
   Xvfb + session bus + notification daemon, then the smoke scripts). A step that exists in one pipeline only,

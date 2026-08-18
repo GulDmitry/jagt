@@ -36,11 +36,12 @@ orchestrator:
   terminal: kitty
   # kitty-command: kitty   # override the kitty binary if not on PATH
   # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own (default 11)
-  # Any CLI launcher; the worktree path is appended. `open -a` will NOT do: it activates the app
-  # without opening the passed directory.
-  editor-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"]
-  # Two paths are appended: <left> <right>.
-  editor-diff-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea", "diff"]
+  # Any CLI launcher, resolved on PATH and in the usual install dirs; the worktree path is appended.
+  # `open -a` will NOT do: it activates the app without opening the passed directory.
+  editor-command: ["idea"]
+  # editor-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"]   # no `idea` launcher installed
+  # Two paths are appended: <left> <right>. Any difftool takes them — ["difft"], ["code", "--diff"].
+  editor-diff-command: ["idea", "diff"]
   # claude | codex. A Codex worktree runs against its own CODEX_HOME, so your ~/.codex servers are not there.
   # agent: claude
   # codex:

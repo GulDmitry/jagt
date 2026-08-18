@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.platform;
 
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.platform.EditorDriver.WorktreeLocation;
+import dev.jagt.orchestrator.service.ProcessRunner;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -8,6 +10,9 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class CliEditorDriverTest {
 
@@ -20,6 +25,31 @@ class CliEditorDriverTest {
                   <value><RecentProjectMetaInfo /></value>
                 </entry>
             </map></option></component></application>""";
+
+    @Test
+    void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsNowhereToBeFound() {
+        ProcessRunner processRunner = mock(ProcessRunner.class);
+        CliEditorDriver driver = new CliEditorDriver(processRunner, OrchestratorProperties.defaults()
+                .withEditorCommand(List.of("no-such-editor")));
+
+        assertThatThrownBy(() -> driver.open(Path.of("/wt")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("orchestrator.editor-command")
+                .hasMessageContaining("no-such-editor");
+        verifyNoInteractions(processRunner);
+    }
+
+    @Test
+    void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsBlank() {
+        ProcessRunner processRunner = mock(ProcessRunner.class);
+        CliEditorDriver driver = new CliEditorDriver(processRunner, OrchestratorProperties.defaults()
+                .withEditorCommand(List.of(" ")));
+
+        assertThatThrownBy(() -> driver.open(Path.of("/wt")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("orchestrator.editor-command is empty");
+        verifyNoInteractions(processRunner);
+    }
 
     @Test
     void removesTheDoneWorktreeEntryButKeepsTheOthers() {

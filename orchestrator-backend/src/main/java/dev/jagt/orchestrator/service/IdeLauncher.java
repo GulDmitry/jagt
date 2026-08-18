@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.platform.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /** Opens a task for a human to look at: its live worktree, a frozen diff, or the worktree a deploy stalled in. */
@@ -34,9 +33,17 @@ public class IdeLauncher {
         // A DEPLOY_CONFLICT lives on the DEPLOY side: the task's own worktree is clean and has nothing to
         // resolve, which is what made this look broken.
         if (task.status() == TaskStatus.DEPLOY_CONFLICT) {
-            Path deployWorktree = GitService.deployWorktreePath(
-                    Path.of(configService.project(task.project()).path()), taskId);
-            if (Files.isDirectory(deployWorktree)) {
+            // A task spanning repositories conflicts in exactly one of them, and it is not necessarily the one
+            // the session runs in — nor the first whose derived path exists, since siblings share it. A project
+            // that has since left config.json is skipped rather than thrown at the human: the worktree below can
+            // still be opened.
+            var projects = configService.load().projects();
+            for (var repo : task.repos()) {
+                ProjectConfig conflicted = projects.get(repo.project());
+                if (conflicted == null || !gitService.hasDeployWorktree(Path.of(conflicted.path()), taskId)) {
+                    continue;
+                }
+                Path deployWorktree = GitService.deployWorktreePath(Path.of(conflicted.path()), taskId);
                 editorDriver.open(deployWorktree);
                 return "Opened the deploy worktree " + deployWorktree + " — resolve there (`git add`), then"
                         + " `deploy " + taskId + "` again.";

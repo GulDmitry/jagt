@@ -125,6 +125,52 @@ class GitServiceTest {
     }
 
     @Test
+    void refusesToFinishADeployFromAWorktreeAnotherRepositoryCut(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("api-origin.git");
+        Path api = dir.resolve("api");
+        Path web = dir.resolve("web");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), api.toString()));
+        Files.writeString(api.resolve("f.txt"), "base");
+        runner.run(api, t, List.of("git", "add", "."));
+        runner.run(api, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(api, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(api, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(api, t, List.of("git", "branch", "ABC-1"));
+        runner.run(dir, t, List.of("git", "init", "-q", "-b", "main", web.toString()));
+        runner.run(web, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+                "--allow-empty", "-m", "base"));
+        runner.run(web, t, List.of("git", "worktree", "add", "-q", "-b", "jagt-deploy-ABC-1",
+                GitService.deployWorktreePath(web, "ABC-1").toString()));
+        GitService git = new GitService(runner);
+
+        assertThatThrownBy(() -> git.mergeIntoAndPush(api, "ABC-1", "dev"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("holds a checkout api did not cut");
+    }
+
+    @Test
+    void onlyTheRepositoryThatCutTheDeployWorktreeClaimsItWhenASiblingDerivesTheSamePath(@TempDir Path dir)
+            throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path api = dir.resolve("api");
+        Path web = dir.resolve("web");
+        runner.run(dir, t, List.of("git", "init", "-q", "-b", "main", api.toString()));
+        runner.run(dir, t, List.of("git", "init", "-q", "-b", "main", web.toString()));
+        runner.run(web, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q",
+                "--allow-empty", "-m", "base"));
+        runner.run(web, t, List.of("git", "worktree", "add", "-q", "-b", "jagt-deploy-ABC-1",
+                GitService.deployWorktreePath(web, "ABC-1").toString()));
+        GitService git = new GitService(runner);
+
+        assertThat(git.hasDeployWorktree(web, "ABC-1")).isTrue();
+        assertThat(git.hasDeployWorktree(api, "ABC-1")).isFalse();
+    }
+
+    @Test
     void deployingAgainAfterResolvingTheDeployWorktreePushesDevAndCleansUp(@TempDir Path dir) throws Exception {
         ProcessRunner runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);

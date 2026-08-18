@@ -209,6 +209,9 @@ public class GitService {
                     .expectSuccess("git fetch in " + projectPath);
             // A prior deploy left a conflicted worktree — the human has since resolved it, so finish the push.
             if (Files.isDirectory(deployWorktree)) {
+                if (!hasDeployWorktree(projectPath, sourceBranch)) {
+                    throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
+                }
                 return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
             }
             // Deploy is decoupled from review state: its ONLY precondition is committed work to ship.
@@ -216,8 +219,7 @@ public class GitService {
                             List.of("git", "rev-list", "--count", "origin/" + targetBranch + ".." + sourceBranch))
                     .expectSuccess("git rev-list count " + sourceBranch).stdout().trim();
             if ("0".equals(ahead)) {
-                throw new IllegalStateException("Nothing to deploy: branch '" + sourceBranch
-                        + "' has no commits beyond " + targetBranch + " (commit work first, or it is already deployed).");
+                throw new NothingToDeployException(sourceBranch, targetBranch);
             }
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "add",
                             "-B", deployBranch, deployWorktree.toString(), "origin/" + targetBranch))
@@ -392,6 +394,41 @@ public class GitService {
         return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-deploy");
     }
 
+    /**
+     * Whether a deploy worktree for this task is waiting in THIS repository. The path is derived from the
+     * repository's PARENT directory, so the sibling repositories of one task all derive the SAME one — the
+     * directory alone cannot say whose conflict is sitting in it, and finishing one repository's merge from
+     * another's checkout would push its content to the wrong remote.
+     */
+    public boolean hasDeployWorktree(Path projectPath, String sourceBranch) {
+        return worktreeOwner(deployWorktreePath(projectPath, sourceBranch))
+                .filter(owner -> sameDirectory(owner, projectPath))
+                .isPresent();
+    }
+
+    /** The repository a checkout belongs to, empty when it is not a checkout at all. */
+    private Optional<Path> worktreeOwner(Path worktree) {
+        if (!Files.isDirectory(worktree)) {
+            return Optional.empty();
+        }
+        var gitDir = processRunner.run(worktree, GIT_TIMEOUT,
+                List.of("git", "rev-parse", "--git-common-dir"));
+        if (gitDir.exitCode() != 0) {
+            return Optional.empty();
+        }
+        // Answered relative to the checkout in the main repository, absolute from a linked worktree.
+        return Optional.ofNullable(worktree.resolve(gitDir.stdout().trim()).normalize().getParent());
+    }
+
+    /** Symlinked temp and home directories are the norm, and git answers with the path they resolve to. */
+    private static boolean sameDirectory(Path one, Path other) {
+        try {
+            return Files.isSameFile(one, other);
+        } catch (IOException e) {
+            return one.toAbsolutePath().normalize().equals(other.toAbsolutePath().normalize());
+        }
+    }
+
     /** Where a revert is staged — separate from the deploy worktree, which may be sitting in a conflict. */
     public static Path revertWorktreePath(Path projectPath, String sourceBranch) {
         return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-revert");
@@ -410,6 +447,34 @@ public class GitService {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", "jagt-deploy-" + sourceBranch));
         });
+    }
+
+    /**
+     * The deploy worktree path this repository derives is occupied by a checkout it did not cut — a sibling's
+     * stalled merge, or a directory whose git metadata is gone. Finishing it here would push that work to this
+     * repository's remote, so nothing is attempted; typed so a caller landing SEVERAL repositories can come back
+     * to this one once the path is free.
+     */
+    public static class ForeignDeployWorktreeException extends IllegalStateException {
+
+        public ForeignDeployWorktreeException(Path deployWorktree, Path projectPath) {
+            super("The deploy worktree path " + deployWorktree + " holds a checkout "
+                    + projectPath.getFileName() + " did not cut, so its merge cannot be finished here. Deal with"
+                    + " that checkout first — finish its deploy, or `git worktree remove --force` it if it is"
+                    + " stale.");
+        }
+    }
+
+    /**
+     * The branch holds nothing the target does not already have. Typed so a caller landing SEVERAL repositories
+     * can tell "there was nothing to do here" apart from a failure.
+     */
+    public static class NothingToDeployException extends IllegalStateException {
+
+        public NothingToDeployException(String sourceBranch, String targetBranch) {
+            super("Nothing to deploy: branch '" + sourceBranch + "' has no commits beyond " + targetBranch
+                    + " (commit work first, or it is already deployed).");
+        }
     }
 
     /**

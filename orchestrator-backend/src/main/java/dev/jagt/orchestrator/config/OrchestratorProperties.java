@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import dev.jagt.orchestrator.platform.Executables;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -34,9 +35,11 @@ public record OrchestratorProperties(
 ) {
 
     /**
-     * tmux is resolved ONCE, here: the configured bare name (the default) is looked up on PATH and then in the
-     * known install locations. Its old default was an absolute Homebrew path, so the whole task flow died on
-     * Linux with "Failed to start command" before the agent ever started — see {@link Executables}.
+     * The binaries the backend itself spawns are resolved ONCE, here: the configured bare name (the default) is
+     * looked up on PATH and then in the known install locations. Defaulting either of these to an absolute
+     * install path is how the task flow died on Linux with "Failed to start command" before the agent ever
+     * started — see {@link Executables}. For a command list only the launcher is resolved; its arguments are the
+     * human's own.
      *
      * <p>The AGENT command is deliberately NOT resolved: it is not spawned by the backend but written into a
      * shell command that runs inside the agent's tmux window, where the human's own PATH applies — and that
@@ -44,6 +47,17 @@ public record OrchestratorProperties(
      */
     public OrchestratorProperties {
         tmuxCommand = Executables.resolve(tmuxCommand);
+        editorCommand = withResolvedLauncher(editorCommand);
+        editorDiffCommand = withResolvedLauncher(editorDiffCommand);
+    }
+
+    private static List<String> withResolvedLauncher(List<String> command) {
+        if (command == null || command.isEmpty()) {
+            return command;
+        }
+        List<String> resolved = new ArrayList<>(command);
+        resolved.set(0, Executables.resolve(resolved.getFirst()));
+        return List.copyOf(resolved);
     }
 
     public record Watchdog(Duration staleAfter) {

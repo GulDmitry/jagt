@@ -13,6 +13,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +41,41 @@ class IdeLauncherTest {
     }
 
     @Test
+    void opensTheDeployWorktreeOfTheRepositoryThatActuallyOwnsTheConflict(@TempDir Path root) throws Exception {
+        Path api = Files.createDirectories(root.resolve("one/api"));
+        Path web = Files.createDirectories(root.resolve("two/web"));
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(dev.jagt.orchestrator.model.TaskRepo.of("api",
+                        root.resolve("one/ABC-1-api").toString()),
+                dev.jagt.orchestrator.model.TaskRepo.of("web", root.resolve("two/ABC-1-web").toString())),
+                TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig(api.toString(), "origin/main", "dev", List.of()),
+                "web", new ProjectConfig(web.toString(), "origin/main", "dev", List.of()))));
+        when(git.hasDeployWorktree(api, "ABC-1")).thenReturn(false);
+        when(git.hasDeployWorktree(web, "ABC-1")).thenReturn(true);
+
+        launcher(state).open("a1", null);
+
+        verify(editor).open(GitService.deployWorktreePath(web, "ABC-1"));
+        verify(editor, never()).open(GitService.deployWorktreePath(api, "ABC-1"));
+    }
+
+    @Test
+    void opensTheTaskWorktreeWhenAConflictedProjectHasLeftTheConfiguration(@TempDir Path root) throws Exception {
+        Path taskWorktree = Files.createDirectories(root.resolve("ABC-1-demo"));
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("gone", taskWorktree.toString(), TaskStatus.DEPLOY_CONFLICT)
+                .alias("a1").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
+
+        String out = launcher(state).open("a1", null);
+
+        verify(editor).open(taskWorktree);
+        assertThat(out).contains("as a project in the editor");
+    }
+
+    @Test
     void ideOpensTheDeployWorktreeForATaskStuckInDeployConflict(@TempDir Path root) throws Exception {
         Path repo = Files.createDirectories(root.resolve("repo"));
         Path deployWorktree = Files.createDirectories(root.resolve("ABC-1-deploy"));   // sibling of the repo
@@ -47,7 +83,9 @@ class IdeLauncherTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", taskWorktree.toString(), TaskStatus.DEPLOY_CONFLICT)
                 .alias("a1").build());
-        when(config.project("proj")).thenReturn(new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
+        when(git.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
 
         String out = launcher(state).open("a1", null);
 

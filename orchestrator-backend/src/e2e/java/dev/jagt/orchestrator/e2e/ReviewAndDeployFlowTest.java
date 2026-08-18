@@ -213,7 +213,7 @@ class ReviewAndDeployFlowTest {
     }
 
     @Test
-    void oneSessionShipsEveryRepositoryTheTaskSpansAndRefusesToDeployHalfOfIt() throws Exception {
+    void oneSessionShipsAndDeploysEveryRepositoryTheTaskSpansAndTakesThemBackOutInReverse() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), new LinkedHashMap<>(Map.of(
                 "proj", repo(), "web", webRepo())), "shared", false);
 
@@ -237,8 +237,15 @@ class ReviewAndDeployFlowTest {
         act("sweep");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
-        assertThat(refused("deploy")).contains("REFUSED", "proj, web");
-        assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
+        assertThat(act("deploy")).contains("proj into dev", "web into dev", "DEPLOYED");
+        assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", "dev"))
+                .contains("Merge branch '" + TASK + "' into dev");
+        assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
+                .contains("Merge branch '" + TASK + "' into dev");
+
+        assertThat(act("revert")).contains("reverted web on dev", "proj on dev", "REVERTED");
+        assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
+                .contains("Revert \"Merge branch '" + TASK + "' into dev\"");
     }
 
     @Test
@@ -278,18 +285,6 @@ class ReviewAndDeployFlowTest {
 
     private String act(String action) throws Exception {
         return post("/api/tasks/" + TASK + "/actions/" + action, "", Map.of());
-    }
-
-    /** The sentence a refusal comes back as — a 400 with the reason, which is what the board shows. */
-    private String refused(String action) throws Exception {
-        HttpResponse<String> answer = client.send(HttpRequest
-                        .newBuilder(URI.create("http://127.0.0.1:" + port + "/api/tasks/" + TASK + "/actions/"
-                                + action))
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString("")).build(),
-                HttpResponse.BodyHandlers.ofString());
-        assertThat(answer.statusCode()).as("%s", answer.body()).isEqualTo(400);
-        return answer.body();
     }
 
     private String post(String path, String body, Map<String, String> headers) throws Exception {

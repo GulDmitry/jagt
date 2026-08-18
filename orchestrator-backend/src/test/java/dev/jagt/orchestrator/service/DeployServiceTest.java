@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.InOrder;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
@@ -21,6 +22,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
@@ -109,6 +111,22 @@ class DeployServiceTest {
     }
 
     @Test
+    void sendsTheHumanToEveryRepositoryWhenNoMergeCommitWasEverRecorded(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "staging", null));
+        DeployService deploys = new DeployService(state, config, mock(GitService.class), editor);
+
+        assertThatThrownBy(() -> deploys.revert("a1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("origin/dev` in api")
+                .hasMessageContaining("origin/staging` in web");
+    }
+
+    @Test
     void refusesToRevertATaskThatWasNeverDeployed(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
@@ -176,19 +194,299 @@ class DeployServiceTest {
                 .hasMessageContaining("deployBranch");
     }
     @Test
-    void refusesToDeployATaskThatSpansRepositoriesRatherThanLandHalfOfIt(@TempDir Path root) {
+    void landsEveryRepositoryATaskSpansInTheOrderItHoldsThem(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
         GitService git = mock(GitService.class);
-        DeployService deploys = new DeployService(state, mock(ConfigService.class), git, editor);
+        when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
+        when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        String result = deploys.deploy("a1");
+
+        assertThat(result).contains("api into dev (cafebabe)", "web into dev (f00dfeed)", "DEPLOYED");
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(after.repos()).extracting(TaskRepo::deployCommit)
+                .containsExactly("cafebabe1234", "f00dfeed5678");
+    }
+
+    @Test
+    void namesWhatIsLiveAndWhatIsNotWhenARepositoryConflictsAfterAnotherHasLanded(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
+        Path deployWorktree = root.resolve("ABC-1-deploy");
+        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict in Widget.java", deployWorktree))
+                .when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        String result = deploys.deploy("a1");
+
+        assertThat(result).contains("CONFLICT merging web into dev", "Live on the deploy branch: api",
+                "NOT deployed: web", deployWorktree.toString());
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+        assertThat(after.repos()).extracting(TaskRepo::deployCommit).containsExactly("cafebabe1234", null);
+    }
+
+    @Test
+    void countsNothingAsLiveWhenTheFirstRepositoryOfAFreshRoundConflicts(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.REVIEWED).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "0ldc0mm1t111")
+                .withDeployCommit("web", "0ldc0mm1t222"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict", root.resolve("ABC-1-deploy")))
+                .when(git).mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        String result = deploys.deploy("a1");
+
+        assertThat(result).contains("Live on the deploy branch: none", "NOT deployed: api, web");
+    }
+
+    @Test
+    void startsFromTheTopWhenADeployWorktreeIsLeftOverFromSomeRoundOtherThanAConflict(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
+        when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("cafebabe1234");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        deploys.deploy("a1");
+
+        verify(git).mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
+        verify(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
+    }
+
+    @Test
+    void aRepeatedDeployPicksUpAtTheRepositoryTheConflictLeftBehind(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
+        when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        deploys.deploy("a1");
+
+        verify(git, never()).mergeIntoAndPush(eq(Path.of("/repo/api")), anyString(), anyString());
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+    }
+
+    @Test
+    void landsTheRepositoriesThatHaveWorkAndPassesOverTheOnesWithNothingToDeploy(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        doThrow(new GitService.NothingToDeployException("ABC-1", "dev"))
+                .when(git).mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
+        when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        String result = deploys.deploy("a1");
+
+        assertThat(result).contains("web into dev (f00dfeed)", "nothing to deploy in api", "DEPLOYED");
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+    }
+
+    @Test
+    void refusesTheDeployWhenNoRepositoryHasAnythingToDeploy(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        doThrow(new GitService.NothingToDeployException("ABC-1", "dev"))
+                .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        assertThatThrownBy(() -> deploys.deploy("a1"))
+                .isInstanceOf(GitService.NothingToDeployException.class)
+                .hasMessageContaining("Nothing to deploy");
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
+    }
+
+    @Test
+    void reportsAndRecordsWhatIsLiveWhenADeployBreaksOffForAReasonNoWorktreeCanFix(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
+        doThrow(new IllegalStateException("Deploy push to dev was rejected"))
+                .when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        assertThatThrownBy(() -> deploys.deploy("a1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Live on the deploy branch: api")
+                .hasMessageContaining("NOT deployed: web")
+                .hasMessageContaining("Deploy push to dev was rejected");
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.status()).isEqualTo(TaskStatus.APPROVED);
+        assertThat(after.message()).contains("Live on the deploy branch: api", "NOT deployed: web");
+    }
+
+    @Test
+    void leavesNoDanglingWordWhenTheFailureItReportsCarriesNoMessage(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
+        doThrow(new NullPointerException()).when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        assertThatThrownBy(() -> deploys.deploy("a1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageEndingWith("NOT deployed: web.");
+    }
+
+    @Test
+    void undoesTheRepositoryThatIsLiveWithoutEvenLookingUpOneThatNeverLanded(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234"))
+                .thenReturn("beef00991122");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        String result = deploys.revert("a1");
+
+        assertThat(result).contains("reverted api on dev (beef0099)", "REVERTED");
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVERTED);
+    }
+
+    @Test
+    void refusesTheWholeDeployWhenAnyRepositoryHasNoDeployBranch(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", null, null));
+        GitService git = mock(GitService.class);
+        DeployService deploys = new DeployService(state, config, git, editor);
 
         assertThatThrownBy(() -> deploys.deploy("a1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("REFUSED")
-                .hasMessageContaining("api, web");
-
+                .hasMessageContaining("web")
+                .hasMessageContaining("deployBranch");
         verifyNoInteractions(git);
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
+    }
+
+    @Test
+    void recordsWhatCameOutWhenARevertStopsPartWaySoTheBoardStillSaysIt(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234")
+                .withDeployCommit("web", "f00dfeed5678"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678"))
+                .thenReturn("beef00991122");
+        doThrow(new IllegalStateException("the revert conflicts"))
+                .when(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        assertThatThrownBy(() -> deploys.revert("a1")).isInstanceOf(IllegalStateException.class);
+
+        assertThat(state.task("ABC-1").orElseThrow().message())
+                .contains("reverted web on dev", "api still live on dev");
+    }
+
+    @Test
+    void undoesTheRepositoriesInReverseOrderAndForgetsEachMergeItTookOut(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234")
+                .withDeployCommit("web", "f00dfeed5678"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.revertMergeAndPush(any(), anyString(), anyString(), anyString())).thenReturn("beef00991122");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        String result = deploys.revert("a1");
+
+        InOrder undone = inOrder(git);
+        undone.verify(git).revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678");
+        undone.verify(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
+        assertThat(result).contains("reverted web on dev", "api on dev", "REVERTED");
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.status()).isEqualTo(TaskStatus.REVERTED);
+        assertThat(after.repos()).extracting(TaskRepo::deployCommit).containsOnlyNulls();
+    }
+
+    @Test
+    void keepsATaskDeployedWhenOneRepositoryCouldNotBeUndone(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234")
+                .withDeployCommit("web", "f00dfeed5678"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678"))
+                .thenReturn("beef00991122");
+        doThrow(new IllegalStateException("the revert conflicts with work done there since the deploy"))
+                .when(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        assertThatThrownBy(() -> deploys.revert("a1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("reverted web on dev")
+                .hasMessageContaining("api still live on dev");
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(after.repos()).extracting(TaskRepo::deployCommit).containsExactly("cafebabe1234", null);
     }
 }
