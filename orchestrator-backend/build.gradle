@@ -40,7 +40,8 @@ tasks.withType(Test).configureEach {
     // Never the developer's own log file: `activity` reads that file back, so fixture tasks would come out as
     // work jagt did unattended. Relative on purpose: an absolute path is a task input that differs per
     // worktree, so nothing would ever be a cache hit across them.
-    systemProperty 'logging.file.name', 'build/test-logs/suite.log'
+    systemProperty 'logging.file.name', projectDir.toPath()
+            .relativize(layout.buildDirectory.file('test-logs/suite.log').get().asFile.toPath()).toString()
     // The suite commits in throwaway repositories, which have no committer identity of their own.
     environment 'GIT_AUTHOR_NAME', 'jagt tests'
     environment 'GIT_AUTHOR_EMAIL', 'tests@example.com'
@@ -176,6 +177,15 @@ tasks.register('e2eTest', Test) {
     classpath = sourceSets.e2e.runtimeClasspath
     useJUnitPlatform()
     shouldRunAfter tasks.named('test')
+}
+
+// What these three prove is the MACHINE, and no machine state is in a cache key: a restored result would come
+// back green without anything having run.
+['e2eTest', 'boardTest', 'linuxDriverTest'].each { name ->
+    tasks.named(name) {
+        outputs.cacheIf { false }
+        outputs.upToDateWhen { false }
+    }
 }
 
 // Spring resolves constructor parameter names reflectively and has no bytecode fallback since 6.1.

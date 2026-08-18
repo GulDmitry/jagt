@@ -580,6 +580,10 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   or a CI-only code path, is a bug: green in CI and green on a laptop must mean the same thing. Neither
   pipeline needs Docker — the container image is for macOS developers and installs from that same deps script.
   `linuxDriverTest` is gated on CAPABILITY (Linux + the binaries + a DISPLAY), never on "which harness am I in".
+  THE BUILD CACHE IS FOR THE HERMETIC SUITE ONLY: what `e2eTest`/`boardTest`/`linuxDriverTest` prove is the
+  MACHINE, and no machine state is in a cache key, so all three opt out (`cacheIf`/`upToDateWhen` false) — a
+  restored result comes back green with nothing having run, on a fresh worktree and in a pipeline that caches
+  `~/.gradle` alike.
 - LINUX IS TESTABLE FROM A MAC: `scripts/linux-suite.sh` runs `test` + `e2eTest` + `linuxDriverTest` inside a
   container (`docker/linux-suite.Dockerfile`). `linuxDriverTest` (source set `src/linuxTest/java`, NOT in
   `check`, guarded by `JAGT_IN_CONTAINER`) is the only place the Linux drivers meet real binaries: the
