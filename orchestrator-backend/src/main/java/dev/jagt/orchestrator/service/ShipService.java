@@ -80,11 +80,9 @@ public class ShipService {
             // for several repositories it would push some and lose the rest — the half-shipped state the sweep
             // then asks about forever. Refusing names what to configure instead.
             if (task.repos().size() > 1) {
-                throw new IllegalStateException("ship " + taskId + ": this task works in "
-                        + String.join(", ", task.projects()) + ", and "
-                        + String.join(", ", unhosted(task, hosts.keySet())) + " has no configured code host."
-                        + " jagt ships a multi-repository task only when it can open every request itself —"
-                        + " set orchestrator.code-host for it, or ship these repositories by hand.");
+                throw new IllegalStateException("ship " + taskId + ": "
+                        + String.join(", ", unhosted(task, hosts.keySet())) + " has no code host, so jagt"
+                        + " cannot open every request — set orchestrator.code-host, or ship by hand.");
             }
             return relayToAgent(taskId, task, config, title, targetOf(task, task.primary()), !hasRequest);
         }
@@ -114,7 +112,7 @@ public class ShipService {
         // A ROUND, not just a status: recorded in history and re-arming the auto-review window even when the
         // status was already CI_POLLING, which is the case for every round after the first.
         stateService.updateTask(taskId, state -> state.withReviewRound(requests));
-        return "ship " + taskId + ": " + String.join("; ", reported) + " — status CI_POLLING"
+        return "ship " + taskId + ": " + String.join("; ", reported) + "; CI_POLLING"
                 + relayDraftedReplies(taskId, Path.of(task.worktreePath()), config);
     }
 
@@ -159,8 +157,7 @@ public class ShipService {
     }
 
     /**
-     * No code host for this repository: the agent still has to do it, exactly as before. Kept verbatim rather
-     * than "improved" — an unconfigured setup must behave as it always has.
+     * No code host for this repository, so the agent is asked to push and open the request itself.
      */
     private String relayToAgent(String taskId, TaskState task, ConfigService.ConfigFile config, String title,
                                String targetBranch, boolean firstShip) {
@@ -168,11 +165,8 @@ public class ShipService {
                 repliesStep(config)));
         // SHIPPING says "underway": the status only reaches CI_POLLING when the agent reports the link back.
         stateService.updateTask(taskId, state -> state.withStatus(TaskStatus.SHIPPING, "shipping"));
-        return "ship " + taskId + ": approval relayed — agent will commit "
-                + (firstShip ? "\"" + title + "\" and open the review request"
-                        : "a concise review-fix message on the existing request")
-                + ", push, post replies, then report CI_POLLING."
-                + " (Configure orchestrator.code-host to have jagt do this itself, without a model.)";
+        return "ship " + taskId + ": relayed to the agent (no code host); SHIPPING until it reports the"
+                + " request";
     }
 
     /**
@@ -184,13 +178,13 @@ public class ShipService {
             return "";
         }
         if (!config.codeReview().postReviewRepliesOrDefault()) {
-            return "; review_replies.md is left for you to post (codeReview.postReviewReplies=false)";
+            return "; review_replies.md is yours to post (postReviewReplies=false)";
         }
         sessions.appendTaskContext(taskId, "The change is committed, pushed and the review request is up to date —"
                 + " there is NOTHING to commit or push.\n" + repliesStep(config)
                 + "Then set status REVIEW_PENDING only if you had to change code; otherwise leave the status"
                 + " alone.");
-        return "; asked the agent to post the drafted replies";
+        return "; drafted replies relayed to the agent";
     }
 
     private static void requireShippable(String taskId, TaskStatus status, boolean hasRequest,
@@ -198,17 +192,14 @@ public class ShipService {
         if (Move.shippable(status, agentLive, hasRequest)) {
             return;
         }
-        throw new IllegalStateException("ship: " + taskId + " is " + status
-                + (status == TaskStatus.SHIPPING
-                        ? " with its agent still shipping — a ship is in flight; `focus` to watch it."
-                        : " — ship needs a task still in progress (IN_PROGRESS/REVIEW_PENDING) or an existing"
-                                + " review request to ship another round onto; this one has neither."));
+        throw new IllegalStateException(status == TaskStatus.SHIPPING
+                ? "ship " + taskId + ": a ship is already in flight; `focus` to watch it."
+                : "ship " + taskId + ": cannot ship a " + status
+                        + " task — needs IN_PROGRESS, REVIEW_PENDING, or an open request.");
     }
 
     private static String describe(GitService.Commit commit) {
-        return commit.created()
-                ? "committed " + commit.changedFiles() + " file(s)"
-                : "nothing new to commit";
+        return commit.created() ? commit.changedFiles() + " file(s)" : "no new commit";
     }
 
     /** What the agent is told to do with review_replies.md, honouring both codeReview switches. */
@@ -253,6 +244,6 @@ public class ShipService {
                 + "2. Push branch " + taskId + ".\n"
                 + requestStep
                 + "4. " + repliesStep
-                + "5. Report back with update_agent_status CI_POLLING, message \"MR: <the request url>\".";
+                + "5. Report back with update_agent_status CI_POLLING, message \"review request: <the url>\".";
     }
 }

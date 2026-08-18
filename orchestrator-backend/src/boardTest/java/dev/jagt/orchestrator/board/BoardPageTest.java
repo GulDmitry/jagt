@@ -184,7 +184,7 @@ class BoardPageTest {
         Page page = open();
 
         assertThat(page.locator("article .actions button")).hasText(
-                new String[]{"Check review", "Deploy", "Focus", "Open IDE", "Diff", "Respawn", "Done"});
+                new String[]{"Check review", "Deploy", "Focus", "Open IDE", "Diff", "Restart agent", "Done"});
         assertThat(page.locator("article .actions button.primary")).hasText("Deploy");
     }
 
@@ -366,6 +366,25 @@ class BoardPageTest {
     }
 
     @Test
+    void thePaletteRunsARetiredVerbItselfInsteadOfPayingTheModelForIt() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host/x/merge_requests/7")
+                .lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("review a1");
+
+        assertThat(page.locator("#palette-state")).containsText("runs as typed");
+
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#toasts .toast")).hasText("sweep ABC-1: checks success");
+        verifyNoInteractions(naturalLanguage);
+    }
+
+    @Test
     void freeTextIsInterpretedAndTheBoardLeadsWithHowItWasUnderstood() {
         when(naturalLanguage.interpret("send the widget work out for review"))
                 .thenReturn("understood as `ship a1` — Shipped ABC-1.");
@@ -388,6 +407,35 @@ class BoardPageTest {
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
         verify(launcher).launch(new LaunchRequest("ABC-9", null, null, null, null, null));
+    }
+
+    @Test
+    void labelsTheSessionClockSoItDoesNotReadAsASecondAgeOfTheStatus() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .meta span").last()).containsText("active");
+    }
+
+    @Test
+    void offersTheProjectsWithNonePickedSoAMultiSelectStartsEmpty() {
+        Page page = open();
+
+        assertThat(page.locator("#project option")).hasCount(2);
+        assertThat(page.locator("#project")).hasValues(new String[]{});
+    }
+
+    @Test
+    void answersATasklessVerbItselfInsteadOfSendingItToTheModel() {
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("ship");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#palette-state")).containsText("ship needs a task");
+        verifyNoInteractions(naturalLanguage);
     }
 
     @Test

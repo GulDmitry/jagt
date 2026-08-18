@@ -54,7 +54,7 @@ class IdeLauncherTest {
         // The conflict lives on the deploy side — `ide` must open THAT, never the (clean) task worktree.
         verify(editor).open(deployWorktree);
         verify(editor, never()).open(taskWorktree);
-        assertThat(out).contains("DEPLOY worktree");
+        assertThat(out).contains("deploy worktree");
     }
 
     @Test

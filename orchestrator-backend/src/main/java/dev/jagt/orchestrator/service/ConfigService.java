@@ -135,7 +135,8 @@ public class ConfigService {
             }
 
             /**
-             * Default true: on `ship`, the agent posts its drafted review replies to the MR threads (current
+             * Default true: on `ship`, the agent posts its drafted review replies to the request threads
+             * (current
              * behaviour). False: the replies stay in {@code review_replies.md} for the human — only code is
              * pushed. Either way the agent drafts a per-comment "comment -> intended reply" block each round.
              */
@@ -174,7 +175,8 @@ public class ConfigService {
         }
 
         /**
-         * Auto-review poller: after `ship`, jagt watches the MR on its own within a bounded time window,
+         * Auto-review poller: after `ship`, jagt watches the request on its own within a bounded time
+         * window,
          * escalating the poll interval from {@code minIntervalMinutes} to {@code maxIntervalMinutes} across
          * the window (linear). See {@code AutoReviewScheduler} + {@code AutoReviewCadence}.
          */

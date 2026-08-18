@@ -142,12 +142,6 @@ function fillProjects() {
   } else {
     projectPicked = false;
   }
-  // A list that allows several picks starts with NONE selected, where a dropdown would have shown its first
-  // option — and an empty box reads as "no projects configured". Showing one costs nothing: what is SENT is
-  // still gated on the human having picked.
-  if (projects.length && projectSelect.selectedIndex < 0) {
-    projectSelect.selectedIndex = 0;
-  }
 }
 
 function sorted(list) {
@@ -199,7 +193,8 @@ function card(task) {
   const meta = document.createElement('div');
   meta.className = 'meta';
   // Two different clocks, on purpose: how long it has been in THIS status (what you want when a task is
-  // waiting on you) and when it was last active at all (a keep-alive bumps only the second one).
+  // waiting on you) and when the session last did anything (a keep-alive bumps only the second one). The
+  // second one is LABELLED — two bare "…d ago" in one row read as two ages of the same thing.
   const status = document.createElement('span');
   status.className = 'status';
   status.textContent = `${task.status} · ${duration(Date.now() - task.statusSince)}`;
@@ -207,7 +202,7 @@ function card(task) {
   // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
   const repos = task.repos || [];
   const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
-  meta.append(status, span(null, where), span(null, relative(task.lastActiveAt)));
+  meta.append(status, span(null, where), span(null, `active ${relative(task.lastActiveAt)}`));
 
   const hint = document.createElement('div');
   hint.className = 'hint';
@@ -377,12 +372,20 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
+// A verb answers to its own name and to whatever it was renamed from — the old spelling is accepted here for
+// the same reason the console accepts it, and offered in neither.
+function verbFor(word) {
+  const typed = word.toLowerCase();
+  // Its own name first, exactly as the server resolves it: an alias must never shadow another verb's id.
+  return verbs.find((v) => v.id === typed) || verbs.find((v) => (v.aliases || []).includes(typed));
+}
+
 // What the human typed, understood WITHOUT a model: a known verb, and — for the per-task ones — a task that
 // actually exists. Anything else is left to tier 2, which is what the model is for.
 function parseCommand(line) {
   const tokens = line.trim().split(/\s+/).filter(Boolean);
   if (!tokens.length) return null;
-  const verb = verbs.find((v) => v.id === tokens[0].toLowerCase());
+  const verb = verbFor(tokens[0]);
   if (!verb) return null;
   const argument = tokens.slice(1).join(' ');
   if (!verb.takesTask) return {verb, argument};
@@ -408,7 +411,7 @@ function judgeAsk() {
   const parsed = parseCommand(line);
   if (!parsed) {
     const word = line.split(/\s+/)[0];
-    const known = verbs.some((v) => v.id === word.toLowerCase());
+    const known = Boolean(verbFor(word));
     state.textContent = known ? '' : `“${word}” is not a command — this will go to the model as plain words`;
     return;
   }
@@ -467,6 +470,13 @@ palette.onsubmit = async (event) => {
   const state = document.getElementById('palette-state');
   const button = palette.querySelector('button[type=submit]');
   const parsed = parseCommand(ask.value);
+  // A verb typed ALONE is answered here: the model would be paid to map a line with no argument at all, and
+  // would answer "unknown command" for a verb the page just completed. A verb WITH an argument that named no
+  // task is prose ("ship the widget one") and stays tier 2's job.
+  if (parsed && parsed.verb.takesTask && !parsed.task && !parsed.argument) {
+    judgeAsk();
+    return;
+  }
   if (parsed && (!parsed.verb.takesTask || parsed.task)) {
     button.disabled = true;
     try {
@@ -504,7 +514,7 @@ palette.onsubmit = async (event) => {
 
 // ---- everything the console can do that is not a per-task button ----
 // Parity is the rule, not a nice-to-have: a capability that exists in one surface only is the bug this section
-// closes (resume, stats, help, stop). Per-task verbs — ship, review, ide (incl. the DEPLOY_CONFLICT
+// closes (resume, stats, help, stop). Per-task verbs — ship, sweep, ide (incl. the DEPLOY_CONFLICT
 // worktree), deploy, revert, respawn, focus, done — are already the card's own buttons, because the server
 // lists them per task and the board renders exactly that list.
 

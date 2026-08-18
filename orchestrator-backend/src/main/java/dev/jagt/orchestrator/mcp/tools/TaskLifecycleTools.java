@@ -37,7 +37,7 @@ public class TaskLifecycleTools implements McpTools {
                     "title": {"type": "string", "description": "The Jira ticket title (shown in the dashboard while the task is in development). Fetch it when delegating."},
                     "ticketUrl": {"type": "string", "description": "Canonical web link to the ticket (shown as the dashboard's clickable ticket line). Fetch it when delegating."},
                     "mode": {"type": "string", "enum": ["auto", "plan"], "description": "plan = the agent starts in Claude plan mode (plans first, human approves in its tmux window). Default: auto."},
-                    "branchStrategy": {"type": "string", "enum": ["fresh", "recreate", "resume"], "description": "For reopened tickets whose branch still exists: recreate = delete it and branch fresh from base (previous MR merged), resume = continue the existing branch and its commits (unmerged work). Default fresh = error if the branch exists."},
+                    "branchStrategy": {"type": "string", "enum": ["fresh", "recreate", "resume"], "description": "For reopened tickets whose branch still exists: recreate = delete it and branch fresh from base (previous request merged), resume = continue the existing branch and its commits (unmerged work). Default fresh = error if the branch exists."},
                     "baseBranch": {"type": "string", "description": "Branch to cut the worktree from and to target with the review request, e.g. a parent feature branch. Must exist on origin. Default: the project's configured baseBranch."}
                   },
                   "required": ["taskId", "projectKey"]

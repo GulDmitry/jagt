@@ -20,21 +20,21 @@ record ReviewRoundCase(String name, ReviewFacts round, TaskStatus expected, Stri
         return List.of(
                 new ReviewRoundCase("unresolved comments",
                         facts(false, "success", List.of("bot (Widget.java:12): tighten this", "human: rename it")),
-                        TaskStatus.CI_POLLING, "relayed 2 comment(s), pipeline success", true),
-                new ReviewRoundCase("red pipeline, nothing unresolved",
+                        TaskStatus.CI_POLLING, "2 comment(s) relayed, checks success", true),
+                new ReviewRoundCase("red checks, nothing unresolved",
                         facts(false, "failed", List.of()),
-                        TaskStatus.CI_POLLING, "relayed 0 comment(s), pipeline failed", true),
+                        TaskStatus.CI_POLLING, "0 comment(s) relayed, checks failed", true),
                 new ReviewRoundCase("green and nothing unresolved",
                         facts(false, "success", List.of()),
-                        TaskStatus.REVIEWED, "no unresolved comments — your move: `deploy` or `done`", false),
+                        TaskStatus.REVIEWED, "checks success, nothing unresolved — `deploy` or `done`", false),
                 new ReviewRoundCase("approved by a human",
                         facts(true, "success", List.of()),
-                        TaskStatus.APPROVED, "MR approved, pipeline success", false),
-                new ReviewRoundCase("pipeline still running",
+                        TaskStatus.APPROVED, "approved, checks success", false),
+                new ReviewRoundCase("checks still running",
                         facts(false, "running", List.of()),
-                        TaskStatus.CI_POLLING, "no unresolved comments yet, not approved — still waiting", false),
+                        TaskStatus.CI_POLLING, "nothing unresolved yet, not approved — waiting", false),
                 new ReviewRoundCase("the request cannot be read", null,
-                        TaskStatus.CI_POLLING, "error: could not read the MR review", false));
+                        TaskStatus.CI_POLLING, "error: could not read", false));
     }
 
     private static ReviewFacts facts(boolean approved, String pipeline, List<String> comments) {

@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -44,25 +46,33 @@ public class GrammarDispatch {
     private String runHere(String line) {
         List<String> tok = List.of(line.split("\\s+"));
         try {
-            return switch (tok.get(0)) {
+            return switch (tok.get(0).toLowerCase(Locale.ROOT)) {
                 case "status" -> "";
                 case "stats" -> views.stats();
                 case "help" -> CommandReference.text();
                 case "do" -> launcher.launch(parseDoArgs(tok));
                 case "resume" -> resume(tok);
-                case "review" -> act(tok, TaskAction.SWEEP);
+                case "sweep" -> act(tok, TaskAction.SWEEP);
                 case "ship" -> act(tok, TaskAction.SHIP);
                 case "focus" -> act(tok, TaskAction.FOCUS);
-                case "ide" -> act(tok, tok.contains("diff") ? TaskAction.DIFF : TaskAction.IDE);
+                case "ide" -> act(tok, tok.stream().anyMatch(token -> token.equalsIgnoreCase("diff"))
+                        ? TaskAction.DIFF : TaskAction.IDE);
+                case "diff" -> act(tok, TaskAction.DIFF);
                 case "deploy" -> act(tok, TaskAction.DEPLOY);
                 case "revert" -> act(tok, TaskAction.REVERT);
                 case "respawn" -> act(tok, TaskAction.RESPAWN);
                 case "done" -> act(tok, TaskAction.DONE);
-                default -> naturalLanguage.interpret(line);
+                default -> retiredVerb(tok, line);
             };
         } catch (IllegalArgumentException | IllegalStateException e) {
             return "error: " + e.getMessage();
         }
+    }
+
+    /** A spelling a verb was renamed from runs here, so muscle memory costs no model call. */
+    private String retiredVerb(List<String> tok, String line) {
+        Optional<TaskAction> renamed = TaskAction.byRetiredVerb(tok.get(0));
+        return renamed.isPresent() ? act(tok, renamed.get()) : naturalLanguage.interpret(line);
     }
 
     /** The same action a board button posts, through the gate that refuses what a status does not allow. */
@@ -73,9 +83,9 @@ public class GrammarDispatch {
     /** The request names its own branches, so anything typed beside its URL could only contradict it. */
     String resume(List<String> tok) {
         String url = tok.stream().skip(1).filter(token -> token.startsWith("http")).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("usage: resume <mr-url>"));
+                .orElseThrow(() -> new IllegalArgumentException("usage: resume <request-url>"));
         if (tok.size() > 2) {
-            throw new IllegalArgumentException("usage: resume <mr-url> — the request carries its own branches;"
+            throw new IllegalArgumentException("usage: resume <request-url> — the request carries its own branches;"
                     + " to start a NEW task on a new branch use `do <ticket>`");
         }
         return launcher.resume(url);

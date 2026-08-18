@@ -37,27 +37,24 @@ public class DeployService {
         try {
             merged = gitService.mergeIntoAndPush(Path.of(project.path()), taskId, deployBranch);
         } catch (GitService.MergeConflictException e) {
-            // Resolve on the DEPLOY side, never in the task branch: the MR targets the base branch, so merging
-            // the deploy branch into the task branch would balloon its diff with everything the deploy branch
-            // carries. jagt does NOT auto-open an editor — the dashboard flags DEPLOY_CONFLICT, the human opens
-            // the worktree and resolves it, then deploys again (the backend does the push).
+            // Resolve on the DEPLOY side, never in the task branch: the request targets the base branch,
+            // so merging the deploy branch into the task branch would balloon its diff with everything the
+            // deploy branch carries. jagt does NOT auto-open an editor — the dashboard flags DEPLOY_CONFLICT,
+            // the human opens the worktree and resolves it, then deploys again (the backend does the push).
             stateService.updateTask(taskId,
                     t -> t.withStatus(TaskStatus.DEPLOY_CONFLICT, "resolve conflict in " + e.deployWorktree()));
-            return "deploy " + taskId + ": MERGE CONFLICT merging into " + deployBranch + ". Open the deploy"
-                    + " worktree yourself and resolve it: " + e.deployWorktree() + " — fix the conflicts,"
-                    + " `git add` them, then `deploy " + taskId + "` again to finish. Your task branch and its"
-                    + " MR are untouched.";
+            return "deploy " + taskId + ": CONFLICT into " + deployBranch + ", nothing pushed. Resolve in "
+                    + e.deployWorktree() + " (`git add`), then `deploy " + taskId + "` again.";
         }
         // The deploy worktree is gone once pushed; drop it from the editor's recent-projects list too, so a
         // human who opened it to resolve a conflict isn't left with a dead jagt-deploy entry.
         editorDriver.forgetProject(GitService.deployWorktreePath(Path.of(project.path()), taskId));
-        // deploy IS a state transition — mark it so the dashboard's next move is 'done', not 'review'.
+        // deploy IS a state transition — mark it so the dashboard's next move is 'done', not 'sweep'.
         stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.DEPLOYED, "deployed to " + deployBranch)
                 // Recorded in the SAME update as the status: a deploy whose commit went missing is a deploy
                 // `revert` can only send to the by-hand path, and these two facts are one event.
                 .withDeployCommit(merged));
-        return "Merged branch " + taskId + " into " + deployBranch + " and pushed " + shortSha(merged)
-                + "; status -> DEPLOYED";
+        return "Merged " + taskId + " into " + deployBranch + " (" + shortSha(merged) + "); DEPLOYED";
     }
 
     /**
@@ -68,9 +65,8 @@ public class DeployService {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         if (task.status() != TaskStatus.DEPLOYED) {
-            throw new IllegalArgumentException("revert " + taskId + ": only a DEPLOYED task can be reverted"
-                    + " (this one is " + task.status() + "). A deploy that conflicted never landed, and a task"
-                    + " reverted once has nothing left to undo.");
+            throw new IllegalArgumentException("revert " + taskId + ": cannot revert a " + task.status()
+                    + " task — only a DEPLOYED one has a merge to undo.");
         }
         ProjectConfig project = deployTarget(task);
         String deployBranch = project.deployBranch();
@@ -87,9 +83,8 @@ public class DeployService {
                 mergeCommit);
         stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.REVERTED,
                 "reverted on " + deployBranch + " (" + shortSha(revertCommit) + ")"));
-        return "Reverted " + taskId + "'s deploy on " + deployBranch + ": pushed " + shortSha(revertCommit)
-                + "; status -> REVERTED. The task branch and its commits are untouched — fix and ship again,"
-                + " or `done " + taskId + "`.";
+        return "Reverted " + taskId + " on " + deployBranch + " (" + shortSha(revertCommit)
+                + "); REVERTED — fix and ship again, or `done`.";
     }
 
     /**
@@ -102,10 +97,9 @@ public class DeployService {
             // Half a change on a shared branch is worse than none: the repositories move together or not at
             // all, and jagt cannot promise that yet — one merge landing while the next conflicts would leave
             // the deploy branch carrying one side of a contract.
-            throw new IllegalArgumentException("REFUSED: this task works in " + task.repos().size()
-                    + " repositories (" + String.join(", ", task.projects()) + ") and a deploy writes a shared"
-                    + " branch — deploying one of them would land half the change. Merge them yourself this"
-                    + " time; jagt only deploys a single-repository task.");
+            throw new IllegalArgumentException("REFUSED: " + String.join(", ", task.projects())
+                    + " move together, and jagt cannot land half a change on a shared branch — merge them"
+                    + " yourself.");
         }
         ProjectConfig project = configService.project(task.project());
         if (project.deployBranch() == null || project.deployBranch().isBlank()) {

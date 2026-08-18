@@ -22,7 +22,7 @@
       <option value="title">title</option>
     </select>
   </label>
-  <label class="control checkbox"><input type="checkbox" id="mine"> waiting on me</label>
+  <label class="control checkbox" title="only tasks whose next move is yours"><input type="checkbox" id="mine"> waiting on me</label>
   <button id="resume-task" title="take over an existing review request: resume its branch and link it">Resume</button>
   <button id="open-palette" title="⌘K / Ctrl-K — say what you want in words">Ask</button>
   <button id="show-stats" title="what jagt's own model calls cost, and where each task's time went">Stats</button>
@@ -36,9 +36,9 @@
   <!-- Several picked = one task, one agent session, a worktree in each: the work spans the repositories. -->
   <select id="project" name="project" multiple size="1" title="one project, or several for work that spans them"></select>
   <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">
-  <label class="checkbox"><input type="checkbox" id="plan"> plan first</label>
+  <label class="checkbox" title="the agent writes a plan and waits for your go-ahead before touching code"><input type="checkbox" id="plan"> plan first</label>
   <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
-  <button type="submit" class="primary">Start</button>
+  <button type="submit" class="primary" title="cut a worktree per project, start one agent session and brief it">Start</button>
   <span id="launch-state" class="muted"></span>
 </form>
 

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.shell;
 
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
@@ -15,6 +16,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -25,8 +27,49 @@ class GrammarDispatchTest {
 
     private final ConfigService config = mock(ConfigService.class);
     private final TaskLauncher launcher = mock(TaskLauncher.class);
+    private final CommandService commands = mock(CommandService.class);
+    private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
     private final GrammarDispatch grammar = new GrammarDispatch(mock(StateViews.class),
-            mock(CommandService.class), launcher, mock(NaturalLanguageDispatch.class), config);
+            commands, launcher, naturalLanguage, config);
+
+    @Test
+    void runsTheSweepForTheVerbItWasRenamedFrom() {
+        grammar.run("review ABC-1");
+
+        verify(commands).execute("ABC-1", TaskAction.SWEEP);
+        verifyNoInteractions(naturalLanguage);
+    }
+
+    @Test
+    void runsAVerbTypedWithCapitalsInsteadOfPayingTheModelForTheCase() {
+        grammar.run("Review ABC-1");
+
+        verify(commands).execute("ABC-1", TaskAction.SWEEP);
+        verifyNoInteractions(naturalLanguage);
+    }
+
+    @Test
+    void readsTheDiffModifierWhateverCaseItWasTypedIn() {
+        grammar.run("IDE ABC-1 DIFF");
+
+        verify(commands).execute("ABC-1", TaskAction.DIFF);
+    }
+
+    @Test
+    void leavesProseToTheModelInsteadOfTakingItsFirstWordForAVerb() {
+        grammar.run("compare the last two commits");
+
+        verify(naturalLanguage).interpret("compare the last two commits");
+        verifyNoInteractions(commands);
+    }
+
+    @Test
+    void runsTheDiffVerbTheOtherSurfacesAlreadyOffer() {
+        grammar.run("diff ABC-1");
+
+        verify(commands).execute("ABC-1", TaskAction.DIFF);
+        verifyNoInteractions(naturalLanguage);
+    }
 
     @Test
     void treatsFreeTextAfterPlanAsNotesNotAProject() {

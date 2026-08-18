@@ -59,7 +59,7 @@ public class NaturalLanguageDispatch {
         if (text == null || text.isBlank()) {
             return "Nothing to interpret.";
         }
-        String retired = RETIRED.get(text.strip().split("\\s+")[0].toLowerCase());
+        String retired = RETIRED.get(text.strip().split("\\s+")[0].toLowerCase(java.util.Locale.ROOT));
         if (retired != null) {
             return retired;
         }
@@ -76,7 +76,7 @@ public class NaturalLanguageDispatch {
                     + " command grammar.";
         }
         CommandProposal mapped = proposal.get();
-        String command = mapped.command() == null ? "" : mapped.command().strip().toLowerCase();
+        String command = mapped.command() == null ? "" : mapped.command().strip().toLowerCase(java.util.Locale.ROOT);
         if (command.isBlank() || command.equals("none")) {
             return "Not clear enough to act on: " + reasonOf(mapped) + " Type `help` for the grammar.";
         }
@@ -86,19 +86,22 @@ public class NaturalLanguageDispatch {
         if (command.equals(RESUME)) {
             return runResume(mapped);
         }
-        Optional<TaskAction> action = TaskAction.byId(command);
+        Optional<TaskAction> action = TaskAction.byId(command).or(() -> TaskAction.byRetiredVerb(command));
         if (action.isEmpty()) {
             return "Mapped \"" + text.strip() + "\" to an unknown command '" + command + "' — refused."
                     + " Type `help` for the grammar.";
         }
+        // The verb is echoed as the action's OWN id: the model may have proposed a spelling the grammar was
+        // renamed from, and repeating it here would teach the word `help` deliberately hides.
+        String verb = action.get().id();
         String task = resolveTask(mapped.task());
         if (task == null) {
-            return "Understood as `" + command + "` but not which task (" + reasonOf(mapped)
-                    + ") — name it: `" + command + " <ticket|alias>`.";
+            return "Understood as `" + verb + "` but not which task (" + reasonOf(mapped)
+                    + ") — name it: `" + verb + " <ticket|alias>`.";
         }
         // Execution goes through the SAME gate as a button: an action the task's status does not allow is
         // refused with a sentence here, so a model's guess can never widen what is legal.
-        String understood = "understood as `" + command + " " + task + "` — ";
+        String understood = "understood as `" + verb + " " + task + "` — ";
         try {
             return understood + commands.execute(task, action.get());
         } catch (Refusal e) {
@@ -129,7 +132,7 @@ public class NaturalLanguageDispatch {
         String url = mapped.ticket() == null ? "" : mapped.ticket().strip();
         if (!url.startsWith("http")) {
             return "Understood as `resume` but no review-request URL was named (" + reasonOf(mapped)
-                    + ") — say it explicitly: `resume <mr-url>`.";
+                    + ") — say it explicitly: `resume <request-url>`.";
         }
         return "understood as `resume " + url + "` — " + launcher.resume(url);
     }

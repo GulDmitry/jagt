@@ -41,10 +41,8 @@ public class TaskResume {
         // Someone else's branch is not bound by jagt's naming, and a task IS its branch — so say which branch
         // and why, instead of letting the generic id check report a regex the human never typed.
         if (!TaskProvisioning.isSafeId(taskId)) {
-            return "error: source branch '" + taskId + "' cannot be a jagt task — a task IS its branch, and"
-                    + " that name also becomes a directory and a tmux window (allowed: letters, digits, '-',"
-                    + " '_'). Work in the branch directly, or start a task of your own with `do <ticket> from "
-                    + taskId + "`.";
+            return "error: branch '" + taskId + "' cannot be a task name (letters, digits, '-', '_' only;"
+                    + " it becomes a directory and a tmux window too). Try `do <ticket> from " + taskId + "`.";
         }
         String result = link(taskId, reviewRequestUrl, request.get().title(), request.get().targetBranch());
         reviewReader.charge(taskId, read.usage());       // the task exists only now
@@ -70,8 +68,8 @@ public class TaskResume {
                 .baseBranch(targetBranch)
                 .build());
         statusReports.report("CI_POLLING", "review request: " + mrUrl, taskId);
-        return "Resumed " + taskId + " on its existing branch; linked review request " + mrUrl
-                + "; status CI_POLLING — run `sweep` or `deploy`.";
+        return "Resumed " + taskId + " on its existing branch, linked " + mrUrl
+                + "; CI_POLLING — `sweep` or `deploy`.";
     }
 
     private String projectFor(String mrUrl) {

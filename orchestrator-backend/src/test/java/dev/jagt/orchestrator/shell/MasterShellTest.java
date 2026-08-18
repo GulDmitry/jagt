@@ -42,6 +42,38 @@ class MasterShellTest {
     }
 
     @Test
+    void tabDoesNotTurnAnAmbiguousPrefixIntoTheSharedBranchWrite() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("rev");
+
+        shell.completeInput(editor, new ArrayList<>());
+
+        assertThat(editor.text()).isEqualTo("rev");
+    }
+
+    @Test
+    void tabCompletesTheTaskArgumentOfAVerbTypedByItsRetiredSpelling() {
+        when(views.taskChoices()).thenReturn(List.of(new TaskChoice("p1", "ABC-2536", "Excel")));
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("review p1");
+
+        shell.completeInput(editor, new ArrayList<>());
+
+        assertThat(editor.text()).isEqualTo("review p1 ");
+    }
+
+    @Test
+    void tabCompletesTheTaskArgumentOfAVerbTypedWithCapitals() {
+        when(views.taskChoices()).thenReturn(List.of(new TaskChoice("p1", "ABC-2536", "Excel")));
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("Ship p1");
+
+        shell.completeInput(editor, new ArrayList<>());
+
+        assertThat(editor.text()).isEqualTo("Ship p1 ");
+    }
+
+    @Test
     void tabCompletesATaskAliasFromTheLiveTasks() {
         when(views.taskChoices()).thenReturn(List.of(new TaskChoice("p1", "ABC-2536", "Excel")));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();

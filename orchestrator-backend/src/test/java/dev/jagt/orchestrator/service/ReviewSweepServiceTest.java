@@ -148,7 +148,7 @@ class ReviewSweepServiceTest {
 
     @Test
     void refusesASecondSweepOfATaskWhileTheFirstIsStillRunning() {
-        // The trigger does not matter — a human typing `review` during an auto-poll used to spawn a second
+        // The trigger does not matter — a human typing `sweep` during an auto-poll used to spawn a second
         // headless read of the same merge request: paid for twice, and two briefs relayed for one round.
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
         when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
@@ -191,7 +191,7 @@ class ReviewSweepServiceTest {
 
     @Test
     void refusesAConcurrentSweepFromAnotherThreadNotJustAReentrantCall() throws InterruptedException {
-        // The real collision is the shell thread (`review`) against the auto-review executor thread, and the
+        // The real collision is the shell thread (`sweep`) against the auto-review executor thread, and the
         // reentrant tests above only ever exercise one thread. What this pins is cross-thread EXCLUSION: the
         // second caller is refused while the first is still inside. (It cannot prove the absence of a data
         // race — the latches introduce the very ordering a race needs to lack — so the concurrent set in
@@ -245,7 +245,7 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
-        assertThat(result.message()).contains("pipeline running");
+        assertThat(result.message()).contains("checks running");
         verify(statusReports, never()).markReviewed("ABC-1");
     }
 
@@ -276,7 +276,7 @@ class ReviewSweepServiceTest {
         ArgumentCaptor<String> brief = ArgumentCaptor.captor();
         verify(sessions).writeTaskContext(eq("ABC-1"), brief.capture());
         assertThat(brief.getValue()).contains("[api] bot: tighten this", "[web] bot: rename that");
-        assertThat(result.message()).contains("relayed 2 comment(s)");
+        assertThat(result.message()).contains("2 comment(s) relayed");
     }
 
     @Test
@@ -302,7 +302,7 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
-        assertThat(result.message()).contains("no review request in web");
+        assertThat(result.message()).contains("no request in web");
         verifyNoInteractions(reviewReader);
     }
 

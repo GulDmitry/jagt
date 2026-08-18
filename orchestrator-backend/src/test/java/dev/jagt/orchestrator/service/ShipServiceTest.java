@@ -86,7 +86,7 @@ class ShipServiceTest {
         verify(stateService).updateTask(eq("ABC-42"), any());
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
         verify(sessions, never()).appendTaskContext(anyString(), anyString());
-        assertThat(result).contains("committed 3 file(s)", "pushed", "opened https://host/mr/9", "CI_POLLING");
+        assertThat(result).contains("3 file(s), pushed, opened https://host/mr/9", "CI_POLLING");
     }
 
     @Test
@@ -139,7 +139,7 @@ class ShipServiceTest {
 
         verify(sessions).writeTaskContext(eq("ABC-42"), contains("This IS the human approval to ship"));
         verify(gitService, never()).pushBranch(any(), any(), anyString());
-        assertThat(result).contains("approval relayed", "orchestrator.code-host");
+        assertThat(result).contains("relayed to the agent", "SHIPPING");
     }
 
     @Test
@@ -148,7 +148,7 @@ class ShipServiceTest {
 
         assertThatThrownBy(() -> ship().ship("ABC-42"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("ship: ABC-42 is NEW");
+                .hasMessageContaining("cannot ship a NEW task");
         verify(gitService, never()).commitAll(any(), any(), anyString());
     }
 
@@ -185,7 +185,7 @@ class ShipServiceTest {
 
         // APPENDS: a sweep may have just relayed a brief, and truncating it would lose the comments.
         verify(sessions).appendTaskContext(eq("ABC-42"), contains("NOTHING to commit or push"));
-        assertThat(result).contains("asked the agent to post the drafted replies");
+        assertThat(result).contains("drafted replies relayed");
     }
 
     @Test
@@ -206,7 +206,7 @@ class ShipServiceTest {
 
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
         verify(sessions, never()).appendTaskContext(anyString(), anyString());
-        assertThat(result).contains("left for you to post");
+        assertThat(result).contains("yours to post");
     }
 
     @Test
@@ -267,7 +267,7 @@ class ShipServiceTest {
                         tuple("git@host:demo/web.git", "release"));
         verify(gitService).pushBranch(any(), eq(Path.of("/wt")), eq("ABC-5"));
         verify(gitService).pushBranch(any(), eq(Path.of("/web-wt")), eq("ABC-5"));
-        assertThat(result).contains("demo committed", "web committed", "https://host/mr/1",
+        assertThat(result).contains("demo 3 file(s), pushed", "web 3 file(s), pushed", "https://host/mr/1",
                 "https://host/mr/2");
     }
 
@@ -323,7 +323,7 @@ class ShipServiceTest {
 
         assertThatThrownBy(() -> ship().ship("ABC-5"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("web has no configured code host")
+                .hasMessageContaining("web has no code host")
                 .hasMessageContaining("orchestrator.code-host");
 
         verify(host, never()).createOrUpdateMergeRequest(any());

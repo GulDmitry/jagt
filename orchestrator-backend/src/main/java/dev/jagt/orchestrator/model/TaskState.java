@@ -29,7 +29,7 @@ public record TaskState(
         // The branch this task was cut from and whose review request it targets, when the human named one at
         // `do` time. Null = the project's configured baseBranch, so a config change still reaches the task.
         String baseBranch,
-        // Auto-review window: when the MR was first linked (window start), the last auto-poll, and the
+        // Auto-review window: when the request was first linked (window start), the last auto-poll, and the
         // per-task on/off (null = follow the config default). Zero = unset.
         long mrCreatedAt,
         long lastPolledAt,
@@ -158,7 +158,7 @@ public record TaskState(
     public TaskState withReviewRound(String project, String reviewRequestUrl) {
         long now = System.currentTimeMillis();
         return toBuilder().status(TaskStatus.CI_POLLING).lastActiveTimestamp(now)
-                .message("MR: " + reviewRequestUrl)
+                .message("review request: " + reviewRequestUrl)
                 .history(appended(seededHistory(), new StatusChange(TaskStatus.CI_POLLING, now, null)))
                 .repos(mapRepo(project, repo -> repo.withMrUrl(reviewRequestUrl)))
                 // The window is per ROUND, not per request: a round shipped days later gets its own polling

@@ -27,7 +27,7 @@
     "outputStyle": ""
   },
   "worktree": {
-    "copyGlobs": ["**/.env", "**/*.pem", "**/*.pub", "**/*.p12", "**/*.jks", "**/*.keystore"]
+    "copyGlobs": ["**/.env"]
   },
   "projects": {
     "my-project": {

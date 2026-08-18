@@ -485,7 +485,10 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   `check`, guarded by `JAGT_IN_CONTAINER`) is the only place the Linux drivers meet real binaries: the
   notifier's message is asserted off the session bus via `dbus-monitor`, kitty is driven under Xvfb. Anything
   a container cannot host — IntelliJ, the AppleScript raise, the Warp URI scheme, the real `claude` — stays
-  NAMED as uncovered rather than faked.
+  NAMED as uncovered rather than faked. Two Linux behaviours are on that list PERMANENTLY (decided 2026-08-18,
+  not a gap waiting to close): `reveal` raising the viewer above other applications, and closing the viewer.
+  Both need a window manager with a human in front of it, so the `@Disabled` test in
+  `LinuxKittyTerminalDriverLinuxTest` documents the lead and no pipeline pretends to cover them.
 - Unit tests: `cd orchestrator-backend && ./gradlew test`. EVERY fixed bug gets a regression unit test
   (sob-ai:unit-testing rules), verified RED by actually reverting the fix and running the test.
 - THE BOARD IS TESTED IN A BROWSER: `./gradlew boardTest` (source set `src/boardTest/java`, NOT in `check`)

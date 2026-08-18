@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.shell;
 
 import dev.jagt.orchestrator.model.TaskChoice;
+import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
 import dev.jagt.orchestrator.service.StateService;
@@ -34,6 +35,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * The console control surface: a full-screen Lanterna screen with the command output on top, the dashboard
@@ -65,13 +67,25 @@ public class MasterShell {
     /** Cap the in-memory output log so a long-running session can't grow it without bound. */
     private static final int MAX_LOG_LINES = 2000;
 
-    /** Every command, for Tab-completion of the first word. */
-    private static final List<String> COMMANDS = List.of("status", "stats", "do", "resume", "review", "ship",
-            "focus", "ide", "deploy", "revert", "respawn", "done", "help", "quit", "exit");
+    /**
+     * Every command, for Tab-completion of the first word: the grammar's own verbs, the spellings they were
+     * renamed from, and the three the console answers itself. The retired ones are here BECAUSE `rev` must stay
+     * ambiguous — completing a prefix to `revert` alone would fill in a shared-branch write for someone whose
+     * fingers meant the sweep.
+     */
+    private static final List<String> COMMANDS = Stream.concat(
+                    CommandReference.verbs().stream().flatMap(MasterShell::spellings),
+                    Stream.of("status", "quit", "exit"))
+            .distinct().sorted().toList();
     /** Commands whose first argument is an EXISTING task (so Tab completes its alias/id); `do`/`resume`
      *  take a new ticket/URL, not a current task. */
-    private static final Set<String> TASK_ARG_COMMANDS = Set.of(
-            "review", "ship", "focus", "ide", "deploy", "revert", "respawn", "done");
+    private static final Set<String> TASK_ARG_COMMANDS = CommandReference.verbs().stream()
+            .filter(CommandReference.Verb::takesTask).flatMap(MasterShell::spellings)
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+
+    private static Stream<String> spellings(CommandReference.Verb verb) {
+        return Stream.concat(Stream.of(verb.id()), verb.aliases().stream());
+    }
 
     public void run() {
         ConfigService.ConfigFile config = configService.load();
@@ -280,7 +294,9 @@ public class MasterShell {
         String[] parts = editor.text().split(" ", -1);
         int idx = parts.length - 1;
         String word = parts[idx];
-        String cmd = parts[0];
+        // The dispatch reads a verb case-insensitively, so completion has to as well: `Review p<Tab>` doing
+        // nothing while `Review p1` runs is the completer disagreeing with the grammar.
+        String cmd = parts[0].toLowerCase(java.util.Locale.ROOT);
         if (idx == 1 && TASK_ARG_COMMANDS.contains(cmd)) {
             completeTaskArg(editor, outputLog, parts, idx, word);
             return;
@@ -295,7 +311,8 @@ public class MasterShell {
         } else {
             return;
         }
-        List<String> matches = pool.stream().filter(c -> c.startsWith(word)).distinct().sorted().toList();
+        String typed = word.toLowerCase(java.util.Locale.ROOT);
+        List<String> matches = pool.stream().filter(c -> c.startsWith(typed)).distinct().sorted().toList();
         if (matches.size() == 1) {
             setLastToken(editor, parts, idx, matches.get(0));
         } else if (!matches.isEmpty()) {

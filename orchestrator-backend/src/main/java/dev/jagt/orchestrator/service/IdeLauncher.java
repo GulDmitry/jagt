@@ -38,9 +38,8 @@ public class IdeLauncher {
                     Path.of(configService.project(task.project()).path()), taskId);
             if (Files.isDirectory(deployWorktree)) {
                 editorDriver.open(deployWorktree);
-                return "Opened the DEPLOY worktree " + deployWorktree + " — resolve the conflict there (fix the"
-                        + " files, `git add` them), then `deploy " + taskId + "` again. Your task branch and its MR"
-                        + " are untouched.";
+                return "Opened the deploy worktree " + deployWorktree + " — resolve there (`git add`), then"
+                        + " `deploy " + taskId + "` again.";
             }
         }
         editorDriver.open(worktree);

@@ -1,55 +1,127 @@
 # jagt — TODO / future ideas
 
-Backlog of ideas, not commitments. Structure: what is OPEN first, then the questions nobody has answered yet,
-then a compact record of what shipped — kept only where the DECISION is worth re-reading. Invariants live in
+Backlog of ideas, not commitments: what is decided but unbuilt, then what is deliberately deferred, then a
+compact record of what shipped — kept only where the DECISION is worth re-reading. Invariants live in
 CLAUDE.md, not here; if an entry below has hardened into a rule, it belongs there instead.
 
-## Roadmap — what is left (reviewed 2026-08-18)
+There is no numbered roadmap any more (reviewed 2026-08-18): every step it carried has shipped, the last being
+`review` → `sweep`. What is left is four items whose DECISION is made and whose plan is written down, plus two
+questions deliberately deferred, each naming the trigger that would reopen it. Nothing here is vague on purpose:
+an entry that cannot say how to do it does not belong.
 
-The numbered roadmap is EMPTY: every step it carried has shipped (the last one, `review` → `sweep`, is in the
-record). What is left is the open questions below, none of them blocked on access.
+## Decided, not built — each carries the plan for building it
 
-Linux is answered as far as a container and a CI runner can answer it (see the record below); what remains is
-one desktop-only question — `reveal` raising the viewer above other applications, and the viewer close that
-the container run left open (the `@Disabled` test in `LinuxKittyTerminalDriverLinuxTest` names the lead).
+### Multi-repo `deploy`/`revert`: land in order, stop at the first conflict
+The last unbuilt part of one-session-many-repositories; everything else shipped (see the record). `deploy` and
+`revert` refuse a multi-repo task today. The decision (owner's, 2026-08-18) is the honest half-state, NOT a dry
+run: merge and push repository by repository, and the moment one conflicts, stop and hand the task back naming
+exactly what landed and what did not. A dry run was rejected because it is not atomic either — a shared branch
+can move between the check and the push — so it would buy rarity, not a guarantee, at the price of a second
+merge of everything.
 
-## Open questions
+How to build it:
+- `DeployService` iterates `TaskState.repos()` in list order (`repos.get(0)` first, so the order a human sees on
+  the card is the order the branches land in), records each repository's merge commit as it succeeds, and stops
+  at the first `MergeConflictException` without touching the rest.
+- The task goes to DEPLOY_CONFLICT with a message naming BOTH sides: which repositories are live on the deploy
+  branch and which are not. That message is the only place a human learns the task is half deployed, so it must
+  never be abbreviated to "conflict".
+- `revert` follows the same rule from the other end: it reverts the merge commits that EXIST, in reverse order,
+  and refuses per repository exactly as it already does when a commit is missing or already reverted — a
+  repository that never landed is not an error, it is nothing to undo.
+- The gate stays: a repository with no recorded merge commit is never guessed at, and `deployBranch` ==
+  `baseBranch` still refuses first.
+- Coverage is a ROW in `ReviewRoundCase`-style data, not a new test class: a two-repository task where the
+  second merge conflicts, asserting the sentence names both repositories and that the first stayed pushed.
 
-### One task = many repositories — decided, half built
-The shape question is ANSWERED: a task holds a LIST of repositories and still runs ONE session, so what
-multiplies is worktrees, not agents (`model/TaskRepo`; the alternative — a "change set" grouping N tasks — would
-have given a cross-repo change two agents that cannot see each other's half of it). Two slices are in:
-- the model, with per-repo review request and deploy commit, and `state.json` read in both shapes;
-- `StateService.findByWorktree` answers from ANY of a task's repositories, so a tool called in the directory the
-  agent is editing reaches the task that owns it.
+### Orphan worktrees belong in the log, not on the board — DECIDED 2026-08-18
+The owner's call: the board is dense and a directory nobody owns is housekeeping, not something a human acts on
+mid-flight. Scope, decided: drop the `Orphans` button and its `<dialog>`, drop `GET /orphans`, drop the console
+verb — all three, so neither surface keeps a capability the other lost. `WorktreeOrphanScanner` keeps doing
+exactly what it does today (LOOK, never delete, because an orphan can hold uncommitted work) and reports at WARN
+with the count of copied secret files per directory. The startup desktop notification STAYS: whoever never opens
+the log is the person that ping is for. Its listener must keep catching everything — a diagnostic that throws
+during `ApplicationReadyEvent` would stop the backend from starting.
 
-The flow followed in a third slice (see the record): `do <ticket> proj1,proj2` and a multi-select on the board,
-one worktree per repository, `ship` per repository, one merged review round, `done` removing every worktree, and
-a card that names them all.
+### The diff tool is already its own config — but its default is an absolute macOS path
+Raised 2026-08-18, and half of it needs no work: `ide <task> diff` does NOT have to use the IDE. It runs
+`orchestrator.editor-diff-command` (a separate list from `orchestrator.editor-command`, README documents both),
+two paths appended, so pointing it at any difftool — `difft`, `meld`, `code --diff` — is a config line today.
+What IS wrong is the DEFAULT: `application.yml` ships
+`["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea", "diff"]`, and `editor-command` the same absolute path.
+That contradicts the rule the rest of jagt follows — an external binary is configured by BARE NAME and resolved
+by `platform/Executables` (PATH first, then the known install dirs), which is exactly why `tmux-command` stopped
+defaulting to `/opt/homebrew/bin/tmux`. So: default both to `idea` (plus `diff`), resolve them through
+`Executables` the way the terminal binary is, and keep the absolute path as the commented example for whoever
+has no `idea` launcher on PATH. Worth checking while there: whether a missing launcher fails with a sentence
+naming the config key, since `ide` is allowed to throw at the human.
 
-What is left is exactly ONE verb: `deploy`/`revert` across repositories, which is refused today rather than
-half-done. It is not a loop — it is the question of what "deployed" means when the second merge conflicts after
-the first has been pushed to a shared branch. Two candidate answers, neither cheap: land them in order and stop
-at the first conflict (the task is then half live, and only the human can decide whether to revert the first or
-finish the second), or refuse unless every repository merges cleanly in a dry run first (safer, and still not
-atomic — a shared branch can move between the check and the push). Until one is chosen, jagt says so.
+### An activity log of what jagt did on its own — DECIDED 2026-08-18: read the tail of the log it already writes
+With `autoReview` polling on a timer the system acts while nobody is looking, and the only trace today is a
+terminal nobody is watching. Decided: NO new store. jagt already logs exactly this and only this — INFO for
+hidden work, nothing for a button a human pressed (see the record) — as structured ECS JSON to
+`logging.file.name` (default `jagt-backend.log`). The feature is a READER of that file.
 
-### Secrets are copied into every worktree and only the happy path cleans them up
-`worktree.copyGlobs` deliberately copies gitignored local files — `.env`, `*.pem`, keystores — into each
-worktree so the app can actually run there. It means N copies of production-ish credentials in sibling
-directories, readable by every agent process, removed only when `done` succeeds in deleting the worktree.
-`WorktreeOrphanScanner` REPORTS the leftovers with a count of copied secrets per orphan (startup ping +
-`GET /orphans`) and deletes nothing, since an orphan can hold uncommitted work. One question still open about
-the copying itself: should the default set be narrower than "any `*.pem`"? One key covers .env, keys, certs and
-keystores for every project.
+How to build it:
+- read the LAST N lines of the configured log file, newest first, and keep only the events that name a task
+  (the structured fields are already there: `task`, `alias`, `status`, `outcome`); a poll that found nothing is
+  one line and must stay one line.
+- no file configured, or unreadable? Say that in the dialog. Inventing an in-memory copy would be a second
+  answer to "what happened", which is the thing this decision avoids.
+- surface it on BOTH: a `<dialog>` like the other reports on the board, and a verb in the console — a report
+  that exists in one surface only is the bug parity exists to catch.
+- it must not restate what `state.json` history already carries (status transitions with who asked). If an entry
+  would only repeat a transition, drop it: the log's value is the work that changed NO status.
+- the reader is one small class with the file as its only input, so its test writes a few lines and asserts what
+  comes back — no scheduler, no state.
+
+## Open questions — both DEFERRED, with the trigger that would reopen them
 
 ### A killed model call is unmeasurable
 `ProcessRunner` destroys the process on timeout and throws, so there is no envelope and no usage: the tokens
 already burned are unknown, not zero (logged as UNMEASURED rather than guessed). Capturing them needs
 `--output-format stream-json` with usage accumulated from the message stream — worth it only if timeouts turn
-out to be common, and the 6-minute review sweep is the candidate.
+out to be common, and the 6-minute review sweep is the candidate. ANSWERED BY: a timeout actually happening
+often enough to care — DEFERRED on purpose until one does.
 
-### What CI found that no local run could (2026-08-13)
+### A minimal MCP config for the assistant, if determinism ever beats convenience
+`--strict-mcp-config --mcp-config <file>` works, but the server names CANNOT be guessed — jagt does not know
+whether the tracker is Jira or Linear or what the human named it. It would have to be config
+(`assistant.mcpServers: ["…"]`, empty = inherit everything). Given the measured ~7k tokens the MCP surface
+costs, this is a determinism nicety, NOT a cost lever. ANSWERED BY: someone wanting the determinism enough to
+maintain a per-install server list — DEFERRED until then.
+
+## The record — what shipped, and the finding worth keeping
+
+Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
+themselves are in CLAUDE.md.
+
+### The board's transport is SSE, and the host poll stays a poll — 2026-08-18
+Asked whether long polling should become something modern, and the premise needed correcting first: the board
+never polled. `web/TaskEventStream` pushes a payload-less Server-Sent Event on `StateService.onChange` and the
+page re-fetches `/api/tasks`; the 15s timer in the page only repaints the relative clocks. SSE→WebSocket was
+REJECTED: the traffic is one-directional and payload-free, SSE reconnects by itself, and a socket would add a
+second protocol for nothing.
+
+What actually polls is outbound — `AutoReviewScheduler` asking the code host every 60s, backing off as a request
+ages. Webhooks were REJECTED too, and the reason is not fashion: jagt runs on a laptop with no inbound URL, so a
+webhook needs a tunnel or a relay, i.e. infrastructure jagt refuses to require. Poll-only is the decision; revisit
+it only if jagt ever grows a hosted half.
+
+### The card labels its second clock — 2026-08-18
+`REVIEW_PENDING · 3d` and a bare `4d ago` in one row read as two ages of the same thing. Both numbers are worth
+having — one is time in THIS status, the other the session's last activity, which only a keep-alive bumps — so
+the fix was presentation: the second is now `active 4d ago`. Dropping it was tried and reverted; the information
+is not the problem, the missing word was.
+
+### Copied secrets — `**/.env` is the only default — 2026-08-18
+Answered 2026-08-18 (owner): the narrow default wins in both places. `config.json.dist` now ships
+`["**/.env"]`, matching `ConfigService.copyGlobsOrDefault()`, so a fresh install and a config with the section
+omitted behave identically, and nothing copies key material nobody asked for. Keys, certs and keystores are a
+per-project opt-in — the human adds the globs their run configs actually need. What stays open is nothing; the
+orphan report still counts what was copied and deletes none of it.
+
+### What CI found that no local run could — 2026-08-13
 Both failures were the same shape — code that assumed the machine it grew up on — and both are fixed with a
 RED-verified test. Worth remembering as a class:
 - `git merge` exiting non-zero was reported as a merge CONFLICT unconditionally. On a runner with no committer
@@ -63,17 +135,6 @@ RED-verified test. Worth remembering as a class:
 - Also: the process reap hard-failed when `lsof` was missing, taking `done` with it, despite its own javadoc
   promising "never thrown"; and the suite depended on an ambient git identity, so it was green on any
   developer machine and red on every runner. The Test tasks now declare the identity they need.
-
-### A minimal MCP config for the assistant, if determinism ever beats convenience
-`--strict-mcp-config --mcp-config <file>` works, but the server names CANNOT be guessed — jagt does not know
-whether the tracker is Jira or Linear or what the human named it. It would have to be config
-(`assistant.mcpServers: ["…"]`, empty = inherit everything). Given the measured ~7k tokens the MCP surface
-costs, this is a determinism nicety, NOT a cost lever.
-
-## The record — what shipped, and the finding worth keeping
-
-Compact by design: each entry is the decision a future reader would otherwise have to re-derive. The rules
-themselves are in CLAUDE.md.
 
 ### The sweep is called `sweep`, and the wording stopped naming GitLab — 2026-08-18
 

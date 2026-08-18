@@ -11,12 +11,12 @@ public final class CommandReference {
      * palette uses this to COMPLETE and VALIDATE what a human types — and, when the line parses, to run it
      * deterministically instead of paying a model to map it (tier 1 before tier 2).
      */
-    public record Verb(String id, String hint, boolean takesTask) {
+    public record Verb(String id, String hint, boolean takesTask, java.util.List<String> aliases) {
     }
 
     /** Most-used first; a verb missing here sorts to the end rather than being dropped. */
     private static final java.util.List<String> BY_USE = java.util.List.of(
-            "review", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
+            "sweep", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
             "revert", "done", "help");
 
     private CommandReference() {
@@ -26,12 +26,14 @@ public final class CommandReference {
     public static java.util.List<Verb> verbs() {
         java.util.List<Verb> verbs = new java.util.ArrayList<>();
         for (dev.jagt.orchestrator.model.TaskAction action : dev.jagt.orchestrator.model.TaskAction.values()) {
-            verbs.add(new Verb(action.id(), action.hint(), true));
+            verbs.add(new Verb(action.id(), action.hint(), true, action.retiredVerbs()));
         }
-        verbs.add(new Verb("do", "start a task from a ticket key or URL", false));
-        verbs.add(new Verb("resume", "take over an existing review request (its URL)", false));
-        verbs.add(new Verb("stats", "what jagt's own model calls cost, and where each task's time went", false));
-        verbs.add(new Verb("help", "this command reference", false));
+        verbs.add(new Verb("do", "start a task from a ticket key or URL", false, java.util.List.of()));
+        verbs.add(new Verb("resume", "take over an existing review request (its URL)", false,
+                java.util.List.of()));
+        verbs.add(new Verb("stats", "what jagt's own model calls cost, and where each task's time went", false,
+                java.util.List.of()));
+        verbs.add(new Verb("help", "this command reference", false, java.util.List.of()));
         verbs.sort(java.util.Comparator.comparingInt(verb -> {
             int rank = BY_USE.indexOf(verb.id());
             return rank < 0 ? BY_USE.size() : rank;
@@ -46,12 +48,13 @@ public final class CommandReference {
                 "  stats                        model spend per task, and where each task's time went",
                 "  do <ticket> [project] [plan] spin up a sub-agent in a worktree",
                 "    … [proj1,proj2]            one session, a worktree in EACH: work that spans repositories",
-                "    … [from <branch>]          cut the worktree from <branch> and target its MR at it",
-                "  resume <mr-url>              reopened MR: resume its branch + link it -> CI_POLLING",
+                "    … [from <branch>]          cut the worktree from <branch> and target its request at it",
+                "  resume <request-url>         reopened request: resume its branch + link it -> CI_POLLING",
                 "  focus <ticket>               jump to the agent's window (talk to it there)",
-                "  ship <ticket>                approve: commit (pattern title), push, open/update the MR",
-                "  review <ticket>              pull the MR's pipeline + comments, relay them to the agent",
-                "  ide <ticket> [diff]          open worktree project (live Git diff); `diff` = static snapshot vs base",
+                "  ship <ticket>                approve: commit (pattern title), push, open/update the request",
+                "  sweep <ticket>               pull the request's checks + comments, relay them to the agent",
+                "  ide <ticket> [diff]          open worktree project (live Git diff)",
+                "  diff <ticket>                static snapshot vs the base branch",
                 "                               on DEPLOY_CONFLICT it opens the DEPLOY worktree to resolve in",
                 "  deploy <ticket>              merge task branch into deployBranch + push",
                 "  revert <ticket>              undo that deploy: revert its merge on deployBranch + push",

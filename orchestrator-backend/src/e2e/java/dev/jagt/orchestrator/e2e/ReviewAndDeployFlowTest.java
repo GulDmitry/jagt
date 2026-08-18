@@ -159,7 +159,7 @@ class ReviewAndDeployFlowTest {
     @Test
     void aRoundTripFromShipToDeployAndBackOutAgain() throws Exception {
         String shipped = shipTheFirstRound();
-        assertThat(shipped).contains("committed", "pushed, opened " + host.requestUrl(), "status CI_POLLING");
+        assertThat(shipped).contains("file(s), pushed, opened " + host.requestUrl(), "CI_POLLING");
         assertThat(host.writes()).singleElement()
                 .extracting(MergeRequestSpec::sourceBranch, MergeRequestSpec::targetBranch,
                         MergeRequestSpec::title)
@@ -178,7 +178,7 @@ class ReviewAndDeployFlowTest {
         agentReports("REVIEW_PENDING", "comment addressed");
 
         assertThat(act("ship")).contains("updated " + host.requestUrl(),
-                "asked the agent to post the drafted replies");
+                "drafted replies relayed");
         assertThat(host.writes()).hasSize(2);
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", TASK))
                 .contains(TASK + " address review comments");
@@ -186,15 +186,15 @@ class ReviewAndDeployFlowTest {
                 .contains("there is NOTHING to commit or push");
 
         host.answers(new ReviewFacts(true, true, "success", List.of()));
-        assertThat(act("sweep")).contains("request approved");
+        assertThat(act("sweep")).contains("approved, checks success");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
-        assertThat(act("deploy")).contains("Merged branch " + TASK + " into dev", "status -> DEPLOYED");
+        assertThat(act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
         assertThat(task().deployCommit()).isNotBlank();
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", "dev"))
                 .contains("Merge branch '" + TASK + "' into dev");
 
-        assertThat(act("revert")).contains("Reverted " + TASK + "'s deploy on dev", "status -> REVERTED");
+        assertThat(act("revert")).contains("Reverted " + TASK + " on dev", "REVERTED");
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", "dev"))
                 .contains("Revert \"Merge branch '" + TASK + "' into dev\"");
 
@@ -225,7 +225,7 @@ class ReviewAndDeployFlowTest {
 
         String shipped = act("ship");
 
-        assertThat(shipped).contains("proj committed", "web committed");
+        assertThat(shipped).contains("proj 1 file(s), pushed", "web 1 file(s), pushed");
         assertThat(host.writes()).extracting(MergeRequestSpec::remoteUrl)
                 .containsExactly(E2eWorkspace.remoteUrl(origin()), E2eWorkspace.remoteUrl(webOrigin()));
         assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", TASK))
@@ -249,7 +249,7 @@ class ReviewAndDeployFlowTest {
         String resumed = post("/api/tasks/resume",
                 "{\"reviewRequestUrl\": \"" + host.requestUrl() + "\"}", Map.of());
 
-        assertThat(resumed).contains("Resumed " + TASK + " on its existing branch", "status CI_POLLING");
+        assertThat(resumed).contains("Resumed " + TASK + " on its existing branch", "CI_POLLING");
         assertThat(task().status()).isEqualTo(TaskStatus.CI_POLLING);
         assertThat(task().mrUrl()).isEqualTo(host.requestUrl());
         assertThat(task().baseBranch()).isEqualTo("main");

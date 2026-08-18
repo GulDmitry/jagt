@@ -16,8 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * One MR review sweep: read the MR's approval + pipeline + unresolved comments, then take the single
- * correct action. Shared by the manual {@code review} command (human types it) and the
+ * One review sweep: read the request's approval + checks + unresolved comments, then take the single
+ * correct action. Shared by the manual {@code sweep} command (human types it) and the
  * {@code AutoReviewScheduler} (unattended poll) so both behave identically — the code-review-must-have-a-
  * -human rule lives in the OUTCOME, not the trigger: an approval advances state, but comments are only
  * RELAYED to the agent as drafts (nothing is pushed/posted), so the human always closes the loop.
@@ -38,7 +38,7 @@ public class ReviewSweepService {
     private final StateService stateService;
     /**
      * One sweep at a time per task, no matter who asked. The guard lives HERE, not in a caller, because
-     * there are several triggers — the human's `review`, the auto-review scheduler, later a UI button — and
+     * there are several triggers — the human's `sweep`, the auto-review scheduler, later a UI button — and
      * a second sweep of the same merge request spends a full headless read twice AND can relay a second
      * brief for the same review round (the agent then fixes the same comments twice, or interleaves them).
      * The scheduler keeps its own guard on top: that one stops polls from QUEUING up behind a slow sweep,
@@ -47,18 +47,18 @@ public class ReviewSweepService {
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
     public SweepResult sweep(String taskIdOrAlias) {
-        // Resolve first: `review a1` and the scheduler's `review ABC-1` must take the SAME lock.
+        // Resolve first: `sweep a1` and the scheduler's `sweep ABC-1` must take the SAME lock.
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
         if (!inFlight.add(taskId)) {
             return new SweepResult(SweepResult.Kind.IN_FLIGHT,
-                    "review " + taskId + ": a sweep is already running — wait for it to finish");
+                    "sweep " + taskId + ": already running — wait for it");
         }
         try {
             SweepResult result = sweepExclusively(taskId);
             String alias = stateService.task(taskId).map(TaskState::alias).orElse(null);
             log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
                     .addKeyValue("outcome", result.kind())
-                    .log("review {}: {}", TaskLabel.of(taskId, alias), result.message());
+                    .log("sweep {}: {}", TaskLabel.of(taskId, alias), result.message());
             return result;
         } finally {
             inFlight.remove(taskId);
@@ -71,7 +71,7 @@ public class ReviewSweepService {
                 .toList();
         if (reviewed.isEmpty()) {
             return new SweepResult(SweepResult.Kind.NO_MR,
-                    "error: no MR linked to " + taskId + " — `ship` or `resume <mr-url>` first");
+                    "error: no request linked to " + taskId + " — `ship` first");
         }
         // A repository with no request yet is work nobody is reviewing, so the round cannot be called clean:
         // advancing here would report "nothing unresolved" over a half that was never shipped.
@@ -80,8 +80,8 @@ public class ReviewSweepService {
                 .map(TaskRepo::project)
                 .toList();
         if (!unshipped.isEmpty()) {
-            return new SweepResult(SweepResult.Kind.PENDING, "review " + taskId + ": no review request in "
-                    + String.join(", ", unshipped) + " — `ship` again so every repository has one");
+            return new SweepResult(SweepResult.Kind.PENDING, "sweep " + taskId + ": no request in "
+                    + String.join(", ", unshipped) + " — `ship` again");
         }
         String mrUrl = reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", "));
         // One unreadable request fails the WHOLE sweep, exactly as a partial read of one does: "nothing
@@ -91,7 +91,7 @@ public class ReviewSweepService {
             Optional<ReviewFacts> read = reviewReader.read(taskId, repo.mrUrl());
             if (read.isEmpty() || !read.get().exists()) {
                 return new SweepResult(SweepResult.Kind.UNREADABLE,
-                        "error: could not read the MR review for " + repo.mrUrl());
+                        "error: could not read " + repo.mrUrl());
             }
             rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
         }
@@ -102,23 +102,23 @@ public class ReviewSweepService {
             if (r.approved()) {
                 statusReports.markApproved(taskId);
                 return new SweepResult(SweepResult.Kind.APPROVED,
-                        "review " + taskId + ": MR approved, pipeline " + r.pipelineStatus()
-                                + " — your move: `deploy` or `done`");
+                        "sweep " + taskId + ": approved, checks " + r.pipelineStatus()
+                                + " — `deploy` or `done`");
             }
             if (pipeline.contains("success")) {   // only advance when CI is GREEN, not merely still running
                 statusReports.markReviewed(taskId);
                 return new SweepResult(SweepResult.Kind.REVIEWED,
-                        "review " + taskId + ": pipeline " + r.pipelineStatus()
-                                + ", no unresolved comments — your move: `deploy` or `done`");
+                        "sweep " + taskId + ": checks " + r.pipelineStatus()
+                                + ", nothing unresolved — `deploy` or `done`");
             }
             return new SweepResult(SweepResult.Kind.PENDING,
-                    "review " + taskId + ": pipeline " + r.pipelineStatus()
-                            + ", no unresolved comments yet, not approved — still waiting");
+                    "sweep " + taskId + ": checks " + r.pipelineStatus()
+                            + ", nothing unresolved yet, not approved — waiting");
         }
         sessions.writeTaskContext(taskId, brief(mrUrl, r, pipelineFailed));
         return new SweepResult(SweepResult.Kind.RELAYED,
-                "review " + taskId + ": relayed " + r.comments().size() + " comment(s), pipeline "
-                        + r.pipelineStatus() + " -> agent");
+                "sweep " + taskId + ": " + r.comments().size() + " comment(s) relayed, checks "
+                        + r.pipelineStatus());
     }
 
     /** Which repository a comment came from, so the agent knows which worktree to open. */
@@ -143,8 +143,8 @@ public class ReviewSweepService {
     }
 
     private static String worstPipeline(List<ReviewFacts> rounds) {
-        // A host with no pipeline at all answers "none", so the merged word stays one a human can read: an
-        // empty slot in "pipeline , no unresolved comments" says nothing about which repository has none.
+        // A host with no checks at all answers "none", so the merged word stays one a human can read: an
+        // empty slot in "checks , no unresolved comments" says nothing about which repository has none.
         List<String> statuses = rounds.stream()
                 .map(round -> round.pipelineStatus() == null || round.pipelineStatus().isBlank()
                         ? "none" : round.pipelineStatus())
@@ -164,9 +164,9 @@ public class ReviewSweepService {
      * disagreements and the questions back.
      */
     private static String brief(String mrUrl, ReviewFacts r, boolean pipelineFailed) {
-        StringBuilder brief = new StringBuilder("Review round for MR ").append(mrUrl).append(".\n");
+        StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
         if (pipelineFailed) {
-            brief.append("Pipeline: ").append(r.pipelineStatus()).append(" — fix the failing build.\n");
+            brief.append("Checks: ").append(r.pipelineStatus()).append(" — fix the failing build.\n");
         }
         if (!r.comments().isEmpty()) {
             brief.append("""

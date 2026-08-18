@@ -29,7 +29,7 @@ class BoardApiControllerTest {
     void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
         var ids = api.commands().stream().map(dev.jagt.orchestrator.service.CommandReference.Verb::id).toList();
 
-        assertThat(ids).contains("ship", "review", "ide", "diff", "deploy", "revert", "respawn", "done", "focus",
+        assertThat(ids).contains("ship", "sweep", "ide", "diff", "deploy", "revert", "respawn", "done", "focus",
                 "do", "resume", "stats", "help");
         // Whether a verb needs a task is what decides if "ship" alone is a mistake or a command.
         assertThat(api.commands().stream()
@@ -42,7 +42,7 @@ class BoardApiControllerTest {
     void offersTheEverydayVerbsBeforeTheRareOnes() {
         var ids = api.commands().stream().map(dev.jagt.orchestrator.service.CommandReference.Verb::id).toList();
 
-        assertThat(ids).startsWith("review", "ship", "do");
+        assertThat(ids).startsWith("sweep", "ship", "do");
         assertThat(ids.indexOf("ship")).isLessThan(ids.indexOf("focus"));
         assertThat(ids.indexOf("deploy")).isLessThan(ids.indexOf("done"));
     }

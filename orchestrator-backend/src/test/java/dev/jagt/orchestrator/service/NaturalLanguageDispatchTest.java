@@ -57,6 +57,17 @@ class NaturalLanguageDispatchTest {
     }
 
     @Test
+    void answersWithTheCurrentVerbWhenTheProposalEchoedTheSpellingItWasRenamedFrom(@TempDir Path root) {
+        StateService state = stateWithOneTask(root);
+        proposes("review", "a1", "", "the human said review");
+        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
+
+        String result = dispatchWith(state).interpret("what does the review say on a1");
+
+        assertThat(result).isEqualTo("understood as `sweep ABC-1` — sweep ABC-1: checks success");
+    }
+
+    @Test
     void runsTheMappedActionThroughTheSameGateAButtonUsesAndSaysWhatItUnderstood(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
         proposes("ship", "a1", "", "the only task about layout");

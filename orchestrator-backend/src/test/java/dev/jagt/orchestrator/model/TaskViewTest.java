@@ -83,6 +83,6 @@ class TaskViewTest {
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
                 TaskStatus.CI_POLLING).alias("a1").build(), false);
 
-        assertThat(view.actions()).extracting(TaskView.ActionView::id).contains("review");
+        assertThat(view.actions()).extracting(TaskView.ActionView::id).contains("sweep");
     }
 }

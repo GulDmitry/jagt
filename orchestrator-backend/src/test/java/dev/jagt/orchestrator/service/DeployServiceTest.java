@@ -117,7 +117,7 @@ class DeployServiceTest {
 
         assertThatThrownBy(() -> deploys.revert("a1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("only a DEPLOYED task");
+                .hasMessageContaining("only a DEPLOYED one");
         verifyNoInteractions(git);
     }
 
@@ -142,7 +142,7 @@ class DeployServiceTest {
         // The human resolves it himself — jagt opens no editor, briefs no agent, and never touches the task branch.
         verifyNoInteractions(editor);
         assertThat(worktree.resolve("task_context.md")).doesNotExist();
-        assertThat(result).contains(deployWorktree.toString()).contains("untouched").contains("deploy ABC-1");
+        assertThat(result).contains(deployWorktree.toString()).contains("nothing pushed").contains("deploy ABC-1");
         TaskState after = state.task("ABC-1").orElseThrow();
         assertThat(after.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
         assertThat(after.message()).contains(deployWorktree.toString());

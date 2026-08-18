@@ -18,9 +18,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * Auto-review poller: after `ship`, watches each CI_POLLING task's MR on its own within the configured
+ * Auto-review poller: after `ship`, watches each CI_POLLING task's request on its own within the configured
  * time window, escalating the interval via {@link AutoReviewCadence}, and reacting through the SHARED
- * {@link ReviewSweepService} — so an unattended poll behaves exactly like a human typing `review`
+ * {@link ReviewSweepService} — so an unattended poll behaves exactly like a human typing `sweep`
  * (approval advances state, comments are only relayed as drafts for the human to close out). The backend
  * still talks to NO external system: the sweep delegates the code-host read to a headless Claude.
  *
@@ -89,7 +89,7 @@ public class AutoReviewScheduler {
                     // Keyed by the WINDOW, not the task: shipping another round starts a new window without
                     // ever leaving CI_POLLING, and that round deserves its own reminder.
                     if (windowElapsedNotified.add(taskId + "@" + task.mrCreatedAt())) {
-                        userNotifier.notify("jagt · " + taskId, "auto-review window elapsed — `review` manually");
+                        userNotifier.notify("jagt · " + taskId, "auto-review window elapsed — `sweep` manually");
                     }
                 }
                 case POLL -> poll(taskId, task.alias());
@@ -115,7 +115,7 @@ public class AutoReviewScheduler {
 
     private void poll(String taskId, String alias) {
         // Stops the 60s tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a
-        // task's sweeps mutually exclusive — a human typing `review` at the same time is a different
+        // task's sweeps mutually exclusive — a human typing `sweep` at the same time is a different
         // trigger entirely; that exclusion lives in ReviewSweepService, where every trigger passes through.
         if (!inFlight.add(taskId)) {
             return;

@@ -32,7 +32,7 @@ public class WatchdogService {
     /**
      * The statuses in which jagt EXPECTS the agent to be doing something, so silence means death:
      * NEW (died before its first status update — spawn failure, auth prompt), IN_PROGRESS, and SHIPPING
-     * (the documented "stuck at SHIPPING, no MR appears" failure, previously invisible to the watchdog —
+     * (the documented "stuck at SHIPPING, no request appears" failure, previously invisible to the watchdog —
      * recovery depended on the human noticing).
      *
      * <p>Every other status is idle BY DESIGN and must stay unwatched or the alert becomes noise:

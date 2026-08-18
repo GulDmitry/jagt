@@ -152,7 +152,7 @@ of steps the task took), what jagt has spent on it, and links to the ticket and 
 says when the agent has left **drafted review replies** in its worktree — read them before you ship, because
 `ship` is what posts them. Every card carries exactly the actions that are legal for it right now,
 the obvious one highlighted: open the IDE, focus the agent's terminal, ship, check the review, deploy, close.
-`New task` does what `do ABC-42` does, and `Resume` does what `resume <mr-url>` does — take over a review
+`New task` does what `do ABC-42` does, and `Resume` does what `resume <request-url>` does — take over a review
 request that already exists (reopened, or someone else's work): its branch comes back with the commits already
 on it and the request is linked, not reopened. `Stats`, `Help` and `Orphans` are the same commands
 too — they open OVER the board in a dialog instead of taking you to another page.
@@ -168,7 +168,7 @@ started the process (Ctrl-C, or kill it), not to a button in a browser. Nothing 
 in tmux and keep working when the backend goes away.
 
 **The board and the console can do the same things**; anything console-only is a bug. Per-task verbs — ship,
-review, `ide` (including the DEPLOY worktree when a deploy conflicted), deploy, revert, respawn, focus, done —
+sweep, `ide` (including the deploy worktree when a deploy conflicted), deploy, revert, respawn, focus, done —
 are the card's own buttons, because the server lists the legal ones per task and the board renders exactly that.
 
 Sort within columns by last activity, tokens, alias or title, and tick
@@ -186,14 +186,14 @@ status, and points at drafted review replies when the agent has written any. Tal
 |---------|--------|
 | `do <ticket> [plan] [notes]` | fetch the ticket, spin up a sub-agent in an isolated worktree; `plan` = plan mode |
 | `do <ticket> from <branch>` | same, but the worktree is cut from `<branch>` and its merge request targets `<branch>` instead of the project's `baseBranch` — for stacking a task on a parent feature branch. The branch must already exist on `origin`; `deploy` is unaffected (it still merges into `deployBranch`) |
-| `do <ticket> <projA>,<projB>` | one change that moves two repositories: ONE task and ONE agent session, with a worktree in each (the session runs in the first named and edits the others in place). `ship` opens a request per repository and `review` reports them as one round — as far along as the least finished one. `deploy` is refused for such a task: a shared branch cannot be written half way. On the board, pick several projects in the launch row |
+| `do <ticket> <projA>,<projB>` | one change that moves two repositories: ONE task and ONE agent session, with a worktree in each (the session runs in the first named and edits the others in place). `ship` opens a request per repository and `sweep` reports them as one round — as far along as the least finished one. `deploy` is refused for such a task: a shared branch cannot be written half way. On the board, pick several projects in the launch row |
 | `status` | show the task dashboard |
 | `stats` | token spend of jagt's **own** model calls, per task (a sub-agent's session is invisible to jagt), then cycle time: how long each task has been waiting on you, on its agent and on the code host, and how many rounds it has been out for review |
 | `focus <ticket>` | jump to the agent's session — **talk to the agent directly there** |
 | `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (a task started `from <branch>` diffs against that branch instead; falls back to `baseBranch`) — does not auto-refresh |
-| `review <ticket>` | pull the MR's pipeline + comments; the agent fixes locally and drafts replies (nothing pushed) |
+| `sweep <ticket>` | pull the request's checks + comments; the agent fixes locally and drafts replies (nothing pushed). `review` still works — the old spelling of the same verb |
 | `ship <ticket>` | approved: jagt itself commits (title from `mrTitlePattern`), pushes the task branch and opens or updates the review request over the code host's API — no model involved, so nothing can stall or reword it. Only the drafted replies stay with the agent, as a follow-up. Without `orchestrator.code-host` configured it falls back to instructing the agent, as before |
-| `resume <mr-url>` | reopened merge request: resume its branch with existing commits and link that MR → `CI_POLLING` (no new MR). The MR's own target branch is remembered, so the next `ship` updates that request instead of opening a second one |
+| `resume <request-url>` | reopened review request: resume its branch with existing commits and link that request → `CI_POLLING` (no new one is opened). The request's own target branch is remembered, so the next `ship` updates it instead of opening a second one |
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push — always as a merge commit (`--no-ff`), which is what lets `revert` take the whole task back out in one go. On conflict nothing is pushed: the task goes `DEPLOY_CONFLICT`, `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, then `deploy` again |
 | `revert <ticket>` | undo that deploy: revert the merge commit it created on `deployBranch` and push the revert → `REVERTED`. Only adds a commit (no history rewrite, no force-push) and leaves your branch and its commits intact, so the normal follow-up is fix + `ship` again. Refused, with nothing written, when the commit is already reverted, is not on the branch, or the revert conflicts with later work there |
 | `respawn <ticket>` | restart a dead agent session |
@@ -220,7 +220,7 @@ flowchart TD
     DO["do ABC-123 [plan]"]
     IDE1["ide ABC-123"]
     SHIP["ship ABC-123"]
-    REVIEW["review ABC-123"]
+    REVIEW["sweep ABC-123"]
     IDE2["ide ABC-123"]
     DEPLOY["deploy ABC-123"]
     DONE["done ABC-123"]
@@ -231,29 +231,29 @@ flowchart TD
     DO -->|"agent works — no commits"| IDE1
     IDE1 -->|"needs changes: focus + tell the agent"| IDE1
     IDE1 -->|"approved"| SHIP
-    SHIP -->|"commit + push + open MR"| REVIEW
-    REVIEW -->|"pipeline + comments → agent fixes locally, drafts replies"| IDE2
+    SHIP -->|"commit + push + open the request"| REVIEW
+    REVIEW -->|"checks + comments → agent fixes locally, drafts replies"| IDE2
     IDE2 -->|"another round"| SHIP
     IDE2 -->|"green + all resolved"| DEPLOY
     DEPLOY -->|"merged into deployBranch (conflict → you resolve it in the deploy worktree, deploy again)"| DONE
-    DEPLOY -.->|"more changes: ship again (same MR) → deploy again — deploy is a dev step, not the end"| SHIP
+    DEPLOY -.->|"more changes: ship again (same request) → deploy again — deploy is a dev step, not the end"| SHIP
 
     classDef cmd font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
     class DO,FOCUS,IDE1,SHIP,REVIEW,IDE2,DEPLOY,DONE cmd;
 ```
 
-The `ship → review → ide → ship` loop repeats once per review round (bot + human comments, CI) until CI is
+The `ship → sweep → ide → ship` loop repeats once per review round (bot + human comments, CI) until CI is
 green and every thread is resolved — then `deploy`, then `done`.
 
 ### Your role — the human in the loop
 
-jagt never acts on the MR or CI by itself. Three checkpoints are explicitly yours (and the roadmap for
+jagt never acts on the review request or its checks by itself. Three checkpoints are explicitly yours (and the roadmap for
 future automation):
 
 | checkpoint | when | you run |
 |------------|------|---------|
 | **Review** | agent reached `REVIEW_PENDING`, and after every review round | `ide` → then `ship` (or `focus` to iterate live) |
-| **CI / progress** | after `ship` | `review` — or set `autoReview.enabled` and jagt polls for you within a bounded window (it only READS and DRAFTS; it never posts, pushes or deploys) |
+| **CI / progress** | after `ship` | `sweep` — or set `autoReview.enabled` and jagt polls for you within a bounded window (it only READS and DRAFTS; it never posts, pushes or deploys) |
 | **Close** | CI green, reviewers satisfied | `done` |
 
 ---
@@ -313,16 +313,16 @@ Keys are grouped into logical sections; a whole section may be omitted (each key
 | `viewer.keepViewer` | keep the agents window open after the last task (default `true`) |
 | `dashboard.refreshSeconds` | how often the dashboard refreshes, in seconds (default `10`) |
 | `dashboard.reservedRows` | rows reserved for command output + input below the dashboard (default `17`) |
-| `codeReview.mrTitlePattern` | MR/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
-| `codeReview.postReviewReplies` | on `ship`, auto-post the agent's replies to MR threads (default `true`); `false` keeps them in `review_replies.md` |
+| `codeReview.mrTitlePattern` | request/commit title template, placeholders `{ticket}` `{title}` (default `{ticket} {title}`) |
+| `codeReview.postReviewReplies` | on `ship`, auto-post the agent's replies to the request's threads (default `true`); `false` keeps them in `review_replies.md` |
 | `codeReview.reviewReplyAuthors` | non-empty = auto-post replies ONLY to threads whose author matches one (e.g. `["coderabbit"]`); empty = all authors |
-| `codeReview.mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created MRs (default both `true`) |
-| `autoReview.enabled` | after `ship`, poll the MR automatically (approval → `APPROVED`; comments → drafted for you, never posted). Default `false` (opt-in) |
-| `autoReview.windowHours` | how long auto-polling runs after the MR opens; then it stops and pings you to `review` manually (default `24`) |
+| `codeReview.mergeRequestDefaults` | `removeSourceBranch` / `squash` flags for created requests (default both `true`) |
+| `autoReview.enabled` | after `ship`, poll the request automatically (approval → `APPROVED`; comments → drafted for you, never posted). Default `false` (opt-in) |
+| `autoReview.windowHours` | how long auto-polling runs after the request opens; then it stops and pings you to `sweep` manually (default `24`) |
 | `autoReview.minIntervalMinutes` | poll interval at the window START — tightest cadence (default `10`) |
 | `autoReview.maxIntervalMinutes` | poll interval at the window END — the cap, ≈ hourly; interval ramps linearly min→max (default `60`) |
 | `agent.outputStyle` | optional output style for the agent (Claude Code), e.g. `acme:engineer` (default empty = the agent's own style) |
-| `worktree.copyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`; add keys/certs). A `**/` prefix also matches at the repository ROOT, so `**/.env` covers both `app/.env` and a single-module repo's own `.env` — Java's glob alone would skip the second |
+| `worktree.copyGlobs` | globs of gitignored local files copied into each worktree so the app runs (default `["**/.env"]`, and that is also what `config.json.dist` ships — every copy is another copy of a credential in a sibling directory, so widen it yourself, per project, to the keys or certs your run configs actually need). A `**/` prefix also matches at the repository ROOT, so `**/.env` covers both `app/.env` and a single-module repo's own `.env` — Java's glob alone would skip the second |
 | `projects.<key>.path` | absolute path to the base repository |
 | `projects.<key>.baseBranch` | default branch new task branches start from, e.g. `origin/main` (read-only; jagt never pushes here). Per task, `do <ticket> from <branch>` overrides it |
 | `projects.<key>.deployBranch` | target of `deploy`, e.g. `dev` (omit to disable deploy) |
@@ -347,7 +347,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.claude-command` | the `claude` binary — the agent runtime AND the master assistant's headless reads (default `claude`) |
 | `orchestrator.codex.command` | the `codex` binary for `orchestrator.agent=codex` (default `codex`) |
 | `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits (default `user,project,local`) |
-| `orchestrator.assistant.model` | model for every master-assistant read — ticket, MR, review sweep (default `haiku`: ~$0.06 a call vs ~$0.41 on the inherited default; blank = your default) |
+| `orchestrator.assistant.model` | model for every master-assistant read — ticket, review request, review sweep (default `haiku`: ~$0.06 a call vs ~$0.41 on the inherited default; blank = your default) |
 | `orchestrator.assistant.permission-mode` | lifts the headless permission gate so the ticket-read can call MCP (default `bypassPermissions`) |
 | `orchestrator.assistant.allowed-tools` | comma-separated `mcp__<server>` allow-list; scopes the bypass, takes precedence over permission-mode |
 | `orchestrator.code-host.type` | read review sweeps over the host's own API instead of a paid model call: `gitlab`, `github`, or blank = off (default). Worth setting if `autoReview` is on: measured against a real host, 24 h of polling costs $3-$7 per request without it, and the model read returned 5 of 9 unresolved comments on a large round |
@@ -374,10 +374,10 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 
 | symptom | what happened | what to do |
 |---------|---------------|------------|
-| Task stuck at `SHIPPING`, no MR appears | the agent died mid-ship (crash / API 5xx / 529 Overloaded) before reaching `CI_POLLING` | `ship <ticket>` **again** — jagt sees the dead agent and respawns it to finish. (If it's still alive, `ship` refuses; `focus` to watch.) |
-| Agent seems hung, or nothing happens after `ship`/`review` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to see what it's doing; `respawn <ticket>` restarts a dead session (re-reads `task_context.md`); `done <ticket>` abandons it entirely |
+| Task stuck at `SHIPPING`, no review request appears | the agent died mid-ship (crash / API 5xx / 529 Overloaded) before reaching `CI_POLLING` | `ship <ticket>` **again** — jagt sees the dead agent and respawns it to finish. (If it's still alive, `ship` refuses; `focus` to watch.) |
+| Agent seems hung, or nothing happens after `ship`/`sweep` | session is waiting on input, hit an API error, or its window died | `focus <ticket>` to see what it's doing; `respawn <ticket>` restarts a dead session (re-reads `task_context.md`); `done <ticket>` abandons it entirely |
 | `API Error: 529 Overloaded` | transient model overload, server-side | wait a moment and re-run; task state is unchanged |
-| `deploy` says `MERGE CONFLICT` | task branch and `deployBranch` changed the same lines; jagt merges in a throwaway worktree, so nothing is pushed and the task goes `DEPLOY_CONFLICT` | `ide <ticket>` opens that **deploy** worktree (not the task's) — resolve the conflicts, `git add` them, then `deploy <ticket>` again; jagt finishes the commit + push. Your task branch and its MR are untouched |
+| `deploy` says `MERGE CONFLICT` | task branch and `deployBranch` changed the same lines; jagt merges in a throwaway worktree, so nothing is pushed and the task goes `DEPLOY_CONFLICT` | `ide <ticket>` opens that **deploy** worktree (not the task's) — resolve the conflicts, `git add` them, then `deploy <ticket>` again; jagt finishes the commit + push. Your task branch and its review request are untouched |
 | `revert` says it has no record of the merge commit | the task was deployed before jagt stored it (`deployCommit`) | jagt will not guess which merge to revert on a shared branch. Find it — `git log --merges --grep <ticket> origin/<deployBranch>` — then `git revert -m 1 <sha>` and push. Deploys made from now on are revertible with one command |
 | `revert` says the revert conflicts | someone changed the same lines on `deployBranch` after the deploy | jagt aborts and pushes nothing (the revert worktree is cleaned up, unlike a deploy conflict — what needs deciding is whether reverting is still right). Do it by hand: `git revert -m 1 <sha>`, resolve, push |
 | Parts of the board answer HTTP 500 (`/status`, `/stats`, `/orphans`) while `/` and `/state` still work | you rebuilt while jagt was running: `./gradlew build` rewrites `jagt.jar` in place, so the JVM keeps reading a file that changed — anything not yet loaded dies with `NoClassDefFoundError` | restart it, and run the staged copy so it cannot happen again: `./gradlew stageJar && java -jar build/libs/jagt-run.jar`. jagt also notices this itself within a minute and says so |

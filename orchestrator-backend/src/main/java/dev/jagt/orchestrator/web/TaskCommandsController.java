@@ -41,8 +41,9 @@ public class TaskCommandsController {
     private final TaskLauncher launcher;
     private final NaturalLanguageDispatch naturalLanguage;
     /**
-     * Runs one action on one task. The action id in the URL is the same word the console takes, and an unknown
-     * one is refused rather than mapped to something near it.
+     * Runs one action on one task. The id in the URL is the action's own, and an unknown one is refused rather
+     * than mapped to something near it — including a verb the grammar was renamed FROM, which is accepted where
+     * a human types and nowhere else. A page still offering the old id is a stale page, and it reloads.
      */
     @PostMapping("/tasks/{taskId}/actions/{actionId}")
     public ActionResult act(@PathVariable String taskId, @PathVariable String actionId) {

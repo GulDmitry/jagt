@@ -424,8 +424,8 @@ public class GitService {
         public MergeConflictException(String sourceBranch, String targetBranch, String details, Path deployWorktree) {
             super("Merge CONFLICT merging " + sourceBranch + " into " + targetBranch + " — nothing was pushed."
                     + " Resolve it in the deploy worktree " + deployWorktree + " (this is the " + targetBranch
-                    + " side; the " + sourceBranch + " branch and its MR are untouched): fix the conflicts,"
-                    + " `git add` them, then deploy again to finish. Details: " + details);
+                    + " side; the " + sourceBranch + " branch and its review request are untouched): fix"
+                    + " the conflicts, `git add` them, then deploy again to finish. Details: " + details);
             this.details = details;
             this.deployWorktree = deployWorktree;
         }
