@@ -1,38 +1,32 @@
 package dev.jagt.orchestrator.model;
 
 /**
- * The one-line detail shown under a task in the dashboard. Context-driven and
- * pure so it is deterministic and unit-tested, not improvised by the Master:
- * problems shout in CAPS, in-development tasks show the ticket title, tasks in
- * review show the clickable request link. Agent status chatter ("tests green") is
- * intentionally NOT shown.
+ * The one contextual line under a task — empty whenever the status and the next move already answer, so a
+ * surface must expect nothing to render. Never the agent's own status chatter ("tests green"): what it says
+ * about its progress is not what a human is owed here.
  */
 public final class DashboardLine {
 
     private DashboardLine() {
     }
 
-    public static String forTask(String taskId, TaskState task) {
+    public static String forTask(TaskState task) {
         String message = task.message();
         AgentReport report = AgentReport.of(message);
-        boolean awaiting = report == AgentReport.QUESTION;
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "checks failed");
             case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict — resolve in the deploy worktree");
             case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED ->
                     orDefault(task.mrUrl(), "review request link missing");
-            // A question OUTRANKS the request link: a review round can end with the agent asking instead of
-            // guessing, and this line is the only place that question surfaces. Showing the link instead reads
-            // as "ready to ship" — the human ships, and the unanswered question goes out as a review reply.
-            // `awaiting:` is the prompt's reserved prefix for exactly this (rule 10), not status chatter. (The
-            // title lives in its own column; this line stays contextual.)
+            // A question OUTRANKS the request link: a link reads as "ready to ship", so the human ships and the
+            // unanswered question goes out as a review reply.
             case REVIEW_PENDING -> switch (report) {
                 case QUESTION -> needsInput(message);
                 case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change")
                         + (hasMr(task) ? " · " + task.mrUrl() : "");
                 case PLAIN -> hasMr(task) ? task.mrUrl() : "";
             };
-            case NEW, IN_PROGRESS -> awaiting ? needsInput(message) : "";
+            case NEW, IN_PROGRESS -> report == AgentReport.QUESTION ? needsInput(message) : "";
             case SHIPPING, DONE -> "";
         };
     }

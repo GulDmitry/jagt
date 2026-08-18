@@ -65,7 +65,7 @@ public record TaskView(
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(), move.phase(),
                 move.owner(), move.hint(), actions,
                 move.primary() == null ? null : move.primary().id(),
-                DashboardLine.forTask(id, task), webLink(task.ticketUrl()), webLink(task.mrUrl()),
+                DashboardLine.forTask(task), webLink(task.ticketUrl()), webLink(task.mrUrl()),
                 task.repos().stream()
                         .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl()),
                                 deployBranches.get(repo.project())))
