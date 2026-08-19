@@ -1,6 +1,6 @@
-package dev.jagt.orchestrator.service.commands;
+package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.service.GlobalCommand;
+import dev.jagt.orchestrator.command.GlobalCommand;
 import org.springframework.stereotype.Component;
 
 /** Console-only because the board never hides the dashboard: there, this verb would open a copy of the page. */

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.command;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

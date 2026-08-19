@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.command.ActivityReport;
+import dev.jagt.orchestrator.command.StatsReport;
 import dev.jagt.orchestrator.task.TaskChoice;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

@@ -23,11 +23,11 @@ the kind is missing: add a kind, never an exception.
 | `job/` | work that runs with nobody watching | built — `Job` + `Jobs`; the five implementations still live in `service/` |
 | `notify/` | something a human must be told | built — the fan-out; the record and the channel contract are `port/Notification` + `port/Notifier` |
 | `surface/` | who is asking | built — `surface/console`, `surface/board`, `surface/mcp`, `surface/ui` |
-| commands | what a human asks that no task owns | built — `service/GlobalCommand` + `service/commands/`; not a folder of its own yet |
+| `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb, and the reports they render |
 
-`service/` is the rest: work more than one kind shares — git, the state file, config reading, tmux, worktrees, and
-the renderers both surfaces use. It is named for what it is rather than pushed into one verb's folder, because a
-class two capabilities use belongs to neither. It is the largest package here and the least sorted.
+`service/` is the rest: work more than one kind shares — git, the state file, config reading, worktrees, agent
+sessions, and the two renderers both surfaces read (`StateViews`, `DashboardRenderer`). It is named for what it is
+rather than pushed into one verb's folder, because a class two kinds use belongs to neither.
 
 ## The rings — arrows point inward only
 
@@ -36,7 +36,7 @@ adapter/                     the only place an OS is named, and where every vend
     | implements
 port/  task/  flow/          the centre: records, rules, and the interfaces they declare
     ^ used by
-capability/ job/ notify/ service/ surface/       the use cases and the work they share
+capability/ command/ job/ notify/ service/ surface/     the use cases and the work they share
 ```
 
 `port/` is INSIDE the centre, not a ring around it: those interfaces are written by the rules for their own needs,
@@ -103,7 +103,7 @@ Three things the sketch does not show:
 | You want to | Do this |
 |---|---|
 | add a per-task verb | a class in `capability/` — or a folder once it owns work (`capability/ship/` is the pattern; six verbs are still flat), plus rules in `flow/FlowRules` if it moves the task |
-| add a report or a launch shortcut | one `GlobalCommand` in `service/commands/` — every surface picks it up |
+| add a report or a launch shortcut | one `GlobalCommand` in `command/` — every surface picks it up |
 | replace a built-in verb | another `TaskCapability` for the same action with a higher `priority()`; an equal priority is refused |
 | run something before/after a verb | a `port/CapabilityInterceptor` for that action — never a new status |
 | add unattended work | one `Job`; `Jobs` tickers it and the `jobs` report lists it. An adapter's own workaround is a job THAT adapter contributes |

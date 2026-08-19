@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.TaskAction;
 

@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.service.CommandReference;
-import dev.jagt.orchestrator.service.GlobalCommand;
-import dev.jagt.orchestrator.service.GlobalCommands;
+import dev.jagt.orchestrator.command.CommandReference;
+import dev.jagt.orchestrator.command.GlobalCommand;
+import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
 import org.junit.jupiter.api.Test;

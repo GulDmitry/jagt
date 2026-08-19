@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.commands;
+package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.ProjectConfig;

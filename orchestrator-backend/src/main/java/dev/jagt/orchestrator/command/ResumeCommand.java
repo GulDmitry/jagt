@@ -1,6 +1,6 @@
-package dev.jagt.orchestrator.service.commands;
+package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.service.GlobalCommand;
+import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

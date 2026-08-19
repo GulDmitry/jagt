@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.commands;
+package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.job.Jobs;
 import org.junit.jupiter.api.Test;

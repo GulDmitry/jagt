@@ -1,5 +1,6 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.service.DurationFormat;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.task.StatusChange;

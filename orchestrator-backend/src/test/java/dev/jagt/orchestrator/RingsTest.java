@@ -35,7 +35,7 @@ class RingsTest {
      * an OS or a vendor impossible to swap. What the use cases need from out there they declare as a port.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"capability", "job", "notify", "service", "surface"})
+    @ValueSource(strings = {"capability", "command", "job", "notify", "service", "surface"})
     void nothingBetweenTheCentreAndTheEdgeNamesTheEdge(String ring) throws IOException {
         assertThat(importsOf(ring).filter("adapter"::equals)).isEmpty();
     }
