@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.Move;
+import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.model.Owner;
 import dev.jagt.orchestrator.model.StatusChange;
 import dev.jagt.orchestrator.model.TaskState;

@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.TaskChoice;
 import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskView;
+import dev.jagt.orchestrator.flow.TaskView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

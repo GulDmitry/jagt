@@ -1,4 +1,6 @@
-package dev.jagt.orchestrator.model;
+package dev.jagt.orchestrator.flow;
+
+import dev.jagt.orchestrator.model.*;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

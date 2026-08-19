@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
@@ -42,7 +43,7 @@ class DeployServiceTest {
     }
 
     @Test
-    void movesTaskToDeployedAfterASuccessfulDeploy(@TempDir Path root) {
+    void reportsAFullDeployAsDoneAndStampsTheBranchItLandedOn(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .message("MR: http://x").alias("a1").build());
@@ -50,9 +51,10 @@ class DeployServiceTest {
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         DeployService deploys = new DeployService(state, config, mock(GitService.class), editor);
 
-        deploys.deploy("a1");
+        Outcome outcome = deploys.deploy("a1");
 
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.stamp()).isEqualTo("deployed to dev");
     }
 
     /** Without the commit stored, `revert` has nothing exact to undo and can only send the human to git. */
@@ -66,14 +68,14 @@ class DeployServiceTest {
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("cafebabe1234");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.deploy("a1");
+        Outcome outcome = deploys.deploy("a1");
 
         assertThat(state.task("ABC-1").orElseThrow().deployCommit()).isEqualTo("cafebabe1234");
-        assertThat(result).contains("cafebabe");
+        assertThat(outcome.message()).contains("cafebabe");
     }
 
     @Test
-    void revertsTheDeployedMergeAndMovesTheTaskToReverted(@TempDir Path root) {
+    void revertsTheDeployedMergeAndReportsTheUndoAsDone(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
                 .deployCommit("cafebabe1234").build());
@@ -84,10 +86,11 @@ class DeployServiceTest {
                 .thenReturn("f00dfeed5678");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.revert("a1");
+        Outcome outcome = deploys.revert("a1");
 
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVERTED);
-        assertThat(result).contains("f00dfeed");
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.message()).contains("f00dfeed");
+        assertThat(outcome.stamp()).isEqualTo("reverted on dev (f00dfeed)");
     }
 
     /**
@@ -127,20 +130,7 @@ class DeployServiceTest {
     }
 
     @Test
-    void refusesToRevertATaskThatWasNeverDeployed(@TempDir Path root) {
-        StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
-        GitService git = mock(GitService.class);
-        DeployService deploys = new DeployService(state, mock(ConfigService.class), git, editor);
-
-        assertThatThrownBy(() -> deploys.revert("a1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("only a DEPLOYED one");
-        verifyNoInteractions(git);
-    }
-
-    @Test
-    void flagsDeployConflictOnTheDashboardWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
+    void handsBackAConflictWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
             throws Exception {
         StateService state = stateIn(root);
         Path worktree = java.nio.file.Files.createDirectories(root.resolve("wt"));
@@ -155,15 +145,15 @@ class DeployServiceTest {
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.deploy("a1");
+        Outcome outcome = deploys.deploy("a1");
 
         // The human resolves it himself — jagt opens no editor, briefs no agent, and never touches the task branch.
         verifyNoInteractions(editor);
         assertThat(worktree.resolve("task_context.md")).doesNotExist();
-        assertThat(result).contains(deployWorktree.toString()).contains("nothing pushed").contains("deploy ABC-1");
-        TaskState after = state.task("ABC-1").orElseThrow();
-        assertThat(after.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-        assertThat(after.message()).contains(deployWorktree.toString());
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
+        assertThat(outcome.message()).contains(deployWorktree.toString())
+                .contains("nothing pushed").contains("deploy ABC-1");
+        assertThat(outcome.stamp()).contains(deployWorktree.toString());
     }
 
     @Test
@@ -206,12 +196,11 @@ class DeployServiceTest {
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.deploy("a1");
+        Outcome outcome = deploys.deploy("a1");
 
-        assertThat(result).contains("api into dev (cafebabe)", "web into dev (f00dfeed)", "DEPLOYED");
-        TaskState after = state.task("ABC-1").orElseThrow();
-        assertThat(after.status()).isEqualTo(TaskStatus.DEPLOYED);
-        assertThat(after.repos()).extracting(TaskRepo::deployCommit)
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.message()).contains("api into dev (cafebabe)", "web into dev (f00dfeed)", "DEPLOYED");
+        assertThat(state.task("ABC-1").orElseThrow().repos()).extracting(TaskRepo::deployCommit)
                 .containsExactly("cafebabe1234", "f00dfeed5678");
     }
 
@@ -230,13 +219,14 @@ class DeployServiceTest {
                 .when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.deploy("a1");
+        Outcome outcome = deploys.deploy("a1");
 
-        assertThat(result).contains("CONFLICT merging web into dev", "Live on the deploy branch: api",
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
+        assertThat(outcome.message()).contains("CONFLICT merging web into dev", "Live on the deploy branch: api",
                 "NOT deployed: web", deployWorktree.toString());
-        TaskState after = state.task("ABC-1").orElseThrow();
-        assertThat(after.status()).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
-        assertThat(after.repos()).extracting(TaskRepo::deployCommit).containsExactly("cafebabe1234", null);
+        assertThat(outcome.stamp()).contains("Live on the deploy branch: api", "NOT deployed: web");
+        assertThat(state.task("ABC-1").orElseThrow().repos()).extracting(TaskRepo::deployCommit)
+                .containsExactly("cafebabe1234", null);
     }
 
     @Test
@@ -254,9 +244,9 @@ class DeployServiceTest {
                 .when(git).mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.deploy("a1");
+        Outcome outcome = deploys.deploy("a1");
 
-        assertThat(result).contains("Live on the deploy branch: none", "NOT deployed: api, web");
+        assertThat(outcome.message()).contains("Live on the deploy branch: none", "NOT deployed: api, web");
     }
 
     @Test
@@ -292,10 +282,10 @@ class DeployServiceTest {
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        deploys.deploy("a1");
+        Outcome outcome = deploys.deploy("a1");
 
         verify(git, never()).mergeIntoAndPush(eq(Path.of("/repo/api")), anyString(), anyString());
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
     }
 
     @Test
@@ -312,10 +302,10 @@ class DeployServiceTest {
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.deploy("a1");
+        Outcome outcome = deploys.deploy("a1");
 
-        assertThat(result).contains("web into dev (f00dfeed)", "nothing to deploy in api", "DEPLOYED");
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.message()).contains("web into dev (f00dfeed)", "nothing to deploy in api", "DEPLOYED");
     }
 
     @Test
@@ -351,14 +341,13 @@ class DeployServiceTest {
                 .when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        assertThatThrownBy(() -> deploys.deploy("a1"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Live on the deploy branch: api")
-                .hasMessageContaining("NOT deployed: web")
-                .hasMessageContaining("Deploy push to dev was rejected");
-        TaskState after = state.task("ABC-1").orElseThrow();
-        assertThat(after.status()).isEqualTo(TaskStatus.APPROVED);
-        assertThat(after.message()).contains("Live on the deploy branch: api", "NOT deployed: web");
+        Outcome outcome = deploys.deploy("a1");
+
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.PARTIAL);
+        assertThat(outcome.message()).contains("Live on the deploy branch: api", "NOT deployed: web",
+                "Deploy push to dev was rejected");
+        assertThat(outcome.stamp()).contains("Live on the deploy branch: api", "NOT deployed: web");
+        assertThat(outcome.cause()).hasMessage("Deploy push to dev was rejected");
     }
 
     @Test
@@ -374,9 +363,10 @@ class DeployServiceTest {
         doThrow(new NullPointerException()).when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        assertThatThrownBy(() -> deploys.deploy("a1"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageEndingWith("NOT deployed: web.");
+        Outcome outcome = deploys.deploy("a1");
+
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.PARTIAL);
+        assertThat(outcome.message()).endsWith("NOT deployed: web.");
     }
 
     @Test
@@ -392,10 +382,10 @@ class DeployServiceTest {
                 .thenReturn("beef00991122");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.revert("a1");
+        Outcome outcome = deploys.revert("a1");
 
-        assertThat(result).contains("reverted api on dev (beef0099)", "REVERTED");
-        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVERTED);
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.message()).contains("reverted api on dev (beef0099)", "REVERTED");
     }
 
     @Test
@@ -433,10 +423,10 @@ class DeployServiceTest {
                 .when(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        assertThatThrownBy(() -> deploys.revert("a1")).isInstanceOf(IllegalStateException.class);
+        Outcome outcome = deploys.revert("a1");
 
-        assertThat(state.task("ABC-1").orElseThrow().message())
-                .contains("reverted web on dev", "api still live on dev");
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.PARTIAL);
+        assertThat(outcome.stamp()).contains("reverted web on dev", "api still live on dev");
     }
 
     @Test
@@ -453,19 +443,19 @@ class DeployServiceTest {
         when(git.revertMergeAndPush(any(), anyString(), anyString(), anyString())).thenReturn("beef00991122");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        String result = deploys.revert("a1");
+        Outcome outcome = deploys.revert("a1");
 
         InOrder undone = inOrder(git);
         undone.verify(git).revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678");
         undone.verify(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
-        assertThat(result).contains("reverted web on dev", "api on dev", "REVERTED");
-        TaskState after = state.task("ABC-1").orElseThrow();
-        assertThat(after.status()).isEqualTo(TaskStatus.REVERTED);
-        assertThat(after.repos()).extracting(TaskRepo::deployCommit).containsOnlyNulls();
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.message()).contains("reverted web on dev", "api on dev", "REVERTED");
+        assertThat(state.task("ABC-1").orElseThrow().repos()).extracting(TaskRepo::deployCommit)
+                .containsOnlyNulls();
     }
 
     @Test
-    void keepsATaskDeployedWhenOneRepositoryCouldNotBeUndone(@TempDir Path root) {
+    void refusesTheUndoAsHalfDoneWhenOneRepositoryCouldNotBeReverted(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
@@ -481,12 +471,11 @@ class DeployServiceTest {
                 .when(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
         DeployService deploys = new DeployService(state, config, git, editor);
 
-        assertThatThrownBy(() -> deploys.revert("a1"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("reverted web on dev")
-                .hasMessageContaining("api still live on dev");
-        TaskState after = state.task("ABC-1").orElseThrow();
-        assertThat(after.status()).isEqualTo(TaskStatus.DEPLOYED);
-        assertThat(after.repos()).extracting(TaskRepo::deployCommit).containsExactly("cafebabe1234", null);
+        Outcome outcome = deploys.revert("a1");
+
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.PARTIAL);
+        assertThat(outcome.message()).contains("reverted web on dev", "api still live on dev");
+        assertThat(state.task("ABC-1").orElseThrow().repos()).extracting(TaskRepo::deployCommit)
+                .containsExactly("cafebabe1234", null);
     }
 }

@@ -1,0 +1,59 @@
+package dev.jagt.orchestrator.notify;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * The one place a notification is handed over, and the only thing any caller depends on. Delivery happens off the
+ * caller's thread with a bounded backlog: telling a human is never worth delaying a git push, and a channel that
+ * hangs must cost a dropped banner rather than a stalled task.
+ */
+@Component
+@Slf4j
+public class Notifications {
+
+    private static final int BACKLOG = 64;
+
+    private final List<Notifier> channels;
+    private final Executor delivery;
+
+    @Autowired
+    public Notifications(List<Notifier> channels) {
+        this(channels, new ThreadPoolExecutor(0, 4, 30, TimeUnit.SECONDS, new ArrayBlockingQueue<>(BACKLOG),
+                Thread.ofPlatform().name("jagt-notify-", 0).daemon().factory()));
+    }
+
+    Notifications(List<Notifier> channels, Executor delivery) {
+        this.channels = List.copyOf(channels);
+        this.delivery = delivery;
+    }
+
+    public void send(Notification notification) {
+        for (Notifier channel : channels) {
+            if (!channel.takes(notification)) {
+                continue;
+            }
+            try {
+                delivery.execute(() -> deliver(channel, notification));
+            } catch (RejectedExecutionException e) {
+                log.warn("notification dropped, {} is backed up: {}", channel.id(), notification.title());
+            }
+        }
+    }
+
+    private static void deliver(Notifier channel, Notification notification) {
+        try {
+            channel.deliver(notification);
+        } catch (Throwable t) {
+            log.warn("channel {} failed to deliver \"{}\": {}", channel.id(), notification.title(), t.toString());
+        }
+    }
+}

@@ -133,6 +133,20 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     since tmux sizes every window to its smallest attached client, including one nobody is looking at. And ttyd
     stays ONE class, not a sixth seam — a second web terminal is an interface extraction, and nothing outside
     it names ttyd.
+  - THE MACHINE IS ONE FILE AND IT HAS TWO DOORS. `flow/FlowRules` is the whole life of a task: which statuses
+    allow which action (the guard reads `flow/Facts` — an open request, and a liveness probe the projection passes
+    as "no" because it costs a process spawn per row), and what each outcome of that action leads to. Door one is
+    `flow/FlowEngine.run`: check the rules, run the `capability/TaskCapability` registered for the action, write
+    the status the table gives for its `flow/Outcome`. Door two is `flow/FlowReports`: a status the task itself
+    reports — its agent over MCP, or a round jagt read for it — refused unless `FlowRules.reportable` allows it,
+    which is what stops a task talking itself onto a shared branch, out of one, or closed. NOTHING BELOW `flow/`
+    NAMES A STATUS: a capability does the work and reports OK / RELAYED / CONFLICT / PARTIAL / GONE plus the
+    sentence and the stamp, so the same work can be reached from several statuses without every doer learning the
+    machine. `withStatus` therefore appears in `flow/` and in the record that implements it, nowhere else — that
+    is greppable, and it is the invariant. PARTIAL is the one outcome that REFUSES: it is stamped on the task
+    first and thrown second, because a shared branch holding half a change must be recorded, not merely
+    complained about. The table stays Java rather than config: every status and action in it is checked by the
+    compiler.
   - "how is an action executed" is `service/CommandService` (validates against `Move` first, so a stale board
     tab is refused with a sentence, not with a git error three layers down), and "how is a task started" is
     `service/TaskLauncher`. The console parses a command line, the controller parses JSON; neither owns rules.

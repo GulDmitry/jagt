@@ -1,12 +1,14 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.AgentReport;
-import dev.jagt.orchestrator.model.Move;
+import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.model.RoundState;
 import dev.jagt.orchestrator.model.TaskLabel;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,8 @@ public class AgentStatusReports {
     private static final int MAX_MESSAGE = 100;
 
     private final StateService stateService;
-    private final UserNotifier userNotifier;
+    private final Notifications notifications;
+    private final FlowReports flow;
 
     public String report(String status, String message, String taskId) {
         TaskStatus newStatus;
@@ -50,17 +53,13 @@ public class AgentStatusReports {
                             + " \"review request: https://...\"");
         }
         TaskStatus previous = current.map(TaskState::status).orElse(null);
-        boolean updated = stateService.updateTask(taskId, t -> {
-            TaskState next = t.withStatus(newStatus, shortMessage);
-            if (url != null) {
-                next = next.withMrUrl(url);
-                // First time a request is linked = the auto-review window start; never reset it on later
-                // rounds.
-                if (t.mrCreatedAt() == 0) {
-                    next = next.withMrCreatedAt(System.currentTimeMillis());
-                }
+        boolean updated = flow.report(taskId, newStatus, shortMessage, next -> {
+            if (url == null) {
+                return next;
             }
-            return next;
+            TaskState linked = next.withMrUrl(url);
+            // First time a request is linked = the auto-review window start; never reset it on later rounds.
+            return next.mrCreatedAt() == 0 ? linked.withMrCreatedAt(System.currentTimeMillis()) : linked;
         });
         if (!updated) {
             throw new IllegalArgumentException("Task " + taskId + " not found in state.json");
@@ -93,14 +92,14 @@ public class AgentStatusReports {
     }
 
     public String notifyUser(String title, String message) {
-        userNotifier.notify(title == null ? "jagt" : title, message);
+        notifications.send(Notification.fromAgent(null, title, message));
         return "Notification sent";
     }
 
     private void markOutcome(String taskId, TaskStatus status, String message) {
         String id = stateService.canonicalTaskId(taskId);
         TaskStatus previous = stateService.task(id).map(TaskState::status).orElse(null);
-        boolean updated = stateService.updateTask(id, t -> t.withStatus(status, message));
+        boolean updated = flow.report(id, status, message);
         // Never for a no-op (task gone) or a re-poll landing on the status the human already saw.
         if (updated && status != previous) {
             ping(id, status, message, stateService.task(id));
@@ -108,9 +107,10 @@ public class AgentStatusReports {
     }
 
     private void ping(String taskId, TaskStatus status, String message, Optional<TaskState> task) {
-        RoundState round = RoundState.of(message, task.map(t -> t.withStatus(status, message))
-                .map(WorktreeFiles::draftedReplies).orElse(false));
-        userNotifier.notify("jagt · " + taskId, banner(Move.forTask(status, true, round).hint(), round));
+        RoundState round = RoundState.of(message,
+                task.map(t -> WorktreeFiles.draftedReplies(t, status)).orElse(false));
+        notifications.send(Notification.fromAgent(taskId, status.name().toLowerCase(java.util.Locale.ROOT),
+                banner(Move.forTask(status, true, round).hint(), round)));
     }
 
     /**

@@ -2,9 +2,11 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -16,9 +18,8 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,7 +31,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
  */
 class AgentStatusReportsTest {
 
-    private final UserNotifier notifier = mock(UserNotifier.class);
+    private final Notifications notifications = mock(Notifications.class);
 
     private static StateService stateIn(Path root) {
         return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -38,7 +39,7 @@ class AgentStatusReportsTest {
     }
 
     private AgentStatusReports reports(StateService state) {
-        return new AgentStatusReports(state, notifier);
+        return new AgentStatusReports(state, notifications, new FlowReports(state));
     }
 
     @Test
@@ -58,7 +59,7 @@ class AgentStatusReportsTest {
 
         reports(state).report("REVIEW_PENDING", "done", "ABC-1");
 
-        verify(notifier).notify(org.mockito.ArgumentMatchers.contains("ABC-1"), anyString());
+        verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())));
     }
 
     @Test
@@ -68,7 +69,7 @@ class AgentStatusReportsTest {
 
         reports(state).report("IN_PROGRESS", "step 2", "ABC-1");
 
-        verifyNoInteractions(notifier);
+        verifyNoInteractions(notifications);
     }
 
     @Test
@@ -149,7 +150,8 @@ class AgentStatusReportsTest {
         reports(state).markApproved("ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
-        verify(notifier).notify(eq("jagt · ABC-1"), contains("approved"));
+        verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
+                && sent.body().contains("approved")));
     }
 
     @Test
@@ -160,7 +162,7 @@ class AgentStatusReportsTest {
 
         reports(state).markApproved("ABC-1");
 
-        verify(notifier, never()).notify(eq("jagt · ABC-1"), contains("approved"));
+        verify(notifications, never()).send(any());
     }
 
     @Test
@@ -194,7 +196,8 @@ class AgentStatusReportsTest {
 
         reports(state).report("REVIEW_PENDING", "widget fixed", "ABC-1");
 
-        verify(notifier).notify(eq("jagt · ABC-1"), contains("review_replies.md"));
+        verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
+                && sent.body().contains("review_replies.md")));
     }
 
     @Test
@@ -208,8 +211,8 @@ class AgentStatusReportsTest {
 
         reports(state).report("REVIEW_PENDING", "no changes: every comment already handled", "ABC-1");
 
-        ArgumentCaptor<String> banner = ArgumentCaptor.forClass(String.class);
-        verify(notifier).notify(eq("jagt · ABC-1"), banner.capture());
-        assertThat(banner.getValue()).containsOnlyOnce("drafted replies");
+        ArgumentCaptor<Notification> ping = ArgumentCaptor.forClass(Notification.class);
+        verify(notifications).send(ping.capture());
+        assertThat(ping.getValue().body()).containsOnlyOnce("drafted replies");
     }
 }

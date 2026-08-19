@@ -137,29 +137,35 @@ public record TaskState(
         return toBuilder().title(title).ticketUrl(ticketUrl).build();
     }
 
-    /**
-     * A status move — the ONE place history grows, and only when the status actually CHANGED: the keep-alive
-     * comes through here too, and four real transitions must not drown in hundreds of identical rows.
-     */
+    /** A status move — the ONE place history grows. */
     public TaskState withStatus(TaskStatus status, String message) {
+        return withStatus(status, message, false);
+    }
+
+    /**
+     * @param event whether to record this even when the status is unchanged — true for something that was DONE to
+     *              the task, because a second review round shipped onto the same request is a real event, and
+     *              false for a task repeating itself, because a keep-alive would otherwise drown four
+     *              transitions in hundreds of identical rows
+     */
+    public TaskState withStatus(TaskStatus status, String message, boolean event) {
         long now = System.currentTimeMillis();
         List<StatusChange> known = seededHistory();
+        boolean record = event || status != this.status;
         return toBuilder().status(status).lastActiveTimestamp(now).message(message)
-                .history(status == this.status ? known : appended(known, new StatusChange(status, now, null)))
+                .history(record ? appended(known, new StatusChange(status, now, null)) : known)
                 .build();
     }
 
     /**
-     * A ship landed: a NEW review round, recorded even when the status does not change — which it does not for
-     * a round shipped from CI_POLLING onto the same request, the normal path.
+     * A ship landed: a NEW review round. The status that follows is not decided here — the flow engine writes it,
+     * which is also what records the round in history.
      *
      * <p>The URL goes on the repo it belongs to: a task spanning two would otherwise link to the wrong diff.
      */
     public TaskState withReviewRound(String project, String reviewRequestUrl) {
         long now = System.currentTimeMillis();
-        return toBuilder().status(TaskStatus.CI_POLLING).lastActiveTimestamp(now)
-                .message("review request: " + reviewRequestUrl)
-                .history(appended(seededHistory(), new StatusChange(TaskStatus.CI_POLLING, now, null)))
+        return toBuilder().lastActiveTimestamp(now)
                 .repos(mapRepo(project, repo -> repo.withMrUrl(reviewRequestUrl)))
                 // The window is per ROUND, not per request: a round shipped days later gets its own polling
                 // window, and lastPolledAt=0 makes the next scheduler tick look at it right away.

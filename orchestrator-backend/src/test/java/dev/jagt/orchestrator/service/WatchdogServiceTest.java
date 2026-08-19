@@ -4,7 +4,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -16,8 +17,7 @@ import java.util.Arrays;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -32,13 +32,14 @@ class WatchdogServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW)
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(6).toMillis()).alias("a1").build());
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
         TmuxService tmux = mock(TmuxService.class);
         ConfigService config = configMock();
 
-        new WatchdogService(state, notifier, properties, tmux, config).run();
+        new WatchdogService(state, notifications, properties, tmux, config).run();
 
-        verify(notifier).notify(eq("Orchestrator Alert"), contains("ABC-1"));
+        verify(notifications).send(argThat(sent -> sent.topic() == Notification.Topic.WATCHDOG
+                && "ABC-1".equals(sent.taskId())));
     }
 
     @Test
@@ -48,13 +49,13 @@ class WatchdogServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(20).toMillis()).alias("a1").build());
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.lastWindowActivityMillis(any(), anyString())).thenReturn(System.currentTimeMillis());
 
-        new WatchdogService(state, notifier, properties, tmux, configMock()).run();
+        new WatchdogService(state, notifications, properties, tmux, configMock()).run();
 
-        verifyNoInteractions(notifier);
+        verifyNoInteractions(notifications);
     }
 
     private static ConfigService configMock() {
@@ -72,11 +73,12 @@ class WatchdogServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.SHIPPING)
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(6).toMillis()).alias("a1").build());
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
 
-        new WatchdogService(state, notifier, properties, mock(TmuxService.class), configMock()).run();
+        new WatchdogService(state, notifications, properties, mock(TmuxService.class), configMock()).run();
 
-        verify(notifier).notify(eq("Orchestrator Alert"), contains("ABC-1"));
+        verify(notifications).send(argThat(sent -> sent.topic() == Notification.Topic.WATCHDOG
+                && "ABC-1".equals(sent.taskId())));
     }
 
     @Test
@@ -94,10 +96,10 @@ class WatchdogServiceTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(60).toMillis()).alias("a1").build());
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
 
-        new WatchdogService(state, notifier, properties, mock(TmuxService.class), configMock()).run();
+        new WatchdogService(state, notifications, properties, mock(TmuxService.class), configMock()).run();
 
-        verifyNoInteractions(notifier);
+        verifyNoInteractions(notifications);
     }
 }

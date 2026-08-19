@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskRepo;
+import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.EditorDriver;
@@ -40,7 +41,7 @@ public class DeployService {
     }
 
     /** Merges the task branch into every project's deploy branch and pushes, repository by repository. */
-    public String deploy(String taskId) {
+    public Outcome deploy(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         List<Target> targets = deployTargets(task);
@@ -70,14 +71,14 @@ public class DeployService {
             } catch (GitService.MergeConflictException e) {
                 return handBackConflict(taskId, targets, i, e);
             } catch (RuntimeException e) {
-                throw stoppedPartWay(taskId, targets, i, e);
+                return stoppedPartWay(taskId, targets, i, e);
             }
             // The deploy worktree is gone once pushed; drop it from the editor's recent-projects list too, so a
             // human who opened it to resolve a conflict isn't left with a dead jagt-deploy entry.
             editorDriver.forgetProject(GitService.deployWorktreePath(target.path(), taskId));
         }
         if (!blocked.isEmpty()) {
-            throw notFinished(taskId, merged, blocked);
+            return notFinished(taskId, merged, blocked);
         }
         // Nothing landed and nothing was resumed past: there was nothing to deploy at all, which is the answer a
         // single-repository task has always given. A RESUMED sequence whose remainder is all idle is finished.
@@ -91,10 +92,13 @@ public class DeployService {
      * Some repositories landed and at least one never started, so the task is NOT deployed — but the verb is
      * repeatable and the next run has a free path, which is the whole point of coming back to it.
      */
-    private RuntimeException notFinished(String taskId, Map<String, String> merged, List<String> blocked) {
-        return new IllegalStateException("deploy " + taskId + ": merged " + names(List.copyOf(merged.keySet()))
+    private Outcome notFinished(String taskId, Map<String, String> merged, List<String> blocked) {
+        List<String> landed = List.copyOf(merged.keySet());
+        return Outcome.partial("deploy " + taskId + ": merged " + names(landed)
                 + ", but " + names(blocked) + " could not start while the shared deploy worktree path held"
-                + " another repository's checkout. Run `deploy " + taskId + "` again.");
+                + " another repository's checkout. Run `deploy " + taskId + "` again.",
+                "deploy stopped part way — live on the deploy branch: " + names(landed)
+                        + ". NOT deployed: " + names(blocked) + ".", null);
     }
 
     /**
@@ -121,18 +125,17 @@ public class DeployService {
      * does NOT auto-open an editor — the dashboard flags DEPLOY_CONFLICT, the human opens the worktree and
      * resolves it, then deploys again (the backend does the push).
      */
-    private String handBackConflict(String taskId, List<Target> targets, int at,
+    private Outcome handBackConflict(String taskId, List<Target> targets, int at,
                                     GitService.MergeConflictException e) {
         Target conflicted = targets.get(at);
         String half = targets.size() > 1 ? halfState(targets, at) : "";
         String note = half.isEmpty() ? "" : " — " + half;
-        stateService.updateTask(taskId,
-                t -> t.withStatus(TaskStatus.DEPLOY_CONFLICT, "resolve conflict in " + e.deployWorktree() + note));
         String what = targets.size() > 1
                 ? "CONFLICT merging " + conflicted.project() + " into " + conflicted.deployBranch() + ". " + half
                 : "CONFLICT into " + conflicted.deployBranch() + ", nothing pushed.";
-        return "deploy " + taskId + ": " + what + " Resolve in " + e.deployWorktree() + " (`git add`), then"
-                + " `deploy " + taskId + "` again.";
+        return Outcome.conflict("deploy " + taskId + ": " + what + " Resolve in " + e.deployWorktree()
+                + " (`git add`), then `deploy " + taskId + "` again.",
+                "resolve conflict in " + e.deployWorktree() + note);
     }
 
     /**
@@ -147,15 +150,14 @@ public class DeployService {
         return "Live on the deploy branch: " + names(live) + ". NOT deployed: " + names(pending) + ".";
     }
 
-    private String deployed(String taskId, List<Target> targets, int from, Map<String, String> merged,
+    private Outcome deployed(String taskId, List<Target> targets, int from, Map<String, String> merged,
                             List<String> nothingToDo) {
         TaskState task = requireTask(taskId);
-        stateService.updateTask(taskId,
-                t -> t.withStatus(TaskStatus.DEPLOYED, "deployed to " + names(deployBranches(targets))));
+        String stamp = "deployed to " + names(deployBranches(targets));
         if (targets.size() == 1) {
             Target only = targets.getFirst();
-            return "Merged " + taskId + " into " + only.deployBranch() + " ("
-                    + shortSha(merged.get(only.project())) + "); DEPLOYED";
+            return Outcome.ok("Merged " + taskId + " into " + only.deployBranch() + " ("
+                    + shortSha(merged.get(only.project())) + "); DEPLOYED", stamp);
         }
         List<String> landed = targets.stream().filter(target -> merged.containsKey(target.project()))
                 .map(target -> target.project() + " into " + target.deployBranch()
@@ -166,7 +168,8 @@ public class DeployService {
                 .map(target -> target.project() + " (" + shortSha(mergeCommit(task, target)) + ")").toList();
         String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);
         String idle = nothingToDo.isEmpty() ? "" : ", nothing to deploy in " + names(nothingToDo);
-        return "deploy " + taskId + ": merged " + names(landed) + already + idle + "; DEPLOYED";
+        return Outcome.ok("deploy " + taskId + ": merged " + names(landed) + already + idle + "; DEPLOYED",
+                stamp);
     }
 
     /**
@@ -174,14 +177,13 @@ public class DeployService {
      * The status is left alone, because there is nothing for a human to resolve in a worktree; the message is
      * stamped anyway, or a repository stays live on a shared branch with nothing but a console line admitting it.
      */
-    private RuntimeException stoppedPartWay(String taskId, List<Target> targets, int at, RuntimeException cause) {
+    private Outcome stoppedPartWay(String taskId, List<Target> targets, int at, RuntimeException cause) {
         if (targets.size() == 1 || at == 0) {
-            return cause;
+            throw cause;
         }
         String half = halfState(targets, at);
-        stateService.updateTask(taskId, t -> t.withStatus(t.status(), "deploy stopped part way — " + half));
-        return new IllegalStateException("deploy " + taskId + " stopped part way. " + half + because(cause),
-                cause);
+        return Outcome.partial("deploy " + taskId + " stopped part way. " + half + because(cause),
+                "deploy stopped part way — " + half, cause);
     }
 
     /** A cause without a message must not end the report in the word "null". */
@@ -197,13 +199,9 @@ public class DeployService {
      * revert that fails part way can be repeated and touches only what is still live. A repository that never
      * landed is nothing to undo rather than an error.
      */
-    public String revert(String taskId) {
+    public Outcome revert(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        if (task.status() != TaskStatus.DEPLOYED) {
-            throw new IllegalArgumentException("revert " + taskId + ": cannot revert a " + task.status()
-                    + " task — only a DEPLOYED one has a merge to undo.");
-        }
         List<Target> landed = landedTargets(task);
         if (landed.isEmpty()) {
             throw unrecordedDeploy(taskId, deployTargets(task));
@@ -216,7 +214,7 @@ public class DeployService {
                 lastRevertCommit = gitService.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
                         mergeCommit(task, target));
             } catch (RuntimeException e) {
-                throw stillLive(taskId, target, reverted, e);
+                return stillLive(taskId, target, reverted, e);
             }
             stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), null));
             reverted.add(target.project() + " on " + target.deployBranch() + " ("
@@ -225,17 +223,15 @@ public class DeployService {
         return allReverted(taskId, task.repos().size() == 1, landed, reverted, lastRevertCommit);
     }
 
-    private String allReverted(String taskId, boolean singleRepo, List<Target> landed, List<String> reverted,
+    private Outcome allReverted(String taskId, boolean singleRepo, List<Target> landed, List<String> reverted,
                                String revertCommit) {
         String tail = "; REVERTED — fix and ship again, or `done`.";
         if (singleRepo) {
             String on = "on " + landed.getFirst().deployBranch() + " (" + shortSha(revertCommit) + ")";
-            stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.REVERTED, "reverted " + on));
-            return "Reverted " + taskId + " " + on + tail;
+            return Outcome.ok("Reverted " + taskId + " " + on + tail, "reverted " + on);
         }
-        stateService.updateTask(taskId,
-                t -> t.withStatus(TaskStatus.REVERTED, "reverted " + names(reverted)));
-        return "revert " + taskId + ": reverted " + names(reverted) + tail;
+        return Outcome.ok("revert " + taskId + ": reverted " + names(reverted) + tail,
+                "reverted " + names(reverted));
     }
 
     /**
@@ -244,15 +240,14 @@ public class DeployService {
      * well as thrown: a sentence in a console the human has since scrolled past is not a record of a shared
      * branch holding half a change.
      */
-    private RuntimeException stillLive(String taskId, Target at, List<String> reverted, RuntimeException cause) {
+    private Outcome stillLive(String taskId, Target at, List<String> reverted, RuntimeException cause) {
         if (reverted.isEmpty()) {
-            return cause;
+            throw cause;
         }
         String half = "reverted " + names(reverted) + ", " + at.project() + " still live on "
                 + at.deployBranch();
-        stateService.updateTask(taskId, t -> t.withStatus(TaskStatus.DEPLOYED, half));
-        return new IllegalStateException("revert " + taskId + ": " + half + " — repeat `revert " + taskId
-                + "` once this is dealt with." + because(cause), cause);
+        return Outcome.partial("revert " + taskId + ": " + half + " — repeat `revert " + taskId
+                + "` once this is dealt with." + because(cause), half, cause);
     }
 
     /**

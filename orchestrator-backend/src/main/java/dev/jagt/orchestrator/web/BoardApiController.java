@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.web;
 
-import dev.jagt.orchestrator.model.TaskView;
+import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.GlobalCommand;
 import dev.jagt.orchestrator.service.GlobalCommands;

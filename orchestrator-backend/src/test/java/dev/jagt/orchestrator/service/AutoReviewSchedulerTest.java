@@ -4,7 +4,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 import org.junit.jupiter.api.Test;
@@ -18,8 +19,7 @@ import java.time.Duration;
 import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -82,9 +82,9 @@ class AutoReviewSchedulerTest {
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
                 .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
 
-        new AutoReviewScheduler(state, enabledConfig(), sweep, notifier, Runnable::run).run();
+        new AutoReviewScheduler(state, enabledConfig(), sweep, notifications, Runnable::run).run();
 
         verify(sweep).sweep("ABC-1");
         assertThat(state.task("ABC-1").orElseThrow().lastPolledAt())
@@ -96,13 +96,15 @@ class AutoReviewSchedulerTest {
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
-        UserNotifier notifier = mock(UserNotifier.class);
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(), sweep, notifier, Runnable::run);
+        Notifications notifications = mock(Notifications.class);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(), sweep,
+                notifications, Runnable::run);
 
         scheduler.run();
         scheduler.run();
 
-        verify(notifier).notify(eq("jagt · ABC-1"), contains("window elapsed"));
+        verify(notifications).send(argThat(sent -> sent.topic() == Notification.Topic.AGENT
+                && "ABC-1".equals(sent.taskId()) && sent.body().contains("window elapsed")));
         verifyNoInteractions(sweep);
     }
 
@@ -112,9 +114,9 @@ class AutoReviewSchedulerTest {
         // for the rest of the task's life — and the new pipeline was never polled either.
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis()).build());
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(),
-                mock(ReviewSweepService.class), notifier, Runnable::run);
+                mock(ReviewSweepService.class), notifications, Runnable::run);
         scheduler.run();
 
         // ship lands another round: same status, brand-new window
@@ -123,7 +125,9 @@ class AutoReviewSchedulerTest {
                 System.currentTimeMillis() - Duration.ofHours(25).toMillis()));
         scheduler.run();
 
-        verify(notifier, org.mockito.Mockito.times(2)).notify(eq("jagt · ABC-1"), contains("window elapsed"));
+        verify(notifications, org.mockito.Mockito.times(2)).send(
+                argThat(sent -> sent.topic() == Notification.Topic.AGENT
+                        && "ABC-1".equals(sent.taskId()) && sent.body().contains("window elapsed")));
     }
 
     /**
@@ -136,9 +140,9 @@ class AutoReviewSchedulerTest {
     void forgetsTheRemindersOfATaskThatWasRetiredWhileStillPolling(@TempDir Path root) {
         long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
         StateService state = stateWith(root, polling().mrCreatedAt(window).build());
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(),
-                mock(ReviewSweepService.class), notifier, Runnable::run);
+                mock(ReviewSweepService.class), notifications, Runnable::run);
         scheduler.run();
 
         state.removeTask("ABC-1");
@@ -146,7 +150,9 @@ class AutoReviewSchedulerTest {
         state.putTask("ABC-1", polling().mrCreatedAt(window).build());
         scheduler.run();
 
-        verify(notifier, org.mockito.Mockito.times(2)).notify(eq("jagt · ABC-1"), contains("window elapsed"));
+        verify(notifications, org.mockito.Mockito.times(2)).send(
+                argThat(sent -> sent.topic() == Notification.Topic.AGENT
+                        && "ABC-1".equals(sent.taskId()) && sent.body().contains("window elapsed")));
     }
 
     @Test
@@ -154,13 +160,13 @@ class AutoReviewSchedulerTest {
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(1).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
         ConfigService disabled = mock(ConfigService.class);
         when(disabled.load()).thenReturn(ConfigFile.defaults());
 
-        new AutoReviewScheduler(state, disabled, sweep, notifier, Runnable::run).run();
+        new AutoReviewScheduler(state, disabled, sweep, notifications, Runnable::run).run();
 
-        verifyNoInteractions(sweep, notifier);
+        verifyNoInteractions(sweep, notifications);
     }
 
     @Test

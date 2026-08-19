@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.codehost.CodeHost;
+import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
 import dev.jagt.orchestrator.model.ProjectConfig;
@@ -73,7 +74,7 @@ class ShipServiceTest {
         when(host.createOrUpdateMergeRequest(any()))
                 .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", true)));
 
-        String result = ship().ship("ABC-42");
+        Outcome outcome = ship().ship("ABC-42");
 
         ArgumentCaptor<MergeRequestSpec> spec = ArgumentCaptor.captor();
         verify(gitService).commitAll(any(), eq(Path.of("/wt")), eq("ABC-42 Widget layout is off"));
@@ -86,7 +87,9 @@ class ShipServiceTest {
         verify(stateService).updateTask(eq("ABC-42"), any());
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
         verify(sessions, never()).appendTaskContext(anyString(), anyString());
-        assertThat(result).contains("3 file(s), pushed, opened https://host/mr/9", "CI_POLLING");
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.message()).contains("3 file(s), pushed, opened https://host/mr/9", "CI_POLLING");
+        assertThat(outcome.stamp()).isEqualTo("review request: https://host/mr/9");
     }
 
     @Test
@@ -110,10 +113,10 @@ class ShipServiceTest {
         when(host.createOrUpdateMergeRequest(any()))
                 .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
 
-        String result = ship().ship("ABC-42");
+        Outcome outcome = ship().ship("ABC-42");
 
         verify(gitService).commitAll(any(), any(), eq("ABC-42 address review comments"));
-        assertThat(result).contains("updated https://host/mr/9");
+        assertThat(outcome.message()).contains("updated https://host/mr/9");
     }
 
     @Test
@@ -135,28 +138,20 @@ class ShipServiceTest {
         havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "Widget layout is off");
         when(host.hostsRepository(anyString())).thenReturn(false);
 
-        String result = ship().ship("ABC-42");
+        Outcome outcome = ship().ship("ABC-42");
 
         verify(sessions).writeTaskContext(eq("ABC-42"), contains("This IS the human approval to ship"));
         verify(gitService, never()).pushBranch(any(), any(), anyString());
-        assertThat(result).contains("relayed to the agent", "SHIPPING");
-    }
-
-    @Test
-    void refusesToShipATaskThatHasNothingToShipOnto() {
-        havingTask("ABC-42", TaskStatus.NEW, null, "t");
-
-        assertThatThrownBy(() -> ship().ship("ABC-42"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("cannot ship a NEW task");
-        verify(gitService, never()).commitAll(any(), any(), anyString());
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
+        assertThat(outcome.message()).contains("relayed to the agent", "SHIPPING");
+        assertThat(outcome.stamp()).isEqualTo("shipping");
     }
 
     @Test
     void refusesASecondShipWhileTheFirstIsStillRunning() {
         havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "t");
         ShipService shipService = ship();
-        var reentrant = new java.util.concurrent.atomic.AtomicReference<String>();
+        var reentrant = new java.util.concurrent.atomic.AtomicReference<Outcome>();
         when(host.createOrUpdateMergeRequest(any())).thenAnswer(call -> {
             reentrant.set(shipService.ship("ABC-42"));
             return Optional.of(new MergeRequestRef("https://host/mr/9", true));
@@ -164,7 +159,7 @@ class ShipServiceTest {
 
         shipService.ship("ABC-42");
 
-        assertThat(reentrant.get()).contains("already running");
+        assertThat(reentrant.get().message()).contains("already running");
         verify(gitService, never()).commitAll(any(), any(), eq("t"));   // the inner call did nothing
         verify(host).createOrUpdateMergeRequest(any());
     }
@@ -181,11 +176,11 @@ class ShipServiceTest {
         when(host.createOrUpdateMergeRequest(any()))
                 .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
 
-        String result = ship().ship("ABC-42");
+        Outcome outcome = ship().ship("ABC-42");
 
         // APPENDS: a sweep may have just relayed a brief, and truncating it would lose the comments.
         verify(sessions).appendTaskContext(eq("ABC-42"), contains("NOTHING to commit or push"));
-        assertThat(result).contains("drafted replies relayed");
+        assertThat(outcome.message()).contains("drafted replies relayed");
     }
 
     @Test
@@ -202,11 +197,11 @@ class ShipServiceTest {
         when(host.createOrUpdateMergeRequest(any()))
                 .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
 
-        String result = ship().ship("ABC-42");
+        Outcome outcome = ship().ship("ABC-42");
 
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
         verify(sessions, never()).appendTaskContext(anyString(), anyString());
-        assertThat(result).contains("yours to post");
+        assertThat(outcome.message()).contains("yours to post");
     }
 
     @Test
@@ -227,9 +222,9 @@ class ShipServiceTest {
     }
 
     @Test
-    void recordsAnotherRoundShippedOntoTheSameRequestAsARealRound() {
+    void armsAFreshPollingWindowForAnotherRoundShippedOntoTheSameRequest() {
         // The path CLAUDE.md calls normal ("the human iterates and ships another round onto the same request")
-        // does not change the status, so it used to leave no history entry and no fresh polling window.
+        // does not change the status, so it used to leave no fresh polling window.
         havingTask("ABC-42", TaskStatus.CI_POLLING, "https://host/mr/9", "Widget layout is off");
         when(host.createOrUpdateMergeRequest(any()))
                 .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
@@ -241,7 +236,6 @@ class ShipServiceTest {
         TaskState before = TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("https://host/mr/9").mrCreatedAt(1_000L).lastPolledAt(9_000L).build();
         TaskState after = update.getValue().apply(before);
-        assertThat(after.history()).hasSizeGreaterThan(before.history().size());
         assertThat(after.mrCreatedAt()).isGreaterThan(1_000L);
         assertThat(after.lastPolledAt()).isZero();
     }
@@ -258,7 +252,7 @@ class ShipServiceTest {
                 .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", true)),
                         Optional.of(new MergeRequestRef("https://host/mr/2", true)));
 
-        String result = ship().ship("ABC-5");
+        Outcome outcome = ship().ship("ABC-5");
 
         ArgumentCaptor<MergeRequestSpec> specs = ArgumentCaptor.captor();
         verify(host, times(2)).createOrUpdateMergeRequest(specs.capture());
@@ -267,12 +261,12 @@ class ShipServiceTest {
                         tuple("git@host:demo/web.git", "release"));
         verify(gitService).pushBranch(any(), eq(Path.of("/wt")), eq("ABC-5"));
         verify(gitService).pushBranch(any(), eq(Path.of("/web-wt")), eq("ABC-5"));
-        assertThat(result).contains("demo 3 file(s), pushed", "web 3 file(s), pushed", "https://host/mr/1",
-                "https://host/mr/2");
+        assertThat(outcome.message()).contains("demo 3 file(s), pushed", "web 3 file(s), pushed",
+                "https://host/mr/1", "https://host/mr/2");
     }
 
     @Test
-    void keepsBothRequestsOnTheirOwnRepositoriesWhileRecordingASingleRound() {
+    void keepsBothRequestsOnTheirOwnRepositoriesAndRecordsTheRoundOnce() {
         when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
                 List.of()));
         List<TaskRepo> repos = List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
@@ -290,7 +284,7 @@ class ShipServiceTest {
         TaskState after = update.getValue().apply(TaskState.builder(repos, TaskStatus.REVIEW_PENDING).build());
         assertThat(after.repo("demo").orElseThrow().mrUrl()).isEqualTo("https://host/mr/1");
         assertThat(after.repo("web").orElseThrow().mrUrl()).isEqualTo("https://host/mr/2");
-        assertThat(after.history()).hasSize(2);
+        assertThat(after.mrCreatedAt()).isPositive();
     }
 
     @Test

@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.model.TaskRepo;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.job.Job;
@@ -67,7 +68,7 @@ public class WorktreeOrphanScanner implements Job {
 
     private final ConfigService configService;
     private final StateService stateService;
-    private final UserNotifier userNotifier;
+    private final Notifications notifications;
 
     /**
      * One WARN per leftover directory, plus a single desktop ping: the log carries the detail, and the ping is
@@ -83,9 +84,9 @@ public class WorktreeOrphanScanner implements Job {
         // Nothing deletes these: an orphan can hold uncommitted work as well as the copied secrets.
         orphans.forEach(orphan -> log.warn("Orphaned worktree {} ({} copied secret file(s)) — no task owns it,"
                 + " delete it yourself once you are sure", orphan.path(), orphan.secretFiles()));
-        userNotifier.notify("jagt · " + orphans.size() + " orphaned worktree(s)",
+        notifications.send(Notification.housekeeping(orphans.size() + " orphaned worktree(s)",
                 secrets > 0 ? secrets + " copied secret file(s) left on disk — see the log"
-                        : "left over from a crashed or abandoned task — see the log");
+                        : "left over from a crashed or abandoned task — see the log"));
     }
 
     /** Every leftover worktree directory across all configured projects, deduplicated by path. */

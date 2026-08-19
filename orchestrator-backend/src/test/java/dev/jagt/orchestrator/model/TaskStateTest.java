@@ -74,20 +74,40 @@ class TaskStateTest {
     }
 
     @Test
-    void recordsAShippedRoundEvenThoughTheStatusDoesNotChange() {
-        // Move.shippable allows another round from CI_POLLING, and that is the NORMAL path — so the round has
-        // to be visible even though CI_POLLING → CI_POLLING looks like a keep-alive to withStatus.
+    void opensANewPollingWindowForEveryRoundShippedOntoTheSameRequest() {
         TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("https://host/mr/9").mrCreatedAt(1_000L).lastPolledAt(9_000L).build();
 
         TaskState round = polling.withReviewRound("https://host/mr/9");
 
-        assertThat(round.history()).hasSize(polling.history().size() + 1);
-        assertThat(round.history().getLast().status()).isEqualTo(TaskStatus.CI_POLLING);
-        assertThat(round.statusSince()).isEqualTo(round.history().getLast().at());
-        // A new round is a new polling window, and it should be looked at on the next tick.
         assertThat(round.mrCreatedAt()).isGreaterThan(1_000L);
         assertThat(round.lastPolledAt()).isZero();
+        assertThat(round.primary().mrUrl()).isEqualTo("https://host/mr/9");
+    }
+
+    /**
+     * Another round shipped onto the same request never leaves CI_POLLING, so the row would be dropped as a
+     * keep-alive — and a human reading the history would see one round where there were three.
+     */
+    @Test
+    void recordsSomethingDoneToTheTaskEvenWhenItsStatusDoesNotChange() {
+        TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .history(List.of(new StatusChange(TaskStatus.CI_POLLING, 1_000, null))).build();
+
+        TaskState again = polling.withStatus(TaskStatus.CI_POLLING, "review request: https://host/mr/9", true);
+
+        assertThat(again.history()).hasSize(2);
+        assertThat(again.statusSince()).isEqualTo(again.history().getLast().at());
+    }
+
+    @Test
+    void dropsARepeatedStatusATaskOnlyKeepsSayingAboutItself() {
+        TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .history(List.of(new StatusChange(TaskStatus.CI_POLLING, 1_000, null))).build();
+
+        TaskState again = polling.withStatus(TaskStatus.CI_POLLING, "still polling");
+
+        assertThat(again.history()).hasSize(1);
     }
 
     @Test

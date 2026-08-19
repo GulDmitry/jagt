@@ -17,10 +17,10 @@ registry, one folder. If something fits no kind, the kind is missing — add a k
 | Kind | Its one job | State |
 |---|---|---|
 | `task/` | the task record and the file it lives in | built (`TaskState`, `StateService`) |
-| `flow/` | which status allows which capability, and what each outcome leads to | planned — legality is in `Move`, transitions are scattered across four classes |
-| `capability/` | one thing that can be done to a task | partial — declared in `TaskAction`/`GlobalCommand`, executed by a switch |
+| `flow/` | which status allows what, and where each outcome leads | built — rules, engine, reports; `TaskStatus` still in `model/` |
+| `capability/` | one thing that can be done to a task | built — one class per verb, none of them naming a status |
 | `job/` | work that runs with nobody watching | built (`Job`, `Jobs`, one ticker) — the five job classes still live in `service/` |
-| `notify/` | something a human must be told | partial — transport only, no notification record |
+| `notify/` | something a human must be told | built (`Notification`, `Notifier`, `Notifications`) — one channel so far, the desktop |
 | `surface/` | who is asking: console, board, MCP | built, spread over three packages |
 
 Drivers are not a kind. They are what a kind needs from the world: an interface the inner rings declare
@@ -51,11 +51,15 @@ A capability does its work and reports an OUTCOME. It never names a status and n
 owns the transition, and it is the only writer.
 
 ```
-Capability:  Outcome run(Target)            // no TaskStatus in this file
-Outcome:     OK | NOTHING | QUESTION | CONFLICT | PARTIAL  + message
-FlowRules:   allow(DEPLOY).from(<statuses>).when(<guard>).on(OK, DEPLOYED).on(CONFLICT, DEPLOY_CONFLICT)
-FlowEngine:  rules.allows? -> capability.run -> rules.next(outcome) -> ONE status write
+TaskCapability:  Outcome run(taskId)                    // no TaskStatus in this file
+Outcome:         OK | RELAYED | CONFLICT | PARTIAL | GONE, + the sentence and the stamp
+FlowRules:       allow(DEPLOY).from(<statuses>).when(<guard>).on(OK, DEPLOYED).on(CONFLICT, DEPLOY_CONFLICT)
+FlowEngine:      rules.allows? -> capability.run -> rules.next(outcome) -> ONE status write
+FlowReports:     the second door — a status the task itself reports, same table, same refusals
 ```
+
+Two doors, one table. PARTIAL is the only outcome that refuses: a half-written shared branch is stamped on the
+task first and thrown second, because a sentence in a console nobody scrolled back to is not a record.
 
 ## Where a new thing goes
 

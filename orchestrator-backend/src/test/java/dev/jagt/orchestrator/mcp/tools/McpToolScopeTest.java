@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.mcp.McpTools;
 import dev.jagt.orchestrator.mcp.ToolHandler;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
-import dev.jagt.orchestrator.service.DeployService;
+import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskRetirement;
@@ -34,7 +34,7 @@ class McpToolScopeTest {
 
     private final StateService stateService = mock(StateService.class);
     private final CallerScope scope = new CallerScope(stateService);
-    private final DeployService deploys = mock(DeployService.class);
+    private final CommandService commands = mock(CommandService.class);
     private final TaskRetirement retirement = mock(TaskRetirement.class);
     private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
 
@@ -52,12 +52,12 @@ class McpToolScopeTest {
     @ParameterizedTest
     @ValueSource(strings = {"deploy_task", "revert_task"})
     void refusesASubAgentReachingForTheToolsThatWriteASharedBranch(String tool) {
-        ToolHandler handler = declared(new DeployTools(deploys, scope)).get(tool);
+        ToolHandler handler = declared(new DeployTools(commands, scope)).get(tool);
 
         assertThatThrownBy(() -> handler.call(args("{\"taskId\":\"ABC-1\"}"), "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(tool + " is Master-only");
-        verifyNoInteractions(deploys);
+        verifyNoInteractions(commands);
     }
 
     @Test

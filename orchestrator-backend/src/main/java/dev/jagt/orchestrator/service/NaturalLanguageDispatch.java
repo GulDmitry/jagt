@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.model.ActionOrigin;
 import dev.jagt.orchestrator.model.LaunchRequest;
 import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskView;
+import dev.jagt.orchestrator.flow.TaskView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

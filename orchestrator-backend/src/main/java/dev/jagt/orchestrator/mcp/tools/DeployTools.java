@@ -3,7 +3,8 @@ package dev.jagt.orchestrator.mcp.tools;
 import dev.jagt.orchestrator.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.mcp.McpTools;
 import dev.jagt.orchestrator.mcp.CallerScope;
-import dev.jagt.orchestrator.service.DeployService;
+import dev.jagt.orchestrator.model.TaskAction;
+import dev.jagt.orchestrator.service.CommandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +15,7 @@ import static dev.jagt.orchestrator.mcp.tools.ToolArgs.text;
 @RequiredArgsConstructor
 public class DeployTools implements McpTools {
 
-    private final DeployService deploys;
+    private final CommandService commands;
     private final CallerScope callerScope;
 
     @Override
@@ -44,11 +45,11 @@ public class DeployTools implements McpTools {
 
     private String deploy(String taskId, String callerTaskId) {
         callerScope.requireMaster(callerTaskId, "deploy_task");
-        return deploys.deploy(taskId);
+        return commands.execute(taskId, TaskAction.DEPLOY);
     }
 
     private String revert(String taskId, String callerTaskId) {
         callerScope.requireMaster(callerTaskId, "revert_task");
-        return deploys.revert(taskId);
+        return commands.execute(taskId, TaskAction.REVERT);
     }
 }

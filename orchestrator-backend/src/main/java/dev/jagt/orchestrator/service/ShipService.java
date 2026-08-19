@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.codehost.CodeHost;
 import dev.jagt.orchestrator.model.MergeRequestRef;
 import dev.jagt.orchestrator.model.MergeRequestSpec;
-import dev.jagt.orchestrator.model.Move;
+import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.model.ReviewRequestTitle;
 import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
@@ -43,10 +43,10 @@ public class ShipService {
     /** One ship at a time per task: two clicks in a row would push and call the host twice for nothing. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
-    public String ship(String taskIdOrAlias) {
+    public Outcome ship(String taskIdOrAlias) {
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
         if (!inFlight.add(taskId)) {
-            return "ship " + taskId + ": already running — wait for it to finish";
+            return Outcome.nothing("ship " + taskId + ": already running — wait for it to finish");
         }
         try {
             return shipExclusively(taskId);
@@ -55,14 +55,13 @@ public class ShipService {
         }
     }
 
-    private String shipExclusively(String taskId) {
+    private Outcome shipExclusively(String taskId) {
         TaskState task = stateService.task(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
         ConfigService.ConfigFile config = configService.load();
         // ANY repository's request makes another round possible, which is the same question the projection asks
         // to OFFER the ship — the gate and the button must not answer it differently.
         boolean hasRequest = task.hasReviewRequest();
-        requireShippable(taskId, task.status(), hasRequest, sessions.agentLive(taskId));
 
         String title = ReviewRequestTitle.expand(config.codeReview().mrTitlePatternOrDefault(), taskId,
                 task.title());
@@ -89,7 +88,7 @@ public class ShipService {
         return shipOverRest(taskId, task, config, hosts, title);
     }
 
-    private String shipOverRest(String taskId, TaskState task, ConfigService.ConfigFile config,
+    private Outcome shipOverRest(String taskId, TaskState task, ConfigService.ConfigFile config,
                                 Map<String, CodeHost> hosts, String title) {
         Map<String, String> requests = new LinkedHashMap<>();
         List<String> reported = new ArrayList<>();
@@ -112,8 +111,10 @@ public class ShipService {
         // A ROUND, not just a status: recorded in history and re-arming the auto-review window even when the
         // status was already CI_POLLING, which is the case for every round after the first.
         stateService.updateTask(taskId, state -> state.withReviewRound(requests));
-        return "ship " + taskId + ": " + String.join("; ", reported) + "; CI_POLLING"
-                + relayDraftedReplies(taskId, Path.of(task.worktreePath()), config);
+        String primary = requests.getOrDefault(task.primary().project(), requests.values().iterator().next());
+        return Outcome.ok("ship " + taskId + ": " + String.join("; ", reported) + "; CI_POLLING"
+                + relayDraftedReplies(taskId, Path.of(task.worktreePath()), config),
+                "review request: " + primary);
     }
 
     /** What one repository's share of a ship produced. */
@@ -159,14 +160,13 @@ public class ShipService {
     /**
      * No code host for this repository, so the agent is asked to push and open the request itself.
      */
-    private String relayToAgent(String taskId, TaskState task, ConfigService.ConfigFile config, String title,
+    private Outcome relayToAgent(String taskId, TaskState task, ConfigService.ConfigFile config, String title,
                                String targetBranch, boolean firstShip) {
         sessions.writeTaskContext(taskId, shipInstruction(firstShip, title, taskId, targetBranch,
                 repliesStep(config)));
-        // SHIPPING says "underway": the status only reaches CI_POLLING when the agent reports the link back.
-        stateService.updateTask(taskId, state -> state.withStatus(TaskStatus.SHIPPING, "shipping"));
-        return "ship " + taskId + ": relayed to the agent (no code host); SHIPPING until it reports the"
-                + " request";
+        // Handed over, not done: the status only reaches CI_POLLING when the agent reports the link back.
+        return Outcome.relayed("ship " + taskId + ": relayed to the agent (no code host); SHIPPING until it"
+                + " reports the request", "shipping");
     }
 
     /**
@@ -187,16 +187,6 @@ public class ShipService {
         return "; drafted replies relayed to the agent";
     }
 
-    private static void requireShippable(String taskId, TaskStatus status, boolean hasRequest,
-                                         boolean agentLive) {
-        if (Move.shippable(status, agentLive, hasRequest)) {
-            return;
-        }
-        throw new IllegalStateException(status == TaskStatus.SHIPPING
-                ? "ship " + taskId + ": a ship is already in flight; `focus` to watch it."
-                : "ship " + taskId + ": cannot ship a " + status
-                        + " task — needs IN_PROGRESS, REVIEW_PENDING, or an open request.");
-    }
 
     private static String describe(GitService.Commit commit) {
         return commit.created() ? commit.changedFiles() + " file(s)" : "no new commit";

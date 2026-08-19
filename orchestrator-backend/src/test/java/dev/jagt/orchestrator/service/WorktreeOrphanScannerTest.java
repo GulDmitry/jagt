@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.model.ProjectConfig;
 import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notifications;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -80,14 +80,14 @@ class WorktreeOrphanScannerTest {
     @Test
     void staysSilentAtStartupWhenNothingIsRotting(@TempDir Path root) throws IOException {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
-        UserNotifier notifier = mock(UserNotifier.class);
+        Notifications notifications = mock(Notifications.class);
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
 
-        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifier).run();
+        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifications).run();
 
-        verifyNoInteractions(notifier);
+        verifyNoInteractions(notifications);
     }
 
     @Test
@@ -120,7 +120,7 @@ class WorktreeOrphanScannerTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
                 .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(copyGlobs)));
-        return new WorktreeOrphanScanner(config, stateWith(root, tasks), mock(UserNotifier.class));
+        return new WorktreeOrphanScanner(config, stateWith(root, tasks), mock(Notifications.class));
     }
 
     private static StateService stateWith(Path root, Map<String, TaskState> tasks) {

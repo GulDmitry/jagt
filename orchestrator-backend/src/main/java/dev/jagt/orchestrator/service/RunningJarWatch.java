@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
 import dev.jagt.orchestrator.job.Job;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,7 @@ public class RunningJarWatch implements Job {
     record Stamp(long lastModified, long size) {
     }
 
-    private final UserNotifier userNotifier;
+    private final Notifications notifications;
     /** Null when this JVM is not running from a jar at all (an IDE, a test, `bootRun`) — then there is nothing to watch. */
     private final Path jar;
     private final Stamp atStartup;
@@ -52,12 +53,12 @@ public class RunningJarWatch implements Job {
     // @Autowired disambiguates: the second constructor exists so a test can point the watch at a file it
     // controls, and with two of them Spring otherwise refuses to choose (same reason AutoReviewScheduler has it).
     @org.springframework.beans.factory.annotation.Autowired
-    public RunningJarWatch(UserNotifier userNotifier) {
-        this(userNotifier, ownJar());
+    public RunningJarWatch(Notifications notifications) {
+        this(notifications, ownJar());
     }
 
-    RunningJarWatch(UserNotifier userNotifier, Path jar) {
-        this.userNotifier = userNotifier;
+    RunningJarWatch(Notifications notifications, Path jar) {
+        this.notifications = notifications;
         this.jar = jar;
         this.atStartup = stamp(jar);
     }
@@ -76,8 +77,8 @@ public class RunningJarWatch implements Job {
                 + " will fail with NoClassDefFoundError — /status and /stats typically go 500 first."
                 + " Restart from a copy the build does not touch: ./gradlew stageJar && java -jar"
                 + " build/libs/jagt-run.jar. Agents keep running in tmux.", jar);
-        userNotifier.notify("jagt · restart needed",
-                "the running jar was rebuilt — parts of the board will fail until you restart");
+        notifications.send(Notification.install("restart needed",
+                "the running jar was rebuilt — parts of the board will fail until you restart"));
     }
 
     /**

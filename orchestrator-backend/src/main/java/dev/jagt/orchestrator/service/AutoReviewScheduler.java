@@ -5,7 +5,8 @@ import dev.jagt.orchestrator.model.AutoReviewWatch;
 import dev.jagt.orchestrator.model.TaskLabel;
 import dev.jagt.orchestrator.model.TaskState;
 import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import dev.jagt.orchestrator.job.Job;
@@ -54,7 +55,7 @@ public class AutoReviewScheduler implements Job {
     private final StateService stateService;
     private final ConfigService configService;
     private final ReviewSweepService reviewSweep;
-    private final UserNotifier userNotifier;
+    private final Notifications notifications;
     private final Executor executor;
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
     private final Set<String> windowElapsedNotified = ConcurrentHashMap.newKeySet();
@@ -63,10 +64,10 @@ public class AutoReviewScheduler implements Job {
     // Executor), and with two constructors Spring otherwise demands a no-arg default and fails to start.
     @Autowired
     public AutoReviewScheduler(StateService stateService, ConfigService configService,
-                               ReviewSweepService reviewSweep, UserNotifier userNotifier) {
+                               ReviewSweepService reviewSweep, Notifications notifications) {
         // Single thread: a sweep spawns a headless Claude (minutes); serialising them bounds the cost and
         // keeps the 60s tick from ever piling up overlapping polls.
-        this(stateService, configService, reviewSweep, userNotifier,
+        this(stateService, configService, reviewSweep, notifications,
                 Executors.newSingleThreadExecutor(r -> {
                     Thread t = new Thread(r, "auto-review");
                     t.setDaemon(true);
@@ -75,11 +76,11 @@ public class AutoReviewScheduler implements Job {
     }
 
     AutoReviewScheduler(StateService stateService, ConfigService configService, ReviewSweepService reviewSweep,
-                        UserNotifier userNotifier, Executor executor) {
+                        Notifications notifications, Executor executor) {
         this.stateService = stateService;
         this.configService = configService;
         this.reviewSweep = reviewSweep;
-        this.userNotifier = userNotifier;
+        this.notifications = notifications;
         this.executor = executor;
     }
 
@@ -105,7 +106,8 @@ public class AutoReviewScheduler implements Job {
                     // Keyed by the WINDOW, not the task: shipping another round starts a new window without
                     // ever leaving CI_POLLING, and that round deserves its own reminder.
                     if (windowElapsedNotified.add(taskId + "@" + task.mrCreatedAt())) {
-                        userNotifier.notify("jagt · " + taskId, "auto-review window elapsed — `sweep` manually");
+                        notifications.send(Notification.fromAgent(taskId, "auto-review",
+                                "window elapsed — `sweep` manually"));
                     }
                 }
                 case POLL -> poll(taskId, task.alias());

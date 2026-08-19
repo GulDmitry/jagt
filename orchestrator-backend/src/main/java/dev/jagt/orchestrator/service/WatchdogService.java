@@ -2,7 +2,8 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.job.Job;
@@ -40,7 +41,7 @@ public class WatchdogService implements Job {
 
 
     private final StateService stateService;
-    private final UserNotifier userNotifier;
+    private final Notifications notifications;
     private final OrchestratorProperties properties;
     private final TmuxService tmuxService;
     private final ConfigService configService;
@@ -87,8 +88,8 @@ public class WatchdogService implements Job {
             lastAlertAt.put(taskId, now);
             long silentMinutes = (now - task.lastActiveTimestamp()) / 60_000;
             log.warn("Watchdog: task {} silent for {} min", taskId, silentMinutes);
-            userNotifier.notify("Orchestrator Alert",
-                    "Agent " + taskId + " unresponsive (" + silentMinutes + " min)");
+            notifications.send(Notification.watchdog(taskId, "agent unresponsive",
+                    "silent for " + silentMinutes + " min"));
         });
     }
 }

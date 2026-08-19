@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.notify.Notification;
+import dev.jagt.orchestrator.notify.Notifications;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -9,8 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -23,55 +23,57 @@ import static org.mockito.Mockito.verifyNoInteractions;
  */
 class RunningJarWatchTest {
 
-    private final UserNotifier notifier = mock(UserNotifier.class);
+    private final Notifications notifications = mock(Notifications.class);
 
     @Test
     void saysSoOnceWhenTheJarIsRewrittenUnderTheRunningProcess(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "first build");
-        RunningJarWatch watch = new RunningJarWatch(notifier, jar);
+        RunningJarWatch watch = new RunningJarWatch(notifications, jar);
 
         watch.run();                                            // nothing changed yet
-        verifyNoInteractions(notifier);
+        verifyNoInteractions(notifications);
 
         Files.writeString(jar, "a different build entirely");
         Files.setLastModifiedTime(jar, FileTime.fromMillis(System.currentTimeMillis() + 5_000));
         watch.run();
         watch.run();                                            // the condition persists until a restart
 
-        verify(notifier, times(1)).notify(contains("restart"), anyString());
+        verify(notifications, times(1)).send(argThat(sent -> sent.topic() == Notification.Topic.INSTALL
+                && sent.title().contains("restart")));
     }
 
     @Test
     void staysQuietWhileTheJarIsUntouched(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "one build");
-        RunningJarWatch watch = new RunningJarWatch(notifier, jar);
+        RunningJarWatch watch = new RunningJarWatch(notifications, jar);
 
         watch.run();
         watch.run();
 
-        verifyNoInteractions(notifier);
+        verifyNoInteractions(notifications);
     }
 
     /** A `clean` removes the file: that is a rewrite as far as class loading is concerned. */
     @Test
     void treatsAVanishedJarAsARewrite(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
-        RunningJarWatch watch = new RunningJarWatch(notifier, jar);
+        RunningJarWatch watch = new RunningJarWatch(notifications, jar);
         Files.delete(jar);
 
         watch.run();
 
-        verify(notifier).notify(contains("restart"), anyString());
+        verify(notifications).send(argThat(sent -> sent.topic() == Notification.Topic.INSTALL
+                && sent.title().contains("restart")));
     }
 
     /** Run from an IDE, a test or `bootRun` there is no jar — the watch must be inert, not noisy. */
     @Test
     void watchesNothingWhenTheProcessDidNotStartFromAJar() {
-        RunningJarWatch watch = new RunningJarWatch(notifier, null);
+        RunningJarWatch watch = new RunningJarWatch(notifications, null);
 
         watch.run();
 
-        verifyNoInteractions(notifier);
+        verifyNoInteractions(notifications);
     }
 
     /**
