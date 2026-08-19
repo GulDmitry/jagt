@@ -226,6 +226,17 @@ class BoardPageTest {
     }
 
     @Test
+    void theObviousActionKeepsItsLabelReadableEvenWhenItSitsInTheQuietRow() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .actions.tool button.primary")).hasText("Focus");
+        assertThat(page.locator("article .actions.tool button.primary")).hasCSS("color", "rgb(255, 255, 255)");
+    }
+
+    @Test
     void hoveringTheRevertButtonShowsThatItTakesOnlyTheLastDeployBackOut() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.DEPLOYED).alias("a1").mrUrl("https://host.example/mr/7")

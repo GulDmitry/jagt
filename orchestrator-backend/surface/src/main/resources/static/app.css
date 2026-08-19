@@ -134,7 +134,7 @@ a { color: var(--accent); }
 .actions button { font-size: 12px; padding: 3px 8px; }
 /* Recedes: nothing in this row writes a branch or ends a session. */
 .actions.tool { margin-top: 4px; }
-.actions.tool button { color: var(--muted); }
+.actions.tool button:not(.primary) { color: var(--muted); }
 .empty { color: var(--muted); padding: 0 16px 16px; }
 
 #show-log {
