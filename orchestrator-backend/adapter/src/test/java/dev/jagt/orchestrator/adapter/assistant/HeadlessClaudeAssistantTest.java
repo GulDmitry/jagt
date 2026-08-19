@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.port.Processes;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,7 +29,6 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty().withPermissionMode("bypassPermissions"));
 
         assistant.readTicket("ABC-42");
@@ -46,7 +44,6 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty().withPermissionMode("bypassPermissions")
                         .withAllowedTools(List.of("mcp__acme_jira", "mcp__acme_gitlab")));
 
@@ -64,7 +61,6 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty()
                         .withMcpConfig("{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"));
 
@@ -83,8 +79,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(), AssistantProperties.empty());
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
 
@@ -100,7 +95,6 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty().withModel("haiku"));
 
         assistant.readTicket("ABC-42");
@@ -116,7 +110,6 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty().withModel(""));
 
         assistant.readTicket("ABC-42");
@@ -132,7 +125,6 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
@@ -153,7 +145,6 @@ class HeadlessClaudeAssistantTest {
                  "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
                 "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}""", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-42").facts();
@@ -173,7 +164,6 @@ class HeadlessClaudeAssistantTest {
                  "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
                 \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}""", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-7").facts();
@@ -193,7 +183,6 @@ class HeadlessClaudeAssistantTest {
                 "cache_read_input_tokens":0,"output_tokens":40},
                  "result":"the tracker MCP is not available"}""", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
-                OrchestratorProperties.defaults(),
                 AssistantProperties.empty());
 
         var answer = assistant.readReview("https://host/mr/9");

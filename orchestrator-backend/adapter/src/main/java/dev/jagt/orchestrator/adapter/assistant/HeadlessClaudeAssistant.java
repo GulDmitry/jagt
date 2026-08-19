@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.port.Processes;
 
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -75,7 +74,6 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
 
     private final ProcessRunner processRunner;
     private final ClaudeProperties claude;
-    private final OrchestratorProperties properties;
     private final AssistantProperties assistant;
     private final JsonMapper mapper = new JsonMapper();
 
