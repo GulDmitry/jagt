@@ -5,6 +5,9 @@ IntelliJ IDEA via the `idea` CLI), Java 25 / Spring Boot 4.x — but every OS- a
 behind a strategy interface (see PLUGGABLE BY DESIGN), so a Linux port is new driver impls, not a fork.
 Jackson is v3 (`tools.jackson.*` packages, unchecked exceptions); annotations stay `com.fasterxml.jackson.annotation`.
 Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven or Kotlin (incl. `.kts`).
+`ARCHITECTURE.md` is the map — what KINDS of thing jagt has and where a new one goes, with each kind's state
+(built / partial / planned) on it. Read it before adding a kind of thing this file has no rule for. This file
+is reachable as `AGENTS.md` too, and that is the name any agent-facing document uses.
 
 ## Components
 - `orchestrator-backend/` — Spring Boot app ("The Brain") AND the Master console itself: state manager,
