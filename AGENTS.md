@@ -98,14 +98,14 @@ link to it, because no file here is named after one vendor.
     agent), and `Move` SORTS by that group rather than trusting the order somebody appended in, so a new verb
     lands on the right side of the card by declaring its group and nothing else. The board renders one row per
     group and reads which groups exist off the wire — a page that knew the names would be a second answer. Shared text lives in
-    `service/CommandReference` (the grammar) and `StateViews` (dashboard + stats), so neither surface renders its
+    `command/CommandReference` (the grammar) and `command/StateViews` (dashboard + stats), so neither surface renders its
     own version. The reports open in a `<dialog>` over the board, never a new page — and EVERY dialog closes three ways: Escape, its own button, and the dimmed area around it, which is the click a human makes first. The backdrop close is guarded by where the press STARTED, so dragging a selection out of a report does not dismiss what is being read. ONE deliberate exception to
     parity: `quit` is console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill),
     not to a browser button, and nothing is lost by that since agents live in tmux. A shutdown endpoint was built and removed;
     do not add one back.
   - "WHAT COMMANDS EXIST" HAS EXACTLY TWO ANSWERS, AND BOTH ARE DECLARATIONS. A verb a task owns is a
     `flow/TaskAction` row, gated by `Move`, executed by `CommandService`. A verb no task owns is a
-    `service/GlobalCommand` bean (`service/commands/*`, collected by `GlobalCommands`): id, hint, usage, whether
+    `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`): id, hint, usage, whether
     its answer is a REPORT, whether it is console-only. `CommandReference` RENDERS both — `help`'s text and the
     palette's verb list — so a hint is written once; `GrammarDispatch` LOOKS A TYPED WORD UP in the two instead of
     switching on it; and `GET /api/commands/{id}` serves any report, so declaring another one needs no endpoint, no
@@ -207,7 +207,7 @@ link to it, because no file here is named after one vendor.
   ran and when it runs next — work nobody watches is visible BEFORE it acts, not only after. An adapter's own
   workaround is a job THAT ADAPTER contributes (the IDEA recent-projects cleanup), never a permanent timer for
   everybody.
-- WHAT JAGT DID UNATTENDED IS READ BACK FROM ITS OWN LOG, never from a second store: `service/ActivityReport`
+- WHAT JAGT DID UNATTENDED IS READ BACK FROM ITS OWN LOG, never from a second store: `command/ActivityReport`
   tails `logging.file.name` (structured ECS JSON), keeps the entries that carry a `task` key-value and renders
   them newest first for the `activity` verb and the board's Activity dialog. The convention it depends on is the
   one already in force — INFO for work nobody watched, nothing for a button a human pressed — so an in-memory
@@ -441,7 +441,7 @@ link to it, because no file here is named after one vendor.
   missing binary is no longer an `IOException`, so `runDetached` FAILS the launch when the wrapper exits
   non-zero at once — without that, no ttyd installed reads as "no web terminal configured".
 - NO GUI/keystroke automation, ever: System Events keystrokes race with the human typing (they land in
-  whatever is focused). Agent terminals are tmux windows (`TmuxService`); visibility comes from one Warp
+  whatever is focused). Agent terminals are windows in a session host (`port/SessionHost`, tmux today); visibility comes from one Warp
   window opened via `open warp://launch/jagt-agents` (launch config generated into
   `~/.warp/launch_configurations/`) whenever `tmux list-clients` shows nobody attached.
 - PLUGGABLE BY DESIGN — this is a FIRM architectural invariant, do not erode it. jagt targets Linux +
