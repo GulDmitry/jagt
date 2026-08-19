@@ -159,8 +159,9 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   `surface/mcp/McpToolRegistry`, implementations under `surface/mcp/tools`), and every other caller takes the small service it
   actually uses — `AgentSessions` (tmux window, focus, kill, relay), `TaskProvisioning` + `WorktreeSetup` +
   `SubAgentBriefing` (creation), `AgentStatusReports` (what an agent reports), `IdeLauncher`, `DeployService`
-  (the only shared-branch writes), `TaskRetirement`, `TaskResume`, `TaskOperations` (the per-task verbs a
-  surface offers). `surface/mcp/CallerScope` owns the X-Working-Directory rule for all of them.
+  (the only shared-branch writes), `TaskRetirement`, `TaskResume`. The per-task verbs are a class each under
+  `capability/`, reached through the flow engine. `surface/mcp/CallerScope` owns the X-Working-Directory rule for
+  all of them.
 - TWO-TIER DISPATCH: tier 1 is the grammar (typed command / board button) and it stays LLM-free. Tier 2 is
   `service/NaturalLanguageDispatch` — free text (an unknown console line, or the board's ⌘K palette →
   `POST /api/interpret`) goes to a model that only PROPOSES one grammar command; the dispatcher validates the
