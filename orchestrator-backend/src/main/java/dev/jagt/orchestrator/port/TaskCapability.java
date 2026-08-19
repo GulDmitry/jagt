@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.capability;
+package dev.jagt.orchestrator.port;
 
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;

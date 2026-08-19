@@ -39,7 +39,7 @@ import java.util.function.UnaryOperator;
  */
 @Service
 @Slf4j
-public class StateService {
+public class StateService implements dev.jagt.orchestrator.port.TaskStore {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record StateFile(Map<String, TaskState> tasks) {
@@ -110,6 +110,7 @@ public class StateService {
         return read().tasks();
     }
 
+    @Override
     public Optional<TaskState> task(String taskId) {
         return Optional.ofNullable(tasks().get(taskId));
     }
@@ -119,6 +120,7 @@ public class StateService {
      * belongs here and every caller that accepts human input goes through this one place. An unknown
      * value is returned unchanged, so callers still produce their own "not found" error.
      */
+    @Override
     public String canonicalTaskId(String idOrAlias) {
         if (idOrAlias == null || task(idOrAlias).isPresent()) {
             return idOrAlias;
@@ -137,6 +139,7 @@ public class StateService {
         });
     }
 
+    @Override
     public boolean updateTask(String taskId, UnaryOperator<TaskState> update) {
         AtomicBoolean found = new AtomicBoolean();
         mutate(file -> {

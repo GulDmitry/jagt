@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.board;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
@@ -13,7 +14,7 @@ import dev.jagt.orchestrator.adapter.TtydWebTerminal;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
-import dev.jagt.orchestrator.service.Refusal;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import org.junit.jupiter.api.AfterAll;

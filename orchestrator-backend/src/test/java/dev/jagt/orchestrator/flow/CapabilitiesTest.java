@@ -1,5 +1,8 @@
-package dev.jagt.orchestrator.capability;
+package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.port.TaskCapability;
+
+import dev.jagt.orchestrator.port.TaskCapability;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;
 import org.junit.jupiter.api.Test;

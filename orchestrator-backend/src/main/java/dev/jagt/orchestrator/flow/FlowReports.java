@@ -2,9 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.service.StateService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import dev.jagt.orchestrator.port.TaskStore;
 
 import java.util.function.UnaryOperator;
 
@@ -13,11 +11,13 @@ import java.util.function.UnaryOperator;
  * over MCP and a review round jagt read on the task's behalf both come through here, so the machine has no
  * entrance without a rule on it — a task cannot talk itself onto a shared branch, out of one, or closed.
  */
-@Service
-@RequiredArgsConstructor
 public class FlowReports {
 
-    private final StateService stateService;
+    public FlowReports(TaskStore tasks) {
+        this.tasks = tasks;
+    }
+
+    private final TaskStore tasks;
 
     public boolean report(String taskId, TaskStatus status, String message) {
         return report(taskId, status, message, UnaryOperator.identity());
@@ -31,6 +31,6 @@ public class FlowReports {
         if (!FlowRules.reportable(status)) {
             throw new IllegalArgumentException(status + " is jagt's to set, not a task's to report");
         }
-        return stateService.updateTask(taskId, task -> alsoRecord.apply(task.withStatus(status, message)));
+        return tasks.updateTask(taskId, task -> alsoRecord.apply(task.withStatus(status, message)));
     }
 }

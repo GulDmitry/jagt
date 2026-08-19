@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.MasterAssistant.CommandProposal;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.LaunchRequest;

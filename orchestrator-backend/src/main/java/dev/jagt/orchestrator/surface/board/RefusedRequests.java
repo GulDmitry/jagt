@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.service.Refusal;
+import dev.jagt.orchestrator.flow.Refusal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

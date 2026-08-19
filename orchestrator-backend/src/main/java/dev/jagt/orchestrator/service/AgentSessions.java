@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AgentSessions {
+public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     private final ConfigService configService;
     private final StateService stateService;
@@ -62,6 +62,7 @@ public class AgentSessions {
     }
 
     /** Whether the task's agent is alive right now — the one question a projection deliberately does not ask. */
+    @Override
     public boolean agentLive(String taskId) {
         return tmuxService.taskWindowState(agentSession(configService.load(), taskId), taskId)
                 == TmuxService.WindowState.AGENT_RUNNING;

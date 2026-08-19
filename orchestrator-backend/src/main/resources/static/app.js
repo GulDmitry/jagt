@@ -610,6 +610,19 @@ function showReport(title, text) {
 }
 
 document.getElementById('close-report').onclick = () => report.close();
+
+// The dimmed area around a dialog is part of it, and a modal that answers only its own button reads as stuck.
+// Which element the press STARTED on decides: selecting text inside and releasing outside is not a request to
+// close what you were reading.
+function closeOnBackdrop(dialog) {
+  let pressedBackdrop = false;
+  dialog.addEventListener('mousedown', (event) => { pressedBackdrop = event.target === dialog; });
+  dialog.addEventListener('click', (event) => {
+    if (pressedBackdrop && event.target === dialog) dialog.close();
+  });
+}
+
+closeOnBackdrop(report);
 document.getElementById('show-log').onclick = () => showReport('log — this session', messages.join('\n'));
 
 async function text(path, options) {
@@ -644,6 +657,7 @@ async function openTerminal(task) {
 }
 
 document.getElementById('close-terminal').onclick = () => terminalDialog.close();
+closeOnBackdrop(terminalDialog);
 // A loaded frame stays attached, and tmux sizes every window to its smallest client — including one nobody
 // is looking at.
 terminalDialog.addEventListener('close', () => { terminalFrame.src = 'about:blank'; });

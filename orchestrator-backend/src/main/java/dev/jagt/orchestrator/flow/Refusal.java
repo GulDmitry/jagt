@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.flow;
 
 /**
  * A refusal a caller may need to ACT on, not merely show. The sentence stays the whole answer for a human; the
