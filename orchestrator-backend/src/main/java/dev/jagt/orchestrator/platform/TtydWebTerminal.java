@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.platform;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.WebTerminalProperties;
 import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.startup.StartupCheck;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class TtydWebTerminal {
+public class TtydWebTerminal implements StartupCheck {
 
     /** Long enough to catch a server that cannot bind, short enough not to be felt on the first click. */
     private static final Duration START_GRACE = Duration.ofMillis(400);
@@ -44,6 +45,15 @@ public class TtydWebTerminal {
     private final Map<String, Server> servers = new LinkedHashMap<>();
 
     private record Server(int port, Process process) {
+    }
+
+    @Override
+    public List<String> problems() {
+        return properties.enabled() && Executables.unresolved(properties.command())
+                ? List.of("orchestrator.web-terminal.command: '" + properties.command() + "' is not on PATH"
+                        + " nor in the usual install directories, and the web terminal is enabled. Install"
+                        + " ttyd, set the key to a full path, or turn the terminal off.")
+                : List.of();
     }
 
     /**

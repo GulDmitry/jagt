@@ -20,6 +20,12 @@ class ExecutablesTest {
     }
 
     @Test
+    void answersForABareSpawnByLookingAtPathAndNowhereElse() {
+        assertThat(Executables.onPath("git", "/usr/bin", present("/usr/bin/git"))).isTrue();
+        assertThat(Executables.onPath("git", "/usr/sbin", present("/opt/homebrew/bin/git"))).isFalse();
+    }
+
+    @Test
     void prefersPathBecauseThatIsWhatMakesItPortable() {
         assertThat(Executables.resolve("tmux", "/opt/custom/bin:/usr/bin",
                 present("/opt/custom/bin/tmux", "/usr/bin/tmux")))

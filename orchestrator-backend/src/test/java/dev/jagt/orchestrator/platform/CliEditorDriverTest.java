@@ -27,6 +27,17 @@ class CliEditorDriverTest {
             </map></option></component></application>""";
 
     @Test
+    void refusesToStartNamingBothEditorKeysWhenNeitherLauncherIsInstalled() {
+        CliEditorDriver driver = new CliEditorDriver(mock(ProcessRunner.class),
+                OrchestratorProperties.defaults().withEditorCommand(List.of("no-such-editor"))
+                        .withEditorDiffCommand(List.of("no-such-difftool")));
+
+        assertThat(driver.problems())
+                .anySatisfy(problem -> assertThat(problem).contains("orchestrator.editor-command"))
+                .anySatisfy(problem -> assertThat(problem).contains("orchestrator.editor-diff-command"));
+    }
+
+    @Test
     void saysWhichKeyToSetWhenTheConfiguredEditorLauncherIsNowhereToBeFound() {
         ProcessRunner processRunner = mock(ProcessRunner.class);
         CliEditorDriver driver = new CliEditorDriver(processRunner, OrchestratorProperties.defaults()

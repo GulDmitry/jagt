@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.ui;
 
+import dev.jagt.orchestrator.startup.Misconfigured;
 import org.springframework.boot.web.server.PortInUseException;
 
 /**
@@ -16,6 +17,9 @@ public final class StartupFailure {
 
     public static String describe(Throwable failure) {
         for (Throwable cause = failure; cause != null; cause = cause.getCause()) {
+            if (cause instanceof Misconfigured misconfigured) {
+                return misconfigured.getMessage();
+            }
             if (cause instanceof PortInUseException portTaken) {
                 int port = portTaken.getPort();
                 return "jagt cannot start: port " + port + " is already in use — most likely a jagt that is"

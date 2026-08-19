@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.agent;
 
 import dev.jagt.orchestrator.config.CodexProperties;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -14,8 +15,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class CodexAgentRuntimeTest {
 
     private static CodexAgentRuntime runtime(String prompt) {
+        return runtime(prompt, Path.of("/orchestrator-root"));
+    }
+
+    private static CodexAgentRuntime runtime(String prompt, Path orchestratorRoot) {
         return new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt(prompt),
-                CodexProperties.defaults());
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults()
+                        .withRoot(orchestratorRoot.toString())));
     }
 
     @Test
@@ -92,5 +99,19 @@ class CodexAgentRuntimeTest {
         assertThat(worktree.resolve(".mcp.json")).doesNotExist();
         assertThat(worktree.resolve(".claude")).doesNotExist();
         assertThat(worktree.resolve("CLAUDE.md")).doesNotExist();
+    }
+
+    @Test
+    void refusesToStartWithoutTheBridgeItIsTheOnlyRuntimeStillSpawning(@TempDir Path root) {
+        assertThat(runtime("go", root).problems())
+                .anySatisfy(problem -> assertThat(problem).contains("mcp_client.js", "is not there"));
+    }
+
+    @Test
+    void hasNothingToReportAboutTheBridgeOnceItIsThere(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("mcp_client.js"), "// bridge");
+
+        assertThat(runtime("go", root).problems())
+                .noneSatisfy(problem -> assertThat(problem).contains("mcp_client.js"));
     }
 }

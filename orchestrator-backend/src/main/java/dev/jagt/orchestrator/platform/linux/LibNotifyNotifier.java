@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.platform.linux;
 
+import dev.jagt.orchestrator.platform.Executables;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.startup.StartupCheck;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -22,7 +24,7 @@ import java.util.List;
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "linux")
 @Slf4j
-public class LibNotifyNotifier implements UserNotifier {
+public class LibNotifyNotifier implements UserNotifier, StartupCheck {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
@@ -33,7 +35,16 @@ public class LibNotifyNotifier implements UserNotifier {
                              @org.springframework.beans.factory.annotation.Value(
                                      "${orchestrator.notify-send-command:notify-send}") String notifySendCommand) {
         this.processRunner = processRunner;
-        this.notifySendCommand = notifySendCommand;
+        this.notifySendCommand = Executables.resolve(notifySendCommand);
+    }
+
+    @Override
+    public List<String> problems() {
+        return Executables.unresolved(notifySendCommand)
+                ? List.of("orchestrator.notify-send-command: '" + notifySendCommand + "' is not on PATH nor in"
+                        + " the usual install directories — every alert jagt raises would go nowhere. Install"
+                        + " libnotify or set the key to a full path.")
+                : List.of();
     }
 
     @Override

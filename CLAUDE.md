@@ -314,6 +314,18 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
   instruction (2026-08-18), and the console never had a verb for it: housekeeping is not something a human acts
   on mid-flight, and the board is dense enough. Do not add either back. Its startup listener catches everything — an `ApplicationReadyEvent` listener that throws fails the
   whole boot, and a diagnostic must never be able to stop the backend from starting.
+- WHAT IS MISSING IS SAID AT STARTUP, NOT AT THE CLICK THAT NEEDED IT. `startup/StartupValidation` asks every
+  `StartupCheck` before the operator surfaces open and refuses the start with ALL problems at once
+  (`Misconfigured`, printed by `StartupFailure`) — a human fixes one list instead of one item per restart, and
+  each line names the key that fixes it. A check lives NEXT TO the part it answers for, so it exists only when
+  that part was SELECTED and nothing branches on which terminal, agent or host is configured (`CliEditorDriver`,
+  the kitty driver, `TtydWebTerminal`, `LibNotifyNotifier`, `CodexAgentRuntime`); what no implementation can
+  answer for — a `type` that selects NOTHING, the human's `config.json`, jagt's own paths, git and tmux — is a
+  check in `startup`. Two limits are DECISIONS, not gaps: nothing reaches the NETWORK (presence, never validity
+  — a wrong token is the first read's answer, and a laptop offline must still start), and nothing asks a remote
+  about a branch (that is a fetch per project on every start). `orchestrator.startup-checks=false` belongs to
+  test harnesses ONLY — what the checks ask about is the human's machine, and a runner is not one, so every
+  suite and smoke script that boots the app passes it exactly as it passes `open-warp-window=false`.
 - Every MCP tool call from a registered worktree bumps `lastActiveTimestamp` (Watchdog keep-alive).
 - Tomcat's "Error setting socket options" (`SocketException` at `setSoLinger`) is a connection the peer aborted
   between `accept()` and configuring it — a browser pre-connect, the losing half of a Node client's IPv6/IPv4

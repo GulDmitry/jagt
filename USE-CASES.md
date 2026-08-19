@@ -3,6 +3,16 @@
 What jagt does in a given situation, one line each. Append a line when a case turns out to be non-obvious —
 that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.md`; this file is the answers.
 
+## Starting jagt
+
+| Situation | What to run | What happens |
+|---|---|---|
+| Something the setup needs is not installed or not configured | start jagt | It refuses, and lists EVERY problem at once — each naming the key that fixes it. Checked: git and tmux, the configured terminal, the editor launchers, ttyd when the web terminal is on, the projects in `config.json`, the stdio bridge when the agent is Codex, and a code host or tracker that was wired. |
+| A project's `path` is missing, is not a git repository, or its `deployBranch` equals its base | start jagt | Refused, naming the project key. What lives on a REMOTE is not checked: a branch would cost a fetch per project on every start. |
+| `code-host.type` / `tracker.type` has a typo, or its token is unset | start jagt | Refused. The old answer was silent: nothing claimed the URL, so every sweep and every `do` fell back to a paid model read and nobody noticed until the bill. |
+| A token is set but wrong, or the host is unreachable | start jagt | NOT detected — no check reaches the network. Presence is what a start can answer; validity is the first read's business. |
+| A suite or a smoke script boots the app on a machine with no desktop | `--orchestrator.startup-checks=false` | Skips the lot. What they ask about is the human's machine, and a runner is not one. |
+
 ## Starting work
 
 | Situation | What to run | What happens |

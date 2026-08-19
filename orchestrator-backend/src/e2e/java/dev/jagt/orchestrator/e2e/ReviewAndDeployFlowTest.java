@@ -67,7 +67,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
  */
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"orchestrator.agent=stub", "orchestrator.open-warp-window=false"})
+        properties = {"orchestrator.agent=stub", "orchestrator.open-warp-window=false",
+                "orchestrator.startup-checks=false"})
 class ReviewAndDeployFlowTest {
 
     private static final String TASK = "ABC-1";

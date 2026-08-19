@@ -12,6 +12,7 @@ import java.net.ServerSocket;
 import java.util.OptionalInt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -27,6 +28,24 @@ import static org.mockito.Mockito.when;
 class TtydWebTerminalTest {
 
     private final ProcessRunner processes = mock(ProcessRunner.class);
+
+    @Test
+    void refusesToStartWhenTheTerminalIsEnabledAndNothingServesIt() {
+        WebTerminalProperties enabled = WebTerminalProperties.defaults().withEnabled(true)
+                .withCommand("no-such-ttyd");
+
+        assertThat(new TtydWebTerminal(processes, enabled, OrchestratorProperties.defaults()).problems())
+                .singleElement(STRING)
+                .contains("orchestrator.web-terminal.command", "no-such-ttyd");
+    }
+
+    @Test
+    void saysNothingAboutAMissingTerminalNobodyAskedFor() {
+        WebTerminalProperties disabled = WebTerminalProperties.defaults().withCommand("no-such-ttyd");
+
+        assertThat(new TtydWebTerminal(processes, disabled, OrchestratorProperties.defaults()).problems())
+                .isEmpty();
+    }
 
     @Test
     void attachesAWritableTerminalToTheTmuxSession() {

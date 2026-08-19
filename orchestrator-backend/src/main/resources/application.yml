@@ -102,5 +102,8 @@ orchestrator:
   tmux-command: tmux
   # Smoke tests pass false, so a run leaves no window behind.
   open-warp-window: true
+  # Refuse to start when a part of the installation is missing, instead of failing at the click that needs it.
+  # A suite that boots the application passes false: what these check is the machine, and a runner is not one.
+  startup-checks: true
   watchdog:
     stale-after: 5m

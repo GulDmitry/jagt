@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.platform;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.startup.StartupCheck;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -15,6 +16,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,10 +28,26 @@ import java.util.regex.Pattern;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class CliEditorDriver implements EditorDriver {
+public class CliEditorDriver implements EditorDriver, StartupCheck {
 
     private final ProcessRunner processRunner;
     private final OrchestratorProperties properties;
+
+    @Override
+    public List<String> problems() {
+        return Stream.of(problems(properties.editorCommand(), "orchestrator.editor-command"),
+                        problems(properties.editorDiffCommand(), "orchestrator.editor-diff-command"))
+                .flatMap(List::stream).toList();
+    }
+
+    private static List<String> problems(List<String> configured, String configKey) {
+        try {
+            launcher(configured, configKey);
+            return List.of();
+        } catch (IllegalStateException missing) {
+            return List.of(missing.getMessage());
+        }
+    }
 
     // Detached: GUI launchers (idea, open -a) may not return until the IDE is ready or the window
     // closes; waiting would time out and then kill the window we just opened.

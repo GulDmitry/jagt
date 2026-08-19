@@ -59,7 +59,7 @@ printf '{
 
 tmux kill-session -t "$SESSION" 2>/dev/null
 tmux new-session -d -s "$SESSION" -x 120 -y 30
-tmux send-keys -t "$SESSION" "ORCHESTRATOR_ROOT=$ROOT $JAVA -jar $JAR --server.port=$PORT --orchestrator.ui=tui --orchestrator.open-warp-window=false" Enter
+tmux send-keys -t "$SESSION" "ORCHESTRATOR_ROOT=$ROOT $JAVA -jar $JAR --server.port=$PORT --orchestrator.ui=tui --orchestrator.open-warp-window=false --orchestrator.startup-checks=false" Enter
 for _ in $(seq 1 40); do curl -s "localhost:$PORT/state" >/dev/null 2>&1 && break; sleep 1; done
 sleep 3
 

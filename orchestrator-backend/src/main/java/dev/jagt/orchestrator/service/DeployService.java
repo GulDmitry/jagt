@@ -311,9 +311,9 @@ public class DeployService {
             throw new IllegalArgumentException("Project '" + target.project()
                     + "' has no deployBranch in config.json — set it to enable deploy");
         }
-        String base = project.baseBranch() == null ? "" : project.baseBranch().replaceFirst("^origin/", "");
-        if (project.deployBranch().equals(base)) {
-            throw new IllegalArgumentException("REFUSED: deployBranch equals the base branch '" + base
+        if (project.deploysIntoTheBaseBranch()) {
+            throw new IllegalArgumentException("REFUSED: deployBranch equals the base branch '"
+                    + project.baseBranchName()
                     + "'. jagt must never merge into the branch tasks are created from — point deployBranch"
                     + " at a downstream branch (e.g. dev).");
         }

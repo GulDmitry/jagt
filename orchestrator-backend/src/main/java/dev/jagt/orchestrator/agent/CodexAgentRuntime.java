@@ -1,12 +1,18 @@
 package dev.jagt.orchestrator.agent;
 
 import dev.jagt.orchestrator.config.CodexProperties;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.platform.Executables;
+import dev.jagt.orchestrator.startup.StartupCheck;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Codex CLI runtime — the second implementation behind {@link AgentRuntime}, selected by
@@ -23,12 +29,27 @@ import java.nio.file.Path;
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent", havingValue = "codex")
 @RequiredArgsConstructor
-public class CodexAgentRuntime extends AbstractAgentRuntime {
+public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCheck {
 
     private static final String CODEX_HOME_DIR = ".codex";
 
     private final OrchestratorProperties properties;
     private final CodexProperties codex;
+    private final OrchestratorPaths paths;
+
+    @Override
+    public List<String> problems() {
+        List<String> problems = new ArrayList<>();
+        Path bridge = paths.root().resolve("mcp_client.js");
+        if (!Files.isRegularFile(bridge)) {
+            problems.add("orchestrator.agent=codex needs " + bridge + ", which is not there — the agent"
+                    + " reaches jagt through it.");
+        }
+        if (!Executables.onPath("node")) {
+            problems.add("orchestrator.agent=codex needs node on PATH — it spawns the bridge itself.");
+        }
+        return problems;
+    }
 
     @Override
     public String displayName() {

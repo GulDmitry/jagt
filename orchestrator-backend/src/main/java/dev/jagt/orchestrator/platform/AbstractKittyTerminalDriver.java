@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.platform;
 import lombok.extern.slf4j.Slf4j;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.startup.StartupCheck;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -22,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * launch options ({@link #platformOptions()}). A new platform is a subclass and nothing else.
  */
 @Slf4j
-public abstract class AbstractKittyTerminalDriver implements TerminalDriver {
+public abstract class AbstractKittyTerminalDriver implements TerminalDriver, StartupCheck {
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(20);
     /** The window/tab needs a moment to open and attach; don't open a second one meanwhile. */
@@ -38,8 +39,17 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver {
                                           String kittyCommand, String kittyFontSize) {
         this.processRunner = processRunner;
         this.properties = properties;
-        this.kittyCommand = kittyCommand;
+        this.kittyCommand = Executables.resolve(kittyCommand);
         this.kittyFontSize = kittyFontSize;
+    }
+
+    @Override
+    public List<String> problems() {
+        return Executables.unresolved(kittyCommand)
+                ? List.of("orchestrator.kitty-command: '" + kittyCommand + "' is not on PATH nor in the usual"
+                        + " install directories — nothing would show the agents' sessions. Install kitty, set"
+                        + " the key to a full path, or pick another orchestrator.terminal.")
+                : List.of();
     }
 
     /** Extra {@code -o} launch options for this desktop; empty when none are needed. */

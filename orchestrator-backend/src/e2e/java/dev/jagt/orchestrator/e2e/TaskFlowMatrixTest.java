@@ -41,7 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * replaced by a double.
  */
 @Tag("e2e")
-@SpringBootTest(properties = {"orchestrator.agent=stub", "orchestrator.open-warp-window=false"})
+@SpringBootTest(properties = {"orchestrator.agent=stub", "orchestrator.open-warp-window=false",
+        "orchestrator.startup-checks=false"})
 class TaskFlowMatrixTest {
 
     @TempDir

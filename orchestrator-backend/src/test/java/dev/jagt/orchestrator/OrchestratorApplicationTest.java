@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * terminal and blocks, and {@link IdeRecentProjectsCleaner} runs on a 60s schedule that rewrites the real
  * IDE's recent-projects file. Everything they depend on is still wired and asserted here.
  */
-@SpringBootTest(properties = "orchestrator.open-warp-window=false")
+@SpringBootTest(properties = {"orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
 class OrchestratorApplicationTest {
 
     @TempDir

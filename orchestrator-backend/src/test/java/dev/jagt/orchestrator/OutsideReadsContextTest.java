@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(properties = {
         "orchestrator.open-warp-window=false",
+        "orchestrator.startup-checks=false",
         "orchestrator.code-host.type=github",
         "orchestrator.code-host.base-url=https://github.com",
         "orchestrator.code-host.token=test-token",

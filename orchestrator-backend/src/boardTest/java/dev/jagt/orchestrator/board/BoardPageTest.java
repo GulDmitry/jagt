@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
  * human a desktop alert.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "orchestrator.open-warp-window=false")
+        properties = {"orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
 class BoardPageTest {
 
     @TempDir

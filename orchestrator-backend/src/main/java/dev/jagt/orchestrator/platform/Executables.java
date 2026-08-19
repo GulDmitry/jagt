@@ -51,6 +51,15 @@ public final class Executables {
         return resolved != null && !resolved.isBlank() && !resolved.contains("/");
     }
 
+    /** Whether a bare name is on {@code PATH} — all a plain spawn looks at, none of the fallbacks below. */
+    public static boolean onPath(String name) {
+        return onPath(name, System.getenv("PATH"), Executables::isExecutableFile);
+    }
+
+    static boolean onPath(String name, String pathEnv, Predicate<Path> isExecutable) {
+        return firstMatch(splitPath(pathEnv), name, isExecutable) != null;
+    }
+
     static String resolve(String configured, String pathEnv, Predicate<Path> isExecutable) {
         return resolve(configured, pathEnv, System.getProperty("user.home"), isExecutable,
                 Executables::bundlesIn);
