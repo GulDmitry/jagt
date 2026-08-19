@@ -1,6 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Processes;
+
+import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -19,7 +22,7 @@ class GitServiceTest {
 
     @Test
     void refusesWorktreeCreationWhenTicketBranchSurvivedPreviousRun(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -42,7 +45,7 @@ class GitServiceTest {
     @Test
     void cutsTheWorktreeFromFreshlyFetchedUpstreamEvenWhenBaseBranchIsSpelledLocally(@TempDir Path dir)
             throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -70,7 +73,7 @@ class GitServiceTest {
 
     @Test
     void deployMergesTheTaskBranchIntoDevAndLeavesTheTaskBranchByteIdentical(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);
         Path origin = dir.resolve("o.git");
         Path repo = dir.resolve("repo");
@@ -97,7 +100,7 @@ class GitServiceTest {
 
     @Test
     void deployConflictLeavesADeployWorktreeAndNeverModifiesTheTaskBranch(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);
         Path origin = dir.resolve("o.git");
         Path repo = dir.resolve("repo");
@@ -128,7 +131,7 @@ class GitServiceTest {
 
     @Test
     void refusesToFinishADeployFromAWorktreeAnotherRepositoryCut(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);
         Path origin = dir.resolve("api-origin.git");
         Path api = dir.resolve("api");
@@ -156,7 +159,7 @@ class GitServiceTest {
     @Test
     void onlyTheRepositoryThatCutTheDeployWorktreeClaimsItWhenASiblingDerivesTheSamePath(@TempDir Path dir)
             throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);
         Path api = dir.resolve("api");
         Path web = dir.resolve("web");
@@ -174,7 +177,7 @@ class GitServiceTest {
 
     @Test
     void deployingAgainAfterResolvingTheDeployWorktreePushesDevAndCleansUp(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);
         Path origin = dir.resolve("o.git");
         Path repo = dir.resolve("repo");
@@ -217,7 +220,7 @@ class GitServiceTest {
     @Test
     void removeWorktreeReapsEveryWorktreeRootedProcessNotJustJava(@TempDir Path dir) throws Exception {
         assumeTrue(onPath("lsof"), "lsof is not installed — the reap cannot see cwds without it");
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -264,7 +267,7 @@ class GitServiceTest {
 
     @Test
     void keepsExistingCommitsWhenReopenedTicketResumesItsBranch(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -291,7 +294,7 @@ class GitServiceTest {
      */
     @Test
     void freesTheBaseRepositoryWhenItStillHoldsTheBranchThisTaskNeeds(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         GitService git = new GitService(runner);
 
@@ -304,7 +307,7 @@ class GitServiceTest {
 
     @Test
     void refusesWhenTheCheckoutHoldingTheBranchHasUncommittedWork(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         Files.writeString(repo.resolve("f.txt"), "work nobody committed");
         GitService git = new GitService(runner);
@@ -321,7 +324,7 @@ class GitServiceTest {
     /** `git branch -D` cannot delete a checked-out branch, so this is the strategy freeing exists for. */
     @Test
     void freesTheBaseRepositoryBeforeDeletingTheBranchItStillHolds(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         GitService git = new GitService(runner);
 
@@ -335,7 +338,7 @@ class GitServiceTest {
     /** A refusal must leave the human's own repository exactly where it was. */
     @Test
     void leavesTheCheckoutAloneWhenItRefusesAnExistingBranch(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         GitService git = new GitService(runner);
 
@@ -348,7 +351,7 @@ class GitServiceTest {
 
     @Test
     void freesACheckoutThatOnlyHasUntrackedFilesInIt(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         Files.writeString(repo.resolve("scratch.txt"), "never added to git");
         GitService git = new GitService(runner);
@@ -361,7 +364,7 @@ class GitServiceTest {
 
     @Test
     void resumesTheBranchWhenTheRequestTargetsABaseThatNoLongerExists(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         GitService git = new GitService(runner);
 
@@ -376,7 +379,7 @@ class GitServiceTest {
     /** The switch is jagt's, so undoing it is too: a creation that fails afterwards owes the checkout back. */
     @Test
     void putsTheCheckoutBackWhenTheWorktreeItWasFreedForCannotBeCut(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         GitService git = new GitService(runner);
 
@@ -394,7 +397,7 @@ class GitServiceTest {
 
     @Test
     void leavesTheFilesOfTheFreedCheckoutExactlyAsTheyWere(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         Files.writeString(repo.resolve("f.txt"), "the branch's own content");
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "add", "."));
@@ -410,7 +413,7 @@ class GitServiceTest {
     /** Only what jagt detached is jagt's to move back: anything else is a checkout the human is standing in. */
     @Test
     void leavesARepositoryOnItsOwnBranchAloneWhenAskedToReattach(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
         GitService git = new GitService(runner);
@@ -423,7 +426,7 @@ class GitServiceTest {
 
     @Test
     void putsTheCheckoutBackWhenRecreatingTheBranchLeavesTheWorktreeUncut(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         Path notADirectory = Files.writeString(dir.resolve("in-the-way"), "");
         GitService git = new GitService(runner);
@@ -438,7 +441,7 @@ class GitServiceTest {
 
     @Test
     void refusesWhenAnotherWorktreeHoldsTheBranch(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
         runner.run(repo, Duration.ofSeconds(30),
@@ -452,7 +455,7 @@ class GitServiceTest {
         assertThat(dir.resolve("wt")).doesNotExist();
     }
 
-    private static Path repositoryOnItsOwnBranch(ProcessRunner runner, Path dir) throws IOException {
+    private static Path repositoryOnItsOwnBranch(Processes runner, Path dir) throws IOException {
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -469,7 +472,7 @@ class GitServiceTest {
 
     @Test
     void startsBranchFreshFromBaseWhenReopenedTicketRecreatesIt(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -492,7 +495,7 @@ class GitServiceTest {
 
     @Test
     void namesTheRealTargetBranchInTheDeployMergeCommit(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -525,7 +528,7 @@ class GitServiceTest {
 
     @Test
     void leavesTheTaskBranchWithoutTheBaseBranchAsUpstream(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -547,7 +550,7 @@ class GitServiceTest {
     @Test
     void deployConflictPushesNothingToDevAndLeavesTheDeployWorktreeWithTaskBranchUntouched(@TempDir Path dir)
             throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -589,7 +592,7 @@ class GitServiceTest {
 
     @Test
     void excludesGitIgnoredPlumbingFromTheIdeDiffSnapshot(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -616,7 +619,7 @@ class GitServiceTest {
 
     @Test
     void refusesDeployWhenBranchHasNoCommitsBeyondTheTarget(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -638,7 +641,7 @@ class GitServiceTest {
 
     @Test
     void clearsAStaleLeftoverDirectoryBeforeCreatingTheWorktree(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -660,7 +663,7 @@ class GitServiceTest {
 
     @Test
     void deletesTheDirectoryEvenWhenGitWorktreeRemoveFails(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -681,7 +684,7 @@ class GitServiceTest {
 
     @Test
     void publishesTaskCommitsWhenDeployMergesCleanly(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner();
+        Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -720,12 +723,12 @@ class GitServiceTest {
      * needs. Extracted because every revert case starts from it, and ten lines of `git` per test is how a
      * suite stops being read.
      */
-    private record Repo(ProcessRunner runner, Path dir, Path path) {
+    private record Repo(Processes runner, Path dir, Path path) {
 
         private static final Duration T = Duration.ofSeconds(30);
 
         static Repo withTaskBranch(Path dir, String taskBranch) throws Exception {
-            ProcessRunner runner = new ProcessRunner();
+            Processes runner = new ProcessRunner();
             Path origin = dir.resolve("o.git");
             Path repo = dir.resolve("repo");
             runner.run(dir, T, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
@@ -852,9 +855,9 @@ class GitServiceTest {
      */
     @Test
     void removesTheWorktreeEvenWhenTheProcessReaperIsNotInstalled(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner() {
+        Processes runner = new ProcessRunner() {
             @Override
-            public ProcessResult run(Path workingDir, Duration timeout, List<String> command) {
+            public Processes.Result run(Path workingDir, Duration timeout, List<String> command) {
                 if (command.get(0).equals("lsof")) {
                     throw new IllegalStateException("Failed to start command: lsof (not installed)");
                 }
@@ -887,11 +890,11 @@ class GitServiceTest {
      */
     @Test
     void reportsAFailedMergeAsAnErrorAndNotAsAConflictWhenNothingIsUnmerged(@TempDir Path dir) throws Exception {
-        ProcessRunner runner = new ProcessRunner() {
+        Processes runner = new ProcessRunner() {
             @Override
-            public ProcessResult run(Path workingDir, Duration timeout, List<String> command) {
+            public Processes.Result run(Path workingDir, Duration timeout, List<String> command) {
                 if (command.size() > 1 && command.get(1).equals("merge")) {
-                    return new ProcessResult(128, "", "Author identity unknown");
+                    return new Processes.Result(128, "", "Author identity unknown");
                 }
                 return super.run(workingDir, timeout, command);
             }

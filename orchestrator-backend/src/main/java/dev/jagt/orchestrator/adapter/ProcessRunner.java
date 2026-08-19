@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.port.Processes;
+
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -11,18 +13,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
-public class ProcessRunner {
-
-    public record ProcessResult(int exitCode, String stdout, String stderr) {
-
-        public ProcessResult expectSuccess(String action) {
-            if (exitCode != 0) {
-                throw new IllegalStateException(
-                        action + " failed (exit " + exitCode + "): " + (stderr.isBlank() ? stdout : stderr));
-            }
-            return this;
-        }
-    }
+public class ProcessRunner implements Processes {
 
     /** POSIX tools that can put a launch in its own session; absolute because they ARE the mechanism. */
     private static final List<String> SETSID = List.of("/usr/bin/setsid", "/bin/setsid");
@@ -30,7 +21,8 @@ public class ProcessRunner {
     /** Long enough for a wrapper that could not exec to have exited, short enough to be invisible. */
     private static final Duration LAUNCH_CHECK = Duration.ofMillis(200);
 
-    public ProcessResult run(Path workingDir, Duration timeout, List<String> command) {
+    @Override
+    public Result run(Path workingDir, Duration timeout, List<String> command) {
         return run(workingDir, timeout, Map.of(), command);
     }
 
@@ -43,6 +35,7 @@ public class ProcessRunner {
      * <p>Detached from jagt's own session too, so the terminal's Ctrl-C cannot reach it — see
      * {@link #detachedFrom}.
      */
+    @Override
     public Process runDetached(Path workingDir, List<String> command) {
         try {
             ProcessBuilder builder = new ProcessBuilder(detachedFrom(command));
@@ -101,7 +94,8 @@ public class ProcessRunner {
                 .orElse(null);
     }
 
-    public ProcessResult run(Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
+    @Override
+    public Result run(Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             if (workingDir != null) {
@@ -127,7 +121,7 @@ public class ProcessRunner {
             }
             outThread.join(2_000);
             errThread.join(2_000);
-            return new ProcessResult(process.exitValue(), stdout.toString().trim(), stderr.toString().trim());
+            return new Result(process.exitValue(), stdout.toString().trim(), stderr.toString().trim());
         } catch (IOException e) {
             throw new IllegalStateException("Failed to start command: " + String.join(" ", command), e);
         } catch (InterruptedException e) {

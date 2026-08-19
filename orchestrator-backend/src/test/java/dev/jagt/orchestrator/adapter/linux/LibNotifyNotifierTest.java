@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.linux;
 
+import dev.jagt.orchestrator.port.Processes;
+
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import org.junit.jupiter.api.Test;
@@ -42,7 +44,7 @@ class LibNotifyNotifierTest {
         // the watchdog, an MCP tool, an agent handing control back.
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(), any(Duration.class), any()))
-                .thenReturn(new ProcessRunner.ProcessResult(1, "", "No notification daemon"));
+                .thenReturn(new Processes.Result(1, "", "No notification daemon"));
 
         assertThatCode(() -> new LibNotifyNotifier(runner, "notify-send").notify("jagt", "your move"))
                 .doesNotThrowAnyException();
@@ -62,7 +64,7 @@ class LibNotifyNotifierTest {
     void runsTheConfiguredBinarySoADistroPathCanBeOverridden() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(), any(Duration.class), any()))
-                .thenReturn(new ProcessRunner.ProcessResult(0, "", ""));
+                .thenReturn(new Processes.Result(0, "", ""));
 
         new LibNotifyNotifier(runner, "/usr/bin/notify-send").notify("jagt", "your move");
 

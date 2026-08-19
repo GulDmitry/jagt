@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.Executables;
 import lombok.RequiredArgsConstructor;

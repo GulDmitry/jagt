@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.macos;
 
+import dev.jagt.orchestrator.port.Processes;
+
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
@@ -23,8 +25,8 @@ class KittyTerminalDriverTest {
     private static List<String> launchCommand() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(), any(Duration.class), any()))
-                .thenReturn(new ProcessRunner.ProcessResult(1, "", ""))        // no instance yet
-                .thenReturn(new ProcessRunner.ProcessResult(0, "", ""));
+                .thenReturn(new Processes.Result(1, "", ""))        // no instance yet
+                .thenReturn(new Processes.Result(0, "", ""));
         new KittyTerminalDriver(runner, OrchestratorProperties.defaults()
                 .withOpenWarpWindow(true).withTmuxCommand("tmux"), mock(OsaScript.class), "kitty", "")
                 .openViewer("agents", "agents", Path.of("/work/tree"));

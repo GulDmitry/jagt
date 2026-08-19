@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -29,7 +29,7 @@ public class TmuxService {
 
     public enum WindowState { MISSING, DEAD_SHELL, AGENT_RUNNING }
 
-    private final ProcessRunner processRunner;
+    private final Processes processRunner;
     private final OrchestratorProperties properties;
     private final OrchestratorPaths paths;
     private final TerminalDriver terminalDriver;

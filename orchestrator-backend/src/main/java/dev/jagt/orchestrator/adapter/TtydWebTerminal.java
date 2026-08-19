@@ -3,7 +3,8 @@ package dev.jagt.orchestrator.adapter;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.WebTerminalProperties;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.startup.StartupCheck;
+import dev.jagt.orchestrator.port.StartupCheck;
+import dev.jagt.orchestrator.port.WebTerminal;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class TtydWebTerminal implements StartupCheck {
+public class TtydWebTerminal implements WebTerminal, StartupCheck {
 
     /** Long enough to catch a server that cannot bind, short enough not to be felt on the first click. */
     private static final Duration START_GRACE = Duration.ofMillis(400);
@@ -64,6 +65,7 @@ public class TtydWebTerminal implements StartupCheck {
      *
      * @throws IllegalStateException when the server cannot be launched at all, e.g. no ttyd installed
      */
+    @Override
     public synchronized OptionalInt serve(String tmuxSession) {
         if (!properties.enabled()) {
             return OptionalInt.empty();

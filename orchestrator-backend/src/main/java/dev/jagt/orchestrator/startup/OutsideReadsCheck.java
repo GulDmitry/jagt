@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.config.CodeHostProperties;
 import dev.jagt.orchestrator.config.TrackerProperties;

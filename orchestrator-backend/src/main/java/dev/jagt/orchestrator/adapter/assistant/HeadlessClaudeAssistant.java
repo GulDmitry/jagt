@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import dev.jagt.orchestrator.port.Processes;
+
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -189,7 +191,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             cmd.add("--permission-mode");
             cmd.add(assistant.permissionMode());
         }
-        ProcessRunner.ProcessResult result;
+        Processes.Result result;
         try {
             result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
         } catch (RuntimeException e) {

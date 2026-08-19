@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.port.TerminalDriver;
 import lombok.extern.slf4j.Slf4j;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.startup.StartupCheck;
+import dev.jagt.orchestrator.port.StartupCheck;
 
 import java.nio.file.Path;
 import java.time.Duration;

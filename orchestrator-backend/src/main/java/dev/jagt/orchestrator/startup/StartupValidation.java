@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationStartedEvent;

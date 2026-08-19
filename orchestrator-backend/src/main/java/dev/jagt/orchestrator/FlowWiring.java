@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.config;
+package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.flow.Capabilities;
 import dev.jagt.orchestrator.flow.FlowEngine;
@@ -14,9 +14,9 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 /**
- * The machine is assembled here rather than annotated, so nothing in it depends on the framework that runs it:
- * the rules, the engine and the two doors compile against records and ports alone, and their tests need no
- * container.
+ * The machine is assembled here rather than annotated, so nothing in it depends on the framework that runs it: the
+ * rules, the engine and the two doors compile against records and ports alone, and their tests need no container.
+ * It sits with the application because wiring IS the assembly — `config/` holds what the use cases READ.
  */
 @Configuration
 @Slf4j

@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.linux;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 

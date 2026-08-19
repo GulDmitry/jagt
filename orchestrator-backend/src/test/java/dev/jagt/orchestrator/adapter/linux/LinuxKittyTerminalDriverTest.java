@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.linux;
 
+import dev.jagt.orchestrator.port.Processes;
+
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
@@ -37,8 +39,8 @@ class LinuxKittyTerminalDriverTest {
         // kitty's own ascii fallback covers a non-Latin layout — and `cmd` is not even a modifier here.
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(), any(Duration.class), any()))
-                .thenReturn(new ProcessRunner.ProcessResult(1, "", ""))        // no instance yet
-                .thenReturn(new ProcessRunner.ProcessResult(0, "", ""));
+                .thenReturn(new Processes.Result(1, "", ""))        // no instance yet
+                .thenReturn(new Processes.Result(0, "", ""));
         // Both binaries are RESOLVED (PATH, then the known install dirs), so a bare name in the argv is
         // whatever this machine has — asserting one would pass only where it is absent.
         OrchestratorProperties properties = OrchestratorProperties.defaults()

@@ -49,10 +49,10 @@ What `RingsTest` actually asserts, and nothing more:
 - those three import no Spring and no Lombok. Jackson annotations stay: the record IS the file format.
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell) outside `adapter/`.
 
-Outward imports from the OUTER rings are not asserted yet, and there are two: `surface/board/AgentTerminalController`
-names `adapter/TtydWebTerminal`, and `service/GitService` + `service/TmuxService` name `adapter/ProcessRunner`. Two
-vendors are also still outside `adapter/`: tmux has no port at all (`service/TmuxService`), and the config key
-`orchestrator.claude-command` names one agent.
+- no ring between the centre and the edge names `adapter/` — a use case that names the edge is the rule backwards.
+
+One vendor is still inside the rings: tmux has no port at all (`service/TmuxService`), and the config key
+`orchestrator.claude-command` names one agent in a key a human types.
 
 ## No capability knows a status, and only `flow/` writes one
 
@@ -90,6 +90,9 @@ Three things the sketch does not show:
 | `Tracker` | `adapter/tracker/JiraTracker` |
 | `MasterAssistant` | `adapter/assistant/HeadlessClaudeAssistant` |
 | `Notifier` | `adapter/DesktopNotifier` (a channel; `notify/Notifications` fans out to every one it finds) |
+| `Processes` | `adapter/ProcessRunner` |
+| `WebTerminal` | `adapter/TtydWebTerminal` |
+| `StartupCheck` | `startup/{Config,OutsideReads,Toolchain,Workspace}Check`, `adapter/TtydWebTerminal`, `adapter/agent/CodexAgentRuntime` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ per platform), `adapter/macos/WarpTerminalDriver` |
 | `EditorDriver` | `adapter/CliEditorDriver` |
@@ -156,8 +159,8 @@ real browser), `linuxDriverTest` (Linux binaries, container) — none but `test`
 `./gradlew build stageJar`, then `java -jar build/libs/jagt-run.jar`.
 
 The rings are folders and `RingsTest` keeps their direction, but the compiler is not the one enforcing it. Two
-placements have to be settled before a build graph can be drawn: `config/` (the use cases read its property
-records, so it is inner rather than assembly, yet it also holds `FlowWiring`, which IS assembly) and `startup/`
-(`StartupCheck` is a contract adapters implement, so that interface is a port; the checks that collect and run them
-are not). Then `:core` (task, flow, port) `:usecase` `:surface` `:adapter`, with the existing project staying the
-app so `build/libs/jagt-run.jar` does not move.
+placements had to be settled before a build graph could be drawn: `config/` and `startup/`
+Both are settled now: `port/StartupCheck` is the contract, `startup/` holds the checks and the collector, and
+wiring moved out of `config/` to `FlowWiring` beside the application — so `config/` is purely what the use cases
+read. What remains is drawing the graph: `:core` (task, flow, port) `:usecase` `:surface` `:adapter`, with the
+existing project staying the app so `build/libs/jagt-run.jar` does not move.

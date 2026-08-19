@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

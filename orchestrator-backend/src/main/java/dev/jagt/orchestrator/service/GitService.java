@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Processes;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,7 +30,7 @@ public class GitService {
     private static final Duration GIT_TIMEOUT = Duration.ofMinutes(3);
 
     private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();
-    private final ProcessRunner processRunner;
+    private final Processes processRunner;
 
     public enum BranchStrategy { FRESH, RECREATE, RESUME }
 

@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.config.CodexProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.Executables;
-import dev.jagt.orchestrator.startup.StartupCheck;
+import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

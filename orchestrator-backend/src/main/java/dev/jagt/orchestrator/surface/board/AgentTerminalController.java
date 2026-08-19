@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
-import dev.jagt.orchestrator.adapter.TtydWebTerminal;
+import dev.jagt.orchestrator.port.WebTerminal;
 import dev.jagt.orchestrator.service.AgentSessions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,7 +26,7 @@ public class AgentTerminalController {
     }
 
     private final AgentSessions sessions;
-    private final TtydWebTerminal webTerminal;
+    private final WebTerminal webTerminal;
 
     @PostMapping("/tasks/{taskId}/terminal")
     public Terminal terminal(@PathVariable String taskId) {

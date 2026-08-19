@@ -1,8 +1,9 @@
 package dev.jagt.orchestrator.linux;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
-import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;

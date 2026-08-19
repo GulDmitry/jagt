@@ -30,6 +30,16 @@ class RingsTest {
         assertThat(importsOf(ring).filter(imported -> !CORE.contains(imported))).isEmpty();
     }
 
+    /**
+     * The edge is the outermost ring, so a use case naming one is the dependency rule backwards: it is what makes
+     * an OS or a vendor impossible to swap. What the use cases need from out there they declare as a port.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"capability", "job", "notify", "service", "surface"})
+    void nothingBetweenTheCentreAndTheEdgeNamesTheEdge(String ring) throws IOException {
+        assertThat(importsOf(ring).filter("adapter"::equals)).isEmpty();
+    }
+
     /** A framework in the centre would make every rule above it need a container to be exercised. */
     @ParameterizedTest
     @ValueSource(strings = {"flow", "task", "port"})
