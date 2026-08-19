@@ -116,6 +116,14 @@ public final class FlowRules {
         return rule == null ? Optional.empty() : Optional.ofNullable(rule.next().get(outcome));
     }
 
+    /** Every status any action can lead to, so the assembly can ask whether the machine has a hole in it. */
+    public static Set<TaskStatus> targets() {
+        return RULES.values().stream().flatMap(rule -> rule.next().values().stream())
+                .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    }
+
+
+
     /** Whether a task may be moved to {@code status} by its own agent rather than by jagt. */
     public static boolean reportable(TaskStatus status) {
         return AGENT_REPORTABLE.contains(status);

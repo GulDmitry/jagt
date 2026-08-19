@@ -140,8 +140,11 @@ nothing. `startup/StartupCheck` implementations are collected by `startup/Startu
 The composition half, and what of it exists:
 
 1. every flow rule names a registered capability — RUN time only today (`FlowEngine` refuses on the click)
-2. every status reachable from NEW, and every non-terminal status with a way out — planned
-3. every (status × capability × outcome) decided — planned
+2. every status something can put a task into — built (`startup/FlowCheck`). There is deliberately no "stuck
+   status" check beside it: the report door is judged by the status being reported rather than the one being left,
+   so no status can trap a task and asserting it would assert nothing
+3. every (status × capability × outcome) decided — planned, and it needs a capability to declare which outcomes it
+   can return
 4. a job's declared capability and watched statuses exist — planned, and `Job` declares neither yet
 5. a required port capability present in the SELECTED adapter — only the weak form (a configured type resolves to a
    bean); nothing checks thread resolution, tab titles or an attachable session host
