@@ -111,6 +111,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Deploy | `deploy <task>` | Merges the task branch into `deployBranch` and pushes. Refused when that equals the base branch. |
 | Deploy hit a conflict | resolve in the deploy worktree | Status DEPLOY_CONFLICT; jagt keeps the half-done state for you. |
 | Take a deploy back out | `revert <task>` | Reverts the LAST recorded merge commit. Refused (with a by-hand recipe) whenever it would have to guess which commit. |
+| A task sits at REVERTED and reads "your move" | `focus` then `ship <task>`, or `done <task>` | Nothing else acts on it, hence YOU. `deploy` is not offered: the revert ADDED a commit, so re-merging the same branch brings nothing — the branch and its commits survive, so the move is new commits and another round, or close it. |
 | Done | `done <task>` | Kills the agent window, reaps its language server. The branch survives. |
 | Merged task branches pile up | your own git, per branch | jagt has no `prune`: a cross-project bulk delete was removed deliberately. Cleanup is one task's own business. |
 | Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be MAPPED onto a live one (`done <task>` is the near neighbour, and it kills a worktree). |
