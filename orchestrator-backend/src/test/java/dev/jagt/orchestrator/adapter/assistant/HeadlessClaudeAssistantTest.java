@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import dev.jagt.orchestrator.config.ClaudeProperties;
+
 import dev.jagt.orchestrator.port.Processes;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
@@ -27,10 +29,9 @@ class HeadlessClaudeAssistantTest {
     void liftsThePermissionGateSoTheHeadlessReadCanCallMcpTools() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty().withPermissionMode("bypassPermissions"));
 
         assistant.readTicket("ABC-42");
@@ -44,10 +45,9 @@ class HeadlessClaudeAssistantTest {
     void scopesTheBypassToTheConfiguredMcpServersInsteadOfLiftingItWholesale() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty().withPermissionMode("bypassPermissions")
                         .withAllowedTools(List.of("mcp__acme_jira", "mcp__acme_gitlab")));
 
@@ -63,10 +63,9 @@ class HeadlessClaudeAssistantTest {
     void loadsOnlyTheDeclaredMcpServersInsteadOfWhateverTheHumanHasInstalled() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty()
                         .withMcpConfig("{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"));
 
@@ -84,10 +83,9 @@ class HeadlessClaudeAssistantTest {
     void inheritsTheHumansOwnMcpServersWhenTheInstallDeclaresNone() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties, AssistantProperties.empty());
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties, AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
 
@@ -101,10 +99,9 @@ class HeadlessClaudeAssistantTest {
     void runsTheConfiguredModelInsteadOfWhateverTheHumansDefaultCostsToday() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty().withModel("haiku"));
 
         assistant.readTicket("ABC-42");
@@ -118,10 +115,9 @@ class HeadlessClaudeAssistantTest {
     void inheritsTheHumansOwnModelWhenNoneIsConfigured() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty().withModel(""));
 
         assistant.readTicket("ABC-42");
@@ -135,10 +131,9 @@ class HeadlessClaudeAssistantTest {
     void asksForTheJsonEnvelopeSoEveryCallCarriesItsOwnCost() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
@@ -152,7 +147,6 @@ class HeadlessClaudeAssistantTest {
     void readsTheTicketOutOfTheEnvelopesStructuredOutput() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 """
                 {"type":"result","is_error":false,"total_cost_usd":0.05,
@@ -160,7 +154,7 @@ class HeadlessClaudeAssistantTest {
                 "cache_read_input_tokens":0,"output_tokens":170},
                  "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
                 "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-42").facts();
@@ -175,13 +169,12 @@ class HeadlessClaudeAssistantTest {
     void fallsBackToTheResultStringWhenTheEnvelopeCarriesNoParsedOutput() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 """
                 {"type":"result","is_error":false,
                  "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
                 \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-7").facts();
@@ -195,14 +188,13 @@ class HeadlessClaudeAssistantTest {
     void reportsTheCostOfACallTheModelAnsweredWithAnError() {
         ProcessRunner runner = mock(ProcessRunner.class);
         OrchestratorProperties properties = mock(OrchestratorProperties.class);
-        when(properties.claudeCommand()).thenReturn("claude");
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 """
                 {"type":"result","is_error":true,"total_cost_usd":0.12,
                  "usage":{"input_tokens":5,"cache_creation_input_tokens":25000,\
                 "cache_read_input_tokens":0,"output_tokens":40},
                  "result":"the tracker MCP is not available"}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, properties,
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), properties,
                 AssistantProperties.empty());
 
         var answer = assistant.readReview("https://host/mr/9");

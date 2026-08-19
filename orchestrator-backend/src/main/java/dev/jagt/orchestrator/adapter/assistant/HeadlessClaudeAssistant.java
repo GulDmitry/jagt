@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import dev.jagt.orchestrator.config.ClaudeProperties;
+
 import dev.jagt.orchestrator.port.Processes;
 
 import dev.jagt.orchestrator.port.MasterAssistant;
@@ -75,6 +77,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private static final Duration MAP_TIMEOUT = Duration.ofSeconds(90);
 
     private final ProcessRunner processRunner;
+    private final ClaudeProperties claude;
     private final OrchestratorProperties properties;
     private final AssistantProperties assistant;
     private final JsonMapper mapper = new JsonMapper();
@@ -161,7 +164,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     private Answer<JsonNode> ask(String prompt, String schema, String label, Duration timeout, boolean withMcp) {
-        List<String> cmd = new ArrayList<>(List.of(properties.claudeCommand(), prompt, "-p",
+        List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
                 "--json-schema", schema,
                 // The JSON envelope wraps the answer together with the call's token usage and cost, so the
                 // spend is measurable. Plain text output would hide the price of every read.

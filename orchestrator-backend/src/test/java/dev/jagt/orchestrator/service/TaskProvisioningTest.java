@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.ClaudeProperties;
+
 import dev.jagt.orchestrator.port.SessionHost;
 
 import dev.jagt.orchestrator.adapter.agent.ClaudeAgentRuntime;
@@ -62,13 +64,13 @@ class TaskProvisioningTest {
 
     private TaskProvisioning provisioning() {
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, new McpEndpoint("http://localhost:8290/mcp"));
+        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, ClaudeProperties.defaults(), new McpEndpoint("http://localhost:8290/mcp"));
         return provisioning(new WorktreeSetup(runtime, paths, config,
                 new SubAgentBriefing(new PromptTemplates(), properties, paths, config, state)));
     }
 
     private TaskProvisioning provisioning(WorktreeSetup setup) {
-        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, new McpEndpoint("http://localhost:8290/mcp"));
+        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, ClaudeProperties.defaults(), new McpEndpoint("http://localhost:8290/mcp"));
         AgentSessions sessions = new AgentSessions(config, state, mock(SessionHost.class),
                 mock(TerminalDriver.class), runtime);
         return new TaskProvisioning(config, state, git, sessions, setup);

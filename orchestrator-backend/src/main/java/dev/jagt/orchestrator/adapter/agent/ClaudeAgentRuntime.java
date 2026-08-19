@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.config.ClaudeProperties;
+
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     private static final String LOCAL_MEMORY_FILE = "CLAUDE.local.md";
 
     private final OrchestratorProperties properties;
+    private final ClaudeProperties claude;
     private final McpEndpoint mcp;
 
     @Override
@@ -39,7 +42,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     public String launchCommand(Path worktree, boolean planMode) {
-        return properties.claudeCommand()
+        return claude.command()
                 + (planMode ? " --permission-mode plan" : "")
                 + " " + shellQuote(properties.agentPrompt());
     }

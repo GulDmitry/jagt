@@ -50,7 +50,8 @@ orchestrator:
   # codex:
   #   command: codex
   # Also used by the headless reads, which stay Claude whichever agent runs the tasks.
-  claude-command: claude
+  claude:
+    command: claude
   # Initial prompt every spawned sub-agent starts with (otherwise the session idles).
   agent-prompt: >-
     You are the sub-agent for this worktree. Read task_context.md, set your status to IN_PROGRESS

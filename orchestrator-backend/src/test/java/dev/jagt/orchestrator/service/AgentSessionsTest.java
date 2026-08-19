@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.ClaudeProperties;
+
 import dev.jagt.orchestrator.port.SessionHost;
 
 import dev.jagt.orchestrator.adapter.agent.ClaudeAgentRuntime;
@@ -53,7 +55,8 @@ class AgentSessionsTest {
 
     private AgentSessions sessions() {
         return new AgentSessions(config, state, tmux, terminal,
-                new ClaudeAgentRuntime(OrchestratorProperties.defaults(), new McpEndpoint("http://localhost:8290/mcp")));
+                new ClaudeAgentRuntime(OrchestratorProperties.defaults(), ClaudeProperties.defaults(),
+                        new McpEndpoint("http://localhost:8290/mcp")));
     }
 
     @Test

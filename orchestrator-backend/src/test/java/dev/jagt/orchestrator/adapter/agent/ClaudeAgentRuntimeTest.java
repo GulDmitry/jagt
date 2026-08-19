@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.config.ClaudeProperties;
+
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -19,7 +21,7 @@ class ClaudeAgentRuntimeTest {
 
     private static ClaudeAgentRuntime runtime(String command, String prompt) {
         return new ClaudeAgentRuntime(OrchestratorProperties.defaults()
-                .withClaudeCommand(command).withAgentPrompt(prompt),
+                .withAgentPrompt(prompt), new ClaudeProperties(command),
                 new McpEndpoint("http://localhost:8290/mcp"));
     }
 

@@ -347,7 +347,7 @@ Machine/OS-level settings live in `orchestrator-backend/src/main/resources/appli
 | `orchestrator.editor-command` | editor launcher list (default `[idea]`; e.g. `[code]`). The launcher is resolved like `tmux-command`; with none found, `ide` says so and names this key |
 | `orchestrator.editor-diff-command` | diff launcher for `ide <ticket> diff` (default `[idea, diff]`) — any difftool takes the two paths, e.g. `[difft]` or `[code, --diff]` |
 | `orchestrator.agent` | which AI agent runtime — `claude` (default) or `codex`; the pluggable seam, one class per CLI (plus `stub` for the e2e matrix) |
-| `orchestrator.claude-command` | the `claude` binary — the agent runtime AND the master assistant's headless reads (default `claude`) |
+| `orchestrator.claude.command` | the `claude` binary — that agent's runtime AND the master assistant's headless reads (default `claude`). One agent's own key, like `orchestrator.codex.*` |
 | `orchestrator.codex.command` | the `codex` binary for `orchestrator.agent=codex` (default `codex`) |
 | `orchestrator.assistant.setting-sources` | MCP/settings the `do` ticket-read inherits (default `user,project,local`) |
 | `orchestrator.assistant.model` | model for every master-assistant read — ticket, review request, review sweep (default `haiku`: ~$0.06 a call vs ~$0.41 on the inherited default; blank = your default) |

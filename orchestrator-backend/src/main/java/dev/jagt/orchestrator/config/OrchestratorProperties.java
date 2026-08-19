@@ -27,7 +27,6 @@ public record OrchestratorProperties(
         String terminal,
         List<String> editorCommand,
         List<String> editorDiffCommand,
-        String claudeCommand,
         String agentPrompt,
         String tmuxCommand,
         boolean openWarpWindow,
@@ -69,13 +68,13 @@ public record OrchestratorProperties(
      * opening a terminal window is a visible side effect nobody should get by accident.
      */
     public static OrchestratorProperties defaults() {
-        return new OrchestratorProperties(null, null, null, null, null, null, null, null, null, null,
+        return new OrchestratorProperties(null, null, null, null, null, null, null, null, null,
                 false, new Watchdog(Duration.ofMinutes(5)));
     }
 
     public OrchestratorProperties withStaleAfter(Duration value) {
         return new OrchestratorProperties(root, configFile, stateFile, platform, terminal, editorCommand,
-                editorDiffCommand, claudeCommand, agentPrompt, tmuxCommand, openWarpWindow,
+                editorDiffCommand, agentPrompt, tmuxCommand, openWarpWindow,
                 new Watchdog(value));
     }
 }
