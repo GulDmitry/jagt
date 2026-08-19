@@ -19,3 +19,23 @@ The config half is built (`startup/StartupCheck` + `StartupValidation`, one repo
 composition half is not: every flow rule names a registered capability, every status reachable from NEW with a way
 out, every (status × capability × outcome) decided, a job's watched statuses exist, a required port capability is
 present in the SELECTED adapter, one owner per id.
+
+## Two vendors are still inside the rings (open)
+
+- tmux has NO port: `service/TmuxService` is named directly by everything that opens a session, and
+  `startup/ToolchainCheck` refuses to start without the binary. Windows has no tmux, so this is what a port would
+  be for — `SessionHost` (create, attach, kill, is-alive, send a line) with tmux as one adapter.
+- `orchestrator.claude-command` names one agent in a key a human types. Renaming it breaks existing `config.json`
+  files, so it is the owner's call, not a refactor's.
+
+## The outer rings' direction is not asserted (open)
+
+`RingsTest` covers `task/`, `flow/` and `port/`. Two outward imports exist above them and are named in
+ARCHITECTURE.md: `surface/board/AgentTerminalController` → `adapter/TtydWebTerminal` (wants a port) and
+`service/GitService` + `service/TmuxService` → `adapter/ProcessRunner`.
+
+## `service/` is the unsorted half (open)
+
+40-odd classes: git, state, config, tmux, worktrees — and the renderers both surfaces use (`DashboardRenderer`,
+`StateViews`, `StatsReport`, `CycleTimeRenderer`, `UsageStatsRenderer`, `CommandReference`), which are surface work
+sitting in the shared pile.
