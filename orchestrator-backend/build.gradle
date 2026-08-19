@@ -4,9 +4,6 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
 }
 
-ext.springBootVersion = '4.1.0'
-ext.lombokVersion = '1.18.46'
-
 group = 'dev.jagt'
 version = '0.6.0'
 description = 'Stateful multi-agent dev orchestrator (macOS / Warp / Claude Code)'
@@ -41,7 +38,7 @@ dependencies {
 subprojects {
     apply plugin: 'java'
 
-    // One place decides every module's library versions, including the root's own.
+    // Versions come from gradle.properties, which every project reads on its own.
     dependencies {
         implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
         // The annotation processor resolves outside the platform, so its version is named here rather than in
@@ -69,7 +66,9 @@ subprojects {
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
         maxHeapSize = '2g'
-        systemProperty 'logging.file.name', "${buildDir}/test-logs/suite.log"
+        // Relative on purpose: an absolute path is a task input that differs per worktree, so nothing
+        // would ever be a cache hit across them.
+        systemProperty 'logging.file.name', 'build/test-logs/suite.log'
         environment 'GIT_AUTHOR_NAME', 'jagt tests'
         environment 'GIT_AUTHOR_EMAIL', 'tests@example.com'
         environment 'GIT_COMMITTER_NAME', 'jagt tests'
