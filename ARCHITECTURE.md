@@ -154,16 +154,23 @@ The composition half, and what of it exists:
 Cosmetic capability missing → degrade and say why. A capability a safety property leans on missing → refuse to
 start, naming the config key that would make it consistent. Neither is implemented.
 
-## The build, and the modules that are not there yet
+## The build, and the module that is
 
-ONE Gradle module (`settings.gradle` declares no subprojects). Four test source sets with different meanings:
-`test` (hermetic, JUnit-parallel, in `check`), `e2eTest` (git + tmux, real worktrees), `boardTest` (the page in a
-real browser), `linuxDriverTest` (Linux binaries, container) — none but `test` is in `check`. Run the staged jar:
-`./gradlew build stageJar`, then `java -jar build/libs/jagt-run.jar`.
+TWO Gradle modules: `:core` (task, flow, port) and the root, which is the application. `:core` depends on nothing
+of jagt's, so an import that points outward from the centre DOES NOT COMPILE — that rule is the compiler's now
+rather than a test's. It also has no Spring and no Lombok on its classpath at all, which is what makes "the centre
+needs no container" checkable instead of claimed. Its 200-odd tests run as `:core:test`.
 
-The rings are folders and `RingsTest` keeps their direction, but the compiler is not the one enforcing it. Two
-placements had to be settled before a build graph could be drawn: `config/` and `startup/`
-Both are settled now: `port/StartupCheck` is the contract, `startup/` holds the checks and the collector, and
-wiring moved out of `config/` to `FlowWiring` beside the application — so `config/` is purely what the use cases
-read. What remains is drawing the graph: `:core` (task, flow, port) `:usecase` `:surface` `:adapter`, with the
-existing project staying the app so `build/libs/jagt-run.jar` does not move.
+Four test source sets in the root, with different meanings: `test` (hermetic, JUnit-parallel, in `check`),
+`e2eTest` (git + tmux, real worktrees), `boardTest` (the page in a real browser), `linuxDriverTest` (Linux
+binaries, container) — none but `test` is in `check`. Run the staged jar: `./gradlew build stageJar`, then
+`java -jar build/libs/jagt-run.jar`, which is where it has always been.
+
+The other rings are still folders, and `RingsTest` keeps their direction. Splitting `:usecase` from `:adapter`
+needs one decision first: `adapter/Executables` (PATH plus the known install directories) is read by `config/` and
+by `startup/ToolchainCheck`, while `adapter/` reads `config/` twenty-one times — a cycle between the two modules.
+The way out is to resolve a binary WHERE IT IS SPAWNED rather than when the config record is built, and that is a
+change to how binaries are found — the thing that broke `ide` on the owner's machine once before. Two earlier
+placements are settled: `port/StartupCheck` is the contract adapters implement, `startup/` holds the checks and
+their collector, and wiring left `config/` for `FlowWiring` beside the application, so `config/` is purely what the
+use cases read.
