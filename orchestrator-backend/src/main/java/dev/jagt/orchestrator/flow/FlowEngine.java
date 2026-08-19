@@ -44,16 +44,6 @@ public class FlowEngine {
         return apply(taskId, task.status(), action, wrapped(taskId, action, capability));
     }
 
-    /**
-     * A status the task itself reports — its agent over MCP, or a review round jagt read on its behalf. The same
-     * table decides, so a task cannot talk itself onto a shared branch, out of one, or closed.
-     */
-    public boolean report(String taskId, TaskStatus status, String message) {
-        if (!FlowRules.reportable(status)) {
-            throw new IllegalArgumentException("Status " + status + " is jagt's to set, not a task's to report");
-        }
-        return tasks.updateTask(taskId, task -> task.withStatus(status, message));
-    }
 
     /**
      * The work, inside whatever an install declared around this verb. Innermost is the capability itself, so an
@@ -70,11 +60,13 @@ public class FlowEngine {
 
     private String apply(String taskId, TaskStatus was, TaskAction action, Outcome outcome) {
         Optional<TaskStatus> next = FlowRules.next(action, outcome.kind());
-        if (outcome.stamp() != null) {
-            TaskStatus stamped = next.orElse(was);
+        if (next.isPresent() || outcome.stamp() != null) {
+            TaskStatus moved = next.orElse(was);
             // Recorded even when the status is unchanged: a second round shipped onto the same request, or a
-            // deploy that stopped part way, both happened and both are what a human reads the history for.
-            tasks.updateTask(taskId, task -> task.withStatus(stamped, outcome.stamp(), true));
+            // deploy that stopped part way, both happened and both are what a human reads the history for. An
+            // outcome with nothing to say keeps the line the task already carries.
+            tasks.updateTask(taskId, task -> task.withStatus(moved,
+                    outcome.stamp() == null ? task.message() : outcome.stamp(), true));
         }
         if (outcome.kind().refuses()) {
             throw new IllegalStateException(outcome.message(), outcome.cause());

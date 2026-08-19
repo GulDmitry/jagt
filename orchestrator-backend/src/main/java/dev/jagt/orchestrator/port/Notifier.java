@@ -1,4 +1,5 @@
-package dev.jagt.orchestrator.notify;
+package dev.jagt.orchestrator.port;
+
 
 /**
  * One way of reaching the human — a desktop banner, a log line, a mailbox. Adding one must change no caller, so

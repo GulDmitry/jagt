@@ -9,11 +9,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * A one-shot, hard-formatted headless Claude call for the Master side: spin up a stripped session
- * that inherits ONLY the human's own MCP servers (no hardcoded servers/paths in jagt), ask one
- * question, force a deterministic JSON answer, done. Reads a ticket before a worktree
- * exists (so the sub-agent can't do it yet). Empty result = assistant unavailable / call failed —
- * callers fall back to explicit input.
+ * One question to a model, answered as JSON, for the Master side: it reads a ticket before a worktree exists, so
+ * before there is any sub-agent to ask. An implementation spends money, so it is metered and it is the ONLY place
+ * jagt does. Empty result = unavailable or failed, and every caller falls back to explicit input rather than
+ * guessing.
  */
 public interface MasterAssistant {
 

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.notify;
+package dev.jagt.orchestrator.port;
 
 /**
  * Something a human must be told. A record rather than a title and a body, because routing needs to know what

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.notify;
 
+import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.adapter.DesktopNotifier;
 import dev.jagt.orchestrator.port.UserNotifier;
 import org.junit.jupiter.api.Test;
 

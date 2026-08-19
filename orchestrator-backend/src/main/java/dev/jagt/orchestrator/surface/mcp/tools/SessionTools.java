@@ -21,11 +21,11 @@ public class SessionTools implements McpTools {
     public void declare(McpToolRegistry tools) {
         tools.tool("open_task_tab", """
                 {
-                  "description": "Start a fresh Claude sub-agent session (tmux window) for an ALREADY registered task whose session is gone or unresponsive.",
+                  "description": "Start a fresh sub-agent session (a terminal window) for an ALREADY registered task whose session is gone or unresponsive.",
                   "type": "object",
                   "properties": {
                     "taskId": {"type": "string"},
-                    "mode": {"type": "string", "enum": ["auto", "plan"], "description": "plan = start in Claude plan mode. Default: auto."}
+                    "mode": {"type": "string", "enum": ["auto", "plan"], "description": "plan = start the agent in its planning mode. Default: auto."}
                   },
                   "required": ["taskId"]
                 }""",
@@ -34,7 +34,7 @@ public class SessionTools implements McpTools {
 
         tools.tool("close_task_tab", """
                 {
-                  "description": "Close a task's tmux window and kill its Claude session (e.g. when the task is finished). Worktree and state entry are kept — use remove_task to retire the task completely.",
+                  "description": "Close a task's window and kill its agent session (e.g. when the task is finished). Worktree and state entry are kept — use remove_task to retire the task completely.",
                   "type": "object",
                   "properties": {
                     "taskId": {"type": "string"}
@@ -45,7 +45,7 @@ public class SessionTools implements McpTools {
 
         tools.tool("focus_task", """
                 {
-                  "description": "Bring the task's agent window to the user's screen: switch tmux to its window and bring Warp to the foreground. If the session was closed, a fresh Claude session is started first.",
+                  "description": "Bring the task's agent window to the user's screen: select its window and raise the viewer. If the session was closed, a fresh one is started first.",
                   "type": "object",
                   "properties": {
                     "taskId": {"type": "string", "description": "Task id or its short alias (p1, s2, ...)."}

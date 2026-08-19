@@ -55,12 +55,14 @@ class RingsTest {
         }
     }
 
+    /**
+     * Every ring the source NAMES, however it names it: a plain import, a static import, or a fully qualified
+     * reference written inline. Matching import lines alone would let the same dependency in by the back door.
+     */
     private static Stream<String> importsOf(String ring) throws IOException {
-        return sources(ring).flatMap(text -> text.lines())
-                .filter(line -> line.startsWith("import dev.jagt.orchestrator."))
-                .map(line -> line.substring("import dev.jagt.orchestrator.".length()))
-                .map(rest -> rest.substring(0, rest.indexOf('.')))
-                .distinct();
+        java.util.regex.Pattern named = java.util.regex.Pattern.compile("dev\\.jagt\\.orchestrator\\.([a-z]\\w*)");
+        return sources(ring).flatMap(text -> named.matcher(text).results())
+                .map(match -> match.group(1)).distinct();
     }
 
     private static Stream<String> sources(String ring) throws IOException {

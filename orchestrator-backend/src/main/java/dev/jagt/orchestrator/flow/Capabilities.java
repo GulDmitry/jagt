@@ -25,6 +25,11 @@ public class Capabilities {
                 .sorted(Comparator.comparingInt(CapabilityInterceptor::order)).toList();
         declared.stream().sorted(Comparator.comparingInt(TaskCapability::priority)).forEach(capability -> {
             TaskCapability replaced = byAction.put(capability.action(), capability);
+            if (replaced != null && replaced.priority() == capability.priority()) {
+                throw new IllegalStateException(capability.getClass().getSimpleName() + " and "
+                        + replaced.getClass().getSimpleName() + " both claim `" + capability.action().id()
+                        + "` at priority " + capability.priority() + " — one of them must say which wins");
+            }
             if (replaced != null) {
                 takeovers.add(capability.getClass().getSimpleName() + " takes over `"
                         + capability.action().id() + "` from " + replaced.getClass().getSimpleName());

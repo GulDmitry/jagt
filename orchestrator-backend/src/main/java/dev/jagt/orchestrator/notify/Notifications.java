@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.notify;
 
+import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.Notifier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

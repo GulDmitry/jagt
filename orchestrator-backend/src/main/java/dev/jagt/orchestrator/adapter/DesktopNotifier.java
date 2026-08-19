@@ -1,6 +1,9 @@
-package dev.jagt.orchestrator.notify;
+package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.Notifier;
 import dev.jagt.orchestrator.port.UserNotifier;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

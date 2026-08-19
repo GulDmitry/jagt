@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.notify;
 
+import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.port.Notifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
