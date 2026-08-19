@@ -20,9 +20,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class RingsTest {
 
-    /** The centre is its own module now, so the rule is read across both source roots. */
-    private static final List<Path> ROOTS = List.of(Path.of("src/main/java/dev/jagt/orchestrator"),
-            Path.of("core/src/main/java/dev/jagt/orchestrator"));
+    /**
+     * Every module's production sources. A root that stops matching after a refactor is how this test goes green
+     * and stops guarding anything, so it is asserted below rather than assumed.
+     */
+    private static final List<Path> ROOTS = List.of(
+            Path.of("core/src/main/java/dev/jagt/orchestrator"),
+            Path.of("usecase/src/main/java/dev/jagt/orchestrator"),
+            Path.of("adapter/src/main/java/dev/jagt/orchestrator"),
+            Path.of("surface/src/main/java/dev/jagt/orchestrator"),
+            Path.of("src/main/java/dev/jagt/orchestrator"));
     private static final Set<String> CORE = Set.of("flow", "task", "port");
 
     /** The centre may know its own rings and nothing else — that is what makes its tests need no container. */
@@ -37,7 +44,7 @@ class RingsTest {
      * an OS or a vendor impossible to swap. What the use cases need from out there they declare as a port.
      */
     @ParameterizedTest
-    @ValueSource(strings = {"capability", "command", "job", "notify", "service", "surface"})
+    @ValueSource(strings = {"capability", "command", "job", "notify", "service", "surface", "config", "startup"})
     void nothingBetweenTheCentreAndTheEdgeNamesTheEdge(String ring) {
         assertThat(importsOf(ring).filter("adapter"::equals)).isEmpty();
     }
@@ -46,18 +53,31 @@ class RingsTest {
     @ParameterizedTest
     @ValueSource(strings = {"flow", "task", "port"})
     void theCentreCarriesNoFrameworkAtAll(String ring) {
-        assertThat(sources(ring).filter(text -> text.contains("import org.springframework")
-                || text.contains("import lombok"))).isEmpty();
+        assertThat(sources(ring).filter(text -> text.contains("org.springframework")
+                || text.contains("lombok"))).isEmpty();
     }
 
     /**
      * The whole point of the edge: porting to another machine is a folder, not a search. `open` is not on the
      * list — it is an ordinary English word in the sentences jagt writes.
      */
+    /**
+     * The guard on the guard: a ring whose sources this cannot find is a ring nothing checks, and the failure mode
+     * is silence. Every assertion below reads files, so it must be able to prove it read some.
+     */
+    @Test
+    void readsEveryRingItClaimsToCheck() {
+        assertThat(ROOTS).allSatisfy(root -> assertThat(Files.isDirectory(root))
+                .describedAs("source root %s", root).isTrue());
+        assertThat(List.of("flow", "task", "port", "capability", "command", "job", "notify", "service",
+                "surface", "adapter", "config", "startup")).allSatisfy(ring ->
+                assertThat(sources(ring).count()).describedAs("java files in %s", ring).isPositive());
+    }
+
     @Test
     void theOperatingSystemIsNamedOnlyAtTheEdge() {
         List<String> osOnly = List.of("osascript", "notify-send", "setsid", "/opt/homebrew", "/usr/local/bin",
-                "wt.exe", "PATHEXT");
+                "wt.exe", "PATHEXT", "lsof", "kill -9", "/Applications");
 
         assertThat(ROOTS.stream().flatMap(RingsTest::javaFilesUnder)
                 .filter(path -> !path.toString().contains("/adapter/"))

@@ -34,8 +34,8 @@ public final class DashboardLine {
     }
 
     /**
-     * The checks, when they are not simply green: a red run while the task still reads CI_POLLING is the case the
-     * status alone cannot show, and it is the one worth interrupting a human for.
+     * The checks, only when they are not green: a red run while the task still reads CI_POLLING is what the status
+     * alone cannot show.
      */
     private static String checks(TaskState task) {
         return switch (Pipeline.of(task.pipelineStatus())) {

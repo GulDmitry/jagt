@@ -6,15 +6,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * What creating a task needs, as one value — the chain that carries it used to pass eight positional Strings of
- * which a typical call filled three, so two swapped nulls were indistinguishable at every hop.
+ * What creating a task needs, as one value.
  *
- * <p>{@code baseBranch} is the per-task OVERRIDE of the project's configured base: the branch the worktree is
- * cut from AND the branch its review request targets. Null (the normal case) means "the project's baseBranch",
- * and it stays null in state.json so a later config change still reaches those tasks.
+ * <p>{@code baseBranch} is the per-task OVERRIDE of the project's configured base: the branch the worktree is cut
+ * from AND the branch its review request targets. Null (the normal case) means the project's own.
  *
  * @param projectKeys every repository the one session works in, the agent's own FIRST — it runs there and edits
- *                    the others in place. Ordinary work names one.
+ *                    the others in place
  */
 public record NewTask(String taskId, List<String> projectKeys, String instructions, String mode,
                       String branchStrategy, String baseBranch, String title, String ticketUrl) {
@@ -23,12 +21,10 @@ public record NewTask(String taskId, List<String> projectKeys, String instructio
         projectKeys = projectKeys == null ? List.of() : List.copyOf(projectKeys);
     }
 
-    /** Where the agent's session runs, which is also the repo every single-repo accessor answers for. */
     public String projectKey() {
         return projectKeys.isEmpty() ? null : projectKeys.get(0);
     }
 
-    /** taskId + the session's project are the only two a task cannot be created without. */
     public static Builder builder(String taskId, String projectKey) {
         return new Builder(taskId, projectKey);
     }
@@ -48,7 +44,7 @@ public record NewTask(String taskId, List<String> projectKeys, String instructio
             this.projectKeys.add(projectKey);
         }
 
-        /** The further repositories this one session also works in; the session's own project stays first. */
+        /** Further repositories the same session works in; the session's own project stays first. */
         public Builder alsoIn(List<String> projects) {
             if (projects != null) {
                 projects.stream().filter(p -> p != null && !p.isBlank()).forEach(projectKeys::add);
@@ -87,8 +83,8 @@ public record NewTask(String taskId, List<String> projectKeys, String instructio
         }
 
         public NewTask build() {
-            // Dropping a blank one silently would promote the next repository to be the one the agent's session
-            // runs in — a different task than the caller asked for, and nothing downstream could tell.
+            // Dropping a blank one silently would promote the next repository to be the session's own — a
+            // different task than the caller asked for, and nothing downstream could tell.
             if (projectKeys.get(0) == null || projectKeys.get(0).isBlank()) {
                 throw new IllegalArgumentException("A task needs the project its session runs in");
             }

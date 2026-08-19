@@ -7,9 +7,9 @@ import dev.jagt.orchestrator.port.TaskStore;
 import java.util.function.UnaryOperator;
 
 /**
- * The second door into the machine: a status the task itself reports, rather than one an action led to. Its agent
- * over MCP and a review round jagt read on the task's behalf both come through here, so the machine has no
- * entrance without a rule on it — a task cannot talk itself onto a shared branch, out of one, or closed.
+ * The second door into the machine: a status the task itself reports, rather than one an action led to. Every
+ * report comes through here, so the machine has no entrance without a rule on it — a task cannot talk itself onto
+ * a shared branch, out of one, or closed.
  */
 public class FlowReports {
 

@@ -16,8 +16,7 @@ import java.util.function.BiPredicate;
  * to. Nothing else may answer either question — a projection asks it to decide what to offer and the engine asks
  * it before acting, so a card cannot advertise a move the gate then refuses.
  *
- * <p>It stays Java rather than configuration on purpose: every status and every action here is checked by the
- * compiler, and a table nobody can mistype is worth more than one nobody has to rebuild for.
+ * <p>Java rather than configuration on purpose: every status and every action here is compiler-checked.
  */
 public final class FlowRules {
 
@@ -100,10 +99,7 @@ public final class FlowRules {
         return rule != null && rule.allows(status, facts);
     }
 
-    /**
-     * Every action legal for a task, what moves it on before what only looks at it — grouped rather than left to
-     * the enum's own order, so both surfaces render the same card without either of them sorting.
-     */
+    /** Every action legal for a task, what moves it on before what only looks at it — so no surface sorts. */
     public static List<TaskAction> allowed(TaskStatus status, Facts facts) {
         return RULES.entrySet().stream().filter(entry -> entry.getValue().allows(status, facts))
                 .map(Map.Entry::getKey)
@@ -116,7 +112,12 @@ public final class FlowRules {
         return rule == null ? Optional.empty() : Optional.ofNullable(rule.next().get(outcome));
     }
 
-    /** Every status any action can lead to, so the assembly can ask whether the machine has a hole in it. */
+    /** Whether the table says anything at all about this action — a verb it does not mention can never run. */
+    public static boolean mentions(TaskAction action) {
+        return RULES.containsKey(action);
+    }
+
+    /** Every status any action can lead to. */
     public static Set<TaskStatus> targets() {
         return RULES.values().stream().flatMap(rule -> rule.next().values().stream())
                 .collect(java.util.stream.Collectors.toUnmodifiableSet());

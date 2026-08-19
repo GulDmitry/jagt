@@ -1,16 +1,13 @@
 package dev.jagt.orchestrator.task;
 
 /**
- * The facts needed to adopt a review request that is already open: which branch it comes from, which one it
- * merges into, and what it is called.
+ * The facts needed to adopt a review request that is already open.
  *
- * <p>Deliberately host- and source-agnostic: the same facts come either from a code host's own API
- * ({@link dev.jagt.orchestrator.port.CodeHost}, free) or from a headless assistant read
+ * <p>Source-agnostic on purpose: the same facts come either from a code host's own API
+ * ({@link dev.jagt.orchestrator.port.CodeHost}, free) or from a model read
  * ({@link dev.jagt.orchestrator.port.MasterAssistant}, paid), and no consumer may care which.
  *
- * @param exists       false = the URL could not be resolved at all (gone, or the read failed)
- * @param sourceBranch the branch the request is built on, which becomes the task itself
- * @param targetBranch the branch the request merges into, which the next round must keep targeting
+ * @param exists false = the URL could not be resolved at all (gone, or the read failed)
  */
 public record MergeRequestFacts(boolean exists, String sourceBranch, String targetBranch, String title) {
 }

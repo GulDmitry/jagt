@@ -1,9 +1,6 @@
 package dev.jagt.orchestrator.task;
 
-/**
- * Who asked for a change — the question a task's history could not answer: it recorded that a task moved to
- * SHIPPING, never whether a human typed it, clicked it, said it in words, or an agent reported it.
- */
+/** Who asked for a status change. */
 public enum ActionOrigin {
 
     CONSOLE,

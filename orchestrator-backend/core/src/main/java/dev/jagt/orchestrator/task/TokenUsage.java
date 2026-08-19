@@ -4,13 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * What jagt's own model calls cost: the headless assistant spend, accumulated per task in state.json and
- * per session in memory. Only MASTER-side calls land here — a sub-agent's spend lives in its own Claude
- * session and jagt cannot see it, so this is jagt's cost of running a task, not the task's total cost.
+ * What jagt's own model calls cost. A sub-agent's spend lives in its own session where jagt cannot see it, so
+ * this is never a task's total cost.
  *
- * <p>{@code inputTokens} counts fresh context (prompt + cache writes, both billed at input rates);
- * {@code cachedInputTokens} counts cache reads, kept apart because they are an order of magnitude cheaper
- * and their share is the signal for "is the prompt cache doing anything for us".
+ * <p>{@code inputTokens} counts fresh context, cache writes included — both bill at input rates;
+ * {@code cachedInputTokens} counts cache reads, an order of magnitude cheaper.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TokenUsage(int calls, long inputTokens, long cachedInputTokens, long outputTokens,
@@ -33,15 +31,13 @@ public record TokenUsage(int calls, long inputTokens, long cachedInputTokens, lo
                 costUsd + other.costUsd);
     }
 
-    /** Every token that passed through, fresh or cached, in or out — the one number a column can hold. */
+    /** Every token that passed through, fresh or cached, in or out. */
     @JsonIgnore
     public long total() {
         return inputTokens + cachedInputTokens + outputTokens;
     }
 
-    /** Nothing measured — nothing to show and nothing to add.
-     *  {@code @JsonIgnore}: Jackson would otherwise persist this derived accessor as a {@code "none"}
-     *  field in state.json, which is the SSOT and must carry state only. */
+    /** {@code @JsonIgnore} keeps Jackson from persisting this derived accessor as a {@code "none"} field. */
     @JsonIgnore
     public boolean isNone() {
         return calls == 0;

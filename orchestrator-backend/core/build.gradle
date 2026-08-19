@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 java {
@@ -15,8 +15,8 @@ repositories {
 // No Spring and no Lombok, deliberately: the records and the rules are exercised without a container, and the
 // build is what stops that becoming a promise. Jackson is here because the record IS the state file's format.
 dependencies {
-    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.20'
-    implementation 'tools.jackson.core:jackson-databind:3.0.2'
+    api 'com.fasterxml.jackson.core:jackson-annotations:2.20'
+    api 'tools.jackson.core:jackson-databind:3.0.2'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.14.0'
     testImplementation 'org.assertj:assertj-core:3.27.6'
     testImplementation 'org.mockito:mockito-core:5.20.0'

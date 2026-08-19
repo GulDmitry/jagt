@@ -1,10 +1,9 @@
 package dev.jagt.orchestrator.flow;
 
 /**
- * The human-readable step of a task's life. Eleven {@link TaskStatus} values are the persisted SSOT, but four
- * of them ({@code REVIEW_PENDING}, {@code CI_POLLING}, {@code REVIEWED}, {@code APPROVED}) all read as the one
- * word "review" to a person, which is why the dashboard was unreadable. A phase is a PROJECTION for humans —
- * never a second state machine, never persisted.
+ * The human-readable step of a task's life: {@link TaskStatus} is the persisted SSOT, but several of its values
+ * all read as the one word "review" to a person. A phase is a PROJECTION for humans — never a second state
+ * machine, never persisted.
  */
 public enum Phase {
 
@@ -18,7 +17,6 @@ public enum Phase {
     READY("ready"),
     /** Merged into the deploy branch — or stuck in a conflict on the way there. */
     DEPLOY("deploy"),
-    /** Closed. */
     DONE("done");
 
     private final String label;

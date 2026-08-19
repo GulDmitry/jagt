@@ -1,9 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
-/**
- * Whose turn it is. The single most useful fact about a task and the one the old prose hint buried: a human
- * scanning a board wants to know what is waiting for THEM before anything else.
- */
+/** Whose turn it is. */
 public enum Owner {
 
     /** The agent is working; waiting is correct. */

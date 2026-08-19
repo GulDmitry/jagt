@@ -62,8 +62,8 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
                 case PLAIN -> TaskAction.SHIP;
             };
             case CI_POLLING, CI_FAILED -> hasReviewRequest ? TaskAction.SWEEP : TaskAction.FOCUS;
-            // Not unconditional: with no request there is nothing to land, and a primary the action list omits
-            // would leave the board with no highlighted button at all.
+            // With no request there is nothing to land, and a primary the action list omits would leave a card
+            // with no highlighted button at all.
             case REVIEWED, APPROVED -> hasReviewRequest ? TaskAction.DEPLOY : TaskAction.DONE;
             case DEPLOY_CONFLICT -> TaskAction.DEPLOY;
             case DEPLOYED -> TaskAction.DONE;
@@ -73,7 +73,7 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         };
     }
 
-    /** One line of prose for the TUI and for a button tooltip — the same wording the dashboard always used. */
+    /** One line of prose, for a hint line or a button tooltip. */
     private static String hint(TaskStatus status, RoundState round) {
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent working — wait or focus";

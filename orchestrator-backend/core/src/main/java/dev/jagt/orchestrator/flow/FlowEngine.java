@@ -12,9 +12,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * The ONE place a task's status is decided and written, whoever asked. It checks the action against
- * {@link FlowRules}, runs the capability, and applies the transition the rules give for that outcome — so no doer
- * names a status, and a refusal is answered with a sentence instead of a git error three layers down.
+ * The ONE place a task's status is decided and written, whoever asked: no doer names a status, and a refusal is
+ * answered with a sentence instead of a git error three layers down.
  */
 public class FlowEngine {
 
@@ -62,9 +61,8 @@ public class FlowEngine {
         Optional<TaskStatus> next = FlowRules.next(action, outcome.kind());
         if (next.isPresent() || outcome.stamp() != null) {
             TaskStatus moved = next.orElse(was);
-            // Recorded even when the status is unchanged: a second round shipped onto the same request, or a
-            // deploy that stopped part way, both happened and both are what a human reads the history for. An
-            // outcome with nothing to say keeps the line the task already carries.
+            // Recorded even when the status is unchanged: a second round onto the same request and a deploy that
+            // stopped part way both happened. An outcome with nothing to say keeps the line the task carries.
             tasks.updateTask(taskId, task -> task.withStatus(moved,
                     outcome.stamp() == null ? task.message() : outcome.stamp(), true));
         }

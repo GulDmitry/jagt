@@ -4,15 +4,12 @@ import dev.jagt.orchestrator.port.AgentWorktree;
 import java.nio.file.Path;
 
 /**
- * The pluggable AI-agent runtime — what jagt spawns per task and how it wires that agent to the
- * orchestrator. One implementation per agent CLI (Claude Code, Codex, …), selected by
- * {@code orchestrator.agent} exactly like the {@code platform} strategies
- * ({@link dev.jagt.orchestrator.port.TerminalDriver} etc.). Everything agent-specific — the launch
- * command, the agent's own MCP config file, the settings that let it run unattended — lives behind this seam
- * so the task flow (create worktree → provision → launch → talk over MCP) stays agent-agnostic.
+ * The pluggable AI-agent runtime — what jagt spawns per task and how it wires that agent to the orchestrator. One
+ * implementation per agent CLI, selected by {@code orchestrator.agent}. Everything agent-specific — the launch
+ * command, the agent's own MCP config file, the settings that let it run unattended — lives behind this seam so
+ * the task flow (create worktree → provision → launch → talk over MCP) stays agent-agnostic.
  *
- * <p>A new agent is therefore one class: implement this, register a config value. If something else has to
- * change to add one, that is the pluggable-by-design invariant leaking and belongs here instead.
+ * <p>A new agent is therefore one class: implement this, register a config value.
  */
 public interface AgentRuntime {
 
@@ -23,7 +20,7 @@ public interface AgentRuntime {
      */
     String SYSTEM_KNOWLEDGE_FILE = "AGENTS.md";
 
-    /** Human-facing agent name (e.g. "Claude") for dashboard/log messages. */
+    /** Human-facing agent name, for messages a human reads. */
     String displayName();
 
     /**
@@ -43,10 +40,9 @@ public interface AgentRuntime {
     Path systemKnowledgeFile(Path worktree);
 
     /**
-     * Writes what this agent needs to run in a fresh worktree: the config that declares jagt's MCP proxy
-     * (Claude {@code .mcp.json}, Codex {@code config.toml}, …), whatever lifts its permission prompts (nobody
-     * watches the tmux window to answer one), and its alias for {@link #SYSTEM_KNOWLEDGE_FILE}. Called once
-     * per task, before the agent starts.
+     * Writes what this agent needs to run in a fresh worktree: the config that declares jagt's MCP server,
+     * whatever lifts its permission prompts (nobody watches the window to answer one), and its alias for
+     * {@link #SYSTEM_KNOWLEDGE_FILE}. Called once per task, before the agent starts.
      */
     void provisionWorktree(AgentWorktree worktree);
 }

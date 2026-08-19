@@ -45,9 +45,6 @@ public interface SessionHost {
     /** Closes every window a task owns, and answers how many there were. */
     int killTaskWindows(String session, String taskId);
 
-    /**
-     * When the window last showed any activity, as epoch millis — 0 when unknown. This is what tells a busy agent
-     * from a stuck one: it says nothing over MCP either way.
-     */
+    /** When the window last showed any activity, as epoch millis — 0 when unknown. */
     long lastWindowActivityMillis(String session, String taskId);
 }

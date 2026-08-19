@@ -1,5 +1,9 @@
 rootProject.name = 'orchestrator-backend'
 
-// The centre as its own module: `:core` has no dependency on anything outside itself, so an import that points
-// outward does not compile. The rest of the tree is still one module — see ARCHITECTURE.md for what blocks it.
+// One module per ring, so the dependency rule is the compiler's: `:core` sees nothing of jagt's, `:usecase` sees
+// only the centre, `:adapter` and `:surface` see the centre and the use cases, and only the root sees every
+// adapter — which is what makes it the assembly.
 include 'core'
+include 'usecase'
+include 'adapter'
+include 'surface'

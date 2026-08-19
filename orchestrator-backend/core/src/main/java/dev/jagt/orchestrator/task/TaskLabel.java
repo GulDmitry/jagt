@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.task;
 
-/** {@code ABC-1 (a1)} — a line with only one of the two cannot be matched against the other surface. */
+/** {@code ABC-1 (a1)}, or the id alone when there is no alias. */
 public final class TaskLabel {
 
     private TaskLabel() {

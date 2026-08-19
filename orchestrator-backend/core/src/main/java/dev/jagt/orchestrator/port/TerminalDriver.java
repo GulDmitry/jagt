@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.port;
 import java.nio.file.Path;
 
 /**
- * How the agents' tmux sessions become visible, selected by {@code orchestrator.terminal}.
+ * How the agents' sessions become visible, selected by {@code orchestrator.terminal}.
  *
  * <p>The invariant every implementation owes: ONE dedicated agents window, task views as tabs inside it.
  */

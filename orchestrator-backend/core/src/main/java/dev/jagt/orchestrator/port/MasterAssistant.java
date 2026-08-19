@@ -9,10 +9,9 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * One question to a model, answered as JSON, for the Master side: it reads a ticket before a worktree exists, so
- * before there is any sub-agent to ask. An implementation spends money, so it is metered and it is the ONLY place
- * jagt does. Empty result = unavailable or failed, and every caller falls back to explicit input rather than
- * guessing.
+ * One question to a model, asked before any worktree exists and so before there is any sub-agent to ask. An
+ * implementation spends money, so it is metered. Empty result = unavailable or failed, and every caller falls back
+ * to explicit input rather than guessing.
  */
 public interface MasterAssistant {
 
@@ -25,10 +24,9 @@ public interface MasterAssistant {
     }
 
     /**
-     * One answer plus what it cost. The usage is reported even when {@code facts} is empty — a call that
-     * failed or came back unusable was paid for all the same, and the caller books it either way. Keeping
-     * the cost in the RETURN keeps this port about reading: no implementation can forget to meter, and the
-     * caller (the only one who knows whether a task exists yet) decides what the spend is attributed to.
+     * One answer plus what it cost. The usage is reported even when {@code facts} is empty — a call that failed or
+     * came back unusable was paid for all the same. The cost rides in the RETURN so no implementation can forget
+     * to meter, and the caller decides what the spend is attributed to.
      */
     record Answer<T>(Optional<T> facts, TokenUsage usage) {
 
@@ -50,8 +48,8 @@ public interface MasterAssistant {
     Answer<TicketFacts> readTicket(String ticketRef);
 
     /**
-     * Reads a review request by URL so `resume` can recover the branch it is built on and the branch it
-     * targets. The FALLBACK read: it follows a URL no configured host claims, which is what keeps it here.
+     * Reads a review request by URL. The FALLBACK read: it follows a URL no configured host claims, which is what
+     * keeps it here.
      */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
 
@@ -61,8 +59,8 @@ public interface MasterAssistant {
     /**
      * Maps a free-text request ("push the login one for review") onto one grammar command. {@code context} is the
      * prompt-ready list of commands and current tasks the caller wants considered — the port knows nothing
-     * about the grammar, so adding a command never touches this interface. Reads NOTHING from the outside,
-     * so implementations should run stripped of MCP entirely: cheaper, and it cannot call a tool by accident.
+     * about the grammar, so adding a command never touches this interface. Reads NOTHING from the outside, so an
+     * implementation should run with no tools at all: cheaper, and it cannot call one by accident.
      */
     Answer<CommandProposal> mapCommand(String text, String context);
 }

@@ -4,11 +4,7 @@ import java.util.Locale;
 
 /**
  * What the code host last said about the checks, as a verdict rather than as its own wording: every host spells
- * this differently (`success`, `SUCCESS`, `passed`, `running`, `pending`, `failed`, `error`, `timed_out`), and a
- * surface that matched on the words would agree with the other surface only by luck — and with the sweep's own
- * decision only by luck too, which is the disagreement that matters.
- *
- * <p>One parser, because the console's marker and the board's dot are the same fact seen twice.
+ * this differently, and anything matching on the words would agree with the next reader only by luck.
  */
 public enum Pipeline {
 
@@ -21,10 +17,9 @@ public enum Pipeline {
      * be what advances a task, and the words hosts invent are not a list anyone can finish.
      */
     NONE(2),
-    /** The checks passed. */
     GREEN(3);
 
-    /** Worst first, for merging several repositories' rounds into the one a human is owed. */
+    /** Worst first, for merging several repositories' rounds into one. */
     private final int severity;
 
     Pipeline(int severity) {
@@ -57,7 +52,7 @@ public enum Pipeline {
         return NONE;
     }
 
-    /** Whether a human should be told without being asked: a run that went red is the one that cannot wait. */
+    /** Whether a human should be told without being asked. */
     public boolean worthATap() {
         return this == RED;
     }

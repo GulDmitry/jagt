@@ -1,12 +1,10 @@
 package dev.jagt.orchestrator.flow;
 
 /**
- * Something a human can do to one task. Named here rather than spelled out in each front-end, so the TUI, the
- * web UI and the HTTP API offer exactly the same set — and so an action that is not legal for a task cannot be
- * offered at all (see {@link Move}).
+ * Something a human can do to one task, named once so every surface offers exactly the same set.
  *
- * <p>{@code id} is the wire name (URL segment, HTML data attribute) and the CLI verb; keeping them the same
- * string means a button and a typed command cannot drift apart.
+ * <p>{@code id} is the wire name (URL segment, HTML data attribute) AND the CLI verb: one string, so a button and
+ * a typed command cannot drift apart.
  */
 public enum TaskAction {
 
@@ -25,10 +23,8 @@ public enum TaskAction {
             "start a new agent session in the same worktree — it re-reads its brief");
 
     /**
-     * Which half of a card an action belongs to. FLOW moves the task along its life — closing it included; TOOL
-     * only looks at what is already there, or starts the same agent again. Declared once because both surfaces
-     * order and separate them the same way, and a card that mixes "push to a shared branch" in among "open the
-     * diff" makes the human read every button before pressing one.
+     * Which half of a card an action belongs to: FLOW moves the task along its life, closing it included; TOOL
+     * only looks at what is already there, or starts the same agent again.
      */
     public enum Group {
 
@@ -40,7 +36,6 @@ public enum TaskAction {
             this.id = id;
         }
 
-        /** The wire name, so a front-end can group without knowing the enum. */
         public String id() {
             return id;
         }
@@ -83,7 +78,7 @@ public enum TaskAction {
         return hint;
     }
 
-    /** What a human types, for the command reference: the verb and its argument, not prose. */
+    /** What a human types: the verb and its argument, not prose. */
     public String usage() {
         return usage;
     }
@@ -94,9 +89,8 @@ public enum TaskAction {
     }
 
     /**
-     * The action a retired spelling still names, or empty — never a current id, so a verb set stays closed.
-     * Case and padding are normalized HERE, because every surface that accepts the old word comes through this
-     * method and one of them must not be stricter than the next.
+     * The action a retired spelling still names, or empty — never a current id, so a verb set stays closed. Case
+     * and padding are normalized HERE, so no surface that accepts the old word is stricter than the next.
      */
     public static java.util.Optional<TaskAction> byRetiredVerb(String verb) {
         return verb == null ? java.util.Optional.empty()

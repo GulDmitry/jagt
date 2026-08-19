@@ -14,8 +14,8 @@ import java.util.Map;
 /**
  * One task, as {@code state.json} holds it.
  *
- * <p>A task works in one or MORE repositories ({@link #repos()}) but always in ONE session: what multiplies is
- * worktrees. {@code repos.get(0)} is where that session runs, and the single-repo accessors answer for it.
+ * <p>A task works in one or MORE repositories but always in ONE session: {@code repos.get(0)} is where that
+ * session runs, and the single-repo accessors answer for it.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -27,27 +27,21 @@ public record TaskState(
         String alias,
         String title,
         String ticketUrl,
-        // The branch this task was cut from and whose review request it targets, when the human named one at
-        // `do` time. Null = the project's configured baseBranch, so a config change still reaches the task.
+        // Null = the project's configured baseBranch, so a config change still reaches the task.
         String baseBranch,
-        // Auto-review window: when the request was first linked (window start), the last auto-poll, and the
-        // per-task on/off (null = follow the config default). Zero = unset.
+        // mrCreatedAt is when jagt stamped the round, not the host's own creation time. Zero = unset.
         long mrCreatedAt,
         long lastPolledAt,
         Boolean autoReview,
-        // What the host last said about the checks, in ITS words — parsed into a verdict by flow/Pipeline, so a
-        // host that words it differently needs no change here. Null = never read.
+        // The host's own wording for the checks, unparsed. Null = never read.
         String pipelineStatus,
-        // Master-side model spend on this task (headless assistant calls); null until the first one.
+        // Null until the first metered call.
         TokenUsage usage,
-        // Append-only, oldest first: every status this task actually moved TO, with when. Capped, see below.
+        // Append-only, oldest first: every status this task actually moved TO, with when.
         List<StatusChange> history
 ) {
 
-    /**
-     * The file is rewritten on every MCP call, so the log cannot be unbounded. A full history drops its OLDEST
-     * entries — the ones nobody asks about.
-     */
+    /** The whole file is rewritten on every update, so the log cannot be unbounded; the OLDEST entries drop. */
     private static final int MAX_HISTORY = 50;
 
     public TaskState {
@@ -56,9 +50,8 @@ public record TaskState(
     }
 
     /**
-     * Reads BOTH shapes of {@code state.json}: the current one with {@code repos}, and the older files that
-     * carried {@code project}/{@code worktreePath}/{@code remoteUrl}/{@code mrUrl}/{@code deployCommit} at the
-     * top level. Without it, the next read of an existing file would silently drop every task in it.
+     * Reads BOTH shapes: the current one with {@code repos}, and older files that carried one repository's
+     * fields at the top level.
      */
     @JsonCreator
     static TaskState fromJson(
@@ -88,7 +81,6 @@ public record TaskState(
                 baseBranch, mrCreatedAt, lastPolledAt, autoReview, pipelineStatus, usage, history);
     }
 
-    /** Where the agent's session runs, and what the single-repo accessors answer for. */
     @JsonIgnore
     public TaskRepo primary() {
         return repos.isEmpty() ? new TaskRepo(null, null, null, null, null) : repos.get(0);
@@ -109,7 +101,7 @@ public record TaskState(
         return primary().remoteUrl();
     }
 
-    /** The primary repo's review request. A multi-repo task has one per repo — see {@link #repos()}. */
+    /** The primary repo's request only; a multi-repo task has one per repo. */
     @JsonIgnore
     public String mrUrl() {
         return primary().mrUrl();
@@ -120,19 +112,17 @@ public record TaskState(
         return primary().deployCommit();
     }
 
-    /** Every project this task touches, in order; one entry for the ordinary single-repo task. */
     @JsonIgnore
     public List<String> projects() {
         return repos.stream().map(TaskRepo::project).filter(p -> p != null && !p.isBlank()).toList();
     }
 
-    /** The repo for a project key, or empty — a caller acting per repository must not guess which one it got. */
     @JsonIgnore
     public java.util.Optional<TaskRepo> repo(String project) {
         return repos.stream().filter(r -> r.project() != null && r.project().equals(project)).findFirst();
     }
 
-    /** True when ANY repo has a review request open: the question every "is there something to sweep" asks. */
+    /** True when ANY of the repos has a review request open. */
     @JsonIgnore
     public boolean hasReviewRequest() {
         return repos.stream().anyMatch(TaskRepo::hasReviewRequest);
@@ -148,10 +138,9 @@ public record TaskState(
     }
 
     /**
-     * @param event whether to record this even when the status is unchanged — true for something that was DONE to
-     *              the task, because a second review round shipped onto the same request is a real event, and
-     *              false for a task repeating itself, because a keep-alive would otherwise drown four
-     *              transitions in hundreds of identical rows
+     * @param event record even when the status is unchanged — true for something DONE to the task (a second round
+     *              shipped onto the same request is a real event), false for a task repeating itself, whose
+     *              keep-alives would otherwise drown the real transitions
      */
     public TaskState withStatus(TaskStatus status, String message, boolean event) {
         long now = System.currentTimeMillis();
@@ -162,21 +151,14 @@ public record TaskState(
                 .build();
     }
 
-    /**
-     * A ship landed: a NEW review round. The status that follows is not decided here — the flow engine writes it,
-     * which is also what records the round in history.
-     *
-     * <p>The URL goes on the repo it belongs to: a task spanning two would otherwise link to the wrong diff.
-     */
+    /** A NEW review round on one repository's request. The status that follows is not decided here. */
     public TaskState withReviewRound(String project, String reviewRequestUrl) {
         long now = System.currentTimeMillis();
         return toBuilder().lastActiveTimestamp(now)
                 .repos(mapRepo(project, repo -> repo.withMrUrl(reviewRequestUrl)))
-                // A new round has new checks: keeping the last one's verdict would leave a card shouting CHECKS
-                // RED about a run that no longer exists.
+                // A new round has new checks: the last one's verdict describes a run that no longer exists.
                 .pipelineStatus(null)
-                // The window is per ROUND, not per request: a round shipped days later gets its own polling
-                // window, and lastPolledAt=0 makes the next scheduler tick look at it right away.
+                // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
                 .mrCreatedAt(now).lastPolledAt(0)
                 .build();
     }
@@ -187,11 +169,9 @@ public record TaskState(
     }
 
     /**
-     * One ship, however many repositories it landed in: every URL goes on its own repo, and the round is
-     * recorded ONCE — a history entry per repository would read as several rounds.
-     *
-     * <p>The status message carries the session repo's link, the one a human follows first; the rest are on the
-     * repos, which is where a surface reads them from anyway.
+     * One ship, however many repositories it landed in: every URL goes on its own repo, and the round is recorded
+     * ONCE — a history entry per repository would read as several rounds. The recorded round carries the session
+     * repo's link, the one a human follows first.
      */
     public TaskState withReviewRound(Map<String, String> urlByProject) {
         if (urlByProject.isEmpty()) {
@@ -202,10 +182,7 @@ public record TaskState(
         return withMrUrls(urlByProject).withReviewRound(primary().project(), primaryUrl);
     }
 
-    /**
-     * Links each repository to its own request WITHOUT recording a round — what a ship that failed part way
-     * still knows for certain: those requests exist, whatever the task's status ends up saying.
-     */
+    /** Links each repository to its own request WITHOUT recording a round. */
     public TaskState withMrUrls(Map<String, String> urlByProject) {
         TaskState linked = this;
         for (Map.Entry<String, String> request : urlByProject.entrySet()) {
@@ -216,8 +193,8 @@ public record TaskState(
 
     /**
      * A task written before history existed is seeded with its current status at the last activity stamp:
-     * otherwise {@link #statusSince()} falls back to a field every keep-alive bumps, and an hour-old status
-     * reads as "0m".
+     * otherwise {@link #statusSince()} falls back to a stamp every keep-alive bumps, and an hour-old status
+     * reads as brand new.
      */
     private List<StatusChange> seededHistory() {
         if (!history.isEmpty()) {
@@ -227,15 +204,14 @@ public record TaskState(
         return List.of(new StatusChange(status, since, null));
     }
 
-    /**
-     * Names who caused the step this task just took. Separate from taking the step because the two are known in
-     * different places: the transition is built where the work happens, the asker only at the entry point.
-     */
-    /** What the host said about the checks this round, kept so a surface can show it between sweeps. */
     public TaskState withPipelineStatus(String hostStatus) {
         return toBuilder().pipelineStatus(hostStatus).build();
     }
 
+    /**
+     * Stamps who caused the step this task just took — separate from taking it, because the transition is built
+     * where the work happens and the asker is known only at the entry point.
+     */
     public TaskState withLastChangeOrigin(ActionOrigin origin) {
         if (history.isEmpty()) {
             return this;
@@ -253,20 +229,16 @@ public record TaskState(
                 : List.copyOf(grown.subList(grown.size() - MAX_HISTORY, grown.size()));
     }
 
-    /**
-     * Since when the task has been in its CURRENT status — which is NOT {@code lastActiveTimestamp}: a
-     * keep-alive bumps that stamp, so an agent that has been working for an hour looks like it just moved.
-     * Falls back to the activity stamp for a task written before history existed.
-     */
-    /**
-     * Whether the oldest steps have been dropped, which makes anything counted over the whole log — how many
-     * times it went out for review, how long ago it started — a FLOOR rather than the figure.
-     */
+    /** Whether the oldest steps have been dropped, which makes any total over the log a FLOOR, not the figure. */
     @JsonIgnore
     public boolean historyAtCap() {
         return history.size() >= MAX_HISTORY;
     }
 
+    /**
+     * Since when the task has been in its CURRENT status — which is NOT {@code lastActiveTimestamp}: a keep-alive
+     * bumps that stamp, so an agent that has been working for an hour looks like it just moved.
+     */
     public long statusSince() {
         return history.isEmpty() ? lastActiveTimestamp : history.get(history.size() - 1).at();
     }
@@ -275,7 +247,7 @@ public record TaskState(
         return withStatus(status, message);
     }
 
-    /** Records the merge commit a deploy just created IN THAT REPO; the status move is a separate step. */
+    /** The merge commit a deploy created in THAT repo; the status move is a separate step. */
     public TaskState withDeployCommit(String project, String deployCommit) {
         return toBuilder().repos(mapRepo(project, repo -> repo.withDeployCommit(deployCommit))).build();
     }
@@ -292,7 +264,6 @@ public record TaskState(
         return withMrUrl(primary().project(), mrUrl);
     }
 
-    /** Records the remote of a repo, learned when its worktree was created. */
     public TaskState withRemoteUrl(String project, String remoteUrl) {
         return toBuilder().repos(mapRepo(project, repo -> repo.withRemoteUrl(remoteUrl))).build();
     }
@@ -305,7 +276,7 @@ public record TaskState(
         return toBuilder().lastPolledAt(lastPolledAt).build();
     }
 
-    /** Applies a change to ONE repo by project key, leaving the others exactly as they were. */
+    /** A null project key means the primary repo. */
     private List<TaskRepo> mapRepo(String project, java.util.function.UnaryOperator<TaskRepo> change) {
         List<TaskRepo> updated = new ArrayList<>(repos.size());
         for (TaskRepo repo : repos) {
@@ -317,36 +288,29 @@ public record TaskState(
         return List.copyOf(updated);
     }
 
-    /**
-     * The branch this task branched off and merges back into — its own override if the human named one at
-     * {@code do} time, else the project default the caller passes in. ONE answer for the worktree's base, the
-     * review request's target and the {@code ide … diff} snapshot; they cannot drift apart.
-     */
+    /** The task's own base branch, or the project default when it has none (null or blank). */
     public String baseBranchOr(String projectDefault) {
         return baseBranch == null || baseBranch.isBlank() ? projectDefault : baseBranch;
     }
 
-    /** True unless the task explicitly opted out; a null (legacy/unset) follows the config default. */
+    /** An unset (null) per-task flag follows the config default. */
     public boolean autoReviewEnabled(boolean configDefault) {
         return autoReview == null ? configDefault : autoReview;
     }
 
-    /** Spend so far, never null — an untouched (or legacy) task has cost nothing. */
     public TokenUsage usageOrNone() {
         return usage == null ? TokenUsage.NONE : usage;
     }
 
-    /** Adds one call's cost. Does NOT touch lastActiveTimestamp: metering is not agent activity. */
+    /** Does NOT touch lastActiveTimestamp: metering is not agent activity. */
     public TaskState withUsageAdded(TokenUsage added) {
         return toBuilder().usage(usageOrNone().plus(added)).build();
     }
 
-    /** A required-fields entry point; optional fields default to unset and are layered on with setters. */
     public static Builder builder(String project, String worktreePath, TaskStatus status) {
         return new Builder(List.of(TaskRepo.of(project, worktreePath)), status);
     }
 
-    /** The multi-repo entry point: every repository the task works in, the agent's own one first. */
     public static Builder builder(List<TaskRepo> repos, TaskStatus status) {
         return new Builder(repos, status);
     }
@@ -360,10 +324,8 @@ public record TaskState(
     }
 
     /**
-     * Mutable builder so callers set only the fields they care about — a row of positional nulls is exactly the
-     * null-soup jagt's config records avoid. Missing fields stay unset (null / 0). The repositories and the
-     * status are required. The single-repo setters ({@code remoteUrl}, {@code mrUrl}, {@code deployCommit})
-     * write the FIRST repo, which is what a single-repo caller means by them.
+     * Missing fields stay unset (null / 0); the repositories and the status are required. The single-repo setters
+     * ({@code remoteUrl}, {@code mrUrl}, {@code deployCommit}) write the FIRST repo.
      */
     public static final class Builder {
         private List<TaskRepo> repos;
@@ -379,7 +341,7 @@ public record TaskState(
         private Boolean autoReview;
         private String pipelineStatus;
         private TokenUsage usage;
-        /** Null means "a brand-new task" — {@link #build()} then seeds it with the initial status. */
+        /** Null means "a brand-new task". */
         private List<StatusChange> history;
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
@@ -477,9 +439,8 @@ public record TaskState(
         }
 
         /**
-         * A task built from scratch starts its history AT its initial status — otherwise the first entry would
-         * be the second thing that ever happened to it, and "how long did it sit in NEW" would need a
-         * timestamp nobody kept. A task rebuilt from an existing one carries its own history through.
+         * A task built from scratch starts its history AT its initial status, so "how long has it sat in NEW" is
+         * answerable; a task rebuilt from an existing one carries its own history through.
          */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,

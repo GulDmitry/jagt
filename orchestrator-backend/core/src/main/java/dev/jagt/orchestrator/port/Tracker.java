@@ -10,14 +10,13 @@ import java.util.Optional;
  */
 public interface Tracker {
 
-    /** Human-facing tracker name (e.g. "Jira") for log lines. */
+    /** Human-facing tracker name, for log lines. */
     String displayName();
 
     /**
      * Whether this tracker is fully configured AND can actually fetch {@code ticketRef} — an issue key of its
-     * own shape, or a URL of its own. Never claim a reference that cannot be fetched: a claimed-but-failing
-     * read is indistinguishable from a ticket that does not exist, and the caller stops rather than paying a
-     * model to try again.
+     * own shape, or a URL of its own. Never claim a reference that cannot be fetched: a claimed-but-failing read
+     * is indistinguishable from a ticket that does not exist, and the caller stops there.
      */
     boolean supports(String ticketRef);
 

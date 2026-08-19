@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.surface.mcp.McpController;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.MeteredAssistant;
-import dev.jagt.orchestrator.service.StateViews;
+import dev.jagt.orchestrator.command.StateViews;
 import dev.jagt.orchestrator.surface.console.MasterShell;
 import dev.jagt.orchestrator.surface.ui.ConsoleLogging;
 import org.junit.jupiter.api.Test;

@@ -1,24 +1,20 @@
 package dev.jagt.orchestrator.task;
 
 /**
- * Whether anything is polling this task's review request, and when it will next look. A poll happens with nobody
- * watching, so a surface that cannot say this leaves a human guessing whether the silence means "waiting" or
- * "nothing is running".
+ * Whether anything is polling this task's review request, and when it will next look — a poll happens with nobody
+ * watching, so silence must not be the only answer a surface has.
  *
  * @param nextPollAt epoch millis of the next poll; 0 unless {@link State#WATCHING}. Absolute rather than a
  *                   remaining duration, because a page repaints its own clocks long after it fetched them
- * @param note       what a human is told, written ONCE here so the two surfaces cannot drift apart in wording;
- *                   null when there is nothing to say. Only the countdown is formatted per surface — it ticks
- *                   between fetches, so a rendered duration would be stale
+ * @param note       what a human is told, written ONCE here so the surfaces cannot drift apart in wording; null
+ *                   when there is nothing to say. The countdown is not in it — that is formatted per surface
  */
 public record AutoReviewWatch(State state, long nextPollAt, String note) {
 
     /**
-     * {@link #NONE} covers every "there is nothing to poll here" case at once — a task not out for review, one
-     * with no request yet, and polling switched off for the whole install, which every surface announces once
-     * rather than per task. {@link #OFF_FOR_TASK} is the one exception worth repeating on the task itself: a task
-     * created while polling was off keeps its own answer, so it stays still while its neighbours are watched, and
-     * {@link State#NO_ROUND} the other: a request whose round was never stamped can never be timed.
+     * {@link #NONE} covers every "there is nothing to poll here" case at once, including polling switched off for
+     * the whole install — which a surface states once rather than per task. {@link #OFF_FOR_TASK} is the one
+     * exception worth repeating on the task itself: it stays still while its neighbours are watched.
      */
     public enum State { NONE, WATCHING, WINDOW_ELAPSED, OFF_FOR_TASK, NO_ROUND }
 

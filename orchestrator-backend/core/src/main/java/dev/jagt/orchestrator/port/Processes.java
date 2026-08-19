@@ -12,7 +12,6 @@ import java.util.Map;
  */
 public interface Processes {
 
-    /** What a finished command left behind. */
     record Result(int exitCode, String stdout, String stderr) {
 
         /** Itself, or an exception naming {@code action} and what the command actually said. */

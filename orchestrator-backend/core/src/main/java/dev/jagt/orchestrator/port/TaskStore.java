@@ -6,9 +6,8 @@ import java.util.Optional;
 import java.util.function.UnaryOperator;
 
 /**
- * What the machine needs of wherever tasks are kept: find one, and change one. Declared here rather than taken as
- * the file-backed service it happens to be, so the rules and the engine can be exercised without a filesystem —
- * and so nothing in them knows that a task is a line in a JSON file.
+ * What the machine needs of wherever tasks are kept: find one, and change one. Declared here so the rules and the
+ * engine can be exercised without a filesystem, and so nothing in them knows how a task is stored.
  */
 public interface TaskStore {
 

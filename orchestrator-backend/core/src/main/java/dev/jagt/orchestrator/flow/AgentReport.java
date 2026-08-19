@@ -5,8 +5,8 @@ package dev.jagt.orchestrator.flow;
  * agent is reporting about it — and for a review round that is what decides whose move it is, since all three
  * outcomes (fixed code, a question, nothing to change) end the round at the same status.
  *
- * <p>One vocabulary in one place: the message is parsed here and nowhere else, so the dashboard line and the
- * projection cannot disagree about what {@code awaiting: …} means.
+ * <p>One vocabulary in one place: the message is parsed here and nowhere else, so two readers cannot disagree
+ * about what {@code awaiting: …} means.
  */
 public enum AgentReport {
 
