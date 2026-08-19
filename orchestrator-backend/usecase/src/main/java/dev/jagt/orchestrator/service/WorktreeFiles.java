@@ -28,6 +28,15 @@ public final class WorktreeFiles {
     }
 
     /**
+     * What jagt writes into a worktree whatever the checkout already holds — the copy is that worktree's, not
+     * the project's (the caller header in `.mcp.json` IS its path), so a commit must not carry it back. The
+     * names jagt refuses to take when the checkout ships them are deliberately absent: a change to one of
+     * those is the agent's own work.
+     */
+    public static final List<String> GENERATED = List.of(".mcp.json", ".claude/settings.local.json",
+            ".jagt", "task_context.md", "review_replies.md");
+
+    /**
      * Keeps orchestrator plumbing out of `git status` in every worktree of the project. info/exclude only
      * affects untracked files, so a project's own tracked AGENTS.md/CLAUDE.md is unaffected.
      */

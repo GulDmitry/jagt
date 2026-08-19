@@ -269,6 +269,13 @@ link to it, because no file here is named after one vendor.
   and posting the drafted `review_replies.md` is still relayed to the agent — a reply needs the thread it
   answers, which `ReviewFacts` does not carry — but as a FOLLOW-UP, never on the critical path. With no host
   configured the old prose relay is kept verbatim: an unconfigured setup must behave as it always did.
+- A COMMIT CARRIES THE TASK'S WORK, NEVER JAGT'S OWN PLUMBING: `commitAll` stages everything and then unstages
+  what jagt writes into a worktree regardless of the checkout (`WorktreeFiles.GENERATED`). `info/exclude`
+  answers only for UNTRACKED files, so a project that versions one of those names — jagt versions `.mcp.json` —
+  used to ship the copy written for that worktree, absolute caller path and all, and every other clone then read
+  a header pointing at somebody else's directory. The names jagt REFUSES to overwrite are deliberately not on
+  that list: a modified `AGENTS.md` is the agent's work. The price is that jagt's own generated files can only be
+  changed in this repository by a human commit.
 - A BRANCH THE BASE REPOSITORY STILL HOLDS IS FREED, NOT REFUSED (`GitService.freeCheckout`): git allows one
   checkout per branch, nobody works in the base repository, and a task blocked on a checkout nobody remembers
   making is worse than a WARN naming what it was on. Four things that are not incidental: it detaches the

@@ -105,6 +105,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Situation | What to run | What happens |
 |---|---|---|
 | Ship a round | `ship <task>` | Commits, pushes the task branch, opens/updates the request. Never merges. |
+| The project versions a file jagt generates per worktree (`.mcp.json` — jagt itself does) | `ship <task>` | The commit holds the task's work only; jagt unstages what it wrote for that worktree. It used to ship a caller header with an absolute path, which then pointed every other clone at the wrong directory. |
 | Deploy | `deploy <task>` | Merges the task branch into `deployBranch` and pushes. Refused when that equals the base branch. |
 | Deploy hit a conflict | resolve in the deploy worktree | Status DEPLOY_CONFLICT; jagt keeps the half-done state for you. |
 | Take a deploy back out | `revert <task>` | Reverts the LAST recorded merge commit. Refused (with a by-hand recipe) whenever it would have to guess which commit. |

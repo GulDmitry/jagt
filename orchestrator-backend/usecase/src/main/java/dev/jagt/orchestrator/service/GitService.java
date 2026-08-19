@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
 
 /**
  * Serialized per repository: index.lock races are per-repository, and a slow fetch in one project must not
@@ -213,6 +214,9 @@ public class GitService {
         return withRepoLock(projectPath, () -> {
             processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "add", "-A"))
                     .expectSuccess("git add -A in " + worktree);
+            processRunner.run(worktree, GIT_TIMEOUT, Stream.concat(
+                            Stream.of("git", "reset", "-q", "--"), WorktreeFiles.GENERATED.stream()).toList())
+                    .expectSuccess("git reset in " + worktree);
             List<String> staged = branchNames(processRunner.run(worktree, GIT_TIMEOUT,
                             List.of("git", "diff", "--cached", "--name-only"))
                     .expectSuccess("git diff --cached in " + worktree).stdout());
