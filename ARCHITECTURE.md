@@ -26,9 +26,10 @@ registry, one folder. If something fits no kind, the kind is missing — add a k
 Drivers are not a kind. They are what a kind needs from the world: an interface the inner rings declare
 (a PORT, in `port/`) and an implementation at the edge (an ADAPTER, in `adapter/`). Both exist.
 
-`service/` is what is left: work more than one capability shares — git, the state file, config, processes, tmux,
-worktrees. It is named for what it is rather than dissolved into one verb's folder, because a class two
-capabilities use belongs to neither.
+A verb that owns work keeps it in its own folder — `capability/ship/`, `capability/deploy/`, `capability/done/` —
+so one feature is one directory. `service/` is what is left: work more than one of them shares (git, the state
+file, config, processes, tmux, worktrees), named for what it is rather than pushed into one verb's folder, because
+a class two capabilities use belongs to neither.
 
 ## The rings — arrows point inward only
 

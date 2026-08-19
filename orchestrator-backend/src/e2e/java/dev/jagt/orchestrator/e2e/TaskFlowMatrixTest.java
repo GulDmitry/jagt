@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.service.TaskRetirement;
+import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.EditorDriver;

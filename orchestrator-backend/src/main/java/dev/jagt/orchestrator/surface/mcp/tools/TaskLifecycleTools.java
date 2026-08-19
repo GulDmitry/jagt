@@ -6,7 +6,7 @@ import dev.jagt.orchestrator.surface.mcp.CallerScope;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.service.TaskRetirement;
+import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

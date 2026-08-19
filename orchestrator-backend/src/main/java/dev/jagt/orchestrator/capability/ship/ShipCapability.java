@@ -1,9 +1,9 @@
-package dev.jagt.orchestrator.capability;
+package dev.jagt.orchestrator.capability.ship;
 
 import dev.jagt.orchestrator.port.TaskCapability;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.service.ShipService;
+import dev.jagt.orchestrator.capability.ship.ShipService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

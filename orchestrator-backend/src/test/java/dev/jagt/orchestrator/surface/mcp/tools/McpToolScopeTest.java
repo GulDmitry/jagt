@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.service.TaskRetirement;
+import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

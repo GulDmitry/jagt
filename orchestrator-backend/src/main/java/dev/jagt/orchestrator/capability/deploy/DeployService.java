@@ -1,5 +1,8 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.capability.deploy;
 
+import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.flow.Outcome;

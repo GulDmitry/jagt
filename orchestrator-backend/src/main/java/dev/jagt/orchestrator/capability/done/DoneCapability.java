@@ -1,25 +1,25 @@
-package dev.jagt.orchestrator.capability;
+package dev.jagt.orchestrator.capability.done;
 
 import dev.jagt.orchestrator.port.TaskCapability;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.service.DeployService;
+import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class DeployCapability implements TaskCapability {
+public class DoneCapability implements TaskCapability {
 
-    private final DeployService deploys;
+    private final TaskRetirement retirement;
 
     @Override
     public TaskAction action() {
-        return TaskAction.DEPLOY;
+        return TaskAction.DONE;
     }
 
     @Override
     public Outcome run(String taskId) {
-        return deploys.deploy(taskId);
+        return Outcome.gone(retirement.retire(taskId));
     }
 }

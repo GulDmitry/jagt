@@ -1,5 +1,10 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.MergeRequestRef;
