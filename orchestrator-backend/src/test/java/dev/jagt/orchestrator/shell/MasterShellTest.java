@@ -20,8 +20,9 @@ class MasterShellTest {
 
     private final ConfigurableApplicationContext context = mock(ConfigurableApplicationContext.class);
     private final StateViews views = mock(StateViews.class);
+    private final GrammarDispatch grammar = mock(GrammarDispatch.class);
     private final MasterShell shell = new MasterShell(views, mock(ConfigService.class),
-            mock(StateService.class), mock(GrammarDispatch.class), context);
+            mock(StateService.class), grammar, context);
 
     @Test
     void exitClosesTheSpringContextInsteadOfLeavingItToTheShutdownHook() {
@@ -33,6 +34,7 @@ class MasterShellTest {
 
     @Test
     void tabCompletesAUniqueCommand() {
+        when(grammar.completions()).thenReturn(List.of("ship", "sweep", "revert", "review"));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("sh");
 
@@ -43,6 +45,7 @@ class MasterShellTest {
 
     @Test
     void tabDoesNotTurnAnAmbiguousPrefixIntoTheSharedBranchWrite() {
+        when(grammar.completions()).thenReturn(List.of("ship", "sweep", "revert", "review"));
         MasterShell.LineEditor editor = new MasterShell.LineEditor();
         editor.setText("rev");
 

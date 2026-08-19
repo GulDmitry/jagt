@@ -11,7 +11,8 @@ package dev.jagt.orchestrator.model;
 public enum TaskAction {
 
     FOCUS("focus", "Focus", "jump to the agent's terminal window"),
-    IDE("ide", "Open IDE", "open the worktree as a project — Git → Local Changes is the live diff"),
+    IDE("ide", "Open IDE", "open the worktree as a project — Git → Local Changes is the live diff",
+            "ide <ticket> [diff]"),
     DIFF("diff", "Diff", "static snapshot of the change vs the deploy branch"),
     SHIP("ship", "Ship", "approve: commit, push, open or update the review request"),
     SWEEP("sweep", "Check review", "pull the checks + unresolved comments and relay them to the agent"),
@@ -26,11 +27,17 @@ public enum TaskAction {
     private final String id;
     private final String label;
     private final String hint;
+    private final String usage;
 
     TaskAction(String id, String label, String hint) {
+        this(id, label, hint, id + " <ticket>");
+    }
+
+    TaskAction(String id, String label, String hint, String usage) {
         this.id = id;
         this.label = label;
         this.hint = hint;
+        this.usage = usage;
     }
 
     public String id() {
@@ -43,6 +50,11 @@ public enum TaskAction {
 
     public String hint() {
         return hint;
+    }
+
+    /** What a human types, for the command reference: the verb and its argument, not prose. */
+    public String usage() {
+        return usage;
     }
 
     /** The action for a wire id, or empty — an unknown id from a URL must never resolve to something else. */

@@ -447,6 +447,12 @@ function refreshSuggestions() {
   document.getElementById('ask-options').replaceChildren(
     ...verbs.map((verb) => Object.assign(document.createElement('option'),
       {value: verb.id, label: verb.hint})));
+  // The toolbar buttons ARE verbs, so their tooltips come from the same declaration the palette reads.
+  for (const [button, id] of [['show-stats', 'stats'], ['show-activity', 'activity'], ['show-help', 'help'],
+    ['resume-task', 'resume']]) {
+    const verb = verbFor(id);
+    if (verb) document.getElementById(button).title = verb.hint;
+  }
 }
 
 // The verdict, live: a typo must be visible before Run, not after a model has been paid to guess at it.
@@ -486,11 +492,11 @@ async function runParsed(parsed) {
     await run(task, {id: verb.id, label: verb.id, hint: verb.hint});
     return `${verb.id} ${task.alias || task.id}`;
   }
-  if (verb.id === 'help') { showReport('help — command reference', await text('/api/help')); return 'help'; }
-  if (verb.id === 'stats') { showReport('stats — spend and cycle time', await text('/api/stats')); return 'stats'; }
-  if (verb.id === 'activity') {
-    showReport('activity — what jagt did on its own', await text('/api/activity'));
-    return 'activity';
+  // Any command whose answer is a report, named by the server rather than listed here: one more of them
+  // needs no branch in this page.
+  if (verb.report) {
+    showReport(`${verb.id} — ${verb.hint}`, await text(`/api/commands/${encodeURIComponent(verb.id)}`));
+    return verb.id;
   }
   if (verb.id === 'do') {
     if (!argument) { document.getElementById('ref').focus(); return 'do'; }
@@ -654,10 +660,12 @@ resumeForm.onsubmit = async (event) => {
   }
 };
 
-document.getElementById('show-stats').onclick = () => openReport('stats — spend and cycle time', '/api/stats');
-document.getElementById('show-help').onclick = () => openReport('help — command reference', '/api/help');
-document.getElementById('show-activity').onclick =
-  () => openReport('activity — what jagt did on its own', '/api/activity');
+for (const [id, button] of [['stats', 'show-stats'], ['help', 'show-help'], ['activity', 'show-activity']]) {
+  document.getElementById(button).onclick = () => {
+    const verb = verbFor(id);
+    openReport(verb ? `${id} — ${verb.hint}` : id, `/api/commands/${id}`);
+  };
+}
 
 async function openReport(title, path) {
   try {

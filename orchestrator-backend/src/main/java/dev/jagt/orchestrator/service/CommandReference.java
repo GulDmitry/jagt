@@ -1,71 +1,81 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.model.TaskAction;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+
 /**
- * The command grammar, in one place, because BOTH surfaces show it: the console prints it for `help`, the board
- * serves it behind its Help button.
+ * The command grammar, rendered from the declarations themselves — {@link TaskAction} for what a task owns and
+ * {@link GlobalCommand} for what it does not. Every surface renders THIS, so a verb cannot exist in one and be
+ * missing from the next, and no hint is written twice.
  */
 public final class CommandReference {
 
-    /**
-     * One verb, as the board's palette needs it: what to type, what it does, and whether it takes a task. The
-     * palette uses this to COMPLETE and VALIDATE what a human types — and, when the line parses, to run it
-     * deterministically instead of paying a model to map it (tier 1 before tier 2).
-     */
-    public record Verb(String id, String hint, boolean takesTask, java.util.List<String> aliases) {
+    public record Verb(String id, String hint, boolean takesTask, List<String> aliases, boolean report,
+                       boolean consoleOnly) {
+    }
+
+    /** A verb with everything either surface asks of it, whichever kind of command declared it. */
+    private record Declared(Verb verb, List<String> usage) {
     }
 
     /** Most-used first; a verb missing here sorts to the end rather than being dropped. */
-    private static final java.util.List<String> BY_USE = java.util.List.of(
+    private static final List<String> BY_USE = List.of(
             "sweep", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
-            "revert", "done", "activity", "help");
+            "revert", "done", "activity", "status", "help");
+
+    private static final int HINT_COLUMN = 29;
 
     private CommandReference() {
     }
 
-    /** Every verb the console accepts, including the ones that are not per-task actions. */
-    public static java.util.List<Verb> verbs() {
-        java.util.List<Verb> verbs = new java.util.ArrayList<>();
-        for (dev.jagt.orchestrator.model.TaskAction action : dev.jagt.orchestrator.model.TaskAction.values()) {
-            verbs.add(new Verb(action.id(), action.hint(), true, action.retiredVerbs()));
-        }
-        verbs.add(new Verb("do", "start a task from a ticket key or URL", false, java.util.List.of()));
-        verbs.add(new Verb("resume", "take over an existing review request (its URL)", false,
-                java.util.List.of()));
-        verbs.add(new Verb("stats", "what jagt's own model calls cost, and where each task's time went", false,
-                java.util.List.of()));
-        verbs.add(new Verb("activity", "what jagt did on its own, newest first", false,
-                java.util.List.of()));
-        verbs.add(new Verb("help", "this command reference", false, java.util.List.of()));
-        verbs.sort(java.util.Comparator.comparingInt(verb -> {
-            int rank = BY_USE.indexOf(verb.id());
-            return rank < 0 ? BY_USE.size() : rank;
-        }));
-        return java.util.List.copyOf(verbs);
+    /** Every verb, console and board alike; a caller that is not a terminal filters {@link Verb#consoleOnly}. */
+    public static List<Verb> verbs(Collection<GlobalCommand> globals) {
+        return declared(globals).stream().map(Declared::verb).toList();
     }
 
-    public static String text() {
-        return String.join("\n",
-                "commands (task = ticket id or alias):",
-                "  status                       show the dashboard",
-                "  stats                        model spend per task, and where each task's time went",
-                "  activity                     what jagt did unattended (polls, relays, agent reports)",
-                "  do <ticket> [project] [plan] spin up a sub-agent in a worktree",
-                "    … [proj1,proj2]            one session, a worktree in EACH: work that spans repositories",
-                "    … [from <branch>]          cut the worktree from <branch> and target its request at it",
-                "  resume <request-url>         reopened request: resume its branch + link it -> CI_POLLING",
-                "  focus <ticket>               jump to the agent's window (talk to it there)",
-                "  ship <ticket>                approve: commit (pattern title), push, open/update the request",
-                "  sweep <ticket>               pull the request's checks + comments, relay them to the agent",
-                "  ide <ticket> [diff]          open worktree project (live Git diff)",
-                "  diff <ticket>                static snapshot vs the base branch",
-                "                               on DEPLOY_CONFLICT it opens the DEPLOY worktree to resolve in",
-                "  deploy <ticket>              merge task branch into deployBranch + push",
-                "  revert <ticket>              undo that deploy: revert its merge on deployBranch + push",
-                "  respawn <ticket>             restart a dead agent session",
-                "  done <ticket>                full cleanup (window, worktree, state; branch kept)",
-                "  help | quit                  this reference | detach (agents keep running)",
-                "",
-                "anything else is free text: a model maps it to ONE of the above and jagt runs it through the",
-                "same gate a button uses (the board's Ask / \u2318K).");
+    public static String text(Collection<GlobalCommand> globals) {
+        List<String> lines = new ArrayList<>();
+        lines.add("commands (task = ticket id or alias):");
+        for (Declared declared : declared(globals)) {
+            lines.add(row(declared.usage().get(0), declared.verb().hint()));
+            declared.usage().stream().skip(1).forEach(modifier -> lines.add("  " + modifier));
+        }
+        // Stopping the backend belongs to whoever owns the process, so it is the one verb no other surface has.
+        lines.add(row("quit", "detach: the shell exits, the agents keep running"));
+        lines.add("");
+        lines.add("anything else is free text: a model maps it to ONE of the above and jagt runs it through the");
+        lines.add("same gate a button uses (the board's Ask / ⌘K).");
+        return String.join("\n", lines);
+    }
+
+    private static List<Declared> declared(Collection<GlobalCommand> globals) {
+        List<Declared> declared = new ArrayList<>();
+        for (TaskAction action : TaskAction.values()) {
+            declared.add(new Declared(new Verb(action.id(), action.hint(), true, action.retiredVerbs(), false,
+                    false), List.of(action.usage())));
+        }
+        for (GlobalCommand command : globals) {
+            declared.add(new Declared(new Verb(command.id(), command.hint(), false, List.of(), command.report(),
+                    command.consoleOnly()), command.usage()));
+        }
+        // Rank, then the id: two commands the order does not name would otherwise come out in whatever
+        // order the container handed them over.
+        declared.sort(Comparator.<Declared>comparingInt(entry -> rankOf(entry.verb().id()))
+                .thenComparing(entry -> entry.verb().id()));
+        return List.copyOf(declared);
+    }
+
+    private static String row(String usage, String hint) {
+        String gap = usage.length() < HINT_COLUMN ? " ".repeat(HINT_COLUMN - usage.length()) : " ";
+        return "  " + usage + gap + hint;
+    }
+
+    private static int rankOf(String id) {
+        int rank = BY_USE.indexOf(id);
+        return rank < 0 ? BY_USE.size() : rank;
     }
 }

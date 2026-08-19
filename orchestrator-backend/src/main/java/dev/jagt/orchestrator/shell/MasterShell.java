@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.shell;
 
+import dev.jagt.orchestrator.model.TaskAction;
 import dev.jagt.orchestrator.model.TaskChoice;
-import dev.jagt.orchestrator.service.CommandReference;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.DashboardRenderer;
 import dev.jagt.orchestrator.service.StateService;
@@ -67,25 +67,16 @@ public class MasterShell {
     /** Cap the in-memory output log so a long-running session can't grow it without bound. */
     private static final int MAX_LOG_LINES = 2000;
 
-    /**
-     * Every command, for Tab-completion of the first word: the grammar's own verbs, the spellings they were
-     * renamed from, and the three the console answers itself. The retired ones are here BECAUSE `rev` must stay
-     * ambiguous — completing a prefix to `revert` alone would fill in a shared-branch write for someone whose
-     * fingers meant the sweep.
-     */
-    private static final List<String> COMMANDS = Stream.concat(
-                    CommandReference.verbs().stream().flatMap(MasterShell::spellings),
-                    Stream.of("status", "quit", "exit"))
-            .distinct().sorted().toList();
-    /** Commands whose first argument is an EXISTING task (so Tab completes its alias/id); `do`/`resume`
-     *  take a new ticket/URL, not a current task. */
-    private static final Set<String> TASK_ARG_COMMANDS = CommandReference.verbs().stream()
-            .filter(CommandReference.Verb::takesTask).flatMap(MasterShell::spellings)
-            .collect(java.util.stream.Collectors.toUnmodifiableSet());
+    /** The shell's own words, which the dispatch never sees — stopping the process is not a command it runs. */
+    private static final List<String> SHELL_COMMANDS = List.of("quit", "exit");
 
-    private static Stream<String> spellings(CommandReference.Verb verb) {
-        return Stream.concat(Stream.of(verb.id()), verb.aliases().stream());
-    }
+    /**
+     * Commands whose first argument is an EXISTING task, so Tab completes its alias/id: every per-task verb and
+     * the spellings it was renamed from. A command no task owns never takes one.
+     */
+    private static final Set<String> TASK_ARG_COMMANDS = java.util.Arrays.stream(TaskAction.values())
+            .flatMap(action -> Stream.concat(Stream.of(action.id()), action.retiredVerbs().stream()))
+            .collect(java.util.stream.Collectors.toUnmodifiableSet());
 
     public void run() {
         ConfigService.ConfigFile config = configService.load();
@@ -303,7 +294,7 @@ public class MasterShell {
         }
         List<String> pool;
         if (idx == 0) {
-            pool = COMMANDS;
+            pool = Stream.concat(grammar.completions().stream(), SHELL_COMMANDS.stream()).toList();
         } else if (cmd.equals("ide") && idx == 2) {
             pool = List.of("diff");
         } else if (cmd.equals("do") && idx >= 2) {

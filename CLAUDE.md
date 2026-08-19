@@ -90,14 +90,25 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     `ShipService.requireShippable` calls — the dashboard used to advise independently of the gate, which is
     exactly how they drifted apart.
   - PARITY IS AN INVARIANT, not an aspiration: a capability that exists in ONE surface only is a bug. Per-task
-    verbs come from `Move.actions()`, so a new action appears on both at once; everything else needs an explicit
-    counterpart, and the ones that were console-only were exactly the ones nobody noticed missing (`resume`,
-    `stats`, `help` — added 2026-08-13; `activity` in 2026-08-18). Shared text lives in `service/CommandReference`
-    (the grammar) and `StateViews` (dashboard + stats), so neither surface renders its own version. The reports
-    open in a `<dialog>` over the board, never a new page. ONE deliberate exception to parity: `quit` is
-    console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill), not to a browser
-    button, and nothing is lost by that since agents live in tmux. A shutdown endpoint was built and removed;
+    verbs come from `Move.actions()`, so a new action appears on both at once. Shared text lives in
+    `service/CommandReference` (the grammar) and `StateViews` (dashboard + stats), so neither surface renders its
+    own version. The reports open in a `<dialog>` over the board, never a new page. ONE deliberate exception to
+    parity: `quit` is console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill),
+    not to a browser button, and nothing is lost by that since agents live in tmux. A shutdown endpoint was built and removed;
     do not add one back.
+  - "WHAT COMMANDS EXIST" HAS EXACTLY TWO ANSWERS, AND BOTH ARE DECLARATIONS. A verb a task owns is a
+    `model/TaskAction` row, gated by `Move`, executed by `CommandService`. A verb no task owns is a
+    `service/GlobalCommand` bean (`service/commands/*`, collected by `GlobalCommands`): id, hint, usage, whether
+    its answer is a REPORT, whether it is console-only. `CommandReference` RENDERS both — `help`'s text and the
+    palette's verb list — so a hint is written once; `GrammarDispatch` LOOKS A TYPED WORD UP in the two instead
+    of switching on it; and `GET /api/commands/{id}` serves any report, so declaring another one needs no
+    endpoint, no console arm and no branch in `app.js`. That is what parity failed on before (2026-08-19): the
+    per-task verbs always had this shape, and `do`/`resume`/`stats`/`activity`/`help` were hand-written in six
+    places each — which is exactly why `resume`, `stats` and `help` were console-only until 2026-08-13 and
+    `activity` until 2026-08-18. Three deliberate limits: that endpoint refuses anything that is not a report
+    (a GET must not be able to start a task), a console-only command is filtered out of what the board is told
+    at all, and tier 2 stays narrower on purpose — a prose request cannot ask for a dialog, so
+    `NaturalLanguageDispatch` names the two launches itself and offers no report.
   - THE EMBEDDED TERMINAL IS A RENDERING OF `focus`, NEVER A SECOND VERB. With `orchestrator.web-terminal
     .enabled` a Focus click on the board also opens the task's tmux session in a `<dialog>`:
     `platform/TtydWebTerminal` serves ONE ttyd per tmux SESSION (not per task — a task is a window inside one),

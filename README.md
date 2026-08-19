@@ -207,7 +207,7 @@ EXECUTED as typed, without a model call. Only real prose reaches the model. Cost
 The task dashboard is always on screen and refreshes on its own (`dashboard.refreshSeconds`). Agents live in one terminal window — switch between them
 with **Shift+←/→** or by clicking a task in the status bar. Every task also gets a short alias (`p1`, `s2`)
 you can use in any command instead of the ticket id. Plain text any time: `curl -s localhost:8290/status`,
-`curl -s localhost:8290/stats`, `curl -s localhost:8290/api/activity`.
+`curl -s localhost:8290/stats`, `curl -s localhost:8290/api/commands/activity`.
 Closing the terminal window only detaches the viewer — agents keep running; kill them explicitly with `done`.
 
 ### The ideal flow
