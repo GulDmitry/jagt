@@ -2,8 +2,10 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.platform.UserNotifier;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
+import dev.jagt.orchestrator.job.Job;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,7 +22,22 @@ import java.nio.file.Path;
  */
 @Service
 @Slf4j
-public class RunningJarWatch {
+public class RunningJarWatch implements Job {
+    @Override
+    public String id() {
+        return "jarwatch";
+    }
+
+    @Override
+    public String describe() {
+        return "notice when the jar this process runs from was rebuilt underneath it";
+    }
+
+    @Override
+    public Duration every() {
+        return Duration.ofMinutes(1);
+    }
+
 
     /** What a jar file looked like: the two cheap facts that a rewrite cannot leave both unchanged. */
     record Stamp(long lastModified, long size) {
@@ -45,8 +62,8 @@ public class RunningJarWatch {
         this.atStartup = stamp(jar);
     }
 
-    @Scheduled(fixedRate = 60_000)
-    public void check() {
+    @Override
+    public void run() {
         if (jar == null || atStartup == null || reported) {
             return;
         }

@@ -19,7 +19,7 @@ registry, one folder. If something fits no kind, the kind is missing — add a k
 | `task/` | the task record and the file it lives in | built (`TaskState`, `StateService`) |
 | `flow/` | which status allows which capability, and what each outcome leads to | planned — legality is in `Move`, transitions are scattered across four classes |
 | `capability/` | one thing that can be done to a task | partial — declared in `TaskAction`/`GlobalCommand`, executed by a switch |
-| `job/` | work that runs with nobody watching | planned — five `@Scheduled` methods with no name for the kind |
+| `job/` | work that runs with nobody watching | built (`Job`, `Jobs`, one ticker) — the five job classes still live in `service/` |
 | `notify/` | something a human must be told | partial — transport only, no notification record |
 | `surface/` | who is asking: console, board, MCP | built, spread over three packages |
 
@@ -65,7 +65,7 @@ FlowEngine:  rules.allows? -> capability.run -> rules.next(outcome) -> ONE statu
 | add a report or a launch shortcut | one `GlobalCommand` — every surface picks it up (built today) |
 | replace a built-in verb | declare a capability with the same id and a higher priority |
 | run something before/after a verb | an interceptor on that id — never a new status |
-| add unattended work | a folder in `job/`; an adapter's own workaround is a job that adapter contributes |
+| add unattended work | one `Job`; `Jobs` tickers it and `jobs` lists it — an adapter's own workaround is a job that adapter contributes |
 | notify somewhere else | one adapter behind the `Notifier` port; callers learn nothing |
 | support another host/tracker/agent/OS | one adapter module; `:app` gains one line |
 
@@ -85,8 +85,8 @@ session in a worktree, provision it, name the file it reads its instructions fro
 ## Assembly validation
 
 At startup, one report of everything wrong — never first-failure, because a half-valid assembly boots and then
-does nothing. Config first (unknown adapter id, missing credential, `deployBranch == baseBranch`, a project path
-that is no repository), then the composition:
+does nothing. The config half is BUILT: `startup/StartupCheck` implementations, collected by `StartupValidation`,
+refuse the start with every problem at once. The composition half is planned:
 
 1. every flow rule names a status that exists (compiler — the table is code) and a capability that is registered
 2. every status is reachable from NEW and every non-terminal status has a way out

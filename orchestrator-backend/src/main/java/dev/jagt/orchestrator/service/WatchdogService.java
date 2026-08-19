@@ -5,8 +5,10 @@ import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
+import dev.jagt.orchestrator.job.Job;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +22,22 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WatchdogService {
+public class WatchdogService implements Job {
+    @Override
+    public String id() {
+        return "watchdog";
+    }
+
+    @Override
+    public String describe() {
+        return "alert when an agent has gone quiet in a status where it is supposed to be working";
+    }
+
+    @Override
+    public Duration every() {
+        return Duration.ofMinutes(1);
+    }
+
 
     private final StateService stateService;
     private final UserNotifier userNotifier;
@@ -46,8 +63,8 @@ public class WatchdogService {
         return status == TaskStatus.NEW || status == TaskStatus.IN_PROGRESS || status == TaskStatus.SHIPPING;
     }
 
-    @Scheduled(fixedRate = 60_000)
-    public void scan() {
+    @Override
+    public void run() {
         long staleMs = properties.watchdog().staleAfter().toMillis();
         long now = System.currentTimeMillis();
         String session = tmuxService.sessionName(configService.load().viewer().tmuxSession());

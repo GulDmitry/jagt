@@ -30,13 +30,13 @@ class RunningJarWatchTest {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "first build");
         RunningJarWatch watch = new RunningJarWatch(notifier, jar);
 
-        watch.check();                                            // nothing changed yet
+        watch.run();                                            // nothing changed yet
         verifyNoInteractions(notifier);
 
         Files.writeString(jar, "a different build entirely");
         Files.setLastModifiedTime(jar, FileTime.fromMillis(System.currentTimeMillis() + 5_000));
-        watch.check();
-        watch.check();                                            // the condition persists until a restart
+        watch.run();
+        watch.run();                                            // the condition persists until a restart
 
         verify(notifier, times(1)).notify(contains("restart"), anyString());
     }
@@ -46,8 +46,8 @@ class RunningJarWatchTest {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "one build");
         RunningJarWatch watch = new RunningJarWatch(notifier, jar);
 
-        watch.check();
-        watch.check();
+        watch.run();
+        watch.run();
 
         verifyNoInteractions(notifier);
     }
@@ -59,7 +59,7 @@ class RunningJarWatchTest {
         RunningJarWatch watch = new RunningJarWatch(notifier, jar);
         Files.delete(jar);
 
-        watch.check();
+        watch.run();
 
         verify(notifier).notify(contains("restart"), anyString());
     }
@@ -69,7 +69,7 @@ class RunningJarWatchTest {
     void watchesNothingWhenTheProcessDidNotStartFromAJar() {
         RunningJarWatch watch = new RunningJarWatch(notifier, null);
 
-        watch.check();
+        watch.run();
 
         verifyNoInteractions(notifier);
     }

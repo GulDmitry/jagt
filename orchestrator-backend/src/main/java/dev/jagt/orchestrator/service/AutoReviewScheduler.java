@@ -8,8 +8,10 @@ import dev.jagt.orchestrator.model.TaskStatus;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
+import dev.jagt.orchestrator.job.Job;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +32,22 @@ import java.util.concurrent.RejectedExecutionException;
  */
 @Service
 @Slf4j
-public class AutoReviewScheduler {
+public class AutoReviewScheduler implements Job {
+    @Override
+    public String id() {
+        return "autoreview";
+    }
+
+    @Override
+    public String describe() {
+        return "poll the review request of every task out for review, and relay the round to its agent";
+    }
+
+    @Override
+    public Duration every() {
+        return Duration.ofMinutes(1);
+    }
+
 
     enum Action { SKIP, POLL, WINDOW_ELAPSED }
 
@@ -66,8 +83,8 @@ public class AutoReviewScheduler {
         this.executor = executor;
     }
 
-    @Scheduled(fixedRate = 60_000)
-    public void scan() {
+    @Override
+    public void run() {
         AutoReviewCadence cadence = AutoReviewCadence.from(configService.load().autoReview());
         if (!cadence.enabled()) {
             return;

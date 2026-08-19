@@ -107,15 +107,16 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     `model/TaskAction` row, gated by `Move`, executed by `CommandService`. A verb no task owns is a
     `service/GlobalCommand` bean (`service/commands/*`, collected by `GlobalCommands`): id, hint, usage, whether
     its answer is a REPORT, whether it is console-only. `CommandReference` RENDERS both — `help`'s text and the
-    palette's verb list — so a hint is written once; `GrammarDispatch` LOOKS A TYPED WORD UP in the two instead
-    of switching on it; and `GET /api/commands/{id}` serves any report, so declaring another one needs no
-    endpoint, no console arm and no branch in `app.js`. That is what parity failed on before (2026-08-19): the
-    per-task verbs always had this shape, and `do`/`resume`/`stats`/`activity`/`help` were hand-written in six
-    places each — which is exactly why `resume`, `stats` and `help` were console-only until 2026-08-13 and
-    `activity` until 2026-08-18. Three deliberate limits: that endpoint refuses anything that is not a report
-    (a GET must not be able to start a task), a console-only command is filtered out of what the board is told
-    at all, and tier 2 stays narrower on purpose — a prose request cannot ask for a dialog, so
-    `NaturalLanguageDispatch` names the two launches itself and offers no report.
+    palette's verb list — so a hint is written once; `GrammarDispatch` LOOKS A TYPED WORD UP in the two instead of
+    switching on it; and `GET /api/commands/{id}` serves any report, so declaring another one needs no endpoint, no
+    console arm and no button in the page (the board BUILDS its report buttons from that list). That is what parity
+    failed on before (2026-08-19): the per-task verbs always had this shape, and
+    `do`/`resume`/`stats`/`activity`/`help` were hand-written in six places each — which is exactly why `resume`,
+    `stats` and `help` were console-only until 2026-08-13 and `activity` until 2026-08-18. Three deliberate limits:
+    that endpoint refuses anything that is not a report (a GET must not be able to start a task), a console-only
+    command is filtered out of what the board is told at all, and tier 2 stays narrower on purpose — a prose
+    request cannot ask for a dialog, so `NaturalLanguageDispatch` names the two launches itself and offers no
+    report.
   - THE EMBEDDED TERMINAL IS A RENDERING OF `focus`, NEVER A SECOND VERB. With `orchestrator.web-terminal
     .enabled` a Focus click on the board also opens the task's tmux session in a `<dialog>`:
     `platform/TtydWebTerminal` serves ONE ttyd per tmux SESSION (not per task — a task is a window inside one),
@@ -183,6 +184,14 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   to the UI thread; the listener runs on whichever thread served the agent's MCP call — never paint from
   there). The SSE event carries no payload on purpose: a payload would be a second serialization that could
   disagree with `/api/tasks`. The periodic tick survives in both only for the relative "ACTIVE" clock.
+- UNATTENDED WORK IS A DECLARED KIND, never a schedule a class keeps to itself: `job/Job` (id, one line of what the
+  human gets, an interval or `null` for once at startup, `run()`) and `job/Jobs`, the ONE ticker — each run on its
+  own thread, never overlapping itself, a run that throws booked against that job and nothing else, so no job needs
+  a guard or a catch-all of its own. A hidden `@Scheduled` cannot be listed, reported on or validated, which is the
+  point: the `jobs` report (a `GlobalCommand`, so both surfaces show it) names each job, its cadence, when it last
+  ran and when it runs next — work nobody watches is visible BEFORE it acts, not only after. An adapter's own
+  workaround is a job THAT ADAPTER contributes (the IDEA recent-projects cleanup), never a permanent timer for
+  everybody.
 - WHAT JAGT DID UNATTENDED IS READ BACK FROM ITS OWN LOG, never from a second store: `service/ActivityReport`
   tails `logging.file.name` (structured ECS JSON), keeps the entries that carry a `task` key-value and renders
   them newest first for the `activity` verb and the board's Activity dialog. The convention it depends on is the
@@ -272,10 +281,11 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   expected to be working — NEW, IN_PROGRESS, SHIPPING. Every other status idles by design (CI_POLLING waits
   on the code host, REVIEW_PENDING/REVIEWED/APPROVED/DEPLOY_CONFLICT on the human), and watching those turns
   the alert into noise.
-- ONE review sweep per task at a time, whatever triggered it: the guard lives in `ReviewSweepService` because
-  the manual `sweep`, the auto-poll and any future UI button all pass through it (two sweeps = the headless
-  read paid twice + two briefs relayed for one review round). `AutoReviewScheduler` keeps its own separate
-  guard, which solves a different problem: stopping 60s ticks from QUEUING behind a sweep that runs minutes.
+- ONE review sweep per task at a time, whatever triggered it: the guard lives in `ReviewSweepService` because the
+  manual `sweep`, the auto-poll and any future UI button all pass through it (two sweeps = the headless read paid
+  twice + two briefs relayed for one review round). The other problem — ticks QUEUING behind a sweep that runs
+  minutes — belongs to `Jobs`, which never runs a job concurrently with itself, so `AutoReviewScheduler` keeps no
+  guard of its own.
 - All git ops in `GitService` under a per-repository `ReentrantLock` (index.lock races are per-repo;
   a slow fetch in one project must not block another).
 - Sub-agents can only act on their own task (X-Working-Directory scoping is ENFORCED in
@@ -326,12 +336,13 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   that cannot parse the primary recovers from that backup (moving the bad file to `state.json.corrupt`). With
   no usable backup it THROWS: starting with an empty task list over an existing state file would destroy the
   human's data on the next write. Never make that path "fail soft".
-- `WorktreeOrphanScanner` only ever LOOKS: worktree directories no task owns can hold uncommitted work AND
-  copies of secrets (`worktree.copyGlobs`), so it WARNs one line each at startup, plus one desktop ping, and
-  deletes nothing. NO surface offers it — the board dialog and `GET /orphans` were removed on the owner's
-  instruction (2026-08-18), and the console never had a verb for it: housekeeping is not something a human acts
-  on mid-flight, and the board is dense enough. Do not add either back. Its startup listener catches everything — an `ApplicationReadyEvent` listener that throws fails the
-  whole boot, and a diagnostic must never be able to stop the backend from starting.
+- `WorktreeOrphanScanner` only ever LOOKS: worktree directories no task owns can hold uncommitted work AND copies
+  of secrets (`worktree.copyGlobs`), so it WARNs one line each at startup, plus one desktop ping, and deletes
+  nothing. NO surface offers it — the board dialog and `GET /orphans` were removed on the owner's instruction
+  (2026-08-18), and the console never had a verb for it: housekeeping is not something a human acts on mid-flight,
+  and the board is dense enough. Do not add either back. It is a job with no interval (once, as soon as the
+  application is up) and it catches nothing itself: a throwing run is booked against that job by `Jobs`, because a
+  diagnostic must never be able to stop the backend from starting.
 - WHAT IS MISSING IS SAID AT STARTUP, NOT AT THE CLICK THAT NEEDED IT. `startup/StartupValidation` asks every
   `StartupCheck` before the operator surfaces open and refuses the start with ALL problems at once
   (`Misconfigured`, printed by `StartupFailure`) — a human fixes one list instead of one item per restart, and

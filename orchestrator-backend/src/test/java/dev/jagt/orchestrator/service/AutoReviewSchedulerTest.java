@@ -84,7 +84,7 @@ class AutoReviewSchedulerTest {
         ReviewSweepService sweep = mock(ReviewSweepService.class);
         UserNotifier notifier = mock(UserNotifier.class);
 
-        new AutoReviewScheduler(state, enabledConfig(), sweep, notifier, Runnable::run).scan();
+        new AutoReviewScheduler(state, enabledConfig(), sweep, notifier, Runnable::run).run();
 
         verify(sweep).sweep("ABC-1");
         assertThat(state.task("ABC-1").orElseThrow().lastPolledAt())
@@ -99,8 +99,8 @@ class AutoReviewSchedulerTest {
         UserNotifier notifier = mock(UserNotifier.class);
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(), sweep, notifier, Runnable::run);
 
-        scheduler.scan();
-        scheduler.scan();
+        scheduler.run();
+        scheduler.run();
 
         verify(notifier).notify(eq("jagt · ABC-1"), contains("window elapsed"));
         verifyNoInteractions(sweep);
@@ -115,13 +115,13 @@ class AutoReviewSchedulerTest {
         UserNotifier notifier = mock(UserNotifier.class);
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(),
                 mock(ReviewSweepService.class), notifier, Runnable::run);
-        scheduler.scan();
+        scheduler.run();
 
         // ship lands another round: same status, brand-new window
         state.updateTask("ABC-1", task -> task.withReviewRound("http://mr/1"));
         state.updateTask("ABC-1", task -> task.withMrCreatedAt(
                 System.currentTimeMillis() - Duration.ofHours(25).toMillis()));
-        scheduler.scan();
+        scheduler.run();
 
         verify(notifier, org.mockito.Mockito.times(2)).notify(eq("jagt · ABC-1"), contains("window elapsed"));
     }
@@ -139,12 +139,12 @@ class AutoReviewSchedulerTest {
         UserNotifier notifier = mock(UserNotifier.class);
         AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(),
                 mock(ReviewSweepService.class), notifier, Runnable::run);
-        scheduler.scan();
+        scheduler.run();
 
         state.removeTask("ABC-1");
-        scheduler.scan();                                        // nothing to notify, and the marker is dropped
+        scheduler.run();                                        // nothing to notify, and the marker is dropped
         state.putTask("ABC-1", polling().mrCreatedAt(window).build());
-        scheduler.scan();
+        scheduler.run();
 
         verify(notifier, org.mockito.Mockito.times(2)).notify(eq("jagt · ABC-1"), contains("window elapsed"));
     }
@@ -158,7 +158,7 @@ class AutoReviewSchedulerTest {
         ConfigService disabled = mock(ConfigService.class);
         when(disabled.load()).thenReturn(ConfigFile.defaults());
 
-        new AutoReviewScheduler(state, disabled, sweep, notifier, Runnable::run).scan();
+        new AutoReviewScheduler(state, disabled, sweep, notifier, Runnable::run).run();
 
         verifyNoInteractions(sweep, notifier);
     }

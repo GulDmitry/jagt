@@ -85,7 +85,7 @@ class WorktreeOrphanScannerTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
 
-        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifier).reportOnStartup();
+        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifier).run();
 
         verifyNoInteractions(notifier);
     }

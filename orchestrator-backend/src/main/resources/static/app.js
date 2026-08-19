@@ -458,12 +458,18 @@ function refreshSuggestions() {
   document.getElementById('ask-options').replaceChildren(
     ...verbs.map((verb) => Object.assign(document.createElement('option'),
       {value: verb.id, label: verb.hint})));
-  // The toolbar buttons ARE verbs, so their tooltips come from the same declaration the palette reads.
-  for (const [button, id] of [['show-stats', 'stats'], ['show-activity', 'activity'], ['show-help', 'help'],
-    ['resume-task', 'resume']]) {
-    const verb = verbFor(id);
-    if (verb) document.getElementById(button).title = verb.hint;
-  }
+  // One button per report the SERVER declares — a new report appears in the toolbar without this page
+  // learning its name, and its tooltip is the same hint the palette shows.
+  document.getElementById('reports').replaceChildren(...verbs.filter((verb) => verb.report).map((verb) => {
+    const button = document.createElement('button');
+    button.id = `show-${verb.id}`;
+    button.textContent = verb.id.charAt(0).toUpperCase() + verb.id.slice(1);
+    button.title = verb.hint;
+    button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`);
+    return button;
+  }));
+  const resume = verbFor('resume');
+  if (resume) document.getElementById('resume-task').title = resume.hint;
 }
 
 // The verdict, live: a typo must be visible before Run, not after a model has been paid to guess at it.
@@ -670,13 +676,6 @@ resumeForm.onsubmit = async (event) => {
     await load();
   }
 };
-
-for (const [id, button] of [['stats', 'show-stats'], ['help', 'show-help'], ['activity', 'show-activity']]) {
-  document.getElementById(button).onclick = () => {
-    const verb = verbFor(id);
-    openReport(verb ? `${id} — ${verb.hint}` : id, `/api/commands/${id}`);
-  };
-}
 
 async function openReport(title, path) {
   try {

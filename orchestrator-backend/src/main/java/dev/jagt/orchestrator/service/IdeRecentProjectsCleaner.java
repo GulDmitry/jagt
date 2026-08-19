@@ -3,8 +3,10 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.platform.EditorDriver;
 import dev.jagt.orchestrator.platform.EditorDriver.WorktreeLocation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
+import dev.jagt.orchestrator.job.Job;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -20,13 +22,28 @@ import java.util.List;
  */
 @Service
 @RequiredArgsConstructor
-public class IdeRecentProjectsCleaner {
+public class IdeRecentProjectsCleaner implements Job {
+    @Override
+    public String id() {
+        return "idecleanup";
+    }
+
+    @Override
+    public String describe() {
+        return "drop worktrees that no longer exist from the editor's recent-projects list";
+    }
+
+    @Override
+    public Duration every() {
+        return Duration.ofMinutes(1);
+    }
+
 
     private final EditorDriver editorDriver;
     private final ConfigService configService;
 
-    @Scheduled(fixedRate = 60_000)
-    public void cleanDeadWorktreeProjects() {
+    @Override
+    public void run() {
         List<WorktreeLocation> locations = new ArrayList<>();
         configService.load().projects().forEach((projectKey, project) -> {
             Path parent = Path.of(project.path()).toAbsolutePath().normalize().getParent();

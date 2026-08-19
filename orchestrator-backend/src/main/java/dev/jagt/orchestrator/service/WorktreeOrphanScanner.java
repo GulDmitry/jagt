@@ -4,9 +4,10 @@ import dev.jagt.orchestrator.model.TaskRepo;
 import dev.jagt.orchestrator.platform.UserNotifier;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.event.EventListener;
+import dev.jagt.orchestrator.job.Job;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -39,7 +40,22 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class WorktreeOrphanScanner {
+public class WorktreeOrphanScanner implements Job {
+    @Override
+    public String id() {
+        return "orphanscan";
+    }
+
+    @Override
+    public String describe() {
+        return "warn about worktree directories no task owns, which can hold work and copied secrets";
+    }
+
+    @Override
+    public Duration every() {
+        return null;
+    }
+
 
     /** Directories never worth walking for secret copies (huge and/or generated). */
     private static final Set<String> SKIP = Set.of(".git", "node_modules", "build", "target", "out", "dist",
@@ -57,18 +73,9 @@ public class WorktreeOrphanScanner {
      * One WARN per leftover directory, plus a single desktop ping: the log carries the detail, and the ping is
      * for whoever never opens it — the Master TUI takes over the screen the moment it starts.
      */
-    @EventListener(ApplicationReadyEvent.class)
-    public void reportOnStartup() {
-        List<Orphan> orphans;
-        try {
-            orphans = scan();
-        } catch (RuntimeException e) {
-            // A DIAGNOSTIC must never be able to stop the backend from starting: an ApplicationReadyEvent
-            // listener that throws fails the whole boot. Reading the config is exactly such a risk — it
-            // refuses to load when config.json is missing.
-            log.warn("Could not scan for orphaned worktrees: {}", e.getMessage());
-            return;
-        }
+    @Override
+    public void run() {
+        List<Orphan> orphans = scan();
         if (orphans.isEmpty()) {
             return;
         }

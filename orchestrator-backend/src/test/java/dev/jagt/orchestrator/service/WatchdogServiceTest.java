@@ -36,7 +36,7 @@ class WatchdogServiceTest {
         TmuxService tmux = mock(TmuxService.class);
         ConfigService config = configMock();
 
-        new WatchdogService(state, notifier, properties, tmux, config).scan();
+        new WatchdogService(state, notifier, properties, tmux, config).run();
 
         verify(notifier).notify(eq("Orchestrator Alert"), contains("ABC-1"));
     }
@@ -52,7 +52,7 @@ class WatchdogServiceTest {
         TmuxService tmux = mock(TmuxService.class);
         when(tmux.lastWindowActivityMillis(any(), anyString())).thenReturn(System.currentTimeMillis());
 
-        new WatchdogService(state, notifier, properties, tmux, configMock()).scan();
+        new WatchdogService(state, notifier, properties, tmux, configMock()).run();
 
         verifyNoInteractions(notifier);
     }
@@ -74,7 +74,7 @@ class WatchdogServiceTest {
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(6).toMillis()).alias("a1").build());
         UserNotifier notifier = mock(UserNotifier.class);
 
-        new WatchdogService(state, notifier, properties, mock(TmuxService.class), configMock()).scan();
+        new WatchdogService(state, notifier, properties, mock(TmuxService.class), configMock()).run();
 
         verify(notifier).notify(eq("Orchestrator Alert"), contains("ABC-1"));
     }
@@ -96,7 +96,7 @@ class WatchdogServiceTest {
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(60).toMillis()).alias("a1").build());
         UserNotifier notifier = mock(UserNotifier.class);
 
-        new WatchdogService(state, notifier, properties, mock(TmuxService.class), configMock()).scan();
+        new WatchdogService(state, notifier, properties, mock(TmuxService.class), configMock()).run();
 
         verifyNoInteractions(notifier);
     }
