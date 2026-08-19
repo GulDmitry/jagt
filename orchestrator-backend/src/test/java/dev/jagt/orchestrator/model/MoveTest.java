@@ -5,6 +5,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,6 +21,15 @@ class MoveTest {
         assertThat(move.owner()).isNotNull();
         assertThat(move.hint()).isNotBlank();
         assertThat(move.actions()).isNotEmpty();
+    }
+
+    @ParameterizedTest
+    @EnumSource(TaskStatus.class)
+    void offersWhatMovesTheTaskOnBeforeWhatOnlyLooksAtIt(TaskStatus status) {
+        List<TaskAction> actions = Move.forTask(status, true, RoundState.NONE).actions();
+
+        assertThat(actions).isSortedAccordingTo(Comparator.comparing(TaskAction::group));
+        assertThat(actions).endsWith(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF, TaskAction.RESPAWN);
     }
 
     @Test

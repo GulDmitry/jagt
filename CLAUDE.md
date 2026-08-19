@@ -90,7 +90,11 @@ Build tool: Gradle, Groovy DSL only (wrapper committed). Never introduce Maven o
     `ShipService.requireShippable` calls — the dashboard used to advise independently of the gate, which is
     exactly how they drifted apart.
   - PARITY IS AN INVARIANT, not an aspiration: a capability that exists in ONE surface only is a bug. Per-task
-    verbs come from `Move.actions()`, so a new action appears on both at once. Shared text lives in
+    verbs come from `Move.actions()`, so a new action appears on both at once — GROUPED there too
+    (`TaskAction.Group`: FLOW moves the task on and closing it counts, TOOL only looks at it or restarts the
+    agent), and `Move` SORTS by that group rather than trusting the order somebody appended in, so a new verb
+    lands on the right side of the card by declaring its group and nothing else. The board renders one row per
+    group and reads which groups exist off the wire — a page that knew the names would be a second answer. Shared text lives in
     `service/CommandReference` (the grammar) and `StateViews` (dashboard + stats), so neither surface renders its
     own version. The reports open in a `<dialog>` over the board, never a new page. ONE deliberate exception to
     parity: `quit` is console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill),

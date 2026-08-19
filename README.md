@@ -170,6 +170,8 @@ in tmux and keep working when the backend goes away.
 **The board and the console can do the same things**; anything console-only is a bug. Per-task verbs — ship,
 sweep, `ide` (including the deploy worktree when a deploy conflicted), deploy, revert, respawn, focus, done —
 are the card's own buttons, because the server lists the legal ones per task and the board renders exactly that.
+A card shows them in two rows: what moves the task along its life first (ship … done), then the ones that only
+look at it or restart its agent (focus, open IDE, diff, restart agent).
 
 Sort within columns by last activity, tokens, alias or title, and tick
 *waiting on me* to see only the tasks that are actually yours. It updates itself — the backend pushes a change

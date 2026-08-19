@@ -277,20 +277,31 @@ function card(task) {
   }
   if (links.children.length) article_children.push(links);
 
-  const actions = document.createElement('div');
-  actions.className = 'actions';
+  // A row per group, broken wherever the order the server sent changes it: which groups exist, and which
+  // comes first, stays the projection's answer.
+  let row = null;
   for (const action of task.actions) {
+    if (!row || row.dataset.group !== action.group) {
+      row = actionRow(action.group);
+      article_children.push(row);
+    }
     const button = document.createElement('button');
     button.textContent = action.label;
     button.title = action.hint;
     if (action.primary) button.className = 'primary';
     button.disabled = busy.has(task.id);
     button.onclick = () => run(task, action);
-    actions.append(button);
+    row.append(button);
   }
-  article_children.push(actions);
   article.append(...article_children);
   return article;
+}
+
+function actionRow(group) {
+  const row = document.createElement('div');
+  row.className = `actions ${group}`;
+  row.dataset.group = group;
+  return row;
 }
 
 function link(href, text) {

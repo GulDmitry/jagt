@@ -85,5 +85,7 @@ class TaskViewTest {
                 TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(), Map.of("proj", "dev", "api", "dev", "web", "dev"));
 
         assertThat(view.actions()).extracting(TaskView.ActionView::id).contains("sweep");
+        assertThat(view.actions()).filteredOn(action -> action.id().equals("sweep"))
+                .singleElement().extracting(TaskView.ActionView::group).isEqualTo("flow");
     }
 }

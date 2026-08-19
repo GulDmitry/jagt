@@ -42,8 +42,8 @@ public record TaskView(
         long tokens
 ) {
 
-    /** An offered action, ready for a button: what to POST back, what to write on it, why. */
-    public record ActionView(String id, String label, String hint, boolean primary) {
+    /** An offered action, ready for a button: what to POST back, what to write on it, why, and where it sits. */
+    public record ActionView(String id, String label, String hint, boolean primary, String group) {
     }
 
     /**
@@ -60,7 +60,7 @@ public record TaskView(
                 RoundState.of(task.message(), draftedReplies));
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
-                        action == move.primary()))
+                        action == move.primary(), action.group().id()))
                 .toList();
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(), move.phase(),
                 move.owner(), move.hint(), actions,

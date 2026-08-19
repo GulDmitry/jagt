@@ -208,7 +208,7 @@ class BoardPageTest {
     }
 
     @Test
-    void aCardOffersTheActionsTheProjectionListsAndMarksTheObviousOne() {
+    void aCardGroupsWhatMovesTheTaskOnAwayFromWhatOnlyLooksAtItAndMarksTheObviousOne() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.REVIEWED).alias("a1")
                 .mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
@@ -216,7 +216,11 @@ class BoardPageTest {
         Page page = open();
 
         assertThat(page.locator("article .actions button")).hasText(
-                new String[]{"Check review", "Deploy", "Focus", "Open IDE", "Diff", "Restart agent", "Done"});
+                new String[]{"Check review", "Deploy", "Done", "Focus", "Open IDE", "Diff", "Restart agent"});
+        assertThat(page.locator("article .actions.flow button")).hasText(
+                new String[]{"Check review", "Deploy", "Done"});
+        assertThat(page.locator("article .actions.tool button")).hasText(
+                new String[]{"Focus", "Open IDE", "Diff", "Restart agent"});
         assertThat(page.locator("article .actions button.primary")).hasText("Deploy");
     }
 

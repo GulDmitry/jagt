@@ -44,6 +44,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 
 | Situation | What to run | What happens |
 |---|---|---|
+| "Which of these buttons changes something?" | the card | Two rows: what moves the task on (ship … done) above, the ones that only look or restart below. The split is `TaskAction.Group`, so the card cannot group them one way and a future surface another. |
 | The agent is asking something | `focus <task>` | Its tmux window is selected. In the console that raises the terminal the viewer runs in; on the board, with `orchestrator.web-terminal` on, the session opens OVER the board and you type into it there. |
 | No web terminal configured | Focus, on the board | The same selection, and the sentence names the window the session is in — there is nothing to embed. |
 | Panel closed by mistake | — | Nothing stops. The agent lives in tmux; the terminal server ends with the last panel watching it, and Focus starts another. |

@@ -10,34 +10,65 @@ package dev.jagt.orchestrator.model;
  */
 public enum TaskAction {
 
-    FOCUS("focus", "Focus", "jump to the agent's terminal window"),
-    IDE("ide", "Open IDE", "open the worktree as a project — Git → Local Changes is the live diff",
+    SHIP(Group.FLOW, "ship", "Ship", "approve: commit, push, open or update the review request"),
+    SWEEP(Group.FLOW, "sweep", "Check review",
+            "pull the checks + unresolved comments and relay them to the agent"),
+    DEPLOY(Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
+    REVERT(Group.FLOW, "revert", "Revert",
+            "undo this task's deploy: revert its merge commit on the deploy branch and push"),
+    DONE(Group.FLOW, "done", "Done", "close the task: session, worktree and state (the branch is kept)"),
+    FOCUS(Group.TOOL, "focus", "Focus", "jump to the agent's terminal window"),
+    IDE(Group.TOOL, "ide", "Open IDE", "open the worktree as a project — Git → Local Changes is the live diff",
             "ide <ticket> [diff]"),
-    DIFF("diff", "Diff", "static snapshot of the change vs the deploy branch"),
-    SHIP("ship", "Ship", "approve: commit, push, open or update the review request"),
-    SWEEP("sweep", "Check review", "pull the checks + unresolved comments and relay them to the agent"),
-    DEPLOY("deploy", "Deploy", "merge the task branch into the deploy branch and push"),
-    REVERT("revert", "Revert", "undo this task's deploy: revert its merge commit on the deploy branch and push"),
-    RESPAWN("respawn", "Restart agent", "start a new agent session in the same worktree — it re-reads its brief"),
-    DONE("done", "Done", "close the task: session, worktree and state (the branch is kept)");
+    DIFF(Group.TOOL, "diff", "Diff", "static snapshot of the change vs the deploy branch"),
+    RESPAWN(Group.TOOL, "respawn", "Restart agent",
+            "start a new agent session in the same worktree — it re-reads its brief");
+
+    /**
+     * Which half of a card an action belongs to. FLOW moves the task along its life — closing it included; TOOL
+     * only looks at what is already there, or starts the same agent again. Declared once because both surfaces
+     * order and separate them the same way, and a card that mixes "push to a shared branch" in among "open the
+     * diff" makes the human read every button before pressing one.
+     */
+    public enum Group {
+
+        FLOW("flow"), TOOL("tool");
+
+        private final String id;
+
+        Group(String id) {
+            this.id = id;
+        }
+
+        /** The wire name, so a front-end can group without knowing the enum. */
+        public String id() {
+            return id;
+        }
+    }
 
     /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
     private static final java.util.Map<String, TaskAction> RENAMED = java.util.Map.of("review", SWEEP);
 
+    private final Group group;
     private final String id;
     private final String label;
     private final String hint;
     private final String usage;
 
-    TaskAction(String id, String label, String hint) {
-        this(id, label, hint, id + " <ticket>");
+    TaskAction(Group group, String id, String label, String hint) {
+        this(group, id, label, hint, id + " <ticket>");
     }
 
-    TaskAction(String id, String label, String hint, String usage) {
+    TaskAction(Group group, String id, String label, String hint, String usage) {
+        this.group = group;
         this.id = id;
         this.label = label;
         this.hint = hint;
         this.usage = usage;
+    }
+
+    public Group group() {
+        return group;
     }
 
     public String id() {

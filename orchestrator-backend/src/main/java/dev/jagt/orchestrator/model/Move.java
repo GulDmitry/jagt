@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.model;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -38,6 +39,9 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
             actions.add(TaskAction.REVERT);
         }
         actions.addAll(ALWAYS);
+        // Grouped, not interleaved: what moves the task on comes first, what only looks at it follows. Sorted
+        // rather than hand-ordered so a new action lands on the right side of the card by declaring its group.
+        actions.sort(Comparator.comparing(TaskAction::group));
         return new Move(phaseOf(status), ownerOf(status), List.copyOf(actions),
                 primaryOf(status, hasReviewRequest, round), hint(status, round));
     }
