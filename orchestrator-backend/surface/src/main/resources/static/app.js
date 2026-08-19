@@ -174,8 +174,7 @@ function sorted(list) {
   return copy;
 }
 
-// One tip node for the page instead of `title`, which appears only after a wait the pointer has to sit through —
-// and every push rebuilds the card it was sitting on, starting that wait over.
+// `title` shows only after a wait, and a push rebuilds the element it was waiting on.
 const tip = Object.assign(document.createElement('div'), {id: 'tip', hidden: true});
 document.body.append(tip);
 
@@ -194,8 +193,7 @@ function showTip(target) {
   tip.style.top = `${fits ? below : Math.max(8, anchor.top - own.height - 8)}px`;
 }
 
-// Delegated, because every element that carries a tip is rebuilt from the projection; `focusin` so the keyboard
-// reaches them too. An empty tip is no tip — a stale status line would otherwise show as an empty box.
+// Delegated: every element carrying a tip is rebuilt on render.
 for (const event of ['pointerover', 'focusin']) {
   document.addEventListener(event, (moved) => {
     const target = moved.target.closest?.('[data-tip]');
@@ -365,8 +363,6 @@ const deployQuestion = (task) => {
   return `Deploy ${task.id}?\n\nThis merges and pushes:\n${lands.join('\n')}${unshipped}`;
 };
 
-// `revert` writes the same shared branches, and its scope is the part a human gets wrong: it takes the LAST
-// deploy out and leaves any earlier one live.
 const revertQuestion = (task) => {
   const branches = (task.repos || []).map((repo) =>
     `${repo.project} → ${repo.deployBranch || 'no deployBranch in config.json'}`);
@@ -378,7 +374,7 @@ const revertQuestion = (task) => {
 const QUESTIONS = {deploy: deployQuestion, revert: revertQuestion};
 
 async function run(task, action) {
-  // `done` destroys a worktree; the two shared-branch writes name what they would push.
+  // `done` destroys a worktree; the shared-branch writes name what they push.
   const ask = QUESTIONS[action.id];
   const question = ask ? ask(task) : `${action.label} ${task.id}?\n\n${action.hint}`;
   if ((ask || action.id === 'done') && !confirm(question)) {

@@ -99,9 +99,8 @@ link to it, because no file here is named after one vendor.
     lands on the right side of the card by declaring its group and nothing else. The board renders one row per
     group and reads which groups exist off the wire — a page that knew the names would be a second answer. Shared text lives in
     `command/CommandReference` (the grammar) and `command/StateViews` (dashboard + stats), so neither surface renders its
-    own version. A HINT ON THE BOARD IS `data-tip`, NEVER `title`: one node, placed on hover (`showTip`), because a
-    push rebuilds the element the pointer is resting on and the browser's own wait starts over — an element that
-    wants a hint declares the text and nothing else. The reports open in a `<dialog>` over the board, never a new page — and EVERY dialog closes three ways: Escape, its own button, and the dimmed area around it, which is the click a human makes first. The backdrop close is guarded by where the press STARTED, so dragging a selection out of a report does not dismiss what is being read. ONE deliberate exception to
+    own version. A HINT IS `data-tip`, NEVER `title`: one node placed on hover (`showTip`), because `title` waits and
+    a push rebuilds the element it waited on. The reports open in a `<dialog>` over the board, never a new page — and EVERY dialog closes three ways: Escape, its own button, and the dimmed area around it, which is the click a human makes first. The backdrop close is guarded by where the press STARTED, so dragging a selection out of a report does not dismiss what is being read. ONE deliberate exception to
     parity: `quit` is console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill),
     not to a browser button, and nothing is lost by that since agents live in tmux. A shutdown endpoint was built and removed;
     do not add one back.
@@ -283,11 +282,10 @@ link to it, because no file here is named after one vendor.
   excluded is what could only race or refuse: NEW (nothing on the branch), SHIPPING (a push in flight),
   IN_PROGRESS (an agent committing INTO the branch this would merge), REVERTED (a revert ADDS a commit, so the
   branch holds nothing the deploy branch lacks — the answer could only be "nothing to deploy"), DONE. The BOARD
-  names the writes it is asking for before it makes them — BOTH of them, `deploy` and `revert`, one
-  `project → branch` line per repository, read from `TaskView.RepoView.deployBranch`, because "the deploy branch"
-  is not something a human can check. `revert`'s question also names its SCOPE (the last deploy only): a deploy
-  overwrites the one recorded merge commit, so a task deployed twice keeps the earlier round live and nothing
-  else on the page says so.
+  names the writes it is asking for before it makes them — `deploy` and `revert` alike, one `project → branch`
+  line per repository, read from `TaskView.RepoView.deployBranch`, because "the deploy branch" is not something a
+  human can check. `revert` names its SCOPE too: a deploy overwrites the one recorded merge commit, so only the
+  last one comes out.
   The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
   pushes/merges to it — and that holds for a PER-TASK base too (`do <ticket> from <branch>`, persisted as
   `TaskState.baseBranch`): it moves what the worktree is cut from and what the merge request TARGETS, never
