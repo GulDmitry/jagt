@@ -35,6 +35,9 @@ public record TaskState(
         long mrCreatedAt,
         long lastPolledAt,
         Boolean autoReview,
+        // What the host last said about the checks, in ITS words — parsed into a verdict by flow/Pipeline, so a
+        // host that words it differently needs no change here. Null = never read.
+        String pipelineStatus,
         // Master-side model spend on this task (headless assistant calls); null until the first one.
         TokenUsage usage,
         // Append-only, oldest first: every status this task actually moved TO, with when. Capped, see below.
@@ -75,13 +78,14 @@ public record TaskState(
             @JsonProperty("mrCreatedAt") long mrCreatedAt,
             @JsonProperty("lastPolledAt") long lastPolledAt,
             @JsonProperty("autoReview") Boolean autoReview,
+            @JsonProperty("pipelineStatus") String pipelineStatus,
             @JsonProperty("usage") TokenUsage usage,
             @JsonProperty("history") List<StatusChange> history) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
         return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
-                baseBranch, mrCreatedAt, lastPolledAt, autoReview, usage, history);
+                baseBranch, mrCreatedAt, lastPolledAt, autoReview, pipelineStatus, usage, history);
     }
 
     /** Where the agent's session runs, and what the single-repo accessors answer for. */
@@ -168,6 +172,9 @@ public record TaskState(
         long now = System.currentTimeMillis();
         return toBuilder().lastActiveTimestamp(now)
                 .repos(mapRepo(project, repo -> repo.withMrUrl(reviewRequestUrl)))
+                // A new round has new checks: keeping the last one's verdict would leave a card shouting CHECKS
+                // RED about a run that no longer exists.
+                .pipelineStatus(null)
                 // The window is per ROUND, not per request: a round shipped days later gets its own polling
                 // window, and lastPolledAt=0 makes the next scheduler tick look at it right away.
                 .mrCreatedAt(now).lastPolledAt(0)
@@ -224,6 +231,11 @@ public record TaskState(
      * Names who caused the step this task just took. Separate from taking the step because the two are known in
      * different places: the transition is built where the work happens, the asker only at the entry point.
      */
+    /** What the host said about the checks this round, kept so a surface can show it between sweeps. */
+    public TaskState withPipelineStatus(String hostStatus) {
+        return toBuilder().pipelineStatus(hostStatus).build();
+    }
+
     public TaskState withLastChangeOrigin(ActionOrigin origin) {
         if (history.isEmpty()) {
             return this;
@@ -365,6 +377,7 @@ public record TaskState(
         private long mrCreatedAt;
         private long lastPolledAt;
         private Boolean autoReview;
+        private String pipelineStatus;
         private TokenUsage usage;
         /** Null means "a brand-new task" — {@link #build()} then seeds it with the initial status. */
         private List<StatusChange> history;
@@ -448,6 +461,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder pipelineStatus(String pipelineStatus) {
+            this.pipelineStatus = pipelineStatus;
+            return this;
+        }
+
         public Builder usage(TokenUsage usage) {
             this.usage = usage;
             return this;
@@ -467,7 +485,7 @@ public record TaskState(
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
-                    baseBranch, mrCreatedAt, lastPolledAt, autoReview, usage, log);
+                    baseBranch, mrCreatedAt, lastPolledAt, autoReview, pipelineStatus, usage, log);
         }
     }
 }

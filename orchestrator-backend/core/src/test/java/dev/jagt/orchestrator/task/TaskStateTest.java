@@ -203,6 +203,6 @@ class TaskStateTest {
     private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
                                         List<StatusChange> history) {
         return new TaskState(List.of(TaskRepo.of("proj", "/wt")), status, lastActive, message, "a1", null,
-                null, null, 0, 0, null, null, history);
+                null, null, 0, 0, null, null, null, history);
     }
 }

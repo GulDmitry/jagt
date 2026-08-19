@@ -26,6 +26,12 @@ public record Notification(Topic topic, Severity severity, String taskId, String
         return new Notification(Topic.AGENT, Severity.ATTENTION, taskId, title, body);
     }
 
+    /** The checks went red on a task out for review — nobody is watching the host, so this is how it arrives. */
+    public static Notification checksFailed(String taskId, String hostStatus) {
+        return new Notification(Topic.AGENT, Severity.ATTENTION, taskId, "checks " + hostStatus,
+                "the pipeline is not green — `sweep` relays the failure to the agent");
+    }
+
     public static Notification watchdog(String taskId, String title, String body) {
         return new Notification(Topic.WATCHDOG, Severity.ALERT, taskId, title, body);
     }

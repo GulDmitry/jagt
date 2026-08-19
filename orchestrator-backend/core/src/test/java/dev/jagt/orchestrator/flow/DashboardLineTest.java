@@ -101,4 +101,36 @@ class DashboardLineTest {
                 .isEqualTo("ANSWERED: every comment already handled · https://host/mr/440");
     }
 
+    @Test
+    void shoutsThatTheChecksWentRedBeforeShowingTheRequestLink() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("https://host/mr/501").pipelineStatus("failed").build();
+
+        assertThat(DashboardLine.forTask(task)).isEqualTo("CHECKS RED · https://host/mr/501");
+    }
+
+    @Test
+    void saysTheChecksAreStillRunningWhileTheHostHasNoAnswerYet() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("https://host/mr/502").pipelineStatus("running").build();
+
+        assertThat(DashboardLine.forTask(task)).isEqualTo("checks running · https://host/mr/502");
+    }
+
+    @Test
+    void saysNothingAboutTheChecksWhenTheyPassed() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("https://host/mr/503").pipelineStatus("success").build();
+
+        assertThat(DashboardLine.forTask(task)).isEqualTo("https://host/mr/503");
+    }
+
+    @Test
+    void saysNothingAboutTheChecksBeforeTheyHaveBeenRead() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("https://host/mr/504").build();
+
+        assertThat(DashboardLine.forTask(task)).isEqualTo("https://host/mr/504");
+    }
+
 }

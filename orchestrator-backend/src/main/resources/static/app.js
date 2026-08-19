@@ -229,6 +229,13 @@ function card(task) {
   const repos = task.repos || [];
   const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
   meta.append(status, span(null, where), span(null, `active ${relative(task.lastActiveAt)}`));
+  // The checks, as one dot: the sweep already reads the pipeline, and a red run while the card still says
+  // CI_POLLING is the thing a status word cannot show.
+  if (task.pipeline && task.pipeline !== 'NONE') {
+    const checks = span(`checks ${task.pipeline.toLowerCase()}`, '');
+    checks.title = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
+    meta.append(checks);
+  }
 
   const hint = document.createElement('div');
   hint.className = 'hint';

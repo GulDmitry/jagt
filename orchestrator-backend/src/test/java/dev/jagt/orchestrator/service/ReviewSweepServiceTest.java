@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -13,8 +15,10 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -22,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class ReviewSweepServiceTest {
@@ -30,8 +35,9 @@ class ReviewSweepServiceTest {
     private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
     private final AgentSessions sessions = mock(AgentSessions.class);
     private final StateService stateService = mock(StateService.class);
+    private final Notifications notifications = mock(Notifications.class);
     private final ReviewSweepService sweep = new ReviewSweepService(reviewReader, statusReports, sessions,
-            stateService);
+            stateService, notifications);
 
     @BeforeEach
     void aTaskWithAnOpenRequest() {
@@ -304,6 +310,72 @@ class ReviewSweepServiceTest {
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("no request in web");
         verifyNoInteractions(reviewReader);
+    }
+
+    /**
+     * The verdict is derived on every read, so what the task has to keep is the host's OWN wording — that is
+     * what a surface shows a human next to the dot, and no two hosts spell it the same way.
+     */
+    @Test
+    void keepsWhatTheHostSaidAboutTheChecksOnTheTask() {
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "SUCCEEDED", List.of())));
+        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+        assertThat(stamped.getValue()
+                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .pipelineStatus()).isEqualTo("SUCCEEDED");
+    }
+
+    @Test
+    void tapsTheHumanWhenTheChecksGoRedAndSaysNothingOnALaterPollOfTheSameRun() {
+        AtomicReference<TaskState> stored = new AtomicReference<>(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build());
+        when(stateService.task("ABC-1")).thenAnswer(call -> Optional.of(stored.get()));
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            stored.set(call.<UnaryOperator<TaskState>>getArgument(1).apply(stored.get()));
+            return true;
+        });
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
+
+        sweep.sweep("ABC-1");
+        sweep.sweep("ABC-1");
+
+        verify(notifications, times(1)).send(Notification.checksFailed("ABC-1", "failed"));
+        verifyNoMoreInteractions(notifications);
+    }
+
+    @Test
+    void saysNothingWhenAFailedRunComesBackGreen() {
+        AtomicReference<TaskState> stored = new AtomicReference<>(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
+                .pipelineStatus("failed").build());
+        when(stateService.task("ABC-1")).thenAnswer(call -> Optional.of(stored.get()));
+        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
+            stored.set(call.<UnaryOperator<TaskState>>getArgument(1).apply(stored.get()));
+            return true;
+        });
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
+
+        sweep.sweep("ABC-1");
+
+        verify(statusReports).markReviewed("ABC-1");
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void tellsTheHumanNothingAboutAGreenSweep() {
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
+
+        sweep.sweep("ABC-1");
+
+        verifyNoInteractions(notifications);
     }
 
     private void twoRepositoriesUnderReview() {

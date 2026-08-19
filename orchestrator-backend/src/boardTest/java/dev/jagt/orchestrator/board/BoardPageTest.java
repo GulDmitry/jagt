@@ -588,6 +588,33 @@ class BoardPageTest {
         assertThat(page.locator("#terminal")).isHidden();
     }
 
+    /**
+     * The status word cannot carry this: a task sits at CI_POLLING whether its run is still going or already
+     * red, and only the host's own wording says which failure it was.
+     */
+    @Test
+    void aCardShowsTheChecksAsRedAndCarriesWhatTheHostSaidAboutThem() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .pipelineStatus("failed").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .meta .checks.red")).hasCount(1);
+        assertThat(page.locator("article .meta .checks.red")).hasAttribute("title", "checks: failed");
+    }
+
+    @Test
+    void aCardShowsNoChecksDotWhenNoPipelineHasBeenReadYet() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article")).hasCount(1);
+        assertThat(page.locator("article .checks")).hasCount(0);
+    }
+
     private static long now() {
         return System.currentTimeMillis();
     }

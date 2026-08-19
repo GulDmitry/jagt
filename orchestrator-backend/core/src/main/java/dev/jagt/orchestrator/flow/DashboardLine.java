@@ -19,7 +19,7 @@ public final class DashboardLine {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "checks failed");
             case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict — resolve in the deploy worktree");
             case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED ->
-                    orDefault(task.mrUrl(), "review request link missing");
+                    checks(task) + orDefault(task.mrUrl(), "review request link missing");
             // A question OUTRANKS the request link: a link reads as "ready to ship", so the human ships and the
             // unanswered question goes out as a review reply.
             case REVIEW_PENDING -> switch (report) {
@@ -30,6 +30,18 @@ public final class DashboardLine {
             };
             case NEW, IN_PROGRESS -> report == AgentReport.QUESTION ? needsInput(message) : "";
             case SHIPPING, DONE -> "";
+        };
+    }
+
+    /**
+     * The checks, when they are not simply green: a red run while the task still reads CI_POLLING is the case the
+     * status alone cannot show, and it is the one worth interrupting a human for.
+     */
+    private static String checks(TaskState task) {
+        return switch (Pipeline.of(task.pipelineStatus())) {
+            case RED -> "CHECKS RED · ";
+            case RUNNING -> "checks running · ";
+            case GREEN, NONE -> "";
         };
     }
 

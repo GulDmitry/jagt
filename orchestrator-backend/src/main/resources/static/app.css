@@ -157,3 +157,11 @@ a { color: var(--accent); }
   box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
 }
 .toast.error { border-left-color: var(--danger); }
+
+/* The checks as one dot beside the status: a colour a glance reads, and the host's own wording in the title. */
+.checks { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center; }
+.checks.green { background: var(--ok); }
+.checks.red { background: var(--danger); }
+.checks.running { background: var(--muted); animation: checks-pulse 1.6s ease-in-out infinite; }
+@keyframes checks-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .checks.running { animation: none; } }

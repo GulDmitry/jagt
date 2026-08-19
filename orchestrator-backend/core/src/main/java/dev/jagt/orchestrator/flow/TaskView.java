@@ -51,6 +51,10 @@ public record TaskView(
         // Whether anything is polling this task's request and when it will next look. A poll runs with nobody
         // watching, so silence must not be the only thing a surface can show about it.
         AutoReviewWatch autoReview,
+        // The checks, as a verdict: a surface shows GREEN, RED, RUNNING or NONE without matching on a host's
+        // wording. `pipelineSaid` is that wording, for a tooltip — the verdict is what anything decides on.
+        Pipeline pipeline,
+        String pipelineSaid,
         long tokens
 ) {
 
@@ -84,6 +88,7 @@ public record TaskView(
                         .toList(),
                 task.lastActiveTimestamp(),
                 task.statusSince(), task.history(), draftedReplies, autoReview,
+                Pipeline.of(task.pipelineStatus()), task.pipelineStatus(),
                 task.usageOrNone().total());
     }
 

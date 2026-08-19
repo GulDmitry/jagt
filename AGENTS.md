@@ -218,6 +218,14 @@ link to it, because no file here is named after one vendor.
   nothing older — the owner's call (2026-08-18), and the reason nothing gzipped is read back. The file stays
   structured on EVERY surface: `ConsoleLogging` used to try blanking `logging.structured.format.file` for the
   console UIs, which would leave `activity` nothing to parse, and that dead override is gone.
+- THE CHECKS ARE READ WHERE THE COMMENTS ARE, AND SHOWN WITHOUT BEING ASKED FOR. A sweep already pulls the review
+  round, so it stamps what the host said about the pipeline onto the task (`TaskState.pipelineStatus`, the host's
+  OWN wording) and `flow/Pipeline` is the one parser that turns it into GREEN / RED / RUNNING / NONE — every host
+  words it differently, and two surfaces matching on words would agree by luck. The board shows one dot in the
+  card's meta row and the console prefixes the request line (`CHECKS RED · …`), because a red run while the task
+  still reads CI_POLLING is exactly what a status word cannot show. The human is tapped ONCE per run, on the
+  transition INTO red: an unattended poll that notified every time would be a loop, and a red run that is already
+  known is not news.
 - Drafted review replies are a FILE, not state: `TaskViews` stats `review_replies.md` in the worktree and puts
   a boolean on the projection (presence, not a count — the agent's brief prescribes no per-comment marker, so
   a number would be a guess). Both surfaces announce it, because a human who does not know the convention

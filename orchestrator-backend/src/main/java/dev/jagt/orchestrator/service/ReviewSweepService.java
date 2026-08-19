@@ -1,5 +1,11 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.notify.Notifications;
+
+import dev.jagt.orchestrator.port.Notification;
+
+import dev.jagt.orchestrator.flow.Pipeline;
+
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -36,6 +42,7 @@ public class ReviewSweepService {
     private final AgentStatusReports statusReports;
     private final AgentSessions sessions;
     private final StateService stateService;
+    private final Notifications notifications;
     /**
      * One sweep at a time per task, no matter who asked. The guard lives HERE, not in a caller, because
      * there are several triggers — the human's `sweep`, the auto-review scheduler, later a UI button — and
@@ -96,8 +103,9 @@ public class ReviewSweepService {
             rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
         }
         ReviewFacts r = merged(rounds);
-        String pipeline = r.pipelineStatus() == null ? "" : r.pipelineStatus().toLowerCase();
-        boolean pipelineFailed = pipeline.contains("fail");
+        recordChecks(taskId, r.pipelineStatus());
+        Pipeline checks = Pipeline.of(r.pipelineStatus());
+        boolean pipelineFailed = checks == Pipeline.RED;
         if (r.comments().isEmpty() && !pipelineFailed) {
             if (r.approved()) {
                 statusReports.markApproved(taskId);
@@ -105,7 +113,7 @@ public class ReviewSweepService {
                         "sweep " + taskId + ": approved, checks " + r.pipelineStatus()
                                 + " — `deploy` or `done`");
             }
-            if (pipeline.contains("success")) {   // only advance when CI is GREEN, not merely still running
+            if (checks == Pipeline.GREEN) {   // only advance when CI is GREEN, not merely still running
                 statusReports.markReviewed(taskId);
                 return new SweepResult(SweepResult.Kind.REVIEWED,
                         "sweep " + taskId + ": checks " + r.pipelineStatus()
@@ -119,6 +127,24 @@ public class ReviewSweepService {
         return new SweepResult(SweepResult.Kind.RELAYED,
                 "sweep " + taskId + ": " + r.comments().size() + " comment(s) relayed, checks "
                         + r.pipelineStatus());
+    }
+
+    /**
+     * Keeps what the host said about the checks on the task, and taps the human ONCE when a run turns red — a
+     * later poll saying the same thing writes nothing and says nothing, or an unattended sweep would rewrite the
+     * state file and notify on a loop. A re-ship clears the verdict, so the NEXT failing run is news again.
+     */
+    private void recordChecks(String taskId, String hostStatus) {
+        String said = stateService.task(taskId).map(TaskState::pipelineStatus).orElse(null);
+        if (java.util.Objects.equals(said, hostStatus)) {
+            return;
+        }
+        Pipeline was = Pipeline.of(said);
+        Pipeline now = Pipeline.of(hostStatus);
+        stateService.updateTask(taskId, task -> task.withPipelineStatus(hostStatus));
+        if (now.worthATap() && now != was) {
+            notifications.send(Notification.checksFailed(taskId, hostStatus));
+        }
     }
 
     /** Which repository a comment came from, so the agent knows which worktree to open. */
@@ -142,18 +168,17 @@ public class ReviewSweepService {
                 rounds.stream().flatMap(round -> round.comments().stream()).toList());
     }
 
+    /**
+     * The worst repository's own wording. Ordered by VERDICT rather than by the words themselves, so the sweep's
+     * decision and what a surface shows cannot disagree about one read; a host with no checks answers "none", so
+     * the merged line stays something a human can read.
+     */
     private static String worstPipeline(List<ReviewFacts> rounds) {
-        // A host with no checks at all answers "none", so the merged word stays one a human can read: an
-        // empty slot in "checks , no unresolved comments" says nothing about which repository has none.
-        List<String> statuses = rounds.stream()
+        return rounds.stream()
                 .map(round -> round.pipelineStatus() == null || round.pipelineStatus().isBlank()
                         ? "none" : round.pipelineStatus())
-                .toList();
-        return statuses.stream().filter(status -> status.toLowerCase().contains("fail")).findFirst()
-                .orElseGet(() -> statuses.stream()
-                        .filter(status -> !status.toLowerCase().contains("success"))
-                        .findFirst()
-                        .orElse("success"));
+                .min(java.util.Comparator.comparingInt(said -> Pipeline.of(said).severity()))
+                .orElse("none");
     }
 
     /**
