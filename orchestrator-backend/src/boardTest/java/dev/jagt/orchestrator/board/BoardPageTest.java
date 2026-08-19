@@ -226,16 +226,51 @@ class BoardPageTest {
     }
 
     @Test
-    void theRevertButtonSaysItTakesOnlyTheLastDeployBackOut() {
+    void hoveringTheRevertButtonShowsThatItTakesOnlyTheLastDeployBackOut() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.DEPLOYED).alias("a1").mrUrl("https://host.example/mr/7")
                 .lastActiveTimestamp(now()).build());
 
         Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Revert").setExact(true)).hover();
 
-        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Revert")))
-                .hasAttribute("title",
-                        "undo the LAST deploy only, earlier ones stay live: revert that merge and push");
+        assertThat(page.locator("#tip")).isVisible();
+        assertThat(page.locator("#tip"))
+                .hasText("undo the LAST deploy only, earlier ones stay live: revert that merge and push");
+    }
+
+    @Test
+    void aTooltipGoesAwayWithThePointerThatOpenedIt() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).hover();
+        page.locator("h1").hover();
+
+        assertThat(page.locator("#tip")).isHidden();
+    }
+
+    @Test
+    void revertingAsksFirstAndSaysOnlyTheLastDeployComesOut() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.DEPLOYED).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+        CompletableFuture<String> asked = new CompletableFuture<>();
+
+        Page page = open();
+        page.onDialog(dialog -> {
+            asked.complete(dialog.message());
+            dialog.dismiss();
+        });
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Revert").setExact(true)).click();
+
+        org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
+                .startsWith("Revert ABC-1?")
+                .contains("This pushes a revert commit to:")
+                .contains("alpha → dev")
+                .contains("Only the LAST deploy of this task comes out");
+        verifyNoInteractions(commands);
     }
 
     @Test
@@ -614,7 +649,7 @@ class BoardPageTest {
         Page page = open();
 
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
-        assertThat(page.locator("article .meta .checks.red")).hasAttribute("title", "checks: failed");
+        assertThat(page.locator("article .meta .checks.red")).hasAttribute("data-tip", "checks: failed");
     }
 
     @Test

@@ -14,7 +14,7 @@
 <header>
   <h1>jagt</h1>
   <span id="waiting" class="waiting" hidden></span>
-  <span id="auto-review" class="chip" title="whether the unattended review poll runs"></span>
+  <span id="auto-review" class="chip" data-tip="whether the unattended review poll runs"></span>
   <span class="grow"></span>
   <label class="control">sort
     <select id="sort">
@@ -23,21 +23,21 @@
       <option value="title">title</option>
     </select>
   </label>
-  <label class="control checkbox" title="only tasks whose next move is yours"><input type="checkbox" id="mine"> waiting on me</label>
+  <label class="control checkbox" data-tip="only tasks whose next move is yours"><input type="checkbox" id="mine"> waiting on me</label>
   <button id="resume-task">Resume</button>
-  <button id="open-palette" title="⌘K / Ctrl-K — say what you want in words">Ask</button>
+  <button id="open-palette" data-tip="⌘K / Ctrl-K — say what you want in words">Ask</button>
   <span id="reports"></span>
-  <span id="live" class="dot" title="live updates"></span>
+  <span id="live" class="dot" data-tip="live updates"></span>
 </header>
 
 <form id="launch">
   <input id="ref" name="ref" placeholder="ABC-42 or a ticket URL" autocomplete="off" required>
   <!-- Several picked = one task, one agent session, a worktree in each. -->
-  <select id="project" name="project" multiple size="1" title="one project, or several for work that spans them"></select>
+  <select id="project" name="project" multiple size="1" data-tip="one project, or several for work that spans them"></select>
   <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">
-  <label class="checkbox" title="the agent writes a plan and waits for your go-ahead before touching code"><input type="checkbox" id="plan"> plan first</label>
+  <label class="checkbox" data-tip="the agent writes a plan and waits for your go-ahead before touching code"><input type="checkbox" id="plan"> plan first</label>
   <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
-  <button type="submit" class="primary" title="cut a worktree per project, start one agent session and brief it">Start</button>
+  <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button>
   <span id="launch-state" class="muted"></span>
 </form>
 
@@ -77,7 +77,7 @@
 <main id="board"></main>
 <p id="empty" class="empty" hidden>No tasks. The row above starts one — the same thing
   <code>do ABC-42</code> does in the console.</p>
-<button id="show-log" class="log" hidden title="only the first line fits here — click for every message this session"></button>
+<button id="show-log" class="log" hidden data-tip="only the first line fits here — click for every message this session"></button>
 <div id="toasts"></div>
 <script src="app.js"></script>
 </body>

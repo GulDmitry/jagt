@@ -174,7 +174,40 @@ function sorted(list) {
   return copy;
 }
 
+// One tip node for the page instead of `title`, which appears only after a wait the pointer has to sit through —
+// and every push rebuilds the card it was sitting on, starting that wait over.
+const tip = Object.assign(document.createElement('div'), {id: 'tip', hidden: true});
+document.body.append(tip);
+
+function hideTip() {
+  tip.hidden = true;
+}
+
+function showTip(target) {
+  tip.textContent = target.dataset.tip;
+  tip.hidden = false;
+  const anchor = target.getBoundingClientRect();
+  const own = tip.getBoundingClientRect();
+  const below = anchor.bottom + 8;
+  const fits = below + own.height < window.innerHeight - 8;
+  tip.style.left = `${Math.max(8, Math.min(anchor.left, window.innerWidth - own.width - 8))}px`;
+  tip.style.top = `${fits ? below : Math.max(8, anchor.top - own.height - 8)}px`;
+}
+
+// Delegated, because every element that carries a tip is rebuilt from the projection; `focusin` so the keyboard
+// reaches them too. An empty tip is no tip — a stale status line would otherwise show as an empty box.
+for (const event of ['pointerover', 'focusin']) {
+  document.addEventListener(event, (moved) => {
+    const target = moved.target.closest?.('[data-tip]');
+    if (target && target.dataset.tip) showTip(target);
+    else hideTip();
+  });
+}
+document.addEventListener('pointerdown', hideTip);
+window.addEventListener('scroll', hideTip, true);
+
 function render() {
+  hideTip();
   const shown = onlyMine.checked ? tasks.filter((t) => t.owner === 'YOU') : tasks;
   const waiting = tasks.filter((t) => t.owner === 'YOU').length;
   const waitingLabel = document.getElementById('waiting');
@@ -222,7 +255,7 @@ function card(task) {
   const status = document.createElement('span');
   status.className = 'status';
   status.textContent = `${task.status} · ${duration(Date.now() - task.statusSince)}`;
-  status.title = timeline(task);
+  status.dataset.tip = timeline(task);
   // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
   const repos = task.repos || [];
   const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
@@ -231,7 +264,7 @@ function card(task) {
   // CI_POLLING is the thing a status word cannot show.
   if (task.pipeline && task.pipeline !== 'NONE') {
     const checks = span(`checks ${task.pipeline.toLowerCase()}`, '');
-    checks.title = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
+    checks.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
     meta.append(checks);
   }
 
@@ -254,7 +287,7 @@ function card(task) {
     const drafts = document.createElement('div');
     drafts.className = 'drafts';
     drafts.textContent = 'drafted review replies — read them before you ship';
-    drafts.title = 'review_replies.md in the worktree; open it with the IDE action';
+    drafts.dataset.tip = 'review_replies.md in the worktree; open it with the IDE action';
     article_children.push(drafts);
   }
 
@@ -263,7 +296,7 @@ function card(task) {
     const node = document.createElement('div');
     node.className = watch.stalled ? 'watch stalled' : 'watch';
     node.textContent = watch.text;
-    node.title = autoReview.summary;
+    node.dataset.tip = autoReview.summary;
     article_children.push(node);
   }
 
@@ -291,7 +324,7 @@ function card(task) {
     }
     const button = document.createElement('button');
     button.textContent = action.label;
-    button.title = action.hint;
+    button.dataset.tip = action.hint;
     if (action.primary) button.className = 'primary';
     button.disabled = busy.has(task.id);
     button.onclick = () => run(task, action);
@@ -332,10 +365,23 @@ const deployQuestion = (task) => {
   return `Deploy ${task.id}?\n\nThis merges and pushes:\n${lands.join('\n')}${unshipped}`;
 };
 
+// `revert` writes the same shared branches, and its scope is the part a human gets wrong: it takes the LAST
+// deploy out and leaves any earlier one live.
+const revertQuestion = (task) => {
+  const branches = (task.repos || []).map((repo) =>
+    `${repo.project} → ${repo.deployBranch || 'no deployBranch in config.json'}`);
+  return `Revert ${task.id}?\n\nThis pushes a revert commit to:\n${branches.join('\n')}\n\n`
+    + 'Only the LAST deploy of this task comes out — if it was deployed more than once, the earlier rounds stay'
+    + ' live and have to be reverted by hand. The task branch keeps every commit.';
+};
+
+const QUESTIONS = {deploy: deployQuestion, revert: revertQuestion};
+
 async function run(task, action) {
-  // `done` destroys a worktree and `deploy` writes to a shared branch: ask.
-  const question = action.id === 'deploy' ? deployQuestion(task) : `${action.label} ${task.id}?\n\n${action.hint}`;
-  if ((action.id === 'done' || action.id === 'deploy') && !confirm(question)) {
+  // `done` destroys a worktree; the two shared-branch writes name what they would push.
+  const ask = QUESTIONS[action.id];
+  const question = ask ? ask(task) : `${action.label} ${task.id}?\n\n${action.hint}`;
+  if ((ask || action.id === 'done') && !confirm(question)) {
     return;
   }
   busy.add(task.id);
@@ -464,14 +510,14 @@ function refreshSuggestions() {
     const button = document.createElement('button');
     button.id = `show-${verb.id}`;
     button.textContent = verb.id.charAt(0).toUpperCase() + verb.id.slice(1);
-    button.title = verb.hint;
+    button.dataset.tip = verb.hint;
     button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`);
     return button;
   }));
   const resume = verbFor('resume');
   if (resume) {
     document.querySelectorAll('#resume-task, #resume button[type=submit]')
-      .forEach((button) => { button.title = resume.hint; });
+      .forEach((button) => { button.dataset.tip = resume.hint; });
   }
 }
 

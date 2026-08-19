@@ -142,6 +142,12 @@ a { color: var(--accent); }
   color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
 }
+#tip {
+  position: fixed; z-index: 60; pointer-events: none; max-width: min(340px, 76vw);
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 8px; font-size: 12px; line-height: 1.35; white-space: pre-wrap;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
+}
 #toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px;
   max-width: min(520px, 90vw); }
 .toast { cursor: pointer; }
