@@ -34,7 +34,18 @@ link to it, because no file here is named after one vendor.
 - `.mcp.json` — Claude Code's project MCP config, GENERATED per worktree by `ClaudeAgentRuntime` (not
   symlinked: the header value IS that worktree's path). The committed ROOT `.mcp.json` is the same server for a
   dev session working ON jagt, with no header — that session is not a task, so the backend treats it as Master.
-  Other runtimes write their own equivalent (Codex: `.codex/config.toml`); it is not a universal file.
+  Other runtimes write their own equivalent (Codex: `.jagt/codex/config.toml`); it is not a universal file.
+- WHOEVER WORKS ON JAGT ITSELF READS THE SAME FILE AND REACHES THE SAME SERVER, whatever CLI they run — the
+  root is provisioned for all three exactly as a worktree is, because a rule only one vendor loads is a rule
+  half the sessions break. `AGENTS.md` is the one knowledge file (`CLAUDE.md` is a symlink to it, Codex reads
+  the name natively, `.qwen/settings.json` points `context.fileName` at it); jagt's MCP server is declared once
+  per CLI — `.mcp.json` (HTTP), `.qwen/settings.json` (HTTP, `trust` so its tools need no per-call
+  confirmation), `.codex/config.toml` (the stdio bridge, Codex having no verified remote form) — and none of
+  them carries a worktree header, so every root session is Master. Two limits are Codex's, not jagt's: it loads
+  a project layer only for a TRUSTED project and resolves the bridge relative to where it was launched (start
+  it at the root), and its approval policy is global, so nothing here pre-approves it the way
+  `.claude/settings.json` pre-approves jagt's own tools for a Claude session. A rule that belongs to this
+  repository goes in `AGENTS.md`, never in a vendor-named local file.
 - `config.json` — user config, grouped into logical sections: `projects` (path, baseBranch,
   deployBranch, labels), `viewer` (tmuxSession, viewMode shared|tab-per-task, keepViewer), `dashboard`
   (refreshSeconds, reservedRows), `codeReview` (mrTitlePattern, postReviewReplies, reviewReplyAuthors,
@@ -459,8 +470,10 @@ link to it, because no file here is named after one vendor.
     pluggable AI-agent CLI: `launchCommand` AND worktree provisioning (`provisionWorktree`, a template in
     `AbstractAgentRuntime` + one per-agent hook) live here. `mcp_client.js` is a STANDARD, agent-agnostic MCP
     stdio↔HTTP proxy (keep it that way) and is linked by the template; only the config that declares it
-    differs per agent (Claude `.mcp.json` + `.claude/settings.local.json`, Codex `.codex/config.toml` with
-    `CODEX_HOME` pointed at the worktree) and belongs in each `AgentRuntime`. Nothing outside the runtime may
+    differs per agent (Claude `.mcp.json` + `.claude/settings.local.json`, Codex `.jagt/codex/config.toml`
+    with `CODEX_HOME` pointed at it — NOT at the worktree's own `.codex/`, which is where a repository ships
+    the project config layer Codex reads, and jagt overwriting a tracked file is a change `ship` commits) and
+    belongs in each `AgentRuntime`. Nothing outside the runtime may
     name an agent's files — `WorktreeSetup` only calls `provisionWorktree`, and `AgentSessions` `displayName`.
   - `CodeHost` (`…adapter.codehost`, `orchestrator.code-host.type`, default none; `gitlab` and `github`) — reads of a
     review request (the ROUND a sweep decides on, and the BRANCHES a `resume` adopts, so neither costs a model
@@ -748,6 +761,11 @@ link to it, because no file here is named after one vendor.
   of this file. Fix every real finding (or explicitly note why it's a non-issue), then re-review if the fixes are
   non-trivial. No commit lands unreviewed — this is a hard gate, not a suggestion. (A shell hook can only
   *remind*; it cannot invoke a skill, so this is enforced here as a workflow rule, not in settings.json.)
+- COMMIT EVERY FINISHED PIECE OF WORK, IN THE SAME TURN IT WENT GREEN. Permission to commit is standing;
+  permission to push is not. Stage the explicit paths you touched, never `git add -A` — other sessions are in
+  this tree. Where the review skill cannot run (a harness with no subagents), read the diff yourself, say so in
+  one line, and commit anyway: a change with no logic in it — a string, a doc row, the assertions that follow
+  one — is a diff read, not a fan-out. Work left sitting in the tree is not delivered.
 
 ## Build & run
 - Default run is the WEB BOARD: `./gradlew build stageJar` then `java -jar build/libs/jagt-run.jar` serves it

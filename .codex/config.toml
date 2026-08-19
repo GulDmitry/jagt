@@ -1,0 +1,5 @@
+# Codex loads this layer only for a trusted project, and only relative to where it was launched:
+# run it from the repository root, or the bridge path below does not resolve.
+[mcp_servers.jagt-orchestrator]
+command = "node"
+args = ["mcp_client.js"]

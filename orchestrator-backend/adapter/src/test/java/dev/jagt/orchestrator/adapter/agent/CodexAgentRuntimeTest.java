@@ -23,7 +23,7 @@ class CodexAgentRuntimeTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")));
 
         assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false))
-                .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.codex' codex 'Read AGENTS.md and work'");
+                .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex 'Read AGENTS.md and work'");
     }
 
     @Test
@@ -33,7 +33,7 @@ class CodexAgentRuntimeTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")));
 
         assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), true))
-                .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.codex' codex --sandbox read-only 'go'");
+                .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.jagt/codex' codex --sandbox read-only 'go'");
     }
 
     @Test
@@ -77,7 +77,7 @@ class CodexAgentRuntimeTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")))
                 .provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
-        assertThat(Files.readString(worktree.resolve(".codex/config.toml")))
+        assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
                 .contains("[mcp_servers.jagt-orchestrator]")
                 .contains("args = [\"" + worktree.resolve("mcp_client.js") + "\"]");
     }
@@ -110,9 +110,24 @@ class CodexAgentRuntimeTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")))
                 .provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
-        assertThat(Files.readString(worktree.resolve(".codex/config.toml")))
+        assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
                 .contains("approval_policy = \"never\"")
                 .contains("sandbox_mode = \"workspace-write\"");
+    }
+
+    @Test
+    void leavesACodexConfigTheRepositoryShipsExactlyAsItCheckedOut(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        Files.createDirectories(worktree.resolve(".codex"));
+        Files.writeString(worktree.resolve(".codex/config.toml"), "model = \"the project's own choice\"\n");
+
+        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+
+        assertThat(Files.readString(worktree.resolve(".codex/config.toml")))
+                .isEqualTo("model = \"the project's own choice\"\n");
     }
 
     @Test

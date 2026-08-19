@@ -12,6 +12,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | `code-host.type` / `tracker.type` has a typo, or its token is unset | start jagt | Refused. The old answer was silent: nothing claimed the URL, so every sweep and every `do` fell back to a paid model read and nobody noticed until the bill. |
 | A token is set but wrong, or the host is unreachable | start jagt | NOT detected — no check reaches the network. Presence is what a start can answer; validity is the first read's business. |
 | A suite or a smoke script boots the app on a machine with no desktop | `--orchestrator.startup-checks=false` | Skips the lot. What they ask about is the human's machine, and a runner is not one. |
+| You work ON jagt with Codex or Qwen rather than Claude | open the repository as usual | The same rules and the same MCP server: `AGENTS.md` is the one knowledge file (`CLAUDE.md` is a symlink to it, `.qwen/settings.json` points `context.fileName` at it) and each CLI has its own declaration of jagt's server committed at the root. A rule written into a vendor-named file binds one session in three. |
 
 ## Starting work
 
@@ -23,6 +24,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | One change moves two repositories (a service and its client) | `do ABC-1 api,web` | ONE task, ONE agent session, a worktree per repository named `ABC-1-<project>`. The session runs in the first named; its briefing lists the others as its own to edit. On the board: pick several projects (ctrl/cmd-click). |
 | A multi-repo task reaches review | `ship ABC-1` | A commit, a push and a request PER repository, each targeting that repository's own base branch. The sentence names each one. |
 | One of its repositories has no code host configured | `ship ABC-1` | The WHOLE task falls back to instructing the agent — half pushed by jagt and half by the agent is a state neither can describe. |
+| The project ships its own `.codex/config.toml` | `do ABC-1` with `orchestrator.agent=codex` | Left alone: jagt points `CODEX_HOME` at `.jagt/codex/` in the worktree, so the project's own layer still loads and no tracked file changes under the agent. It used to be overwritten, and `ship` (`git add -A`) committed the overwrite. |
 | "What exactly will this deploy push?" | the board's Deploy button | The confirmation names it before anything runs: one `project → branch` line per repository, or `no deployBranch in config.json` where a project configures none. The console answers the same question afterwards, in the sentence it prints. |
 | "What exactly will this revert take out?" | the board's Revert button | The confirmation names the branches it pushes to, and the scope: the last deploy only. |
 | A request you have decided to land, whatever the review says | `deploy ABC-1` | Offered on ANY task with a request open — REVIEW_PENDING included. The reviewer's verdict is not jagt's gate; git's only precondition is commits on the branch. |

@@ -1,0 +1,11 @@
+{
+  "context": {
+    "fileName": ["AGENTS.md"]
+  },
+  "mcpServers": {
+    "jagt-orchestrator": {
+      "httpUrl": "http://127.0.0.1:8290/mcp",
+      "trust": true
+    }
+  }
+}

@@ -17,16 +17,19 @@ import java.util.List;
 
 /**
  * Codex reads {@code AGENTS.md} natively, so there is no alias to create. Its MCP servers are declared under
- * {@code $CODEX_HOME}, which the launch command points AT THE WORKTREE — so the agent gets exactly jagt's own
- * server, and the human's {@code ~/.codex} config is neither read nor modified. The flip side: the human's
- * other MCP servers are NOT inherited there, so a Codex agent cannot post review replies by itself.
+ * {@code $CODEX_HOME}, which the launch command points at a jagt-owned directory INSIDE the worktree — so the
+ * agent gets exactly jagt's own server, and the human's {@code ~/.codex} config is neither read nor modified.
+ * Not the worktree's own {@code .codex/}: Codex reads a project config layer from there, so a repository may
+ * ship one, and jagt writing over a tracked file is a change the next {@code ship} commits.
+ * The flip side of the private home: the human's other MCP servers are NOT inherited, so a Codex agent cannot
+ * post review replies by itself.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent", havingValue = "codex")
 @RequiredArgsConstructor
 public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCheck {
 
-    private static final String CODEX_HOME_DIR = ".codex";
+    private static final String CODEX_HOME_DIR = ".jagt/codex";
 
     private final OrchestratorProperties properties;
     private final CodexProperties codex;

@@ -262,6 +262,19 @@ future automation):
 
 ## Development
 
+### Working on jagt with any agent CLI
+
+The repository briefs whichever CLI you open it with, and points all of them at a running backend's MCP
+server (no worktree header, so the session counts as Master):
+
+| CLI | reads the rules from | reaches jagt's MCP through |
+|---|---|---|
+| Claude Code | `AGENTS.md` via the committed `CLAUDE.md` symlink | `.mcp.json` (HTTP); `.claude/settings.json` pre-approves the tools |
+| Codex | `AGENTS.md` (its own convention) | `.codex/config.toml` — the `mcp_client.js` stdio bridge, so it needs Node; Codex loads that layer only for a *trusted* project, and resolves the bridge from the working directory, so start it at the repository root |
+| Qwen Code | `AGENTS.md` via `context.fileName` in `.qwen/settings.json` | `.qwen/settings.json` (HTTP, `trust: true`) |
+
+There is one rules file — `AGENTS.md`. Never write a project rule into a vendor-named file.
+
 ### The suites
 
 | task | what it needs | what it answers |
