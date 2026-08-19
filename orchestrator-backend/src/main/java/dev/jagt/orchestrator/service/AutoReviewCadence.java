@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.AutoReviewWatch;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 

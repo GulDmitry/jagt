@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
-import dev.jagt.orchestrator.model.NewRepo;
-import dev.jagt.orchestrator.model.NewTask;
+import dev.jagt.orchestrator.task.NewRepo;
+import dev.jagt.orchestrator.task.NewTask;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

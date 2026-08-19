@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.model.TicketFacts;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

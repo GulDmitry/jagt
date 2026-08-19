@@ -2,9 +2,9 @@ package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.capability.Capabilities;
 import dev.jagt.orchestrator.capability.TaskCapability;
-import dev.jagt.orchestrator.model.TaskAction;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.Refusal;
 import dev.jagt.orchestrator.service.StateService;

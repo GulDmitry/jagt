@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.config;
 
-import dev.jagt.orchestrator.platform.Executables;
+import dev.jagt.orchestrator.adapter.Executables;
 import lombok.With;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

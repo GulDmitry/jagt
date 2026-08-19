@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant;
-import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.model.MergeRequestFacts;
-import dev.jagt.orchestrator.model.TicketFacts;
-import dev.jagt.orchestrator.model.AssistantCallKind;
-import dev.jagt.orchestrator.model.ReviewFacts;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.port.MasterAssistant;
+import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.task.MergeRequestFacts;
+import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

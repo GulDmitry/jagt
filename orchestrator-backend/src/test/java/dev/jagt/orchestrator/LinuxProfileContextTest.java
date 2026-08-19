@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.platform.TerminalDriver;
-import dev.jagt.orchestrator.platform.UserNotifier;
-import dev.jagt.orchestrator.platform.linux.LibNotifyNotifier;
-import dev.jagt.orchestrator.platform.linux.LinuxKittyTerminalDriver;
+import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
+import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
-import dev.jagt.orchestrator.shell.MasterShell;
+import dev.jagt.orchestrator.surface.console.MasterShell;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;

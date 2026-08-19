@@ -133,15 +133,15 @@ public final class WorktreeFiles {
     }
 
     /** Announced only where it is actionable: the file survives until the agent deletes it. */
-    public static boolean draftedReplies(dev.jagt.orchestrator.model.TaskState task) {
+    public static boolean draftedReplies(dev.jagt.orchestrator.task.TaskState task) {
         return draftedReplies(task, task.status());
     }
 
     /** The same, for a status the task is being MOVED to rather than the one it still carries. */
-    public static boolean draftedReplies(dev.jagt.orchestrator.model.TaskState task,
-                                         dev.jagt.orchestrator.model.TaskStatus status) {
-        if (status != dev.jagt.orchestrator.model.TaskStatus.REVIEW_PENDING
-                && status != dev.jagt.orchestrator.model.TaskStatus.CI_FAILED) {
+    public static boolean draftedReplies(dev.jagt.orchestrator.task.TaskState task,
+                                         dev.jagt.orchestrator.flow.TaskStatus status) {
+        if (status != dev.jagt.orchestrator.flow.TaskStatus.REVIEW_PENDING
+                && status != dev.jagt.orchestrator.flow.TaskStatus.CI_FAILED) {
             return false;
         }
         String worktree = task.worktreePath();

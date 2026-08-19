@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

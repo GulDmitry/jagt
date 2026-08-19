@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.ReviewFacts;
-import dev.jagt.orchestrator.model.TaskRepo;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

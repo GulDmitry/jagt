@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.notify;
 
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.port.UserNotifier;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.mock;

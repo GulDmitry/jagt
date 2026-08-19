@@ -16,15 +16,19 @@ registry, one folder. If something fits no kind, the kind is missing — add a k
 
 | Kind | Its one job | State |
 |---|---|---|
-| `task/` | the task record and the file it lives in | built (`TaskState`, `StateService`) |
-| `flow/` | which status allows what, and where each outcome leads | built — rules, engine, reports; `TaskStatus` still in `model/` |
+| `task/` | the task record and the file it lives in | built — `TaskState` and everything it is made of |
+| `flow/` | which status allows what, and where each outcome leads | built — rules, engine, reports, the projection, and the statuses themselves |
 | `capability/` | one thing that can be done to a task | built — one class per verb, none of them naming a status |
 | `job/` | work that runs with nobody watching | built (`Job`, `Jobs`, one ticker) — the five job classes still live in `service/` |
 | `notify/` | something a human must be told | built (`Notification`, `Notifier`, `Notifications`) — one channel so far, the desktop |
-| `surface/` | who is asking: console, board, MCP | built, spread over three packages |
+| `surface/` | who is asking: console, board, MCP | built — `surface/console`, `surface/board`, `surface/mcp` |
 
 Drivers are not a kind. They are what a kind needs from the world: an interface the inner rings declare
-(a PORT) and an implementation at the edge (an ADAPTER).
+(a PORT, in `port/`) and an implementation at the edge (an ADAPTER, in `adapter/`). Both exist.
+
+`service/` is what is left: work more than one capability shares — git, the state file, config, processes, tmux,
+worktrees. It is named for what it is rather than dissolved into one verb's folder, because a class two
+capabilities use belongs to neither.
 
 ## The rings — arrows point inward only
 

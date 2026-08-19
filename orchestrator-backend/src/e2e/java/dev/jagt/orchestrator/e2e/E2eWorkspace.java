@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.model.GitRemote;
+import dev.jagt.orchestrator.task.GitRemote;
 import dev.jagt.orchestrator.service.GitService;
 
 import java.io.IOException;

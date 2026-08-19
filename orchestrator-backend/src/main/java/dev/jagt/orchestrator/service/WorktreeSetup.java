@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.agent.AgentRuntime;
-import dev.jagt.orchestrator.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.adapter.agent.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.model.NewRepo;
-import dev.jagt.orchestrator.model.NewTask;
+import dev.jagt.orchestrator.task.NewRepo;
+import dev.jagt.orchestrator.task.NewTask;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;

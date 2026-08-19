@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.ProjectConfig;
-import dev.jagt.orchestrator.model.TaskRepo;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.platform.EditorDriver;
+import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

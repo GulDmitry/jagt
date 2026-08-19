@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.codehost.CodeHost;
-import dev.jagt.orchestrator.model.MergeRequestRef;
-import dev.jagt.orchestrator.model.MergeRequestSpec;
+import dev.jagt.orchestrator.port.CodeHost;
+import dev.jagt.orchestrator.task.MergeRequestRef;
+import dev.jagt.orchestrator.task.MergeRequestSpec;
 import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.model.ReviewRequestTitle;
-import dev.jagt.orchestrator.model.TaskRepo;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.task.ReviewRequestTitle;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

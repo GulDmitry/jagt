@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

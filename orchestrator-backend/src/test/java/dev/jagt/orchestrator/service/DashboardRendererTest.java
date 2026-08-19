@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.model.AssistantCallKind;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -53,7 +53,7 @@ class DashboardRendererTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .alias("a1").title("title")
-                .history(java.util.List.of(new dev.jagt.orchestrator.model.StatusChange(
+                .history(java.util.List.of(new dev.jagt.orchestrator.task.StatusChange(
                         TaskStatus.REVIEW_PENDING, System.currentTimeMillis() - 7_200_000, null)))
                 .build());
 

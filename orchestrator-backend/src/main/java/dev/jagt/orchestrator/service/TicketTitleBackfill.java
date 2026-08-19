@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.TicketFacts;
+import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

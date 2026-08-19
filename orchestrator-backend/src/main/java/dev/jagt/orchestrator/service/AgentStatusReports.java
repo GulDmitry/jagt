@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.AgentReport;
+import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.model.RoundState;
-import dev.jagt.orchestrator.model.TaskLabel;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.flow.RoundState;
+import dev.jagt.orchestrator.task.TaskLabel;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.notify.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.RequiredArgsConstructor;

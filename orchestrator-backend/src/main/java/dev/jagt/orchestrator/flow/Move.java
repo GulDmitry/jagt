@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.model.AgentReport;
-import dev.jagt.orchestrator.model.Owner;
-import dev.jagt.orchestrator.model.Phase;
-import dev.jagt.orchestrator.model.RoundState;
-import dev.jagt.orchestrator.model.TaskAction;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.flow.Owner;
+import dev.jagt.orchestrator.flow.Phase;
+import dev.jagt.orchestrator.flow.RoundState;
+import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.flow.TaskStatus;
 
 import java.util.List;
 

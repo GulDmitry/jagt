@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service.commands;
 
-import dev.jagt.orchestrator.model.LaunchRequest;
+import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.GlobalCommand;
 import dev.jagt.orchestrator.service.TaskLauncher;

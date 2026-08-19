@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.linux;
 
-import dev.jagt.orchestrator.platform.linux.LibNotifyNotifier;
+import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
 import dev.jagt.orchestrator.service.ProcessRunner;
 import org.junit.jupiter.api.Test;
 

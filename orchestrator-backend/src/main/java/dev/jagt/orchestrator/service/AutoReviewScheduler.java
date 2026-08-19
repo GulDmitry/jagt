@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.ActionOrigin;
-import dev.jagt.orchestrator.model.AutoReviewWatch;
-import dev.jagt.orchestrator.model.TaskLabel;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.task.TaskLabel;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.notify.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;

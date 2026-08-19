@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.notify.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;

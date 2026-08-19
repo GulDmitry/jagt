@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.codehost.CodeHost;
-import dev.jagt.orchestrator.model.MergeRequestFacts;
-import dev.jagt.orchestrator.model.ReviewFacts;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.CodeHost;
+import dev.jagt.orchestrator.task.MergeRequestFacts;
+import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

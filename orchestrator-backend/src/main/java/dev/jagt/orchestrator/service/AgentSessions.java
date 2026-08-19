@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.agent.AgentRuntime;
-import dev.jagt.orchestrator.model.TaskLabel;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.platform.TerminalDriver;
+import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.TaskLabel;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.port.TerminalDriver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

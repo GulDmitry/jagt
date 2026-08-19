@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.codehost.CodeHost;
-import dev.jagt.orchestrator.model.MergeRequestFacts;
-import dev.jagt.orchestrator.model.MergeRequestRef;
-import dev.jagt.orchestrator.model.MergeRequestSpec;
-import dev.jagt.orchestrator.model.ReviewFacts;
+import dev.jagt.orchestrator.port.CodeHost;
+import dev.jagt.orchestrator.task.MergeRequestFacts;
+import dev.jagt.orchestrator.task.MergeRequestRef;
+import dev.jagt.orchestrator.task.MergeRequestSpec;
+import dev.jagt.orchestrator.task.ReviewFacts;
 
 import java.util.List;
 import java.util.Optional;

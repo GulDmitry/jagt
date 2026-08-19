@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.ActionOrigin;
+import dev.jagt.orchestrator.task.ActionOrigin;
 
 import java.util.function.Supplier;
 

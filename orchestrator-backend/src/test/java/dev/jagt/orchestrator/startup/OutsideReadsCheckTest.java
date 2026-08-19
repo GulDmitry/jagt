@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.startup;
 
-import dev.jagt.orchestrator.codehost.CodeHost;
+import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.config.CodeHostProperties;
 import dev.jagt.orchestrator.config.TrackerProperties;
-import dev.jagt.orchestrator.tracker.Tracker;
+import dev.jagt.orchestrator.port.Tracker;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 

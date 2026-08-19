@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.capability;
 
-import dev.jagt.orchestrator.model.TaskAction;
+import dev.jagt.orchestrator.flow.TaskAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

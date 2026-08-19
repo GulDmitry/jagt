@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.AutoReviewWatch;
+import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.flow.TaskView;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

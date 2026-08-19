@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.TaskRepo;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.notify.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;

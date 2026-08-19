@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.AssistantCallKind;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

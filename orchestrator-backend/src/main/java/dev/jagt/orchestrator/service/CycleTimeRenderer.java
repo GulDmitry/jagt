@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.model.Owner;
-import dev.jagt.orchestrator.model.StatusChange;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.flow.Owner;
+import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;

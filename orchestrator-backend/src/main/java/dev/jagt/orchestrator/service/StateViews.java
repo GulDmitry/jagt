@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.TaskChoice;
+import dev.jagt.orchestrator.task.TaskChoice;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

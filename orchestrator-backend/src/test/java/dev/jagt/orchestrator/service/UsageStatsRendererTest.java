@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.model.AssistantCallKind;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -86,8 +86,8 @@ class UsageStatsRendererTest {
      */
     @Test
     void keepsEveryCallKindLabelInsideItsColumn() {
-        for (dev.jagt.orchestrator.model.AssistantCallKind kind
-                : dev.jagt.orchestrator.model.AssistantCallKind.values()) {
+        for (dev.jagt.orchestrator.task.AssistantCallKind kind
+                : dev.jagt.orchestrator.task.AssistantCallKind.values()) {
             assertThat(kind.label().length()).as(kind.name() + " label")
                     .isLessThanOrEqualTo(UsageStatsRenderer.LABEL_W);
         }

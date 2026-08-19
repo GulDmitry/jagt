@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant.Answer;
-import dev.jagt.orchestrator.model.TicketFacts;
-import dev.jagt.orchestrator.model.TokenUsage;
-import dev.jagt.orchestrator.tracker.Tracker;
+import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.task.TicketFacts;
+import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.port.Tracker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

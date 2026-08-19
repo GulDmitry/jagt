@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowEngine;
-import dev.jagt.orchestrator.model.TaskAction;
+import dev.jagt.orchestrator.flow.TaskAction;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

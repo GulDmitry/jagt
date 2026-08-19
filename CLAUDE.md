@@ -21,7 +21,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   (`orchestrator.code-host.*`, `orchestrator.tracker.*`); with neither configured the backend holds no
   credential at all.
 - HOW AN AGENT REACHES THE MCP SERVER IS PART OF THE `AgentRuntime` SEAM, and there are exactly two paths
-  (`agent/McpEndpoint` documents both): HTTP — the CLI is pointed at `orchestrator.mcp-url` and carries
+  (`adapter/agent/McpEndpoint` documents both): HTTP — the CLI is pointed at `orchestrator.mcp-url` and carries
   `X-Working-Directory: <worktree>` itself, nothing running in between; or stdio — the CLI can only SPAWN a
   server, so the runtime calls `AbstractAgentRuntime.linkStdioProxy` and gets `mcp_client.js`, the standard
   Node bridge that POSTs the same header. Prefer HTTP: verified against a real session, and it is what took
@@ -61,10 +61,10 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
 - `state.json` — SSOT for tasks (gitignored, auto-created). Each task also keeps `history` — every status it
   moved TO, with when and WHO ASKED, oldest first, capped at 50 (the file is rewritten on every MCP call). A
   KEEP-ALIVE adds nothing (same status = no entry, else four real transitions drown in hundreds of identical
-  rows), and a task starts its history at the status it was created with. The asker (`model/ActionOrigin`) is
+  rows), and a task starts its history at the status it was created with. The asker (`task/ActionOrigin`) is
   carried by `service/OriginContext` and stamped in `StateService`, NOT passed down: a deploy reaches the same
   code whether it was clicked, typed, said in words or called over MCP, so every signature in between would
-  have to grow a parameter it has no use for. Set it at an ENTRY POINT only — `web/OriginFilter` (both HTTP
+  have to grow a parameter it has no use for. Set it at an ENTRY POINT only — `surface/board/OriginFilter` (both HTTP
   surfaces at once, so a new endpoint cannot forget), `GrammarDispatch.run`, `NaturalLanguageDispatch` and
   `AutoReviewScheduler`; nesting is honest, so console free text is recorded as the interpretation it became. Read "since when in this status" from
   `TaskState.statusSince()`, NEVER from `lastActiveTimestamp` — a keep-alive bumps that one, so an hour-old
@@ -75,7 +75,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   REVERTED (its deploy was taken back out; the branch and commits survive, so the next move is a fix), DONE.
 
 ## Session roles
-- Master = the backend process itself. `MasterShell` owns the screen; `shell/GrammarDispatch` parses the fixed
+- Master = the backend process itself. `MasterShell` owns the screen; `surface/console/GrammarDispatch` parses the fixed
   grammar and executes it in-process: no LLM, no MCP round-trip, no tokens, no drift. There is NO Master Claude session — the
   deterministic REPL/TUI replaced it, and `master_prompt.md` went with it (see git history). The only LLM
   call on the master side is the headless one-shot assistant below.
@@ -84,11 +84,11 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   rules; instructions arrive via `task_context.md`.
 
 ## Control surfaces (web board + console)
-- TWO front-ends, ONE core, and the seam is `OperatorUi` (`…ui`, selected by `orchestrator.ui`: web | tui |
+- TWO front-ends, ONE core, and the seam is `OperatorUi` (`…surface.ui`, selected by `orchestrator.ui`: web | tui |
   both — default WEB). `OperatorUiRunner` is the only `ApplicationRunner`; a blocking surface (the TUI, which
   owns the terminal) starts last so the board is already serving. Adding a surface must not add a second
   answer to any question the others already answer:
-  - "what is this task and what can I do with it" is `model/Move` + `model/TaskView`, built by
+  - "what is this task and what can I do with it" is `flow/Move` + `flow/TaskView`, built by
     `service/TaskViews`. The TUI, `/status` and `/api/tasks` all render THAT. `Move.shippable` is also what
     `ShipService.requireShippable` calls — the dashboard used to advise independently of the gate, which is
     exactly how they drifted apart.
@@ -104,7 +104,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     not to a browser button, and nothing is lost by that since agents live in tmux. A shutdown endpoint was built and removed;
     do not add one back.
   - "WHAT COMMANDS EXIST" HAS EXACTLY TWO ANSWERS, AND BOTH ARE DECLARATIONS. A verb a task owns is a
-    `model/TaskAction` row, gated by `Move`, executed by `CommandService`. A verb no task owns is a
+    `flow/TaskAction` row, gated by `Move`, executed by `CommandService`. A verb no task owns is a
     `service/GlobalCommand` bean (`service/commands/*`, collected by `GlobalCommands`): id, hint, usage, whether
     its answer is a REPORT, whether it is console-only. `CommandReference` RENDERS both — `help`'s text and the
     palette's verb list — so a hint is written once; `GrammarDispatch` LOOKS A TYPED WORD UP in the two instead of
@@ -119,7 +119,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     report.
   - THE EMBEDDED TERMINAL IS A RENDERING OF `focus`, NEVER A SECOND VERB. With `orchestrator.web-terminal
     .enabled` a Focus click on the board also opens the task's tmux session in a `<dialog>`:
-    `platform/TtydWebTerminal` serves ONE ttyd per tmux SESSION (not per task — a task is a window inside one),
+    `adapter/TtydWebTerminal` serves ONE ttyd per tmux SESSION (not per task — a task is a window inside one),
     and `POST /api/tasks/{id}/terminal` hands back its address, `null` meaning none is configured. It selects
     no window and executes nothing; the action itself still goes through `CommandService`, so the console keeps
     raising the native viewer and the card grows no button outside `Move.actions()`. Four things it owes, none
@@ -155,12 +155,12 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     nobody handles differently keeps throwing plain.
 - THERE IS NO TOOLS FACADE ANY MORE, and do not bring one back. `OrchestratorTools` grew to 871 lines and
   eleven collaborators, and every attempt to thin it ADDED one, because a delegating aggregate keeps what it
-  does not shed. It was DISSOLVED (2026-08-14): each MCP tool group declares its own tools (`mcp/McpTools` +
-  `mcp/McpToolRegistry`, implementations under `mcp/tools`), and every other caller takes the small service it
+  does not shed. It was DISSOLVED (2026-08-14): each MCP tool group declares its own tools (`surface/mcp/McpTools` +
+  `surface/mcp/McpToolRegistry`, implementations under `surface/mcp/tools`), and every other caller takes the small service it
   actually uses — `AgentSessions` (tmux window, focus, kill, relay), `TaskProvisioning` + `WorktreeSetup` +
   `SubAgentBriefing` (creation), `AgentStatusReports` (what an agent reports), `IdeLauncher`, `DeployService`
   (the only shared-branch writes), `TaskRetirement`, `TaskResume`, `TaskOperations` (the per-task verbs a
-  surface offers). `mcp/CallerScope` owns the X-Working-Directory rule for all of them.
+  surface offers). `surface/mcp/CallerScope` owns the X-Working-Directory rule for all of them.
 - TWO-TIER DISPATCH: tier 1 is the grammar (typed command / board button) and it stays LLM-free. Tier 2 is
   `service/NaturalLanguageDispatch` — free text (an unknown console line, or the board's ⌘K palette →
   `POST /api/interpret`) goes to a model that only PROPOSES one grammar command; the dispatcher validates the
@@ -212,7 +212,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   one already in force — INFO for work nobody watched, nothing for a button a human pressed — so an in-memory
   ring buffer or a jagt-owned log file would be a second answer to "what happened" AND would not survive the
   restart after which a human looks. It deliberately shows only work that named a task: `state.json` history
-  already carries the status transitions with who asked for them. ONE RUN, ONE LOG: `ui/SessionLog` empties the
+  already carries the status transitions with who asked for them. ONE RUN, ONE LOG: `surface/ui/SessionLog` empties the
   file and deletes the archives beside it before the appender opens it, so the report is this session's work and
   nothing older — the owner's call (2026-08-18), and the reason nothing gzipped is read back. The file stays
   structured on EVERY surface: `ConsoleLogging` used to try blanking `logging.structured.format.file` for the
@@ -303,7 +303,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
 - All git ops in `GitService` under a per-repository `ReentrantLock` (index.lock races are per-repo;
   a slow fetch in one project must not block another).
 - Sub-agents can only act on their own task (X-Working-Directory scoping is ENFORCED in
-  `mcp/CallerScope`, and its wiring into each tool is what `McpToolScopeTest` pins — the rule was real for three
+  `surface/mcp/CallerScope`, and its wiring into each tool is what `McpToolScopeTest` pins — the rule was real for three
   tools and MISSING from four until 2026-08-14, so a new tool taking a taskId gets a row in that test, not a
   promise); `initialize_task`/`remove_task`/`deploy_task`/`revert_task` are Master-only. Task ids are validated
   (`[A-Za-z0-9][A-Za-z0-9_-]*`) — they become branch/dir/tmux names. A task's OWN repositories are ONE scope, not
@@ -311,7 +311,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   many worktrees it holds — narrowing that back to the primary worktree silently breaks every tool the agent
   calls from a sibling repo.
 - ONE SESSION, MANY REPOSITORIES — what multiplies is WORKTREES, never agents. A task holds a LIST
-  (`model/TaskRepo`, `repos.get(0)` = where the session runs) and every per-repo step iterates it: creation cuts
+  (`task/TaskRepo`, `repos.get(0)` = where the session runs) and every per-repo step iterates it: creation cuts
   a worktree each (`TaskProvisioning.resolveRepos` validates ALL of them before cutting ANY, and a failure part
   way unwinds the ones already cut), `ship` commits/pushes/opens a request per repository against THAT
   repository's own base branch, `done` deletes every worktree — the siblings hold checkouts and copied secrets
@@ -373,7 +373,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
 - Tomcat's "Error setting socket options" (`SocketException` at `setSoLinger`) is a connection the peer aborted
   between `accept()` and configuring it — a browser pre-connect, the losing half of a Node client's IPv6/IPv4
   race to `localhost`, a `curl` probe. `SO_LINGER` is simply the first unguarded setsockopt, and Tomcat gives no
-  knob (`AbstractProtocol` sets `connectionLinger` in its constructor). `web/AbortedConnectionFilter` drops that
+  knob (`AbstractProtocol` sets `connectionLinger` in its constructor). `surface/board/AbortedConnectionFilter` drops that
   one event and nothing else — do NOT "fix" it by silencing `NioEndpoint`, which also hides real socket errors.
 - CODE REVIEW IS NEVER FULLY AUTOMATED. The auto-review poll (`AutoReviewScheduler` → `ReviewSweepService`)
   only READS and DRAFTS: an approval may advance status, but comments are merely RELAYED to the agent, which
@@ -383,7 +383,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   this: the human-in-the-loop gate lives in the OUTCOME, not in who triggered the sweep.
 - WORK THAT RUNS UNATTENDED MUST BE VISIBLE WHILE IT WAITS, not only after it acts. `AutoReviewCadence` is the
   WHOLE auto-review policy — enabled, the interval ramp, AND `watch(task, now)` answering what a human is owed
-  about one task (`model/AutoReviewWatch`: watching + the absolute next-poll stamp, window elapsed, off for this
+  about one task (`task/AutoReviewWatch`: watching + the absolute next-poll stamp, window elapsed, off for this
   task, or nothing). `AutoReviewScheduler.decide` is a translation of that same watch, so a card cannot promise a
   poll the scheduler will not make. Both surfaces show it — the console's dashboard header carries
   `cadence.summary()` and each task a `└ auto-review:` line; the board has the chip (`Board.autoReview`) and a
@@ -406,7 +406,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   and is executed as given.
 - A ROUND REPORTS ITS OUTCOME, because all three end at REVIEW_PENDING and the human is advised from the
   MESSAGE: `awaiting: …` = a question, `no changes: …` = nothing was edited (already handled, or every comment
-  pushed back on), anything else = there is a diff to read. `model/AgentReport` is the ONE parser of that
+  pushed back on), anything else = there is a diff to read. `flow/AgentReport` is the ONE parser of that
   vocabulary (`Move` and `DashboardLine` both read it, so they cannot disagree), and `Move` is total over
   (status × report). Why it matters: advising SHIP for a no-change round is a LOOP — the ship commits nothing
   and returns the task to CI_POLLING, the only status the auto-poll watches, which relays the same threads
@@ -442,15 +442,15 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   `if claude`/`if macos` sprinkled through the flow. The agent-agnostic task flow (create worktree →
   provision → launch → talk over MCP) must stay free of any single agent's assumptions. The six seams:
   - `UserNotifier` (`orchestrator.platform`, default macos), `TerminalDriver` (`orchestrator.terminal`,
-    default `kitty`; `warp` too), `EditorDriver` (`orchestrator.editor-command`) — in `…platform`.
-  - `AgentRuntime` (`…agent`, `orchestrator.agent`, `claude` default, `codex` the second impl) — the
+    default `kitty`; `warp` too), `EditorDriver` (`orchestrator.editor-command`) — in `…adapter` (ports in `…port`).
+  - `AgentRuntime` (`…adapter.agent`, `orchestrator.agent`, `claude` default, `codex` the second impl) — the
     pluggable AI-agent CLI: `launchCommand` AND worktree provisioning (`provisionWorktree`, a template in
     `AbstractAgentRuntime` + one per-agent hook) live here. `mcp_client.js` is a STANDARD, agent-agnostic MCP
     stdio↔HTTP proxy (keep it that way) and is linked by the template; only the config that declares it
     differs per agent (Claude `.mcp.json` + `.claude/settings.local.json`, Codex `.codex/config.toml` with
     `CODEX_HOME` pointed at the worktree) and belongs in each `AgentRuntime`. Nothing outside the runtime may
     name an agent's files — `WorktreeSetup` only calls `provisionWorktree`, and `AgentSessions` `displayName`.
-  - `CodeHost` (`…codehost`, `orchestrator.code-host.type`, default none; `gitlab` and `github`) — reads of a
+  - `CodeHost` (`…adapter.codehost`, `orchestrator.code-host.type`, default none; `gitlab` and `github`) — reads of a
     review request (the ROUND a sweep decides on, and the BRANCHES a `resume` adopts, so neither costs a model
     call) plus EXACTLY ONE write: `createOrUpdateMergeRequest` (opening the artifact a human then reviews).
     Never a push, a merge, a comment or an approval — those belong to the human's gates or to the agent's own
@@ -471,8 +471,8 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     host may claim) and each host derives its own API endpoints from it — github.com serves its API from
     another host entirely. Two flags have no GitHub counterpart on purpose: squash and delete-branch-on-merge
     are REPOSITORY settings there, and a `CodeHost` configures no repository. The relay LINE is shared
-    (`codehost/RelayLine`), so an agent never has to learn a second format for a round.
-  - `Tracker` (`…tracker`, `orchestrator.tracker.type`, default none; `jira`) — reads the ONE ticket a launch
+    (`adapter/codehost/RelayLine`), so an agent never has to learn a second format for a round.
+  - `Tracker` (`…adapter.tracker`, `orchestrator.tracker.type`, default none; `jira`) — reads the ONE ticket a launch
     needs (title, labels, project) so `do <ticket>` costs no model call either. Read-only, in the strong sense:
     a tracker that transitions, comments or assigns is a bug — an issue's state is the human's to move.
     `service/TicketReader` routes it exactly as `ReviewReader` routes a host, including the no-fallback rule (a
@@ -480,7 +480,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     hides the misconfiguration). The assistant keeps ONE thing no configured tracker can do: follow a URL into
     a tracker jagt was never pointed at. Jira is read over the `v2` API on purpose — Cloud and Data Center both
     serve it, and the three fields read here are identical in v2 and v3.
-  - `JsonHttp` (`…http`) is the transport BOTH of those read over, and it is not a seventh seam: it exists so a
+  - `JsonHttp` (`…adapter.http`) is the transport BOTH of those read over, and it is not a seventh seam: it exists so a
     host or a tracker is testable without a socket (every implementation's test drives a fake of it), and it
     carries only the verbs a create-or-update needs.
   - The shared system-knowledge file is `AGENTS.md` (the cross-agent convention, `AgentRuntime
@@ -496,7 +496,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     one holds the briefing varies, and a prompt that says `AGENTS.md` is wrong exactly where the fallback
     applies. A new agent = one `AgentRuntime` impl; a Linux port =
     new `UserNotifier`/`TerminalDriver`/`EditorDriver` impls. Nothing else should need to change.
-- kitty is ONE driver, not one per OS: `AbstractKittyTerminalDriver` (in `…platform`) holds everything —
+- kitty is ONE driver, not one per OS: `AbstractKittyTerminalDriver` (in `…adapter` (ports in `…port`)) holds everything —
   remote control, the per-session socket, tabs, reveal, close — and each platform subclass supplies exactly two
   things, `bringToFront()` and `platformOptions()`. macOS needs AppleScript to raise the app (Cocoa) and the
   Cyrillic `cmd+` keymap workaround; Linux needs NEITHER (the WM owns stacking, and kitty's own `ascii`
@@ -627,7 +627,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   run opens a Warp window that stays behind), use a throwaway tmux session + `ORCHESTRATOR_ROOT`, and
   kill the session / remove worktrees + branches afterwards.
 - NO ABSOLUTE macOS PATHS IN DEFAULTS: an external binary is configured by BARE NAME and resolved by
-  `platform/Executables` (PATH, then the known install dirs — Homebrew included, because a GUI-launched
+  `adapter/Executables` (PATH, then the known install dirs — Homebrew included, because a GUI-launched
   process has neither prefix on PATH — then the per-user script dirs, then INSIDE APPLICATION BUNDLES).
   `tmux-command` used to default to `/opt/homebrew/bin/tmux`, which made
   every task on Linux fail at "Failed to start command"; the agent CLI is deliberately NOT resolved (it runs
@@ -707,7 +707,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
   under it does too much. Fix the class, never the fixture (sob-ai:unit-testing §5).
 - NO CLASS IS OVER THE CEILING TODAY (checked 2026-08-14: 70 classes, none above five, 47 at three or fewer).
   A new aggregate is how that regresses: when a class would need a sixth collaborator, the answer is a registry
-  of small units (see `mcp/McpTools`, and `Move.actions()` for the per-task verbs), never one more field.
+  of small units (see `surface/mcp/McpTools`, and `Move.actions()` for the per-task verbs), never one more field.
 - No positional null-soup: config/value records get a builder or `defaults()` + `withX` withers — never a
   10-arg record constructor with a row of `null`s.
 - LOMBOK CARRIES THE MECHANICAL BOILERPLATE, and nothing else: `@RequiredArgsConstructor` for injected final

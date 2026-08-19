@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.platform.EditorDriver;
-import dev.jagt.orchestrator.platform.EditorDriver.WorktreeLocation;
+import dev.jagt.orchestrator.port.EditorDriver;
+import dev.jagt.orchestrator.port.EditorDriver.WorktreeLocation;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.job.Job;
 import org.springframework.stereotype.Service;

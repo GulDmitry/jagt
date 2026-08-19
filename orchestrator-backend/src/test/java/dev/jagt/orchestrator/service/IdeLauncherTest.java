@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.model.ProjectConfig;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.EditorDriver;
+import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.port.EditorDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -45,9 +45,9 @@ class IdeLauncherTest {
         Path api = Files.createDirectories(root.resolve("one/api"));
         Path web = Files.createDirectories(root.resolve("two/web"));
         StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder(List.of(dev.jagt.orchestrator.model.TaskRepo.of("api",
+        state.putTask("ABC-1", TaskState.builder(List.of(dev.jagt.orchestrator.task.TaskRepo.of("api",
                         root.resolve("one/ABC-1-api").toString()),
-                dev.jagt.orchestrator.model.TaskRepo.of("web", root.resolve("two/ABC-1-web").toString())),
+                dev.jagt.orchestrator.task.TaskRepo.of("web", root.resolve("two/ABC-1-web").toString())),
                 TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig(api.toString(), "origin/main", "dev", List.of()),

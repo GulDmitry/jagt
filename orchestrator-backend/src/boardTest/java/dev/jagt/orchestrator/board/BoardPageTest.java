@@ -5,11 +5,11 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
-import dev.jagt.orchestrator.model.LaunchRequest;
-import dev.jagt.orchestrator.model.TaskAction;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.TtydWebTerminal;
+import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.adapter.TtydWebTerminal;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
@@ -303,8 +303,8 @@ class BoardPageTest {
     @Test
     void deployingNamesEveryRepositoryAndTheBranchItWouldBePushedTo() throws Exception {
         state.putTask("ABC-1", TaskState.builder(List.of(
-                        dev.jagt.orchestrator.model.TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString()),
-                        new dev.jagt.orchestrator.model.TaskRepo("beta", root.resolve("ABC-1-beta").toString(),
+                        dev.jagt.orchestrator.task.TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString()),
+                        new dev.jagt.orchestrator.task.TaskRepo("beta", root.resolve("ABC-1-beta").toString(),
                                 null, "https://host.example/mr/8", null)),
                 TaskStatus.REVIEW_PENDING).alias("a1").lastActiveTimestamp(now()).build());
         CompletableFuture<String> asked = new CompletableFuture<>();

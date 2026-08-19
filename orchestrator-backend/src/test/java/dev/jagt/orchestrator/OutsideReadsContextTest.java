@@ -1,11 +1,11 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.codehost.CodeHost;
-import dev.jagt.orchestrator.codehost.GitHubCodeHost;
+import dev.jagt.orchestrator.port.CodeHost;
+import dev.jagt.orchestrator.adapter.codehost.GitHubCodeHost;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
-import dev.jagt.orchestrator.shell.MasterShell;
-import dev.jagt.orchestrator.tracker.JiraTracker;
-import dev.jagt.orchestrator.tracker.Tracker;
+import dev.jagt.orchestrator.surface.console.MasterShell;
+import dev.jagt.orchestrator.adapter.tracker.JiraTracker;
+import dev.jagt.orchestrator.port.Tracker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;

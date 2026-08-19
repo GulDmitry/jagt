@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.config;
 import lombok.With;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import dev.jagt.orchestrator.platform.Executables;
+import dev.jagt.orchestrator.adapter.Executables;
 
 import java.time.Duration;
 import java.util.ArrayList;

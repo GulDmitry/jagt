@@ -2,10 +2,10 @@ package dev.jagt.orchestrator.service;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.model.ActionOrigin;
-import dev.jagt.orchestrator.model.StatusChange;
-import dev.jagt.orchestrator.model.TaskRepo;
-import dev.jagt.orchestrator.model.TaskState;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.DeserializationFeature;

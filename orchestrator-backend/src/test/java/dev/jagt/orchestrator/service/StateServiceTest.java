@@ -2,12 +2,12 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.model.ActionOrigin;
-import dev.jagt.orchestrator.model.StatusChange;
-import dev.jagt.orchestrator.model.TaskRepo;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.model.TokenUsage;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;

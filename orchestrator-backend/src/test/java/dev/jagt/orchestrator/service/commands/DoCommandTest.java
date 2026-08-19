@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service.commands;
 
-import dev.jagt.orchestrator.model.LaunchRequest;
-import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import org.junit.jupiter.api.Test;

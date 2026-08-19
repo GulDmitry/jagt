@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.assistant.MasterAssistant;
+import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.mcp.McpController;
+import dev.jagt.orchestrator.surface.mcp.McpController;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.MeteredAssistant;
 import dev.jagt.orchestrator.service.StateViews;
-import dev.jagt.orchestrator.shell.MasterShell;
-import dev.jagt.orchestrator.ui.ConsoleLogging;
+import dev.jagt.orchestrator.surface.console.MasterShell;
+import dev.jagt.orchestrator.surface.ui.ConsoleLogging;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;

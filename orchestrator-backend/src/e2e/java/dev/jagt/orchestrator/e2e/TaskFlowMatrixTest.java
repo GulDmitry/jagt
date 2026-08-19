@@ -1,18 +1,18 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.service.TaskRetirement;
-import dev.jagt.orchestrator.model.NewTask;
-import dev.jagt.orchestrator.model.TaskStatus;
-import dev.jagt.orchestrator.platform.EditorDriver;
-import dev.jagt.orchestrator.platform.TerminalDriver;
-import dev.jagt.orchestrator.platform.UserNotifier;
+import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.port.EditorDriver;
+import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.shell.MasterShell;
+import dev.jagt.orchestrator.surface.console.MasterShell;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;

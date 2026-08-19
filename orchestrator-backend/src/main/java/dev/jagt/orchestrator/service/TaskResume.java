@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.GitRemote;
-import dev.jagt.orchestrator.model.NewTask;
-import dev.jagt.orchestrator.model.ReviewRequestTitle;
+import dev.jagt.orchestrator.task.GitRemote;
+import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.ReviewRequestTitle;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

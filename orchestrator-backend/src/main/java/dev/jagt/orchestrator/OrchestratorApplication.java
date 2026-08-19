@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.ui.ConsoleLogging;
-import dev.jagt.orchestrator.ui.SessionLog;
-import dev.jagt.orchestrator.ui.StartupFailure;
+import dev.jagt.orchestrator.surface.ui.ConsoleLogging;
+import dev.jagt.orchestrator.surface.ui.SessionLog;
+import dev.jagt.orchestrator.surface.ui.StartupFailure;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;

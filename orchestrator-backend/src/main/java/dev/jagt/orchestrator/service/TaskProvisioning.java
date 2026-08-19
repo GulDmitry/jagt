@@ -1,14 +1,14 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.agent.AgentRuntime;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
-import dev.jagt.orchestrator.model.NewRepo;
-import dev.jagt.orchestrator.model.NewTask;
-import dev.jagt.orchestrator.model.ProjectConfig;
-import dev.jagt.orchestrator.model.TaskState;
-import dev.jagt.orchestrator.model.TaskStatus;
+import dev.jagt.orchestrator.task.NewRepo;
+import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

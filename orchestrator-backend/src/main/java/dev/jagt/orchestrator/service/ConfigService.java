@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import lombok.With;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.model.ProjectConfig;
+import dev.jagt.orchestrator.task.ProjectConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.json.JsonReadFeature;

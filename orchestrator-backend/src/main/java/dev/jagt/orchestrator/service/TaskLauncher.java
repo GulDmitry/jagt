@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.model.LaunchRequest;
-import dev.jagt.orchestrator.model.NewTask;
-import dev.jagt.orchestrator.model.TicketFacts;
+import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.TicketFacts;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
