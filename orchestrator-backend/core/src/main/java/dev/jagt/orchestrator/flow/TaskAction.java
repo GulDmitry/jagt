@@ -13,7 +13,7 @@ public enum TaskAction {
             "pull the checks + unresolved comments and relay them to the agent"),
     DEPLOY(Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
     REVERT(Group.FLOW, "revert", "Revert",
-            "undo this task's deploy: revert its merge commit on the deploy branch and push"),
+            "undo the LAST deploy only, earlier ones stay live: revert that merge and push"),
     DONE(Group.FLOW, "done", "Done", "close the task: session, worktree and state (the branch is kept)"),
     FOCUS(Group.TOOL, "focus", "Focus", "jump to the agent's terminal window"),
     IDE(Group.TOOL, "ide", "Open IDE", "open the worktree as a project — Git → Local Changes is the live diff",

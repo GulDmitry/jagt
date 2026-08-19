@@ -469,7 +469,10 @@ function refreshSuggestions() {
     return button;
   }));
   const resume = verbFor('resume');
-  if (resume) document.getElementById('resume-task').title = resume.hint;
+  if (resume) {
+    document.querySelectorAll('#resume-task, #resume button[type=submit]')
+      .forEach((button) => { button.title = resume.hint; });
+  }
 }
 
 // The verdict, live: a typo must be visible before Run, not after a model has been paid to guess at it.

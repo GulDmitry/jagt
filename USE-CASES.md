@@ -30,6 +30,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | One repository of the task has nothing to deploy (the change never touched it) | `deploy ABC-1` | Passed over and named in the sentence, not treated as a failure — that is also why starting the sequence over is harmless when the deploy worktree was cleaned up by hand. Every repository idle → refused, exactly as a single-repo task is. |
 | A deploy worktree is sitting at the shared `<task>-deploy` path but a SIBLING repository cut it | `deploy ABC-1` | Refused for that repository by name: finishing someone else's merge there would push their work to this repository's remote. Resolve or `git worktree remove --force` it first. |
 | A multi-repo deploy breaks off for something no worktree can fix (rejected push, failed fetch) | `deploy ABC-1` | Status untouched (nothing to resolve), but the sentence AND the task message name what is already live. Deal with the cause and `deploy` again. |
+| The same task was deployed more than once (ship → deploy → sweep → ship → deploy) | `revert ABC-1` | Only the LAST deploy comes out: each deploy overwrites the one merge commit jagt records per repository, so earlier rounds stay live on the deploy branch. Taking all of them out is by hand — `git log --merges --grep ABC-1 origin/<deployBranch>`, then `git revert -m 1 <sha>` newest first. |
 | Taking a multi-repo deploy back out | `revert ABC-1` | Reverse order, and only the repositories that actually landed. Each one forgets its merge commit as it comes out, so a `revert` that fails part way can be repeated and touches only what is still live — the task stays DEPLOYED until everything is out. |
 | Ticket unreadable / no tracker | `do ABC-1 <project>` | The read is skipped; the task carries no title. |
 | A tracker is configured and the ref is its own (`ABC-1`, `…/browse/ABC-1`) | `do ABC-1` | Title, labels and project are read over the tracker's API — no model call, no tokens. |
@@ -103,7 +104,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Ship a round | `ship <task>` | Commits, pushes the task branch, opens/updates the request. Never merges. |
 | Deploy | `deploy <task>` | Merges the task branch into `deployBranch` and pushes. Refused when that equals the base branch. |
 | Deploy hit a conflict | resolve in the deploy worktree | Status DEPLOY_CONFLICT; jagt keeps the half-done state for you. |
-| Take a deploy back out | `revert <task>` | Reverts the recorded merge commit. Refused (with a by-hand recipe) whenever it would have to guess which commit. |
+| Take a deploy back out | `revert <task>` | Reverts the LAST recorded merge commit. Refused (with a by-hand recipe) whenever it would have to guess which commit. |
 | Done | `done <task>` | Kills the agent window, reaps its language server. The branch survives. |
 | Merged task branches pile up | your own git, per branch | jagt has no `prune`: a cross-project bulk delete was removed deliberately. Cleanup is one task's own business. |
 | Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be MAPPED onto a live one (`done <task>` is the near neighbour, and it kills a worktree). |

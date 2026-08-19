@@ -226,6 +226,19 @@ class BoardPageTest {
     }
 
     @Test
+    void theRevertButtonSaysItTakesOnlyTheLastDeployBackOut() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.DEPLOYED).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Revert")))
+                .hasAttribute("title",
+                        "undo the LAST deploy only, earlier ones stay live: revert that merge and push");
+    }
+
+    @Test
     void clickingAnActionRunsItAndShowsTheSentenceItAnswered() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
