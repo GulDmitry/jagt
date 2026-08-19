@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Capabilities;
 import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.port.AgentPresence;
+import dev.jagt.orchestrator.port.CapabilityInterceptor;
 import dev.jagt.orchestrator.port.TaskCapability;
 import dev.jagt.orchestrator.port.TaskStore;
 import lombok.extern.slf4j.Slf4j;
@@ -22,8 +23,8 @@ import java.util.List;
 public class FlowWiring {
 
     @Bean
-    public Capabilities capabilities(List<TaskCapability> declared) {
-        Capabilities capabilities = new Capabilities(declared);
+    public Capabilities capabilities(List<TaskCapability> declared, List<CapabilityInterceptor> around) {
+        Capabilities capabilities = new Capabilities(declared, around);
         capabilities.takeovers().forEach(log::info);
         return capabilities;
     }

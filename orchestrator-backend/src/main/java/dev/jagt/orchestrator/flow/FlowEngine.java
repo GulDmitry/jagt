@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.port.AgentPresence;
+import dev.jagt.orchestrator.port.CapabilityInterceptor;
 import dev.jagt.orchestrator.port.TaskCapability;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -8,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * The ONE place a task's status is decided and written, whoever asked. It checks the action against
@@ -39,7 +41,7 @@ public class FlowEngine {
         }
         TaskCapability capability = capabilities.of(action).orElseThrow(() ->
                 new IllegalStateException("No capability declared for `" + action.id() + "`"));
-        return apply(taskId, task.status(), action, capability.run(taskId));
+        return apply(taskId, task.status(), action, wrapped(taskId, action, capability));
     }
 
     /**
@@ -51,6 +53,19 @@ public class FlowEngine {
             throw new IllegalArgumentException("Status " + status + " is jagt's to set, not a task's to report");
         }
         return tasks.updateTask(taskId, task -> task.withStatus(status, message));
+    }
+
+    /**
+     * The work, inside whatever an install declared around this verb. Innermost is the capability itself, so an
+     * interceptor that refuses stops the work AND the transition — nothing has happened to report.
+     */
+    private Outcome wrapped(String taskId, TaskAction action, TaskCapability capability) {
+        Supplier<Outcome> work = () -> capability.run(taskId);
+        for (CapabilityInterceptor interceptor : capabilities.around(action).reversed()) {
+            Supplier<Outcome> inner = work;
+            work = () -> interceptor.around(taskId, inner);
+        }
+        return work.get();
     }
 
     private String apply(String taskId, TaskStatus was, TaskAction action, Outcome outcome) {

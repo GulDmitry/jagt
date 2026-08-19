@@ -74,7 +74,7 @@ task first and thrown second, because a sentence in a console nobody scrolled ba
 | add a per-task verb | a folder in `capability/`, plus rules in `flow/FlowRules` if it moves the task |
 | add a report or a launch shortcut | one `GlobalCommand` — every surface picks it up (built today) |
 | replace a built-in verb | declare a capability with the same id and a higher priority |
-| run something before/after a verb | an interceptor on that id — never a new status |
+| run something before/after a verb | a `port/CapabilityInterceptor` for that action — never a new status |
 | add unattended work | one `Job`; `Jobs` tickers it and `jobs` lists it — an adapter's own workaround is a job that adapter contributes |
 | notify somewhere else | one adapter behind the `Notifier` port; callers learn nothing |
 | support another host/tracker/agent/OS | one adapter module; `:app` gains one line |
