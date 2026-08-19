@@ -74,6 +74,28 @@ class AgentStatusReportsTest {
         verifyNoInteractions(notifications);
     }
 
+    @Test
+    void notifiesHumanWhenAgentStopsToAskWithoutLeavingTheStatusItWasWorkingIn(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("step 2").build());
+
+        reports(state).report("IN_PROGRESS", "awaiting: which uniqueness rule", "ABC-1");
+
+        verify(notifications).send(argThat(sent -> "needs input".equals(sent.title())));
+    }
+
+    @Test
+    void doesNotNotifyAgainWhileTheAgentRepeatsTheQuestionItIsStillWaitingOn(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .message("awaiting: which uniqueness rule").build());
+
+        reports(state).report("IN_PROGRESS", "awaiting: which uniqueness rule", "ABC-1");
+
+        verifyNoInteractions(notifications);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"branch pushed", "pushed, see the http docs for the request"})
     void refusesToSayATaskIsWaitingOnChecksWithoutNamingTheRequest(String message, @TempDir Path root) {

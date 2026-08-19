@@ -32,6 +32,8 @@ public record TaskState(
         // mrCreatedAt is when jagt stamped the round, not the host's own creation time. Zero = unset.
         long mrCreatedAt,
         long lastPolledAt,
+        // When the watchdog last saw a sign of life from an agent it found silent; 0 = not silent.
+        long silentSince,
         Boolean autoReview,
         // The host's own wording for the checks, unparsed. Null = never read.
         String pipelineStatus,
@@ -70,6 +72,9 @@ public record TaskState(
             @JsonProperty("baseBranch") String baseBranch,
             @JsonProperty("mrCreatedAt") long mrCreatedAt,
             @JsonProperty("lastPolledAt") long lastPolledAt,
+            // Boxed: a state.json written before this field existed omits it, and Jackson 3 refuses to map an
+            // absent value onto a primitive — the file would be quarantined as corrupt on the first read.
+            @JsonProperty("silentSince") Long silentSince,
             @JsonProperty("autoReview") Boolean autoReview,
             @JsonProperty("pipelineStatus") String pipelineStatus,
             @JsonProperty("usage") TokenUsage usage,
@@ -78,7 +83,8 @@ public record TaskState(
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
         return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
-                baseBranch, mrCreatedAt, lastPolledAt, autoReview, pipelineStatus, usage, history);
+                baseBranch, mrCreatedAt, lastPolledAt, silentSince == null ? 0 : silentSince, autoReview,
+                pipelineStatus, usage, history);
     }
 
     @JsonIgnore
@@ -146,7 +152,7 @@ public record TaskState(
         long now = System.currentTimeMillis();
         List<StatusChange> known = seededHistory();
         boolean record = event || status != this.status;
-        return toBuilder().status(status).lastActiveTimestamp(now).message(message)
+        return toBuilder().status(status).lastActiveTimestamp(now).message(message).silentSince(0)
                 .history(record ? appended(known, new StatusChange(status, now, null)) : known)
                 .build();
     }
@@ -202,6 +208,20 @@ public record TaskState(
         }
         long since = lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis();
         return List.of(new StatusChange(status, since, null));
+    }
+
+    /**
+     * What the watchdog found, so a surface can say a session is blocked without probing per row. Its own wither
+     * because silence is not activity: stamping it must not bump {@code lastActiveTimestamp} the way a report
+     * does. The other direction needs no caller — any report clears it, since an agent that speaks is alive.
+     */
+    public TaskState withSilentSince(long silentSince) {
+        return toBuilder().silentSince(silentSince).build();
+    }
+
+    @JsonIgnore
+    public boolean agentIsSilent() {
+        return silentSince > 0;
     }
 
     public TaskState withPipelineStatus(String hostStatus) {
@@ -319,8 +339,8 @@ public record TaskState(
         return new Builder(repos, status)
                 .lastActiveTimestamp(lastActiveTimestamp).message(message).alias(alias)
                 .title(title).ticketUrl(ticketUrl).baseBranch(baseBranch)
-                .mrCreatedAt(mrCreatedAt).lastPolledAt(lastPolledAt).autoReview(autoReview)
-                .usage(usage).history(history);
+                .mrCreatedAt(mrCreatedAt).lastPolledAt(lastPolledAt).silentSince(silentSince)
+                .autoReview(autoReview).pipelineStatus(pipelineStatus).usage(usage).history(history);
     }
 
     /**
@@ -338,6 +358,7 @@ public record TaskState(
         private String baseBranch;
         private long mrCreatedAt;
         private long lastPolledAt;
+        private long silentSince;
         private Boolean autoReview;
         private String pipelineStatus;
         private TokenUsage usage;
@@ -418,6 +439,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder silentSince(long silentSince) {
+            this.silentSince = silentSince;
+            return this;
+        }
+
         public Builder autoReview(Boolean autoReview) {
             this.autoReview = autoReview;
             return this;
@@ -446,7 +472,8 @@ public record TaskState(
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
-                    baseBranch, mrCreatedAt, lastPolledAt, autoReview, pipelineStatus, usage, log);
+                    baseBranch, mrCreatedAt, lastPolledAt, silentSince, autoReview, pipelineStatus, usage,
+                    log);
         }
     }
 }

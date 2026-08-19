@@ -129,6 +129,29 @@ class TaskStateTest {
      * those files are read on the next start. Silently dropping them is precisely what StateService's backup
      * machinery exists to prevent, so the old shape must map onto the single repo it always described.
      */
+    /**
+     * The sweep stamps the checks and the round then reports a status; the report must not take the verdict with
+     * it, or "CHECKS RED" is gone by the time either surface renders the task it belongs to.
+     */
+    @Test
+    void keepsWhatTheHostSaidAboutTheChecksWhenTheTaskGoesOnMoving() {
+        TaskState red = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
+                .withPipelineStatus("failed");
+
+        TaskState reported = red.withStatus(TaskStatus.CI_FAILED, "build broken");
+
+        assertThat(reported.pipelineStatus()).isEqualTo("failed");
+    }
+
+    /** An agent that reports is alive by definition, and the board must stop asking for input it already got. */
+    @Test
+    void dropsTheSilenceStampAsSoonAsTheAgentReportsAnything() {
+        TaskState silent = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
+                .withSilentSince(1_000);
+
+        assertThat(silent.touched().agentIsSilent()).isFalse();
+    }
+
     @Test
     void readsAStateFileWrittenBeforeATaskCouldSpanRepositories() {
         String legacy = """
@@ -209,6 +232,6 @@ class TaskStateTest {
     private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
                                         List<StatusChange> history) {
         return new TaskState(List.of(TaskRepo.of("proj", "/wt")), status, lastActive, message, "a1", null,
-                null, null, 0, 0, null, null, null, history);
+                null, null, 0, 0, 0, null, null, null, history);
     }
 }

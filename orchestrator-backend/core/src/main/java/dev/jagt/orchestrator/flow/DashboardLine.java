@@ -28,8 +28,9 @@ public final class DashboardLine {
                         + (hasMr(task) ? " · " + task.mrUrl() : "");
                 case PLAIN -> hasMr(task) ? task.mrUrl() : "";
             };
-            case NEW, IN_PROGRESS -> report == AgentReport.QUESTION ? needsInput(message) : "";
-            case SHIPPING, DONE -> "";
+            case NEW, IN_PROGRESS -> report == AgentReport.QUESTION ? needsInput(message) : silence(task);
+            case SHIPPING -> silence(task);
+            case DONE -> "";
         };
     }
 
@@ -43,6 +44,14 @@ public final class DashboardLine {
             case RUNNING -> "checks running · ";
             case GREEN, NONE -> "";
         };
+    }
+
+    /**
+     * The status says the agent is working and the watchdog found otherwise — the one case where the status
+     * itself misleads, so it is shouted rather than left to the next-move line.
+     */
+    private static String silence(TaskState task) {
+        return task.agentIsSilent() ? "NEEDS YOU: agent silent — no report and a quiet window" : "";
     }
 
     private static String needsInput(String message) {

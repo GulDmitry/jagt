@@ -64,16 +64,26 @@ public class AgentStatusReports {
         if (!updated) {
             throw new IllegalArgumentException("Task " + taskId + " not found in state.json");
         }
+        String alias = current.map(TaskState::alias).orElse(null);
+        // An agent that stops to ask usually keeps its status, so the message is the only thing that changed —
+        // and nobody is watching its window.
+        boolean askedNow = AgentReport.of(shortMessage) == AgentReport.QUESTION
+                && AgentReport.of(current.map(TaskState::message).orElse(null)) != AgentReport.QUESTION;
         if (newStatus != previous) {
-            String alias = current.map(TaskState::alias).orElse(null);
             log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
                     .addKeyValue("status", newStatus).addKeyValue("from", previous)
                     .log("<- agent {}: {}{}", TaskLabel.of(taskId, alias), newStatus,
                             shortMessage == null ? "" : " — " + shortMessage);
-            // A keep-alive says nothing new; a task handing control back does.
-            if (newStatus == TaskStatus.REVIEW_PENDING || newStatus == TaskStatus.CI_FAILED) {
-                ping(taskId, newStatus, shortMessage, current);
-            }
+        } else if (askedNow) {
+            log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
+                    .addKeyValue("status", newStatus)
+                    .log("<- agent {}: {}", TaskLabel.of(taskId, alias), shortMessage);
+        }
+        // A keep-alive says nothing new; a task handing control back, or stopping to ask, does.
+        boolean handedBack = newStatus != previous
+                && (newStatus == TaskStatus.REVIEW_PENDING || newStatus == TaskStatus.CI_FAILED);
+        if (handedBack || askedNow) {
+            ping(taskId, newStatus, shortMessage, current);
         }
         return "Task " + taskId + " -> " + newStatus + (shortMessage == null ? "" : " (" + shortMessage + ")");
     }
@@ -108,8 +118,15 @@ public class AgentStatusReports {
     private void ping(String taskId, TaskStatus status, String message, Optional<TaskState> task) {
         RoundState round = RoundState.of(message,
                 task.map(t -> WorktreeFiles.draftedReplies(t, status)).orElse(false));
-        notifications.send(Notification.fromAgent(taskId, status.name().toLowerCase(java.util.Locale.ROOT),
-                banner(Move.forTask(status, true, round).hint(), round)));
+        notifications.send(Notification.fromAgent(taskId, title(status, round),
+                banner(Move.forTask(status, true, round, false).hint(), round)));
+    }
+
+    /** A question is what the human has to act on; which status it was asked from is not. */
+    private static String title(TaskStatus status, RoundState round) {
+        return round.report() == AgentReport.QUESTION
+                ? "needs input"
+                : status.name().toLowerCase(java.util.Locale.ROOT);
     }
 
     /**

@@ -36,7 +36,8 @@ public class FlowEngine {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — "
                     + Move.forTask(task.status(), task.hasReviewRequest(),
-                            dev.jagt.orchestrator.flow.RoundState.of(task.message(), false)).hint() + ")");
+                            dev.jagt.orchestrator.flow.RoundState.of(task.message(), false),
+                            task.agentIsSilent()).hint() + ")");
         }
         TaskCapability capability = capabilities.of(action).orElseThrow(() ->
                 new IllegalStateException("No capability declared for `" + action.id() + "`"));

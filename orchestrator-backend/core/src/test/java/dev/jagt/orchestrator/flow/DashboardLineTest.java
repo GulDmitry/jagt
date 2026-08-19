@@ -60,6 +60,25 @@ class DashboardLineTest {
         assertThat(DashboardLine.forTask(task)).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
 
+    /** The one case where the status itself lies: it reads as work in progress and nothing is progressing. */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING"})
+    void shoutsThatAnAgentTheWatchdogFoundSilentIsNowTheHumansProblem(TaskStatus status) {
+        TaskState task = TaskState.builder("p", "/wt", status).message("step 2").silentSince(1_000).build();
+
+        assertThat(DashboardLine.forTask(task))
+                .isEqualTo("NEEDS YOU: agent silent — no report and a quiet window");
+    }
+
+    /** What it asked is worth more than the fact it then stopped; the next-move line still names the silence. */
+    @Test
+    void quotesTheQuestionRatherThanTheSilenceWhenTheAgentAskedBeforeItWentQuiet() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
+                .message("awaiting: FE or BE decision").silentSince(1_000).build();
+
+        assertThat(DashboardLine.forTask(task)).isEqualTo("NEEDS INPUT: FE or BE decision");
+    }
+
     @Test
     void shoutsNeedsInputRatherThanTheMrLinkWhenAReviewRoundEndedInAQuestion() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)

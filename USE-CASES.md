@@ -49,13 +49,15 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 | Situation | What to run | What happens |
 |---|---|---|
 | "Which of these buttons changes something?" | the card | Two rows: what moves the task on (ship … done) above, the ones that only look or restart below. The split is `TaskAction.Group`, so the card cannot group them one way and a future surface another. |
+| An agent stops mid-work to ask | — | Its `awaiting: …` report turns the card over to YOU without leaving IN_PROGRESS: the line reads NEEDS INPUT, the move line says the agent is asking, and one desktop ping titled `needs input` arrives the first time it asks. A question kept the AGENT badge until 2026-08-19, which the `your move` filter and count both dropped. |
+| An agent stops and never says so (permission prompt, token limit, crash) | — | The watchdog probes (stale MCP + a quiet tmux window), stamps the task, and the card turns over to YOU on its own: NEEDS YOU, `agent silent — no report and a quiet window`, Focus highlighted. Until 2026-08-19 that finding was a desktop ping only, so a dismissed notification left the board reading `agent working`. Any report from the agent clears it. |
 | The agent is asking something | `focus <task>` | Its tmux window is selected. In the console that raises the terminal the viewer runs in; on the board, with `orchestrator.web-terminal` on, the session opens OVER the board and you type into it there. |
 | No web terminal configured | Focus, on the board | The same selection, and the sentence names the window the session is in — there is nothing to embed. |
 | Panel closed by mistake | — | Nothing stops. The agent lives in tmux; the terminal server ends with the last panel watching it, and Focus starts another. |
 | You want the board from a second machine | `--server.address=0.0.0.0` | Refused by default, and deliberately: the board needs no password to deploy, close a task or start an agent. Widen the bind only on a network you trust, and remember the embedded terminal is a shell (`web-terminal.bind` decides that one separately). |
 | Panel open on one task, Focus pressed on another | Focus | The panel follows: in viewMode `shared` every task is a window of ONE session, and a session has one current window — for the embedded view and the native viewer alike. |
 | ttyd not installed, or its port taken | — | Focus still selects the window; the panel simply does not open, and the log carries ttyd's own exit code. |
-| A task at SHIPPING | — | The status and the move line are the whole answer; the detail line stays empty. A third wording of "the agent is pushing" told nobody anything. |
+| A task at SHIPPING | — | The status and the move line are the whole answer; the detail line stays empty unless the watchdog found the agent silent. A third wording of "the agent is pushing" told nobody anything. |
 | The backend restarts while an agent session is live (HTTP transport) | — | Nothing to do: the next tool call reaches the new process. A call made while it was down answers "Unable to connect", and the one after the restart succeeds — a failed call does not retire the server for the session. |
 
 ## Review requests
@@ -86,7 +88,7 @@ that is cheaper than re-deciding it in the next session. Rules live in `CLAUDE.m
 |---|---|
 | Comment is right | Fixes it locally. Never commits or pushes on its own. |
 | Comment is wrong | Changes nothing, replies with the one technical reason. Silent compliance is the failure mode this exists to prevent. |
-| Comment is unclear, or forces a design decision | Asks: `notify_user` + REVIEW_PENDING with message `awaiting: …`. The board shows NEEDS INPUT instead of the link. |
+| Comment is unclear, or forces a design decision | Asks: REVIEW_PENDING with message `awaiting: …`. The board shows NEEDS INPUT instead of the link, and jagt pings the human off that message — the agent does not send a second notification of its own. |
 | Checks red, no comments | Fixes the build locally, then REVIEW_PENDING — it cannot push, so it never sees the checks go green. |
 | Every comment was already handled, or pushed back on | REVIEW_PENDING with message `no changes: …`. Nothing is highlighted, the line reads ANSWERED, and jagt does NOT advise a ship — there is no diff, and shipping would return the task to CI_POLLING for the poll to relay the same threads. |
 | Drafted replies exist | Both surfaces flag it, and the push notification names the file — a banner has nothing beside it to show them; they are posted only after a human `ship`. |

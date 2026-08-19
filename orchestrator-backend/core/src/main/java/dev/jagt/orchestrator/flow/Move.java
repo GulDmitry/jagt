@@ -17,15 +17,18 @@ import java.util.List;
  * <p>The report is an input because all three outcomes of a review round end at the same status, and only one
  * of them is a ship.
  *
- * <p>Liveness is projected as "not live": it would cost a process spawn per task per render. A task stuck at
- * {@code SHIPPING} is therefore offered SHIP, and the gate refuses at execution time if its agent is alive.
+ * <p>Liveness is projected as "not live" for the RULES: probing per task per render would cost a process spawn,
+ * so a task stuck at {@code SHIPPING} is offered SHIP and the gate refuses at execution time if its agent is
+ * alive. {@code agentSilent} is the other direction and costs nothing here — the watchdog already probed and
+ * stamped it, and a stopped agent must not read as a working one.
  */
 public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskAction primary, String hint) {
 
-    public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round) {
-        return new Move(phaseOf(status), ownerOf(status),
+    public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round,
+                               boolean agentSilent) {
+        return new Move(phaseOf(status), ownerOf(status, round, agentSilent),
                 FlowRules.allowed(status, Facts.projected(hasReviewRequest)),
-                primaryOf(status, hasReviewRequest, round), hint(status, round));
+                primaryOf(status, hasReviewRequest, round), hint(status, round, agentSilent));
     }
 
     private static Phase phaseOf(TaskStatus status) {
@@ -39,7 +42,24 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         };
     }
 
-    /** Whose turn a status means. Public because a view that adds up time per owner must not map it a second way. */
+    /**
+     * An agent that stopped is not working, whatever status it kept — whether it said so ({@code awaiting: …}) or
+     * simply went quiet. The wait is the human's either way, and a card that still reads "agent" is dropped by
+     * every filter and count that looks for their own move.
+     */
+    private static Owner ownerOf(TaskStatus status, RoundState round, boolean agentSilent) {
+        Owner owner = ownerOf(status);
+        return owner == Owner.AGENT && stopped(round, agentSilent) ? Owner.YOU : owner;
+    }
+
+    private static boolean stopped(RoundState round, boolean agentSilent) {
+        return round.report() == AgentReport.QUESTION || agentSilent;
+    }
+
+    /**
+     * Whose turn a status ALONE means. Public because a view that adds up time per owner must not map it a second
+     * way, and it has only statuses to add up.
+     */
     public static Owner ownerOf(TaskStatus status) {
         return switch (status) {
             case NEW, IN_PROGRESS, SHIPPING -> Owner.AGENT;
@@ -74,7 +94,12 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
     }
 
     /** One line of prose, for a hint line or a button tooltip. */
-    private static String hint(TaskStatus status, RoundState round) {
+    private static String hint(TaskStatus status, RoundState round, boolean agentSilent) {
+        if (ownerOf(status) == Owner.AGENT && stopped(round, agentSilent)) {
+            return round.report() == AgentReport.QUESTION
+                    ? "the agent is asking — answer it in its window (focus) and it carries on"
+                    : "the agent has gone quiet — focus it: a prompt nobody answered, or it died (respawn)";
+        }
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent working — wait or focus";
             case REVIEW_PENDING -> switch (round.report()) {

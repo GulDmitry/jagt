@@ -103,6 +103,19 @@ link to it, because no file here is named after one vendor.
     `service/TaskViews`. The TUI, `/status` and `/api/tasks` all render THAT. `Move.shippable` is also what
     `ShipService.requireShippable` calls — the dashboard used to advise independently of the gate, which is
     exactly how they drifted apart.
+  - A BLOCKED SESSION IS ON THE DASHBOARD, WHATEVER BLOCKED IT — the owner's rule (2026-08-19), and it has two
+    halves because a stopped agent may or may not manage to say so. The agent's own half is `awaiting: …` BEFORE
+    it puts any question to a human (`sub-agent-context.md` rule 10): `AgentReport.QUESTION` flips `Move.owner`
+    to YOU from whatever status it kept, `DashboardLine` reads NEEDS INPUT, and `AgentStatusReports` pings once,
+    on the transition INTO asking. The half no prompt can promise is the agent that never got the chance — a
+    permission prompt, a token limit, a crash — so `WatchdogService` STAMPS what it probes (`TaskState
+    .silentSince`, stale MCP plus a quiet tmux window) instead of only sending a ping a human dismisses, and the
+    same owner flip plus a NEEDS YOU line happen with the agent saying nothing. Three things hold it up: every
+    status whose `Move.ownerOf` is AGENT is watched by the watchdog (pinned in `WatchdogServiceTest` — a status
+    the agent owns and nothing watches is a session that waits forever); the stamp is written only on the
+    TRANSITION in or out of silence, because both surfaces repaint on a state write and that job runs every
+    minute; and ANY report clears it (`withStatus`), so a task that answers stops asking. Neither surface needed
+    a new field for it — owner, hint and detail already carry it, which is what parity means here.
   - PARITY IS AN INVARIANT, not an aspiration: a capability that exists in ONE surface only is a bug. Per-task
     verbs come from `Move.actions()`, so a new action appears on both at once — GROUPED there too
     (`TaskAction.Group`: FLOW moves the task on and closing it counts, TOOL only looks at it or restarts the

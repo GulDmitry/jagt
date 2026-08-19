@@ -16,7 +16,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void answersForEveryStatusThereIsSoNoTaskCanRenderAsUnknown(TaskStatus status) {
-        Move move = Move.forTask(status, false, RoundState.NONE);
+        Move move = Move.forTask(status, false, RoundState.NONE, false);
 
         assertThat(move.phase()).isNotNull();
         assertThat(move.owner()).isNotNull();
@@ -27,7 +27,7 @@ class MoveTest {
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void offersWhatMovesTheTaskOnBeforeWhatOnlyLooksAtIt(TaskStatus status) {
-        List<TaskAction> actions = Move.forTask(status, true, RoundState.NONE).actions();
+        List<TaskAction> actions = Move.forTask(status, true, RoundState.NONE, false).actions();
 
         assertThat(actions).isSortedAccordingTo(Comparator.comparing(TaskAction::group));
         assertThat(actions).endsWith(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF, TaskAction.RESPAWN);
@@ -39,7 +39,7 @@ class MoveTest {
      */
     @Test
     void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, false));
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, false), false);
 
         assertThat(move.primary()).isNull();
         assertThat(move.hint()).isEqualTo("nothing to ship — every comment answered; the open threads are the"
@@ -50,7 +50,7 @@ class MoveTest {
     /** `ship` is the only thing that posts review_replies.md, so "nothing to ship" would strand the answers. */
     @Test
     void stillAdvisesAShipWhenTheRoundLeftRepliesToPostEvenThoughItChangedNoCode() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, true));
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, true), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
         assertThat(move.hint()).isEqualTo("no code changed — ship to post the drafted replies, nothing else"
@@ -59,17 +59,59 @@ class MoveTest {
 
     @Test
     void pointsAtTheAgentWhenTheRoundEndedInAQuestionInsteadOfAtTheShipButton() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.QUESTION, false));
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.QUESTION, false), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
         assertThat(move.hint()).contains("the agent is asking");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"NEW", "IN_PROGRESS", "SHIPPING"})
+    void handsAnAgentThatStoppedToAskBackToTheHumanInsteadOfSayingItIsStillWorking(TaskStatus status) {
+        Move move = Move.forTask(status, false, new RoundState(AgentReport.QUESTION, false), false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.hint()).contains("the agent is asking");
+        assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
+    }
+
+    /**
+     * The watchdog probed and found nothing alive; the status still says the agent is working. A card that keeps
+     * reading "agent" is dropped by the board's own-move filter and count, so the block stays invisible.
+     */
+    @ParameterizedTest
+    @CsvSource({"NEW", "IN_PROGRESS", "SHIPPING"})
+    void handsAnAgentThatWentQuietBackToTheHumanInsteadOfSayingItIsStillWorking(TaskStatus status) {
+        Move move = Move.forTask(status, false, RoundState.NONE, true);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.hint()).contains("gone quiet");
+        assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
+    }
+
+    /** The question it managed to report is the more useful of the two, and the silence adds nothing to it. */
+    @Test
+    void quotesTheQuestionRatherThanTheSilenceWhenAnAgentAskedBeforeItStopped() {
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, false,
+                new RoundState(AgentReport.QUESTION, false), true);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.hint()).contains("the agent is asking");
+    }
+
+    /** A status whose wait is the human's or the host's says nothing new when an agent stamp lingers on it. */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_POLLING", "DEPLOYED", "DONE"})
+    void keepsTheOwnerOfAStatusThatWasNeverTheAgentsEvenIfSilenceWasStamped(TaskStatus status) {
+        assertThat(Move.forTask(status, true, RoundState.NONE, true))
+                .isEqualTo(Move.forTask(status, true, RoundState.NONE, false));
     }
 
     /** Read off every status there is rather than a sample, so a status added later cannot go unowned. */
     @Test
     void namesTheHumanAsTheOwnerOfExactlyTheStatusesThatWaitForOne() {
         var waitingOnYou = Arrays.stream(TaskStatus.values())
-                .filter(status -> Move.forTask(status, false, RoundState.NONE).owner() == Owner.YOU).toList();
+                .filter(status -> Move.forTask(status, false, RoundState.NONE, false).owner() == Owner.YOU).toList();
 
         assertThat(waitingOnYou).containsExactly(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED,
                 TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.DEPLOYED,
@@ -81,13 +123,13 @@ class MoveTest {
             "APPROVED,true,READY"})
     void collapsesTheFourStatusesThatAllReadAsReviewIntoDistinctPhases(TaskStatus status, boolean hasRequest,
                                                                       Phase phase) {
-        assertThat(Move.forTask(status, hasRequest, RoundState.NONE).phase()).isEqualTo(phase);
+        assertThat(Move.forTask(status, hasRequest, RoundState.NONE, false).phase()).isEqualTo(phase);
     }
 
     /** A primary the action list does not contain leaves the board with nothing highlighted at all. */
     @Test
     void neverMakesDeployThePrimaryMoveOfATaskThatHasNoRequestToLand() {
-        Move move = Move.forTask(TaskStatus.REVIEWED, false, RoundState.NONE);
+        Move move = Move.forTask(TaskStatus.REVIEWED, false, RoundState.NONE, false);
 
         assertThat(move.actions()).doesNotContain(TaskAction.DEPLOY);
         assertThat(move.actions()).contains(move.primary());
@@ -97,7 +139,7 @@ class MoveTest {
     @CsvSource(nullValues = "NOTHING", value = {"REVIEW_PENDING,false,SHIP", "CI_FAILED,true,SWEEP",
             "APPROVED,true,DEPLOY", "DEPLOYED,true,DONE", "IN_PROGRESS,false,FOCUS", "DONE,false,NOTHING"})
     void pointsAtTheOneObviousActionForEachStatus(TaskStatus status, boolean hasRequest, TaskAction primary) {
-        assertThat(Move.forTask(status, hasRequest, RoundState.NONE).primary()).isEqualTo(primary);
+        assertThat(Move.forTask(status, hasRequest, RoundState.NONE, false).primary()).isEqualTo(primary);
     }
 
     /**
@@ -106,13 +148,14 @@ class MoveTest {
      */
     @Test
     void offersShipForATaskStuckAtShippingBecauseTheDeadAgentIsWhatMakesItStuck() {
-        assertThat(Move.forTask(TaskStatus.SHIPPING, false, RoundState.NONE).actions()).contains(TaskAction.SHIP);
+        assertThat(Move.forTask(TaskStatus.SHIPPING, false, RoundState.NONE, false).actions())
+                .contains(TaskAction.SHIP);
     }
 
     /** The change came back out, so the next move is a fix onto the same request — not the DONE a deploy gets. */
     @Test
     void advisesAFixOntoTheSameRequestForATaskWhoseDeployWasTakenBackOut() {
-        Move move = Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE);
+        Move move = Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE, false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
         assertThat(move.actions()).contains(TaskAction.SHIP);
@@ -120,12 +163,12 @@ class MoveTest {
 
     @Test
     void sendsTheHumanToTheAgentWhenAReversionHasNoRequestToShipOnto() {
-        assertThat(Move.forTask(TaskStatus.REVERTED, false, RoundState.NONE).primary())
+        assertThat(Move.forTask(TaskStatus.REVERTED, false, RoundState.NONE, false).primary())
                 .isEqualTo(TaskAction.FOCUS);
     }
 
     @Test
     void leavesAReversionInTheDeployPhaseBecauseThatIsWhereItWentWrong() {
-        assertThat(Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE).phase()).isEqualTo(Phase.DEPLOY);
+        assertThat(Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE, false).phase()).isEqualTo(Phase.DEPLOY);
     }
 }
