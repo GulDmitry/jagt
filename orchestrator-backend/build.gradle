@@ -19,6 +19,7 @@ repositories {
 }
 
 dependencies {
+    implementation project(':core')
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'com.googlecode.lanterna:lanterna:3.1.5'
     compileOnly 'org.projectlombok:lombok'

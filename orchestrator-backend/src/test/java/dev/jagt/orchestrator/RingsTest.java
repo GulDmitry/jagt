@@ -20,13 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class RingsTest {
 
-    private static final Path MAIN = Path.of("src/main/java/dev/jagt/orchestrator");
+    /** The centre is its own module now, so the rule is read across both source roots. */
+    private static final List<Path> ROOTS = List.of(Path.of("src/main/java/dev/jagt/orchestrator"),
+            Path.of("core/src/main/java/dev/jagt/orchestrator"));
     private static final Set<String> CORE = Set.of("flow", "task", "port");
 
     /** The centre may know its own rings and nothing else — that is what makes its tests need no container. */
     @ParameterizedTest
     @ValueSource(strings = {"flow", "task", "port"})
-    void theCentreImportsNothingFromTheRingsAroundIt(String ring) throws IOException {
+    void theCentreImportsNothingFromTheRingsAroundIt(String ring) {
         assertThat(importsOf(ring).filter(imported -> !CORE.contains(imported))).isEmpty();
     }
 
@@ -36,14 +38,14 @@ class RingsTest {
      */
     @ParameterizedTest
     @ValueSource(strings = {"capability", "command", "job", "notify", "service", "surface"})
-    void nothingBetweenTheCentreAndTheEdgeNamesTheEdge(String ring) throws IOException {
+    void nothingBetweenTheCentreAndTheEdgeNamesTheEdge(String ring) {
         assertThat(importsOf(ring).filter("adapter"::equals)).isEmpty();
     }
 
     /** A framework in the centre would make every rule above it need a container to be exercised. */
     @ParameterizedTest
     @ValueSource(strings = {"flow", "task", "port"})
-    void theCentreCarriesNoFrameworkAtAll(String ring) throws IOException {
+    void theCentreCarriesNoFrameworkAtAll(String ring) {
         assertThat(sources(ring).filter(text -> text.contains("import org.springframework")
                 || text.contains("import lombok"))).isEmpty();
     }
@@ -53,31 +55,36 @@ class RingsTest {
      * list — it is an ordinary English word in the sentences jagt writes.
      */
     @Test
-    void theOperatingSystemIsNamedOnlyAtTheEdge() throws IOException {
+    void theOperatingSystemIsNamedOnlyAtTheEdge() {
         List<String> osOnly = List.of("osascript", "notify-send", "setsid", "/opt/homebrew", "/usr/local/bin",
                 "wt.exe", "PATHEXT");
 
-        try (Stream<Path> files = Files.walk(MAIN)) {
-            assertThat(files.filter(path -> path.toString().endsWith(".java"))
-                    .filter(path -> !path.toString().contains("/adapter/"))
-                    .filter(path -> osOnly.stream().anyMatch(name -> read(path).contains(name)))
-                    .map(Path::getFileName)).isEmpty();
-        }
+        assertThat(ROOTS.stream().flatMap(RingsTest::javaFilesUnder)
+                .filter(path -> !path.toString().contains("/adapter/"))
+                .filter(path -> osOnly.stream().anyMatch(name -> read(path).contains(name)))
+                .map(Path::getFileName)).isEmpty();
     }
 
     /**
      * Every ring the source NAMES, however it names it: a plain import, a static import, or a fully qualified
      * reference written inline. Matching import lines alone would let the same dependency in by the back door.
      */
-    private static Stream<String> importsOf(String ring) throws IOException {
+    private static Stream<String> importsOf(String ring) {
         java.util.regex.Pattern named = java.util.regex.Pattern.compile("dev\\.jagt\\.orchestrator\\.([a-z]\\w*)");
         return sources(ring).flatMap(text -> named.matcher(text).results())
                 .map(match -> match.group(1)).distinct();
     }
 
-    private static Stream<String> sources(String ring) throws IOException {
-        try (Stream<Path> files = Files.walk(MAIN.resolve(ring))) {
-            return files.filter(path -> path.toString().endsWith(".java")).map(RingsTest::read).toList().stream();
+    private static Stream<String> sources(String ring) {
+        return ROOTS.stream().map(root -> root.resolve(ring)).filter(Files::isDirectory)
+                .flatMap(RingsTest::javaFilesUnder).map(RingsTest::read);
+    }
+
+    private static Stream<Path> javaFilesUnder(Path root) {
+        try (Stream<Path> files = Files.walk(root)) {
+            return files.filter(path -> path.toString().endsWith(".java")).toList().stream();
+        } catch (IOException e) {
+            throw new java.io.UncheckedIOException(e);
         }
     }
 

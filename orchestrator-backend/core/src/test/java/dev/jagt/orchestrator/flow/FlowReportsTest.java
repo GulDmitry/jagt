@@ -1,8 +1,9 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.port.TaskStore;
+
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -20,7 +21,7 @@ import static org.mockito.Mockito.when;
 /** The second door into the machine: what a task may say about itself, and what only jagt may set. */
 class FlowReportsTest {
 
-    private final StateService stateService = mock(StateService.class);
+    private final TaskStore stateService = mock(TaskStore.class);
     private final FlowReports reports = new FlowReports(stateService);
 
     @Test

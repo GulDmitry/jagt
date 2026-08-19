@@ -1,12 +1,12 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.port.AgentPresence;
+import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.port.TaskCapability;
 import dev.jagt.orchestrator.port.TaskCapability;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -30,8 +30,8 @@ import static org.mockito.Mockito.when;
  */
 class FlowEngineTest {
 
-    private final StateService stateService = mock(StateService.class);
-    private final AgentSessions sessions = mock(AgentSessions.class);
+    private final TaskStore stateService = mock(TaskStore.class);
+    private final AgentPresence sessions = mock(AgentPresence.class);
 
     private record FixedCapability(TaskAction action, Outcome outcome) implements TaskCapability {
 

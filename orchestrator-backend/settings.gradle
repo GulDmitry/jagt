@@ -1,1 +1,5 @@
 rootProject.name = 'orchestrator-backend'
+
+// The centre as its own module: `:core` has no dependency on anything outside itself, so an import that points
+// outward does not compile. The rest of the tree is still one module — see ARCHITECTURE.md for what blocks it.
+include 'core'
