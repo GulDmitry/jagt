@@ -548,6 +548,46 @@ class BoardPageTest {
         verify(launcher).launch(new LaunchRequest("ABC-9", "beta", null, null, null, null));
     }
 
+    @Test
+    void aReportClosesWhenTheDimmedAreaAroundItIsClicked() {
+        Page page = open();
+        page.locator("#show-activity").click();
+        assertThat(page.locator("#report")).isVisible();
+
+        page.mouse().click(4, 4);
+
+        assertThat(page.locator("#report")).isHidden();
+    }
+
+    @Test
+    void aReportSurvivesASelectionThatStartedInsideItAndEndedOutside() {
+        Page page = open();
+        page.locator("#show-activity").click();
+
+        page.locator("#report-body").hover();
+        page.mouse().down();
+        page.mouse().move(4, 4);
+        page.mouse().up();
+
+        assertThat(page.locator("#report")).isVisible();
+    }
+
+    @Test
+    void theTerminalPanelClosesOnTheDimmedAreaToo() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
+        when(webTerminal.serve("jagt")).thenReturn(OptionalInt.of(8291));
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
+        assertThat(page.locator("#terminal")).isVisible();
+
+        page.mouse().click(4, 4);
+
+        assertThat(page.locator("#terminal")).isHidden();
+    }
+
     private static long now() {
         return System.currentTimeMillis();
     }

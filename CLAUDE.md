@@ -99,7 +99,7 @@ is reachable as `AGENTS.md` too, and that is the name any agent-facing document 
     lands on the right side of the card by declaring its group and nothing else. The board renders one row per
     group and reads which groups exist off the wire — a page that knew the names would be a second answer. Shared text lives in
     `service/CommandReference` (the grammar) and `StateViews` (dashboard + stats), so neither surface renders its
-    own version. The reports open in a `<dialog>` over the board, never a new page. ONE deliberate exception to
+    own version. The reports open in a `<dialog>` over the board, never a new page — and EVERY dialog closes three ways: Escape, its own button, and the dimmed area around it, which is the click a human makes first. The backdrop close is guarded by where the press STARTED, so dragging a selection out of a report does not dismiss what is being read. ONE deliberate exception to
     parity: `quit` is console-only — stopping the backend belongs to whoever owns the process (Ctrl-C / kill),
     not to a browser button, and nothing is lost by that since agents live in tmux. A shutdown endpoint was built and removed;
     do not add one back.
