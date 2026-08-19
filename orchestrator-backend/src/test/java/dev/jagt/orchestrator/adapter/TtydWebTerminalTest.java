@@ -1,8 +1,9 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.WebTerminalProperties;
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;

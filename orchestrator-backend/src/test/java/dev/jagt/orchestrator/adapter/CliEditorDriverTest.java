@@ -1,8 +1,9 @@
 package dev.jagt.orchestrator.adapter;
 
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.EditorDriver.WorktreeLocation;
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;

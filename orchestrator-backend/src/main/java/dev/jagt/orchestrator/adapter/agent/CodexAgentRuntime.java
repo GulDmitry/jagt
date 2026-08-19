@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.config.CodexProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;

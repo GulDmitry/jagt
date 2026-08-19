@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TokenUsage;
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import tools.jackson.databind.json.JsonMapper;

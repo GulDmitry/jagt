@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.linux;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.AbstractKittyTerminalDriver;
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;

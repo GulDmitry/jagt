@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.port;
 
-import dev.jagt.orchestrator.adapter.agent.AgentWorktree;
+import dev.jagt.orchestrator.port.AgentWorktree;
 import java.nio.file.Path;
 
 /**

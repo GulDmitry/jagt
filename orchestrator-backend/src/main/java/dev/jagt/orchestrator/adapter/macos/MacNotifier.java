@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.adapter.macos;
 
 import dev.jagt.orchestrator.port.UserNotifier;
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

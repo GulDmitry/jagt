@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.startup.StartupCheck;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;

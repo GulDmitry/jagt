@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import java.io.IOException;
 import java.io.UncheckedIOException;

@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.WebTerminalProperties;
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.startup.StartupCheck;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;

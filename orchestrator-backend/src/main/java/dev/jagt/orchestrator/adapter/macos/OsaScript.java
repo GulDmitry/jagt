@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.macos;
 
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

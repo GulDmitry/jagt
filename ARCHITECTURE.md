@@ -42,12 +42,14 @@ capability/ job/ notify/ surface/        the use cases
 task/ flow/                              the core: records and rules
 ```
 
-Two rules, both greppable:
+Two rules, and `RingsTest` asserts both rather than trusting them:
 
-- THE CORE HAS NO FRAMEWORK AND NO IO. No `@Component`, no `ProcessBuilder`, no `java.nio.file`, no
-  `System.currentTimeMillis()` in `task/` or `flow/`. Their tests build a record and call a function — no mocks.
-- THE OPERATING SYSTEM EXISTS IN ONE FOLDER. `osascript`, `setsid`, `open`, `notify-send`, install prefixes:
-  all under `adapter/<platform>/`. Everything above names a port.
+- THE CORE HAS NO FRAMEWORK AND NO PROCESS. Nothing in `task/`, `flow/` or `port/` imports Spring or Lombok, and
+  nothing in them imports a ring further out — the machine is assembled from `config/FlowWiring`, so its tests
+  build a record and call a function. Two clocks remain in the record itself (a status stamp is *when* it
+  happened); threading a clock through every wither would buy a purity the tests do not need.
+- THE OPERATING SYSTEM IS NAMED ONLY AT THE EDGE. `osascript`, `notify-send`, `setsid`, install prefixes, a
+  Windows shell: all under `adapter/`. Porting is a folder, not a search.
 
 ## Nothing below `flow/` knows a status
 
@@ -120,3 +122,9 @@ compile.
 
 Modules come LAST: they confirm a separation that already holds. One jar is still what ships, and the board must
 still work with the machine offline.
+
+NOT DONE YET, and named rather than implied. The rings hold as folders and `RingsTest` keeps the direction, but
+two placements have to be settled before the build graph can be drawn: `config/` (the use cases read its property
+records, so it is inner, not assembly) and `startup/` (its `StartupCheck` is a contract adapters implement, so
+that interface is a port while the checks that collect and run them are not). Until then the compiler is not the
+one enforcing the rule — the test is.

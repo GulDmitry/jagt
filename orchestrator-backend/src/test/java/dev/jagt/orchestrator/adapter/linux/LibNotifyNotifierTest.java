@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.linux;
 
-import dev.jagt.orchestrator.service.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.adapter.ProcessRunner;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
