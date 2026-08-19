@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -117,5 +118,23 @@ class RunningJarWatchTest {
     @Test
     void readsAJarThatCanNoLongerBeStampedAtAllAsARewrite() {
         assertThat(RunningJarWatch.rewritten(new RunningJarWatch.Stamp(1_000, 42), null)).isTrue();
+    }
+
+    /**
+     * The jar `bootJar` writes is the one a build overwrites in place, so a process running it is one build away
+     * from dying on whatever class it had not loaded yet — the human is owed that at startup, not afterwards.
+     */
+    @Test
+    void knowsItIsRunningTheJarTheBuildRewrites(@TempDir Path dir) throws IOException {
+        Path built = Files.writeString(dir.resolve("jagt.jar"), "x");
+
+        assertThat(new RunningJarWatch(mock(Notifications.class), built).runningTheBuildsOwnJar()).isTrue();
+    }
+
+    @Test
+    void saysNothingAboutAStagedCopyTheBuildNeverTouches(@TempDir Path dir) throws IOException {
+        Path staged = Files.writeString(dir.resolve("jagt-run-20260819-120000.jar"), "x");
+
+        assertThat(new RunningJarWatch(mock(Notifications.class), staged).runningTheBuildsOwnJar()).isFalse();
     }
 }

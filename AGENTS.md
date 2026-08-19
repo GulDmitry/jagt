@@ -770,6 +770,8 @@ link to it, because no file here is named after one vendor.
   loaded yet (`/status`, `/stats` first, while the board still renders) — diagnosed twice as an
   endpoint bug before the inode was checked. Avoid both by running the staged copy (`./gradlew stageJar`,
   then `build/libs/jagt-run.jar` — a symlink to a per-build `jagt-run-<stamp>.jar`, so re-staging while an
-  instance runs cannot touch the inode it holds; a fixed staged name had the same bug and reproduced it once);
+  instance runs cannot touch the inode it holds; a fixed staged name had the same bug and reproduced it once).
+  A process started from `jagt.jar` SAYS SO at startup (`RunningJarWatch`), because the alternative is
+  learning it from a 500 or from a `NoClassDefFoundError` in the shutdown hook — the first exception-carrying log line of the process's life is usually the one Ctrl-C produces, which is why the crash looks like a logback bug;
   `service/RunningJarWatch` reports it when it happens anyway. (Past sessions
   burned hours chasing this as a logback/preload bug — it is not.)

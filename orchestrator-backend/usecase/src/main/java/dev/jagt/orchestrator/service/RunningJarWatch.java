@@ -38,6 +38,23 @@ public class RunningJarWatch implements Job {
     }
 
 
+    private boolean warnedAboutTheBuildsOwnJar;
+
+    /**
+     * Said at the start rather than after the first mysterious 500: a build in this tree will rewrite THIS file,
+     * and the process then dies on whatever class it had not loaded yet — most visibly on the way out, where the
+     * first exception-carrying log line of its life needs a logback class it never needed before.
+     */
+    private void warnOnceAboutTheBuildsOwnJar() {
+        if (warnedAboutTheBuildsOwnJar || !runningTheBuildsOwnJar()) {
+            return;
+        }
+        warnedAboutTheBuildsOwnJar = true;
+        log.warn("Running from {} — the jar the build REWRITES. The next `./gradlew build` in this tree corrupts"
+                + " this process. Run the staged copy instead: ./gradlew stageJar && java -jar"
+                + " build/libs/jagt-run.jar", jar);
+    }
+
     /** What a jar file looked like: the two cheap facts that a rewrite cannot leave both unchanged. */
     record Stamp(long lastModified, long size) {
     }
@@ -61,8 +78,17 @@ public class RunningJarWatch implements Job {
         this.atStartup = stamp(jar);
     }
 
+    /** The name {@code bootJar} writes, and the one a build in this tree overwrites in place. */
+    private static final String BUILD_OUTPUT = "jagt.jar";
+
+    /** Whether this process is running the jar the build rewrites, rather than a staged copy of it. */
+    boolean runningTheBuildsOwnJar() {
+        return jar != null && BUILD_OUTPUT.equals(jar.getFileName().toString());
+    }
+
     @Override
     public void run() {
+        warnOnceAboutTheBuildsOwnJar();
         if (jar == null || atStartup == null || reported) {
             return;
         }
