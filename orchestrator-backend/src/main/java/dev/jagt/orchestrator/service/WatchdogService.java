@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.SessionHost;
+
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
@@ -43,7 +45,7 @@ public class WatchdogService implements Job {
     private final StateService stateService;
     private final Notifications notifications;
     private final OrchestratorProperties properties;
-    private final TmuxService tmuxService;
+    private final SessionHost sessions;
     private final ConfigService configService;
     private final Map<String, Long> lastAlertAt = new ConcurrentHashMap<>();
 
@@ -68,7 +70,7 @@ public class WatchdogService implements Job {
     public void run() {
         long staleMs = properties.watchdog().staleAfter().toMillis();
         long now = System.currentTimeMillis();
-        String session = tmuxService.sessionName(configService.load().viewer().tmuxSession());
+        String session = sessions.sessionName(configService.load().viewer().tmuxSession());
         stateService.tasks().forEach((taskId, task) -> {
             if (!watches(task.status()) || now - task.lastActiveTimestamp() < staleMs) {
                 lastAlertAt.remove(taskId);
@@ -76,7 +78,7 @@ public class WatchdogService implements Job {
             }
             // Silent on MCP, but is it actually working? A busy agent keeps printing (spinner,
             // tokens, build logs) — recent tmux window output means it's alive, not hung.
-            long windowActivity = tmuxService.lastWindowActivityMillis(session, taskId);
+            long windowActivity = sessions.lastWindowActivityMillis(session, taskId);
             if (windowActivity > 0 && now - windowActivity < staleMs) {
                 lastAlertAt.remove(taskId);
                 return;

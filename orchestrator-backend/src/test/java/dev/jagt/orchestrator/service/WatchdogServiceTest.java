@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.SessionHost;
+
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskState;
@@ -33,7 +35,7 @@ class WatchdogServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW)
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(6).toMillis()).alias("a1").build());
         Notifications notifications = mock(Notifications.class);
-        TmuxService tmux = mock(TmuxService.class);
+        SessionHost tmux = mock(SessionHost.class);
         ConfigService config = configMock();
 
         new WatchdogService(state, notifications, properties, tmux, config).run();
@@ -50,7 +52,7 @@ class WatchdogServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(20).toMillis()).alias("a1").build());
         Notifications notifications = mock(Notifications.class);
-        TmuxService tmux = mock(TmuxService.class);
+        SessionHost tmux = mock(SessionHost.class);
         when(tmux.lastWindowActivityMillis(any(), anyString())).thenReturn(System.currentTimeMillis());
 
         new WatchdogService(state, notifications, properties, tmux, configMock()).run();
@@ -75,7 +77,7 @@ class WatchdogServiceTest {
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(6).toMillis()).alias("a1").build());
         Notifications notifications = mock(Notifications.class);
 
-        new WatchdogService(state, notifications, properties, mock(TmuxService.class), configMock()).run();
+        new WatchdogService(state, notifications, properties, mock(SessionHost.class), configMock()).run();
 
         verify(notifications).send(argThat(sent -> sent.topic() == Notification.Topic.WATCHDOG
                 && "ABC-1".equals(sent.taskId())));
@@ -98,7 +100,7 @@ class WatchdogServiceTest {
                 .lastActiveTimestamp(System.currentTimeMillis() - Duration.ofMinutes(60).toMillis()).alias("a1").build());
         Notifications notifications = mock(Notifications.class);
 
-        new WatchdogService(state, notifications, properties, mock(TmuxService.class), configMock()).run();
+        new WatchdogService(state, notifications, properties, mock(SessionHost.class), configMock()).run();
 
         verifyNoInteractions(notifications);
     }

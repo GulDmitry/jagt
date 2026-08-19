@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.SessionHost;
+
 import dev.jagt.orchestrator.adapter.agent.ClaudeAgentRuntime;
 import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -67,7 +69,7 @@ class TaskProvisioningTest {
 
     private TaskProvisioning provisioning(WorktreeSetup setup) {
         ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, new McpEndpoint("http://localhost:8290/mcp"));
-        AgentSessions sessions = new AgentSessions(config, state, mock(TmuxService.class),
+        AgentSessions sessions = new AgentSessions(config, state, mock(SessionHost.class),
                 mock(TerminalDriver.class), runtime);
         return new TaskProvisioning(config, state, git, sessions, setup);
     }

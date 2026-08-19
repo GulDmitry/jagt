@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.SessionHost;
+
 import dev.jagt.orchestrator.adapter.agent.ClaudeAgentRuntime;
 import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -37,7 +39,7 @@ class AgentSessionsTest {
 
     private StateService state;
     private ConfigService config;
-    private final TmuxService tmux = mock(TmuxService.class);
+    private final SessionHost tmux = mock(SessionHost.class);
     private final TerminalDriver terminal = mock(TerminalDriver.class);
 
     @BeforeEach
@@ -95,7 +97,7 @@ class AgentSessionsTest {
     void nudgesRunningAgentWhenTaskContextIsUpdated() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.AGENT_RUNNING);
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
 
         assertThat(sessions().writeTaskContext("ABC-1", "new instructions")).contains("nudged");
@@ -105,7 +107,7 @@ class AgentSessionsTest {
     void respawnsADownSessionWhenWriteTaskContextTargetsIt() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
-        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(TmuxService.WindowState.MISSING);
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
 
         assertThat(sessions().writeTaskContext("ABC-1", "new instructions")).contains("respawned");
         verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false));

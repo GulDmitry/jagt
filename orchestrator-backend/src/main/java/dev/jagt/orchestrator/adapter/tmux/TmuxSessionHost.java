@@ -1,4 +1,6 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.adapter.tmux;
+
+import dev.jagt.orchestrator.port.SessionHost;
 
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.AgentRuntime;
@@ -23,11 +25,9 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class TmuxService {
+public class TmuxSessionHost implements SessionHost {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
-
-    public enum WindowState { MISSING, DEAD_SHELL, AGENT_RUNNING }
 
     private final Processes processRunner;
     private final OrchestratorProperties properties;
@@ -36,10 +36,12 @@ public class TmuxService {
     private final AgentRuntime agentRuntime;
     private final Object lock = new Object();
 
+    @Override
     public String sessionName(String configured) {
         return configured == null || configured.isBlank() ? "jagt" : configured;
     }
 
+    @Override
     public void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias,
                                Path worktreePath, boolean planMode) {
         synchronized (lock) {
@@ -77,6 +79,7 @@ public class TmuxService {
      * Switches the session's current window to the task's window (the attached
      * terminal client follows). Returns false when no window with that name exists.
      */
+    @Override
     public boolean focusTaskWindow(String session, String dedicatedTitle, String taskId) {
         synchronized (lock) {
             var windowId = findWindowId(session, taskId);
@@ -97,6 +100,7 @@ public class TmuxService {
      * has it as a child; the inspection shell is childless. (pane_current_command
      * is useless here: without job control it always reports the shell itself.)
      */
+    @Override
     public WindowState taskWindowState(String session, String taskId) {
         synchronized (lock) {
             var windowId = findWindowId(session, taskId);
@@ -119,6 +123,7 @@ public class TmuxService {
      * Types a message into the agent's Claude session (targeted at its pane —
      * no focus/GUI involvement). Claude Code queues it if mid-generation.
      */
+    @Override
     public boolean nudgeTaskWindow(String session, String taskId, String message) {
         synchronized (lock) {
             var windowId = findWindowId(session, taskId);
@@ -138,6 +143,7 @@ public class TmuxService {
      * a window also kills its processes, i.e. the Claude session. Returns how
      * many windows were closed.
      */
+    @Override
     public int killTaskWindows(String session, String taskId) {
         synchronized (lock) {
             var windows = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-windows",
@@ -167,6 +173,7 @@ public class TmuxService {
      * printing (spinner, tokens, build logs) even when it makes no MCP call, so this catches
      * "busy but silent on MCP" that lastActiveTimestamp misses. 0 if the window is gone/unknown.
      */
+    @Override
     public long lastWindowActivityMillis(String session, String taskId) {
         synchronized (lock) {
             var windowId = findWindowId(session, taskId);

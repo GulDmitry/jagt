@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.SessionHost;
+
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.TaskState;
@@ -16,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * relaying an instruction into its worktree.
  *
  * <p>Which agent runs here is never assumed: window titles, liveness and the words in these messages come from
- * {@code TmuxService} and {@link AgentRuntime#displayName()}.
+ * {@code SessionHost} and {@link AgentRuntime#displayName()}.
  */
 @Service
 @RequiredArgsConstructor
@@ -25,7 +27,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     private final ConfigService configService;
     private final StateService stateService;
-    private final TmuxService tmuxService;
+    private final SessionHost sessions;
     private final TerminalDriver terminalDriver;
     private final AgentRuntime agentRuntime;
     /** Per-task relay monitors; a handful of entries, one per task ever relayed to in this session. */
@@ -38,7 +40,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     /** Kills a task's windows outright — used by `done`, which then deletes the worktree under them. */
     public int killWindows(String taskId) {
-        return tmuxService.killTaskWindows(agentSession(configService.load(), taskId), taskId);
+        return sessions.killTaskWindows(agentSession(configService.load(), taskId), taskId);
     }
 
     /**
@@ -50,7 +52,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         if (!stateService.tasks().isEmpty() || config.viewer().keepViewerOrDefault()) {
             return false;
         }
-        terminalDriver.closeViewerWindow(tmuxService.sessionName(config.viewer().tmuxSession()));
+        terminalDriver.closeViewerWindow(sessions.sessionName(config.viewer().tmuxSession()));
         return true;
     }
 
@@ -64,8 +66,8 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     /** Whether the task's agent is alive right now — the one question a projection deliberately does not ask. */
     @Override
     public boolean agentLive(String taskId) {
-        return tmuxService.taskWindowState(agentSession(configService.load(), taskId), taskId)
-                == TmuxService.WindowState.AGENT_RUNNING;
+        return sessions.taskWindowState(agentSession(configService.load(), taskId), taskId)
+                == SessionHost.WindowState.AGENT_RUNNING;
     }
 
     private TaskState requireTask(String taskId) {
@@ -91,7 +93,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     public String closeTaskTab(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        int killed = tmuxService.killTaskWindows(
+        int killed = sessions.killTaskWindows(
                 agentSession(configService.load(), taskId), taskId);
         return killed == 0
                 ? "No tmux window named '" + taskId + "' found — the session was already closed."
@@ -110,25 +112,25 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         TaskState task = requireTask(taskId);
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
-        String dedicatedTitle = tmuxService.sessionName(config.viewer().tmuxSession());
+        String dedicatedTitle = sessions.sessionName(config.viewer().tmuxSession());
         boolean respawned = false;
         Path worktreePath = Path.of(task.worktreePath());
-        switch (tmuxService.taskWindowState(session, taskId)) {
+        switch (sessions.taskWindowState(session, taskId)) {
             case MISSING -> {
-                tmuxService.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
+                sessions.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
                 respawned = true;
             }
             case DEAD_SHELL -> {
                 // The window survived only for post-mortem inspection; focusing it
                 // must hand the user a live agent, not a dead prompt.
-                tmuxService.killTaskWindows(session, taskId);
-                tmuxService.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
+                sessions.killTaskWindows(session, taskId);
+                sessions.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
                 respawned = true;
             }
             case AGENT_RUNNING -> {
             }
         }
-        tmuxService.focusTaskWindow(session, dedicatedTitle, taskId);
+        sessions.focusTaskWindow(session, dedicatedTitle, taskId);
         boolean raised = terminalDriver.reveal(dedicatedTitle);
         return "Focused tmux window '" + taskId + "'"
                 + (raised
@@ -172,8 +174,8 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                         instructions.lines().findFirst().orElse("(empty)"));
         // A file on disk doesn't wake a running agent session — nudge it directly.
         String session = agentSession(configService.load(), taskId);
-        if (tmuxService.taskWindowState(session, taskId) == TmuxService.WindowState.AGENT_RUNNING
-                && tmuxService.nudgeTaskWindow(session, taskId,
+        if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING
+                && sessions.nudgeTaskWindow(session, taskId,
                         "The Master updated task_context.md — re-read it now and follow the new instructions.")) {
             return "Instructions written to task_context.md and the agent was nudged to re-read them.";
         }
@@ -197,7 +199,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     private String openTab(String taskId, String alias, Path worktreePath, ConfigService.ConfigFile config,
                            boolean planMode) {
         String session = agentSession(config, taskId);
-        tmuxService.openTaskWindow(session, tmuxService.sessionName(config.viewer().tmuxSession()), taskId,
+        sessions.openTaskWindow(session, sessions.sessionName(config.viewer().tmuxSession()), taskId,
                 alias, worktreePath, planMode);
         return session;
     }
@@ -208,7 +210,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
      * session, shown as its own Warp tab in the current window.
      */
     private String agentSession(ConfigService.ConfigFile config, String taskId) {
-        String base = tmuxService.sessionName(config.viewer().tmuxSession());
+        String base = sessions.sessionName(config.viewer().tmuxSession());
         return config.viewer().sharedView()
                 ? base
                 : base + "-" + taskId;
