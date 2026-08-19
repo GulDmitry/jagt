@@ -8,11 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
-/**
- * Common agent-runtime logic, so concrete runtimes only fill in what actually varies. Provisioning is a
- * TEMPLATE with one hook, {@link #wireAgent}, because everything in it is per-agent — including how the CLI
- * reaches jagt's MCP server (see {@link McpEndpoint}: HTTP directly, or the stdio bridge below).
- */
 public abstract class AbstractAgentRuntime implements AgentRuntime {
 
     @Override
@@ -42,17 +37,15 @@ public abstract class AbstractAgentRuntime implements AgentRuntime {
     protected abstract void wireAgent(AgentWorktree worktree);
 
     /**
-     * For a CLI that cannot talk to a remote MCP server and can only SPAWN one: links the standard Node bridge
-     * into the worktree, which POSTs to the same endpoint with the same caller header. Call it only from a
-     * runtime that needs it — an agent that speaks HTTP wants no proxy process, and linking one for everybody
-     * is why Node is not a prerequisite of jagt itself.
+     * For a CLI that cannot talk to a remote MCP server and can only SPAWN one. Call it ONLY from a runtime
+     * that needs it — an agent speaking HTTP wants no proxy process, and linking one for everybody is what put
+     * Node among jagt's prerequisites.
      */
     protected static void linkStdioProxy(AgentWorktree worktree) {
         symlink(worktree.path().resolve("mcp_client.js"),
                 worktree.orchestratorRoot().resolve("mcp_client.js"));
     }
 
-    /** POSIX single-quote a shell argument (the agent's bootstrap prompt in {@link #launchCommand}). */
     protected static String shellQuote(String s) {
         return "'" + (s == null ? "" : s).replace("'", "'\\''") + "'";
     }

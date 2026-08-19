@@ -6,10 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Resolves the orchestrator root without any machine-specific configuration: walks up from the launch
- * directory until it finds a committed root marker. Works both for `./gradlew bootRun` (started in
- * orchestrator-backend/) and for `java -jar` started from the root itself. Everything is overridable via
- * orchestrator.* properties / ORCHESTRATOR_ROOT.
+ * Resolves the orchestrator root with no machine-specific configuration: walk up from the launch directory until a
+ * committed marker turns up, wherever the process was started.
  *
  * <p>TWO markers are accepted, and that is deliberate: `mcp_client.js` is only still here for agents that
  * cannot talk to a remote MCP server, so "where is the root" must not depend on whether that bridge exists.

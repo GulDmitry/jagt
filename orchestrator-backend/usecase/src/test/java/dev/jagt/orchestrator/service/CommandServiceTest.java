@@ -1,8 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Refusal;
-
 import dev.jagt.orchestrator.flow.FlowEngine;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import org.junit.jupiter.api.Test;
 

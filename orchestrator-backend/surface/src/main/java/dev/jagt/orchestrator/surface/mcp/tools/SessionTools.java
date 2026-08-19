@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 
-/** The agent session a task runs in: start it, kill it, look at it, talk to it. */
 @Component
 @RequiredArgsConstructor
 public class SessionTools implements McpTools {

@@ -3,10 +3,13 @@ package dev.jagt.orchestrator.surface.board;
 import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,7 +44,11 @@ class BoardApiControllerTest {
 
         assertThat(ids).contains("ship", "sweep", "ide", "diff", "deploy", "revert", "respawn", "done", "focus",
                 "do", "stats");
-        // Whether a verb needs a task is what decides if "ship" alone is a mistake or a command.
+    }
+
+    /** Whether a verb needs a task is what decides if "ship" alone is a mistake or a command. */
+    @Test
+    void saysWhichVerbsAreNothingWithoutATaskToApplyThemTo() {
         assertThat(api.commands().stream().filter(CommandReference.Verb::takesTask)
                 .map(CommandReference.Verb::id)).contains("ship").doesNotContain("do", "stats");
     }
@@ -81,9 +88,9 @@ class BoardApiControllerTest {
 
     @Test
     void reportsTheSessionSpendAndTheProjectsAlongsideTheTasks() {
-        when(usageTracker.session()).thenReturn(dev.jagt.orchestrator.task.TokenUsage.ofCall(1000, 0, 50, 0.1));
+        when(usageTracker.session()).thenReturn(TokenUsage.ofCall(1000, 0, 50, 0.1));
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
-                new dev.jagt.orchestrator.service.AutoReviewCadence(false, java.time.Duration.ofHours(24), 10, 60),
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60),
                 List.of("demo")));
 
         var board = api.tasks();
@@ -96,9 +103,9 @@ class BoardApiControllerTest {
     /** A board with nothing out for review still has to say whether anything would be polled. */
     @Test
     void saysWhetherTheUnattendedPollRunsAtAllEvenWithNoTasks() {
-        when(usageTracker.session()).thenReturn(dev.jagt.orchestrator.task.TokenUsage.NONE);
+        when(usageTracker.session()).thenReturn(TokenUsage.NONE);
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
-                new dev.jagt.orchestrator.service.AutoReviewCadence(true, java.time.Duration.ofHours(24), 10, 60),
+                new AutoReviewCadence(true, Duration.ofHours(24), 10, 60),
                 List.of()));
 
         var board = api.tasks();

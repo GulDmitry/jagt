@@ -43,7 +43,6 @@ public class DeployService {
                 .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
     }
 
-    /** Merges the task branch into every project's deploy branch and pushes, repository by repository. */
     public Outcome deploy(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
@@ -61,14 +60,12 @@ public class DeployService {
                 merged.put(target.project(), commit);
                 stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), commit));
             } catch (GitService.NothingToDeployException e) {
-                // A repository whose branch adds nothing — because the change never touched it, or because it
-                // is already on the deploy branch — is nothing to do, not a failure.
                 nothingToDo.add(target.project());
                 idle = idle == null ? e : idle;
                 continue;
             } catch (GitService.ForeignDeployWorktreeException e) {
-                // The shared path is busy with a sibling's stalled merge. Coming back to this repository once
-                // that is dealt with beats refusing the whole sequence — the sibling is in this very list.
+                // Coming back to this repository beats refusing the whole sequence — the sibling holding the
+                // shared path is in this very list.
                 blocked.add(target.project());
                 continue;
             } catch (GitService.MergeConflictException e) {
@@ -76,25 +73,22 @@ public class DeployService {
             } catch (RuntimeException e) {
                 return stoppedPartWay(taskId, targets, i, e);
             }
-            // The deploy worktree is gone once pushed; drop it from the editor's recent-projects list too, so a
-            // human who opened it to resolve a conflict isn't left with a dead jagt-deploy entry.
+            // A human who opened the worktree to resolve a conflict would otherwise be left with a dead entry
+            // in the editor's project list.
             editorDriver.forgetProject(GitService.deployWorktreePath(target.path(), taskId));
         }
         if (!blocked.isEmpty()) {
             return notFinished(taskId, merged, blocked);
         }
-        // Nothing landed and nothing was resumed past: there was nothing to deploy at all, which is the answer a
-        // single-repository task has always given. A RESUMED sequence whose remainder is all idle is finished.
+        // Nothing landed and nothing resumed past means there was nothing to deploy at all; a RESUMED sequence
+        // whose remainder is all idle is finished.
         if (merged.isEmpty() && idle != null && from == 0) {
             throw idle;
         }
         return deployed(taskId, targets, from, merged, nothingToDo);
     }
 
-    /**
-     * Some repositories landed and at least one never started, so the task is NOT deployed — but the verb is
-     * repeatable and the next run has a free path, which is the whole point of coming back to it.
-     */
+    /** Some repositories landed and at least one never started, so the task is NOT deployed and deploy repeats. */
     private Outcome notFinished(String taskId, Map<String, String> merged, List<String> blocked) {
         List<String> landed = List.copyOf(merged.keySet());
         return Outcome.partial("deploy " + taskId + ": merged " + names(landed)
@@ -124,9 +118,7 @@ public class DeployService {
 
     /**
      * Resolve on the DEPLOY side, never in the task branch: the request targets the base branch, so merging the
-     * deploy branch into the task branch would balloon its diff with everything the deploy branch carries. jagt
-     * does NOT auto-open an editor — the dashboard flags DEPLOY_CONFLICT, the human opens the worktree and
-     * resolves it, then deploys again (the backend does the push).
+     * deploy branch into the task branch would balloon its diff with everything the deploy branch carries.
      */
     private Outcome handBackConflict(String taskId, List<Target> targets, int at,
                                     GitService.MergeConflictException e) {
@@ -254,8 +246,8 @@ public class DeployService {
     }
 
     /**
-     * Deployed before jagt started recording the commit. Guessing it (search the log by branch name) would risk
-     * reverting the WRONG merge on a shared branch — the one mistake with no cheap undo.
+     * Guessing the merge commit (searching the log by branch name) would risk reverting the WRONG merge on a
+     * shared branch — the one mistake with no cheap undo.
      */
     private RuntimeException unrecordedDeploy(String taskId, List<Target> targets) {
         // Every repository, because a recipe naming one leaves the others live on their own branches.
@@ -270,11 +262,8 @@ public class DeployService {
     }
 
     /**
-     * Every repository the task works in, paired with where it lands. Resolving is separate from
-     * {@link #requireDeployable}: a deploy checks all of them before pushing anything, so a project misconfigured
-     * at the end of the list cannot be discovered half way through, while an undo may only judge the
-     * repositories it is actually going to touch — a repository with nothing to undo must not block the one that
-     * is live on a shared branch.
+     * Every repository the task works in, paired with where it lands. All of them are resolved before anything is
+     * pushed, so a project misconfigured at the end of the list cannot be discovered half way through.
      */
     private List<Target> deployTargets(TaskState task) {
         List<Target> targets = new ArrayList<>();
@@ -331,12 +320,10 @@ public class DeployService {
         return names.isEmpty() ? "none" : String.join(", ", names);
     }
 
-    /** Commits are shown short everywhere a human reads one: eight characters identify it and fit a line. */
     private static String shortSha(String sha) {
         return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
     }
 
-    /** One repository's share of a deploy: which project, and the configuration saying where it lands. */
     private record Target(String project, ProjectConfig config) {
 
         Path path() {

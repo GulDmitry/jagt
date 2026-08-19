@@ -1,10 +1,8 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
 /**
- * One unresolved comment as the single line a review brief lists: {@code author (file:line): body}.
- *
- * <p>Defined once for every host: an agent addressing a round must not have to learn a second format because
- * the review happens to live somewhere else.
+ * Defined once for every host: an agent addressing a round must not have to learn a second format because the
+ * review happens to live somewhere else.
  */
 final class RelayLine {
 

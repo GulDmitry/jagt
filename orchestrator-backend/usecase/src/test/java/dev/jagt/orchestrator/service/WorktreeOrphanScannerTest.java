@@ -67,8 +67,7 @@ class WorktreeOrphanScannerTest {
     }
 
     @Test
-    void leavesTheWorktreeOfALiveTaskAlone(@TempDir Path root)
-            throws IOException {
+    void leavesTheWorktreeOfALiveTaskAlone(@TempDir Path root) throws IOException {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
         WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"),
@@ -90,15 +89,15 @@ class WorktreeOrphanScannerTest {
         verifyNoInteractions(notifications);
     }
 
+    /** Another project's worktree and unrelated directories are none of this project's business. */
     @Test
     void recognisesBothATaskWorktreeAndAnAbandonedDeployWorktree() {
         List<String> onDisk = List.of("ABC-40-demo", "ABC-41-demo", "ABC-41-deploy", "demo-repo",
                 "something-else", "XYZ-1-other");
 
-        Set<String> orphans = WorktreeOrphanScanner.orphanNames(onDisk, "demo", Set.of("ABC-41-demo", "ABC-41-deploy"));
+        Set<String> orphans = WorktreeOrphanScanner.orphanNames(onDisk, "demo",
+                Set.of("ABC-41-demo", "ABC-41-deploy"));
 
-        // ABC-41 is live, so neither its worktree nor its deploy leftover is an orphan; another project's
-        // worktree and unrelated directories are none of this project's business.
         assertThat(orphans).containsExactly("ABC-40-demo");
     }
 

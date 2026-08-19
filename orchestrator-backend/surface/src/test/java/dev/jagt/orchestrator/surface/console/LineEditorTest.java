@@ -6,101 +6,155 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LineEditorTest {
 
-    private static MasterShell.LineEditor of(String text) {
-        MasterShell.LineEditor e = new MasterShell.LineEditor();
-        e.setText(text);
-        return e;
+    @Test
+    void typesIntoTheMiddleOfTheLineRatherThanAtItsEnd() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("abc");
+
+        editor.left();
+        editor.left();
+        editor.insert('X');
+
+        assertThat(editor.text()).isEqualTo("aXbc");
+        assertThat(editor.cursor()).isEqualTo(2);
     }
 
     @Test
-    void insertsAtTheCursorNotJustTheEnd() {
-        MasterShell.LineEditor e = of("abc");
-        e.left();
-        e.left();
-        e.insert('X');
+    void putsAVerbInFrontOfALineThatAlreadyHasItsArgument() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("world");
 
-        assertThat(e.text()).isEqualTo("aXbc");
-        assertThat(e.cursor()).isEqualTo(2);
+        editor.home();
+        editor.insert('h');
+        editor.insert('i');
+
+        assertThat(editor.text()).isEqualTo("hiworld");
+        assertThat(editor.cursor()).isEqualTo(2);
     }
 
     @Test
-    void homeThenTypingPrependsToTheLine() {
-        MasterShell.LineEditor e = of("world");
-        e.home();
-        e.insert('h');
-        e.insert('i');
+    void rubsOutTheCharacterBeforeTheCursor() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("abcd");
+        editor.left();
 
-        assertThat(e.text()).isEqualTo("hiworld");
-        assertThat(e.cursor()).isEqualTo(2);
+        editor.backspace();
+
+        assertThat(editor.text()).isEqualTo("abd");
+        assertThat(editor.cursor()).isEqualTo(2);
     }
 
     @Test
-    void backspaceDeletesLeftOfCursorAndDeleteRemovesUnderIt() {
-        MasterShell.LineEditor e = of("abcd");
-        e.left();               // cursor between c and d
-        e.backspace();          // removes c -> "abd"
-        e.delete();             // removes d -> "ab"
+    void rubsOutTheCharacterTheCursorSitsOn() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("abcd");
+        editor.left();
 
-        assertThat(e.text()).isEqualTo("ab");
-        assertThat(e.cursor()).isEqualTo(2);
+        editor.delete();
+
+        assertThat(editor.text()).isEqualTo("abc");
+        assertThat(editor.cursor()).isEqualTo(3);
     }
 
     @Test
-    void killToStartAndKillToEndClearEitherSideOfTheCursor() {
-        MasterShell.LineEditor start = of("delete me here");
-        start.end();
-        start.killToStart();
-        assertThat(start.text()).isEmpty();
+    void clearsEverythingTypedBeforeTheCursor() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("delete me here");
+        editor.end();
 
-        MasterShell.LineEditor end = of("keep this");
-        end.home();
-        end.right();
-        end.right();
-        end.right();
-        end.right();            // cursor after "keep"
-        end.killToEnd();
-        assertThat(end.text()).isEqualTo("keep");
+        editor.killToStart();
+
+        assertThat(editor.text()).isEmpty();
     }
 
     @Test
-    void deleteWordBackRemovesThePreviousWordIncludingTrailingSpaces() {
-        MasterShell.LineEditor e = of("do ABC-1 project ");
-        e.deleteWordBack();
+    void clearsTheRestOfTheLineAfterTheCursor() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("keep this");
+        editor.home();
+        editor.right();
+        editor.right();
+        editor.right();
+        editor.right();
 
-        assertThat(e.text()).isEqualTo("do ABC-1 ");
-        assertThat(e.cursor()).isEqualTo(9);
+        editor.killToEnd();
+
+        assertThat(editor.text()).isEqualTo("keep");
     }
 
     @Test
-    void wordLeftAndWordRightJumpOverWholeWords() {
-        MasterShell.LineEditor e = of("alpha beta gamma");
-        e.wordLeft();                        // to start of "gamma"
-        assertThat(e.cursor()).isEqualTo(11);
-        e.wordLeft();                        // to start of "beta"
-        assertThat(e.cursor()).isEqualTo(6);
-        e.wordRight();                       // to end of "beta"
-        assertThat(e.cursor()).isEqualTo(10);
+    void dropsTheLastWordTypedTogetherWithTheSpaceAfterIt() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("do ABC-1 project ");
+
+        editor.deleteWordBack();
+
+        assertThat(editor.text()).isEqualTo("do ABC-1 ");
+        assertThat(editor.cursor()).isEqualTo(9);
     }
 
     @Test
-    void cursorMovesAreClampedToTheLineBounds() {
-        MasterShell.LineEditor e = of("ab");
-        e.left();
-        e.left();
-        e.left();                            // cannot go before 0
-        assertThat(e.cursor()).isZero();
-        e.end();
-        e.right();                           // cannot go past the end
-        assertThat(e.cursor()).isEqualTo(2);
+    void jumpsBackWholeWordsInsteadOfOneCharacterAtATime() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("alpha beta gamma");
+
+        editor.wordLeft();
+        editor.wordLeft();
+
+        assertThat(editor.cursor()).isEqualTo(6);
     }
 
     @Test
-    void setTextPlacesTheCursorAtTheEndAndClearResetsEverything() {
-        MasterShell.LineEditor e = of("recalled command");
-        assertThat(e.cursor()).isEqualTo("recalled command".length());
+    void jumpsForwardToTheEndOfTheNextWord() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("alpha beta gamma");
+        editor.home();
 
-        e.clear();
-        assertThat(e.text()).isEmpty();
-        assertThat(e.cursor()).isZero();
+        editor.wordRight();
+
+        assertThat(editor.cursor()).isEqualTo(5);
+    }
+
+    @Test
+    void staysAtTheStartOfTheLineWhenTheCursorIsMovedFurtherLeft() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("ab");
+
+        editor.left();
+        editor.left();
+        editor.left();
+
+        assertThat(editor.cursor()).isZero();
+    }
+
+    @Test
+    void staysAtTheEndOfTheLineWhenTheCursorIsMovedFurtherRight() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("ab");
+        editor.end();
+
+        editor.right();
+
+        assertThat(editor.cursor()).isEqualTo(2);
+    }
+
+    @Test
+    void leavesTheCursorReadyToTypeAtTheEndOfARecalledCommand() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+
+        editor.setText("recalled command");
+
+        assertThat(editor.cursor()).isEqualTo(16);
+    }
+
+    @Test
+    void leavesAnEmptyPromptBehindWhenTheLineIsAbandoned() {
+        MasterShell.LineEditor editor = new MasterShell.LineEditor();
+        editor.setText("recalled command");
+
+        editor.clear();
+
+        assertThat(editor.text()).isEmpty();
+        assertThat(editor.cursor()).isZero();
     }
 }

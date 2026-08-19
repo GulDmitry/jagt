@@ -7,11 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * The read-only views of jagt's state: the dashboard, the stats report, what jagt did unattended, and the
- * tasks to pick from.
- * Grouped into one collaborator so a caller that shows state (the Master shell, the HTTP endpoints) takes
- * a single dependency instead of one per screen — and so both surfaces are guaranteed to show the exact
- * same text.
+ * The read-only views of jagt's state, grouped into ONE collaborator: a caller that shows state takes a single
+ * dependency instead of one per screen, and every surface is then showing the same text.
  */
 @Component
 @RequiredArgsConstructor

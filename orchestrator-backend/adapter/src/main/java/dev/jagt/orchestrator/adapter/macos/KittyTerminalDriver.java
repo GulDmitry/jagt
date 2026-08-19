@@ -10,10 +10,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * kitty on macOS. Everything about driving kitty lives in {@link AbstractKittyTerminalDriver}; what is
- * genuinely macOS here is raising the app (Cocoa needs an AppleScript activate — kitty's own
- * {@code focus-window} moves focus WITHIN the app but does not bring it in front of other apps) and the
- * keyboard workaround below.
+ * Raising the app needs an AppleScript activate: kitty's own {@code focus-window} moves focus WITHIN the
+ * application but does not bring it in front of other ones.
  */
 @Component
 @ConditionalOnExpression("'${orchestrator.terminal:kitty}'.equals('kitty')"

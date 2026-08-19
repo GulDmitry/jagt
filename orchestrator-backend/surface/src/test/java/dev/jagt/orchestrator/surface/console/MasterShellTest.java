@@ -26,7 +26,6 @@ class MasterShellTest {
 
     @Test
     void exitClosesTheSpringContextInsteadOfLeavingItToTheShutdownHook() {
-
         shell.stopBackend();
 
         verify(context).close();
@@ -97,7 +96,7 @@ class MasterShellTest {
 
         shell.completeInput(editor, log);
 
-        assertThat(editor.text()).isEqualTo("ship p");   // ambiguous → unchanged, options listed instead
+        assertThat(editor.text()).isEqualTo("ship p");
         assertThat(log).anyMatch(l -> l.contains("ABC-2536") && l.contains("Excel export flag"));
         assertThat(log).anyMatch(l -> l.contains("ABC-2540") && l.contains("Login rate limit"));
     }
@@ -112,6 +111,7 @@ class MasterShellTest {
         assertThat(MasterShell.withDashboard("", "DASH")).isEqualTo("DASH");
     }
 
+    /** What {@code fit()} used to clip is spread across continuation lines instead, so nothing is lost. */
     @Test
     void wrapsALongNextMoveLineSoItsClippedTailBecomesVisible() {
         String line = " ".repeat(20) + "→ your move: resolve the deploy conflict in the deploy worktree, "
@@ -121,9 +121,8 @@ class MasterShellTest {
 
         assertThat(out).hasSizeGreaterThan(1);
         assertThat(out).allSatisfy(seg -> assertThat(seg.length()).isLessThanOrEqualTo(60));
-        // The tail that `fit()` used to clip is now spread across continuation lines — nothing is lost.
-        String rejoined = out.stream().map(String::strip).reduce((a, b) -> a + " " + b).orElse("");
-        assertThat(rejoined).contains("then `deploy` again");
+        assertThat(String.join(" ", out.stream().map(String::strip).toList()))
+                .contains("then `deploy` again");
     }
 
     @Test
@@ -133,7 +132,7 @@ class MasterShellTest {
         List<String> out = MasterShell.wrapHanging(line, 40);
 
         assertThat(out.get(0)).contains("→");
-        assertThat(out.get(1)).startsWith(" ".repeat(22)).doesNotContain("→");   // 20 indent + "→ "
+        assertThat(out.get(1)).startsWith(" ".repeat(22)).doesNotContain("→");
     }
 
     @Test

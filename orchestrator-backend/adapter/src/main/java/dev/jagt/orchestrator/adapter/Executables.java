@@ -9,17 +9,13 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * Finds the external binaries jagt shells out to, portably. In order:
- * <ol>
- *   <li>A value with a separator is the human's explicit choice, returned untouched even if it does not exist
- *       yet — the failure then names what they asked for.</li>
- *   <li>A bare name comes off {@code PATH}.</li>
- *   <li>Then the known install directories, because a GUI-launched process inherits a PATH with neither
- *       Homebrew prefix in it.</li>
- *   <li>Then inside application bundles, whose launcher never lands in any bin directory — without this a
- *       desktop application cannot be configured by name at all, which is how the IDE stopped opening.</li>
- *   <li>Failing everything, the bare name — so the error reads {@code tmux}, not a guess.</li>
- * </ol>
+ * Finds the external binaries jagt shells out to, portably. Two lookups a plain {@code PATH} search does not
+ * cover: a GUI-launched process inherits a PATH with neither Homebrew prefix in it, and an application bundle's
+ * launcher lands in no bin directory at all — without the latter a desktop application cannot be configured by
+ * name.
+ *
+ * <p>A value with a separator, and a name nothing matched, come back untouched, so the failure names what the
+ * human asked for rather than a guess.
  */
 public final class Executables {
 
@@ -27,13 +23,11 @@ public final class Executables {
     private static final List<String> KNOWN_BIN_DIRS = List.of(
             "/opt/homebrew/bin", "/usr/local/bin", "/run/current-system/sw/bin", "/usr/bin", "/bin");
 
-    /** Per-user launcher directories, relative to the home directory. Absent ones simply match nothing. */
     private static final List<List<String>> HOME_BIN_DIRS = List.of(
             List.of(".local", "bin"),
             List.of("Library", "Application Support", "JetBrains", "Toolbox", "scripts"),
             List.of(".local", "share", "JetBrains", "Toolbox", "scripts"));
 
-    /** Where application bundles live, and the path from one to its launcher. */
     private static final List<String> APP_DIRS = List.of("/Applications");
     private static final String BUNDLE_SUFFIX = ".app";
     private static final List<String> BUNDLE_BIN = List.of("Contents", "MacOS");
@@ -41,7 +35,6 @@ public final class Executables {
     private Executables() {
     }
 
-    /** Resolves against the real PATH and filesystem. */
     public static String resolve(String configured) {
         return resolve(configured, System.getenv("PATH"), Executables::isExecutableFile);
     }
@@ -65,7 +58,7 @@ public final class Executables {
                 Executables::bundlesIn);
     }
 
-    /** The rules above as a pure function, so every branch is testable without a machine that has the binary. */
+    /** A pure function, so every branch is testable without a machine that has the binary. */
     static String resolve(String configured, String pathEnv, String userHome, Predicate<Path> isExecutable,
                           Function<Path, List<Path>> bundles) {
         String name = configured == null ? "" : configured.strip();
@@ -92,8 +85,8 @@ public final class Executables {
     }
 
     /**
-     * The launcher inside an application bundle. Not an {@code if macos}: on a system without bundles the
-     * directories hold none, and the search costs one listing.
+     * Not an {@code if macos}: on a system without bundles the directories hold none, and the search costs one
+     * listing.
      */
     private static String inBundles(String name, String userHome, Predicate<Path> isExecutable,
                                     Function<Path, List<Path>> bundles) {

@@ -1,17 +1,12 @@
 package dev.jagt.orchestrator.flow;
 
 import dev.jagt.orchestrator.port.TaskCapability;
-
-import dev.jagt.orchestrator.port.TaskCapability;
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.TaskAction;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** One doer per action: an install replaces a built-in by outranking it, and never by patching jagt. */
 class CapabilitiesTest {
 
     private record Declared(TaskAction action, int priority, String says) implements TaskCapability {
@@ -33,7 +28,7 @@ class CapabilitiesTest {
     }
 
     @Test
-    void aLowerRankingClaimantDoesNotDisplaceTheOneAlreadyRegistered() {
+    void picksTheHigherRankingClaimantWhicheverOrderTheInstallDeclaredThemIn() {
         Capabilities capabilities = new Capabilities(List.of(
                 new Declared(TaskAction.SHIP, 10, "the install's own ship"),
                 new Declared(TaskAction.SHIP, 0, "the built-in ship")));

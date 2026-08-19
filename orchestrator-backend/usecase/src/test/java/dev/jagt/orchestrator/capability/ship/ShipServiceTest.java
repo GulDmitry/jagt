@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.GitService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.capability.ship.ShipService;
 import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.MergeRequestRef;
@@ -15,12 +14,17 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -71,10 +75,9 @@ class ShipServiceTest {
         assertThat(ShipService.repliesStep(notPosting)).doesNotContain("Resolve a thread");
     }
 
+    /** No prose relayed to a model, so nothing stalls on a permission prompt and SHIPPING cannot hang. */
     @Test
     void commitsPushesAndOpensTheReviewRequestWithoutInvolvingTheAgent() {
-        // The whole point: no prose relayed to a model, so there is nobody to stall on a permission prompt
-        // and nothing to reword. SHIPPING stops being a state a task can hang in.
         havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "Widget layout is off");
         when(host.createOrUpdateMergeRequest(any()))
                 .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", true)));
@@ -86,9 +89,7 @@ class ShipServiceTest {
         verify(gitService).pushBranch(any(), eq(Path.of("/wt")), eq("ABC-42"));
         verify(host).createOrUpdateMergeRequest(spec.capture());
         assertThat(spec.getValue().sourceBranch()).isEqualTo("ABC-42");
-        assertThat(spec.getValue().targetBranch()).isEqualTo("main");     // never the origin/ spelling
-        // The status move is recorded as a review ROUND (history + a fresh polling window), not as a generic
-        // status update — see recordsAnotherRoundShippedOntoTheSameRequestAsARealRound.
+        assertThat(spec.getValue().targetBranch()).isEqualTo("main");
         verify(stateService).updateTask(eq("ABC-42"), any());
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
         verify(sessions, never()).appendTaskContext(anyString(), anyString());
@@ -124,9 +125,9 @@ class ShipServiceTest {
         assertThat(outcome.message()).contains("updated https://host/mr/9");
     }
 
+    /** Losing that distinction would send the human looking for an unpushed branch. */
     @Test
     void saysThePushLandedWhenTheHostThenRefusesTheRequest() {
-        // Losing that distinction would send the human looking for an unpushed branch.
         havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "t");
         when(host.createOrUpdateMergeRequest(any())).thenReturn(Optional.empty());
 
@@ -136,10 +137,9 @@ class ShipServiceTest {
                 .hasMessageContaining("GitLab would not open the review request");
     }
 
+    /** An unconfigured setup must behave as it always did: opening a request needs an API jagt lacks. */
     @Test
     void fallsBackToTheAgentRelayForARepositoryNoConfiguredHostOwns() {
-        // An unconfigured setup must behave exactly as it always did — opening a request needs an API jagt
-        // does not otherwise have.
         havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "Widget layout is off");
         when(host.hostsRepository(anyString())).thenReturn(false);
 
@@ -156,7 +156,7 @@ class ShipServiceTest {
     void refusesASecondShipWhileTheFirstIsStillRunning() {
         havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "t");
         ShipService shipService = ship();
-        var reentrant = new java.util.concurrent.atomic.AtomicReference<Outcome>();
+        AtomicReference<Outcome> reentrant = new AtomicReference<>();
         when(host.createOrUpdateMergeRequest(any())).thenAnswer(call -> {
             reentrant.set(shipService.ship("ABC-42"));
             return Optional.of(new MergeRequestRef("https://host/mr/9", true));
@@ -165,16 +165,18 @@ class ShipServiceTest {
         shipService.ship("ABC-42");
 
         assertThat(reentrant.get().message()).contains("already running");
-        verify(gitService, never()).commitAll(any(), any(), eq("t"));   // the inner call did nothing
+        verify(gitService, never()).commitAll(any(), any(), eq("t"));
         verify(host).createOrUpdateMergeRequest(any());
     }
 
+    /**
+     * Off the critical path on purpose: posting a reply needs the thread it answers, which the sweep does not
+     * carry, but a dead agent must no longer be able to block the ship itself. It APPENDS, because a sweep may
+     * have just relayed a brief and truncating it would lose the comments.
+     */
     @Test
-    void asksTheAgentToPostItsDraftedRepliesAfterTheRequestIsUpToDate(@org.junit.jupiter.api.io.TempDir Path worktree)
-            throws java.io.IOException {
-        // Off the critical path on purpose: posting a reply needs the thread it answers, which the sweep does
-        // not carry, but a dead agent must no longer be able to block the ship itself.
-        java.nio.file.Files.writeString(worktree.resolve("review_replies.md"), "- reply");
+    void asksTheAgentToPostItsDraftedRepliesAfterTheRequestIsUpToDate(@TempDir Path worktree) throws IOException {
+        Files.writeString(worktree.resolve("review_replies.md"), "- reply");
         when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", worktree.toString(),
                 TaskStatus.CI_FAILED).mrUrl("https://host/mr/9").remoteUrl("git@host:demo/demo.git")
                 .title("t").build()));
@@ -183,15 +185,13 @@ class ShipServiceTest {
 
         Outcome outcome = ship().ship("ABC-42");
 
-        // APPENDS: a sweep may have just relayed a brief, and truncating it would lose the comments.
         verify(sessions).appendTaskContext(eq("ABC-42"), contains("NOTHING to commit or push"));
         assertThat(outcome.message()).contains("drafted replies relayed");
     }
 
     @Test
-    void leavesTheDraftsAloneWhenTheHumanTurnedPostingOff(@org.junit.jupiter.api.io.TempDir Path worktree)
-            throws java.io.IOException {
-        java.nio.file.Files.writeString(worktree.resolve("review_replies.md"), "- reply");
+    void leavesTheDraftsAloneWhenTheHumanTurnedPostingOff(@TempDir Path worktree) throws IOException {
+        Files.writeString(worktree.resolve("review_replies.md"), "- reply");
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
                 .withCodeReview(ConfigService.ConfigFile.CodeReviewConfig.defaults()
@@ -218,7 +218,7 @@ class ShipServiceTest {
     }
 
     @Test
-    void relayedReviewRoundLeadsWithTheTaskIdAndKeepsTheRequestTitle() {
+    void tellsARelayedAgentToKeepTheRequestTitleOnAFurtherRound() {
         String instruction = ShipService.shipInstruction(false, "ABC-42 Widget layout is off", "ABC-42", "dev", "");
 
         assertThat(instruction).contains("STARTS with \"ABC-42\"")
@@ -226,17 +226,16 @@ class ShipServiceTest {
                 .doesNotContain("EXACTLY this message");
     }
 
+    /** Another round onto the same request does not change the status, so nothing else re-arms the window. */
     @Test
     void armsAFreshPollingWindowForAnotherRoundShippedOntoTheSameRequest() {
-        // The path CLAUDE.md calls normal ("the human iterates and ships another round onto the same request")
-        // does not change the status, so it used to leave no fresh polling window.
         havingTask("ABC-42", TaskStatus.CI_POLLING, "https://host/mr/9", "Widget layout is off");
         when(host.createOrUpdateMergeRequest(any()))
                 .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
 
         ship().ship("ABC-42");
 
-        ArgumentCaptor<java.util.function.UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
+        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-42"), update.capture());
         TaskState before = TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("https://host/mr/9").mrCreatedAt(1_000L).lastPolledAt(9_000L).build();
@@ -246,7 +245,7 @@ class ShipServiceTest {
     }
 
     @Test
-    void opensARequestInEveryRepositoryTheTaskWorksInAndRecordsOneRound() {
+    void commitsPushesAndOpensARequestInEveryRepositoryTheTaskWorksIn() {
         when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
                 List.of()));
         when(stateService.task("ABC-5")).thenReturn(Optional.of(TaskState.builder(List.of(
@@ -284,7 +283,7 @@ class ShipServiceTest {
 
         ship().ship("ABC-5");
 
-        ArgumentCaptor<java.util.function.UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
+        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-5"), update.capture());
         TaskState after = update.getValue().apply(TaskState.builder(repos, TaskStatus.REVIEW_PENDING).build());
         assertThat(after.repo("demo").orElseThrow().mrUrl()).isEqualTo("https://host/mr/1");
@@ -330,15 +329,6 @@ class ShipServiceTest {
         verify(sessions, never()).writeTaskContext(anyString(), anyString());
     }
 
-    private ShipService ship() {
-        return new ShipService(stateService, configService, gitService, sessions, List.of(host));
-    }
-
-    private void havingTask(String taskId, TaskStatus status, String requestUrl, String title) {
-        when(stateService.task(taskId)).thenReturn(Optional.of(TaskState.builder("demo", "/wt", status)
-                .mrUrl(requestUrl).remoteUrl("git@host:demo/demo.git").title(title).build()));
-    }
-
     @Test
     void keepsTheRequestOfARepositoryThatLandedWhenALaterOneFails() {
         when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
@@ -352,10 +342,19 @@ class ShipServiceTest {
 
         assertThatThrownBy(() -> ship().ship("ABC-5")).isInstanceOf(IllegalStateException.class);
 
-        ArgumentCaptor<java.util.function.UnaryOperator<TaskState>> saved = ArgumentCaptor.captor();
+        ArgumentCaptor<UnaryOperator<TaskState>> saved = ArgumentCaptor.captor();
         verify(stateService).updateTask(eq("ABC-5"), saved.capture());
         TaskState after = saved.getValue().apply(TaskState.builder(repos, TaskStatus.REVIEW_PENDING).build());
         assertThat(after.repo("demo").orElseThrow().mrUrl()).isEqualTo("https://host/mr/1");
         assertThat(after.status()).isEqualTo(TaskStatus.REVIEW_PENDING);
+    }
+
+    private ShipService ship() {
+        return new ShipService(stateService, configService, gitService, sessions, List.of(host));
+    }
+
+    private void havingTask(String taskId, TaskStatus status, String requestUrl, String title) {
+        when(stateService.task(taskId)).thenReturn(Optional.of(TaskState.builder("demo", "/wt", status)
+                .mrUrl(requestUrl).remoteUrl("git@host:demo/demo.git").title(title).build()));
     }
 }

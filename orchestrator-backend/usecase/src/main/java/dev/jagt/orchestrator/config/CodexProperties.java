@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * NOT the Claude runtime's, it is the {@code claude} CLI the master assistant shells out to whatever agent is
  * active. A runtime's own settings belong to the runtime — that is what makes adding one a single class.
  *
- * @param command the Codex CLI binary (default {@code codex})
+ * @param command the Codex CLI binary
  */
 @ConfigurationProperties(prefix = "orchestrator.codex")
 public record CodexProperties(String command) {

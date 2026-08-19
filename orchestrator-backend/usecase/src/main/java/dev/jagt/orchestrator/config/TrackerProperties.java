@@ -5,9 +5,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * The issue tracker jagt may READ over its own API instead of paying a headless model call per ticket.
  *
- * <p>Blank {@code type} = none wired, which is the default: a {@code do} then reads the ticket through the
- * assistant exactly as before. Wiring one is opt-in and read-only — jagt never transitions, comments on or
- * assigns an issue.
+ * <p>Blank {@code type} = none wired, which is the default. Wiring one is opt-in and read-only — jagt never
+ * transitions, comments on or assigns an issue.
  *
  * @param type    tracker implementation to activate, e.g. {@code jira}; blank = none
  * @param baseUrl the tracker's root, e.g. {@code https://tracker.example.com} — a ticket URL is only read when

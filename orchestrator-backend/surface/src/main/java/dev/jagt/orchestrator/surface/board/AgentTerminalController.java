@@ -11,10 +11,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.OptionalInt;
 
 /**
- * Where a task's agent session can be watched and talked to inside the board. It moves nothing: the window is
- * selected by the {@code focus} action, exactly as a typed command does it, and this only says which port on
- * this machine serves that session. The host is the browser's own — it is the only one that knows the name it
- * reached jagt under, and jagt would answer with a loopback address a second machine cannot use.
+ * It moves nothing: the window is selected by the {@code focus} action, exactly as a typed command does it, and
+ * this only says which port on this machine serves that session.
  */
 @RestController
 @RequestMapping("/api")

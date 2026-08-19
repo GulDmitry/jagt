@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -92,7 +93,7 @@ class InterceptedCapabilityTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("our own check says no");
         assertThat(log).isEmpty();
-        verify(tasks, org.mockito.Mockito.never()).updateTask(eq("ABC-1"), any());
+        verify(tasks, never()).updateTask(eq("ABC-1"), any());
     }
 
     @Test

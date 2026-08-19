@@ -13,11 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Claude Code runtime — the default agent. Selected by {@code orchestrator.agent=claude}.
- *
- * <p>Its worktree gets the project MCP config ({@code .mcp.json}, symlinked from the orchestrator root),
- * a generated {@code .claude/settings.local.json} that pre-approves what an unwatched session must not stop
- * on, and {@code CLAUDE.md} as a symlink to the shared {@link AgentRuntime#SYSTEM_KNOWLEDGE_FILE} — Claude
+ * {@code CLAUDE.md} is a symlink to the shared system-knowledge file rather than a second copy of it: Claude
  * reads its own filename, jagt keeps writing one file.
  *
  * <p>Where the repository ships either of those two names, the briefing moves to {@code CLAUDE.local.md}
@@ -82,10 +78,9 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     /**
-     * The worktree's MCP config: Claude Code talks to the backend over HTTP and carries the caller header
-     * itself, so there is no proxy process between them — which is what took Node out of jagt's requirements.
-     * Written per worktree rather than symlinked from the root, because the header value IS the worktree path
-     * (how the backend knows which task is calling).
+     * Claude Code talks to the backend over HTTP and carries the caller header itself, so no proxy process sits
+     * between them. Written per worktree rather than symlinked from the root, because the header value IS the
+     * worktree path.
      */
     static String mcpJson(String url, String worktreePath) {
         return """
@@ -102,13 +97,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     /**
-     * The generated worktree {@code .claude/settings.local.json}. Without {@code enableAllProjectMcpServers}
-     * every spawned session stops at a "New MCP server found" prompt; without the allow-list Claude's
-     * auto-mode classifier still gates individual calls, freezing the agent on invisible prompts nobody in the
-     * tmux window answers — MCP calls (even notify_user) and the agent's own git commit/push on ship. The
-     * output style is pinned here because a worktree is an untrusted project where the human's global style
-     * may not apply; disabled plugins keep a ~1-2GB language server per worktree from spawning when the human
-     * opted into that. Valid JSON in all cases.
+     * Without {@code enableAllProjectMcpServers} every spawned session stops at a "New MCP server found"
+     * prompt; without the allow-list Claude's auto-mode classifier still gates individual calls, freezing the
+     * agent on invisible prompts nobody in the tmux window answers — MCP calls (even notify_user) and the
+     * agent's own git commit/push on ship. The output style is pinned here because a worktree is an untrusted
+     * project where the human's global style may not apply; disabled plugins keep a ~1-2GB language server per
+     * worktree from spawning when the human opted into that.
      */
     static String settingsJson(String outputStyle, List<String> disabledPlugins) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""

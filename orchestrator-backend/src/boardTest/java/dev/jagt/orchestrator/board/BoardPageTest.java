@@ -11,10 +11,10 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.adapter.TtydWebTerminal;
+import dev.jagt.orchestrator.service.AutoReviewScheduler;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
-import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import org.junit.jupiter.api.AfterAll;
@@ -87,7 +87,7 @@ class BoardPageTest {
     /** Polling is ON in the config so the page can show what it looks like; the poller itself would read a
      *  review request for real and, with no code host, pay a model to do it. */
     @MockitoBean
-    private dev.jagt.orchestrator.service.AutoReviewScheduler autoReviewScheduler;
+    private AutoReviewScheduler autoReviewScheduler;
 
     private BrowserContext session;
 

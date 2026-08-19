@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 class JobsTest {
 
     @Test
-    void runsAgainOnlyAfterItsIntervalHasPassed() {
+    void holdsAJobBackUntilItsIntervalHasPassed() {
         Job job = mock(Job.class);
         when(job.id()).thenReturn("poll-reviews");
         when(job.every()).thenReturn(Duration.ofMinutes(1));
@@ -28,8 +28,17 @@ class JobsTest {
         jobs.tick(60_000);
 
         verify(job, times(1)).run();
+    }
 
-        jobs.tick(61_000);
+    @Test
+    void runsAJobAgainOnceItsIntervalHasPassed() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        when(job.every()).thenReturn(Duration.ofMinutes(1));
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+
+        jobs.tick(1_000);
+        jobs.tick(61_001);
 
         verify(job, times(2)).run();
     }

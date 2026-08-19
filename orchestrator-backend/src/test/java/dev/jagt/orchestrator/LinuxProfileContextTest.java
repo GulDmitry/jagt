@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.surface.console.MasterShell;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(properties = {"orchestrator.open-warp-window=false", "orchestrator.startup-checks=false",
         "orchestrator.platform=linux"})
+@ResourceLock("spring-logging")
 class LinuxProfileContextTest {
 
     @TempDir

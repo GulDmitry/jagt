@@ -15,14 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Minimal MCP (JSON-RPC 2.0) server: initialize, ping, tools/list, tools/call.
- * The stdio transport lives in mcp_client.js which proxies each message here
- * over HTTP and injects the caller's CWD as X-Working-Directory.
- *
- * Each tool is declared exactly once as a ToolSpec (schema + handler), so
- * tools/list, dispatch and required-argument validation cannot drift apart.
- */
 @Service
 @Slf4j
 public class McpProtocolService {
@@ -45,7 +37,7 @@ public class McpProtocolService {
     }
 
     private void register(String name, String schemaJson, ToolHandler handler) {
-        // Declarations are spread across groups now, so a collision is invisible unless it is loud.
+        // Declarations are spread across groups, so a collision is invisible unless it is loud.
         if (tools.putIfAbsent(name, new ToolSpec(name, mapper.readTree(schemaJson), handler)) != null) {
             throw new IllegalStateException("Two MCP tool groups both declare '" + name + "'");
         }
@@ -89,11 +81,7 @@ public class McpProtocolService {
         return error(mapper.nullNode(), -32700, "Parse error: " + message);
     }
 
-    /**
-     * Any MCP traffic from a registered worktree proves the agent is alive
-     * (documented contract), throttled so heartbeats don't rewrite state.json
-     * several times per request.
-     */
+    /** Any MCP traffic from a registered worktree proves the agent is alive. */
     private String keepAlive(String callerCwd) {
         var caller = stateService.findByWorktree(callerCwd);
         caller.ifPresent(entry -> {

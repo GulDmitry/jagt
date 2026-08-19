@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.adapter.agent;
+package dev.jagt.orchestrator.config;
 
 import org.junit.jupiter.api.Test;
 
@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AgentBootstrapPromptTest {
 
     @Test
-    void bootstrapPromptForbidsAutonomousCommitsSoOnlyShipCommits() throws Exception {
+    void theShippedBootstrapPromptLeavesEveryCommitToAHumansShip() throws Exception {
         String applicationYml;
         try (InputStream in = getClass().getResourceAsStream("/application.yml")) {
             applicationYml = new String(in.readAllBytes(), StandardCharsets.UTF_8);

@@ -12,10 +12,8 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Desktop notifications on Linux via {@code notify-send} (libnotify) — present on every desktop that has a
- * notification daemon, which is what the freedesktop spec makes it. No fallback chain like the macOS
- * notifier needs: {@code notify-send} either reaches the session bus or it does not, and there is no second
- * mechanism that would work where it fails.
+ * There is no fallback chain: {@code notify-send} either reaches the session bus or it does not, and no second
+ * mechanism would work where it fails.
  *
  * <p>{@code --app-name jagt} so the banners are attributable (and mutable) as jagt's own, and NORMAL urgency
  * on purpose: every notification jagt sends means "your move", which should persist until seen but must not
@@ -53,7 +51,7 @@ public class LibNotifyNotifier implements UserNotifier, StartupCheck {
             processRunner.run(null, TIMEOUT, command(notifySendCommand, title, message))
                     .expectSuccess("notify-send");
         } catch (RuntimeException e) {
-            // Contract: a broken notification must never fail the calling flow (watchdog, MCP tools).
+            // A broken notification must never fail the flow that raised it.
             log.warn("notification failed: {}", e.getMessage());
         }
     }

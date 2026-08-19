@@ -130,6 +130,23 @@ public final class FlowRules {
         return AGENT_REPORTABLE.contains(status);
     }
 
+    /**
+     * The same question with the status the task is IN. One report is not source-agnostic: saying CI_POLLING is
+     * saying "a request is open and waiting", which for a task the review has already passed drags it backwards
+     * and re-arms the unattended poll on work that is done. Everything else an agent may say about itself holds
+     * wherever it is — a task being fixed after a revert really is IN_PROGRESS again.
+     */
+    public static boolean reportable(TaskStatus from, TaskStatus to) {
+        if (!reportable(to)) {
+            return false;
+        }
+        return to != TaskStatus.CI_POLLING || BEFORE_THE_VERDICT.contains(from);
+    }
+
+    /** Statuses a task can still be waiting on its checks from. */
+    private static final Set<TaskStatus> BEFORE_THE_VERDICT = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,
+            TaskStatus.SHIPPING, TaskStatus.REVIEW_PENDING, TaskStatus.CI_POLLING, TaskStatus.CI_FAILED);
+
     private static Builder rule(TaskAction action) {
         return new Builder(action);
     }

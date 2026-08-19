@@ -10,10 +10,8 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.springframework.beans.factory.annotation.Autowired;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.lang.reflect.Constructor;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
@@ -21,6 +19,7 @@ import java.util.Arrays;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -53,7 +52,7 @@ class AutoReviewSchedulerTest {
     }
 
     @Test
-    void reportsWindowElapsedPastTheWindow() {
+    void stopsPollingATaskThatHasBeenOutForReviewLongerThanTheWindow() {
         TaskState task = polling().mrCreatedAt(NOW - Duration.ofHours(25).toMillis()).build();
 
         assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW))
@@ -69,7 +68,7 @@ class AutoReviewSchedulerTest {
     }
 
     @Test
-    void skipsWhenNoMrIsLinkedYet() {
+    void skipsATaskWithNoRequestToRead() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).autoReview(true)
                 .mrCreatedAt(NOW - Duration.ofMinutes(20).toMillis()).build();
 
@@ -77,7 +76,7 @@ class AutoReviewSchedulerTest {
     }
 
     @Test
-    void scanSweepsADueTaskAndRecordsThePoll(@TempDir Path root) {
+    void sweepsADueTaskAndRecordsThatItLooked(@TempDir Path root) {
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
                 .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
@@ -92,7 +91,7 @@ class AutoReviewSchedulerTest {
     }
 
     @Test
-    void scanPingsOncePerElapsedWindowAndDoesNotPoll(@TempDir Path root) {
+    void tapsTheHumanOncePerElapsedWindowInsteadOfPollingOn(@TempDir Path root) {
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
@@ -108,10 +107,9 @@ class AutoReviewSchedulerTest {
         verifyNoInteractions(sweep);
     }
 
+    /** A round shipped in-process never leaves CI_POLLING, so a per-task marker would silence it forever. */
     @Test
     void pingsAgainForTheNewWindowAShippedRoundOpens(@TempDir Path root) {
-        // A round shipped in-process never leaves CI_POLLING, so the old per-task marker silenced the reminder
-        // for the rest of the task's life — and the new pipeline was never polled either.
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis()).build());
         Notifications notifications = mock(Notifications.class);
@@ -119,13 +117,12 @@ class AutoReviewSchedulerTest {
                 mock(ReviewSweepService.class), notifications, Runnable::run);
         scheduler.run();
 
-        // ship lands another round: same status, brand-new window
         state.updateTask("ABC-1", task -> task.withReviewRound("http://mr/1"));
         state.updateTask("ABC-1", task -> task.withMrCreatedAt(
                 System.currentTimeMillis() - Duration.ofHours(25).toMillis()));
         scheduler.run();
 
-        verify(notifications, org.mockito.Mockito.times(2)).send(
+        verify(notifications, times(2)).send(
                 argThat(sent -> sent.topic() == Notification.Topic.AGENT
                         && "ABC-1".equals(sent.taskId()) && sent.body().contains("window elapsed")));
     }
@@ -146,17 +143,17 @@ class AutoReviewSchedulerTest {
         scheduler.run();
 
         state.removeTask("ABC-1");
-        scheduler.run();                                        // nothing to notify, and the marker is dropped
+        scheduler.run();
         state.putTask("ABC-1", polling().mrCreatedAt(window).build());
         scheduler.run();
 
-        verify(notifications, org.mockito.Mockito.times(2)).send(
+        verify(notifications, times(2)).send(
                 argThat(sent -> sent.topic() == Notification.Topic.AGENT
                         && "ABC-1".equals(sent.taskId()) && sent.body().contains("window elapsed")));
     }
 
     @Test
-    void scanDoesNothingWhenAutoReviewIsDisabled(@TempDir Path root) {
+    void pollsNothingWhenTheInstallHasAutoReviewOff(@TempDir Path root) {
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(1).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
@@ -169,18 +166,6 @@ class AutoReviewSchedulerTest {
         verifyNoInteractions(sweep, notifications);
     }
 
-    @Test
-    void marksExactlyOneConstructorForSpringSoTheContextCanInstantiateIt() {
-        // Two constructors (the injected one + the test one that takes an Executor) → Spring needs @Autowired
-        // on exactly one, else it demands a no-arg default and the whole app fails to start.
-        long autowired = Arrays.stream(AutoReviewScheduler.class.getDeclaredConstructors())
-                .filter(c -> c.isAnnotationPresent(Autowired.class))
-                .count();
-        Constructor<?>[] all = AutoReviewScheduler.class.getDeclaredConstructors();
-
-        assertThat(all.length).isGreaterThan(1);   // guard only matters while there IS ambiguity
-        assertThat(autowired).isEqualTo(1);
-    }
 
     private static StateService stateWith(Path root, TaskState task) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()

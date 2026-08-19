@@ -18,11 +18,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Pushes "the board changed" to every open browser, so the web UI never polls for state. It subscribes to
- * {@link StateService#onChange} — the same signal a state-driven TUI repaint uses — and forwards it as a
- * Server-Sent Event; the client then re-fetches the projection.
- *
- * <p>Deliberately carries NO payload: the event says "something moved", the client asks for the current board.
+ * Deliberately carries NO payload: the event says "something moved", the client asks for the current board.
  * A payload would be a second serialization of the projection that could disagree with {@code /api/tasks}, and
  * a browser that missed one event would then be silently stale.
  *
@@ -101,9 +97,7 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
      * timeout, by design above), and Tomcat's stop WAITS for in-flight async requests — so with one tab open
      * the shutdown hook hung forever and the process survived every ^C. Ending the connections ourselves is
      * the fix, and {@code ContextClosedEvent} is the last moment we still can: it fires before the lifecycle
-     * stop that shuts the web server down, unlike {@code @PreDestroy}, which runs after it. This is an
-     * {@code ApplicationListener} rather than {@code @EventListener} so the wiring is in the type, not in an
-     * annotation a test cannot see.
+     * stop that shuts the web server down, unlike {@code @PreDestroy}, which runs after it.
      */
     @Override
     public void onApplicationEvent(ContextClosedEvent event) {

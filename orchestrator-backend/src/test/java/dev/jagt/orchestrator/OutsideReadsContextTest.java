@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.surface.console.MasterShell;
 import dev.jagt.orchestrator.adapter.tracker.JiraTracker;
 import dev.jagt.orchestrator.port.Tracker;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "orchestrator.tracker.type=jira",
         "orchestrator.tracker.base-url=https://tracker.example.com",
         "orchestrator.tracker.token=test-token"})
+@ResourceLock("spring-logging")
 class OutsideReadsContextTest {
 
     @TempDir

@@ -22,6 +22,7 @@ class UsageTrackerTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
     }
 
+    /** The session total stays the SUM of the split, never a second counter that can drift from it. */
     @Test
     void splitsTheSessionSpendByWhatEachCallWasFor(@TempDir Path root) {
         UsageTracker tracker = new UsageTracker(stateIn(root));
@@ -34,7 +35,6 @@ class UsageTrackerTest {
         assertThat(byKind.get(AssistantCallKind.REVIEW_SWEEP).calls()).isEqualTo(2);
         assertThat(byKind.get(AssistantCallKind.TICKET_READ).calls()).isEqualTo(1);
         assertThat(byKind).doesNotContainKey(AssistantCallKind.MR_READ);
-        // The session total must stay the SUM of the split, not a second counter that can drift from it.
         assertThat(tracker.session().calls()).isEqualTo(3);
         assertThat(tracker.session().inputTokens()).isEqualTo(86_000);
     }

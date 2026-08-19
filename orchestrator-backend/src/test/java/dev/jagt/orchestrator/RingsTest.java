@@ -5,10 +5,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,10 +60,6 @@ class RingsTest {
     }
 
     /**
-     * The whole point of the edge: porting to another machine is a folder, not a search. `open` is not on the
-     * list — it is an ordinary English word in the sentences jagt writes.
-     */
-    /**
      * The guard on the guard: a ring whose sources this cannot find is a ring nothing checks, and the failure mode
      * is silence. Every assertion below reads files, so it must be able to prove it read some.
      */
@@ -74,6 +72,10 @@ class RingsTest {
                 assertThat(sources(ring).count()).describedAs("java files in %s", ring).isPositive());
     }
 
+    /**
+     * The whole point of the edge: porting to another machine is a folder, not a search. {@code open} is not on
+     * the list — it is an ordinary English word in the sentences jagt writes.
+     */
     @Test
     void theOperatingSystemIsNamedOnlyAtTheEdge() {
         List<String> osOnly = List.of("osascript", "notify-send", "setsid", "/opt/homebrew", "/usr/local/bin",
@@ -90,7 +92,7 @@ class RingsTest {
      * reference written inline. Matching import lines alone would let the same dependency in by the back door.
      */
     private static Stream<String> importsOf(String ring) {
-        java.util.regex.Pattern named = java.util.regex.Pattern.compile("dev\\.jagt\\.orchestrator\\.([a-z]\\w*)");
+        Pattern named = Pattern.compile("dev\\.jagt\\.orchestrator\\.([a-z]\\w*)");
         return sources(ring).flatMap(text -> named.matcher(text).results())
                 .map(match -> match.group(1)).distinct();
     }
@@ -104,7 +106,7 @@ class RingsTest {
         try (Stream<Path> files = Files.walk(root)) {
             return files.filter(path -> path.toString().endsWith(".java")).toList().stream();
         } catch (IOException e) {
-            throw new java.io.UncheckedIOException(e);
+            throw new UncheckedIOException(e);
         }
     }
 
@@ -112,7 +114,7 @@ class RingsTest {
         try {
             return Files.readString(path);
         } catch (IOException e) {
-            throw new java.io.UncheckedIOException(e);
+            throw new UncheckedIOException(e);
         }
     }
 }

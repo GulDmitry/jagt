@@ -4,8 +4,7 @@ import lombok.With;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * The terminal the board embeds: a local web server attached to the agents' tmux session, so looking at an
- * agent is a click instead of a window switch.
+ * The terminal the board embeds: a local web server attached to the agents' tmux session.
  *
  * <p>Disabled by default — enabling it is what makes jagt need one more binary installed.
  *

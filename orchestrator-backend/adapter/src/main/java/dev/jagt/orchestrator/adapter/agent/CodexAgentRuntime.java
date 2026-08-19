@@ -16,16 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Codex CLI runtime — the second implementation behind {@link AgentRuntime}, selected by
- * {@code orchestrator.agent=codex}. It exists to keep the seam honest: everything that differs from Claude is
- * inside this class, and the task flow did not learn a single {@code if codex}.
- *
- * <p>Codex reads {@code AGENTS.md} natively, so there is no alias to create. Its MCP servers are declared in
- * {@code config.toml} under {@code $CODEX_HOME}, which the launch command points AT THE WORKTREE — so a task's
- * agent gets exactly jagt's MCP proxy, and the human's own {@code ~/.codex} config is neither read nor
- * modified. The flip side is that the human's other MCP servers (tracker, code host) are NOT inherited in a
- * Codex worktree; jagt's own reads no longer need them (see the {@code CodeHost} seam), but a Codex agent
- * cannot post review replies by itself yet.
+ * Codex reads {@code AGENTS.md} natively, so there is no alias to create. Its MCP servers are declared under
+ * {@code $CODEX_HOME}, which the launch command points AT THE WORKTREE — so the agent gets exactly jagt's own
+ * server, and the human's {@code ~/.codex} config is neither read nor modified. The flip side: the human's
+ * other MCP servers are NOT inherited there, so a Codex agent cannot post review replies by itself.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent", havingValue = "codex")
@@ -59,8 +53,8 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
 
     @Override
     public String launchCommand(Path worktree, boolean planMode) {
-        // read-only sandbox IS plan mode for Codex: it can read and reason but cannot touch the files, so the
-        // human approves the plan in the tmux window exactly as with Claude's --permission-mode plan.
+        // A read-only sandbox IS plan mode here: the agent can read and reason but cannot touch the files, so
+        // the human approves the plan in the tmux window first.
         return "CODEX_HOME=" + shellQuote(worktree.resolve(CODEX_HOME_DIR).toString()) + " " + codex.command()
                 + (planMode ? " --sandbox read-only" : "")
                 + " " + shellQuote(properties.agentPrompt());
@@ -70,15 +64,14 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
     protected void wireAgent(AgentWorktree worktree) {
         // Codex spawns its MCP servers; its config has no verified remote-server form with custom headers, and
         // the header is what tells the backend which task is calling. So this runtime keeps the stdio bridge
-        // (and with it Node) until somebody confirms an HTTP form on a real Codex — at which point this becomes
-        // the same two lines as ClaudeAgentRuntime and the link goes away. See McpEndpoint for both paths.
+        // (and with it Node) until somebody confirms an HTTP form on a real Codex.
         linkStdioProxy(worktree);
         write(worktree.path().resolve(CODEX_HOME_DIR).resolve("config.toml"), configToml(worktree.path()));
     }
 
     /**
-     * The generated per-worktree Codex config. {@code approval_policy = "never"} is the counterpart of Claude's
-     * allow-list: nobody sits in the tmux window to approve a command, so an asking agent is a frozen agent.
+     * {@code approval_policy = "never"}: nobody sits in the tmux window to approve a command, so an asking
+     * agent is a frozen agent.
      * The sandbox stays {@code workspace-write} — the worktree is the agent's sandbox, and writes outside it
      * are not part of the deal.
      */

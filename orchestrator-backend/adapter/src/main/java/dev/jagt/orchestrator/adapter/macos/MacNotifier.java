@@ -49,7 +49,7 @@ public class MacNotifier implements UserNotifier {
                         + " with title " + OsaScript.string(title));
             }
         } catch (RuntimeException e) {
-            // A broken notification must never fail the calling flow (watchdog, tools).
+            // A broken notification must never fail the flow that raised it.
             log.warn("notification failed: {}", e.getMessage());
         }
     }

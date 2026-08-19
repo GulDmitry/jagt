@@ -33,11 +33,9 @@ class StateServiceTest {
                 .withRoot(root.toString()).withStateFile(stateFile.toString())));
     }
 
-
+    /** SSE and the TUI repaint both re-read on notification, so the event has to fire AFTER the write. */
     @Test
     void tellsListenersAboutAChangeOnlyAfterItIsOnDisk(@TempDir Path root) {
-        // The guarantee both consumers need (SSE, TUI repaint): a listener that re-reads must see the change,
-        // so it fires AFTER the write, not before it.
         Path stateFile = root.resolve("state.json");
         StateService state = stateIn(root, stateFile);
         List<String> seenByListener = new ArrayList<>();
@@ -86,7 +84,7 @@ class StateServiceTest {
         boolean found = state.updateTask("NOPE-1", TaskState::touched);
 
         assertThat(found).isFalse();
-        assertThat(changes).hasValue(0);       // a repaint per no-op update is noise, not information
+        assertThat(changes).hasValue(0);
     }
 
     @Test
@@ -113,10 +111,11 @@ class StateServiceTest {
 
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
-        assertThat(state.task("ABC-1")).isPresent();     // the mutation is what matters; listeners are not
+        assertThat(state.task("ABC-1")).isPresent();
         assertThat(secondListener).hasValue(1);
     }
 
+    /** The backup is the version BEFORE the last write, which is what makes it a recovery point. */
     @Test
     void keepsThePreviousVersionBesideTheStateFileOnEveryWrite(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
@@ -125,7 +124,6 @@ class StateServiceTest {
 
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
 
-        // The backup is the version BEFORE the last write — that is what makes it a recovery point.
         assertThat(Files.readString(root.resolve("state.json.bak"))).contains("ABC-1").doesNotContain("ABC-2");
         assertThat(Files.readString(stateFile)).contains("ABC-1", "ABC-2");
     }
@@ -140,15 +138,17 @@ class StateServiceTest {
 
         var tasks = stateIn(root, stateFile).tasks();
 
-        assertThat(tasks).containsOnlyKeys("ABC-1");                  // whatever the backup still had
+        assertThat(tasks).containsOnlyKeys("ABC-1");
         assertThat(Files.exists(root.resolve("state.json.corrupt"))).isTrue();
         assertThat(Files.readString(root.resolve("state.json.corrupt"))).contains("truncated");
     }
 
+    /**
+     * Recovery moves the unreadable file aside, leaving NO state file: without writing the recovered tasks back,
+     * the very next read answers "no tasks" and the write after it buries the backup.
+     */
     @Test
     void putsTheRecoveredTasksBackSoTheNextReaderStillFindsThem(@TempDir Path root) throws IOException {
-        // The recovery moves the unreadable file aside, which leaves NO state file: without writing the
-        // recovered tasks back, the very next read answers "no tasks" and the next write buries the backup.
         Path stateFile = root.resolve("state.json");
         StateService state = stateIn(root, stateFile);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
@@ -160,10 +160,9 @@ class StateServiceTest {
         assertThat(stateIn(root, stateFile).tasks()).containsOnlyKeys("ABC-1");
     }
 
+    /** Starting empty is the one unacceptable outcome: the next write buries a file a human could salvage. */
     @Test
     void refusesToStartWithAnEmptyTaskListOverAnUnreadableStateFile(@TempDir Path root) throws IOException {
-        // Silently starting empty is the one unacceptable outcome: the next write would overwrite the file
-        // the human might still salvage by hand.
         Path stateFile = root.resolve("state.json");
         Files.writeString(stateFile, "this is not json");
 
@@ -206,13 +205,11 @@ class StateServiceTest {
         assertThat(state.tasks()).containsOnlyKeys("ABC-1");
     }
 
+    /** A derived accessor must not become a persisted field: Jackson once wrote isNone() as "none":false. */
     @Test
     void writesOnlyRealStateForATaskThatHasSpentTokens(@TempDir Path root) throws IOException {
-        // state.json is the SSOT: a derived accessor on TokenUsage must not become a persisted field. It did
-        // once — Jackson picked up isNone() and wrote "none":false into every task's usage block.
         Path stateFile = root.resolve("state.json");
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(stateFile.toString())));
+        StateService state = stateIn(root, stateFile);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .usage(TokenUsage.ofCall(25_000, 100, 170, 0.05)).build());
 
@@ -222,17 +219,17 @@ class StateServiceTest {
         assertThat(written).doesNotContain("none");
     }
 
+    /**
+     * The new primitive longs are simply absent from such a file. Failing the load instead of defaulting them
+     * stranded every task and left /state and the dashboard empty.
+     */
     @Test
     void loadsAStateFileWrittenBeforeTheAutoReviewFieldsExisted(@TempDir Path root) throws IOException {
-        // A real state.json from before mrCreatedAt/lastPolledAt/autoReview were added: the new primitive
-        // longs are simply absent. Jackson must default them to 0, not fail the whole load (which stranded
-        // every task and left /state + the dashboard empty).
         Path stateFile = root.resolve("state.json");
         Files.writeString(stateFile, """
                 {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"CI_POLLING",
                 "lastActiveTimestamp":123,"alias":"a1","mrUrl":"http://mr/1"}}}""");
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(stateFile.toString())));
+        StateService state = stateIn(root, stateFile);
 
         var task = state.task("ABC-1").orElseThrow();
 
@@ -245,8 +242,7 @@ class StateServiceTest {
 
     @Test
     void resolvesCallerTaskWhenCallerReportsPhysicalPathOfSymlinkedWorktree(@TempDir Path root) throws IOException {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        StateService state = stateIn(root, root.resolve("state.json"));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.NEW).alias("a1").build());
         String physicalCallerCwd = root.toRealPath().toString();
 
@@ -302,8 +298,7 @@ class StateServiceTest {
 
     @Test
     void forgetsTaskWhenItIsRemoved(@TempDir Path root) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        StateService state = stateIn(root, root.resolve("state.json"));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
         boolean removed = state.removeTask("ABC-1");

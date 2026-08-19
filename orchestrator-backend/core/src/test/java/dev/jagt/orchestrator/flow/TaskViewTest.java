@@ -22,7 +22,8 @@ class TaskViewTest {
 
     private static TaskView viewOf(String ticketUrl, String reviewRequestUrl) {
         return TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                .alias("a1").ticketUrl(ticketUrl).mrUrl(reviewRequestUrl).build(), false, AutoReviewWatch.none(), Map.of("proj", "dev", "api", "dev", "web", "dev"));
+                .alias("a1").ticketUrl(ticketUrl).mrUrl(reviewRequestUrl).build(), false,
+                AutoReviewWatch.none(), Map.of("proj", "dev"));
     }
 
     @ParameterizedTest
@@ -66,12 +67,14 @@ class TaskViewTest {
     void stillSaysSomethingWhenTheStoredRequestLinkWasUnusable() {
         assertThat(viewOf(null, "javascript:alert(1)").detail()).isEqualTo("javascript:alert(1)");
     }
+
     @Test
     void carriesEveryRepositoryWithItsOwnRequestSoNoSurfaceHasToGuessWhichDiffIsWhich() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
                 new TaskRepo("api", "/api-wt", "git@host:g/api.git", "https://host/api/-/merge_requests/1", null),
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
-                TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(), Map.of("proj", "dev", "api", "dev", "web", "dev"));
+                TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(),
+                Map.of("api", "dev", "web", "dev"));
 
         assertThat(view.repos()).extracting(TaskView.RepoView::project, TaskView.RepoView::reviewRequestUrl)
                 .containsExactly(tuple("api", "https://host/api/-/merge_requests/1"),
@@ -84,7 +87,8 @@ class TaskViewTest {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
                 new TaskRepo("api", "/api-wt", "git@host:g/api.git", null, null),
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
-                TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(), Map.of("proj", "dev", "api", "dev", "web", "dev"));
+                TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(),
+                Map.of("api", "dev", "web", "dev"));
 
         assertThat(view.actions()).extracting(TaskView.ActionView::id).contains("sweep");
         assertThat(view.actions()).filteredOn(action -> action.id().equals("sweep"))

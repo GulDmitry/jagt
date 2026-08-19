@@ -19,12 +19,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Warp's only sanctioned scripting surface is the URI scheme. The viewer is a
- * Tab Config (TOML in ~/.warp/tab_configs) opened via warp://tab_config/&lt;name&gt;:
- * it lands as a TAB in the active window and runs `tmux attach` itself — no
- * shell hooks, never keystroke automation. One dedicated agents window is
- * maintained: it is raised by title (addressed System Events window action)
- * before opening a tab; if absent, the tab config opens a new window.
+ * Warp's only sanctioned scripting surface is the URI scheme, so the viewer is a generated Tab Config opened by
+ * URI: it lands as a TAB in the active window and runs `tmux attach` itself — no shell hooks, no keystrokes.
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "terminal", havingValue = "warp", matchIfMissing = false)
@@ -103,9 +99,8 @@ public class WarpTerminalDriver implements TerminalDriver {
     }
 
     /**
-     * Raises the agents window (title starts with the tmux session base name —
-     * tmux titles the terminal after the attached session). Returns false when
-     * no such window exists yet.
+     * The window is matched by title prefix, since tmux titles the terminal after the attached session. False
+     * when no such window exists yet.
      */
     private boolean raiseDedicatedWindow(String dedicatedTitle) {
         try {

@@ -13,9 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Notices that the jar this JVM is running from has been REWRITTEN underneath it, and says so.
- *
- * <p>A rebuild replaces {@code jagt.jar} at the same inode, so already-loaded classes keep working and the next
+ * A rebuild replaces {@code jagt.jar} at the same inode, so already-loaded classes keep working and the next
  * first-time load dies with {@code NoClassDefFoundError} — which surfaces as a board that renders while some
  * endpoints answer 500, and reads exactly like a bug in those endpoints.
  *
@@ -51,7 +49,7 @@ public class RunningJarWatch implements Job {
     private boolean reported;
 
     // @Autowired disambiguates: the second constructor exists so a test can point the watch at a file it
-    // controls, and with two of them Spring otherwise refuses to choose (same reason AutoReviewScheduler has it).
+    // controls, and with two of them Spring otherwise refuses to choose.
     @org.springframework.beans.factory.annotation.Autowired
     public RunningJarWatch(Notifications notifications) {
         this(notifications, ownJar());
@@ -83,7 +81,7 @@ public class RunningJarWatch implements Job {
 
     /**
      * A rewrite, not a read: either fact changing is enough, and a file that VANISHED (a {@code clean}) counts
-     * too. Pure so the decision is testable without rebuilding anything.
+     * too.
      */
     static boolean rewritten(Stamp atStartup, Stamp now) {
         if (atStartup == null) {
@@ -103,18 +101,15 @@ public class RunningJarWatch implements Job {
         }
     }
 
-    /** The jar this JVM was started from, or null when it was not started from one. */
     private static Path ownJar() {
         return jarFromClassPath(System.getProperty("java.class.path"), Files::isRegularFile);
     }
 
     /**
      * {@code java -jar x.jar} puts EXACTLY that jar on the classpath, which is the one place the path is
-     * unambiguous. The obvious alternative — {@code getProtectionDomain().getCodeSource()} — was tried first and
-     * silently returned nothing: inside a Spring Boot fat jar the location is a {@code jar:nested:…} URL that
-     * {@code Path.of} refuses, so the watch existed and watched nothing (found by rebuilding under a real run,
-     * not by a test). Anything else on the classpath — an exploded run, an IDE, {@code bootRun} — means several
-     * entries or a directory, and then there is no single jar to watch, which is the honest answer.
+     * unambiguous: inside a fat jar {@code getProtectionDomain().getCodeSource()} answers a
+     * {@code jar:nested:…} URL that {@code Path.of} refuses. Anything else on the classpath means several
+     * entries or a directory, and then there is no single jar to watch.
      */
     static Path jarFromClassPath(String classPath, java.util.function.Predicate<Path> isFile) {
         if (classPath == null || classPath.isBlank() || classPath.contains(java.io.File.pathSeparator)) {

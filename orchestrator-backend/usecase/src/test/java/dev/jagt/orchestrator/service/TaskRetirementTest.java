@@ -41,6 +41,7 @@ class TaskRetirementTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
     }
 
+    /** The other order leaves a zombie agent grinding in a deleted directory. */
     @Test
     void killsTheSessionBeforeDeletingTheDirectoryItIsRunningIn(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -50,7 +51,6 @@ class TaskRetirementTest {
 
         String result = retirement(state).retire("a1");
 
-        // The other order leaves a zombie agent grinding in a deleted directory.
         var order = inOrder(sessions, git);
         order.verify(sessions).killWindows("ABC-1");
         order.verify(git).removeWorktree(any(), any(), any());
@@ -68,7 +68,6 @@ class TaskRetirementTest {
 
         assertThat(result).contains("worktree left on disk: project missing from config.json");
         verify(git, never()).removeWorktree(any(), any(), any());
-        // The state entry still goes: a task whose project vanished cannot be worked on either way.
         assertThat(state.task("ABC-1")).isEmpty();
     }
 
@@ -83,6 +82,7 @@ class TaskRetirementTest {
 
         verify(editor).forgetProject(Path.of("/wt"));
     }
+
     @Test
     void deletesTheWorktreeOfEveryRepositoryTheTaskWorkedIn(@TempDir Path root) {
         StateService state = stateIn(root);

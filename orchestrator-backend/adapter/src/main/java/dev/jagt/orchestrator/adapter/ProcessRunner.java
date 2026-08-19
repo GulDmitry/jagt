@@ -27,13 +27,8 @@ public class ProcessRunner implements Processes {
     }
 
     /**
-     * Fire-and-forget: start the process and return immediately, never waiting for or killing it.
-     * For GUI launchers (`idea diff`, editors) whose CLI blocks until the IDE is ready or the window
-     * closes — waiting would time out and then destroy the very window it opened. Only a failure to
-     * START (bad binary) is reported; the launched app's own errors are its business.
-     *
-     * <p>Detached from jagt's own session too, so the terminal's Ctrl-C cannot reach it — see
-     * {@link #detachedFrom}.
+     * A GUI launcher's CLI blocks until its window closes, so waiting would time out and then destroy the very
+     * window it opened. Only a failure to START is reported; the launched app's own errors are its business.
      */
     @Override
     public Process runDetached(Path workingDir, List<String> command) {
@@ -102,9 +97,8 @@ public class ProcessRunner implements Processes {
                 builder.directory(workingDir.toFile());
             }
             builder.environment().putAll(env);
-            // No jagt subprocess reads our stdin — feed them /dev/null so none can steal the
-            // Master shell's stdin (the backend's stdin is the JLine REPL), and so tools like
-            // `claude -p` get immediate EOF instead of a 3s stdin wait.
+            // No jagt subprocess reads our stdin — feed them /dev/null so none can steal the console's own,
+            // and so a CLI that waits on stdin gets immediate EOF instead of a several-second pause.
             builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
             Process process = builder.start();
             // Drain both streams before waitFor to avoid pipe-buffer deadlock on chatty commands.

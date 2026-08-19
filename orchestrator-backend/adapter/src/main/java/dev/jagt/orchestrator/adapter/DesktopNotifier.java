@@ -7,10 +7,6 @@ import dev.jagt.orchestrator.port.UserNotifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * The local desktop banner. It owns how a notification READS on a desktop — the `jagt` prefix and the task it is
- * about — so no caller assembles a title, and a second channel is free to word the same notification its own way.
- */
 @Component
 @RequiredArgsConstructor
 public class DesktopNotifier implements Notifier {

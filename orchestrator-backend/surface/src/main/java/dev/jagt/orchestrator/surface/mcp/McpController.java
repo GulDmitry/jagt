@@ -38,19 +38,17 @@ public class McpController {
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
-    /** Human observability endpoint: current state.json content. */
     @GetMapping(value = "/state", produces = MediaType.APPLICATION_JSON_VALUE)
     public StateService.StateFile state() {
         return stateService.read();
     }
 
-    /** Plain-text dashboard (same view the Master shell prints). */
     @GetMapping(value = "/status", produces = MediaType.TEXT_PLAIN_VALUE)
     public String status() {
         return views.dashboard();
     }
 
-    /** Plain-text token spend of jagt's own model calls, per task (same view as the `stats` command). */
+    /** The spend of jagt's OWN model calls, per task; an agent's own session spends elsewhere. */
     @GetMapping(value = "/stats", produces = MediaType.TEXT_PLAIN_VALUE)
     public String stats() {
         return views.stats();

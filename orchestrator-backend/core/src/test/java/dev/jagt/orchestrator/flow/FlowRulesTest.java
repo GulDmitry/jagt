@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskStatus;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -132,5 +129,29 @@ class FlowRulesTest {
         }));
 
         assertThat(probed).isFalse();
+    }
+
+    /**
+     * The bug this exists to stop: an agent whose message happens to carry a request link could say CI_POLLING
+     * about a task the review had already passed, dragging it backwards and re-arming the unattended poll.
+     */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVIEWED", "APPROVED", "DEPLOYED", "REVERTED"})
+    void refusesToSayATaskIsWaitingOnChecksOnceTheReviewHasPassedIt(TaskStatus past) {
+        assertThat(FlowRules.reportable(past, TaskStatus.CI_POLLING)).isFalse();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING", "REVIEW_PENDING",
+            "CI_POLLING", "CI_FAILED"})
+    void acceptsTheRequestLinkFromATaskThatCouldStillBeWaitingOnIt(TaskStatus waiting) {
+        assertThat(FlowRules.reportable(waiting, TaskStatus.CI_POLLING)).isTrue();
+    }
+
+    /** A task being fixed after a revert really is in progress again, so the rest hold wherever it got to. */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "SHIPPING", "REVIEW_PENDING", "CI_FAILED"})
+    void letsATaskSayWhatItIsDoingWhereverItGotTo(TaskStatus said) {
+        assertThat(FlowRules.reportable(TaskStatus.DEPLOYED, said)).isTrue();
     }
 }

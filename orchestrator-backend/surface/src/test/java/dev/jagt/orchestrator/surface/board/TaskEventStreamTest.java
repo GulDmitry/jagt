@@ -33,7 +33,7 @@ class TaskEventStreamTest {
         stream.followStateChanges();
         ArgumentCaptor<Consumer<StateService.StateFile>> listener = ArgumentCaptor.captor();
         verify(stateService).onChange(listener.capture());
-        stream.open();                                  // a tab that is not attached to a real response
+        stream.open();
 
         listener.getValue().accept(new StateService.StateFile(null));
 

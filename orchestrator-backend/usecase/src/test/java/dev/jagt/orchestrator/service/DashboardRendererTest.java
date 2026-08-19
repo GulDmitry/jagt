@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -10,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -24,21 +28,22 @@ class DashboardRendererTest {
     }
 
     @Test
-    void showsTheTicketUrlAsADetailLineAboveTheMrLink(@TempDir Path root) {
+    void showsTheTicketAboveTheReviewRequestBecauseThatIsTheOrderAHumanReadsThem(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                .alias("a1").title("title").mrUrl("https://gitlab/x/-/merge_requests/9").ticketUrl("https://jira/browse/ABC-1").build());
+                .alias("a1").title("title").mrUrl("https://host/x/-/merge_requests/9")
+                .ticketUrl("https://tracker/browse/ABC-1").build());
 
         String out = rendererFor(state).render();
 
-        assertThat(out).contains("└ https://jira/browse/ABC-1");
-        assertThat(out.indexOf("https://jira/browse/ABC-1"))
-                .isLessThan(out.indexOf("https://gitlab/x/-/merge_requests/9"));
+        assertThat(out).contains("└ https://tracker/browse/ABC-1");
+        assertThat(out.indexOf("https://tracker/browse/ABC-1"))
+                .isLessThan(out.indexOf("https://host/x/-/merge_requests/9"));
     }
 
     @Test
     void pointsAtTheDraftedRepliesWaitingInTheWorktree(@TempDir Path root) throws Exception {
-        java.nio.file.Files.writeString(root.resolve("review_replies.md"), "> rename x\n\nRenamed it.\n");
+        Files.writeString(root.resolve("review_replies.md"), "> rename x\n\nRenamed it.\n");
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("a1").title("title").build());
@@ -53,8 +58,8 @@ class DashboardRendererTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .alias("a1").title("title")
-                .history(java.util.List.of(new dev.jagt.orchestrator.task.StatusChange(
-                        TaskStatus.REVIEW_PENDING, System.currentTimeMillis() - 7_200_000, null)))
+                .history(List.of(new StatusChange(TaskStatus.REVIEW_PENDING,
+                        System.currentTimeMillis() - 7_200_000, null)))
                 .build());
 
         String out = rendererFor(state).render();
@@ -91,7 +96,7 @@ class DashboardRendererTest {
         String out = rendererFor(state, tracker).render();
 
         assertThat(out).contains("TOKENS");
-        assertThat(out).contains("64k");                      // the task's own column
+        assertThat(out).contains("64k");
         assertThat(out).contains("spend 1 call / 64k tok");
     }
 
@@ -116,6 +121,7 @@ class DashboardRendererTest {
         assertThat(rendererFor(state).render()).doesNotContain("└");
     }
 
+    /** The header line is INDENTED: the TUI colours any unindented line as a task row, and this is not one. */
     @Test
     void saysWhenTheUnattendedPollWillNextLookAtATaskOutForReview(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -128,7 +134,6 @@ class DashboardRendererTest {
 
         String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state)).render();
 
-        // Indented: the TUI colours any unindented line as a task row, and this is not one.
         assertThat(out).contains("\n  auto-review on\n");
         assertThat(out).contains("└ auto-review · next poll in 10m");
     }
@@ -136,7 +141,7 @@ class DashboardRendererTest {
     @Test
     void saysWhenNothingWillPollATaskAnyMore(@TempDir Path root) {
         StateService state = stateIn(root);
-        long shipped = System.currentTimeMillis() - java.time.Duration.ofHours(25).toMillis();
+        long shipped = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(shipped).build());
         ConfigService config = mock(ConfigService.class);

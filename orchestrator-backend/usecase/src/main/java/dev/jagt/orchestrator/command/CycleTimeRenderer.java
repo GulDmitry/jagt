@@ -15,8 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Where each task's clock has gone, added up from the status history: how long it has been waiting on the
- * human, on its agent and on the code host, and how many times it went out for review.
+ * Where each task's clock has gone, added up from the status history.
  *
  * <p>Every interval is attributed to whoever owned the status it was spent in ({@link Move#ownerOf}), so this
  * view cannot disagree with the "whose turn" the board and the dashboard show. A task retired with
@@ -29,7 +28,6 @@ public class CycleTimeRenderer {
     static final int TASK_W = 18;
     private static final String ROW = "%-" + TASK_W + "s %7s %7s %9s %7s %7s%n";
 
-    /** One task's clock, summed over the steps its own history recorded. */
     private record Clock(String taskId, long age, long onYou, long onAgent, long onCi, int rounds,
                          boolean partial) {
 
@@ -78,7 +76,6 @@ public class CycleTimeRenderer {
                 clock.floor(rounds));
     }
 
-    /** The answer the table is read for: which of the three is the one to shorten. */
     private static String slowestStep(Clock all) {
         if (all.held() == 0) {
             return "";

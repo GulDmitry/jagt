@@ -18,12 +18,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Agent sessions live in one tmux session (one tmux window per task): tmux
- * commands are instant, deterministic and never touch keyboard/focus.
- * Visibility (a terminal window attached to the session) is delegated to the
- * configured {@link TerminalDriver} whenever no client is attached.
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -50,13 +44,12 @@ public class TmuxSessionHost implements SessionHost {
             ensureSession(session);
             // One task = one window: respawns must never accumulate duplicates.
             killTaskWindows(session, taskId);
-            // The agent gets its bootstrap prompt as CLI arg — without it the session idles forever.
-            // After the agent exits the window shows the tail briefly, then closes itself
-            // (an interactive shell here would linger forever and ignore Ctrl+C).
+            // After the agent exits the window shows the tail briefly, then closes itself: an interactive
+            // shell here would linger forever and read as a hung process.
             String command = agentRuntime.launchCommand(worktreePath, planMode)
                     + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
-            // -P -F prints the window id (@N): the only target immune to name
-            // collisions when the same task is respawned via open_task_tab.
+            // -P -F prints the window id (@N): the only target immune to name collisions when the same task
+            // is respawned.
             String windowId = processRunner.run(null, TIMEOUT, List.of(tmux(), "new-window",
                             "-P", "-F", "#{window_id}",
                             "-t", "=" + session + ":", "-n", taskId, "-c", worktreePath.toString(), command))
@@ -77,10 +70,6 @@ public class TmuxSessionHost implements SessionHost {
         }
     }
 
-    /**
-     * Switches the session's current window to the task's window (the attached
-     * terminal client follows). Returns false when no window with that name exists.
-     */
     @Override
     public boolean focusTaskWindow(String session, String dedicatedTitle, String taskId) {
         synchronized (lock) {
@@ -96,11 +85,9 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     /**
-     * An agent window can exist but hold only the post-exit "inspection" shell
-     * (the launch command ends with `exec $SHELL`) — that counts as dead.
-     * Detection is by child processes: while the agent runs, the pane's shell
-     * has it as a child; the inspection shell is childless. (pane_current_command
-     * is useless here: without job control it always reports the shell itself.)
+     * Detection is by CHILD PROCESSES: while the agent runs, the pane's shell has it as a child, and a window
+     * that outlives its agent is childless. {@code pane_current_command} is useless here — without job control
+     * it always reports the shell itself.
      */
     @Override
     public WindowState taskWindowState(String session, String taskId) {
@@ -121,10 +108,6 @@ public class TmuxSessionHost implements SessionHost {
         }
     }
 
-    /**
-     * Types a message into the agent's Claude session (targeted at its pane —
-     * no focus/GUI involvement). Claude Code queues it if mid-generation.
-     */
     @Override
     public boolean nudgeTaskWindow(String session, String taskId, String message) {
         synchronized (lock) {
@@ -140,11 +123,7 @@ public class TmuxSessionHost implements SessionHost {
         }
     }
 
-    /**
-     * Kills every window named taskId (respawns can leave duplicates); killing
-     * a window also kills its processes, i.e. the Claude session. Returns how
-     * many windows were closed.
-     */
+    /** Killing a window also kills its processes, so this ends the agent with it. */
     @Override
     public int killTaskWindows(String session, String taskId) {
         synchronized (lock) {
@@ -171,9 +150,8 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     /**
-     * Epoch-millis of the window's last terminal activity (any output) — a working agent keeps
-     * printing (spinner, tokens, build logs) even when it makes no MCP call, so this catches
-     * "busy but silent on MCP" that lastActiveTimestamp misses. 0 if the window is gone/unknown.
+     * Epoch-millis of the window's last terminal output — an agent at work keeps printing even when it makes no
+     * MCP call. 0 when the window is gone or unreadable.
      */
     @Override
     public long lastWindowActivityMillis(String session, String taskId) {
@@ -214,10 +192,9 @@ public class TmuxSessionHost implements SessionHost {
                             "-d", "-s", session, "-c", paths.root().toString()))
                     .expectSuccess("tmux new-session " + session);
         }
-        // Responsiveness + task switching. escape-time 0 removes the ESC delay that
-        // makes TUIs feel sluggish. mouse ON so a click on a window name in the status
-        // bar switches tasks (the residual lag is the Warp->tmux double render, not the
-        // mouse); Shift+Left/Right also switch (Warp doesn't grab those, unlike Ctrl+b).
+        // escape-time 0 removes the ESC delay that makes TUIs feel sluggish. mouse ON so a click on a window
+        // name in the status bar switches tasks (the residual lag is the Warp->tmux double render, not the
+        // mouse); Shift+Left/Right also switch, and Warp doesn't grab those, unlike Ctrl+b.
         // Re-applied each time; server-global and cheap.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-sg", "escape-time", "0"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "focus-events", "on"));
@@ -229,9 +206,9 @@ public class TmuxSessionHost implements SessionHost {
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string",
                 "#{?#{@jagt_alias},#W (#{@jagt_alias}),#W}"));
         // The status-bar window list (what you scan while attached) shows only #I:#W#F by default — add the
-        // alias, so "ABC-2554 (p1)" is visible in the bar, not just in the terminal tab title. Keep the
-        // trailing #F: it renders the window flags (`*` current, `-` last, `Z` zoomed) — dropping it is what
-        // made the active-tab `*` marker vanish once a custom format replaced tmux's default.
+        // alias, so "ABC-42 (p1)" is visible in the bar, not just in the terminal tab title. Keep the
+        // trailing #F: it renders the window flags (`*` current, `-` last, `Z` zoomed), and dropping it loses
+        // the marker on the active window.
         String windowFormat = "#I:#W#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-format", windowFormat));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-current-format", windowFormat));
@@ -239,7 +216,6 @@ public class TmuxSessionHost implements SessionHost {
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
     }
 
-    /** If no terminal client is attached to the session, ask the terminal driver for a tab. */
     /** The viewer must NOT open inside a worktree: `done`/`remove` reap every process whose cwd is under
      *  the removed worktree, which would kill-9 the viewer that first opened there — closing all agents'
      *  tabs. A stable home dir is never a reap target. */

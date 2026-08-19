@@ -15,16 +15,14 @@ import java.util.Map;
  * The {@code stats} view: what jagt's own model calls have consumed, per task and in total, in TOKENS —
  * the unit that is actually comparable across models and over time.
  *
- * <p>Deliberately two bottom lines, because they answer different questions and are NOT the same number:
- * "current tasks" sums the tasks still in state.json, while "this session" counts every call since the
- * backend started — including tasks already retired with {@code done} and reads that never became a task.
+ * <p>Deliberately two bottom lines, because they are NOT the same number: the tasks still open, against every
+ * call since the backend started.
  */
 @Component
 @RequiredArgsConstructor
 public class UsageStatsRenderer {
 
-    /** 18 = the longest {@link AssistantCallKind} label ("merge-request read"); a longer one would shift
-     *  every number on its row out of its column, which is exactly what a table exists to prevent. */
+    /** Must fit the longest {@link AssistantCallKind} label, or a number shifts out of its column. */
     static final int LABEL_W = 18;
     private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s%n";
 
@@ -52,8 +50,6 @@ public class UsageStatsRenderer {
         TokenUsage session = usageTracker.session();
         out.append("\n").append(row("current tasks", tasksTotal)).append(row("this session", session));
 
-        // WHAT the spend was for is the actionable half: a ticket read happens once per task, a review sweep
-        // repeats up to hourly for a day — and a category that stops growing is a REST read paying off.
         var byKind = usageTracker.sessionByKind();
         if (!byKind.isEmpty()) {
             out.append('\n').append(String.format(ROW, "BY CALL", "CALLS", "IN", "CACHED", "OUT", "TOTAL"));

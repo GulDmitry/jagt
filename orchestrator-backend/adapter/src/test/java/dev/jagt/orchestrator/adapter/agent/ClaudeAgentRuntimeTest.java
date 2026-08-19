@@ -19,27 +19,31 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ClaudeAgentRuntimeTest {
 
-    private static ClaudeAgentRuntime runtime(String command, String prompt) {
-        return new ClaudeAgentRuntime(OrchestratorProperties.defaults()
-                .withAgentPrompt(prompt), new ClaudeProperties(command),
-                new McpEndpoint("http://localhost:8290/mcp"));
-    }
-
     @Test
     void launchesTheClaudeCliWithTheBootstrapPromptQuoted() {
-        assertThat(runtime("claude", "Read AGENTS.md and work").launchCommand(Path.of("/wt"), false))
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults()
+                .withAgentPrompt("Read AGENTS.md and work"), new ClaudeProperties("claude"),
+                new McpEndpoint("http://localhost:8290/mcp"));
+
+        assertThat(runtime.launchCommand(Path.of("/wt"), false))
                 .isEqualTo("claude 'Read AGENTS.md and work'");
     }
 
     @Test
-    void addsPlanModeFlagWhenRequested() {
-        assertThat(runtime("claude", "go").launchCommand(Path.of("/wt"), true))
+    void startsTheAgentInPlanModeWhenTheHumanAskedToAgreeOnTheApproachFirst() {
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
+
+        assertThat(runtime.launchCommand(Path.of("/wt"), true))
                 .isEqualTo("claude --permission-mode plan 'go'");
     }
 
     @Test
-    void escapesSingleQuotesInThePrompt() {
-        assertThat(runtime("claude", "it's fine").launchCommand(Path.of("/wt"), false))
+    void keepsAPromptWithAnApostropheOneShellArgumentInsteadOfBreakingTheLaunch() {
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("it's fine"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
+
+        assertThat(runtime.launchCommand(Path.of("/wt"), false))
                 .isEqualTo("claude 'it'\\''s fine'");
     }
 
@@ -53,7 +57,9 @@ class ClaudeAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        runtime("claude", "go").provisionWorktree(new AgentWorktree(worktree, root, null, null));
+        new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
         var config = new JsonMapper().readTree(Files.readString(worktree.resolve(".mcp.json")))
                 .path("mcpServers").path("jagt-orchestrator");
@@ -69,7 +75,9 @@ class ClaudeAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        runtime("claude", "go").provisionWorktree(new AgentWorktree(worktree, root, null, null));
+        new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
         assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
     }
@@ -79,7 +87,9 @@ class ClaudeAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        runtime("claude", "go").provisionWorktree(new AgentWorktree(worktree, root, null, null));
+        new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
         Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "system knowledge");
 
         assertThat(Files.readString(worktree.resolve("CLAUDE.md"))).isEqualTo("system knowledge");
@@ -91,7 +101,8 @@ class ClaudeAgentRuntimeTest {
         worktree.toFile().mkdirs();
         Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
 
-        ClaudeAgentRuntime runtime = runtime("claude", "go");
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
         Path briefing = runtime.systemKnowledgeFile(worktree);
         runtime.provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
@@ -105,7 +116,8 @@ class ClaudeAgentRuntimeTest {
         worktree.toFile().mkdirs();
         Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
 
-        ClaudeAgentRuntime runtime = runtime("claude", "go");
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
         Path briefing = runtime.systemKnowledgeFile(worktree);
         runtime.provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
@@ -122,7 +134,10 @@ class ClaudeAgentRuntimeTest {
         Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
         Files.writeString(worktree.resolve("CLAUDE.local.md"), "personal rules");
 
-        assertThatThrownBy(() -> runtime("claude", "go").systemKnowledgeFile(worktree))
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
+
+        assertThatThrownBy(() -> runtime.systemKnowledgeFile(worktree))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("CLAUDE.local.md");
     }

@@ -21,9 +21,8 @@ import java.util.stream.Stream;
  * round-trip. Free text falls through to {@link NaturalLanguageDispatch}, which is the only path that spends
  * tokens.
  *
- * <p>It KNOWS no verb: the first word is looked up among the commands a task does not own ({@link
- * GlobalCommands}) and then among the ones it does ({@link TaskAction}), so a new capability is declared once
- * and typed here without an edit.
+ * <p>It KNOWS no verb: the first word is looked up among the declared commands, so a new capability is typed
+ * here without an edit.
  */
 @Component
 @RequiredArgsConstructor
@@ -65,7 +64,6 @@ public class GrammarDispatch {
         }
     }
 
-    /** The same action a board button posts, through the gate that refuses what a status does not allow. */
     private String act(List<String> tok, TaskAction action) {
         TaskAction wanted = action == TaskAction.IDE
                 && tok.stream().anyMatch(token -> token.equalsIgnoreCase("diff")) ? TaskAction.DIFF : action;

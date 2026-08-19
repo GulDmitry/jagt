@@ -25,15 +25,12 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * {@link MasterAssistant} via a one-shot headless Claude. Portable by design: it hardcodes NO MCP
- * server or path — {@code --setting-sources user,project,local} makes the child inherit the human's
- * own MCP config (so whatever issue-tracker / code-host MCP the human already has, this call gets), and
- * {@code --json-schema} forces a deterministic JSON answer. Runs from the temp dir so only the
- * human's user-level MCP loads (no jagt project MCP), keeping the context — and tokens — small.
- * <p>An install that would rather not depend on whichever servers the human has installed today declares
- * them itself; only the SERVERS stop being inherited, so a declared file's {@code ${ENV}} placeholders and
- * the model still resolve as before. Declared servers lose their plugin scope in tool names, so an
- * allow-list written for the inherited spelling stops matching.
+ * Portable by design: it hardcodes NO MCP server or path — {@code --setting-sources} makes the child inherit
+ * the human's own MCP config, so whatever tracker / code-host server they already have, this call gets. Runs
+ * from the temp dir so only their user-level servers load (no jagt project MCP), keeping the context — and the
+ * tokens — small.
+ * <p>An install may declare the servers itself instead. Declared ones lose their plugin scope in tool names, so
+ * an allow-list written for the inherited spelling silently stops matching.
  */
 @Component
 @RequiredArgsConstructor
@@ -154,7 +151,6 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                         n.path("ticket").asString(""), n.path("reason").asString("")));
     }
 
-    /** Runs one stripped, schema-forced headless Claude call; empty facts on any failure, cost always. */
     private Answer<JsonNode> ask(String prompt, String schema, String label) {
         return ask(prompt, schema, label, TIMEOUT, true);
     }
@@ -166,11 +162,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private Answer<JsonNode> ask(String prompt, String schema, String label, Duration timeout, boolean withMcp) {
         List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
                 "--json-schema", schema,
-                // The JSON envelope wraps the answer together with the call's token usage and cost, so the
-                // spend is measurable. Plain text output would hide the price of every read.
+                // The envelope wraps the answer together with the call's token usage and cost, so the spend is
+                // measurable at all.
                 "--output-format", "json"));
         if (!withMcp) {
-            // An empty --mcp-config with --strict-mcp-config: no servers, no tool schemas, nothing to approve.
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
         } else if (!assistant.mcpConfig().isBlank()) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", assistant.mcpConfig(),
@@ -199,8 +194,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
         } catch (RuntimeException e) {
             // A timeout kills the CLI, so there is no envelope and no number: the tokens it already burned
-            // are unknowable, not zero. Say so in the log — silently returning would understate the spend —
-            // and degrade to an empty answer so the caller reports an error instead of throwing at the human.
+            // are unknowable, not zero.
             log.warn("Headless assistant call for {} never returned ({}) — it was killed after {}, so its"
                     + " token cost is UNMEASURED and missing from the totals", label, e.getMessage(), timeout);
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
@@ -257,9 +251,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     /**
-     * One call's cost out of the envelope. Fresh input = prompt + cache WRITES (both billed at input
-     * rates); cache reads are counted apart because they are far cheaper. A missing usage block (older CLI,
-     * unparseable output) yields {@link TokenUsage#NONE} rather than a fabricated number.
+     * Fresh input = prompt + cache WRITES (both billed at input rates); cache reads are counted apart because
+     * they are far cheaper. A missing usage block yields {@link TokenUsage#NONE} rather than a fabricated
+     * number.
      */
     static TokenUsage usageOf(JsonNode envelope) {
         if (envelope == null) {

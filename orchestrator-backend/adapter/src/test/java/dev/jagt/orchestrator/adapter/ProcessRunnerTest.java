@@ -50,14 +50,13 @@ class ProcessRunnerTest {
     }
 
     @Test
-    void runDetachedReturnsWithoutWaitingForTheProcess() {
-        ProcessRunner runner = new ProcessRunner();
-
+    void handsTheAppBackWhileItIsStillRunningSoNothingWaitsOnTheEditor() {
         long start = System.currentTimeMillis();
-        runner.runDetached(null, List.of("sleep", "3"));
+        Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "3"));
         long elapsedMillis = System.currentTimeMillis() - start;
 
         assertThat(elapsedMillis).isLessThan(2_000);
+        launched.destroyForcibly();
     }
 
     private static String processGroupOf(long pid) throws Exception {

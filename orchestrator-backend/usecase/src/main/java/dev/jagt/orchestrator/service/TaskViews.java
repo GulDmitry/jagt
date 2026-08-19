@@ -12,11 +12,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Builds the ONE projection every human surface renders. Extracted so the TUI, the plain-text {@code /status}
- * and the web board cannot drift: a phase, an owner and a set of legal actions are computed once, here.
+ * Builds the ONE projection every human surface renders, so a phase, an owner and a set of legal actions cannot
+ * mean one thing in one surface and another in the next.
  *
- * <p>Order is "most recently active first", the same order the text dashboard has always used — the web board
- * regroups and re-sorts client-side, which is where a sort belongs when the data is already in the browser.
+ * <p>Order is most recently active first; a surface that wants another grouping re-sorts client-side, which is
+ * where a sort belongs once the data is already in the browser.
  */
 @Component
 @RequiredArgsConstructor
@@ -26,7 +26,6 @@ public class TaskViews {
     private final StateService stateService;
     private final ConfigService configService;
 
-    /** Every task as something to pick from. */
     public List<TaskChoice> choices() {
         return stateService.tasks().entrySet().stream()
                 .map(e -> new TaskChoice(e.getValue().alias(), e.getKey(), e.getValue().title()))

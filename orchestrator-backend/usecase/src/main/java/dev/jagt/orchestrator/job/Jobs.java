@@ -42,7 +42,6 @@ public class Jobs {
         this(declared, Executors.newVirtualThreadPerTaskExecutor());
     }
 
-    /** A thread per run, so a job measured in minutes cannot hold up the ticker; direct in tests. */
     Jobs(List<Job> declared, Executor workers) {
         this.workers = workers;
         for (Job job : declared) {

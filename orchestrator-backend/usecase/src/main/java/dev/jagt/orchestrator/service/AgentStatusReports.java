@@ -18,8 +18,8 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * What an agent says about its own task, and the one ping the human gets for it. Statuses arrive here from the
- * agent's MCP call and from the review sweep; the caller has already decided WHICH task it may touch.
+ * What an agent says about its own task, and the one ping the human gets for it. WHICH task a caller may touch is
+ * already decided upstream.
  */
 @Service
 @RequiredArgsConstructor
@@ -100,7 +100,6 @@ public class AgentStatusReports {
         String id = stateService.canonicalTaskId(taskId);
         TaskStatus previous = stateService.task(id).map(TaskState::status).orElse(null);
         boolean updated = flow.report(id, status, message);
-        // Never for a no-op (task gone) or a re-poll landing on the status the human already saw.
         if (updated && status != previous) {
             ping(id, status, message, stateService.task(id));
         }

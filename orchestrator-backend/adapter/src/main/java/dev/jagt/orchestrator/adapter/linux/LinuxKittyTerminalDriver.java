@@ -10,18 +10,14 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * kitty on Linux. The whole driver is inherited — kitty's remote-control protocol and the temp-dir socket are
- * identical across platforms, which is what the macOS implementation had been quietly proving.
- *
- * <p>Both platform hooks come out EMPTY here, and that is the finding, not an omission:
+ * Both platform hooks come out EMPTY here, and that is the finding, not an omission:
  * <ul>
  *   <li>raising the window is already done by {@code kitty @ focus-window} in {@code reveal} — X11/Wayland
- *       window managers own stacking, and jagt is not going to shell out to wmctrl to fight a WM's
- *       focus-stealing policy. There is no macOS-style "activate the application" step to add;
+ *       window managers own stacking, and jagt is not going to shell out to wmctrl or xdotool to fight a WM's
+ *       focus-stealing policy on one desktop and fail silently on the next;
  *   <li>the Cyrillic keymap workaround is macOS-only by construction: it exists because Cocoa matches a
- *       {@code cmd} key-equivalent by produced character. On Linux kitty's own {@code ascii} shortcut
- *       fallback handles a non-Latin layout, so injecting {@code ctrl+shift} aliases would add config the
- *       terminal does not need.
+ *       {@code cmd} key-equivalent by produced character. Here kitty's own {@code ascii} shortcut fallback
+ *       handles a non-Latin layout, so aliases would add config the terminal does not need.
  * </ul>
  */
 @Component
@@ -42,8 +38,5 @@ public class LinuxKittyTerminalDriver extends AbstractKittyTerminalDriver {
 
     @Override
     public void bringToFront() {
-        // Nothing to add: `reveal` already asked kitty to focus the window, and whether that raises it above
-        // other applications is the window manager's decision, not ours. Deliberately a no-op rather than a
-        // wmctrl/xdotool dependency that would work on one desktop and silently fail on the next.
     }
 }

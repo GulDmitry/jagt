@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.port.TaskStore;
 
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 

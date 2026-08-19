@@ -21,15 +21,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * Auto-review poller: after `ship`, watches each CI_POLLING task's request on its own within the configured
- * time window, escalating the interval via {@link AutoReviewCadence}, and reacting through the SHARED
- * {@link ReviewSweepService} — so an unattended poll behaves exactly like a human typing `sweep`
- * (approval advances state, comments are only relayed as drafts for the human to close out). The backend
- * still talks to NO external system: the sweep delegates the code-host read to a headless Claude.
- *
- * <p>Decision ({@link #decide}) is pure and unit-tested; {@link #scan()} just applies it — one poll at a
- * time per task (in-flight guard), on a bounded executor since a sweep is slow (minutes), and one
- * "window elapsed" ping per task.
+ * Polls each CI_POLLING task's request through the SHARED {@link ReviewSweepService}, so an unattended poll can
+ * do no more than a human asking for one.
  */
 @Service
 @Slf4j
@@ -65,8 +58,8 @@ public class AutoReviewScheduler implements Job {
     @Autowired
     public AutoReviewScheduler(StateService stateService, ConfigService configService,
                                ReviewSweepService reviewSweep, Notifications notifications) {
-        // Single thread: a sweep spawns a headless Claude (minutes); serialising them bounds the cost and
-        // keeps the 60s tick from ever piling up overlapping polls.
+        // Single thread: a sweep runs for minutes, so serialising bounds the cost and keeps the tick from
+        // piling up overlapping polls.
         this(stateService, configService, reviewSweep, notifications,
                 Executors.newSingleThreadExecutor(r -> {
                     Thread t = new Thread(r, "auto-review");
@@ -93,7 +86,7 @@ public class AutoReviewScheduler implements Job {
         long now = System.currentTimeMillis();
         var tasks = stateService.tasks();
         // A task RETIRED while still CI_POLLING never leaves that status, so the branch below would keep its
-        // marker for the life of the process. Forget markers whose task is gone.
+        // marker for the life of the process.
         windowElapsedNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
         tasks.forEach((taskId, task) -> {
             // A task that left CI_POLLING (deployed, done) re-arms its window-elapsed ping.

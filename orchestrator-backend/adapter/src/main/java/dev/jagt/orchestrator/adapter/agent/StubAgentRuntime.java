@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 
 /**
- * A scripted agent for automated runs ({@code orchestrator.agent=stub}), which is the ONE non-deterministic
- * participant an end-to-end assertion has to replace. Everything else in such a run stays real.
+ * The ONE non-deterministic participant an end-to-end assertion has to replace; everything else in such a run
+ * stays real.
  *
  * <p>It writes NO agent config: a scripted agent POSTs to {@code /mcp} itself. That absence is also the
  * assertion — a Claude-shaped file in a stub worktree means something outside the runtime put it there.

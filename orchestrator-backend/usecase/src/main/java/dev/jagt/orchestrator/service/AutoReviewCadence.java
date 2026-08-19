@@ -9,11 +9,10 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 import java.time.Duration;
 
 /**
- * The whole auto-review policy: whether polling runs at all, how long to wait before the next poll given how
- * long the request has been open, and what that means for one task. Pure and total so it is unit-tested, not
- * improvised. The interval escalates LINEARLY from {@code min} at the window start to {@code max} at the window
- * end (capped at {@code max} = hourly by default): poll often early, back off as the request ages. Past the
- * window it returns {@code null} — polling stops (the scheduler pings the human once to sweep manually).
+ * The whole auto-review policy: whether polling runs at all, how long to wait before the next poll given how long
+ * the request has been open, and what that means for one task. The interval escalates LINEARLY from {@code min}
+ * at the window start to {@code max} at its end — poll often early, back off as the request ages — and past the
+ * window polling stops.
  *
  * <p>The poller and every human surface ask the SAME object, so a dashboard cannot advertise a poll the
  * scheduler will not make.

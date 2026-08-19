@@ -14,19 +14,16 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-/** {@link JsonHttp} over Spring's {@code RestClient}. */
 @Component
 @Slf4j
 public class RestClientJsonHttp implements JsonHttp {
 
-    /** A call runs on the auto-review tick or inside `ship`, so it must fail fast rather than hold either. */
+    /** Short, because a call must not hold the background poll it runs on. */
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
 
     private final RestClient client;
 
     public RestClientJsonHttp() {
-        // Its own client, not the auto-configured builder: this talks to one host's API on a background poll
-        // and wants nothing from the app's web stack but a timeout that cannot hang the auto-review tick.
         JdkClientHttpRequestFactory factory =
                 new JdkClientHttpRequestFactory(HttpClient.newBuilder().connectTimeout(TIMEOUT).build());
         factory.setReadTimeout(TIMEOUT);
@@ -63,9 +60,7 @@ public class RestClientJsonHttp implements JsonHttp {
                     .retrieve().body(JsonNode.class);
             return Optional.ofNullable(answer);
         } catch (RuntimeException e) {
-            // Includes 4xx/5xx (RestClient throws by default) and transport failures. Callers degrade to
-            // "unreadable" / "not created", which the human sees — swallowing the cause would look like an
-            // empty review or a silently missing merge request.
+            // Includes 4xx/5xx (RestClient throws by default) as well as transport failures.
             log.warn("{} {} failed: {}", body == null ? "GET" : update ? "PUT" : "POST", url,
                     e.toString());
             return Optional.empty();

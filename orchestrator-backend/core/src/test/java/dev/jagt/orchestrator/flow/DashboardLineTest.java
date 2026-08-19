@@ -4,21 +4,25 @@ import dev.jagt.orchestrator.task.TaskState;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class DashboardLineTest {
 
-    @Test
-    void showsNoDetailWhileInDevelopment() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS).message("some progress note").build();
+    @ParameterizedTest
+    @CsvSource(nullValues = "SILENT", value = {"IN_PROGRESS,some progress note", "SHIPPING,shipping",
+            "NEW,SILENT", "REVIEW_PENDING,SILENT"})
+    void showsNoDetailWhileThereIsNothingForAHumanToActOn(TaskStatus status, String message) {
+        TaskState task = TaskState.builder("p", "/wt", status).message(message).build();
 
         assertThat(DashboardLine.forTask(task)).isEmpty();
     }
 
     @ParameterizedTest
-    @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED", "APPROVED", "DEPLOYED", "REVERTED"})
+    @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_POLLING", "REVIEWED", "APPROVED",
+            "DEPLOYED", "REVERTED"})
     void showsTheRequestLinkForEveryStatusThatHasOneOut(TaskStatus status) {
         TaskState task = TaskState.builder("p", "/wt", status).mrUrl("https://gitlab/x/-/merge_requests/9").build();
 
@@ -57,34 +61,6 @@ class DashboardLineTest {
     }
 
     @Test
-    void showsNoDetailWhenNothingHasBeenReportedYet() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).build();
-
-        assertThat(DashboardLine.forTask(task)).isEmpty();
-    }
-
-    @Test
-    void showsNoDetailWhileTheShipIsInFlight() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.SHIPPING).message("shipping").build();
-
-        assertThat(DashboardLine.forTask(task)).isEmpty();
-    }
-
-    @Test
-    void showsTheMrLinkWhenReviewPendingHasOne() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING).mrUrl("https://host/mr/417").build();
-
-        assertThat(DashboardLine.forTask(task)).isEqualTo("https://host/mr/417");
-    }
-
-    @Test
-    void showsNoDetailWhenReviewPendingHasNoRequestYet() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING).build();
-
-        assertThat(DashboardLine.forTask(task)).isEmpty();
-    }
-
-    @Test
     void shoutsNeedsInputRatherThanTheMrLinkWhenAReviewRoundEndedInAQuestion() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("awaiting: cache or index?").mrUrl("https://host/mr/425").build();
@@ -117,20 +93,12 @@ class DashboardLineTest {
         assertThat(DashboardLine.forTask(task)).isEqualTo("checks running · https://host/mr/502");
     }
 
-    @Test
-    void saysNothingAboutTheChecksWhenTheyPassed() {
+    @ParameterizedTest
+    @CsvSource(nullValues = "UNREAD", value = {"success", "UNREAD"})
+    void showsOnlyTheRequestLinkWhenTheChecksHaveNothingToAdd(String pipelineStatus) {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
-                .mrUrl("https://host/mr/503").pipelineStatus("success").build();
+                .mrUrl("https://host/mr/503").pipelineStatus(pipelineStatus).build();
 
         assertThat(DashboardLine.forTask(task)).isEqualTo("https://host/mr/503");
     }
-
-    @Test
-    void saysNothingAboutTheChecksBeforeTheyHaveBeenRead() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
-                .mrUrl("https://host/mr/504").build();
-
-        assertThat(DashboardLine.forTask(task)).isEqualTo("https://host/mr/504");
-    }
-
 }

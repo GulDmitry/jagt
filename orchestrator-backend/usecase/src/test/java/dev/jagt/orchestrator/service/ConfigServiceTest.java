@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ConfigServiceTest {
 
     @Test
-    void deserializesSectionedConfigAndCoalescesOmittedSections() {
+    void readsEverySectionTheHumanActuallyWrote() {
         String json = """
                 {
                   "viewer": { "tmuxSession": "alt", "viewMode": "tab-per-task", "keepViewer": false },
@@ -36,7 +36,13 @@ class ConfigServiceTest {
         assertThat(config.viewer().keepViewerOrDefault()).isFalse();
         assertThat(config.dashboard().refreshSecondsOrDefault()).isEqualTo(30);
         assertThat(config.agent().outputStyleOrNull()).isEqualTo("acme:eng");
-        // codeReview + worktree omitted entirely — accessors coalesce to section defaults.
+    }
+
+    /** A whole section may be omitted, and callers must never have to null-check the one that was. */
+    @Test
+    void answersForASectionTheConfigFileNeverMentioned() {
+        ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);
+
         assertThat(config.codeReview().mrTitlePatternOrDefault()).isEqualTo("{ticket} {title}");
         assertThat(config.worktree().copyGlobsOrDefault()).containsExactly("**/.env");
     }

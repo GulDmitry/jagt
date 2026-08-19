@@ -23,10 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * GitLab over the v4 REST API — reads the review round (approval state, latest pipeline, unresolved discussion
- * notes) and opens/finds the merge request of a task branch. Selected by {@code orchestrator.code-host.type=gitlab}.
- *
- * <p>A PARTIAL read must never look like a clean review: an unfetchable request or discussion list fails the
+ * A PARTIAL read must never look like a clean review: an unfetchable request or discussion list fails the
  * whole read, because "nothing unresolved + green" ADVANCES a task. The one exception is the approvals endpoint
  * (absent on some instances): unreadable there means "not approved", which can only hold a task back.
  */
@@ -49,7 +46,6 @@ public class GitLabCodeHost implements CodeHost {
         this.http = http;
         this.config = config;
         if (!config.isUsable()) {
-            // Loud, because the symptom is silent: every sweep quietly falls back to a PAID headless read.
             log.warn("orchestrator.code-host.type=gitlab but base-url or token is missing — review sweeps keep"
                     + " using the (paid) headless read. Set orchestrator.code-host.base-url and .token.");
         }
@@ -101,10 +97,10 @@ public class GitLabCodeHost implements CodeHost {
     }
 
     /**
-     * An already-open request is NEVER retitled: {@code ship} runs again on every review round, the title came
-     * from the first one, and the human may well have edited it since. Only the merge flags are pushed, and
-     * only when they actually differ — and a failed flag update still reports the request, because it EXISTS:
-     * answering "no merge request" over a cosmetic flag would send the caller off to create a second one.
+     * An already-open request is NEVER retitled: a ship runs again on every review round, the title came from
+     * the first one, and the human may well have edited it since. A failed flag update still reports the
+     * request, because it EXISTS: answering "no merge request" over a cosmetic flag would send the caller off
+     * to create a second one.
      */
     private MergeRequestRef alignExisting(String mergeRequests, JsonNode existing, MergeRequestSpec spec) {
         MergeRequestRef found = new MergeRequestRef(existing.path("web_url").asString(""), false);
@@ -162,7 +158,7 @@ public class GitLabCodeHost implements CodeHost {
                 + "/merge_requests/" + url.group("iid");
     }
 
-    /** Empty = a page could not be read, which must fail the sweep rather than look like a clean review. */
+    /** Empty = a page could not be read; an empty list = nothing is unresolved. */
     private Optional<List<String>> unresolvedComments(String mrApi) {
         List<String> unresolved = new ArrayList<>();
         for (int page = 1; page <= MAX_PAGES; page++) {
@@ -185,7 +181,6 @@ public class GitLabCodeHost implements CodeHost {
     }
 
     /**
-     * One unresolved note as the single relay line the brief expects ({@code author (file:line): body}).
      * Empty for anything the human is not waiting on: GitLab's own system notes, plain comments that cannot be
      * resolved at all, and already-resolved threads.
      */

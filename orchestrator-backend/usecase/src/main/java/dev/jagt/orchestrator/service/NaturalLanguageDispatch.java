@@ -100,8 +100,6 @@ public class NaturalLanguageDispatch {
             return "Understood as `" + verb + "` but not which task (" + reasonOf(mapped)
                     + ") — name it: `" + verb + " <ticket|alias>`.";
         }
-        // Execution goes through the SAME gate as a button: an action the task's status does not allow is
-        // refused with a sentence here, so a model's guess can never widen what is legal.
         String understood = "understood as `" + verb + " " + task + "` — ";
         try {
             return understood + commands.execute(task, action.get());
@@ -152,9 +150,8 @@ public class NaturalLanguageDispatch {
     }
 
     /**
-     * The prompt's whole world: every command with what it does, and every task with the facts a human would
-     * use to pick one (alias, id, status, title). Built from the SAME projection the surfaces render, so the
-     * mapper cannot be offered a command or a task that the board does not show.
+     * Built from the SAME projection the surfaces render, so the mapper cannot be offered a command or a task
+     * that the board does not show.
      */
     private String context() {
         String commandList = java.util.Arrays.stream(TaskAction.values())

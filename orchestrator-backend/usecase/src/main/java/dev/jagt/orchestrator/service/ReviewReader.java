@@ -58,7 +58,6 @@ public class ReviewReader {
         return assistant.readMergeRequest(reviewRequestUrl);
     }
 
-    /** Attributes what a read cost to the task it named, once that task exists. */
     public void charge(String taskId, TokenUsage usage) {
         assistant.chargeTask(taskId, usage);
     }

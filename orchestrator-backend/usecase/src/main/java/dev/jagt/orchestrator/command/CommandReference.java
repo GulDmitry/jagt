@@ -18,7 +18,6 @@ public final class CommandReference {
                        boolean consoleOnly) {
     }
 
-    /** A verb with everything either surface asks of it, whichever kind of command declared it. */
     private record Declared(Verb verb, List<String> usage) {
     }
 

@@ -19,10 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Jira — reads the summary, labels and project of one issue. Selected by
- * {@code orchestrator.tracker.type=jira}.
- *
- * <p>Only the {@code v2} API is called: Cloud and Data Center both serve it, and the three fields read here are
+ * Only the {@code v2} API is called: Cloud and Data Center both serve it, and the three fields read here are
  * identical in v2 and v3, so asking for the newer one would drop every self-hosted install for nothing.
  *
  * <p>Authentication follows what the token IS: with a {@code user} configured the pair is sent as basic
@@ -46,7 +43,6 @@ public class JiraTracker implements Tracker {
         this.http = http;
         this.config = config;
         if (!config.isUsable()) {
-            // Loud, because the symptom is silent: every `do` quietly falls back to a PAID headless read.
             log.warn("orchestrator.tracker.type=jira but base-url or token is missing — reading a ticket keeps"
                     + " using the (paid) headless read. Set orchestrator.tracker.base-url and .token.");
         }
@@ -68,8 +64,8 @@ public class JiraTracker implements Tracker {
         if (key == null) {
             return Optional.empty();
         }
-        // A read that did not come back is reported as an item that does NOT exist, not as an absent read: a
-        // launch given a mistyped key would otherwise fall through to the "nobody read it" path and provision a
+        // A read that did not come back is reported as an item that does NOT exist, rather than as an absent
+        // read: a mistyped key would otherwise fall through to the "nobody read it" path and provision a
         // worktree, an agent and a branch named after a ticket nobody can open.
         return Optional.of(http.get(config.baseUrl() + "/rest/api/2/issue/" + key
                         + "?fields=summary,labels,project", authHeaders())
@@ -79,8 +75,7 @@ public class JiraTracker implements Tracker {
 
     private TicketFacts facts(JsonNode issue, String requestedKey) {
         JsonNode fields = issue.path("fields");
-        // The key comes back from the ISSUE: a moved issue answers under its new one, and that is the name the
-        // branch, the worktree and the tmux window will carry.
+        // The key comes back from the ISSUE: a moved issue answers under its new one.
         String key = issue.path("key").asString(requestedKey);
         List<String> labels = new ArrayList<>();
         fields.path("labels").forEach(label -> labels.add(label.asString("")));

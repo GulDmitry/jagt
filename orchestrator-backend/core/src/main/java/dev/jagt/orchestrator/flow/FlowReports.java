@@ -31,6 +31,14 @@ public class FlowReports {
         if (!FlowRules.reportable(status)) {
             throw new IllegalArgumentException(status + " is jagt's to set, not a task's to report");
         }
-        return tasks.updateTask(taskId, task -> alsoRecord.apply(task.withStatus(status, message)));
+        // Judged against the state being WRITTEN, not one read a moment earlier: two reports arriving together
+        // must not both pass on a status neither of them ends up leaving from.
+        return tasks.updateTask(taskId, task -> {
+            if (!FlowRules.reportable(task.status(), status)) {
+                throw new IllegalArgumentException(status + " cannot be reported by a task that is already "
+                        + task.status() + " — that would take it backwards and start polling finished work");
+            }
+            return alsoRecord.apply(task.withStatus(status, message));
+        });
     }
 }

@@ -21,11 +21,6 @@ import java.util.stream.Stream;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Default editor strategy: any CLI launcher taking a path — configured as a
- * command list in `orchestrator.editor-command`, e.g. [open, -a, IntelliJ IDEA]
- * or [code] or [subl]. The worktree path is appended as the last argument.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -50,8 +45,6 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         }
     }
 
-    // Detached: GUI launchers (idea, open -a) may not return until the IDE is ready or the window
-    // closes; waiting would time out and then kill the window we just opened.
     @Override
     public void open(Path path) {
         List<String> command = launcher(properties.editorCommand(), "orchestrator.editor-command");
@@ -81,19 +74,16 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
             throw new IllegalStateException(configKey + ": '" + binary + "' is not on PATH nor in the usual"
                     + " install directories — install its launcher or set the key to a full path.");
         }
-        // The RESOLVED launcher, and the human's own arguments after it: a desktop launcher lives in no bin
-        // directory, so spawning the bare name is how the editor stops opening.
         List<String> command = new ArrayList<>(configured);
         command.set(0, binary);
         return command;
     }
 
     /**
-     * Drop the worktree from every JetBrains IDE's recent-projects list (macOS config location), so a
-     * `done` task doesn't leave a dead "project" on the Welcome screen. Best-effort and IMMEDIATE only:
-     * while the IDE is live it holds the list in memory and flushes it back on its next save/exit, which
-     * resurrects the entry — even across a restart (the entry is re-written on the way down). The scheduled
-     * {@link #forgetDeadWorktrees} GC is what actually makes the removal stick once the IDE is next closed.
+     * Best-effort and IMMEDIATE only: while the IDE is live it holds the recent-projects list in memory and
+     * flushes it back on its next save/exit, which resurrects the entry — even across a restart (it is
+     * re-written on the way down). {@link #forgetDeadWorktrees} is what makes the removal stick once that IDE
+     * is next closed.
      */
     @Override
     public void forgetProject(Path worktreePath) {
@@ -111,12 +101,6 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
                 xml -> removeEntries(xml, deadWorktreeKeys(xml, userHome, locations, Files::isDirectory)));
     }
 
-    /**
-     * Apply {@code prune} to every JetBrains IDE's recentProjects.xml, atomically writing back only files it
-     * actually changed. Best-effort: JetBrains owns the file and rewrites it from memory while running, so a
-     * write reliably sticks only once that IDE is next closed. No-op when no JetBrains config dir is present
-     * (a non-JetBrains editor).
-     */
     private void rewriteRecentProjects(String userHome, Function<String, String> prune) {
         for (Path jetBrains : jetBrainsConfigDirs(userHome)) {
             if (Files.isDirectory(jetBrains)) {
@@ -126,9 +110,8 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
     }
 
     /**
-     * Where JetBrains keeps per-IDE config, per platform: {@code ~/Library/Application Support/JetBrains} on
-     * macOS, {@code ~/.config/JetBrains} on Linux (XDG). Both are probed rather than switched on an OS flag —
-     * only one of them exists on a given machine, and probing keeps this free of an `if macos`.
+     * Both locations are probed rather than switched on an OS flag — only one of them exists on a given
+     * machine, and probing keeps this free of an `if macos`.
      */
     static List<Path> jetBrainsConfigDirs(String userHome) {
         return List.of(Path.of(userHome, "Library", "Application Support", "JetBrains"),
@@ -162,11 +145,7 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
 
     private static final Pattern ENTRY_KEY = Pattern.compile("<entry key=\"([^\"]*)\"");
 
-    /**
-     * Remove the {@code <entry key="…">…</entry>} block for {@code worktree} from a recentProjects.xml body.
-     * JetBrains stores the path either absolute or with a {@code $USER_HOME$} macro, so both forms are tried.
-     * Pure + package-private for tests.
-     */
+    /** JetBrains stores the path either absolute or with a {@code $USER_HOME$} macro, so both forms are tried. */
     static String pruneRecentProjects(String xml, String userHome, Path worktree) {
         String abs = worktree.toAbsolutePath().normalize().toString();
         List<String> keys = new ArrayList<>(List.of(abs));
@@ -176,12 +155,6 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         return removeEntries(xml, keys);
     }
 
-    /**
-     * The raw entry keys in {@code xml} whose directory no longer exists AND that name a jagt worktree
-     * ({@code <taskId>-<projectKey>} or {@code <taskId>-deploy} sibling of a configured project). Live
-     * projects — and any dead entry outside a jagt worktree location — are left alone. Pure (existence
-     * injected via {@code dirExists}) + package-private for tests.
-     */
     static List<String> deadWorktreeKeys(String xml, String userHome,
                                          List<WorktreeLocation> locations, Predicate<Path> dirExists) {
         List<String> keys = new ArrayList<>();
@@ -208,7 +181,6 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         return false;
     }
 
-    /** Strip each named {@code <entry key="…">…</entry>} block from a recentProjects.xml body. Pure. */
     static String removeEntries(String xml, Collection<String> rawKeys) {
         String out = xml;
         for (String key : rawKeys) {

@@ -16,21 +16,16 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
-/**
- * The board's READ side: the shared {@link TaskView} projection every surface renders, the grammar, the reports
- * behind it and the change stream. Acting on a task is {@link TaskCommandsController}.
- */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
 public class BoardApiController {
 
-    /** Everything one board render needs, in one round trip. */
     public record Board(List<TaskView> tasks, Spend spend, List<String> projects, String autoReview,
                         boolean autoReviewEnabled) {
     }
 
-    /** What jagt's own model calls have cost this session — the number the console shows in its header. */
+    /** What jagt's OWN model calls have cost this session; an agent's own session spends elsewhere. */
     public record Spend(int calls, long tokens) {
     }
 
@@ -42,17 +37,15 @@ public class BoardApiController {
     @GetMapping("/tasks")
     public Board tasks() {
         var session = usageTracker.session();
-        // Whether polling runs at all is a property of the INSTALL, so it is answered once per render rather
-        // than repeated on every card — a board with no task out for review must still be able to say it.
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), new Spend(session.calls(), session.total()), snapshot.projects(),
                 snapshot.cadence().summary(), snapshot.cadence().enabled());
     }
 
     /**
-     * The grammar as data, for the palette's autocomplete and its client-side validation. Served rather than
-     * hardcoded in the page, so a verb cannot exist in the console and be missing from the suggestions — minus
-     * the ones that only mean something in a terminal, which the board must not be able to offer at all.
+     * Served rather than hardcoded in the page, so a verb cannot exist in the console and be missing from the
+     * suggestions. The console-only ones are filtered out: the board must not be able to offer what only means
+     * something in a terminal.
      */
     @GetMapping("/commands")
     public List<CommandReference.Verb> commands() {
@@ -60,10 +53,7 @@ public class BoardApiController {
                 .filter(verb -> !verb.consoleOnly()).toList();
     }
 
-    /**
-     * Any command's text report, at one address, so declaring another one needs no endpoint here. Reports ONLY:
-     * a GET must not be able to start work.
-     */
+    /** Reports ONLY: a GET must not be able to start work. */
     @GetMapping(value = "/commands/{id}", produces = MediaType.TEXT_PLAIN_VALUE)
     public String report(@PathVariable String id) {
         return globals.byId(id).filter(GlobalCommand::report).filter(command -> !command.consoleOnly())
@@ -71,7 +61,6 @@ public class BoardApiController {
                 .run("");
     }
 
-    /** "Something moved" — the browser re-fetches the board. See {@link TaskEventStream}. */
     @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter events() {
         return events.open();

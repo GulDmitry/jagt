@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 
-/** Opens a task for a human to look at: its live worktree, a frozen diff, or the worktree a deploy stalled in. */
 @Service
 @RequiredArgsConstructor
 public class IdeLauncher {
@@ -31,7 +30,7 @@ public class IdeLauncher {
             throw new IllegalArgumentException("Unknown ide mode '" + mode + "'. Allowed: project, diff");
         }
         // A DEPLOY_CONFLICT lives on the DEPLOY side: the task's own worktree is clean and has nothing to
-        // resolve, which is what made this look broken.
+        // resolve.
         if (task.status() == TaskStatus.DEPLOY_CONFLICT) {
             // A task spanning repositories conflicts in exactly one of them, and it is not necessarily the one
             // the session runs in — nor the first whose derived path exists, since siblings share it. A project
@@ -54,10 +53,7 @@ public class IdeLauncher {
                 + " (use Git → Local Changes for a live diff vs base)";
     }
 
-    /**
-     * Both sides are clean git checkouts: a folder-diff of the live worktree ignores .gitignore and dumps build
-     * artifacts. The right side is FROZEN at this call — the editor's Refresh does nothing.
-     */
+    /** The right side is FROZEN at this call: the editor's own Refresh does nothing. */
     private String openDiff(String taskId, TaskState task, Path worktree) {
         ProjectConfig project = configService.project(task.project());
         Path projectPath = Path.of(project.path());

@@ -18,10 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * All Git operations against a base repository are serialized with a
- * per-repository ReentrantLock to avoid .git/index.lock races between
- * concurrent agents. Different repositories don't contend: a slow
- * `git fetch` in one project must not block initializing tasks in another.
+ * Serialized per repository: index.lock races are per-repository, and a slow fetch in one project must not
+ * block work in another.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,8 +42,8 @@ public class GitService {
         withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            // A previous `done` can unregister a worktree and still fail to delete the directory, which
-            // makes `git worktree add` fail "already exists".
+            // A worktree can end up unregistered with its directory still on disk, which makes
+            // `git worktree add` fail "already exists".
             if (Files.exists(worktreePath)) {
                 log.warn("Clearing a stale leftover worktree directory before creating {}", worktreePath);
                 clearWorktreePath(projectPath, worktreePath);
@@ -164,7 +162,6 @@ public class GitService {
         return !head.isBlank() && head.equals(tip);
     }
 
-    /** Undoes the checkout jagt moved when the step it moved it FOR does not land. */
     private static void run(Runnable restoreOnFailure, Runnable step) {
         try {
             step.run();
@@ -201,7 +198,6 @@ public class GitService {
         return Optional.empty();
     }
 
-    /** One branch name per line, blanks dropped — the shape of {@code --format=%(refname:short)} output. */
     static List<String> branchNames(String stdout) {
         if (stdout == null || stdout.isBlank()) {
             return List.of();
@@ -209,11 +205,10 @@ public class GitService {
         return stdout.lines().map(String::strip).filter(line -> !line.isEmpty()).toList();
     }
 
-    /** What a ship committed, so the caller can report the truth instead of assuming a commit happened. */
     public record Commit(boolean created, int changedFiles) {
     }
 
-    /** Stages everything in the worktree and commits it. Nothing staged = no commit, and not an error. */
+    /** Nothing staged = no commit, and not an error. */
     public Commit commitAll(Path projectPath, Path worktree, String message) {
         return withRepoLock(projectPath, () -> {
             processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "add", "-A"))
@@ -268,11 +263,7 @@ public class GitService {
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "--unset-upstream", branch));
     }
 
-    /**
-     * Removes a worktree; when branchToDelete is non-null the branch goes too
-     * (compensation for a failed initialize_task, where the branch has no
-     * commits of its own yet). Best-effort: failures are logged, not thrown.
-     */
+    /** Deletes {@code branchToDelete} too when non-null. Best-effort: failures are logged, not thrown. */
     public void removeWorktree(Path projectPath, Path worktreePath, String branchToDelete) {
         withRepoLock(projectPath, () -> {
             worktreeProcesses.reap(worktreePath);
@@ -285,7 +276,6 @@ public class GitService {
                         worktreePath, removed.exitCode(), removed.stderr());
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
             }
-            // Finish the job whether git deleted the tree or only unregistered it.
             forceDeleteDir(worktreePath);
             if (branchToDelete != null) {
                 var branch = processRunner.run(projectPath, GIT_TIMEOUT,
@@ -310,7 +300,6 @@ public class GitService {
             String deployBranch = "jagt-deploy-" + sourceBranch;
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            // A prior deploy left a conflicted worktree — the human has since resolved it, so finish the push.
             if (Files.isDirectory(deployWorktree)) {
                 if (!hasDeployWorktree(projectPath, sourceBranch)) {
                     throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
@@ -349,7 +338,6 @@ public class GitService {
         });
     }
 
-    /** Finishes a deploy whose conflicted worktree the human has resolved: commits the merge, pushes, cleans up. */
     private String finishDeploy(Path projectPath, Path deployWorktree, String deployBranch,
                                 String sourceBranch, String targetBranch) {
         String unmerged = unmergedPaths(deployWorktree);
@@ -366,9 +354,8 @@ public class GitService {
         return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
     }
 
-    /** Pushes the resolved deploy branch to the shared target, then removes the worktree — but KEEPS it on a
-     *  rejected push (deploy branch moved) so the resolution isn't lost. Returns the commit that was pushed:
-     *  the merge `revert` will have to undo, which is knowable only here, before the worktree is gone. */
+    /** KEEPS the worktree on a rejected push (the target moved under the merge) so the resolution isn't lost.
+     *  Returns the pushed merge commit — what `revert` undoes, and knowable only before the worktree is gone. */
     private String pushAndRemoveDeploy(Path projectPath, Path deployWorktree, String deployBranch, String targetBranch) {
         var push = processRunner.run(deployWorktree, GIT_TIMEOUT,
                 List.of("git", "push", "origin", "HEAD:" + targetBranch));
@@ -384,14 +371,13 @@ public class GitService {
         return merged;
     }
 
-    /** Paths git left unmerged — the only thing that distinguishes a conflict from a failed merge. */
     private String unmergedPaths(Path worktree) {
         return processRunner.run(worktree, GIT_TIMEOUT,
                         List.of("git", "diff", "--name-only", "--diff-filter=U"))
                 .expectSuccess("git unmerged paths in " + worktree).stdout().trim();
     }
 
-    /** Drops the throwaway deploy checkout and its temp branch. Best-effort: it is scaffolding, not state. */
+    /** Best-effort: the checkout is scaffolding, not state. */
     private void removeDeployWorktree(Path projectPath, Path deployWorktree, String deployBranch) {
         processRunner.run(projectPath, GIT_TIMEOUT,
                 List.of("git", "worktree", "remove", "--force", deployWorktree.toString()));
@@ -447,7 +433,6 @@ public class GitService {
                 return processRunner.run(revertWorktree, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
                         .expectSuccess("git rev-parse HEAD in " + revertWorktree).stdout().trim();
             } finally {
-                // A revert worktree holds no human decision worth keeping, unlike a conflicted deploy.
                 processRunner.run(projectPath, GIT_TIMEOUT,
                         List.of("git", "worktree", "remove", "--force", revertWorktree.toString()));
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "-D", revertBranch));
@@ -470,7 +455,6 @@ public class GitService {
         }
     }
 
-    /** The two "this is not the situation you think it is" checks, refused before anything is written. */
     private void requireRevertable(Path revertWorktree, String targetBranch, String mergeCommit) {
         boolean onBranch = processRunner.run(revertWorktree, GIT_TIMEOUT,
                 List.of("git", "merge-base", "--is-ancestor", mergeCommit, "HEAD")).exitCode() == 0;
@@ -492,7 +476,6 @@ public class GitService {
         return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
     }
 
-    /** The deploy-side worktree for a task: a sibling of the repo, named after the task branch. */
     public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
         return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-deploy");
     }
@@ -537,8 +520,7 @@ public class GitService {
         return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-revert");
     }
 
-    /** Removes a lingering deploy worktree and its {@code jagt-deploy-*} branch, if any (an abandoned
-     *  conflict). Best-effort; no-op when absent. The caller prunes the editor's project list separately. */
+    /** Best-effort: nothing is thrown when the removal fails. */
     public void removeDeployWorktreeIfPresent(Path projectPath, String sourceBranch) {
         Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
         if (!Files.isDirectory(deployWorktree)) {
@@ -607,10 +589,7 @@ public class GitService {
         }
     }
 
-    /**
-     * Left side of the `ide` diff: a throwaway detached worktree at the base branch, reused per task. Pair it
-     * with {@link #checkoutWorktreeCleanForDiff} — the editor folder-diffs the two clean checkouts.
-     */
+    /** A throwaway detached checkout at the base branch, reused per task and left on disk. */
     public Path checkoutBaseForDiff(Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
@@ -625,9 +604,9 @@ public class GitService {
     }
 
     /**
-     * Right side of the `ide` diff: the task's CURRENT tracked state, committed or not, snapshotted through a
-     * throwaway index so {@code .gitignore} and {@code .git/info/exclude} are honored — a raw folder compare
-     * of the live worktree dumps hundreds of untracked files instead. Reused per task.
+     * The task's CURRENT tracked state, committed or not, snapshotted through a throwaway index so
+     * {@code .gitignore} and {@code .git/info/exclude} are honored — a raw folder compare of the live worktree
+     * dumps hundreds of untracked files instead. Reused per task and left on disk.
      */
     public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
@@ -665,11 +644,9 @@ public class GitService {
     }
 
     /**
-     * Clears a reused diff worktree path: unregisters it (if this repo knows it), prunes stale
-     * admin entries, and deletes any leftover directory on disk (a prior run — possibly of another
-     * repo sharing the same taskId — can leave the path, which would fail `git worktree add`).
+     * A path a prior run left behind — possibly another repository's, since the name is derived from the task —
+     * makes `git worktree add` fail, so registration, stale admin entries and the directory all go.
      */
-
     private void clearWorktreePath(Path projectPath, Path temp) {
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "remove", "--force", temp.toString()));
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
@@ -677,11 +654,8 @@ public class GitService {
     }
 
     /**
-     * Delete a directory and everything under it, robustly and GENERICALLY. Some process rooted in the
-     * dir may keep recreating untracked files (any agent/plugin writing state to its cwd — jagt assumes
-     * nothing about which), so each pass first REAPS every process whose cwd is under the dir (killing the
-     * writer, whatever it is), then re-scans and deletes. Killing-then-deleting converges: once the last
-     * writer is gone a pass finds the tree static and removes it. Not tied to any specific file or plugin.
+     * A process rooted in the directory can keep recreating files under it, so every pass kills whatever runs
+     * there before deleting.
      */
     private void forceDeleteDir(Path dir) {
         for (int attempt = 0; attempt < 4 && Files.exists(dir); attempt++) {
@@ -697,10 +671,6 @@ public class GitService {
         }
     }
 
-    /**
-     * The origin remote URL identifies the project on any Git host (GitLab, GitHub, ...) —
-     * agents derive the API project path from it instead of hardcoded ids in config.
-     */
     public String remoteUrl(Path projectPath) {
         return withRepoLock(projectPath, () ->
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "remote", "get-url", "origin"))
@@ -709,11 +679,6 @@ public class GitService {
                         .trim());
     }
 
-    /**
-     * Resolves the shared .git directory of the repository so orchestrator files
-     * (symlinks, CLAUDE.md, task_context.md) can be added to info/exclude and never
-     * pollute git status in any worktree.
-     */
     public Path gitCommonDir(Path projectPath) {
         return withRepoLock(projectPath, () -> {
             String dir = processRunner.run(projectPath, GIT_TIMEOUT,

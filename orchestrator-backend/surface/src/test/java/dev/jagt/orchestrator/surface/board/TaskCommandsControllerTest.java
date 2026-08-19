@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
-import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import org.junit.jupiter.api.Test;
 
@@ -42,8 +41,13 @@ class TaskCommandsControllerTest {
 
         assertThat(refused.getBody()).containsEntry("error", "Deploy is not available")
                 .containsEntry("code", "ACTION_NOT_AVAILABLE");
-        assertThat(refusals.refused(new IllegalStateException("ship: ABC-1 is DEPLOYED")).getBody())
-                .containsOnlyKeys("error");
+    }
+
+    @Test
+    void carriesNoCodeForARefusalNothingOnThePageBranchesOn() {
+        var refused = refusals.refused(new IllegalStateException("ship: ABC-1 is DEPLOYED"));
+
+        assertThat(refused.getBody()).containsOnlyKeys("error");
     }
 
     /** The palette adds no rule: it hands the text to the dispatcher and returns what came back, verbatim. */

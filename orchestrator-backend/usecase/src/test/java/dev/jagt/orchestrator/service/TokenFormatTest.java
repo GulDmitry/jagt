@@ -7,22 +7,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class TokenFormatTest {
 
+    /** Rounding up crosses into the next form rather than widening this one: never "10.0k", never "1000k". */
     @ParameterizedTest
     @CsvSource({
             "0,0",
             "812,812",
             "4800,4.8k",
             "9940,9.9k",
-            "9960,10k",             // rounding up a decimal switches to the whole-unit form, not "10.0k"
+            "9960,10k",
             "63500,64k",
             "999499,999k",
-            "999600,1.0M",          // rounds up past the unit — never "1000k"
+            "999600,1.0M",
             "1200000,1.2M",
             "9940000,9.9M",
             "9994000,10M",
             "12300000,12M"})
-    void writesATokenCountInSixCharactersAtMost(long tokens, String expected) {
+    void writesATokenCountShortEnoughForItsColumnWithoutLosingItsScale(long tokens, String expected) {
         assertThat(TokenFormat.compact(tokens)).isEqualTo(expected);
-        assertThat(TokenFormat.compact(tokens)).hasSizeLessThanOrEqualTo(6);
     }
 }

@@ -3,11 +3,15 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.EditorDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
@@ -45,9 +49,9 @@ class IdeLauncherTest {
         Path api = Files.createDirectories(root.resolve("one/api"));
         Path web = Files.createDirectories(root.resolve("two/web"));
         StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder(List.of(dev.jagt.orchestrator.task.TaskRepo.of("api",
-                        root.resolve("one/ABC-1-api").toString()),
-                dev.jagt.orchestrator.task.TaskRepo.of("web", root.resolve("two/ABC-1-web").toString())),
+        state.putTask("ABC-1", TaskState.builder(List.of(
+                        TaskRepo.of("api", root.resolve("one/ABC-1-api").toString()),
+                        TaskRepo.of("web", root.resolve("two/ABC-1-web").toString())),
                 TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig(api.toString(), "origin/main", "dev", List.of()),
@@ -59,6 +63,20 @@ class IdeLauncherTest {
 
         verify(editor).open(GitService.deployWorktreePath(web, "ABC-1"));
         verify(editor, never()).open(GitService.deployWorktreePath(api, "ABC-1"));
+    }
+
+    /** The conflict lives on the deploy side, so the sentence must not point the human at a clean worktree. */
+    @Test
+    void saysItIsTheDeployWorktreeItOpenedForAConflict(@TempDir Path root) throws Exception {
+        Path repo = Files.createDirectories(root.resolve("repo"));
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", root.resolve("ABC-1-demo").toString(),
+                TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
+        when(git.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
+
+        assertThat(launcher(state).open("a1", null)).contains("deploy worktree");
     }
 
     @Test
@@ -76,55 +94,27 @@ class IdeLauncherTest {
     }
 
     @Test
-    void ideOpensTheDeployWorktreeForATaskStuckInDeployConflict(@TempDir Path root) throws Exception {
-        Path repo = Files.createDirectories(root.resolve("repo"));
-        Path deployWorktree = Files.createDirectories(root.resolve("ABC-1-deploy"));   // sibling of the repo
-        Path taskWorktree = Files.createDirectories(root.resolve("ABC-1-demo"));
-        StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder("proj", taskWorktree.toString(), TaskStatus.DEPLOY_CONFLICT)
-                .alias("a1").build());
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
-                Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
-        when(git.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
-
-        String out = launcher(state).open("a1", null);
-
-        // The conflict lives on the deploy side — `ide` must open THAT, never the (clean) task worktree.
-        verify(editor).open(deployWorktree);
-        verify(editor, never()).open(taskWorktree);
-        assertThat(out).contains("deploy worktree");
-    }
-
-    @Test
-    void opensStaticDiffAgainstBaseWhenModeIsDiff(@TempDir Path root) {
+    void showsTheChangeAgainstTheBaseBranchWhenTheHumanAsksForADiff(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        when(git.checkoutBaseForDiff(any(), any(), any())).thenReturn(java.nio.file.Path.of("/tmp/base"));
-        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any())).thenReturn(java.nio.file.Path.of("/tmp/clean"));
+        when(git.checkoutBaseForDiff(any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
         launcher(state).open("a1", "diff");
 
-        verify(editor).openDiff(java.nio.file.Path.of("/tmp/base"), java.nio.file.Path.of("/tmp/clean"));
+        verify(editor).openDiff(Path.of("/tmp/base"), Path.of("/tmp/clean"));
     }
 
-    @Test
-    void opensWorktreeAsProjectByDefault(@TempDir Path root) {
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = "project")
+    void showsTheHumanTheTasksOwnWorktreeUnlessTheyAskedForSomethingElse(String mode, @TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        launcher(state).open("a1", null);
+        launcher(state).open("a1", mode);
 
-        verify(editor).open(java.nio.file.Path.of("/wt"));
-    }
-
-    @Test
-    void opensWorktreeAsProjectWhenModeIsProject(@TempDir Path root) {
-        StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
-
-        launcher(state).open("a1", "project");
-
-        verify(editor).open(java.nio.file.Path.of("/wt"));
+        verify(editor).open(Path.of("/wt"));
     }
 }

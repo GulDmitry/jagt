@@ -20,16 +20,13 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Creating a task: cut the worktree, put in what the agent needs, register it in state.json, start the agent.
- *
- * <p>What belongs to the AGENT rather than to jagt stays behind {@link AgentRuntime}: this class never learns
- * what a given agent's config file is called.
+ * What belongs to the AGENT rather than to jagt stays behind {@link AgentRuntime}: this class never learns what a
+ * given agent's config file is called.
  */
 @Service
 @RequiredArgsConstructor
 public class TaskProvisioning {
 
-    /** Task ids become git branches, directory names and tmux window names/targets. */
     private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_-]{0,63}");
 
     private final ConfigService configService;
@@ -38,10 +35,7 @@ public class TaskProvisioning {
     private final AgentSessions agentSessions;
     private final WorktreeSetup worktreeSetup;
 
-    /**
-     * The configured project whose repo already has a branch named taskId, or null if none. An empty
-     * {@code projectKeys} asks every configured project, which is what a task with no project named yet needs.
-     */
+    /** An empty {@code projectKeys} asks every configured project — what a task with no project named yet needs. */
     public String existingBranchProject(String taskId, Collection<String> projectKeys) {
         ConfigService.ConfigFile config = configService.load();
         Collection<String> keys = projectKeys == null || projectKeys.isEmpty()
@@ -141,8 +135,7 @@ public class TaskProvisioning {
             cut.forEach(repo -> gitService.removeWorktree(repo.projectPath(), repo.worktreePath(),
                     branchToDelete));
             // A resumed branch survives, so a repository jagt detached to free it can go back — and it must:
-            // the task does not exist afterwards, and nothing else would ever return that checkout. `reattach`
-            // decides per repository whether there is anything to undo; one that was never detached is left be.
+            // the task does not exist afterwards, and nothing else would ever return that checkout.
             if (branchToDelete == null) {
                 repos.forEach(repo -> gitService.reattach(repo.projectPath(), request.taskId()));
             }
@@ -150,13 +143,11 @@ public class TaskProvisioning {
         }
     }
 
-    /** Nothing for ordinary single-repo work; the sibling repositories named when there are any. */
     private static String alsoIn(List<NewRepo> repos) {
         return repos.size() < 2 ? "" : ", also in " + repos.stream().skip(1).map(NewRepo::project)
                 .collect(Collectors.joining(", "));
     }
 
-    /** The human's chosen base branch as a bare name, or null when they named none. */
     private static String branchOverride(String requested) {
         return requested == null || requested.isBlank()
                 ? null
@@ -178,7 +169,6 @@ public class TaskProvisioning {
         }
     }
 
-    /** First letter of the ticket + smallest free ordinal: ABC-123 -> a1, next ABC task -> a2. */
     private String nextAlias(String taskId) {
         String letter = taskId.substring(0, 1).toLowerCase();
         var used = stateService.tasks().values().stream()
@@ -205,13 +195,6 @@ public class TaskProvisioning {
         }
     }
 
-    /**
-     * Every agent session spawned by the orchestrator must know the whole system:
-     * the master root, the backend, all configured projects and the other active
-     * tasks — not only its own worktree.
-     */
-
-    /** Public so a resume can validate the id BEFORE spending git calls: one pattern, one message. */
     public static void requireSafeId(String value, String name) {
         if (!isSafeId(value)) {
             throw new IllegalArgumentException("Argument '" + name + "' must match " + SAFE_ID.pattern()
@@ -219,7 +202,7 @@ public class TaskProvisioning {
         }
     }
 
-    /** For callers that must EXPLAIN an unusable id rather than throw the generic one (see `resume`). */
+    /** For a caller that must EXPLAIN an unusable id rather than throw the generic message. */
     public static boolean isSafeId(String value) {
         return value != null && SAFE_ID.matcher(value).matches();
     }

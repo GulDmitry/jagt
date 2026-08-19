@@ -14,10 +14,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Starts a task from a ticket reference or a reopened review request — the one place that does, so the console
- * and the web board create tasks identically. It owns the decisions launching needs (does the branch already
- * exist, must the ticket be read at all, which project) and nothing about how the request arrived: parsing a
- * command line stays in the console, parsing JSON stays in the controller.
+ * The one place a task is started, so every surface creates tasks identically. It owns the decisions launching
+ * needs and nothing about how the request arrived: parsing a command line stays in the console, parsing JSON
+ * stays in the controller.
  */
 @Service
 public class TaskLauncher {
@@ -72,8 +71,8 @@ public class TaskLauncher {
             titles.of(ref);
             return result;
         }
-        // Otherwise read the item. `ref` may be a KEY or a URL to any tracker, and the read returns the
-        // canonical key (jagt names the branch/worktree by it; it is NOT parsed from a URL).
+        // The read takes a key or a URL to any tracker and answers with the canonical key, which is what names
+        // the branch and the worktree.
         var read = tickets.read(ref);
         var facts = read.facts();
         if (facts.isPresent() && !facts.get().exists()) {
@@ -81,8 +80,7 @@ public class TaskLauncher {
         }
         if (facts.isPresent()) {
             TicketFacts f = facts.get();
-            // Name the task by the canonical key the read gave back; if it returned none but the caller
-            // already gave a bare key, that key is a fine task id (a URL has no such fallback).
+            // A URL has no fallback of its own when the read gave back no key.
             String taskId = f.key() != null && !f.key().isBlank() ? f.key() : (bareKey ? ref : null);
             if (taskId == null) {
                 return "error: read " + ref + " but got no issue key back to name the task";
@@ -99,7 +97,6 @@ public class TaskLauncher {
             tickets.charge(taskId, read.usage());
             return result;
         }
-        // The read is unavailable, so only a bare key can proceed — a URL has no derivable task id without it.
         if (!bareKey) {
             return "error: could not read " + ref + " — pass an issue key (not a URL), or name the project";
         }
@@ -111,15 +108,10 @@ public class TaskLauncher {
         return result;
     }
 
-    /**
-     * Reopened review request. Everything it takes is in the request itself, so this only hands the URL on —
-     * see {@link TaskResume}.
-     */
     public String resume(String reviewRequestUrl) {
         return resumes.resume(reviewRequestUrl);
     }
 
-    /** Picks the jagt project whose configured labels intersect the ticket's labels (or tracker project key). */
     private String resolveByLabels(TicketFacts facts) {
         Map<String, List<String>> projectLabels = new LinkedHashMap<>();
         configService.load().projects().forEach((key, project) -> projectLabels.put(key, project.labels()));
@@ -135,7 +127,6 @@ public class TaskLauncher {
                 + " — specify the project");
     }
 
-    /** Pure: the project keys whose labels intersect the ticket's labels or its tracker project key. */
     public static List<String> projectsMatching(TicketFacts facts, Map<String, List<String>> projectLabels) {
         Set<String> tokens = new HashSet<>(facts.labels());
         tokens.add(facts.trackerProject());
@@ -146,15 +137,13 @@ public class TaskLauncher {
                 .toList();
     }
 
-    /** The configured project to use: the named one, or the only one there is. */
     public String resolveProject(String project) {
         return resolveProjects(project).get(0);
     }
 
     /**
-     * The projects to work in: those named (comma-separated, in the order given — the FIRST is where the
-     * agent's session runs), or the only one configured. One piece of work spanning a service and its client
-     * is one task, so the answer is a list; naming one is the ordinary case, not a special one.
+     * Comma-separated and in the order given — the FIRST is where the agent's session runs — or the only project
+     * configured.
      */
     public List<String> resolveProjects(String project) {
         Set<String> keys = configService.load().projects().keySet();
@@ -176,7 +165,6 @@ public class TaskLauncher {
         throw new IllegalArgumentException("multiple projects " + keys + " — specify one");
     }
 
-    /** The modifiers that come from the human, threaded into every creation path from one place. */
     private static NewTask.Builder newTask(String taskId, List<String> projectKeys, String instructions,
                                            LaunchRequest request) {
         return NewTask.builder(taskId, projectKeys.get(0))
@@ -186,8 +174,6 @@ public class TaskLauncher {
                 .branchStrategy(request.strategy())
                 .baseBranch(request.baseBranch());
     }
-
-    /** The brief for a task jagt could not read the ticket for: the agent reads it itself. */
 
     private static String readAndImplement(String ref, LaunchRequest request) {
         return withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", request.notes());

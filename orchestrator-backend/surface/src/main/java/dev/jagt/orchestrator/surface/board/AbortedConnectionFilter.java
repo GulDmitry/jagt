@@ -15,9 +15,9 @@ import java.net.SocketException;
 import java.util.Arrays;
 
 /**
- * Drops the one ERROR the board prints for connections nobody ever meant to use: the peer tore the connection
- * down between {@code accept()} and Tomcat's {@code setSoLinger}, so the setsockopt fails for a connection that
- * carried no request. Tomcat offers no knob — it sets {@code connectionLinger} in its constructor.
+ * Drops one ERROR: the peer tore the connection down between {@code accept()} and Tomcat's
+ * {@code setSoLinger}, so the setsockopt fails for a connection that carried no request. Tomcat offers no knob
+ * — it sets {@code connectionLinger} in its constructor.
  *
  * <p>Matched by the {@code setSoLinger} frame rather than the message, which keeps it independent of the C
  * library's locale. A failure to configure any OTHER socket option still reaches the log.

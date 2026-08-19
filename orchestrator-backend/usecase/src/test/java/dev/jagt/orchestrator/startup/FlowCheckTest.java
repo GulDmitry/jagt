@@ -24,7 +24,8 @@ class FlowCheckTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"NEW", "DONE"})
     void everyStatusCanBeReachedEitherByAnActionOrByTheTaskReportingIt(TaskStatus status) {
-        assertThat(FlowRules.targets().contains(status) || FlowRules.reportable(status)).isTrue();
+        assertThat(FlowRules.targets().contains(status) || FlowRules.reportable(status))
+                .as("%s has a way in", status).isTrue();
     }
 
     /** A verb the table never mentions is offered by nobody and refused forever, and it looks exactly like a no. */

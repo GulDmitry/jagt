@@ -22,9 +22,8 @@ import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Serves a tmux session over HTTP with ttyd — one server per session, started on demand and gone again with
- * the last viewer that disconnects. It never selects a window: which task is on screen stays tmux's answer,
- * and jagt's is {@code focus}.
+ * Serves a tmux session over HTTP with ttyd. It never selects a window — which task is on screen stays tmux's
+ * own answer.
  *
  * <p>The terminal is WRITABLE (ttyd's default is not): the point of looking at an agent is answering it — which
  * makes typing into it equal to a shell on this machine. A bound address is not enough to protect that, since a
@@ -58,9 +57,8 @@ public class TtydWebTerminal implements WebTerminal, StartupCheck {
     }
 
     /**
-     * The port a terminal attached to {@code tmuxSession} listens on, starting a server when none is up. Empty
-     * when no web terminal is configured — the caller then has nothing to show. The HOST is deliberately not
-     * answered: only the browser knows the name it reached jagt under, and the server it must ask for the
+     * Empty when no web terminal is configured — the caller then has nothing to show. The HOST is deliberately
+     * not answered: only the browser knows the name it reached jagt under, and the server it must ask for the
      * terminal is the same machine.
      *
      * @throws IllegalStateException when the server cannot be launched at all, e.g. no ttyd installed
@@ -93,7 +91,6 @@ public class TtydWebTerminal implements WebTerminal, StartupCheck {
         try {
             process = processRunner.runDetached(null, command);
         } catch (RuntimeException notLaunched) {
-            // Two audiences: the sentence goes to whoever clicked, the command goes where it can be grepped.
             log.warn("Could not start a web terminal for tmux session '{}': {}. Ran: {}",
                     tmuxSession, notLaunched.getMessage(), String.join(" ", command));
             throw notLaunched;
@@ -134,7 +131,6 @@ public class TtydWebTerminal implements WebTerminal, StartupCheck {
     static List<String> serveCommand(String ttydCommand, String bind, int port, String tmuxCommand,
                                      String tmuxSession) {
         List<String> command = new ArrayList<>(List.of(ttydCommand, "--port", String.valueOf(port), "--writable",
-                // The served page is the only origin allowed to open a socket into the session.
                 "--check-origin",
                 // Nothing is left running once the panel is closed, whatever became of the tmux session.
                 "--exit-no-conn",

@@ -1,5 +1,4 @@
-// The board. Plain DOM on purpose: no build step, no CDN, works with the machine offline — and the whole
-// page is ~200 lines, which is less than the config a framework would need.
+// Plain DOM on purpose: no build step, no CDN, works with the machine offline.
 //
 // It holds NO rules of its own: every card renders the server's projection (phase, owner, hint, legal
 // actions), and a button posts the action id back. If the server did not list an action, there is no button —
@@ -75,8 +74,7 @@ const watchLine = (watch) => {
   return {text: watch.note, stalled: true};
 };
 
-// The transitions the task actually went through, as a tooltip: the card stays one line, the record is one
-// hover away. Server-sent, so it is the same history state.json holds.
+// The transitions as a tooltip: the card stays one line, the record is one hover away.
 const timeline = (task) => (task.history || [])
   .map((step) => {
     const asked = step.origin ? `  (${step.origin.toLowerCase().replace('_', '-')})` : '';
@@ -84,8 +82,8 @@ const timeline = (task) => (task.history || [])
   })
   .join('\n');
 
-// A toast is gone in seconds, so every one of them is also kept here for the session. No persistence: a
-// reload starts an empty log, and the backend's own file keeps what matters longer.
+// A toast is gone in seconds, so every one is also kept here for the session. No persistence: the backend's
+// own log file keeps what matters longer.
 const messages = [];
 
 function toast(message, isError) {
@@ -120,8 +118,8 @@ const STALE_VIEW = ['NO_SUCH_TASK', 'ACTION_NOT_AVAILABLE'];
 
 const refusal = (e) => (STALE_VIEW.includes(e.code) ? `${e.message}\n\nThe board is up to date now.` : e.message);
 
-// The grammar, fetched once: the palette completes and validates against the SERVER's verb list, so a command
-// the console accepts can never be missing from the suggestions here.
+// Fetched, not hardcoded: the palette completes and validates against the SERVER's verb list, so a command the
+// console accepts can never be missing from the suggestions here.
 async function loadVerbs() {
   try {
     verbs = await api('/api/commands');
@@ -144,8 +142,8 @@ async function load() {
   }
 }
 
-// The order they were picked in does not survive a multi-select, so it is the CONFIGURED order that decides
-// which repository the agent's session runs in — the same answer for the console's `sng,sobrado`.
+// The order they were picked in does not survive a multi-select, so the CONFIGURED order decides which
+// repository the agent's session runs in.
 function pickedProjects() {
   return [...projectSelect.selectedOptions].map((option) => option.value).join(',');
 }
@@ -186,8 +184,8 @@ function render() {
   chip.textContent = autoReview.summary || '';
   chip.classList.toggle('on', autoReview.enabled);
   document.getElementById('empty').hidden = tasks.length > 0;
-  // Only phases that HAVE tasks get a column. `done` deletes the task outright, so a DONE column could never
-  // hold anything — it just sat there reading "done 0" — and five empty columns are noise on a board of two.
+  // Only phases that HAVE tasks get a column: `done` deletes the task outright, so a DONE column could never
+  // hold anything, and empty columns are noise on a board of two.
   board.replaceChildren(...PHASES.map(([phase, label]) => {
     const inPhase = sorted(shown.filter((task) => task.phase === phase));
     if (!inPhase.length) return null;
@@ -251,8 +249,7 @@ function card(task) {
     article_children.push(detail);
   }
 
-  // The agent's intended answers to the review comments, sitting unread in the worktree. Nothing else on the
-  // page would tell you they exist, and `ship` posts them.
+  // Nothing else on the page would say the drafted answers exist, and `ship` is what posts them.
   if (task.draftedReplies) {
     const drafts = document.createElement('div');
     drafts.className = 'drafts';
@@ -336,8 +333,7 @@ const deployQuestion = (task) => {
 };
 
 async function run(task, action) {
-  // `done` destroys a worktree and `deploy` writes to a shared branch: ask, exactly like the console makes
-  // you type the word.
+  // `done` destroys a worktree and `deploy` writes to a shared branch: ask.
   const question = action.id === 'deploy' ? deployQuestion(task) : `${action.label} ${task.id}?\n\n${action.hint}`;
   if ((action.id === 'done' || action.id === 'deploy') && !confirm(question)) {
     return;
@@ -356,11 +352,8 @@ async function run(task, action) {
   }
 }
 
-// New task: the same modifiers the `do` grammar takes, as fields.
 const launchForm = document.getElementById('launch');
 
-// One control per form: the header button opens it and closes it, and says which state it is in. Escape closes
-// whatever is open. Nothing else — an inline form does not need a second button explaining itself.
 function toggleForm(form, button, onOpen) {
   form.hidden = !form.hidden;
   button.setAttribute('aria-pressed', String(!form.hidden));
@@ -440,16 +433,16 @@ document.addEventListener('keydown', (event) => {
   }
 });
 
-// A verb answers to its own name and to whatever it was renamed from — the old spelling is accepted here for
-// the same reason the console accepts it, and offered in neither.
+// A verb answers to its own name and to whatever it was renamed from: accepted here as the console accepts it,
+// and offered in neither.
 function verbFor(word) {
   const typed = word.toLowerCase();
   // Its own name first, exactly as the server resolves it: an alias must never shadow another verb's id.
   return verbs.find((v) => v.id === typed) || verbs.find((v) => (v.aliases || []).includes(typed));
 }
 
-// What the human typed, understood WITHOUT a model: a known verb, and — for the per-task ones — a task that
-// actually exists. Anything else is left to tier 2, which is what the model is for.
+// Understood WITHOUT a model: a known verb, and — for the per-task ones — a task that actually exists. Anything
+// else is left to tier 2.
 function parseCommand(line) {
   const tokens = line.trim().split(/\s+/).filter(Boolean);
   if (!tokens.length) return null;
@@ -465,8 +458,8 @@ function refreshSuggestions() {
   document.getElementById('ask-options').replaceChildren(
     ...verbs.map((verb) => Object.assign(document.createElement('option'),
       {value: verb.id, label: verb.hint})));
-  // One button per report the SERVER declares — a new report appears in the toolbar without this page
-  // learning its name, and its tooltip is the same hint the palette shows.
+  // One button per report the SERVER declares, so a new one appears in the toolbar without this page learning
+  // its name.
   document.getElementById('reports').replaceChildren(...verbs.filter((verb) => verb.report).map((verb) => {
     const button = document.createElement('button');
     button.id = `show-${verb.id}`;
@@ -516,8 +509,7 @@ async function runParsed(parsed) {
     await run(task, {id: verb.id, label: verb.id, hint: verb.hint});
     return `${verb.id} ${task.alias || task.id}`;
   }
-  // Any command whose answer is a report, named by the server rather than listed here: one more of them
-  // needs no branch in this page.
+  // Reports are named by the server rather than listed here, so one more needs no branch in this page.
   if (verb.report) {
     showReport(`${verb.id} — ${verb.hint}`, await text(`/api/commands/${encodeURIComponent(verb.id)}`));
     return verb.id;
@@ -583,7 +575,6 @@ palette.onsubmit = async (event) => {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({text: ask.value}),
     });
-    // The answer always leads with what it understood, so a wrong mapping is visible rather than mysterious.
     toast(result.message);
     ask.value = '';
     togglePalette(false);
@@ -596,19 +587,12 @@ palette.onsubmit = async (event) => {
   }
 };
 
-// ---- everything the console can do that is not a per-task button ----
-// Parity is the rule, not a nice-to-have: a capability that exists in one surface only is the bug this section
-// closes (resume, stats, help, stop). Per-task verbs — ship, sweep, ide (incl. the DEPLOY_CONFLICT
-// worktree), deploy, revert, respawn, focus, done — are already the card's own buttons, because the server
-// lists them per task and the board renders exactly that list.
-
 const report = document.getElementById('report');
 const reportTitle = document.getElementById('report-title');
 const reportBody = document.getElementById('report-body');
 
-// One dialog for every plain-text answer the backend gives (help, stats, activity). A native <dialog>
-// costs nothing, dims the board itself, closes on Escape, and — unlike a new tab — cannot be lost behind the
-// window you were already reading.
+// One dialog for every plain-text answer the backend gives: a native <dialog> dims the board itself, closes on
+// Escape, and — unlike a new tab — cannot be lost behind the window you were already reading.
 function showReport(title, text) {
   reportTitle.textContent = title;
   reportBody.textContent = text.trimEnd();
@@ -669,7 +653,6 @@ closeOnBackdrop(terminalDialog);
 // is looking at.
 terminalDialog.addEventListener('close', () => { terminalFrame.src = 'about:blank'; });
 
-// `resume`: take over a review request that already exists (reopened, or someone else's work).
 const resumeForm = document.getElementById('resume');
 document.getElementById('resume-task').onclick = () =>
   toggleForm(resumeForm, document.getElementById('resume-task'),
@@ -706,8 +689,7 @@ async function openReport(title, path) {
   }
 }
 
-// A <dialog> closes on Escape by itself; the inline forms do not, and that is what the old "Cancel" buttons
-// were standing in for.
+// A <dialog> closes on Escape by itself; the inline forms do not.
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
   for (const [id, button] of [['resume', 'resume-task'], ['palette', 'open-palette']]) {

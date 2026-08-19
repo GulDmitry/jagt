@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.command.StateViews;
 import dev.jagt.orchestrator.surface.console.MasterShell;
 import dev.jagt.orchestrator.surface.ui.ConsoleLogging;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * IDE's recent-projects file. Everything they depend on is still wired and asserted here.
  */
 @SpringBootTest(properties = {"orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
+@ResourceLock("spring-logging")
 class OrchestratorApplicationTest {
 
     @TempDir
@@ -60,10 +62,16 @@ class OrchestratorApplicationTest {
         assertThat(context.getBean(McpController.class)).isNotNull();
         assertThat(context.getBean(StateViews.class)).isNotNull();
         assertThat(context.getBean(MeteredAssistant.class)).isNotNull();
-        // Self-check on the isolation above: without it this context would run against the developer's real
-        // state.json, and the test would pass while quietly touching live data. Compared as strings because
-        // AssertJ's Path.startsWith resolves the real path, and state.json does not exist until written —
-        // which is itself worth knowing: merely starting up touches no state.
+    }
+
+    /**
+     * The self-check on the isolation above: without it this context runs against the developer's real
+     * state.json and passes while quietly touching live data. Compared as strings because AssertJ's
+     * {@code Path.startsWith} resolves the real path, and state.json does not exist until something writes it —
+     * itself worth knowing, since merely starting up must touch no state.
+     */
+    @Test
+    void keepsTheDevelopersOwnStateFileOutOfABootedContext() {
         assertThat(context.getBean(OrchestratorPaths.class).stateFile().toString())
                 .startsWith(root.toString());
     }
@@ -79,11 +87,13 @@ class OrchestratorApplicationTest {
                 .hasAtLeastOneElementOfType(ConsoleLogging.class);
     }
 
+    /**
+     * A second {@link MasterAssistant} bean would make the injection point ambiguous — a compile-clean,
+     * wiring-clean mistake. That a caller injects the METER rather than the port cannot be asserted from here:
+     * {@link MeteredAssistant} deliberately does not implement the interface, so it is not even a candidate.
+     */
     @Test
     void reachesTheAssistantOnlyThroughItsMeterSoNoCallerCanSpendOffTheBooks() {
-        // A second MasterAssistant bean would make the injection point ambiguous — a compile-clean,
-        // wiring-clean mistake. (That a caller injects the METER rather than the port cannot be asserted from
-        // here: MeteredAssistant deliberately does not implement the interface, so it is not even a candidate.)
         assertThat(context.getBeansOfType(MasterAssistant.class)).hasSize(1);
     }
 }

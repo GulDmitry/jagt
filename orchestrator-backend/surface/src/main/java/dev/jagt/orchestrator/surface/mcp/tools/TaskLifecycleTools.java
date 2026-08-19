@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.texts;
 
-/** A task from nothing to nothing: created, listed, retired. */
 @Component
 @RequiredArgsConstructor
 public class TaskLifecycleTools implements McpTools {

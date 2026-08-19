@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.task;
 
 import dev.jagt.orchestrator.flow.TaskStatus;
-
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -112,10 +111,9 @@ class TaskStateTest {
         assertThat(again.history()).hasSize(1);
     }
 
+    /** With no history to read, statusSince used to fall back to the stamp a keep-alive bumps: always "0m". */
     @Test
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
-        // A task from a state.json written before history existed: statusSince used to fall back to
-        // lastActiveTimestamp, which the keep-alive bumps, so an hour-old status read as "0m" forever.
         long anHourAgo = System.currentTimeMillis() - 3_600_000L;
         TaskState legacy = legacyTask(TaskStatus.IN_PROGRESS, anHourAgo, "working", List.of());
 
@@ -174,7 +172,7 @@ class TaskStateTest {
 
         assertThat(json).contains("\"repos\"").doesNotContain("\"worktreePath\":\"/wt/ABC-1-php\",\"project\"");
         assertThat(reread.projects()).containsExactly("php", "java");
-        assertThat(reread.worktreePath()).isEqualTo("/wt/ABC-1-php");     // the agent's own repo is the first
+        assertThat(reread.worktreePath()).isEqualTo("/wt/ABC-1-php");
     }
 
     /** Two repositories mean two review requests, and putting one on top of the other loses a diff. */
@@ -189,8 +187,16 @@ class TaskStateTest {
         assertThat(shipped.repo("php").orElseThrow().mrUrl()).isEqualTo("https://host/php/mr/1");
         assertThat(shipped.repo("java").orElseThrow().mrUrl()).isEqualTo("https://host/java/mr/2");
         assertThat(shipped.hasReviewRequest()).isTrue();
-        // The same rule for a deploy: each repo records the merge commit that `revert` would undo THERE.
-        TaskState deployed = shipped.withDeployCommit("java", "f00d1234");
+    }
+
+    /** Each repository records the merge commit `revert` would undo THERE, so one deploy cannot mask another. */
+    @Test
+    void keepsAMergeCommitOnTheRepositoryItLandedIn() {
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
+                TaskStatus.DEPLOYED).build();
+
+        TaskState deployed = task.withDeployCommit("java", "f00d1234");
+
         assertThat(deployed.repo("java").orElseThrow().deployCommit()).isEqualTo("f00d1234");
         assertThat(deployed.repo("php").orElseThrow().deployCommit()).isNull();
     }

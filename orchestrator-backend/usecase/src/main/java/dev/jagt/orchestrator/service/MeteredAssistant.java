@@ -15,9 +15,9 @@ import org.springframework.stereotype.Component;
  * returns, so a paid call can never go uncounted, and the returned {@link Answer} still carries its cost for
  * {@link #chargeTask} to attribute later.
  *
- * <p>Why the two steps are separate: for {@code do}/{@code resume} the read is what PRODUCES the id the task
- * is created under, so there is nothing to charge until the task exists. Attributing it any earlier writes to
- * a task that is not in state.json yet and the number is silently lost.
+ * <p>The cost is carried rather than charged because for {@code do}/{@code resume} the read is what PRODUCES the
+ * id the task is created under: attributing it earlier writes to a task that does not exist yet, and the number
+ * is silently lost.
  *
  * <p>INJECT THIS, never {@link MasterAssistant} directly: a direct injection compiles and wires fine and
  * simply spends money off the books.
@@ -45,7 +45,6 @@ public class MeteredAssistant {
         return metered(AssistantCallKind.COMMAND_MAP, assistant.mapCommand(text, context));
     }
 
-    /** Attributes an already-recorded read to a task, once that task is in state.json. */
     public void chargeTask(String taskId, TokenUsage usage) {
         usageTracker.chargeTask(taskId, usage);
     }

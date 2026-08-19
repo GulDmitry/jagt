@@ -9,35 +9,39 @@ import static org.assertj.core.api.Assertions.assertThat;
 /** The OS-neutral half of driving kitty: the argv of the first-open window. */
 class AbstractKittyTerminalDriverTest {
 
-    private static final List<String> NO_PLATFORM_OPTIONS = List.of();
-    private static final List<String> CMD =
-            AbstractKittyTerminalDriver.firstOpenCommand("kitty", "", "unix:/tmp/jagt-kitty-agents",
-                    "agents", "/work/tree", "tmux", "agents", NO_PLATFORM_OPTIONS);
-
     @Test
     void launchesADetachedRemoteControllableInstanceAttachedToTheSession() {
-        assertThat(CMD).startsWith("kitty", "--detach")
+        List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "",
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", "tmux", "agents", List.of());
+
+        assertThat(cmd).startsWith("kitty", "--detach")
                 .containsSequence("-o", "allow_remote_control=yes")
                 .containsSequence("--", "tmux", "attach", "-t", "agents");
     }
 
     @Test
     void isolatesTheViewerFromTheUsersOwnKittyWindows() {
-        assertThat(CMD).containsSequence("--single-instance", "--instance-group", "jagt-agents")
+        List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "",
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", "tmux", "agents", List.of());
+
+        assertThat(cmd).containsSequence("--single-instance", "--instance-group", "jagt-agents")
                 .containsSequence("--listen-on", "unix:/tmp/jagt-kitty-agents");
     }
 
     @Test
     void appliesTheConfiguredFontSizeToTheViewerInstance() {
         List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "13",
-                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", "tmux", "agents", NO_PLATFORM_OPTIONS);
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", "tmux", "agents", List.of());
 
         assertThat(cmd).containsSequence("-o", "font_size=13");
     }
 
     @Test
     void leavesTheFontSizeToKittysOwnConfigWhenUnset() {
-        assertThat(CMD).noneMatch(argument -> argument.startsWith("font_size="));
+        List<String> cmd = AbstractKittyTerminalDriver.firstOpenCommand("kitty", "",
+                "unix:/tmp/jagt-kitty-agents", "agents", "/work/tree", "tmux", "agents", List.of());
+
+        assertThat(cmd).noneMatch(argument -> argument.startsWith("font_size="));
     }
 
     @Test

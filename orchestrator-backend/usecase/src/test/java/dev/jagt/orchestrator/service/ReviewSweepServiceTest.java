@@ -20,6 +20,7 @@ import java.util.function.UnaryOperator;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -47,7 +48,7 @@ class ReviewSweepServiceTest {
     }
 
     @Test
-    void advancesToApprovedWhenTheMrIsApprovedAndClean() {
+    void advancesToApprovedOnceAHumanApprovedAndNoThreadIsLeftOpen() {
         when(reviewReader.read("ABC-1", "http://mr/1"))
                 .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
 
@@ -59,7 +60,7 @@ class ReviewSweepServiceTest {
     }
 
     @Test
-    void marksReviewedWhenGreenAndCleanButNotYetApproved() {
+    void marksAGreenRoundReviewedWhileNobodyHasApprovedItYet() {
         when(reviewReader.read("ABC-1", "http://mr/1"))
                 .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
 
@@ -78,8 +79,8 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
-        verify(sessions).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"),
-                org.mockito.ArgumentMatchers.contains("review_replies.md"));
+        verify(sessions).writeTaskContext(eq("ABC-1"),
+                contains("review_replies.md"));
         verify(statusReports, never()).markApproved("ABC-1");
         verify(statusReports, never()).markReviewed("ABC-1");
     }
@@ -97,10 +98,10 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(sessions).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        verify(sessions).writeTaskContext(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
-                .contains("Wrong: change NOTHING")          // disagreeing is a route, not a failure
-                .contains("awaiting:")                      // so is asking, instead of guessing
+                .contains("Wrong: change NOTHING")
+                .contains("awaiting:")
                 .contains("drop the cache");
     }
 
@@ -117,7 +118,7 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(sessions).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        verify(sessions).writeTaskContext(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
                 .contains("\"no changes: <why, few words>\"")
                 .contains("Never say this if you edited a file")
@@ -137,7 +138,7 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(sessions).writeTaskContext(org.mockito.ArgumentMatchers.eq("ABC-1"), relayed.capture());
+        verify(sessions).writeTaskContext(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue()).contains("When the build is fixed locally, set status REVIEW_PENDING.");
     }
 
@@ -152,10 +153,9 @@ class ReviewSweepServiceTest {
         verify(statusReports, never()).markApproved("ABC-1");
     }
 
+    /** Whatever the trigger: two sweeps mean the read is paid for twice and two briefs go out for one round. */
     @Test
     void refusesASecondSweepOfATaskWhileTheFirstIsStillRunning() {
-        // The trigger does not matter — a human typing `sweep` during an auto-poll used to spawn a second
-        // headless read of the same merge request: paid for twice, and two briefs relayed for one round.
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
         when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
             reentrant.set(sweep.sweep("ABC-1"));
@@ -195,13 +195,13 @@ class ReviewSweepServiceTest {
         verify(reviewReader, times(2)).read("ABC-1", "http://mr/1");
     }
 
+    /**
+     * The real collision is the shell thread against the auto-review executor thread, which the reentrant tests
+     * cannot reach. The latches are what pin cross-thread EXCLUSION rather than absence of a data race — they
+     * introduce the very ordering a race needs to lack — so the setup cannot be simplified away.
+     */
     @Test
     void refusesAConcurrentSweepFromAnotherThreadNotJustAReentrantCall() throws InterruptedException {
-        // The real collision is the shell thread (`sweep`) against the auto-review executor thread, and the
-        // reentrant tests above only ever exercise one thread. What this pins is cross-thread EXCLUSION: the
-        // second caller is refused while the first is still inside. (It cannot prove the absence of a data
-        // race — the latches introduce the very ordering a race needs to lack — so the concurrent set in
-        // ReviewSweepService is a deliberate choice, not something a test can catch being reverted.)
         CountDownLatch firstSweepIsInside = new CountDownLatch(1);
         CountDownLatch secondSweepReturned = new CountDownLatch(1);
         AtomicReference<ReviewSweepService.SweepResult> fromOtherThread = new AtomicReference<>();
@@ -230,7 +230,7 @@ class ReviewSweepServiceTest {
     }
 
     @Test
-    void reportsMissingMrWithoutReadingTheCodeHost() {
+    void saysThereIsNoRequestToReadWithoutTouchingTheCodeHost() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
                 .builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()));
 

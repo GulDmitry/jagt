@@ -21,7 +21,6 @@ public class PromptTemplates {
         this.subAgentContext = load("prompts/sub-agent-context.md");
     }
 
-    /** 16 positional {@code %s} placeholders; {@code SubAgentBriefing.of} is the one call that fills them. */
     public String subAgentContext() {
         return subAgentContext;
     }

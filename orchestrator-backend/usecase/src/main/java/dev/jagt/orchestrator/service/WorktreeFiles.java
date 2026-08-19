@@ -16,14 +16,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * The files a fresh worktree needs that git does not carry: the IDE's run configs and database connections,
- * and the gitignored local files the app cannot start without. Plus keeping jagt's own plumbing out of every
- * worktree's {@code git status}.
- *
- * <p>Statics with no collaborators on purpose: filesystem work with no state and no policy, so its tests need
- * nothing either.
- */
+/** The files a fresh worktree needs that git does not carry, and jagt's own plumbing kept out of git status. */
 @Slf4j
 public final class WorktreeFiles {
 
@@ -37,9 +30,6 @@ public final class WorktreeFiles {
     /**
      * Keeps orchestrator plumbing out of `git status` in every worktree of the project. info/exclude only
      * affects untracked files, so a project's own tracked AGENTS.md/CLAUDE.md is unaffected.
-     *
-     * <p>Takes the git COMMON dir rather than a repository path: resolving that is git's business, not this
-     * class's, and passing it in is what keeps a GitService dependency out of here.
      */
     public static void excludeOrchestratorPlumbing(Path gitCommonDir) {
         List<String> entries = List.of("mcp_client.js", ".mcp.json", "AGENTS.md", "CLAUDE.md",
@@ -65,9 +55,8 @@ public final class WorktreeFiles {
     }
 
     /**
-     * Copies the base project's IDE files (run configurations, database connections) into the worktree so
-     * {@code ide <ticket>} opens ready to run and query. They are gitignored in the base repo, so a fresh
-     * checkout of the task branch lacks them. Best-effort; absent path = no-op.
+     * The IDE's own files are gitignored in the base repository, so a fresh checkout of the task branch lacks
+     * them. Best-effort; an absent path is a no-op.
      */
     public static void copyIdeProjectFiles(Path projectPath, Path worktreePath) {
         List<String> ideFiles = List.of(".run", ".idea/runConfigurations",
@@ -78,10 +67,8 @@ public final class WorktreeFiles {
     }
 
     /**
-     * Copies gitignored LOCAL files matching the configured {@code worktree.copyGlobs} from the base repo to
-     * the same relative path in a new worktree — module {@code .env}, key files, SSL certs etc. that the run
-     * configs reference but git omits, so the app can start in the worktree. The patterns are config, NOT
-     * hardcoded. Best-effort; heavy dirs skipped. (Secrets live only in the local, gitignored worktree.)
+     * Gitignored local files — module {@code .env}, key files, SSL certs — that the run configs reference but git
+     * omits, so the app can start in the worktree. Best-effort; heavy directories skipped.
      */
     public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
         var matchers = localFileMatchers(globs);
@@ -117,9 +104,8 @@ public final class WorktreeFiles {
 
     /**
      * The patterns as matchers against a repository-relative path. A {@code **}{@code /} prefix ALSO matches at
-     * the root: Java's glob wants a directory component there, so the pattern that reads "any .env" skipped the
-     * one a single-module repository has, and the app then failed to start for a reason that looks like anything
-     * but a glob. Shared with whoever reports what those patterns left behind, so the two cannot disagree.
+     * the root: Java's glob wants a directory component there, so "any .env" would skip the one a single-module
+     * repository has.
      */
     public static List<PathMatcher> localFileMatchers(List<String> globs) {
         return (globs == null ? List.<String>of() : globs).stream()
@@ -162,7 +148,7 @@ public final class WorktreeFiles {
         }
     }
 
-    /** Writes a file, failing loudly: a missing task_context.md or agent config is not something to shrug at. */
+    /** Fails loudly: unlike a read, a write that did not happen is not something to shrug at. */
     public static void write(Path file, String content) {
         try {
             Files.writeString(file, content);

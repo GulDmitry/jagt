@@ -23,7 +23,6 @@ class TaskViewsTest {
         Files.writeString(worktree.resolve("review_replies.md"), "> rename x\n\nRenamed it.\n");
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
-
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
         var views = new TaskViews(stateService, configService).all();
@@ -35,7 +34,6 @@ class TaskViewsTest {
     void announcesNoDraftedRepliesWhenTheAgentHasWrittenNone(@TempDir Path worktree) {
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
-
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
         var views = new TaskViews(stateService, configService).all();
@@ -64,7 +62,6 @@ class TaskViewsTest {
     void survivesATaskWhoseWorktreeIsAlreadyGone() {
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("proj", "/nowhere/ABC-1-proj", TaskStatus.DONE).build()));
-
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
         var views = new TaskViews(stateService, configService).all();

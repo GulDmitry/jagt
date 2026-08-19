@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.EditorDriver.WorktreeLocation;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -10,7 +11,9 @@ import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 class CliEditorDriverTest {
@@ -37,9 +40,8 @@ class CliEditorDriverTest {
 
         driver.openDiff(Path.of("/left"), Path.of("/right"));
 
-        org.mockito.ArgumentCaptor<List<String>> spawned = org.mockito.ArgumentCaptor.captor();
-        org.mockito.Mockito.verify(runner).runDetached(org.mockito.ArgumentMatchers.isNull(),
-                spawned.capture());
+        ArgumentCaptor<List<String>> spawned = ArgumentCaptor.captor();
+        verify(runner).runDetached(isNull(), spawned.capture());
         assertThat(spawned.getValue().getFirst()).endsWith("/sh");
         assertThat(spawned.getValue()).containsSubsequence("diff", "/left", "/right");
     }
@@ -89,7 +91,7 @@ class CliEditorDriverTest {
     }
 
     @Test
-    void matchesTheAbsolutePathFormToo() {
+    void prunesAnEntryTheIdeStoredAsAnAbsolutePathRatherThanUnderItsHomeMacro() {
         String absForm = XML.replace("$USER_HOME$/www/repos/ABC-2391-demo", "/Users/me/www/repos/ABC-2391-demo");
 
         String pruned = CliEditorDriver.pruneRecentProjects(absForm, "/Users/me",
@@ -115,36 +117,35 @@ class CliEditorDriverTest {
                 <entry key="$USER_HOME$/www/other/some-old-project"><value><RecentProjectMetaInfo /></value></entry>
             </map></option></component></application>""";
 
-    private static final List<WorktreeLocation> LOCATIONS =
-            List.of(new WorktreeLocation(Path.of("/Users/me/www/repos"), "demo"));
-
+    /** Only ABC-2676-demo and demo-back are still on disk; every other entry names a directory that is gone. */
     @Test
     void garbageCollectsDeadTaskAndDeployWorktreesButKeepsLiveAndForeignEntries() {
-        // Everything is gone from disk EXCEPT the still-checked-out ABC-2676-demo worktree and the demo-back repo.
         Predicate<Path> dirExists = p -> p.endsWith("ABC-2676-demo") || p.endsWith("demo-back");
 
-        List<String> dead = CliEditorDriver.deadWorktreeKeys(GC_XML, "/Users/me", LOCATIONS, dirExists);
+        List<String> dead = CliEditorDriver.deadWorktreeKeys(GC_XML, "/Users/me",
+                List.of(new WorktreeLocation(Path.of("/Users/me/www/repos"), "demo")), dirExists);
         String pruned = CliEditorDriver.removeEntries(GC_XML, dead);
 
         assertThat(pruned)
                 .doesNotContain("ABC-2575-demo").doesNotContain("ABC-2575-deploy")
-                .contains("ABC-2676-demo")           // still checked out — live, kept
-                .contains("demo-back")               // the base repo — kept
-                .contains("some-old-project");      // dead but not a jagt worktree location — left alone
+                .contains("ABC-2676-demo")
+                .contains("demo-back")
+                .contains("some-old-project");
     }
 
     @Test
     void keepsADeadEntryThatIsNotUnderAnyConfiguredWorktreeLocation() {
-        // No configured projects → nothing is a jagt worktree → GC removes nothing even though dirs are gone.
         List<String> dead = CliEditorDriver.deadWorktreeKeys(GC_XML, "/Users/me", List.of(), p -> false);
 
         assertThat(dead).isEmpty();
     }
 
+    /**
+     * The leak the Linux port predicted and found: a prune that only looked in the macOS location left a dead
+     * entry in the IDE's recent-projects list for every {@code done} task on Linux, forever.
+     */
     @Test
     void looksForJetBrainsConfigWhereEachPlatformKeepsIt() {
-        // The Linux port predicted this leak and found it: the prune only ever looked in the macOS location,
-        // so on Linux every `done` task would leave a dead entry in the IDE's recent-projects list forever.
         var dirs = CliEditorDriver.jetBrainsConfigDirs("/home/dev").stream().map(Path::toString).toList();
 
         assertThat(dirs).containsExactly("/home/dev/Library/Application Support/JetBrains",

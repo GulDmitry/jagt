@@ -9,13 +9,13 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** Filesystem work with no collaborators — which is why these tests need none either. */
 class WorktreeFilesTest {
+
     @Test
     void copiesLegacyIdeaRunConfigurationsIntoTheWorktree(@TempDir Path root) throws Exception {
         Path project = root.resolve("repo");
-        java.nio.file.Files.createDirectories(project.resolve(".idea").resolve("runConfigurations"));
-        java.nio.file.Files.writeString(project.resolve(".idea").resolve("runConfigurations").resolve("App.xml"),
+        Files.createDirectories(project.resolve(".idea").resolve("runConfigurations"));
+        Files.writeString(project.resolve(".idea").resolve("runConfigurations").resolve("App.xml"),
                 "<configuration/>");
         Path worktree = root.resolve("ABC-1-repo");
 
@@ -24,13 +24,14 @@ class WorktreeFilesTest {
         assertThat(worktree.resolve(".idea").resolve("runConfigurations").resolve("App.xml"))
                 .exists().hasContent("<configuration/>");
     }
+
     @Test
     void copiesDatabaseConnectionsIntoTheWorktree(@TempDir Path root) throws Exception {
         Path project = root.resolve("repo");
-        java.nio.file.Files.createDirectories(project.resolve(".idea").resolve("dataSources"));
-        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources.xml"), "<dataSource/>");
-        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources.local.xml"), "<local/>");
-        java.nio.file.Files.writeString(project.resolve(".idea").resolve("dataSources").resolve("pg.xml"), "<db/>");
+        Files.createDirectories(project.resolve(".idea").resolve("dataSources"));
+        Files.writeString(project.resolve(".idea").resolve("dataSources.xml"), "<dataSource/>");
+        Files.writeString(project.resolve(".idea").resolve("dataSources.local.xml"), "<local/>");
+        Files.writeString(project.resolve(".idea").resolve("dataSources").resolve("pg.xml"), "<db/>");
         Path worktree = root.resolve("ABC-1-repo");
 
         WorktreeFiles.copyIdeProjectFiles(project, worktree);
@@ -39,17 +40,19 @@ class WorktreeFilesTest {
         assertThat(worktree.resolve(".idea").resolve("dataSources.local.xml")).exists().hasContent("<local/>");
         assertThat(worktree.resolve(".idea").resolve("dataSources").resolve("pg.xml")).exists().hasContent("<db/>");
     }
+
     @Test
     void copiesModernDotRunConfigurationsIntoTheWorktree(@TempDir Path root) throws Exception {
         Path project = root.resolve("repo");
-        java.nio.file.Files.createDirectories(project.resolve(".run"));
-        java.nio.file.Files.writeString(project.resolve(".run").resolve("App.run.xml"), "<configuration/>");
+        Files.createDirectories(project.resolve(".run"));
+        Files.writeString(project.resolve(".run").resolve("App.run.xml"), "<configuration/>");
         Path worktree = root.resolve("ABC-1-repo");
 
         WorktreeFiles.copyIdeProjectFiles(project, worktree);
 
         assertThat(worktree.resolve(".run").resolve("App.run.xml")).exists().hasContent("<configuration/>");
     }
+
     @Test
     void doesNotFailWhenBaseProjectHasNoSharedRunConfigurations(@TempDir Path root) {
         Path project = root.resolve("repo");
@@ -59,17 +62,18 @@ class WorktreeFilesTest {
 
         assertThat(worktree.resolve(".idea")).doesNotExist();
     }
+
     @Test
     void copiesLocalFilesMatchingGlobsSkippingHeavyDirs(@TempDir Path root) throws Exception {
         Path base = root.resolve("base");
-        java.nio.file.Files.createDirectories(base.resolve("app"));
-        java.nio.file.Files.writeString(base.resolve("app/.env"), "SECRET=1");
-        java.nio.file.Files.createDirectories(base.resolve("lib"));
-        java.nio.file.Files.writeString(base.resolve("lib/key.pem"), "PEM");
-        java.nio.file.Files.createDirectories(base.resolve("node_modules"));
-        java.nio.file.Files.writeString(base.resolve("node_modules/.env"), "IGNORED=1");
+        Files.createDirectories(base.resolve("app"));
+        Files.writeString(base.resolve("app/.env"), "SECRET=1");
+        Files.createDirectories(base.resolve("lib"));
+        Files.writeString(base.resolve("lib/key.pem"), "PEM");
+        Files.createDirectories(base.resolve("node_modules"));
+        Files.writeString(base.resolve("node_modules/.env"), "IGNORED=1");
         Path wt = root.resolve("wt");
-        java.nio.file.Files.createDirectories(wt);
+        Files.createDirectories(wt);
 
         WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"));
 
@@ -77,14 +81,15 @@ class WorktreeFilesTest {
         assertThat(wt.resolve("lib/key.pem")).exists().hasContent("PEM");
         assertThat(wt.resolve("node_modules/.env")).doesNotExist();
     }
+
     @Test
     void leavesAFileTheCheckoutAlreadyProvidedAsGitWroteIt(@TempDir Path root) throws Exception {
         Path base = root.resolve("base");
-        java.nio.file.Files.createDirectories(base);
-        java.nio.file.Files.writeString(base.resolve(".env"), "LOCALLY EDITED");
+        Files.createDirectories(base);
+        Files.writeString(base.resolve(".env"), "LOCALLY EDITED");
         Path wt = root.resolve("wt");
-        java.nio.file.Files.createDirectories(wt);
-        java.nio.file.Files.writeString(wt.resolve(".env"), "AS COMMITTED");
+        Files.createDirectories(wt);
+        Files.writeString(wt.resolve(".env"), "AS COMMITTED");
 
         WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
 
@@ -94,10 +99,10 @@ class WorktreeFilesTest {
     @Test
     void copiesTheEnvFileASingleModuleRepositoryKeepsAtItsRoot(@TempDir Path root) throws Exception {
         Path base = root.resolve("base");
-        java.nio.file.Files.createDirectories(base);
-        java.nio.file.Files.writeString(base.resolve(".env"), "SECRET=1");
+        Files.createDirectories(base);
+        Files.writeString(base.resolve(".env"), "SECRET=1");
         Path wt = root.resolve("wt");
-        java.nio.file.Files.createDirectories(wt);
+        Files.createDirectories(wt);
 
         WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
 
@@ -107,15 +112,16 @@ class WorktreeFilesTest {
     @Test
     void copiesNothingWithoutFailingWhenAGlobsDirectoryIsAbsent(@TempDir Path root) throws Exception {
         Path base = root.resolve("base");
-        java.nio.file.Files.createDirectories(base.resolve("src"));
-        java.nio.file.Files.writeString(base.resolve("src/Main.java"), "class Main {}");
+        Files.createDirectories(base.resolve("src"));
+        Files.writeString(base.resolve("src/Main.java"), "class Main {}");
         Path wt = root.resolve("wt");
-        java.nio.file.Files.createDirectories(wt);
+        Files.createDirectories(wt);
 
         WorktreeFiles.copyLocalFiles(base, wt, List.of("vendor/**"));
 
         assertThat(wt.resolve("vendor")).doesNotExist();
     }
+
     @Test
     void keepsJagtsOwnPlumbingOutOfEveryWorktreesGitStatus(@TempDir Path gitCommonDir) throws Exception {
         Files.createDirectories(gitCommonDir.resolve("info"));
@@ -126,12 +132,13 @@ class WorktreeFilesTest {
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
                 .contains("*.local", "task_context.md", "AGENTS.md", ".claude/");
     }
+
     @Test
     void addsNothingTwiceWhenTheProjectIsInitialisedAgain(@TempDir Path gitCommonDir) throws Exception {
         WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir);
         WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir);
 
-        String exclude = Files.readString(gitCommonDir.resolve("info").resolve("exclude"));
-        assertThat(exclude.lines().filter("task_context.md"::equals).count()).isEqualTo(1);
+        assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
+                .containsOnlyOnce("task_context.md");
     }
 }

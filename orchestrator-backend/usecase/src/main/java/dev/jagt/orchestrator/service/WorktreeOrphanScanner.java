@@ -26,17 +26,12 @@ import java.util.TreeSet;
 import java.util.stream.Stream;
 
 /**
- * Finds worktree directories that no task owns any more and WARNS about them once at startup — it never
- * deletes anything, and no surface offers it: housekeeping is not something a human acts on mid-flight.
+ * WARNS about worktree directories no task owns and deletes nothing: an orphan can hold uncommitted work AND
+ * copies of gitignored secrets, so what becomes of it is the human's call. No surface offers it either —
+ * housekeeping is not something a human acts on mid-flight.
  *
- * <p>Why it matters beyond tidiness: {@code worktree.copyGlobs} deliberately copies gitignored local files
- * ({@code .env}, keys, certs) into every worktree so the app can run there, and those copies are removed only
- * when {@code done} succeeds in deleting the directory. {@code removeWorktree} is best-effort and a crashed or
- * abandoned run leaves the whole tree — credentials included — sitting next to the repo indefinitely. So each
- * orphan is reported together with how many of those copied secret files it still holds.
- *
- * <p>Deleting is the human's call: an orphan can also hold uncommitted work, which is exactly why `done`
- * keeps branches and why this only ever looks.
+ * <p>Each orphan is reported with how many of those copied files it still holds, because a copy goes only when
+ * its directory does, and removing a directory is best-effort.
  */
 @Service
 @RequiredArgsConstructor
@@ -62,7 +57,6 @@ public class WorktreeOrphanScanner implements Job {
     private static final Set<String> SKIP = Set.of(".git", "node_modules", "build", "target", "out", "dist",
             ".gradle", ".idea");
 
-    /** One leftover directory: where it is, which project's naming it follows, and what it still holds. */
     public record Orphan(Path path, String projectKey, int secretFiles) {
     }
 
@@ -81,7 +75,6 @@ public class WorktreeOrphanScanner implements Job {
             return;
         }
         int secrets = orphans.stream().mapToInt(Orphan::secretFiles).sum();
-        // Nothing deletes these: an orphan can hold uncommitted work as well as the copied secrets.
         orphans.forEach(orphan -> log.warn("Orphaned worktree {} ({} copied secret file(s)) — no task owns it,"
                 + " delete it yourself once you are sure", orphan.path(), orphan.secretFiles()));
         notifications.send(Notification.housekeeping(orphans.size() + " orphaned worktree(s)",
@@ -89,7 +82,6 @@ public class WorktreeOrphanScanner implements Job {
                         : "left over from a crashed or abandoned task — see the log"));
     }
 
-    /** Every leftover worktree directory across all configured projects, deduplicated by path. */
     public List<Orphan> scan() {
         Map<Path, Orphan> found = new LinkedHashMap<>();
         Set<String> owned = ownedDirectoryNames();
@@ -113,11 +105,7 @@ public class WorktreeOrphanScanner implements Job {
         return List.copyOf(found.values());
     }
 
-    /**
-     * Which directory names look like jagt worktrees for this project but belong to no live task:
-     * {@code <taskId>-<projectKey>} (a task worktree) or {@code <taskId>-deploy} (a conflicted deploy that was
-     * never finished). Pure, so the naming rule is testable without a filesystem.
-     */
+    /** A {@code -deploy} suffix is a conflicted deploy nobody finished, and a leftover just the same. */
     static Set<String> orphanNames(List<String> directoryNames, String projectKey, Set<String> ownedNames) {
         return directoryNames.stream()
                 .filter(name -> name.endsWith("-" + projectKey) || name.endsWith("-deploy"))
@@ -155,7 +143,6 @@ public class WorktreeOrphanScanner implements Job {
         }
     }
 
-    /** How many of the files jagt copies into a worktree (secrets, keys, certs) are still sitting in there. */
     private static int countSecretFiles(Path worktree, List<PathMatcher> matchers) {
         if (matchers.isEmpty()) {
             return 0;

@@ -116,7 +116,8 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).lastActiveTimestamp(1000).alias("a1").build());
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(1000).alias("a1").build());
         McpProtocolService protocol = new McpProtocolService(mapper, state, groups());
 
         protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}"), root.toString());

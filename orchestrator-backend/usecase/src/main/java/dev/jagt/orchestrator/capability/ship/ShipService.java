@@ -25,8 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * {@code ship} — the human's approval, executed: commit the worktree under a title jagt owns, push the task
- * branch, open or update the review request.
+ * {@code ship} — the human's approval, executed.
  *
  * <p>With a {@link CodeHost} for the repository no model is involved, so SHIPPING stops being a state a task
  * can hang in. Without one the prose relay is kept VERBATIM: an unconfigured setup must behave as it always did.
@@ -80,7 +79,7 @@ public class ShipService {
         if (hosts.size() < task.repos().size()) {
             // The relay can only ask for ONE request and hear ONE link back (a status message carries one), so
             // for several repositories it would push some and lose the rest — the half-shipped state the sweep
-            // then asks about forever. Refusing names what to configure instead.
+            // then asks about forever.
             if (task.repos().size() > 1) {
                 throw new IllegalStateException("ship " + taskId + ": "
                         + String.join(", ", unhosted(task, hosts.keySet())) + " has no code host, so jagt"
@@ -120,7 +119,6 @@ public class ShipService {
                 "review request: " + primary);
     }
 
-    /** What one repository's share of a ship produced. */
     private record Shipped(GitService.Commit commit, MergeRequestRef request) {
     }
 
@@ -128,7 +126,6 @@ public class ShipService {
         return task.projects().stream().filter(project -> !hosted.contains(project)).toList();
     }
 
-    /** One repository's share of a ship: its own commit, its own push, its own review request. */
     private Shipped shipRepo(String taskId, TaskState task, ConfigService.ConfigFile config, CodeHost host,
                              TaskRepo repo, String title) {
         Path projectPath = Path.of(configService.project(repo.project()).path()).toAbsolutePath().normalize();
@@ -160,9 +157,6 @@ public class ShipService {
         return base == null ? "" : base.replaceFirst("^origin/", "");
     }
 
-    /**
-     * No code host for this repository, so the agent is asked to push and open the request itself.
-     */
     private Outcome relayToAgent(String taskId, TaskState task, ConfigService.ConfigFile config, String title,
                                String targetBranch, boolean firstShip) {
         sessions.writeTaskContext(taskId, shipInstruction(firstShip, title, taskId, targetBranch,
@@ -172,10 +166,6 @@ public class ShipService {
                 + " reports the request", "shipping");
     }
 
-    /**
-     * The agent's drafted replies, posted as a FOLLOW-UP — off the critical path on purpose, so a dead agent
-     * cannot block a ship.
-     */
     private String relayDraftedReplies(String taskId, Path worktree, ConfigService.ConfigFile config) {
         if (!Files.isRegularFile(worktree.resolve("review_replies.md"))) {
             return "";
@@ -195,7 +185,6 @@ public class ShipService {
         return commit.created() ? commit.changedFiles() + " file(s)" : "no new commit";
     }
 
-    /** What the agent is told to do with review_replies.md, honouring both codeReview switches. */
     static String repliesStep(ConfigService.ConfigFile config) {
         if (!config.codeReview().postReviewRepliesOrDefault()) {
             return "Do NOT post any replies — LEAVE review_replies.md untouched for the human to post.\n";
@@ -216,11 +205,6 @@ public class ShipService {
             + " Leave every thread you pushed back on or asked about UNRESOLVED — that disagreement is the"
             + " reviewer's to settle, and resolving it would read as agreement.\n";
 
-    /**
-     * The ship instruction for the relay path. First ship: commit the exact pattern title and open the
-     * request. Review round: a concise one-liner that LEADS with the task id — the identifier always comes
-     * first, but the full ticket title is not repeated — and the existing request keeps its title.
-     */
     static String shipInstruction(boolean firstShip, String title, String taskId, String targetBranch,
                                   String repliesStep) {
         String commitStep = firstShip

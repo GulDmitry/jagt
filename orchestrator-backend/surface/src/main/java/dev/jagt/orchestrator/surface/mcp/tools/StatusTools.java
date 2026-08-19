@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 
 import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 
-/** What an agent reports about itself, and the ping it can send the human. */
 @Component
 @RequiredArgsConstructor
 public class StatusTools implements McpTools {

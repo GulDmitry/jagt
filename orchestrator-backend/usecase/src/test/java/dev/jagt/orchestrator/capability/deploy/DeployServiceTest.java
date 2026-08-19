@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.capability.deploy;
 import dev.jagt.orchestrator.service.GitService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.capability.deploy.DeployService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Outcome;
@@ -133,6 +132,7 @@ class DeployServiceTest {
                 .hasMessageContaining("origin/staging` in web");
     }
 
+    /** The human resolves a deploy conflict themselves: jagt opens no editor and briefs no agent for it. */
     @Test
     void handsBackAConflictWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
             throws Exception {
@@ -145,13 +145,12 @@ class DeployServiceTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
         GitService git = mock(GitService.class);
         Path deployWorktree = root.resolve("ABC-1-deploy");
-        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict in liquibase/master.yaml", deployWorktree))
+        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict in schema.yaml", deployWorktree))
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
         DeployService deploys = new DeployService(state, config, git, editor);
 
         Outcome outcome = deploys.deploy("a1");
 
-        // The human resolves it himself — jagt opens no editor, briefs no agent, and never touches the task branch.
         verifyNoInteractions(editor);
         assertThat(worktree.resolve("task_context.md")).doesNotExist();
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.CONFLICT);
@@ -161,9 +160,10 @@ class DeployServiceTest {
     }
 
     @Test
-    void refusesDeployWhenDeployBranchIsTheBaseBranch(@TempDir Path root) {
+    void refusesToLandATaskOntoTheVeryBranchItWasCutFrom(@TempDir Path root) {
         StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).message("MR: http://x").alias("a1").build());
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release", "release", null));
         GitService git = mock(GitService.class);
@@ -176,7 +176,7 @@ class DeployServiceTest {
     }
 
     @Test
-    void refusesDeployWhenProjectHasNoDeployBranch(@TempDir Path root) {
+    void refusesToGuessWhereToLandAProjectThatNamesNoDeployBranch(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -187,6 +187,7 @@ class DeployServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("deployBranch");
     }
+
     @Test
     void landsEveryRepositoryATaskSpansInTheOrderItHoldsThem(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -411,29 +412,6 @@ class DeployServiceTest {
     }
 
     @Test
-    void recordsWhatCameOutWhenARevertStopsPartWaySoTheBoardStillSaysIt(@TempDir Path root) {
-        StateService state = stateIn(root);
-        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
-                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
-        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234")
-                .withDeployCommit("web", "f00dfeed5678"));
-        ConfigService config = mock(ConfigService.class);
-        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
-        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
-        when(git.revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678"))
-                .thenReturn("beef00991122");
-        doThrow(new IllegalStateException("the revert conflicts"))
-                .when(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
-        DeployService deploys = new DeployService(state, config, git, editor);
-
-        Outcome outcome = deploys.revert("a1");
-
-        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.PARTIAL);
-        assertThat(outcome.stamp()).contains("reverted web on dev", "api still live on dev");
-    }
-
-    @Test
     void undoesTheRepositoriesInReverseOrderAndForgetsEachMergeItTookOut(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
@@ -479,6 +457,7 @@ class DeployServiceTest {
 
         assertThat(outcome.kind()).isEqualTo(Outcome.Kind.PARTIAL);
         assertThat(outcome.message()).contains("reverted web on dev", "api still live on dev");
+        assertThat(outcome.stamp()).contains("reverted web on dev", "api still live on dev");
         assertThat(state.task("ABC-1").orElseThrow().repos()).extracting(TaskRepo::deployCommit)
                 .containsExactly("cafebabe1234", null);
     }

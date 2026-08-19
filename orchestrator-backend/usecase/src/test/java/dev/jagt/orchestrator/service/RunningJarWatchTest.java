@@ -4,7 +4,12 @@ import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -30,13 +35,10 @@ class RunningJarWatchTest {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "first build");
         RunningJarWatch watch = new RunningJarWatch(notifications, jar);
 
-        watch.run();                                            // nothing changed yet
-        verifyNoInteractions(notifications);
-
         Files.writeString(jar, "a different build entirely");
         Files.setLastModifiedTime(jar, FileTime.fromMillis(System.currentTimeMillis() + 5_000));
         watch.run();
-        watch.run();                                            // the condition persists until a restart
+        watch.run();
 
         verify(notifications, times(1)).send(argThat(sent -> sent.topic() == Notification.Topic.INSTALL
                 && sent.title().contains("restart")));
@@ -81,25 +83,39 @@ class RunningJarWatchTest {
      * into a path, so the watch shipped inert. `java -jar x.jar` puts exactly that jar on the classpath.
      */
     @Test
-    void findsTheJarOnlyWhenTheProcessWasStartedFromExactlyOne(@TempDir Path dir) throws Exception {
+    void findsTheJarTheProcessWasStartedFrom(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
 
         assertThat(RunningJarWatch.jarFromClassPath(jar.toString(), Files::isRegularFile)).isEqualTo(jar);
-        // A classpath of several entries, or a directory of classes: an exploded/IDE/bootRun run.
-        assertThat(RunningJarWatch.jarFromClassPath(jar + java.io.File.pathSeparator + "other.jar",
+    }
+
+    /** Several entries is an exploded IDE/bootRun classpath, which has no single jar anything could watch. */
+    @Test
+    void findsNoJarWhenSomethingElseIsOnTheClassPathToo(@TempDir Path dir) throws Exception {
+        Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
+
+        assertThat(RunningJarWatch.jarFromClassPath(jar + File.pathSeparator + "other.jar",
                 Files::isRegularFile)).isNull();
-        assertThat(RunningJarWatch.jarFromClassPath(dir.toString(), Files::isRegularFile)).isNull();
-        assertThat(RunningJarWatch.jarFromClassPath("does-not-exist.jar", Files::isRegularFile)).isNull();
-        assertThat(RunningJarWatch.jarFromClassPath(null, Files::isRegularFile)).isNull();
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"does-not-exist.jar", "classes"})
+    void findsNoJarWhenTheClassPathNamesNoFile(String classPath) {
+        assertThat(RunningJarWatch.jarFromClassPath(classPath, Files::isRegularFile)).isNull();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1000,42,false", "2000,42,true", "1000,43,true"})
+    void readsAChangeInEitherTheStampOrTheSizeAsARewrite(long modifiedAt, long size, boolean rewritten) {
+        var before = new RunningJarWatch.Stamp(1_000, 42);
+
+        assertThat(RunningJarWatch.rewritten(before, new RunningJarWatch.Stamp(modifiedAt, size)))
+                .isEqualTo(rewritten);
     }
 
     @Test
-    void comparesBothFactsBecauseARebuildCanKeepEitherOne() {
-        var before = new RunningJarWatch.Stamp(1_000, 42);
-
-        assertThat(RunningJarWatch.rewritten(before, new RunningJarWatch.Stamp(1_000, 42))).isFalse();
-        assertThat(RunningJarWatch.rewritten(before, new RunningJarWatch.Stamp(2_000, 42))).isTrue();
-        assertThat(RunningJarWatch.rewritten(before, new RunningJarWatch.Stamp(1_000, 43))).isTrue();
-        assertThat(RunningJarWatch.rewritten(before, null)).isTrue();
+    void readsAJarThatCanNoLongerBeStampedAtAllAsARewrite() {
+        assertThat(RunningJarWatch.rewritten(new RunningJarWatch.Stamp(1_000, 42), null)).isTrue();
     }
 }

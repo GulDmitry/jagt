@@ -22,18 +22,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * One review sweep: read the request's approval + checks + unresolved comments, then take the single
- * correct action. Shared by the manual {@code sweep} command (human types it) and the
- * {@code AutoReviewScheduler} (unattended poll) so both behave identically — the code-review-must-have-a-
- * -human rule lives in the OUTCOME, not the trigger: an approval advances state, but comments are only
- * RELAYED to the agent as drafts (nothing is pushed/posted), so the human always closes the loop.
+ * One review sweep. The human-in-the-loop rule lives in the OUTCOME, not in who triggered it: an approval
+ * advances state, but comments are only RELAYED to the agent as drafts — nothing is pushed or posted, so the
+ * human always closes the loop.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ReviewSweepService {
 
-    /** What the sweep did, so callers format a message / decide whether to notify. */
     public record SweepResult(Kind kind, String message) {
         public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED, IN_FLIGHT }
     }
@@ -44,12 +41,9 @@ public class ReviewSweepService {
     private final StateService stateService;
     private final Notifications notifications;
     /**
-     * One sweep at a time per task, no matter who asked. The guard lives HERE, not in a caller, because
-     * there are several triggers — the human's `sweep`, the auto-review scheduler, later a UI button — and
-     * a second sweep of the same merge request spends a full headless read twice AND can relay a second
+     * One sweep at a time per task, no matter who asked. The guard lives HERE rather than in a caller because
+     * several triggers reach it, and a second sweep of one request pays for the read twice AND relays a second
      * brief for the same review round (the agent then fixes the same comments twice, or interleaves them).
-     * The scheduler keeps its own guard on top: that one stops polls from QUEUING up behind a slow sweep,
-     * which is a different problem from two triggers colliding.
      */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
@@ -113,7 +107,7 @@ public class ReviewSweepService {
                         "sweep " + taskId + ": approved, checks " + r.pipelineStatus()
                                 + " — `deploy` or `done`");
             }
-            if (checks == Pipeline.GREEN) {   // only advance when CI is GREEN, not merely still running
+            if (checks == Pipeline.GREEN) {
                 statusReports.markReviewed(taskId);
                 return new SweepResult(SweepResult.Kind.REVIEWED,
                         "sweep " + taskId + ": checks " + r.pipelineStatus()
@@ -132,7 +126,7 @@ public class ReviewSweepService {
     /**
      * Keeps what the host said about the checks on the task, and taps the human ONCE when a run turns red — a
      * later poll saying the same thing writes nothing and says nothing, or an unattended sweep would rewrite the
-     * state file and notify on a loop. A re-ship clears the verdict, so the NEXT failing run is news again.
+     * state file and notify on a loop.
      */
     private void recordChecks(String taskId, String hostStatus) {
         String said = stateService.task(taskId).map(TaskState::pipelineStatus).orElse(null);
@@ -147,7 +141,6 @@ public class ReviewSweepService {
         }
     }
 
-    /** Which repository a comment came from, so the agent knows which worktree to open. */
     private static ReviewFacts named(String project, ReviewFacts round) {
         return new ReviewFacts(round.exists(), round.approved(), round.pipelineStatus(),
                 round.comments().stream().map(comment -> "[" + project + "] " + comment).toList());
@@ -220,15 +213,13 @@ public class ReviewSweepService {
             r.comments().forEach(c -> brief.append("- ").append(c).append('\n'));
             brief.append("</comments>\n");
         }
-        // An unanswered question ends the round rather than parking in it: staying CI_POLLING would have the
-        // auto-review poll re-brief the agent on the very comments it was told to hold — every interval, each
-        // one paying for another review read. REVIEW_PENDING is what "the human's move" means here, and the
-        // question rides along in the status message.
-        // With no comments this is a failed pipeline, and the agent that fixes it cannot push (below), so it
+        // An unanswered question ENDS the round rather than parking in it: staying CI_POLLING would have the
+        // auto-review poll re-brief the agent on the very comments it was told to hold, paying for another
+        // review read every interval. With no comments this is a failed pipeline, and an agent that cannot push
         // cannot watch the build turn green either — its exit is the local fix.
-        // The round's OUTCOME rides in the message, because all three end at the same status and the human is
-        // advised from it: a ship for a round that changed nothing only returns the task to CI_POLLING, where
-        // the next poll relays the same threads (a reply does not resolve one) and the lap repeats.
+        // The round's OUTCOME rides in the message, because all three end at the same status: a ship for a round
+        // that changed nothing only returns the task to CI_POLLING, where the next poll relays the same threads
+        // (a reply does not resolve one) and the lap repeats.
         brief.append(r.comments().isEmpty()
                 ? "When the build is fixed locally, set status REVIEW_PENDING."
                 : """

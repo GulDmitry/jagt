@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 
-import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -13,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +44,10 @@ class GitServiceTest {
                 .hasMessageContaining("resume");
     }
 
+    /**
+     * A fetch refreshes {@code origin/main} but never fast-forwards a checkout-less local branch, so cutting
+     * from the local spelling would inherit whatever the clone last saw instead of what the teammate pushed.
+     */
     @Test
     void cutsTheWorktreeFromFreshlyFetchedUpstreamEvenWhenBaseBranchIsSpelledLocally(@TempDir Path dir)
             throws Exception {
@@ -57,9 +61,6 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        // A teammate advances origin/main. `repo`'s LOCAL main stays at "base" — git fetch refreshes
-        // origin/main but never fast-forwards a checkout-less local branch. Cutting the subtree from the
-        // local "main" would inherit the stale "base"; it must inherit the freshly fetched "moved on".
         Path other = dir.resolve("other");
         runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), other.toString()));
         Files.writeString(other.resolve("f.txt"), "moved on");
@@ -67,7 +68,6 @@ class GitServiceTest {
         runner.run(other, timeout, List.of("git", "push", "-q", "origin", "main"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        // baseBranch spelled as a plain local name, NOT "origin/main".
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", GitService.BranchStrategy.FRESH);
 
         assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("moved on");
@@ -217,7 +217,8 @@ class GitServiceTest {
     /**
      * Needs the real {@code lsof} — the reap has no other way to ask which processes sit in a directory. A
      * minimal image (many Linux containers) has none, and there the reap is a documented no-op, so this SKIPS
-     * rather than fails: the production behaviour without lsof has its own test below.
+     * rather than fails: the production behaviour without lsof has its own test below. The {@code sleep} stands
+     * in for the agent's Node session or any MCP daemon, which the reap must take by cwd rather than by name.
      */
     @Test
     void removeWorktreeReapsEveryWorktreeRootedProcessNotJustJava(@TempDir Path dir) throws Exception {
@@ -235,9 +236,6 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
         Path wt = dir.resolve("wt");
         git.createWorktree(repo, wt, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
-        // A NON-java process rooted in the worktree stands in for the agent's Node session / any MCP
-        // plugin daemon that would otherwise survive removal and repopulate the directory. Removal must
-        // reap it generically (by cwd), not only java (jdtls).
         Process rooted = new ProcessBuilder("sleep", "300").directory(wt.toFile()).start();
         try {
             git.removeWorktree(repo, wt, "ABC-1");
@@ -287,8 +285,8 @@ class GitServiceTest {
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RESUME);
 
         assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "worktree", "list")).stdout())
-                .contains("(detached HEAD)")                     // the base repository let the branch go
-                .containsPattern("wt +\\w+ \\[ABC-1]");           // and the task's worktree has it
+                .contains("(detached HEAD)")
+                .containsPattern("wt +\\w+ \\[ABC-1]");
     }
 
     @Test
@@ -567,8 +565,6 @@ class GitServiceTest {
                 .hasMessageContaining("nothing was pushed")
                 .hasMessageContaining("ABC-1-deploy");
 
-        // dev was NOT advanced by a partial merge, the task branch is byte-identical, and the deploy-side
-        // worktree is LEFT for the human to resolve there.
         runner.run(repo, timeout, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, timeout, List.of("git", "rev-parse", "origin/dev")).stdout().trim())
                 .isEqualTo(devWithOnlyDevCommit).isNotEqualTo(devBefore);
@@ -668,6 +664,7 @@ class GitServiceTest {
         assertThat(leftover).doesNotExist();
     }
 
+    /** A deploy is one MERGE commit even where git could have fast-forwarded: that is what `revert` undoes. */
     @Test
     void publishesTaskCommitsWhenDeployMergesCleanly(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
@@ -693,16 +690,12 @@ class GitServiceTest {
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, timeout, List.of("git", "fetch", "-q"));
-        // The work is published, and as a MERGE commit even though dev had not moved and git could have
-        // fast-forwarded: one commit per deploy is what makes `revert` able to undo the whole task at once.
         assertThat(runner.run(repo, timeout, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
                 .contains("task feature");
         String parents = runner.run(repo, timeout,
                 List.of("git", "rev-list", "--parents", "-n", "1", "origin/dev")).stdout().trim();
         assertThat(parents.split("\\s+")).hasSize(3).contains(taskTip);
     }
-
-    // ---- revert: the second (and only other) write to a shared branch ----
 
     /**
      * A cloned repo with origin/main + origin/dev and one committed task branch — the exact shape a deploy
@@ -769,7 +762,6 @@ class GitServiceTest {
 
         assertThat(repo.existsOnDev("feature.txt")).isFalse();
         assertThat(repo.sha("origin/dev")).isEqualTo(revert);
-        // The commits survive the revert — that is what makes "fix and ship again" possible.
         assertThat(repo.sha("ABC-1")).isEqualTo(taskTip);
         assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
     }
@@ -872,7 +864,8 @@ class GitServiceTest {
      * The failure a CI runner found: `git merge` exits non-zero for plenty of reasons that are NOT a conflict
      * (no committer identity there, a refusing hook, a broken object), and calling all of them a conflict sent
      * the human to resolve conflicts that did not exist — while LEAVING the deploy worktree behind, so the next
-     * `deploy` took the "the human resolved it" path and pushed whatever was in there.
+     * `deploy` took the "the human resolved it" path and pushed whatever was in there. The scaffolding must
+     * therefore be gone too.
      */
     @Test
     void reportsAFailedMergeAsAnErrorAndNotAsAConflictWhenNothingIsUnmerged(@TempDir Path dir) throws Exception {
@@ -907,14 +900,13 @@ class GitServiceTest {
                 .hasMessageContaining("no conflict is waiting for you")
                 .hasMessageContaining("Author identity unknown");
 
-        // The scaffolding must not survive: a leftover worktree is what the next deploy would try to finish.
         assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
     }
 
     private static boolean onPath(String binary) {
         String path = System.getenv("PATH");
-        return path != null && java.util.Arrays.stream(path.split(":"))
-                .anyMatch(dir -> !dir.isBlank() && java.nio.file.Files.isExecutable(Path.of(dir, binary)));
+        return path != null && Arrays.stream(path.split(":"))
+                .anyMatch(dir -> !dir.isBlank() && Files.isExecutable(Path.of(dir, binary)));
     }
 
     @Test

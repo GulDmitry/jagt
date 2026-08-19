@@ -6,6 +6,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -58,6 +59,6 @@ class CallerScopeTest {
 
     @Test
     void letsTheMasterThroughBecauseItRunsInNoWorktree() {
-        scope.requireMaster(null, "deploy_task");
+        assertThatCode(() -> scope.requireMaster(null, "deploy_task")).doesNotThrowAnyException();
     }
 }

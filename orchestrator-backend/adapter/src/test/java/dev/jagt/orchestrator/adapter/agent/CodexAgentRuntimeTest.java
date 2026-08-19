@@ -16,26 +16,23 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CodexAgentRuntimeTest {
 
-    private static CodexAgentRuntime runtime(String prompt) {
-        return runtime(prompt, Path.of("/orchestrator-root"));
-    }
-
-    private static CodexAgentRuntime runtime(String prompt, Path orchestratorRoot) {
-        return new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt(prompt),
-                CodexProperties.defaults(),
-                new OrchestratorPaths(OrchestratorProperties.defaults()
-                        .withRoot(orchestratorRoot.toString())));
-    }
-
     @Test
     void launchesTheCodexCliAgainstTheWorktreesOwnCodexHome() {
-        assertThat(runtime("Read AGENTS.md and work").launchCommand(Path.of("/wt/ABC-1-proj"), false))
+        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults()
+                .withAgentPrompt("Read AGENTS.md and work"), CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")));
+
+        assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), false))
                 .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.codex' codex 'Read AGENTS.md and work'");
     }
 
     @Test
     void runsReadOnlyInPlanModeSoTheAgentCannotTouchFilesBeforeTheHumanApproves() {
-        assertThat(runtime("go").launchCommand(Path.of("/wt/ABC-1-proj"), true))
+        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")));
+
+        assertThat(runtime.launchCommand(Path.of("/wt/ABC-1-proj"), true))
                 .isEqualTo("CODEX_HOME='/wt/ABC-1-proj/.codex' codex --sandbox read-only 'go'");
     }
 
@@ -45,7 +42,11 @@ class CodexAgentRuntimeTest {
         worktree.toFile().mkdirs();
         Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
 
-        assertThatThrownBy(() -> runtime("go").systemKnowledgeFile(worktree))
+        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")));
+
+        assertThatThrownBy(() -> runtime.systemKnowledgeFile(worktree))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining(AgentRuntime.SYSTEM_KNOWLEDGE_FILE);
     }
@@ -57,8 +58,11 @@ class CodexAgentRuntimeTest {
         worktree.toFile().mkdirs();
         Files.writeString(worktree.resolve("mcp_client.js"), "the project's own script");
 
-        assertThatThrownBy(() -> runtime("go")
-                .provisionWorktree(new AgentWorktree(worktree, root, null, null)))
+        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")));
+
+        assertThatThrownBy(() -> runtime.provisionWorktree(new AgentWorktree(worktree, root, null, null)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("mcp_client.js");
     }
@@ -68,13 +72,30 @@ class CodexAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        runtime("go").provisionWorktree(new AgentWorktree(worktree, root, null, null));
+        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
         assertThat(Files.readString(worktree.resolve(".codex/config.toml")))
                 .contains("[mcp_servers.jagt-orchestrator]")
                 .contains("args = [\"" + worktree.resolve("mcp_client.js") + "\"]");
-        // The config names the bridge, so the bridge has to BE there: Codex spawns its MCP servers rather than
-        // reaching a remote one, which is the one reason Node is still installed for this runtime.
+    }
+
+    /**
+     * Codex spawns its MCP servers rather than reaching a remote one, so the bridge its config names has to BE
+     * there — the one reason Node is still a requirement for this runtime.
+     */
+    @Test
+    void linksTheBridgeItsConfigNamesIntoTheWorktree(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+
+        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+
         assertThat(Files.readSymbolicLink(worktree.resolve("mcp_client.js")))
                 .isEqualTo(root.resolve("mcp_client.js"));
     }
@@ -84,7 +105,10 @@ class CodexAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        runtime("go").provisionWorktree(new AgentWorktree(worktree, root, null, null));
+        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
         assertThat(Files.readString(worktree.resolve(".codex/config.toml")))
                 .contains("approval_policy = \"never\"")
@@ -96,7 +120,10 @@ class CodexAgentRuntimeTest {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();
 
-        runtime("go").provisionWorktree(new AgentWorktree(worktree, root, "sob-ai:Engineer", null));
+        new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")))
+                .provisionWorktree(new AgentWorktree(worktree, root, "sob-ai:Engineer", null));
 
         assertThat(worktree.resolve(".mcp.json")).doesNotExist();
         assertThat(worktree.resolve(".claude")).doesNotExist();
@@ -105,7 +132,11 @@ class CodexAgentRuntimeTest {
 
     @Test
     void refusesToStartWithoutTheBridgeItIsTheOnlyRuntimeStillSpawning(@TempDir Path root) {
-        assertThat(runtime("go", root).problems())
+        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(runtime.problems())
                 .anySatisfy(problem -> assertThat(problem).contains("mcp_client.js", "is not there"));
     }
 
@@ -113,7 +144,11 @@ class CodexAgentRuntimeTest {
     void hasNothingToReportAboutTheBridgeOnceItIsThere(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("mcp_client.js"), "// bridge");
 
-        assertThat(runtime("go", root).problems())
+        var runtime = new CodexAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                CodexProperties.defaults(),
+                new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(runtime.problems())
                 .noneSatisfy(problem -> assertThat(problem).contains("mcp_client.js"));
     }
 }

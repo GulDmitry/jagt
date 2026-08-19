@@ -13,25 +13,22 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ConfigurationPropertiesScan
 public class OrchestratorApplication {
 
-    // NOTE: there is deliberately NO logback "failure-render preload" here. A NoClassDefFoundError during a
-    // startup failure / on exit is a CORRUPTED FAT JAR, not a missing preload — `./gradlew build` rewrites
-    // the jar in place while a JVM runs from it. See the GOTCHA in CLAUDE.md (Build & run). Do not re-add it.
+    // There is deliberately NO logback "failure-render preload" here: a NoClassDefFoundError during a startup
+    // failure or on exit is a CORRUPTED FAT JAR — `./gradlew build` rewrites it in place while a JVM runs from
+    // it. Do not add one back.
     public static void main(String[] args) {
         try {
             application().run(args);
         } catch (RuntimeException | Error failure) {
-            // Boot logs the failure and then marks it handled, so the JVM prints nothing either: the human
-            // got a bare shell prompt back and no reason. See StartupFailure.
             System.err.println(StartupFailure.describe(failure));
             throw failure;
         }
     }
 
     /**
-     * Visible for a test: {@link ConsoleLogging} has to be registered here, by hand, and the last time this
-     * broke it was the REGISTRATION that was wrong while the listener itself worked — a `main` simplified
-     * back to a bare {@code SpringApplication.run} would paint Spring's log lines over the TUI again with the
-     * whole suite green.
+     * Visible for a test, because the REGISTRATION is what breaks while {@link ConsoleLogging} itself works: a
+     * {@code main} simplified back to a bare {@code SpringApplication.run} would paint Spring's log lines over
+     * the TUI with the whole suite green.
      */
     static SpringApplication application() {
         SpringApplication application = new SpringApplication(OrchestratorApplication.class);

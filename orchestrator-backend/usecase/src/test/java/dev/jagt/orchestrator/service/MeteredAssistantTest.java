@@ -46,10 +46,9 @@ class MeteredAssistantTest {
         verify(usageTracker).record(AssistantCallKind.MR_READ, spent);
     }
 
+    /** A failed read was paid for too, and this is the kind that repeats hourly for a day. */
     @Test
     void booksAReviewSweepUnderItsOwnKindEvenWhenTheReadCameBackEmpty() {
-        // The kind must be recorded for a FAILED read too: the call was paid for, and this is the kind that
-        // repeats up to hourly for a day, so dropping its failures would understate the category that matters.
         TokenUsage spent = TokenUsage.ofCall(31_000, 0, 40, 0.06);
         when(port.readReview("http://mr/1")).thenReturn(new Answer<ReviewFacts>(Optional.empty(), spent));
 

@@ -5,8 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * The code host jagt may READ over REST instead of paying a headless model call per review sweep.
  *
- * <p>Blank {@code type} = no host wired, which is the default and keeps jagt's "talks to no external system"
- * shape: sweeps then go through the assistant exactly as before. Wiring one is opt-in and read-only.
+ * <p>Blank {@code type} = no host wired, which is the default. Wiring one is opt-in and read-only.
  *
  * @param type    host implementation to activate, e.g. {@code gitlab}; blank = none
  * @param baseUrl the host's root, e.g. {@code https://gitlab.example.com} — a review URL is only read when it

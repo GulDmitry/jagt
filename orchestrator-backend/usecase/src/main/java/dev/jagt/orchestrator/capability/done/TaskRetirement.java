@@ -55,7 +55,6 @@ public class TaskRetirement {
             editorDriver.forgetProject(GitService.deployWorktreePath(projectPath, taskId));
         }
         stateService.removeTask(taskId);
-        // Reserved by default: a viewer placed by hand survives task cycles.
         boolean closedViewer = sessions.closeViewerIfNoTasksLeft();
         return "Task " + taskId + " removed: worktree deleted, state entry dropped. Branch '" + taskId
                 + "' was kept"

@@ -21,18 +21,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * GitHub — reads a review round (approval decision, the head commit's check rollup, unresolved review threads)
- * and opens or finds the pull request of a task branch. Selected by
- * {@code orchestrator.code-host.type=github}.
- *
- * <p>The READ is one GraphQL query, and that is not a preference: whether a review thread is RESOLVED exists
+ * The READ is one GraphQL query, and that is not a preference: whether a review thread is RESOLVED exists
  * nowhere in the REST API, and a round that cannot tell resolved from open relays every comment it ever saw,
  * every round, forever. One query also makes the all-or-nothing rule trivial — a partial read must never look
  * like a clean review, because "nothing unresolved + green" ADVANCES a task.
  *
  * <p>{@code base-url} is the WEB root ({@code https://github.com}, or an Enterprise host), the same prefix that
- * decides which review URLs this host may claim; the API endpoints are derived from it, since github.com serves
- * its API from another host entirely.
+ * decides which review URLs this host may claim; the API endpoints are derived from it.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.code-host.type", havingValue = "github")
@@ -79,7 +74,6 @@ public class GitHubCodeHost implements CodeHost {
         this.http = http;
         this.config = config;
         if (!config.isUsable()) {
-            // Loud, because the symptom is silent: every sweep quietly falls back to a PAID headless read.
             log.warn("orchestrator.code-host.type=github but base-url or token is missing — review sweeps keep"
                     + " using the (paid) headless read. Set orchestrator.code-host.base-url and .token.");
         }
@@ -177,10 +171,9 @@ public class GitHubCodeHost implements CodeHost {
     }
 
     /**
-     * What the sweep decides on. The review-level lines come FIRST because they frame the round — and a
-     * CHANGES_REQUESTED decision always leaves at least one line, whatever the reviewer typed: with an empty
-     * list and a green rollup the sweep would advance the task to REVIEWED while the host is blocking the
-     * merge.
+     * The review-level lines come FIRST because they frame the round — and a CHANGES_REQUESTED decision always
+     * leaves at least one line, whatever the reviewer typed: with an empty list and a green rollup the sweep
+     * would advance the task to REVIEWED while the host is blocking the merge.
      */
     private static ReviewFacts facts(JsonNode pullRequest, List<String> threadComments) {
         List<String> comments = new ArrayList<>(reviewComments(pullRequest));
@@ -214,9 +207,9 @@ public class GitHubCodeHost implements CodeHost {
     }
 
     /**
-     * Whether the request is approved. {@code reviewDecision} is only populated where the repository REQUIRES a
-     * review, so an unprotected repository answers null however many people clicked Approve — the reviewers'
-     * own latest states are the fallback, and one of them still asking for changes outweighs the rest.
+     * {@code reviewDecision} is only populated where the repository REQUIRES a review, so an unprotected
+     * repository answers null however many people clicked Approve — the reviewers' own latest states are the
+     * fallback, and one of them still asking for changes outweighs the rest.
      */
     private static boolean approved(JsonNode pullRequest) {
         String decision = pullRequest.path("reviewDecision").asString("");
@@ -266,9 +259,8 @@ public class GitHubCodeHost implements CodeHost {
     }
 
     /**
-     * The rollup of the head commit's checks and statuses, in the vocabulary the sweep reads (it only asks
-     * whether the text says "fail" or "success"). ERROR is a failure — a check that could not run is not a
-     * check that is still running, and calling it pending would leave the task waiting forever.
+     * ERROR is a failure — a check that could not run is not a check that is still running, and calling it
+     * pending would leave the task waiting forever.
      */
     private static String checkStatus(JsonNode pullRequest) {
         JsonNode rollup = pullRequest.path("commits").path("nodes").path(0).path("commit")
@@ -287,12 +279,10 @@ public class GitHubCodeHost implements CodeHost {
     }
 
     /**
-     * Opens the pull request of the pushed branch, or reports the one already open for it.
-     *
-     * <p>{@code removeSourceBranch} and {@code squash} are not written: on this host they are REPOSITORY
-     * settings chosen at merge time, not properties of the request — and a {@link CodeHost} configures no
-     * repository. An already-open request is never retitled, for the same reason as everywhere else: every
-     * review round ships again, and the human may have edited the title.
+     * {@code removeSourceBranch} and {@code squash} are not written: on this host they are REPOSITORY settings
+     * chosen at merge time, not properties of the request — and a {@link CodeHost} configures no repository. An
+     * already-open request is never retitled either: every review round ships again, and the human may have
+     * edited the title.
      */
     @Override
     public Optional<MergeRequestRef> createOrUpdateMergeRequest(MergeRequestSpec spec) {

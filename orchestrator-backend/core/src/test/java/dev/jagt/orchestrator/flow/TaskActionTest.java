@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.flow.TaskAction;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 
 import java.util.Locale;
 
@@ -15,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TaskActionTest {
 
     @Test
+    @ResourceLock(Resources.LOCALE)
     void resolvesARetiredSpellingTypedInAnyCaseOnAnyLocale() {
         Locale original = Locale.getDefault();
         Locale.setDefault(Locale.forLanguageTag("tr"));

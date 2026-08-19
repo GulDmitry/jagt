@@ -80,7 +80,7 @@ class AbortedConnectionFilterTest {
         return Stream.of(
                 Arguments.of(named("another socket option failing on the same line", tomcat), otherOption),
                 Arguments.of(named("the same failure reported by anyone but Tomcat's connector",
-                        new LoggerContext().getLogger("dev.jagt.orchestrator.surface.board.BoardApiController")), aborted),
+                        new LoggerContext().getLogger(BoardApiController.class.getName())), aborted),
                 Arguments.of(named("an ordinary event carrying no exception at all", tomcat), null));
     }
 }

@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -40,7 +41,7 @@ class JiraTrackerTest {
         var facts = tracker.readTicket("ABC-42").orElseThrow();
 
         assertThat(facts).isEqualTo(new TicketFacts(true, "ABC-42", "Widget layout is off", "ABC",
-                java.util.List.of("backend", "no-test"), "https://tracker.example.com/browse/ABC-42"));
+                List.of("backend", "no-test"), "https://tracker.example.com/browse/ABC-42"));
     }
 
     @Test

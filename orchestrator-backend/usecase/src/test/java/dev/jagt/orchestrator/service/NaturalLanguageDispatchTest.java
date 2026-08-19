@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Refusal;
-
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.port.MasterAssistant.CommandProposal;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -71,6 +70,7 @@ class NaturalLanguageDispatchTest {
         assertThat(result).isEqualTo("understood as `sweep ABC-1` — sweep ABC-1: checks success");
     }
 
+    /** The interpretation is stated BEFORE the outcome: a wrong mapping has to be visible to be correctable. */
     @Test
     void runsTheMappedActionThroughTheSameGateAButtonUsesAndSaysWhatItUnderstood(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
@@ -79,7 +79,6 @@ class NaturalLanguageDispatchTest {
 
         String result = dispatchWith(state).interpret("push the layout one for review");
 
-        // The interpretation is stated BEFORE the outcome: a wrong mapping has to be visible to be correctable.
         assertThat(result).isEqualTo("understood as `ship ABC-1` — ship ABC-1: pushed");
     }
 

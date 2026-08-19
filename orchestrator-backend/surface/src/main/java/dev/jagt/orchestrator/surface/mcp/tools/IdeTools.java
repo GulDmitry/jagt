@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 
-/** Opening a task for a human to read. */
 @Component
 @RequiredArgsConstructor
 public class IdeTools implements McpTools {

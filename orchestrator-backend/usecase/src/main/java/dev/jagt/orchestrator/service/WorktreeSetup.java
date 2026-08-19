@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Path;
 import java.util.List;
 
-/** Everything a fresh worktree needs before an agent is started in it. */
 @Service
 @RequiredArgsConstructor
 public class WorktreeSetup {

@@ -10,6 +10,8 @@ import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
@@ -23,6 +25,7 @@ class UsageStatsRendererTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
     }
 
+    /** "42 calls, 1.8M tokens" does not say where to optimise; the biggest kind first is the answer. */
     @Test
     void showsWhichKindOfCallTheSpendWentOnBiggestFirst(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -32,8 +35,6 @@ class UsageStatsRendererTest {
 
         String out = new UsageStatsRenderer(tracker).render(state.tasks());
 
-        // "42 calls, 1.8M tokens" does not say where to optimise; this split does, and the answer is the top
-        // line — the poll that repeats, not the read that happens once.
         assertThat(out).contains("BY CALL");
         assertThat(out.indexOf("review sweep")).isLessThan(out.indexOf("ticket read"));
         assertThat(out).doesNotContain("merge-request read");
@@ -82,16 +83,11 @@ class UsageStatsRendererTest {
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out).doesNotContain("average per call");
     }
-    /**
-     * A label longer than its column shifts every number on that row — the table's whole job. Asserted over
-     * the ENUM rather than over one rendered row, so adding a call kind cannot break the layout unnoticed.
-     */
-    @Test
-    void keepsEveryCallKindLabelInsideItsColumn() {
-        for (dev.jagt.orchestrator.task.AssistantCallKind kind
-                : dev.jagt.orchestrator.task.AssistantCallKind.values()) {
-            assertThat(kind.label().length()).as(kind.name() + " label")
-                    .isLessThanOrEqualTo(UsageStatsRenderer.LABEL_W);
-        }
+
+    /** A label longer than its column shifts every number on that row, which is the table's whole job. */
+    @ParameterizedTest
+    @EnumSource(AssistantCallKind.class)
+    void keepsEveryCallKindLabelInsideItsColumn(AssistantCallKind kind) {
+        assertThat(kind.label().length()).isLessThanOrEqualTo(UsageStatsRenderer.LABEL_W);
     }
 }

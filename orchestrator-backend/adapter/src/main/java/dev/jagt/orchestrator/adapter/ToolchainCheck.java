@@ -8,11 +8,6 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The two binaries every task needs whatever else is configured: one cuts the worktree, the other holds the
- * session the agent lives in. It lives at the EDGE because looking a binary up is edge knowledge — the rings
- * above configure a name and never learn where it was found.
- */
 @Component
 @RequiredArgsConstructor
 public class ToolchainCheck implements StartupCheck {

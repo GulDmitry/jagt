@@ -17,8 +17,7 @@ import java.nio.file.Path;
  *       ({@code mcp_client.js}) which POSTs the same header. For clients whose config has no remote form.</li>
  * </ul>
  *
- * <p>The header is how a caller is scoped ({@code StateService.findByWorktree}), and jagt knows each worktree's
- * path when it writes the config — which is why the HTTP path can be static.
+ * <p>jagt knows each worktree's path when it writes the config, which is why the HTTP endpoint can be static.
  */
 @Component
 public class McpEndpoint {
@@ -39,7 +38,6 @@ public class McpEndpoint {
         return url;
     }
 
-    /** What {@link #CALLER_HEADER} must carry for this worktree: its absolute, symlink-free path. */
     public String callerHeaderValue(Path worktree) {
         return worktree.toAbsolutePath().normalize().toString();
     }

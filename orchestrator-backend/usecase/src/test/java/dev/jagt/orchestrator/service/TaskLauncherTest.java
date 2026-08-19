@@ -57,6 +57,7 @@ class TaskLauncherTest {
                         "https://tracker.example.com/browse/ABC-123");
     }
 
+    /** The read happens BEFORE the task exists, so it can only be charged once creation named one. */
     @Test
     void chargesTheTicketReadToTheTaskItJustNamed() {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
@@ -66,7 +67,6 @@ class TaskLauncherTest {
 
         launcher.launch(new LaunchRequest("https://tracker/ABC-123", "group-a", null, null, null, null));
 
-        // The read happens BEFORE the task exists, so it can only be charged after initializeTask created it.
         var order = inOrder(provisioning, tickets);
         order.verify(provisioning).initializeTask(any());
         order.verify(tickets).charge("ABC-123", spent);
@@ -108,11 +108,21 @@ class TaskLauncherTest {
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue().instructions()).contains("start with tests only");
+    }
+
+    @Test
+    void carriesTheModeTheHumanAskedForThroughToTheAgent() {
+        oneProject("demo");
+
+        launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
         assertThat(created.getValue().mode()).isEqualTo("plan");
     }
 
     @Test
-    void threadsTheChosenBranchStrategyIntoInitialize() {
+    void carriesTheHumansBranchStrategyThroughToTheWorktreeCut() {
         oneProject("demo");
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", null, "recreate", null, null));
@@ -123,7 +133,7 @@ class TaskLauncherTest {
     }
 
     @Test
-    void threadsTheChosenBaseBranchIntoInitialize() {
+    void carriesTheHumansBaseBranchThroughToTheWorktreeCut() {
         oneProject("demo");
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", null, null, "feature/parent", null));
@@ -142,11 +152,6 @@ class TaskLauncherTest {
                 Map.of("group-a", List.of("backend"), "group-b", List.of("frontend")));
 
         assertThat(matches).containsExactly("group-a");
-    }
-
-    private void oneProject(String key) {
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of(key, new ProjectConfig("/p", "origin/main", "dev", List.of()))));
     }
 
     @Test
@@ -183,5 +188,10 @@ class TaskLauncherTest {
                 .hasMessageContaining("unknown project [typo]");
 
         verifyNoInteractions(provisioning);
+    }
+
+    private void oneProject(String key) {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of(key, new ProjectConfig("/p", "origin/main", "dev", List.of()))));
     }
 }

@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 
 import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 
-/** The two tools that write a SHARED branch, and the guard that keeps them the human's. */
+/** The tools that write a SHARED branch, and the guard that keeps them the human's. */
 @Component
 @RequiredArgsConstructor
 public class DeployTools implements McpTools {

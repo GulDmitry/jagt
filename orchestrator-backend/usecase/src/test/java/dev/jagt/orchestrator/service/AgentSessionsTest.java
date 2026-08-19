@@ -1,11 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
-
-import dev.jagt.orchestrator.config.ClaudeProperties;
-
 import dev.jagt.orchestrator.port.SessionHost;
-
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskState;
@@ -43,9 +39,10 @@ class AgentSessionsTest {
     private ConfigService config;
     private final SessionHost tmux = mock(SessionHost.class);
     private final TerminalDriver terminal = mock(TerminalDriver.class);
+    private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
 
     @BeforeEach
-    void setUp() {
+    void aReadableConfigOverAnEmptyStateFile() {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
@@ -53,14 +50,12 @@ class AgentSessionsTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     }
 
-    private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
-
     private AgentSessions sessions() {
         return new AgentSessions(config, state, tmux, terminal, agentRuntime);
     }
 
     @Test
-    void closesTaskWindowWhenCalledWithItsTaskId() {
+    void closesTheTmuxWindowOfTheTaskItWasGiven() {
         state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.killTaskWindows("jagt", "TEST-1")).thenReturn(1);
@@ -97,7 +92,7 @@ class AgentSessionsTest {
     }
 
     @Test
-    void nudgesRunningAgentWhenTaskContextIsUpdated() {
+    void nudgesAnAgentThatIsAlreadyRunningWhenNewInstructionsArrive() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
@@ -107,7 +102,7 @@ class AgentSessionsTest {
     }
 
     @Test
-    void respawnsADownSessionWhenWriteTaskContextTargetsIt() {
+    void respawnsATaskWhoseSessionIsGoneRatherThanDroppingTheRelay() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
@@ -116,10 +111,12 @@ class AgentSessionsTest {
         verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false));
     }
 
+    /**
+     * Two flows relay into one file — a sweep's brief and ship's "post your drafted replies" — so truncating
+     * means the agent never sees whichever arrived first and the review reads as clean.
+     */
     @Test
     void addsToAnUnreadRelayInsteadOfWipingIt() throws Exception {
-        // Two flows relay to one file: a sweep's brief with unresolved comments, and ship's "post your drafted
-        // replies". Truncating meant the agent never saw whichever arrived first — the review looked clean.
         Path worktree = worktreeWithRelay("BRIEF: four unresolved comments");
 
         sessions().appendTaskContext("ABC-1", "ALSO: post your drafted replies");

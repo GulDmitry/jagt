@@ -13,15 +13,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * kitty as the agents viewer, driven by its remote-control CLI ({@code kitty @ --to unix:<socket> …}) — no
- * keystrokes. Its tabs are addressable, so they can be titled, focused and closed. The tab execs
- * {@code tmux attach}, so agents persist whatever happens to the viewer.
- *
- * <p>One dedicated instance per tmux session, isolated from the user's own kitty by {@code --instance-group}
- * and a per-session socket; their kitty.conf is never touched.
- *
- * <p>OS-neutral except the two hooks below — raising the window ({@link #bringToFront()}) and desktop-only
- * launch options ({@link #platformOptions()}). A new platform is a subclass and nothing else.
+ * kitty as the agents viewer. Its tabs are addressable, so they can be titled, focused and closed; the tab
+ * execs {@code tmux attach}, so agents persist whatever happens to the viewer.
  */
 @Slf4j
 public abstract class AbstractKittyTerminalDriver implements TerminalDriver, StartupCheck {
@@ -53,7 +46,6 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
                 : List.of();
     }
 
-    /** Extra {@code -o} launch options for this desktop; empty when none are needed. */
     protected abstract List<String> platformOptions();
 
     @Override
@@ -72,7 +64,6 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
         String socket = socket(tmuxSession);
         String tmux = properties.tmuxCommand();
         if (instanceRunning(socket)) {
-            // Add a titled tab that re-attaches (ensureViewer only calls us when detached).
             var launch = processRunner.run(null, TIMEOUT, List.of(kittyCommand, "@", "--to", socket,
                     "launch", "--type=tab", "--tab-title", dedicatedTitle, "--cwd", tabCwd.toString(),
                     "--", tmux, "attach", "-t", tmuxSession));
@@ -81,7 +72,6 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
             }
             return;
         }
-        // First open: launch a dedicated kitty window already attached to the session.
         var open = processRunner.run(null, TIMEOUT, firstOpenCommand(kittyCommand, kittyFontSize, socket,
                 dedicatedTitle, tabCwd.toString(), tmux, tmuxSession, platformOptions()));
         if (open.exitCode() != 0) {
@@ -107,14 +97,13 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     public void closeViewerWindow(String dedicatedTitle) {
         // A window-close leaves a headless instance holding the socket on macOS (the app outlives its
         // windows), so kill the dedicated instance by its unique per-session socket path instead — no other
-        // process carries it. Agents keep running in tmux; this only detaches the viewer. Best-effort.
+        // process carries it. Agents keep running in tmux; this only detaches the viewer.
         processRunner.run(null, TIMEOUT, List.of("pkill", "-f", socketPath(dedicatedTitle)));
     }
 
     /**
-     * The argv for the first-open kitty window: a dedicated, remote-controllable instance already attached
-     * to the tmux session. {@code --detach} forks kitty into the background and returns immediately; without
-     * it the GUI process runs in the foreground and ProcessRunner blocks until timeout.
+     * {@code --detach} forks kitty into the background and returns immediately; without it the GUI process runs
+     * in the foreground and the command blocks until it times out.
      */
     static List<String> firstOpenCommand(String kittyCommand, String fontSize, String socket, String title,
                                          String directory, String tmux, String tmuxSession,

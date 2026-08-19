@@ -50,17 +50,13 @@ public class WatchdogService implements Job {
     private final Map<String, Long> lastAlertAt = new ConcurrentHashMap<>();
 
     /**
-     * The statuses in which jagt EXPECTS the agent to be doing something, so silence means death:
-     * NEW (died before its first status update — spawn failure, auth prompt), IN_PROGRESS, and SHIPPING
-     * (the documented "stuck at SHIPPING, no request appears" failure, previously invisible to the watchdog —
-     * recovery depended on the human noticing).
+     * The statuses where the agent is EXPECTED to be doing something, so silence means death — NEW included,
+     * for an agent that died before its first status update at all (spawn failure, auth prompt).
      *
-     * <p>Every other status is idle BY DESIGN and must stay unwatched or the alert becomes noise:
-     * REVIEW_PENDING / REVIEWED / APPROVED / CI_FAILED / DEPLOY_CONFLICT wait on the HUMAN (jagt's own
-     * next-move for CI_FAILED is "your move: review"), CI_POLLING waits on the code host, DEPLOYED and DONE
-     * are terminal. REVIEW_PENDING and CI_FAILED are the arguable ones: right after a relayed brief the agent
-     * IS working. Telling "relayed, unanswered" apart from "waiting for you" needs state jagt does not keep,
-     * and guessing would fire alerts at a human who is simply taking their time.
+     * <p>Every other status idles BY DESIGN and must stay unwatched, or the alert becomes noise. REVIEW_PENDING
+     * and CI_FAILED are the arguable ones: right after a relayed brief the agent IS working, but telling
+     * "relayed, unanswered" apart from "waiting for you" needs state jagt does not keep, and guessing would
+     * fire alerts at a human who is simply taking their time.
      */
     static boolean watches(TaskStatus status) {
         return status == TaskStatus.NEW || status == TaskStatus.IN_PROGRESS || status == TaskStatus.SHIPPING;
@@ -76,8 +72,6 @@ public class WatchdogService implements Job {
                 lastAlertAt.remove(taskId);
                 return;
             }
-            // Silent on MCP, but is it actually working? A busy agent keeps printing (spinner,
-            // tokens, build logs) — recent tmux window output means it's alive, not hung.
             long windowActivity = sessions.lastWindowActivityMillis(session, taskId);
             if (windowActivity > 0 && now - windowActivity < staleMs) {
                 lastAlertAt.remove(taskId);

@@ -5,8 +5,11 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.time.Duration;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,25 +17,10 @@ class AutoReviewCadenceTest {
 
     private final AutoReviewCadence cadence = new AutoReviewCadence(true, Duration.ofHours(24), 10, 60);
 
-    @Test
-    void pollsAtTheTightestIntervalAtTheStartOfTheWindow() {
-        assertThat(cadence.pollInterval(Duration.ZERO)).isEqualTo(Duration.ofMinutes(10));
-    }
-
-    @Test
-    void rampsToTheMaxIntervalByTheEndOfTheWindow() {
-        assertThat(cadence.pollInterval(Duration.ofHours(24))).isEqualTo(Duration.ofMinutes(60));
-    }
-
-    @Test
-    void escalatesLinearlyAcrossTheWindow() {
-        assertThat(cadence.pollInterval(Duration.ofHours(12))).isEqualTo(Duration.ofMinutes(35));
-    }
-
-    @Test
-    void backsOffMonotonicallyAsTheMrAges() {
-        assertThat(cadence.pollInterval(Duration.ofHours(6)))
-                .isLessThan(cadence.pollInterval(Duration.ofHours(18)));
+    @ParameterizedTest
+    @CsvSource({"0,10", "12,35", "24,60"})
+    void backsOffLinearlyFromTheTightestIntervalToTheMaxAcrossTheWindow(int hoursOut, int expectedMinutes) {
+        assertThat(cadence.pollInterval(Duration.ofHours(hoursOut))).isEqualTo(Duration.ofMinutes(expectedMinutes));
     }
 
     @Test
@@ -78,7 +66,7 @@ class AutoReviewCadenceTest {
     @Test
     void watchesAMultiRepoTaskWhoseRequestIsOpenOnASiblingRatherThanTheSessionRepository() {
         long shipped = 1_000_000_000_000L;
-        TaskState task = TaskState.builder(java.util.List.of(TaskRepo.of("api", "/api-wt"),
+        TaskState task = TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                         new TaskRepo("web", "/web-wt", null, "https://host/web/-/merge_requests/2", null)),
                 TaskStatus.CI_POLLING).mrCreatedAt(shipped).lastPolledAt(shipped).build();
 

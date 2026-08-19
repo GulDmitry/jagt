@@ -38,10 +38,9 @@ public class UsageTracker {
     }
 
     /**
-     * Attributes an already-recorded measurement to a task (id or alias), so the dashboard and {@code stats}
-     * can show what that task has cost. A task that is gone (retired mid-sweep) only loses its per-task
-     * detail — the session total already has the number — but that is worth a line in the log, because the
-     * same silence would otherwise hide a wrong id.
+     * Attributes an already-recorded measurement to a task, by id or alias. A task that is gone (retired
+     * mid-sweep) only loses its per-task detail — the session total already has the number — but that is still
+     * worth a line in the log, because the same silence would otherwise hide a wrong id.
      */
     public void chargeTask(String taskId, TokenUsage usage) {
         if (usage == null || usage.isNone() || taskId == null || taskId.isBlank()) {
@@ -54,12 +53,10 @@ public class UsageTracker {
         }
     }
 
-    /** Everything spent since this backend started. */
     public TokenUsage session() {
         return sessionByKind.values().stream().reduce(TokenUsage.NONE, TokenUsage::plus);
     }
 
-    /** The same spend, split by what each call was for — biggest first, so the answer is the top line. */
     public Map<AssistantCallKind, TokenUsage> sessionByKind() {
         Map<AssistantCallKind, TokenUsage> copy = new EnumMap<>(AssistantCallKind.class);
         copy.putAll(sessionByKind);

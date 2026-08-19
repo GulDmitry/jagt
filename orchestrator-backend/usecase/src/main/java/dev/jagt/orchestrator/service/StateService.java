@@ -28,8 +28,7 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 /**
- * SSOT for all active tasks. Every mutation rewrites state.json atomically
- * (temp file + Files.move with ATOMIC_MOVE) so a crash never leaves a torn file.
+ * SSOT for all active tasks. Every mutation rewrites the file atomically, so a crash never leaves a torn file.
  *
  * <p>Atomicity protects against a TORN file, not against a bad one: a hand edit, a botched migration or a
  * serialization bug can leave valid-but-wrong or unparseable JSON, and this one file is the only record of
@@ -51,15 +50,9 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
 
     private final ObjectMapper mapper;
     private final Path stateFile;
-    /** The previous successful write, and where an unparseable file is set aside for the human to inspect. */
     private final Path backupFile;
     private final Path corruptFile;
     private final Object lock = new Object();
-    /**
-     * Fired after a mutation has been WRITTEN. Two consumers want exactly this signal — the web UI's SSE
-     * stream and a TUI that repaints when state changes instead of on a timer — so it is published once here
-     * rather than invented twice. Copy-on-write: listeners are registered at startup and read on every write.
-     */
     private final List<Consumer<StateFile>> changeListeners = new CopyOnWriteArrayList<>();
     /**
      * The last parse, keyed by the file version it came from. Reading is the hot path — a single dashboard
@@ -116,9 +109,8 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     /**
-     * The task id behind an id OR its short alias (p1, s2, …) — aliases are state, so resolving them
-     * belongs here and every caller that accepts human input goes through this one place. An unknown
-     * value is returned unchanged, so callers still produce their own "not found" error.
+     * The task id behind an id OR its short alias. An unknown value is returned UNCHANGED, so callers still
+     * produce their own "not found" error.
      */
     @Override
     public String canonicalTaskId(String idOrAlias) {
@@ -163,9 +155,9 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     /**
-     * Resolves the calling agent's task from the X-Working-Directory header value. ANY of the task's
-     * repositories answers, not just the first: one piece of work can span several, and a session started in
-     * any of them belongs to the same task — so a multi-repo task is ONE caller, not several.
+     * The task a caller's working directory belongs to. ANY of the task's repositories answers, not just the
+     * first: one piece of work can span several, and a session started in any of them belongs to the same task —
+     * so a multi-repo task is ONE caller, not several.
      */
     public Optional<Map.Entry<String, TaskState>> findByWorktree(String cwd) {
         if (cwd == null || cwd.isBlank()) {
@@ -186,9 +178,8 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     /**
-     * Node's process.cwd() reports the physical path (symlinks resolved, e.g.
-     * /private/tmp), while configured paths may be logical (/tmp) — compare
-     * physical to physical.
+     * A caller may report the physical path (symlinks resolved, e.g. /private/tmp) where configured paths are
+     * logical (/tmp) — compare physical to physical.
      */
     private static Path canonical(Path path) {
         try {
@@ -198,7 +189,6 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         }
     }
 
-    /** The single JSON rendering of orchestrator state, same shape as state.json on disk. */
     public String prettyJson() {
         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(read());
     }
@@ -238,7 +228,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             StateFile unchanged = new StateFile(before.tasks());
             written = mutation.apply(before);
             if (unchanged.equals(written)) {
-                return;                       // e.g. updateTask for an id that is not there: nothing to say
+                return;
             }
             writeUnlocked(written);
         }

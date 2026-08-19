@@ -13,20 +13,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Renders the plain-text task dashboard for the console and the {@code /status} endpoint. It renders the
- * SHARED {@link TaskView} projection — the same one the web board consumes — so a phase, an owner and a
- * next move cannot mean one thing here and another there.
+ * Renders the SHARED {@link TaskView} projection — the same one the web board consumes — so a phase, an owner and
+ * a next move cannot mean one thing here and another there.
  */
 @Component
 @RequiredArgsConstructor
 public class DashboardRenderer {
 
     private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("HH:mm:ss");
-    /** Last-active stamp: day-month hour:minute, no year/seconds — the ACTIVE column the table sorts on. */
     private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("dd-MM HH:mm");
 
-    // Column widths, defined ONCE and shared by the header + every task row. The Master TUI colors the
-    // ALIAS / TASK / TITLE columns by the offsets below, so this is the single source of truth for the layout.
+    // Defined ONCE: a surface that colours one column finds it by the offsets below.
     public static final int ALIAS_W = 5;
     public static final int TASK_W = 11;
     private static final int STATUS_W = 14;
@@ -35,7 +32,6 @@ public class DashboardRenderer {
     private static final int TOKENS_W = 7;
     private static final String ROW_FORMAT = "%-" + ALIAS_W + "s %-" + TASK_W + "s %-" + STATUS_W
             + "s %-" + PROJECT_W + "s %-" + ACTIVE_W + "s %-" + TOKENS_W + "s %s%n";
-    /** Start column of the ALIAS / TASK / TITLE fields in a rendered row (for per-column coloring). */
     public static final int COL_ALIAS = 0;
     public static final int COL_TASK = ALIAS_W + 1;
     public static final int COL_TITLE =
@@ -50,9 +46,8 @@ public class DashboardRenderer {
         StringBuilder out = new StringBuilder();
         out.append("jagt orchestrator — ").append(tasks.size()).append(" task(s)   updated ")
                 .append(LocalTime.now().format(CLOCK)).append(sessionSpend()).append('\n');
-        // On the line that used to be blank: an 80-column header has no room left, and a wrapped header costs a
-        // dashboard row (see sessionSpend). INDENTED, because the TUI decides what to colour as a task row by
-        // whether a line starts with a space.
+        // Its own line: an 80-column header has no room left, and a wrapped header costs a dashboard row.
+        // INDENTED, because a line starting with a space is what marks a task row for colouring.
         out.append("  ").append(snapshot.cadence().summary()).append('\n');
         out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE ▼", "TOKENS",
                 "TITLE"));
@@ -113,13 +108,11 @@ public class DashboardRenderer {
         return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).format(STAMP);
     }
 
-    /** The task's own column: total tokens jagt spent on it, or a dash when it has cost nothing yet. */
     private static String tokens(long tokens) {
         return tokens == 0 ? "-" : TokenFormat.compact(tokens);
     }
 
-    /** Session total in the header — omitted until something has been spent, and kept short enough that
-     *  the header still fits an 80-column terminal (a wrapped header costs a dashboard row). */
+    /** Omitted until something has been spent, and kept short so the header still fits 80 columns. */
     private String sessionSpend() {
         TokenUsage session = usageTracker.session();
         return session.isNone() ? "" : "   spend " + session.calls()
@@ -127,8 +120,7 @@ public class DashboardRenderer {
                 + TokenFormat.compact(session.total()) + " tok";
     }
 
-    /** The ticket title on one line (whitespace collapsed), shown in FULL — it's the last column, so the
-     *  Master TUI clips it to the window width and {@code /status} shows all of it. */
+    /** Never truncated: it is the last column, so a surface that has to clip it can. */
     private static String oneLineTitle(String title) {
         if (title == null || title.isBlank()) {
             return "";
