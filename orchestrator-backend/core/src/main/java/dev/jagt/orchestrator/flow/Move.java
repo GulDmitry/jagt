@@ -130,7 +130,7 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
                         ? "no code changed this round; ship opens the review request"
                         : round.draftedReplies()
                                 ? "no code changed; ship posts the drafted replies and nothing else"
-                                : "nothing to ship; the open threads are the reviewer's to close";
+                                : "nothing to ship";
                 case QUESTION -> "answer the question (focus), then ship";
                 case PLAIN -> "read the diff (ide), then ship";
             };

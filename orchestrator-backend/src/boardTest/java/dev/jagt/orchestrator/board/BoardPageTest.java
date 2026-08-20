@@ -438,10 +438,13 @@ class BoardPageTest {
         assertThat(page.locator("article a.id")).hasCount(0);
     }
 
-    /** A card with no highlighted button is the one a human stares at, and the badge that carried the hint is
-     *  absent exactly there. */
+    /**
+     * The one round that leaves no highlighted button and no badge, so its own line has to answer whose move it
+     * is. A card carries no next-move line of its own: one that appears for some states and not others is a rule
+     * nobody can read off the screen.
+     */
     @Test
-    void spellsOutTheNextMoveOnACardThatOffersNoObviousOne() {
+    void answersWhoseMoveItIsOnTheCardThatOffersNoButtonToPress() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/7")
                 .message("no changes: already handled").lastActiveTimestamp(now()).build());
@@ -449,8 +452,9 @@ class BoardPageTest {
         Page page = open();
 
         assertThat(page.locator("article .badge")).hasCount(0);
-        assertThat(page.locator("article .hint"))
-                .hasText("nothing to ship; the open threads are the reviewer's to close");
+        assertThat(page.locator("article .hint")).hasCount(0);
+        assertThat(page.locator("article .detail")).hasText(
+                "ANSWERED: already handled — the open threads are the reviewer's to close");
     }
 
     @Test

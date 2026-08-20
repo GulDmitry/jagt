@@ -382,15 +382,6 @@ function card(task) {
     article_children.push(drafts);
   }
 
-  // No highlighted button means no obvious move, and that is exactly the card a human stares at. The hint is
-  // the tooltip of the badge everywhere else, and a card with no primary has no badge either.
-  if (!task.primaryAction) {
-    const hint = document.createElement('div');
-    hint.className = 'hint';
-    hint.textContent = task.hint;
-    article_children.push(hint);
-  }
-
   // A row per group, broken wherever the order the server sent changes it: which groups exist, and which
   // comes first, stays the projection's answer.
   let row = null;

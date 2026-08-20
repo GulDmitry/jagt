@@ -136,7 +136,6 @@ a.id, a.mr-age {
 }
 a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid; }
 .detail { font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
-.hint { font-size: 12px; margin: 4px 0; color: var(--muted); }
 .detail.problem { color: var(--danger); font-weight: 600; }
 .pulse.stalled { color: var(--you); }
 /* Drafted replies are a "read this before you ship" nudge, not an error: warm, not red. */

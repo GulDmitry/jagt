@@ -23,7 +23,10 @@ public final class DashboardLine {
             // unanswered question goes out as a review reply.
             case REVIEW_PENDING -> switch (report) {
                 case QUESTION -> needsInput(message);
-                case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change");
+                // Complete on its own: this is the one round that leaves no highlighted button, so a surface
+                // that shows only this line still has to say whose move it is.
+                case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change")
+                        + " — the open threads are the reviewer's to close";
                 case PLAIN -> requestProblem(task, usableRequestLink);
             };
             case NEW, IN_PROGRESS -> report == AgentReport.QUESTION ? needsInput(message) : silence(task);

@@ -43,7 +43,7 @@ class MoveTest {
 
         assertThat(move.primary()).isNull();
         assertThat(move.owner()).isEqualTo(Owner.CI);
-        assertThat(move.hint()).isEqualTo("nothing to ship; the open threads are the reviewer's to close");
+        assertThat(move.hint()).isEqualTo("nothing to ship");
         assertThat(move.actions()).contains(TaskAction.SHIP);
     }
 

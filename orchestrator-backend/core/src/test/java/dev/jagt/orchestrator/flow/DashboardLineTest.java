@@ -102,7 +102,8 @@ class DashboardLineTest {
                 .message("no changes: every comment already handled").mrUrl("https://host/mr/440").build();
 
         assertThat(DashboardLine.forTask(task, "https://host/mr/440"))
-                .isEqualTo("ANSWERED: every comment already handled");
+                .isEqualTo("ANSWERED: every comment already handled"
+                        + " — the open threads are the reviewer's to close");
     }
 
     @ParameterizedTest
