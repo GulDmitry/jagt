@@ -68,6 +68,17 @@ class GitHubCodeHostTest {
     }
 
     @Test
+    void readsWhenTheHostSaysTheRequestWasOpenedSoTheWaitIsMeasurableFromTheHostNotFromJagt() {
+        when(http.post(eq(GRAPHQL), anyMap(), anyMap())).thenReturn(Optional.of(json.readTree("""
+                {"data": {"repository": {"pullRequest": {
+                  "createdAt": "2026-08-18T11:41:00Z",
+                  "reviewThreads": {"pageInfo": {"hasNextPage": false}, "nodes": []}}}}}""")));
+
+        assertThat(host.readReview(PR_URL).orElseThrow().openedAt())
+                .isEqualTo(java.time.Instant.parse("2026-08-18T11:41:00Z").toEpochMilli());
+    }
+
+    @Test
     void reportsChangesRequestedAsNotApproved() {
         when(http.post(eq(GRAPHQL), anyMap(), anyMap())).thenReturn(Optional.of(json.readTree("""
                 {"data": {"repository": {"pullRequest": {

@@ -330,6 +330,59 @@ class ReviewSweepServiceTest {
                 .pipelineStatus()).isEqualTo("SUCCEEDED");
     }
 
+    /**
+     * The status clock restarts on every round and on a respawned agent re-reporting itself, so how long the
+     * review has been waiting can only come from the host.
+     */
+    @Test
+    void keepsWhenTheHostSaysTheRequestWasOpened() {
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of(), 1_700_000_000_000L)));
+        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+        assertThat(stamped.getValue()
+                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .requestOpenedAt()).isEqualTo(1_700_000_000_000L);
+    }
+
+    /** A task is as far along as its least finished repository, so the wait is the longest one of them. */
+    @Test
+    void reportsTheOldestRequestOfAMultiRepoTaskAsHowLongTheReviewHasBeenWaiting() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder(List.of(TaskRepo.of("api", "/wt-api").withMrUrl("http://mr/1"),
+                        TaskRepo.of("web", "/wt-web").withMrUrl("http://mr/2")), TaskStatus.CI_POLLING)
+                .alias("a1").build()));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of(), 1_700_000_100_000L)));
+        when(reviewReader.read("ABC-1", "http://mr/2"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of(), 1_700_000_000_000L)));
+        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+        assertThat(stamped.getValue()
+                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .requestOpenedAt()).isEqualTo(1_700_000_000_000L);
+    }
+
+    /** A model read cannot say, and "open since jagt noticed" is a different fact — wrong by days after a resume. */
+    @Test
+    void leavesTheRequestsAgeAloneWhenTheReadCouldNotSayWhenItWasOpened() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
+                .pipelineStatus("running").requestOpenedAt(1_700_000_000_000L).build()));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of())));
+
+        sweep.sweep("ABC-1");
+
+        verify(stateService, never()).updateTask(eq("ABC-1"), any());
+    }
+
     @Test
     void tapsTheHumanWhenTheChecksGoRedAndSaysNothingOnALaterPollOfTheSameRun() {
         AtomicReference<TaskState> stored = new AtomicReference<>(TaskState

@@ -70,6 +70,29 @@ class GitLabCodeHostTest {
     }
 
     @Test
+    void readsWhenTheHostSaysTheRequestWasOpenedSoTheWaitIsMeasurableFromTheHostNotFromJagt() {
+        when(http.get(eq(MR_API), anyMap())).thenReturn(Optional.of(json.readTree("""
+                {"iid": 42, "created_at": "2026-08-18T11:41:00.797Z"}""")));
+        when(http.get(eq(MR_API + "/approvals"), anyMap())).thenReturn(Optional.of(json.readTree("{}")));
+        when(http.get(eq(MR_API + "/discussions?per_page=100&page=1"), anyMap()))
+                .thenReturn(Optional.of(json.readTree("[]")));
+
+        assertThat(host.readReview(MR_URL).orElseThrow().openedAt())
+                .isEqualTo(java.time.Instant.parse("2026-08-18T11:41:00.797Z").toEpochMilli());
+    }
+
+    @Test
+    void answersThatItDoesNotKnowWhenTheRequestWasOpenedRatherThanGuessing() {
+        when(http.get(eq(MR_API), anyMap())).thenReturn(Optional.of(json.readTree("""
+                {"iid": 42, "created_at": "not a date"}""")));
+        when(http.get(eq(MR_API + "/approvals"), anyMap())).thenReturn(Optional.of(json.readTree("{}")));
+        when(http.get(eq(MR_API + "/discussions?per_page=100&page=1"), anyMap()))
+                .thenReturn(Optional.of(json.readTree("[]")));
+
+        assertThat(host.readReview(MR_URL).orElseThrow().openedAt()).isZero();
+    }
+
+    @Test
     void authenticatesWithTheConfiguredTokenAsAPrivateHeader() {
         when(http.get(anyString(), anyMap())).thenReturn(Optional.of(json.readTree("[]")));
 

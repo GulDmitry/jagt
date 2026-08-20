@@ -243,6 +243,14 @@ link to it, because no file here is named after one vendor.
   nothing older — the owner's call (2026-08-18), and the reason nothing gzipped is read back. The file stays
   structured on EVERY surface: `ConsoleLogging` used to try blanking `logging.structured.format.file` for the
   console UIs, which would leave `activity` nothing to parse, and that dead override is gone.
+- THREE CLOCKS, THREE QUESTIONS, AND NONE OF THEM ANSWERS ANOTHER'S. `statusSince` is time in THIS status —
+  it restarts on every real transition, including a respawned agent re-reporting itself out of REVERTED, which
+  is why it cannot answer "how long has this been waiting". `lastActiveTimestamp` is liveness for the watchdog
+  (any MCP call, keep-alives included). `TaskState.requestOpenedAt` is the review's own age (dropped the moment the task is pointed at another request, so a stamp cannot outlive what it describes), and it is the CODE
+  HOST's `created_at` — stamped by every review read (`ReviewFacts.openedAt`, one write with the pipeline
+  wording), never jagt's own stamp: `mrCreatedAt` is the round window `AutoReviewCadence` measures, and a task
+  RESUMED on someone's week-old request would read as opened just now. A read that cannot say (the paid model
+  read) leaves it at 0 and the surfaces show no age, which is the honest answer.
 - THE CHECKS ARE READ WHERE THE COMMENTS ARE, AND SHOWN WITHOUT BEING ASKED FOR. A sweep already pulls the review
   round, so it stamps what the host said about the pipeline onto the task (`TaskState.pipelineStatus`, the host's
   OWN wording) and `flow/Pipeline` is the one parser that turns it into GREEN / RED / RUNNING / NONE — every host

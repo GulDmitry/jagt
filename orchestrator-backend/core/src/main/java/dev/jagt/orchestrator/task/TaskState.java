@@ -31,6 +31,9 @@ public record TaskState(
         String baseBranch,
         // mrCreatedAt is when jagt stamped the round, not the host's own creation time. Zero = unset.
         long mrCreatedAt,
+        // When the HOST says the request was opened — how long the review has been hanging, which no status
+        // clock answers. Written by whatever read last saw it; 0 until one did (a model read cannot say).
+        long requestOpenedAt,
         long lastPolledAt,
         // When the watchdog last saw a sign of life from an agent it found silent; 0 = not silent.
         long silentSince,
@@ -71,6 +74,7 @@ public record TaskState(
             @JsonProperty("ticketUrl") String ticketUrl,
             @JsonProperty("baseBranch") String baseBranch,
             @JsonProperty("mrCreatedAt") long mrCreatedAt,
+            @JsonProperty("requestOpenedAt") Long requestOpenedAt,
             @JsonProperty("lastPolledAt") long lastPolledAt,
             // Boxed: a state.json written before this field existed omits it, and Jackson 3 refuses to map an
             // absent value onto a primitive — the file would be quarantined as corrupt on the first read.
@@ -83,8 +87,8 @@ public record TaskState(
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
         return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
-                baseBranch, mrCreatedAt, lastPolledAt, silentSince == null ? 0 : silentSince, autoReview,
-                pipelineStatus, usage, history);
+                baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
+                silentSince == null ? 0 : silentSince, autoReview, pipelineStatus, usage, history);
     }
 
     @JsonIgnore
@@ -160,8 +164,7 @@ public record TaskState(
     /** A NEW review round on one repository's request. The status that follows is not decided here. */
     public TaskState withReviewRound(String project, String reviewRequestUrl) {
         long now = System.currentTimeMillis();
-        return toBuilder().lastActiveTimestamp(now)
-                .repos(mapRepo(project, repo -> repo.withMrUrl(reviewRequestUrl)))
+        return relinked(project, reviewRequestUrl).lastActiveTimestamp(now)
                 // A new round has new checks: the last one's verdict describes a run that no longer exists.
                 .pipelineStatus(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
@@ -224,6 +227,11 @@ public record TaskState(
         return silentSince > 0;
     }
 
+    /** The host's own answer; a read that does not know it (0) must not erase one that did. */
+    public TaskState withRequestOpenedAt(long requestOpenedAt) {
+        return requestOpenedAt <= 0 ? this : toBuilder().requestOpenedAt(requestOpenedAt).build();
+    }
+
     public TaskState withPipelineStatus(String hostStatus) {
         return toBuilder().pipelineStatus(hostStatus).build();
     }
@@ -277,7 +285,17 @@ public record TaskState(
     }
 
     public TaskState withMrUrl(String project, String mrUrl) {
-        return toBuilder().repos(mapRepo(project, repo -> repo.withMrUrl(mrUrl))).build();
+        return relinked(project, mrUrl).build();
+    }
+
+    /**
+     * Points one repository at a request, and DROPS {@code requestOpenedAt} when that changes what is linked: the
+     * stamp describes the requests a read saw, so a second request opened on the same task would otherwise read
+     * as days old until the next read stamped it again.
+     */
+    private Builder relinked(String project, String mrUrl) {
+        List<TaskRepo> repos = mapRepo(project, repo -> repo.withMrUrl(mrUrl));
+        return toBuilder().repos(repos).requestOpenedAt(repos.equals(this.repos) ? requestOpenedAt : 0);
     }
 
     public TaskState withMrUrl(String mrUrl) {
@@ -339,7 +357,8 @@ public record TaskState(
         return new Builder(repos, status)
                 .lastActiveTimestamp(lastActiveTimestamp).message(message).alias(alias)
                 .title(title).ticketUrl(ticketUrl).baseBranch(baseBranch)
-                .mrCreatedAt(mrCreatedAt).lastPolledAt(lastPolledAt).silentSince(silentSince)
+                .mrCreatedAt(mrCreatedAt).requestOpenedAt(requestOpenedAt)
+                .lastPolledAt(lastPolledAt).silentSince(silentSince)
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).usage(usage).history(history);
     }
 
@@ -357,6 +376,7 @@ public record TaskState(
         private String ticketUrl;
         private String baseBranch;
         private long mrCreatedAt;
+        private long requestOpenedAt;
         private long lastPolledAt;
         private long silentSince;
         private Boolean autoReview;
@@ -434,6 +454,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder requestOpenedAt(long requestOpenedAt) {
+            this.requestOpenedAt = requestOpenedAt;
+            return this;
+        }
+
         public Builder lastPolledAt(long lastPolledAt) {
             this.lastPolledAt = lastPolledAt;
             return this;
@@ -472,8 +497,8 @@ public record TaskState(
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
-                    baseBranch, mrCreatedAt, lastPolledAt, silentSince, autoReview, pipelineStatus, usage,
-                    log);
+                    baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, autoReview,
+                    pipelineStatus, usage, log);
         }
     }
 }

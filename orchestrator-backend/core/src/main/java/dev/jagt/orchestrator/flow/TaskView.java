@@ -40,6 +40,8 @@ public record TaskView(
         long lastActiveAt,
         // Since when it has been in THIS status — not the activity stamp a keep-alive bumps.
         long statusSince,
+        // When the code host says the review request was opened; 0 = no request, or no read has said yet.
+        long requestOpenedAt,
         List<StatusChange> history,
         // Drafted review replies are waiting in the worktree, and nothing else announces them.
         boolean draftedReplies,
@@ -77,7 +79,8 @@ public record TaskView(
                                 deployBranches.get(repo.project())))
                         .toList(),
                 task.lastActiveTimestamp(),
-                task.statusSince(), task.history(), draftedReplies, autoReview,
+                task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
+                task.history(), draftedReplies, autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(),
                 task.usageOrNone().total());
     }

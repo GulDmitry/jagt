@@ -97,7 +97,7 @@ public class ReviewSweepService {
             rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
         }
         ReviewFacts r = merged(rounds);
-        recordChecks(taskId, r.pipelineStatus());
+        record(taskId, r);
         Pipeline checks = Pipeline.of(r.pipelineStatus());
         boolean pipelineFailed = checks == Pipeline.RED;
         if (r.comments().isEmpty() && !pipelineFailed) {
@@ -124,26 +124,32 @@ public class ReviewSweepService {
     }
 
     /**
-     * Keeps what the host said about the checks on the task, and taps the human ONCE when a run turns red — a
-     * later poll saying the same thing writes nothing and says nothing, or an unattended sweep would rewrite the
-     * state file and notify on a loop.
+     * Keeps what the host said about the checks and when it says the request was opened, and taps the human ONCE
+     * when a run turns red — a later poll saying the same thing writes nothing and says nothing, or an unattended
+     * sweep would rewrite the state file and notify on a loop. ONE write for both, since both come off one read.
      */
-    private void recordChecks(String taskId, String hostStatus) {
-        String said = stateService.task(taskId).map(TaskState::pipelineStatus).orElse(null);
-        if (java.util.Objects.equals(said, hostStatus)) {
+    private void record(String taskId, ReviewFacts facts) {
+        Optional<TaskState> before = stateService.task(taskId);
+        String said = before.map(TaskState::pipelineStatus).orElse(null);
+        boolean newChecks = !java.util.Objects.equals(said, facts.pipelineStatus());
+        boolean newOpened = facts.openedAt() > 0
+                && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.openedAt();
+        if (!newChecks && !newOpened) {
             return;
         }
+        stateService.updateTask(taskId, task -> task.withPipelineStatus(facts.pipelineStatus())
+                .withRequestOpenedAt(facts.openedAt()));
         Pipeline was = Pipeline.of(said);
-        Pipeline now = Pipeline.of(hostStatus);
-        stateService.updateTask(taskId, task -> task.withPipelineStatus(hostStatus));
-        if (now.worthATap() && now != was) {
-            notifications.send(Notification.checksFailed(taskId, hostStatus));
+        Pipeline now = Pipeline.of(facts.pipelineStatus());
+        if (newChecks && now.worthATap() && now != was) {
+            notifications.send(Notification.checksFailed(taskId, facts.pipelineStatus()));
         }
     }
 
     private static ReviewFacts named(String project, ReviewFacts round) {
         return new ReviewFacts(round.exists(), round.approved(), round.pipelineStatus(),
-                round.comments().stream().map(comment -> "[" + project + "] " + comment).toList());
+                round.comments().stream().map(comment -> "[" + project + "] " + comment).toList(),
+                round.openedAt());
     }
 
     /**
@@ -158,7 +164,13 @@ public class ReviewSweepService {
         return new ReviewFacts(true,
                 rounds.stream().allMatch(ReviewFacts::approved),
                 worstPipeline(rounds),
-                rounds.stream().flatMap(round -> round.comments().stream()).toList());
+                rounds.stream().flatMap(round -> round.comments().stream()).toList(),
+                longestOpen(rounds));
+    }
+
+    /** The OLDEST request: how long the review has been hanging is the longest any of them has waited. */
+    private static long longestOpen(List<ReviewFacts> rounds) {
+        return rounds.stream().mapToLong(ReviewFacts::openedAt).filter(opened -> opened > 0).min().orElse(0);
     }
 
     /**

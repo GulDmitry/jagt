@@ -67,6 +67,33 @@ class DashboardRendererTest {
         assertThat(out).contains("(2h in REVIEW_PENDING)");
     }
 
+    /** The status clock restarts on every round; how long the review has been waiting is the other clock. */
+    @Test
+    void saysHowLongTheReviewRequestHasBeenOpenNextToTheStatusClock(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").title("title").mrUrl("https://host/x/-/merge_requests/9")
+                .requestOpenedAt(System.currentTimeMillis() - Duration.ofHours(8).toMillis())
+                .history(List.of(new StatusChange(TaskStatus.CI_POLLING,
+                        System.currentTimeMillis() - 600_000, null)))
+                .build());
+
+        String out = rendererFor(state).render();
+
+        assertThat(out).contains("(10m in CI_POLLING · MR 8h)");
+    }
+
+    @Test
+    void saysNothingAboutTheRequestsAgeWhileNoReadHasSaidWhenItWasOpened(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").title("title").mrUrl("https://host/x/-/merge_requests/9").build());
+
+        String out = rendererFor(state).render();
+
+        assertThat(out).doesNotContain("MR ");
+    }
+
     @Test
     void ordersRowsByLastActiveDescendingUnderTheSortedActiveColumn(@TempDir Path root) {
         StateService state = stateIn(root);

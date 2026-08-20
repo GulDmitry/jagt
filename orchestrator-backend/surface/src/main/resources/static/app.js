@@ -247,9 +247,9 @@ function card(task) {
 
   const meta = document.createElement('div');
   meta.className = 'meta';
-  // Two different clocks, on purpose: how long it has been in THIS status (what you want when a task is
-  // waiting on you) and when the session last did anything (a keep-alive bumps only the second one). The
-  // second one is LABELLED — two bare "…d ago" in one row read as two ages of the same thing.
+  // Three clocks, three questions: how long it has been in THIS status, how long the review request has been
+  // open (below), and when the session last did anything (a keep-alive bumps only the last one). All but the
+  // status one are LABELLED — bare durations in one row read as several ages of the same thing.
   const status = document.createElement('span');
   status.className = 'status';
   status.textContent = `${task.status} · ${duration(Date.now() - task.statusSince)}`;
@@ -257,7 +257,15 @@ function card(task) {
   // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
   const repos = task.repos || [];
   const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
-  meta.append(status, span(null, where), span(null, `active ${relative(task.lastActiveAt)}`));
+  meta.append(status, span(null, where));
+  // The clock a status word cannot give: how long the REQUEST has been open. The status clock restarts on
+  // every round — and on a respawned agent re-reporting itself — while the review keeps waiting.
+  if (task.requestOpenedAt > 0) {
+    const open = span('mr-age', `MR ${duration(Date.now() - task.requestOpenedAt)}`);
+    open.dataset.tip = `review request open since ${new Date(task.requestOpenedAt).toLocaleString()}`;
+    meta.append(open);
+  }
+  meta.append(span(null, `active ${relative(task.lastActiveAt)}`));
   // The checks, as one dot: the sweep already reads the pipeline, and a red run while the card still says
   // CI_POLLING is the thing a status word cannot show.
   if (task.pipeline && task.pipeline !== 'NONE') {

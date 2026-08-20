@@ -224,6 +224,24 @@ class TaskStateTest {
         assertThat(deployed.repo("php").orElseThrow().deployCommit()).isNull();
     }
 
+    @Test
+    void keepsAKnownRequestAgeWhenAReadCannotSayWhenItWasOpened() {
+        TaskState stamped = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").requestOpenedAt(1_700_000_000_000L).build();
+
+        assertThat(stamped.withRequestOpenedAt(0).requestOpenedAt()).isEqualTo(1_700_000_000_000L);
+    }
+
+    /** The stamp describes the request that was linked; a second one would otherwise read as days old. */
+    @Test
+    void dropsTheRequestAgeWhenTheTaskIsPointedAtAnotherRequest() {
+        TaskState stamped = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").requestOpenedAt(1_700_000_000_000L).build();
+
+        assertThat(stamped.withMrUrl("http://mr/2").requestOpenedAt()).isZero();
+        assertThat(stamped.withMrUrl("http://mr/1").requestOpenedAt()).isEqualTo(1_700_000_000_000L);
+    }
+
     /**
      * A task as an OLD state.json holds it: no history at all. The builder cannot express that (a null history
      * means "brand new", so it seeds one), which leaves the canonical constructor — and that is a row of
@@ -232,6 +250,6 @@ class TaskStateTest {
     private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
                                         List<StatusChange> history) {
         return new TaskState(List.of(TaskRepo.of("proj", "/wt")), status, lastActive, message, "a1", null,
-                null, null, 0, 0, 0, null, null, null, history);
+                null, null, 0, 0, 0, 0, null, null, null, history);
     }
 }

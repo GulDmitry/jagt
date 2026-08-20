@@ -77,12 +77,24 @@ public class DashboardRenderer {
             out.append("                    → ").append(task.owner().label()).append(" · ")
                     .append(task.hint()).append("  (")
                     .append(DurationFormat.compact(System.currentTimeMillis() - task.statusSince()))
-                    .append(" in ").append(task.status()).append(")\n");
+                    .append(" in ").append(task.status()).append(requestOpen(task)).append(")\n");
         }
         if (tasks.isEmpty()) {
             out.append("(no tasks)\n");
         }
         return out.toString();
+    }
+
+    /**
+     * How long the review request has been open, next to the status clock a respawned agent resets — the two
+     * answer different questions, and this is the one a human means by "how long has this been waiting". Worded
+     * as the board words it, and as short: this is already the longest line on the dashboard, and a wrap costs
+     * every polled task a row.
+     */
+    private static String requestOpen(TaskView task) {
+        return task.requestOpenedAt() <= 0
+                ? ""
+                : " · MR " + DurationFormat.compact(System.currentTimeMillis() - task.requestOpenedAt());
     }
 
     /**

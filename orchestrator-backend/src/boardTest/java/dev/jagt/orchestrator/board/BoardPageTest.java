@@ -197,6 +197,33 @@ class BoardPageTest {
         assertThat(page.locator("article .detail")).hasCount(0);
     }
 
+    /**
+     * The status clock restarts on every round and on a respawned agent re-reporting itself, so how long the
+     * review has been hanging is a clock of its own.
+     */
+    @Test
+    void aCardSaysHowLongTheReviewRequestHasBeenOpen() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .requestOpenedAt(now() - java.time.Duration.ofHours(8).toMillis())
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .mr-age")).hasText("MR 8h");
+    }
+
+    @Test
+    void aCardSaysNothingAboutTheRequestsAgeWhileNoReadHasSaidWhenItWasOpened() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .mr-age")).hasCount(0);
+    }
+
     @Test
     void showsAHandEditedAliasAsTextRatherThanAsMarkup() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),

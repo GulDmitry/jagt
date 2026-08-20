@@ -117,7 +117,7 @@ article.ci { border-left-color: var(--ci); }
 .badge.agent { background: var(--agent-bg); color: var(--agent); }
 .badge.ci { background: var(--ci-bg); color: var(--ci); }
 .badge.nobody { background: var(--nobody-bg); color: var(--nobody); }
-.status { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.status, .mr-age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
 .hint { font-size: 12px; color: var(--muted); margin: 6px 0; }
 .detail { font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
 .detail.problem { color: var(--danger); font-weight: 600; }

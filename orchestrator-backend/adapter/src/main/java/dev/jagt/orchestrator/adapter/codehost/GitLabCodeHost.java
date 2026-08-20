@@ -137,7 +137,8 @@ public class GitLabCodeHost implements CodeHost {
             log.warn("GitLab approvals for {} are unreadable — treating the request as NOT approved", mrApi);
             return false;
         });
-        return Optional.of(new ReviewFacts(true, approved, pipelineStatus(detail.get()), comments.get()));
+        return Optional.of(new ReviewFacts(true, approved, pipelineStatus(detail.get()), comments.get(),
+                HostStamp.epochMillis(detail.get().path("created_at").asString(""))));
     }
 
     @Override

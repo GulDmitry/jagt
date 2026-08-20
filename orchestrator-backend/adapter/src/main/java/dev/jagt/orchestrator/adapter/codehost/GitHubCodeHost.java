@@ -49,6 +49,7 @@ public class GitHubCodeHost implements CodeHost {
               repository(owner:$owner,name:$repo){
                 pullRequest(number:$number){
                   reviewDecision
+                  createdAt
                   commits(last:1){nodes{commit{statusCheckRollup{state}}}}
                   latestReviews(first:%d){nodes{state body author{login}}}
                   reviewThreads(first:%d,after:$after){
@@ -181,7 +182,8 @@ public class GitHubCodeHost implements CodeHost {
         if (comments.isEmpty() && "CHANGES_REQUESTED".equals(pullRequest.path("reviewDecision").asString(""))) {
             comments.add("the reviewer: requested changes — open the review request, it carries no comment");
         }
-        return new ReviewFacts(true, approved(pullRequest), checkStatus(pullRequest), List.copyOf(comments));
+        return new ReviewFacts(true, approved(pullRequest), checkStatus(pullRequest), List.copyOf(comments),
+                HostStamp.epochMillis(pullRequest.path("createdAt").asString("")));
     }
 
     /**
