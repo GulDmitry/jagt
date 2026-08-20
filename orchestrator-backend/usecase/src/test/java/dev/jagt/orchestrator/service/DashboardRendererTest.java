@@ -181,7 +181,7 @@ class DashboardRendererTest {
         String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state),
                 new Jobs(List.of())).render();
 
-        assertThat(out).contains("└ auto-review · stopped polling this round after 24h");
+        assertThat(out).contains("└ auto-review · no further polls: this round is past its 24h window");
     }
 
     @Test
@@ -197,7 +197,7 @@ class DashboardRendererTest {
         String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state),
                 new Jobs(List.of())).render();
 
-        assertThat(out).contains("└ auto-review · off for this task");
+        assertThat(out).contains("└ auto-review · polling is disabled for this task");
     }
 
     /** With polling off, the header has to say so — silence is what a human cannot tell apart from waiting. */

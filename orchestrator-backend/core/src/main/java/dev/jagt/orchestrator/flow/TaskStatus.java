@@ -1,13 +1,13 @@
 package dev.jagt.orchestrator.flow;
 
 public enum TaskStatus {
-    NEW("new"),
+    NEW("starting"),
     IN_PROGRESS("agent working"),
     REVIEW_PENDING("not shipped"),
-    SHIPPING("shipping"),
+    SHIPPING("pushing"),
     CI_POLLING("out for review"),
     CI_FAILED("checks failed"),
-    REVIEWED("review clear"),
+    REVIEWED("review passed"),
     APPROVED("approved"),
     DEPLOY_CONFLICT("deploy conflict"),
     DEPLOYED("deployed"),

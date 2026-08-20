@@ -63,8 +63,10 @@ tmux send-keys -t "$SESSION" "ORCHESTRATOR_ROOT=$ROOT $JAVA -jar $JAR --server.p
 for _ in $(seq 1 40); do curl -s "localhost:$PORT/state" >/dev/null 2>&1 && break; sleep 1; done
 sleep 3
 
-if ! tmux capture-pane -p -t "$SESSION" | grep -q 'IN_PROGRESS'; then
-  echo "FAIL: the dashboard never showed the initial IN_PROGRESS row — the console did not start"
+# The screen carries TaskStatus.label(), not the enum name: what a human reads is the whole point of the
+# dashboard, so this asserts what a human would see.
+if ! tmux capture-pane -p -t "$SESSION" | grep -q 'agent working'; then
+  echo "FAIL: the dashboard never showed the initial 'agent working' row — the console did not start"
   exit 1
 fi
 
@@ -76,7 +78,7 @@ curl -s -X POST "localhost:$PORT/mcp" -H 'Content-Type: application/json' -d "{\
 
 for _ in $(seq 1 6); do
   sleep 1
-  if tmux capture-pane -p -t "$SESSION" | grep -q 'SHIPPING'; then
+  if tmux capture-pane -p -t "$SESSION" | grep -q 'pushing'; then
     echo "PASS: the dashboard showed the new status without waiting for the 60s refresh"
     exit 0
   fi

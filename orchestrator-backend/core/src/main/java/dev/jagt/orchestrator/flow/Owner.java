@@ -8,9 +8,9 @@ public enum Owner {
     /** You. Nothing moves until you act. */
     YOU("you"),
     /** The code host — a pipeline or a reviewer. */
-    CI("ci"),
+    CI("code host"),
     /** Nobody: the task is closed. */
-    NOBODY("nobody");
+    NOBODY("none");
 
     private final String label;
 

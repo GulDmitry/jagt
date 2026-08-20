@@ -8,19 +8,19 @@ package dev.jagt.orchestrator.flow;
  */
 public enum TaskAction {
 
-    SHIP(Group.FLOW, "ship", "Ship", "approve: commit, push, open or update the review request"),
+    SHIP(Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
     SWEEP(Group.FLOW, "sweep", "Check review",
-            "pull the checks + unresolved comments and relay them to the agent"),
+            "read the checks and unresolved comments, relay them to the agent"),
     DEPLOY(Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
     REVERT(Group.FLOW, "revert", "Revert",
-            "undo the LAST deploy only, earlier ones stay live: revert that merge and push"),
-    DONE(Group.FLOW, "done", "Done", "close the task: session, worktree and state (the branch is kept)"),
-    FOCUS(Group.TOOL, "focus", "Focus", "jump to the agent's terminal window"),
-    IDE(Group.TOOL, "ide", "Open IDE", "open the worktree as a project — Git → Local Changes is the live diff",
+            "revert the last deploy's merge commit and push; earlier deploys stay live"),
+    DONE(Group.FLOW, "done", "Done", "kill the session, delete the worktree, drop the task; the branch is kept"),
+    FOCUS(Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
+    IDE(Group.TOOL, "ide", "Open IDE", "open the worktree in the IDE; Local Changes holds the uncommitted diff",
             "ide <ticket> [diff]"),
-    DIFF(Group.TOOL, "diff", "Diff", "static snapshot of the change vs the deploy branch"),
+    DIFF(Group.TOOL, "diff", "Diff", "show the diff against the deploy branch"),
     RESPAWN(Group.TOOL, "respawn", "Restart agent",
-            "start a new agent session in the same worktree — it re-reads its brief");
+            "start a new agent session in the same worktree");
 
     /**
      * Which half of a card an action belongs to: FLOW moves the task along its life, closing it included; TOOL

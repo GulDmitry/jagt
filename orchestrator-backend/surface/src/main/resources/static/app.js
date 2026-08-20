@@ -66,7 +66,7 @@ const watchLine = (watch) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
     const remaining = watch.nextPollAt - Date.now();
-    return {pulse: remaining <= 0 ? 'now' : countdown(remaining), tip: watch.note};
+    return {pulse: `next poll ${remaining <= 0 ? 'due' : countdown(remaining)}`, tip: watch.note};
   }
   return {pulse: watch.label, tip: watch.note, stalled: true};
 };
@@ -76,8 +76,8 @@ const requestLink = (url, label, openedAt) => {
   const anchor = link(url, openedAt > 0 ? `${label} ${duration(Date.now() - openedAt)}` : label);
   anchor.className = 'mr-age';
   anchor.dataset.tip = openedAt > 0
-    ? `review request, open since ${new Date(openedAt).toLocaleString()}`
-    : 'review request';
+    ? `review request; opened ${new Date(openedAt).toLocaleString()}`
+    : 'review request; opening time unknown until the first sweep';
   return anchor;
 };
 
@@ -221,12 +221,12 @@ function renderJobs() {
   }
   const failing = jobsSummary.failing;
   chip.textContent = failing
-    ? `${failing} job(s) failing`
-    : `jobs ↻ ${jobsSummary.nextRunAt ? countdown(jobsSummary.nextRunAt - Date.now()) : '-'}`;
+    ? `jobs: ${failing} failed`
+    : `jobs: next ${jobsSummary.nextRunAt ? countdown(jobsSummary.nextRunAt - Date.now()) : '-'}`;
   chip.classList.toggle('bad', failing > 0);
   chip.dataset.tip = failing
-    ? 'a job\u2019s last run threw — open the Jobs report'
-    : 'the soonest run of anything unattended';
+    ? 'a job\u2019s last run failed; open the Jobs report'
+    : 'next scheduled run of any unattended job';
 }
 
 function render() {
@@ -235,7 +235,7 @@ function render() {
   const waiting = tasks.filter((t) => t.owner === 'YOU').length;
   const waitingLabel = document.getElementById('waiting');
   waitingLabel.hidden = waiting === 0;
-  waitingLabel.textContent = `${waiting} waiting on you`;
+  waitingLabel.textContent = `${waiting} need your action`;
   const chip = document.getElementById('auto-review');
   chip.textContent = autoReview.summary || '';
   chip.classList.toggle('on', autoReview.enabled);
@@ -266,7 +266,7 @@ function card(task) {
   // Only YOUR move is news; every other owner is the status word again. The case this keeps is an agent that
   // stopped, which flips the owner in a phase where nothing else says so.
   if (task.owner === 'YOU') {
-    const badge = span('badge you', 'your move');
+    const badge = span('badge you', 'action required');
     badge.dataset.tip = task.hint;
     top.append(badge);
   }
@@ -306,7 +306,7 @@ function card(task) {
   }
   const watch = watchLine(task.autoReview);
   if (watch) {
-    const pulse = span(watch.stalled ? 'pulse stalled' : 'pulse', `↻ ${watch.pulse}`);
+    const pulse = span(watch.stalled ? 'pulse stalled' : 'pulse', watch.pulse);
     pulse.dataset.tip = watch.tip;
     meta.append(pulse);
   }
@@ -324,8 +324,8 @@ function card(task) {
   if (task.draftedReplies) {
     const drafts = document.createElement('div');
     drafts.className = 'drafts';
-    drafts.textContent = 'drafted review replies — read them before you ship';
-    drafts.dataset.tip = 'review_replies.md in the worktree; open it with the IDE action';
+    drafts.textContent = 'review replies drafted, not posted; ship posts them';
+    drafts.dataset.tip = 'review_replies.md in the worktree';
     article_children.push(drafts);
   }
 

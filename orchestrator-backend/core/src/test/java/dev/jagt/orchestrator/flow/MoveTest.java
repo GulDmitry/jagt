@@ -42,8 +42,7 @@ class MoveTest {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, false), false);
 
         assertThat(move.primary()).isNull();
-        assertThat(move.hint()).isEqualTo("nothing to ship — every comment answered; the open threads are the"
-                + " reviewer's move");
+        assertThat(move.hint()).isEqualTo("nothing to ship; the open threads are the reviewer's to close");
         assertThat(move.actions()).contains(TaskAction.SHIP);
     }
 
@@ -53,8 +52,8 @@ class MoveTest {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, true), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
-        assertThat(move.hint()).isEqualTo("no code changed — ship to post the drafted replies, nothing else"
-                + " goes out");
+        assertThat(move.hint())
+                .isEqualTo("no code changed; ship posts the drafted replies and nothing else");
     }
 
     @Test
@@ -62,7 +61,7 @@ class MoveTest {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.QUESTION, false), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
-        assertThat(move.hint()).contains("the agent is asking");
+        assertThat(move.hint()).contains("answer the question");
     }
 
     @ParameterizedTest
@@ -71,7 +70,7 @@ class MoveTest {
         Move move = Move.forTask(status, false, new RoundState(AgentReport.QUESTION, false), false);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
-        assertThat(move.hint()).contains("the agent is asking");
+        assertThat(move.hint()).contains("answer the question");
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     }
 
@@ -85,7 +84,7 @@ class MoveTest {
         Move move = Move.forTask(status, false, RoundState.NONE, true);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
-        assertThat(move.hint()).contains("gone quiet");
+        assertThat(move.hint()).contains("stopped without reporting");
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     }
 
@@ -96,7 +95,7 @@ class MoveTest {
                 new RoundState(AgentReport.QUESTION, false), true);
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
-        assertThat(move.hint()).contains("the agent is asking");
+        assertThat(move.hint()).contains("answer the question");
     }
 
     /** A status whose wait is the human's or the host's says nothing new when an agent stamp lingers on it. */

@@ -214,7 +214,7 @@ link to it, because no file here is named after one vendor.
   a `do` on that basis is jagt deciding something it cannot know. Whoever wants a bound has the machine's own
   tools for it. Do not reintroduce a cap, a queue, or a "slots" indicator.
 - A STATUS SAYS ITSELF IN WORDS, ONCE: `TaskStatus.label()` is the spelling both surfaces render (`out for
-  review`, `not shipped`, `review clear`), while the enum name stays the wire value, what `state.json` carries and
+  review`, `not shipped`, `review passed`), while the enum name stays the wire value, what `state.json` carries and
   what the board hangs in the chip's tooltip. It names a STATE and never a next move — the highlighted action
   already gives that, and a status that advised too would be the third copy of one sentence. The board binds the
   age INSIDE that chip, because `CI_POLLING · 18m · sng` reads as three unrelated items with the middle one

@@ -76,7 +76,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", status).message("step 2").silentSince(1_000).build();
 
         assertThat(DashboardLine.forTask(task, null))
-                .isEqualTo("NEEDS YOU: agent silent — no report and a quiet window");
+                .isEqualTo("NEEDS YOU: agent stopped: no MCP call and no process in its window");
     }
 
     /** What it asked is worth more than the fact it then stopped; the next-move line still names the silence. */

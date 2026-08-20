@@ -32,18 +32,18 @@ public record AutoReviewWatch(State state, long nextPollAt, String note, String 
 
     public static AutoReviewWatch windowElapsed(long windowHours) {
         return new AutoReviewWatch(State.WINDOW_ELAPSED, 0,
-                "stopped polling this round after " + windowHours + "h; sweep it yourself",
+                "no further polls: this round is past its " + windowHours + "h window",
                 "polling stopped");
     }
 
     public static AutoReviewWatch offForTask() {
-        return new AutoReviewWatch(State.OFF_FOR_TASK, 0, "off for this task; sweep it yourself",
+        return new AutoReviewWatch(State.OFF_FOR_TASK, 0, "polling is disabled for this task",
                 "polling off");
     }
 
     /** A request nothing can time — its round was never stamped, so no interval can be measured from it. */
     public static AutoReviewWatch noRound() {
         return new AutoReviewWatch(State.NO_ROUND, 0,
-                "cannot time this round (no stamp); sweep it yourself", "cannot time this");
+                "no round stamp, so no poll interval can be measured", "cannot time this");
     }
 }

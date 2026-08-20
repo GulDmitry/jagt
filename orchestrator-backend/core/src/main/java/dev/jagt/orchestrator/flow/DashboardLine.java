@@ -17,7 +17,7 @@ public final class DashboardLine {
         AgentReport report = AgentReport.of(message);
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "checks failed");
-            case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict — resolve in the deploy worktree");
+            case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict; resolve it in the deploy worktree");
             case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED -> requestProblem(task, usableRequestLink);
             // A question OUTRANKS the request link: a link reads as "ready to ship", so the human ships and the
             // unanswered question goes out as a review reply.
@@ -48,7 +48,7 @@ public final class DashboardLine {
      * itself misleads, so it is shouted rather than left to the next-move line.
      */
     private static String silence(TaskState task) {
-        return task.agentIsSilent() ? "NEEDS YOU: agent silent — no report and a quiet window" : "";
+        return task.agentIsSilent() ? "NEEDS YOU: agent stopped: no MCP call and no process in its window" : "";
     }
 
     private static String needsInput(String message) {

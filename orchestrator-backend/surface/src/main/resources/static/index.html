@@ -14,7 +14,7 @@
 <header>
   <h1>jagt</h1>
   <span id="waiting" class="waiting" hidden></span>
-  <span id="auto-review" class="chip" data-tip="whether the unattended review poll runs"></span>
+  <span id="auto-review" class="chip" data-tip="unattended review polling: on or off"></span>
   <span id="jobs-pulse" class="chip" hidden></span>
   <span class="grow"></span>
   <label class="control">sort
@@ -24,11 +24,11 @@
       <option value="title">title</option>
     </select>
   </label>
-  <label class="control checkbox" data-tip="only tasks whose next move is yours"><input type="checkbox" id="mine"> waiting on me</label>
+  <label class="control checkbox" data-tip="show only tasks that need your action"><input type="checkbox" id="mine"> needs my action</label>
   <button id="resume-task">Resume</button>
-  <button id="open-palette" data-tip="⌘K / Ctrl-K — say what you want in words">Ask</button>
+  <button id="open-palette" data-tip="⌘K / Ctrl-K: a command, or plain words">Ask</button>
   <span id="reports"></span>
-  <span id="live" class="dot" data-tip="live updates"></span>
+  <span id="live" class="dot" data-tip="push connection to the backend"></span>
 </header>
 
 <form id="launch">
@@ -36,7 +36,7 @@
   <!-- Several picked = one task, one agent session, a worktree in each. -->
   <select id="project" name="project" multiple size="1" data-tip="one project, or several for work that spans them"></select>
   <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">
-  <label class="checkbox" data-tip="the agent writes a plan and waits for your go-ahead before touching code"><input type="checkbox" id="plan"> plan first</label>
+  <label class="checkbox" data-tip="agent writes a plan and waits for approval before changing code"><input type="checkbox" id="plan"> plan first</label>
   <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
   <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button>
   <span id="launch-state" class="muted"></span>
@@ -49,7 +49,7 @@
 </form>
 
 <form id="palette" hidden>
-  <input id="ask" list="ask-options" placeholder="a command (ship a1), or say it in words"
+  <input id="ask" list="ask-options" placeholder="a command (ship a1), or plain words"
          autocomplete="off" required>
   <datalist id="ask-options"></datalist>
   <button type="submit" class="primary">Run</button>
@@ -78,7 +78,7 @@
 <main id="board"></main>
 <p id="empty" class="empty" hidden>No tasks. The row above starts one — the same thing
   <code>do ABC-42</code> does in the console.</p>
-<button id="show-log" class="log" hidden data-tip="only the first line fits here — click for every message this session"></button>
+<button id="show-log" class="log" hidden data-tip="click for every message this session"></button>
 <div id="toasts"></div>
 <script src="app.js"></script>
 </body>

@@ -97,27 +97,27 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
     private static String hint(TaskStatus status, RoundState round, boolean agentSilent) {
         if (ownerOf(status) == Owner.AGENT && stopped(round, agentSilent)) {
             return round.report() == AgentReport.QUESTION
-                    ? "the agent is asking — answer it in its window (focus) and it carries on"
-                    : "the agent has gone quiet — focus it: a prompt nobody answered, or it died (respawn)";
+                    ? "answer the question in the agent's window (focus)"
+                    : "agent stopped without reporting: focus to see why, or respawn";
         }
         return switch (status) {
-            case NEW, IN_PROGRESS -> "agent working — wait or focus";
+            case NEW, IN_PROGRESS -> "agent is working; no action required";
             case REVIEW_PENDING -> switch (round.report()) {
                 case NO_CHANGES -> round.draftedReplies()
-                        ? "no code changed — ship to post the drafted replies, nothing else goes out"
-                        : "nothing to ship — every comment answered; the open threads are the reviewer's move";
-                case QUESTION -> "the agent is asking — answer it (focus), then ship";
-                case PLAIN -> "your move: read the diff (ide), then ship";
+                        ? "no code changed; ship posts the drafted replies and nothing else"
+                        : "nothing to ship; the open threads are the reviewer's to close";
+                case QUESTION -> "answer the question (focus), then ship";
+                case PLAIN -> "read the diff (ide), then ship";
             };
-            case SHIPPING -> "shipping — agent committing/pushing; wait for the review request";
-            case CI_POLLING -> "waiting on the code host — check the review when you want";
-            case CI_FAILED -> "your move: check the review (it relays the failure)";
-            case REVIEWED -> "your move: deploy or done";
-            case APPROVED -> "approved — your move: deploy or done";
-            case DEPLOY_CONFLICT -> "your move: ide opens the deploy worktree — resolve + git add, then deploy again";
-            case DEPLOYED -> "your move: done — or ship more changes, then deploy again";
-            case REVERTED -> "deploy reverted on the deploy branch — your move: fix and ship again, or done";
-            case DONE -> "done";
+            case SHIPPING -> "agent is committing and pushing; wait";
+            case CI_POLLING -> "waiting for comments and checks; sweep reads them now";
+            case CI_FAILED -> "sweep relays the failure to the agent";
+            case REVIEWED -> "no open comments, checks green: deploy or done";
+            case APPROVED -> "approved: deploy or done";
+            case DEPLOY_CONFLICT -> "resolve the conflict in the deploy worktree (ide), git add, then deploy";
+            case DEPLOYED -> "done closes the task; ship again to deploy further changes";
+            case REVERTED -> "the deploy was reverted: ship a fix, or done to close";
+            case DONE -> "closed";
         };
     }
 }

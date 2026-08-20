@@ -144,7 +144,7 @@ class BoardPageTest {
 
         assertThat(page.locator("#auto-review")).hasText("auto-review on");
         assertThat(page.locator("#auto-review")).hasClass(java.util.regex.Pattern.compile("on"));
-        assertThat(page.locator("article .pulse")).hasText("↻ 10m");
+        assertThat(page.locator("article .pulse")).hasText("next poll 10m");
     }
 
     @Test
@@ -190,7 +190,7 @@ class BoardPageTest {
 
         assertThat(page.locator("article .alias")).hasText("a1");
         assertThat(page.locator("article .id")).hasText("ABC-1");
-        assertThat(page.locator("article .badge")).hasText("your move");
+        assertThat(page.locator("article .badge")).hasText("action required");
         assertThat(page.locator("article .title")).hasText("Widget layout is off");
         assertThat(page.locator("article .detail")).hasCount(0);
     }
@@ -255,7 +255,7 @@ class BoardPageTest {
     void saysWhenTheNextUnattendedRunIsDueWithoutAReportBeingOpened() {
         Page page = open();
 
-        assertThat(page.locator("#jobs-pulse")).containsText("jobs ↻");
+        assertThat(page.locator("#jobs-pulse")).containsText("jobs: next");
     }
 
     @Test
@@ -290,7 +290,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .pulse.stalled")).hasText("↻ polling stopped");
+        assertThat(page.locator("article .pulse.stalled")).hasText("polling stopped");
     }
 
     @Test
@@ -303,7 +303,7 @@ class BoardPageTest {
         Page page = open();
 
         assertThat(page.locator("article .pulse.stalled")).hasAttribute("data-tip",
-                "stopped polling this round after 24h; sweep it yourself");
+                "no further polls: this round is past its 24h window");
     }
 
     @Test
@@ -388,7 +388,7 @@ class BoardPageTest {
 
         assertThat(page.locator("#tip")).isVisible();
         assertThat(page.locator("#tip"))
-                .hasText("undo the LAST deploy only, earlier ones stay live: revert that merge and push");
+                .hasText("revert the last deploy's merge commit and push; earlier deploys stay live");
     }
 
     @Test
@@ -581,7 +581,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("#waiting")).hasText("1 waiting on you");
+        assertThat(page.locator("#waiting")).hasText("1 need your action");
     }
 
     @Test
@@ -606,7 +606,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .drafts")).containsText("drafted review replies");
+        assertThat(page.locator("article .drafts")).containsText("review replies drafted, not posted");
     }
 
     @Test

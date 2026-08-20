@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'dev.jagt'
-version = '0.6.0'
+version = '0.7.0'
 description = 'Stateful multi-agent dev orchestrator (macOS / Warp / Claude Code)'
 
 java {
