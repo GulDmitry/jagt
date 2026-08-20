@@ -96,6 +96,16 @@ class DashboardLineTest {
         assertThat(DashboardLine.forTask(task, "https://host/mr/425")).isEqualTo("NEEDS INPUT: cache or index?");
     }
 
+    /** An agent may ask without moving its task, and these are the statuses whose own line says nothing about it. */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED", "APPROVED"})
+    void shoutsNeedsInputForAQuestionAskedFromAStatusThatWaitsOnSomebodyElse(TaskStatus status) {
+        TaskState task = TaskState.builder("p", "/wt", status)
+                .message("awaiting: cache or index?").mrUrl("https://host/mr/425").build();
+
+        assertThat(DashboardLine.forTask(task, "https://host/mr/425")).isEqualTo("NEEDS INPUT: cache or index?");
+    }
+
     @Test
     void saysTheRoundChangedNothing() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)

@@ -40,7 +40,8 @@ public final class FlowRules {
         // request exists, another round may be shipped onto it from wherever the task got to.
         rule(TaskAction.SHIP)
                 .from(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING,
-                        TaskStatus.CI_POLLING, TaskStatus.CI_FAILED, TaskStatus.DEPLOYED, TaskStatus.REVERTED)
+                        TaskStatus.CI_POLLING, TaskStatus.CI_FAILED, TaskStatus.REVIEWED, TaskStatus.DEPLOYED,
+                        TaskStatus.REVERTED)
                 .when((status, facts) -> switch (status) {
                     case IN_PROGRESS, REVIEW_PENDING -> true;
                     case SHIPPING -> !facts.agentLive().getAsBoolean();

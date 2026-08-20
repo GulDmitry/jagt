@@ -45,8 +45,12 @@ public class LibNotifyNotifier implements UserNotifier, StartupCheck {
                 : List.of();
     }
 
+    /**
+     * The link is dropped: {@code notify-send}'s only click mechanism is {@code --action}, which needs the
+     * process to stay alive waiting for the daemon to answer, and jagt's notifications are fire-and-forget.
+     */
     @Override
-    public void notify(String title, String message) {
+    public void notify(String title, String message, String link) {
         try {
             processRunner.run(null, TIMEOUT, command(notifySendCommand, title, message))
                     .expectSuccess("notify-send");

@@ -71,6 +71,24 @@ class ReviewSweepServiceTest {
         verify(statusReports, never()).markApproved("ABC-1");
     }
 
+    /**
+     * Both surfaces show the approval beside the request from the moment it opens, and no status carries it until
+     * the approval has already landed — so the round's own answer is stamped, off the read that is happening
+     * anyway.
+     */
+    @Test
+    void stampsWhetherTheRoundIsApprovedSoBothSurfacesCanShowItBesideTheRequest() {
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
+        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+        assertThat(stamped.getValue()
+                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()).approved()).isTrue();
+    }
+
     @Test
     void relaysCommentsAsDraftsAndNeverAutoAdvancesEvenWhenApproved() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, true,
@@ -387,9 +405,10 @@ class ReviewSweepServiceTest {
     /** A model read cannot say, and "open since jagt noticed" is a different fact — wrong by days after a resume. */
     @Test
     void leavesTheRequestsAgeAloneWhenTheReadCouldNotSayWhenItWasOpened() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
-                .pipelineStatus("running").requestOpenedAt(1_700_000_000_000L).build()));
+        TaskState known = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .mrUrl("http://mr/1").pipelineStatus("running").approved(false)
+                .requestOpenedAt(1_700_000_000_000L).build();
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(known));
         when(reviewReader.read("ABC-1", "http://mr/1"))
                 .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of())));
 

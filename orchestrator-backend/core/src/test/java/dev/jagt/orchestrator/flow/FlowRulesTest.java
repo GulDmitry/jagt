@@ -28,7 +28,8 @@ class FlowRulesTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "CI_FAILED", "DEPLOYED", "REVERTED"})
+    @EnumSource(value = TaskStatus.class,
+            names = {"CI_POLLING", "CI_FAILED", "REVIEWED", "DEPLOYED", "REVERTED"})
     void shipsAFurtherRoundOnlyOntoARequestThatIsAlreadyOpen(TaskStatus status) {
         assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.projected(true))).isTrue();
         assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.projected(false))).isFalse();

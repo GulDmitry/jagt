@@ -15,22 +15,25 @@ public final class DashboardLine {
     public static String forTask(TaskState task, String usableRequestLink) {
         String message = task.message();
         AgentReport report = AgentReport.of(message);
+        // A question OUTRANKS every other line and is reachable from every status — an agent may ask without
+        // moving its task. A request link reads as "ready to ship", so the human ships and the unanswered
+        // question goes out as a review reply.
+        if (report == AgentReport.QUESTION && task.status() != TaskStatus.DONE) {
+            return needsInput(message);
+        }
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "checks failed");
             case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict; resolve it in the deploy worktree");
             case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED -> requestProblem(task, usableRequestLink);
-            // A question OUTRANKS the request link: a link reads as "ready to ship", so the human ships and the
-            // unanswered question goes out as a review reply.
             case REVIEW_PENDING -> switch (report) {
-                case QUESTION -> needsInput(message);
                 // Complete on its own: this is the one round that leaves no highlighted button, so a surface
                 // that shows only this line still has to say whose move it is.
                 case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change")
                         + " — the open threads are the reviewer's to close";
-                case PLAIN -> requestProblem(task, usableRequestLink);
+                // A question never reaches here: it is answered above, from whatever status it was asked.
+                case QUESTION, PLAIN -> requestProblem(task, usableRequestLink);
             };
-            case NEW, IN_PROGRESS -> report == AgentReport.QUESTION ? needsInput(message) : silence(task);
-            case SHIPPING -> silence(task);
+            case NEW, IN_PROGRESS, SHIPPING -> silence(task);
             case DONE -> "";
         };
     }

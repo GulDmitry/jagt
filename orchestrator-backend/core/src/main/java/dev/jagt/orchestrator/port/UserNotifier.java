@@ -8,5 +8,10 @@ package dev.jagt.orchestrator.port;
  */
 public interface UserNotifier {
 
-    void notify(String title, String message);
+    /**
+     * @param link a URL to open when the human CLICKS the banner, or null. A banner says which task needs them
+     *             and then leaves them to find it; the click is what closes that gap. Optional in the strong
+     *             sense: a platform whose banners carry no action ignores it, and no caller may depend on it
+     */
+    void notify(String title, String message, String link);
 }

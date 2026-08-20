@@ -26,11 +26,11 @@ public class StatusTools implements McpTools {
     public void declare(McpToolRegistry tools) {
         tools.tool("update_agent_status", """
                 {
-                  "description": "Update the task status and keep-alive timestamp in state.json. Sub-agents MUST call this frequently to avoid Watchdog alerts. taskId defaults to the calling worktree's task.",
+                  "description": "Update the task status and keep-alive timestamp in state.json. Sub-agents MUST call this frequently to avoid Watchdog alerts, and MUST call it with a message starting `awaiting:` BEFORE putting any question to the human — an interactive choice in your own window reaches nobody, and this call is the only thing that puts the question on their board. taskId defaults to the calling worktree's task.",
                   "type": "object",
                   "properties": {
                     "status": {"type": "string", "enum": [%s]},
-                    "message": {"type": "string", "description": "Progress note, 10 words MAX — it renders as one narrow dashboard table line (longer text is truncated)."},
+                    "message": {"type": "string", "description": "Progress note, 10 words MAX — it renders as one narrow dashboard table line (longer text is truncated). Three openings are read by jagt, not just by the human: `awaiting: <question>` hands the task to them and pings, `no changes: <why>` says a review round edited nothing, anything else is a plain note."},
                     "taskId": {"type": "string", "description": "Optional explicit task id or alias (Master use). Sub-agents may only target their own task."}
                   },
                   "required": ["status"]

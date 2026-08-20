@@ -179,3 +179,10 @@ a { color: var(--accent); }
 .checks.running { background: var(--muted); animation: checks-pulse 1.6s ease-in-out infinite; }
 @keyframes checks-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .checks.running { animation: none; } }
+
+/* The approval, beside the request it belongs to: filled once someone has approved, an empty ring while the
+   round is still waiting for one. Filled-or-hollow in the reviewer's own colour, never green: the dot next to
+   it is the checks, and two green discs would differ by nothing a human can see. */
+.approval { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center;
+  border: 2px solid var(--ci); }
+.approval.yes { background: var(--ci); }

@@ -350,6 +350,13 @@ function card(task) {
       meta.append(requestLink(repo.reviewRequestUrl, `${repo.project} MR`, 0));
     }
   }
+  // The approval, as one dot beside the request: whether anyone has approved is what decides if this card is
+  // waiting on a person or on the human reading it, and no status says so until the approval has landed.
+  if (task.approved != null) {
+    const approval = span(task.approved ? 'approval yes' : 'approval', '');
+    approval.dataset.tip = task.approved ? 'review request approved' : 'review request not approved yet';
+    meta.append(approval);
+  }
   // The checks, as one dot: the sweep already reads the pipeline, and a red run while the card still says
   // CI_POLLING is the thing a status word cannot show.
   if (task.pipeline && task.pipeline !== 'NONE') {
@@ -423,14 +430,18 @@ function link(href, text) {
 const deployQuestion = (task) => {
   const lands = (task.repos || []).map((repo) =>
     `${repo.project} → ${repo.deployBranch || 'no deployBranch in config.json'}`);
-  // A deploy lands what was SHIPPED. After a round the agent's fixes sit uncommitted in the worktree and its
-  // drafted answers are unposted, and only `ship` moves either — so the question says so rather than letting a
-  // click quietly deploy the previous round and mark the task DEPLOYED.
-  const unshipped = task.status === 'REVIEW_PENDING' || task.draftedReplies
-    ? '\n\nCareful: this task has work that was never shipped — the deploy lands the last SHIP, not the agent\u2019s'
-      + ' latest changes, and drafted replies stay unposted. Ship first to include them.'
+  // A deploy lands what was SHIPPED, and only `ship` moves what a round left behind — so the question names what
+  // would be left out rather than letting a click quietly deploy the previous round and mark the task DEPLOYED.
+  // TWO facts, never one sentence: a round that reported `no changes` edited nothing, so there is nothing
+  // unshipped to warn about, while its drafted answers may still be sitting in the worktree unposted.
+  const unshipped = task.status === 'REVIEW_PENDING' && task.round !== 'NO_CHANGES'
+    ? '\n\nCareful: the agent\u2019s latest changes were never shipped — a deploy lands the last SHIP, not the'
+      + ' worktree. Ship first to include them.'
     : '';
-  return `Deploy ${task.id}?\n\nThis merges and pushes:\n${lands.join('\n')}${unshipped}`;
+  const drafts = task.draftedReplies
+    ? '\n\nreview_replies.md is still in the worktree: if those answers were never posted, ship posts them.'
+    : '';
+  return `Deploy ${task.id}?\n\nThis merges and pushes:\n${lands.join('\n')}${unshipped}${drafts}`;
 };
 
 const revertQuestion = (task) => {
@@ -504,6 +515,15 @@ launchForm.onsubmit = async (event) => {
 
 filterBox.oninput = render;
 onlyMine.onchange = render;
+
+// A desktop notification about one task links here with `?task=<id>`, and it lands in the FILTER rather than in
+// a selection of its own: the card then stands alone with its actions, the control that did it is visible, and
+// clearing it is the button already on the page. An id nothing matches shows the "no task matches" line, which
+// is the truth — the task was closed while the banner sat there.
+const deepLink = new URLSearchParams(window.location.search).get('task');
+if (deepLink) {
+  filterBox.value = deepLink;
+}
 
 // Push, not poll: the backend tells us when state changed. The slow interval only refreshes the relative
 // clocks ("4m ago"), which no event can announce.

@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
 
@@ -40,7 +39,7 @@ public final class AutoReviewCadence {
 
     /** What a human is owed about this task: is anything watching it, and when will it next look. */
     public AutoReviewWatch watch(TaskState task, long now) {
-        if (!enabled || task.status() != TaskStatus.CI_POLLING) {
+        if (!enabled || !task.status().outForReview()) {
             return AutoReviewWatch.none();
         }
         if (!task.autoReviewEnabled(true)) {

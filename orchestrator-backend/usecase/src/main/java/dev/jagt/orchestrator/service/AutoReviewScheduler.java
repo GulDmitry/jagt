@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
@@ -21,8 +20,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * Polls each CI_POLLING task's request through the SHARED {@link ReviewSweepService}, so an unattended poll can
- * do no more than a human asking for one.
+ * Polls the request of every task out for review through the SHARED {@link ReviewSweepService}, so an unattended
+ * poll can do no more than a human asking for one. REVIEWED is polled too: an approval arrives after the round
+ * came back clean, and it is the one thing a human is told about without asking.
  */
 @Service
 @Slf4j
@@ -85,12 +85,12 @@ public class AutoReviewScheduler implements Job {
         }
         long now = System.currentTimeMillis();
         var tasks = stateService.tasks();
-        // A task RETIRED while still CI_POLLING never leaves that status, so the branch below would keep its
-        // marker for the life of the process.
+        // A task RETIRED while still out for review never leaves that status, so the branch below would keep
+        // its marker for the life of the process.
         windowElapsedNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
         tasks.forEach((taskId, task) -> {
-            // A task that left CI_POLLING (deployed, done) re-arms its window-elapsed ping.
-            if (task.status() != TaskStatus.CI_POLLING) {
+            // A task no longer out for review (deployed, done) re-arms its window-elapsed ping.
+            if (!task.status().outForReview()) {
                 windowElapsedNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
                 return;
             }

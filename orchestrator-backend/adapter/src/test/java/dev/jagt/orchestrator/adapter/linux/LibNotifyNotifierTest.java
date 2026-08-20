@@ -45,7 +45,7 @@ class LibNotifyNotifierTest {
         when(runner.run(any(), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(1, "", "No notification daemon"));
 
-        assertThatCode(() -> new LibNotifyNotifier(runner, "notify-send").notify("jagt", "your move"))
+        assertThatCode(() -> new LibNotifyNotifier(runner, "notify-send").notify("jagt", "your move", null))
                 .doesNotThrowAnyException();
     }
 
@@ -55,7 +55,7 @@ class LibNotifyNotifierTest {
         when(runner.run(any(), any(Duration.class), any()))
                 .thenThrow(new IllegalStateException("Cannot run program \"notify-send\""));
 
-        assertThatCode(() -> new LibNotifyNotifier(runner, "notify-send").notify("jagt", "your move"))
+        assertThatCode(() -> new LibNotifyNotifier(runner, "notify-send").notify("jagt", "your move", null))
                 .doesNotThrowAnyException();
     }
 
@@ -65,7 +65,7 @@ class LibNotifyNotifierTest {
         when(runner.run(any(), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "", ""));
 
-        new LibNotifyNotifier(runner, "/usr/bin/notify-send").notify("jagt", "your move");
+        new LibNotifyNotifier(runner, "/usr/bin/notify-send").notify("jagt", "your move", null);
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(), any(Duration.class), command.capture());

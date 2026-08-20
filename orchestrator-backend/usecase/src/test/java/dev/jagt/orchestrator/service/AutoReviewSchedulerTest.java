@@ -151,6 +151,22 @@ class AutoReviewSchedulerTest {
                         && sent.body().contains("past its 24h window")));
     }
 
+    /**
+     * An approval lands after the round already came back clean, and REVIEWED is where that round sits — a poll
+     * that stopped there would never see one, which is the one thing the human is told about without asking.
+     */
+    @Test
+    void keepsPollingARoundThatCameBackCleanUntilSomebodyApprovesIt(@TempDir Path root) {
+        StateService state = stateWith(root, polling().status(TaskStatus.REVIEWED)
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
+                .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
+        ReviewSweepService sweep = mock(ReviewSweepService.class);
+
+        new AutoReviewScheduler(state, enabledConfig(), sweep, mock(Notifications.class), Runnable::run).run();
+
+        verify(sweep).sweep("ABC-1");
+    }
+
     @Test
     void pollsNothingWhenTheInstallHasAutoReviewOff(@TempDir Path root) {
         StateService state = stateWith(root, polling()

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
+import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.TaskState;
@@ -90,7 +91,9 @@ public class AgentStatusReports {
         boolean handedBack = landed != previous
                 && (landed == TaskStatus.REVIEW_PENDING || landed == TaskStatus.CI_FAILED);
         if (handedBack || askedNow) {
-            ping(taskId, landed, shortMessage, current);
+            // Re-read: the same call may have LINKED the request, and the advice differs on whether one exists.
+            // `current` is only what the task said before, which is what askedNow needed.
+            ping(taskId, landed, shortMessage, stateService.task(taskId));
         }
         if (landed != newStatus) {
             return "Task " + taskId + " stays " + landed + ": that one is a human's to move on from. Your line"
@@ -100,8 +103,8 @@ public class AgentStatusReports {
     }
 
     /**
-     * A clean review (CI green, nothing unresolved) IS a transition: the next move becomes deploy/done instead
-     * of looping back to review.
+     * A clean review (CI green, nothing unresolved) IS a transition: another round stops being the next move. It
+     * is not an approval, so nobody is interrupted for it — see {@link #ping}.
      */
     public void markReviewed(String taskId) {
         markOutcome(taskId, TaskStatus.REVIEWED, "reviewed — checks green, no unresolved comments");
@@ -117,20 +120,38 @@ public class AgentStatusReports {
         return "Notification sent";
     }
 
+    /**
+     * A round that is polled while it waits reads the same outcome every interval, and reporting it again would
+     * rewrite the task's message — an agent's `awaiting: …` among it — clear the watchdog's silence stamp and
+     * stamp activity for a session that has not spoken. So an unchanged status is not reported at all.
+     */
     private void markOutcome(String taskId, TaskStatus status, String message) {
         String id = stateService.canonicalTaskId(taskId);
         TaskStatus previous = stateService.task(id).map(TaskState::status).orElse(null);
-        boolean updated = flow.report(id, status, message);
-        if (updated && status != previous) {
+        if (status == previous) {
+            return;
+        }
+        if (flow.report(id, status, message)) {
             ping(id, status, message, stateService.task(id));
         }
     }
 
+    /**
+     * The human is tapped for a move of THEIRS and nothing else: a round that came back clean but unapproved, or
+     * one whose threads are the reviewer's to close, is news nobody can act on — and a notification that asks for
+     * nothing is what teaches them to dismiss the ones that do. Which is exactly the question the projection
+     * answers, so the ping reads it rather than keeping a second list of statuses worth interrupting for.
+     */
     private void ping(String taskId, TaskStatus status, String message, Optional<TaskState> task) {
         RoundState round = RoundState.of(message,
                 task.map(t -> WorktreeFiles.draftedReplies(t, status)).orElse(false));
+        // Not silent: whoever this ping is about has just spoken, or jagt has just read the round for it.
+        Move move = Move.forTask(status, task.map(TaskState::hasReviewRequest).orElse(true), round, false);
+        if (move.owner() != Owner.YOU) {
+            return;
+        }
         notifications.send(Notification.fromAgent(taskId, title(status, round),
-                banner(Move.forTask(status, true, round, false).hint(), round)));
+                banner(move.hint(), round)));
     }
 
     /** A question is what the human has to act on; which status it was asked from is not. */

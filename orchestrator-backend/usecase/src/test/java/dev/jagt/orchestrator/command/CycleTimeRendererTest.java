@@ -31,7 +31,8 @@ class CycleTimeRendererTest {
     @Test
     void chargesEachStepToWhoeverOwnedTheStatusItWasSpentIn() {
         Map<String, TaskState> tasks = Map.of("ABC-1", withSteps(
-                step(TaskStatus.IN_PROGRESS, 10), step(TaskStatus.CI_POLLING, 8), step(TaskStatus.REVIEWED, 6)));
+                step(TaskStatus.IN_PROGRESS, 10), step(TaskStatus.CI_POLLING, 8),
+                step(TaskStatus.REVIEW_PENDING, 6)));
 
         String out = new CycleTimeRenderer().render(tasks);
 

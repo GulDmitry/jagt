@@ -47,10 +47,16 @@ public record TaskView(
         List<StatusChange> history,
         // Drafted review replies are waiting in the worktree, and nothing else announces them.
         boolean draftedReplies,
+        // What the last round REPORTED, which no status carries: all three of its outcomes end at REVIEW_PENDING,
+        // and a round that changed nothing left nothing behind to ship.
+        AgentReport round,
         AutoReviewWatch autoReview,
         // `pipeline` is the verdict anything decides on; `pipelineSaid` is the host's own wording, for display.
         Pipeline pipeline,
         String pipelineSaid,
+        // Whether the request is approved; null until a read has said. A status cannot answer this: the wait for
+        // an approval starts the moment the request opens, and only one status is ever the approval itself.
+        Boolean approved,
         long tokens
 ) {
 
@@ -68,7 +74,7 @@ public record TaskView(
                               Map<String, String> deployBranches) {
         Move move = Move.forTask(task.status(), task.hasReviewRequest(),
                 RoundState.of(task.message(), draftedReplies), task.agentIsSilent(),
-                autoReview != null && autoReview.stopped());
+                autoReview == null ? AutoReviewWatch.none() : autoReview);
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
                         action == move.primary(), action.group().id()))
@@ -85,8 +91,9 @@ public record TaskView(
                         .toList(),
                 task.lastActiveTimestamp(),
                 task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
-                task.history(), draftedReplies, autoReview,
+                task.history(), draftedReplies, AgentReport.of(task.message()), autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(),
+                task.hasReviewRequest() ? task.approved() : null,
                 task.usageOrNone().total());
     }
 

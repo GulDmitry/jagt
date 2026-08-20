@@ -32,8 +32,11 @@ public class DashboardRenderer {
     private static final int PROJECT_W = 8;
     private static final int ACTIVE_W = 11;
     private static final int TOKENS_W = 7;
-    private static final String ROW_FORMAT = "%-" + ALIAS_W + "s %-" + TASK_W + "s %-" + STATUS_W
-            + "s %-" + PROJECT_W + "s %-" + ACTIVE_W + "s %-" + TOKENS_W + "s %s%n";
+    // Every column is TRUNCATED to its width, not merely padded to it: one value a character too long shifts
+    // every column after it, and `MasterShell` slices the row at the fixed offsets below to colour it.
+    private static final String ROW_FORMAT = "%-" + ALIAS_W + "." + ALIAS_W + "s %-" + TASK_W + "." + TASK_W
+            + "s %-" + STATUS_W + "." + STATUS_W + "s %-" + PROJECT_W + "." + PROJECT_W + "s %-" + ACTIVE_W
+            + "." + ACTIVE_W + "s %-" + TOKENS_W + "." + TOKENS_W + "s %s%n";
     public static final int COL_ALIAS = 0;
     public static final int COL_TASK = ALIAS_W + 1;
     public static final int COL_TITLE =
@@ -65,7 +68,7 @@ public class DashboardRenderer {
             }
             if (task.reviewRequestUrl() != null) {
                 out.append("                    └ ").append(checks(task.pipeline()))
-                        .append(task.reviewRequestUrl()).append('\n');
+                        .append(approval(task.approved())).append(task.reviewRequestUrl()).append('\n');
             }
             if (task.detail() != null && !task.detail().isBlank()) {
                 out.append("                    └ ").append(task.detail()).append('\n');
@@ -104,6 +107,17 @@ public class DashboardRenderer {
             case RUNNING -> "checks running · ";
             case GREEN, NONE -> "";
         };
+    }
+
+    /**
+     * The one thing a human waits for that no status shows until it has already happened. Silent until a read has
+     * said either way: an unread request is not an unapproved one.
+     */
+    private static String approval(Boolean approved) {
+        if (approved == null) {
+            return "";
+        }
+        return approved ? "APPROVED · " : "not approved · ";
     }
 
     /**

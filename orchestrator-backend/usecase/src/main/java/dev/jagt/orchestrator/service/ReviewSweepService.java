@@ -111,7 +111,7 @@ public class ReviewSweepService {
                 statusReports.markReviewed(taskId);
                 return new SweepResult(SweepResult.Kind.REVIEWED,
                         "sweep " + taskId + ": checks " + r.pipelineStatus()
-                                + ", nothing unresolved — `deploy` or `done`");
+                                + ", nothing unresolved — waiting for an approval; `deploy` without one");
             }
             return new SweepResult(SweepResult.Kind.PENDING,
                     "sweep " + taskId + ": checks " + r.pipelineStatus()
@@ -124,21 +124,25 @@ public class ReviewSweepService {
     }
 
     /**
-     * Keeps what the host said about the checks and when it says the request was opened, and taps the human ONCE
-     * when a run turns red — a later poll saying the same thing writes nothing and says nothing, or an unattended
-     * sweep would rewrite the state file and notify on a loop. ONE write for both, since both come off one read.
+     * Keeps what the host said about this round — the checks, whether it is approved, when it says the request was
+     * opened — and taps the human ONCE when a run turns red: a later poll saying the same thing writes nothing and
+     * says nothing, or an unattended sweep would rewrite the state file and notify on a loop. ONE write for all
+     * three, since all three come off one read. The approval is STAMPED rather than left to the status, because
+     * every surface shows it beside the request from CI_POLLING on, long before any status could carry it.
      */
     private void record(String taskId, ReviewFacts facts) {
         Optional<TaskState> before = stateService.task(taskId);
         String said = before.map(TaskState::pipelineStatus).orElse(null);
         boolean newChecks = !java.util.Objects.equals(said, facts.pipelineStatus());
+        boolean newApproval = !java.util.Objects.equals(before.map(TaskState::approved).orElse(null),
+                facts.approved());
         boolean newOpened = facts.openedAt() > 0
                 && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.openedAt();
-        if (!newChecks && !newOpened) {
+        if (!newChecks && !newApproval && !newOpened) {
             return;
         }
         stateService.updateTask(taskId, task -> task.withPipelineStatus(facts.pipelineStatus())
-                .withRequestOpenedAt(facts.openedAt()));
+                .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
         Pipeline was = Pipeline.of(said);
         Pipeline now = Pipeline.of(facts.pipelineStatus());
         if (newChecks && now.worthATap() && now != was) {

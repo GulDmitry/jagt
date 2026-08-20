@@ -9,6 +9,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import dev.jagt.orchestrator.task.AutoReviewWatch;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class MoveTest {
@@ -79,15 +81,15 @@ class MoveTest {
     /** Waiting on the host is only true while something is still reading the round for you. */
     @Test
     void asksTheHumanToSweepARoundThePollHasGivenUpOn() {
-        Move move = Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE, false, true);
+        Move move = Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE, false, elapsed());
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
-        assertThat(move.hint()).contains("nothing polls this round");
+        assertThat(move.hint()).contains("nothing is polling this round");
     }
 
     @Test
     void leavesARoundStillBeingPolledWithTheHost() {
-        Move move = Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE, false, false);
+        Move move = Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE, false, watching());
 
         assertThat(move.owner()).isEqualTo(Owner.CI);
     }
@@ -95,7 +97,7 @@ class MoveTest {
     /** A host that has never seen the task cannot be what it is waiting for, and `sweep` is refused without one. */
     @Test
     void asksTheHumanAboutATaskWaitingOnChecksWithNoRequestToRead() {
-        Move move = Move.forTask(TaskStatus.CI_POLLING, false, RoundState.NONE, false, false);
+        Move move = Move.forTask(TaskStatus.CI_POLLING, false, RoundState.NONE, false, watching());
 
         assertThat(move.owner()).isEqualTo(Owner.YOU);
         assertThat(move.hint()).contains("no review request");
@@ -163,8 +165,78 @@ class MoveTest {
                 .filter(status -> Move.forTask(status, true, RoundState.NONE, false).owner() == Owner.YOU).toList();
 
         assertThat(waitingOnYou).containsExactly(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED,
-                TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.DEPLOYED,
-                TaskStatus.REVERTED);
+                TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.DEPLOYED, TaskStatus.REVERTED);
+    }
+
+    /**
+     * A round that came back clean is not approved — that is the status after it — so the wait is a reviewer's,
+     * and the deploy stays offered without being advised for whoever needs no approval.
+     */
+    @Test
+    void waitsOnTheReviewerAfterACleanRoundThatNobodyHasApprovedYet() {
+        Move move = Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE, false, watching());
+
+        assertThat(move.owner()).isEqualTo(Owner.CI);
+        assertThat(move.primary()).isNull();
+        assertThat(move.actions()).contains(TaskAction.DEPLOY);
+        assertThat(move.hint()).contains("waiting for an approval");
+    }
+
+    /**
+     * An install with auto-review off polls nothing at all, so the approval is fetched only when a human asks:
+     * a card with no highlighted move would leave them looking at a state nothing was ever going to change.
+     */
+    @Test
+    void highlightsTheReadWhenNothingIsPollingForTheApprovalAtAll() {
+        Move move = Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE, false);
+
+        assertThat(move.owner()).isEqualTo(Owner.CI);
+        assertThat(move.primary()).isEqualTo(TaskAction.SWEEP);
+        assertThat(move.hint()).contains("nothing is polling for the approval");
+    }
+
+    /**
+     * The answer is what unblocks the session, and the status alone would highlight a verb that ACTS: a ship on a
+     * round the agent said it cannot finish, a deploy on the thing being asked about.
+     */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_FAILED", "REVIEWED", "APPROVED",
+            "REVERTED", "DEPLOYED"})
+    void highlightsTheAnswerRatherThanAVerbThatActsWhileAQuestionIsOpen(TaskStatus status) {
+        Move move = Move.forTask(status, true, new RoundState(AgentReport.QUESTION, false), false);
+
+        assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
+    }
+
+    /** Nothing else will notice the approval, so reading it becomes the human's move. */
+    @Test
+    void handsACleanRoundBackToTheHumanOnceNothingPollsItForTheApproval() {
+        Move move = Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE, false, elapsed());
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.primary()).isEqualTo(TaskAction.SWEEP);
+        assertThat(move.hint()).contains("nothing is polling for the approval");
+    }
+
+    /**
+     * Asking is stopping, and the statuses an agent is not EXPECTED to ask from are exactly the ones nothing else
+     * flips: without this the question reaches no badge, no count and no notification.
+     */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED"})
+    void handsTheTaskOverForAQuestionAskedFromAStatusThatWaitsOnTheCodeHost(TaskStatus status) {
+        Move move = Move.forTask(status, true, new RoundState(AgentReport.QUESTION, false), false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.hint()).contains("answer the question");
+    }
+
+    /** A closed task's leftover message is not a question anybody still owes an answer to. */
+    @Test
+    void leavesAClosedTaskAloneWhateverItsLastMessageSaid() {
+        Move move = Move.forTask(TaskStatus.DONE, true, new RoundState(AgentReport.QUESTION, false), false);
+
+        assertThat(move.owner()).isEqualTo(Owner.NOBODY);
     }
 
     @ParameterizedTest
@@ -220,4 +292,12 @@ class MoveTest {
     void leavesAReversionInTheDeployPhaseBecauseThatIsWhereItWentWrong() {
         assertThat(Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE, false).phase()).isEqualTo(Phase.DEPLOY);
     }
+    private static AutoReviewWatch watching() {
+        return AutoReviewWatch.watching(System.currentTimeMillis() + 60_000);
+    }
+
+    private static AutoReviewWatch elapsed() {
+        return AutoReviewWatch.windowElapsed(24);
+    }
+
 }

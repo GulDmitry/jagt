@@ -26,7 +26,7 @@ record ReviewRoundCase(String name, ReviewFacts round, TaskStatus expected, Stri
                         TaskStatus.CI_POLLING, "0 comment(s) relayed, checks failed", true),
                 new ReviewRoundCase("green and nothing unresolved",
                         facts(false, "success", List.of()),
-                        TaskStatus.REVIEWED, "checks success, nothing unresolved — `deploy` or `done`", false),
+                        TaskStatus.REVIEWED, "checks success, nothing unresolved — waiting for an approval", false),
                 new ReviewRoundCase("approved by a human",
                         facts(true, "success", List.of()),
                         TaskStatus.APPROVED, "approved, checks success", false),

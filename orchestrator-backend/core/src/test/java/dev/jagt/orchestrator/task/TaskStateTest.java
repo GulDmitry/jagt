@@ -243,6 +243,31 @@ class TaskStateTest {
     }
 
     /**
+     * A read's answers describe ONE request: pointed at another, the task would otherwise read as approved, green
+     * and days old until the next read said otherwise.
+     */
+    @Test
+    void forgetsWhatWasReadAboutARequestWhenTheTaskIsPointedAtAnotherOne() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("https://host/mr/1")
+                .approved(true).pipelineStatus("success").requestOpenedAt(1_700_000_000_000L).build();
+
+        TaskState relinked = task.withMrUrl("https://host/mr/2");
+
+        assertThat(relinked.approved()).isNull();
+        assertThat(relinked.pipelineStatus()).isNull();
+        assertThat(relinked.requestOpenedAt()).isZero();
+    }
+
+    /** The same call with the link it already carries is not a new request, and drops nothing. */
+    @Test
+    void keepsWhatWasReadWhenTheLinkHasNotChanged() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("https://host/mr/1")
+                .approved(true).pipelineStatus("success").build();
+
+        assertThat(task.withMrUrl("https://host/mr/1").approved()).isTrue();
+    }
+
+    /**
      * A task as an OLD state.json holds it: no history at all. The builder cannot express that (a null history
      * means "brand new", so it seeds one), which leaves the canonical constructor — and that is a row of
      * positional nulls that breaks on every new field, so it lives in exactly one place.
@@ -250,6 +275,6 @@ class TaskStateTest {
     private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
                                         List<StatusChange> history) {
         return new TaskState(List.of(TaskRepo.of("proj", "/wt")), status, lastActive, message, "a1", null,
-                null, null, 0, 0, 0, 0, null, null, null, history);
+                null, null, 0, 0, 0, 0, null, null, null, null, history);
     }
 }

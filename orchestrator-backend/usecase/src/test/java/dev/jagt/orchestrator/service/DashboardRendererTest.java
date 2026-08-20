@@ -43,6 +43,41 @@ class DashboardRendererTest {
                 .isLessThan(out.indexOf("https://host/x/-/merge_requests/9"));
     }
 
+    /**
+     * The console prefixes the request with what the read said about it, and both surfaces show the approval from
+     * the moment the request opens — a status only ever says so once the approval has already landed.
+     */
+    @Test
+    void printsWhetherTheRequestIsApprovedInFrontOfTheLink(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").title("title").mrUrl("https://host/mr/1").approved(false).build());
+        state.putTask("ABC-2", TaskState.builder("proj", "/wt2", TaskStatus.REVIEWED)
+                .alias("a2").title("title").mrUrl("https://host/mr/2").approved(true).build());
+
+        String out = rendererFor(state).render();
+
+        assertThat(out).contains("└ not approved · https://host/mr/1");
+        assertThat(out).contains("└ APPROVED · https://host/mr/2");
+    }
+
+    /**
+     * Every column is truncated, not merely padded: one value a character too long shifts every column after it,
+     * and the shell slices the row at fixed offsets to colour the id and the title.
+     */
+    @Test
+    void keepsTheColumnsWhereTheyAreWhateverTheLongestValueIs(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("a-very-long-project-key", "/wt", TaskStatus.DEPLOY_CONFLICT)
+                .alias("a1").title("title").build());
+
+        String out = rendererFor(state).render();
+
+        String header = out.lines().filter(line -> line.startsWith("ALIAS")).findFirst().orElseThrow();
+        String row = out.lines().filter(line -> line.startsWith("a1")).findFirst().orElseThrow();
+        assertThat(row.indexOf("title")).isEqualTo(header.indexOf("TITLE"));
+    }
+
     @Test
     void pointsAtTheDraftedRepliesWaitingInTheWorktree(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("review_replies.md"), "> rename x\n\nRenamed it.\n");

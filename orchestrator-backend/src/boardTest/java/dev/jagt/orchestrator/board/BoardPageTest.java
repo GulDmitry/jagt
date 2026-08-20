@@ -294,7 +294,7 @@ class BoardPageTest {
     @Test
     void aCardShowsTheTaskAsTheProjectionDescribesIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.REVIEWED).alias("a1").title("Widget layout is off")
+                        TaskStatus.APPROVED).alias("a1").title("Widget layout is off")
                 .mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
@@ -483,7 +483,7 @@ class BoardPageTest {
     @Test
     void aCardGroupsWhatMovesTheTaskOnAwayFromWhatOnlyLooksAtItAndMarksTheObviousOne() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.REVIEWED).alias("a1")
+                        TaskStatus.APPROVED).alias("a1")
                 .mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
@@ -657,12 +657,12 @@ class BoardPageTest {
         verifyNoInteractions(commands);
     }
 
-    /** A deploy lands what was SHIPPED, and a round that came back is not that — the question has to say so. */
+    /** A deploy lands what was SHIPPED, and a round that edited files is not that — the question has to say so. */
     @Test
     void deployingWarnsWhenTheTaskHasWorkThatWasNeverShipped() throws Exception {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/9")
-                .lastActiveTimestamp(now()).build());
+                .message("widget layout fixed").lastActiveTimestamp(now()).build());
         CompletableFuture<String> asked = new CompletableFuture<>();
 
         Page page = open();
@@ -675,6 +675,31 @@ class BoardPageTest {
         org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
                 .contains("never shipped")
                 .contains("lands the last SHIP");
+        verifyNoInteractions(commands);
+    }
+
+    /**
+     * A round that reported `no changes` EDITED nothing, so there is nothing unshipped to warn about — the task
+     * is at REVIEW_PENDING only because that is where every round ends. Warning anyway is what makes a human
+     * doubt a ship they watched succeed.
+     */
+    @Test
+    void deployingSaysNothingAboutUnshippedWorkAfterARoundThatChangedNothing() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/9")
+                .message("no changes: every thread already resolved").lastActiveTimestamp(now()).build());
+        CompletableFuture<String> asked = new CompletableFuture<>();
+
+        Page page = open();
+        page.onDialog(dialog -> {
+            asked.complete(dialog.message());
+            dialog.dismiss();
+        });
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Deploy").setExact(true)).click();
+
+        org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
+                .startsWith("Deploy ABC-1?")
+                .doesNotContain("never shipped");
         verifyNoInteractions(commands);
     }
 
@@ -941,6 +966,39 @@ class BoardPageTest {
 
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
         assertThat(page.locator("article .meta .checks.red")).hasAttribute("data-tip", "checks: failed");
+    }
+
+    /**
+     * Whether anyone has approved decides whether this card is waiting on a person or on the human reading it,
+     * and the status only ever says so once the approval has already landed.
+     */
+    @Test
+    void aCardShowsTheApprovalBesideTheRequestAsAnEmptyRingUntilSomebodyApproves() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .approved(false).lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                        TaskStatus.REVIEWED).alias("a2").mrUrl("https://host.example/mr/8")
+                .approved(true).lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article").nth(0).locator(".meta .approval:not(.yes)")).hasCount(1);
+        assertThat(page.locator("article").nth(0).locator(".meta .approval"))
+                .hasAttribute("data-tip", "review request not approved yet");
+        assertThat(page.locator("article").nth(1).locator(".meta .approval.yes")).hasCount(1);
+    }
+
+    /** A round nobody has read carries no verdict, and an unread request is not an unapproved one. */
+    @Test
+    void aCardShowsNoApprovalDotBeforeAnyReadHasSaidEitherWay() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .approval")).hasCount(0);
     }
 
     @Test

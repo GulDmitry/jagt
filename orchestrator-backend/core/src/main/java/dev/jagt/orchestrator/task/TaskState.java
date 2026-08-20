@@ -40,6 +40,8 @@ public record TaskState(
         Boolean autoReview,
         // The host's own wording for the checks, unparsed. Null = never read.
         String pipelineStatus,
+        // Whether the host says this round is approved. Null = no read has said yet.
+        Boolean approved,
         // Null until the first metered call.
         TokenUsage usage,
         // Append-only, oldest first: every status this task actually moved TO, with when.
@@ -81,6 +83,7 @@ public record TaskState(
             @JsonProperty("silentSince") Long silentSince,
             @JsonProperty("autoReview") Boolean autoReview,
             @JsonProperty("pipelineStatus") String pipelineStatus,
+            @JsonProperty("approved") Boolean approved,
             @JsonProperty("usage") TokenUsage usage,
             @JsonProperty("history") List<StatusChange> history) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
@@ -88,7 +91,8 @@ public record TaskState(
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
         return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
-                silentSince == null ? 0 : silentSince, autoReview, pipelineStatus, usage, history);
+                silentSince == null ? 0 : silentSince, autoReview, pipelineStatus, approved, usage,
+                history);
     }
 
     @JsonIgnore
@@ -165,8 +169,9 @@ public record TaskState(
     public TaskState withReviewRound(String project, String reviewRequestUrl) {
         long now = System.currentTimeMillis();
         return relinked(project, reviewRequestUrl).lastActiveTimestamp(now)
-                // A new round has new checks: the last one's verdict describes a run that no longer exists.
-                .pipelineStatus(null)
+                // A new round has new checks and no verdict on it yet: the last one's answers describe a
+                // request state that no longer exists.
+                .pipelineStatus(null).approved(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
                 .mrCreatedAt(now).lastPolledAt(0)
                 .build();
@@ -236,6 +241,10 @@ public record TaskState(
         return toBuilder().pipelineStatus(hostStatus).build();
     }
 
+    public TaskState withApproved(Boolean approved) {
+        return toBuilder().approved(approved).build();
+    }
+
     /**
      * Stamps who caused the step this task just took — separate from taking it, because the transition is built
      * where the work happens and the asker is known only at the entry point.
@@ -289,13 +298,16 @@ public record TaskState(
     }
 
     /**
-     * Points one repository at a request, and DROPS {@code requestOpenedAt} when that changes what is linked: the
-     * stamp describes the requests a read saw, so a second request opened on the same task would otherwise read
-     * as days old until the next read stamped it again.
+     * Points one repository at a request, and DROPS every answer a read gave about the OLD one when that changes
+     * what is linked — its age, its checks, its approval. All three describe the requests a read saw, so a second
+     * request opened on the same task would otherwise read as days old, green and approved until the next read.
      */
     private Builder relinked(String project, String mrUrl) {
         List<TaskRepo> repos = mapRepo(project, repo -> repo.withMrUrl(mrUrl));
-        return toBuilder().repos(repos).requestOpenedAt(repos.equals(this.repos) ? requestOpenedAt : 0);
+        if (repos.equals(this.repos)) {
+            return toBuilder().repos(repos);
+        }
+        return toBuilder().repos(repos).requestOpenedAt(0).pipelineStatus(null).approved(null);
     }
 
     public TaskState withMrUrl(String mrUrl) {
@@ -359,7 +371,8 @@ public record TaskState(
                 .title(title).ticketUrl(ticketUrl).baseBranch(baseBranch)
                 .mrCreatedAt(mrCreatedAt).requestOpenedAt(requestOpenedAt)
                 .lastPolledAt(lastPolledAt).silentSince(silentSince)
-                .autoReview(autoReview).pipelineStatus(pipelineStatus).usage(usage).history(history);
+                .autoReview(autoReview).pipelineStatus(pipelineStatus).approved(approved)
+                .usage(usage).history(history);
     }
 
     /**
@@ -381,6 +394,7 @@ public record TaskState(
         private long silentSince;
         private Boolean autoReview;
         private String pipelineStatus;
+        private Boolean approved;
         private TokenUsage usage;
         /** Null means "a brand-new task". */
         private List<StatusChange> history;
@@ -479,6 +493,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder approved(Boolean approved) {
+            this.approved = approved;
+            return this;
+        }
+
         public Builder usage(TokenUsage usage) {
             this.usage = usage;
             return this;
@@ -498,7 +517,7 @@ public record TaskState(
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, autoReview,
-                    pipelineStatus, usage, log);
+                    pipelineStatus, approved, usage, log);
         }
     }
 }

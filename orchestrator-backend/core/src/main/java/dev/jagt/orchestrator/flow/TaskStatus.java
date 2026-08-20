@@ -7,7 +7,7 @@ public enum TaskStatus {
     SHIPPING("pushing"),
     CI_POLLING("out for review"),
     CI_FAILED("checks failed"),
-    REVIEWED("review passed"),
+    REVIEWED("not approved"),
     APPROVED("approved"),
     DEPLOY_CONFLICT("deploy conflict"),
     DEPLOYED("deployed"),
@@ -27,5 +27,14 @@ public enum TaskStatus {
 
     public String label() {
         return label;
+    }
+
+    /**
+     * A round is out with the reviewers, so only the code host moves it on — which is also what the unattended
+     * poll watches. REVIEWED is one of them: "nothing unresolved, checks green" is still waiting for an approval,
+     * and a poll that stopped at the status it produced would never see one arrive.
+     */
+    public boolean outForReview() {
+        return this == CI_POLLING || this == REVIEWED;
     }
 }

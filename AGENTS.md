@@ -105,12 +105,19 @@ link to it, because no file here is named after one vendor.
     exactly how they drifted apart.
   - A BLOCKED SESSION IS ON THE DASHBOARD, WHATEVER BLOCKED IT — the owner's rule (2026-08-19), and it has two
     halves because a stopped agent may or may not manage to say so. The agent's own half is `awaiting: …` BEFORE
-    it puts any question to a human (`sub-agent-context.md` rule 10): `AgentReport.QUESTION` flips `Move.owner`
+    it puts any question to a human (`sub-agent-context.md` rule 1, and the `update_agent_status` tool
+    description says it too — a worktree is briefed once, while a tool description reaches every session): `AgentReport.QUESTION` flips `Move.owner`
     to YOU from whatever status it kept, `DashboardLine` reads NEEDS INPUT, and `AgentStatusReports` pings once,
-    on the transition INTO asking. The half no prompt can promise is the agent that never got the chance — a
-    permission prompt, a token limit, a crash — so `WatchdogService` STAMPS what it probes (`TaskState
+    on the transition INTO asking. The half no prompt can promise is the agent that never got the chance — a token
+    limit, a crash — so `WatchdogService` STAMPS what it probes (`TaskState
     .silentSince`, stale MCP plus a quiet tmux window) instead of only sending a ping a human dismisses, and the
-    same owner flip plus a NEEDS YOU line happen with the agent saying nothing. Three things hold it up: every
+    same owner flip plus a NEEDS YOU line happen with the agent saying nothing. WHAT THE WATCHDOG CANNOT SEE IS A
+    LIVE SESSION SITTING AT A PROMPT, and that is measured, not assumed: a Claude window waiting on a question
+    repaints every 10-30s (2026-08-20), so the window half of the probe stays warm forever and no stamp is ever
+    written. An agent asking anything — its own question tool, a plan to approve, a permission prompt — is
+    therefore reachable ONLY through its own `awaiting:` report, which is why that rule is rule 1 of the brief and
+    why the `update_agent_status` tool description carries it as well: a worktree is briefed once, at creation,
+    while a tool description is read by every session that starts. Three things hold it up: every
     status whose `Move.ownerOf` is AGENT is watched by the watchdog (pinned in `WatchdogServiceTest` — a status
     the agent owns and nothing watches is a session that waits forever); the stamp is written only on the
     TRANSITION in or out of silence, because both surfaces repaint on a state write and that job runs every
@@ -214,7 +221,7 @@ link to it, because no file here is named after one vendor.
   a `do` on that basis is jagt deciding something it cannot know. Whoever wants a bound has the machine's own
   tools for it. Do not reintroduce a cap, a queue, or a "slots" indicator.
 - A STATUS SAYS ITSELF IN WORDS, ONCE: `TaskStatus.label()` is the spelling both surfaces render (`out for
-  review`, `not shipped`, `review passed`), while the enum name stays the wire value, what `state.json` carries and
+  review`, `not shipped`, `awaiting approval`), while the enum name stays the wire value, what `state.json` carries and
   what the board hangs in the chip's tooltip. It names a STATE and never a next move — the highlighted action
   already gives that, and a status that advised too would be the third copy of one sentence. The board binds the
   age INSIDE that chip, because `CI_POLLING · 18m · sng` reads as three unrelated items with the middle one
@@ -235,12 +242,38 @@ link to it, because no file here is named after one vendor.
   "action required" count and its own-move filter all read that one value, so a card that asks for a human who
   has nothing to do teaches them to ignore all three. Two cells are therefore decided by more than the status
   (`Move.ownerOf`): a REVIEW_PENDING round that changed nothing and drafted no reply waits on the REVIEWER (the
-  only move left is a ship jagt itself advises against), and a CI_POLLING round whose EXPECTED poll has stopped
+  only move left is a ship jagt itself advises against), and a round whose EXPECTED poll has stopped
   waits on the HUMAN. That second one is `AutoReviewWatch.stopped()`, not "is not being polled": an install that
   polls nothing at all says so once per surface, and flipping every card in it to "action required" would be the
   same badge nobody reads, in the other direction. The projection reads it off the very watch the card renders,
   so the badge and the countdown cannot disagree; a caller that only wants the sentence keeps the four-argument
   `forTask`.
+- WORK THAT IS HANDED IN AND WAITING FOR A REVIEWER IS NOT AN ACTION REQUIRED (the owner's rule, 2026-08-20).
+  REVIEWED means "nothing unresolved, checks green, NOT approved" — it is the status BEFORE an approval, so its
+  owner is the CODE HOST, nothing is highlighted on the card, and no desktop ping goes out; `deploy` stays in the
+  action list for an install that needs no approval, because gating it was already decided against. Three things
+  follow, and none of them is optional: APPROVED is the one the human IS tapped for (`AgentStatusReports.ping`
+  asks `Move` whose move it is and sends nothing unless the answer is YOU — a second list of statuses worth
+  interrupting for would drift from the badge); a REVIEWED round is STILL POLLED (`TaskStatus.outForReview`, read
+  by `Move`, `AutoReviewCadence` and `AutoReviewScheduler` alike), because an approval arrives after the round
+  came back clean and a poll that stopped at the status it produced would never see one; and where NOTHING is
+  polling for the approval, the read is what the card highlights. That last one is why `Move.forTask` takes the
+  `AutoReviewWatch` and not a flag off it: "the poll this round was promised has STOPPED" (the wait becomes the
+  human's) and "nothing is polling at all" (an install with auto-review off, where the approval is fetched only
+  when a human asks) are different questions, and a card that answered the second with the first offered no move
+  at all on the default install.
+- A QUESTION OUTRANKS THE STATUS IT WAS ASKED FROM, in all four places that read a round: `Move.ownerOf` (the
+  wait is the human's), `Move.primaryOf` (FOCUS — the status alone would highlight a verb that ACTS, and a SHIP
+  on a round the agent said it cannot finish is the worst button on the board), `Move.hint` and `DashboardLine`.
+  Reachable from every status, because an agent may ask without moving its task — and the statuses a question is
+  NOT expected from are exactly the ones nothing else flips, so those questions used to reach no badge, no count
+  and no notification. A closed task's leftover message is the one exception.
+- WHETHER THE REQUEST IS APPROVED IS SHOWN, NOT INFERRED FROM THE STATUS. `TaskState.approved` is stamped by the
+  same read that stamps the pipeline (`ReviewSweepService.record`, one write for both, null until a read has
+  said), and both surfaces show it beside the request the moment it opens — the board as a dot next to the MR
+  link (filled when approved, an empty ring while it waits), the console as a prefix on the request line. A
+  status cannot answer this: the wait starts when the request opens, and only one status is ever the approval
+  itself. A new round drops it with the pipeline, since neither describes the request state that follows.
 - Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at
   SHIPPING is therefore offered SHIP and the gate refuses at execution time if its agent is alive.
 - THE BOARD LISTENS ON LOOPBACK (`server.address: 127.0.0.1`), because it asks for no password and can deploy,
@@ -249,6 +282,13 @@ link to it, because no file here is named after one vendor.
   was the asymmetry.
 - The board is vanilla HTML/CSS/JS under `src/main/resources/static` — NO build step, NO CDN, no external
   asset of any kind (it must work with the machine offline and stay inside the one jar).
+- A DESKTOP BANNER CLICKS THROUGH TO THE TASK IT IS ABOUT (`DesktopNotifier` → `UserNotifier.notify(…, link)`):
+  a banner that only NAMES a task leaves the human to find it, which on macOS means finding the browser tab
+  first. The link is the board narrowed to that task by the FILTER the page already has — not a second way to
+  address a card — and it is omitted when there is no board (`orchestrator.ui=tui`) or no task, since a click
+  onto a dead page is worse than one that does nothing. It exists at all only because macOS banners cannot carry
+  an action without `terminal-notifier` (`-open`), which `MacNotifier` already prefers for its own reasons;
+  osascript and `notify-send` both drop the link, and no caller may depend on it.
 - NEITHER surface polls for state: `StateService.onChange` is the one event both use — `TaskEventStream`
   forwards it as SSE, and `MasterShell` sets a dirty FLAG its render loop consumes (Lanterna's screen belongs
   to the UI thread; the listener runs on whichever thread served the agent's MCP call — never paint from

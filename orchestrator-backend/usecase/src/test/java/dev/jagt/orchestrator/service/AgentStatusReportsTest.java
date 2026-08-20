@@ -165,6 +165,23 @@ class AgentStatusReportsTest {
                 && sent.body().contains("approved")));
     }
 
+    /**
+     * The round is in, the checks are green and nobody has approved it: there is nothing for the human to do but
+     * wait for a reviewer, and a notification that asks for nothing is what teaches them to dismiss the ones that
+     * do. The status is still advanced — the next move stops being another round.
+     */
+    @Test
+    void saysNothingWhenARoundCameBackCleanButUnapproved(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").mrUrl("http://mr/1").build());
+
+        reports(state).markReviewed("ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
+        verify(notifications, never()).send(any());
+    }
+
     @Test
     void staysQuietAboutAnApprovalTheHumanHasAlreadySeen(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -174,6 +191,26 @@ class AgentStatusReportsTest {
         reports(state).markApproved("ABC-1");
 
         verify(notifications, never()).send(any());
+    }
+
+    /**
+     * A round that waits for an approval is polled every interval and reads the same outcome each time. Reporting
+     * it again would rewrite the message an agent left there — a question among it — and stamp activity for a
+     * session that never spoke.
+     */
+    @Test
+    void writesNothingWhenAPollReadsTheOutcomeTheTaskAlreadyHolds(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).alias("a1")
+                .mrUrl("http://mr/1").message("awaiting: squash or keep the commits?")
+                .lastActiveTimestamp(1_700_000_000_000L).silentSince(1_700_000_000_000L).build());
+
+        reports(state).markReviewed("ABC-1");
+
+        TaskState after = state.task("ABC-1").orElseThrow();
+        assertThat(after.message()).isEqualTo("awaiting: squash or keep the commits?");
+        assertThat(after.lastActiveTimestamp()).isEqualTo(1_700_000_000_000L);
+        assertThat(after.silentSince()).isEqualTo(1_700_000_000_000L);
     }
 
     @Test
@@ -253,7 +290,7 @@ class AgentStatusReportsTest {
         Files.createDirectories(root.resolve("wt"));
         Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: already handled\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").build());
+                TaskStatus.IN_PROGRESS).alias("a1").mrUrl("https://host/mr/1").build());
 
         reports(state).report("REVIEW_PENDING", "no changes: every comment already handled", "ABC-1");
 
