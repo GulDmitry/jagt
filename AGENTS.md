@@ -707,9 +707,10 @@ link to it, because no file here is named after one vendor.
   three paragraphs, the code needs the explanation, not the file.
 - THE SAME STANDARD IS DEMANDED OF THE AGENTS, and it is one section of `sub-agent-context.md` ("How you
   write") rather than a clause repeated per artifact: a status line, a commit message, the review request's
-  title and description, a reply and a code comment are the same reader in the same hurry. It ends by sending
-  the agent to the machine's OWN writing or commenting skill where one exists, and says that skill outranks the
-  section — house style belongs to whoever's machine it is, and jagt cannot ship one. Two limits: the brief is
+  title and description, a reply and a code comment are the same reader in the same hurry. What sends the agent
+  to the machine's OWN skill is one RULE rather than a clause in that section, because the answer is the same
+  for code, for tests and for a review round as it is for prose: a skill outranks the brief wherever the machine
+  has one, house style belongs to whoever's machine it is, and jagt can ship none of it. Two limits: the brief is
   written by `initialize_task` alone, so a worktree that already exists keeps the wording it was created with
   (recreate the task, or patch its file); and the relay `ship` names the description rule itself, since that is
   the one artifact jagt does not write when a host is configured.
