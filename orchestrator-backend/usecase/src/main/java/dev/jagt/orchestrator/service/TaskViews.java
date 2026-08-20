@@ -15,8 +15,9 @@ import java.util.Map;
  * Builds the ONE projection every human surface renders, so a phase, an owner and a set of legal actions cannot
  * mean one thing in one surface and another in the next.
  *
- * <p>Order is most recently active first; a surface that wants another grouping re-sorts client-side, which is
- * where a sort belongs once the data is already in the browser.
+ * <p>Order is the ALIAS, and it is the projection's job because both surfaces repaint on every state write: an
+ * order that follows activity moves a task on the agent's next keep-alive, which is motion nobody asked for and
+ * costs a human the position they had learnt. A task therefore moves only when one is created or closed.
  */
 @Component
 @RequiredArgsConstructor
@@ -47,13 +48,25 @@ public class TaskViews {
         Map<String, String> deployBranches = new java.util.LinkedHashMap<>();
         config.projects().forEach((key, project) -> deployBranches.put(key, project.deployBranch()));
         List<TaskView> views = stateService.tasks().entrySet().stream()
-                .sorted(Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
-                        e.getValue().lastActiveTimestamp()).reversed())
+                .sorted(Comparator.comparing(TaskViews::aliasOrder))
                 .map(entry -> TaskView.of(entry.getKey(), entry.getValue(),
                         WorktreeFiles.draftedReplies(entry.getValue()),
                         cadence.watch(entry.getValue(), now), deployBranches))
                 .toList();
         return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()));
+    }
+
+    /**
+     * Numeric where the alias is (letter, digits): plain text order puts p10 before p2, which is not an order a
+     * human can predict. An alias-less task sorts after every aliased one, by id.
+     */
+    private static String aliasOrder(Map.Entry<String, TaskState> entry) {
+        String alias = entry.getValue().alias();
+        if (alias == null || alias.isBlank()) {
+            return "~" + entry.getKey();
+        }
+        String digits = alias.replaceAll("\\D", "");
+        return alias.replaceAll("\\d", "") + (digits.isEmpty() ? "" : "%09d".formatted(Long.parseLong(digits)));
     }
 
     public List<TaskView> all() {

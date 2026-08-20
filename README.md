@@ -146,8 +146,11 @@ place, so the two can never tell you different things.
 
 ### The board (default)
 
-Open `http://localhost:8290`. Tasks sit in columns by phase — **build → review → check → ready → deploy** —
-each card showing whose move it is, the status **and how long it has been in it** (hover for the full timeline
+Open `http://localhost:8290`. Every task is one card in a grid ordered by **alias**, and it stays where it is:
+a card never moves because a status changed, only when a task is created or closed. What the phases hold is one
+line of counts above the grid — **build → review → check → ready → deploy → done**, zeros included — so the
+pipeline is a number rather than a position nothing can keep still. Each card shows whose move it is, the status
+**and how long it has been in it** (hover for the full timeline
 of steps the task took), what jagt has spent on it, and links to the ticket and the review request. A card also
 says when the agent has left **drafted review replies** in its worktree — read them before you ship, because
 `ship` is what posts them. Every card carries exactly the actions that are legal for it right now,
@@ -173,8 +176,11 @@ are the card's own buttons, because the server lists the legal ones per task and
 A card shows them in two rows: what moves the task along its life first (ship … done), then the ones that only
 look at it or restart its agent (focus, open IDE, diff, restart agent).
 
-Sort within columns by last activity, tokens, alias or title, and tick
-*waiting on me* to see only the tasks that are actually yours. It updates itself — the backend pushes a change
+There is no sort control: an order that follows activity moves a card on the agent's next keep-alive, and a
+position you have learnt is worth more than any order a click can produce. What is offered instead is narrowing,
+which changes the set only while a control visibly says so — type in the filter box (`/` focuses it, Escape
+clears) to match an alias, a ticket number or a title, and tick *needs my action* for the tasks that are
+yours. It updates itself — the backend pushes a change
 event, the page does not poll — and `deploy`/`done` ask for confirmation, because one writes to a shared
 branch and the other deletes a worktree.
 
@@ -281,7 +287,7 @@ There is one rules file — `AGENTS.md`. Never write a project rule into a vendo
 |---|---|---|
 | `./gradlew test` | nothing (hermetic) | the fast gate; runs everywhere |
 | `./gradlew e2eTest` | git + tmux | the task flow over real worktrees, one row per `TaskFlowCase` |
-| `./gradlew boardTest` | a Chromium (installed on first run) | the web board in a browser: columns, action buttons, the pushed repaint, the palette |
+| `./gradlew boardTest` | a Chromium (installed on first run) | the web board in a browser: the grid and its order, the filter, action buttons, the pushed repaint, the palette |
 | `./gradlew linuxDriverTest` | Linux + notify-send/kitty + a display | the Linux drivers against the real binaries |
 | `scripts/dashboard-layout-smoke.sh`, `scripts/tui-push-repaint-smoke.sh` | tmux + a built jar | the console's layout through a real PTY |
 

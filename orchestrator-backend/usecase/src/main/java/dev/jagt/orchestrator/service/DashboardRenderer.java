@@ -54,7 +54,7 @@ public class DashboardRenderer {
         // INDENTED, because a line starting with a space is what marks a task row for colouring.
         out.append("  ").append(snapshot.cadence().summary())
                 .append(unattended(jobs.summary(now), now)).append('\n');
-        out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE ▼", "TOKENS",
+        out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE", "TOKENS",
                 "TITLE"));
         for (TaskView task : tasks) {
             out.append(String.format(ROW_FORMAT, task.alias() == null ? "-" : task.alias(), task.id(),

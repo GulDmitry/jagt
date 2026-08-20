@@ -17,13 +17,8 @@
   <span id="auto-review" class="chip" data-tip="unattended review polling: on or off"></span>
   <span id="jobs-pulse" class="chip" hidden></span>
   <span class="grow"></span>
-  <label class="control">sort
-    <select id="sort">
-      <option value="active">last active</option>
-      <option value="alias">alias</option>
-      <option value="title">title</option>
-    </select>
-  </label>
+  <input id="filter" class="control" placeholder="filter: alias, ticket or title  (/)" autocomplete="off"
+         data-tip="substring of the alias, the ticket number or the title">
   <label class="control checkbox" data-tip="show only tasks that need your action"><input type="checkbox" id="mine"> needs my action</label>
   <button id="resume-task">Resume</button>
   <button id="open-palette" data-tip="⌘K / Ctrl-K: a command, or plain words">Ask</button>
@@ -75,6 +70,7 @@
   <iframe id="terminal-frame" title="agent terminal"></iframe>
 </dialog>
 
+<div id="phases"></div>
 <main id="board"></main>
 <p id="empty" class="empty" hidden>No tasks. The row above starts one — the same thing
   <code>do ABC-42</code> does in the console.</p>

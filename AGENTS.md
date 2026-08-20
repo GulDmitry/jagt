@@ -219,6 +219,16 @@ link to it, because no file here is named after one vendor.
   already gives that, and a status that advised too would be the third copy of one sentence. The board binds the
   age INSIDE that chip, because `CI_POLLING · 18m · sng` reads as three unrelated items with the middle one
   anybody's guess; the console prints the same pair in the same order.
+- POSITION DOES NOT CARRY STATE, and this is what makes the board readable. A phase that owns a column has to
+  MOVE the card it describes, and re-finding it is the cost a human pays for the arrangement; an order that
+  follows activity moves cards on an agent's keep-alive, which is motion nobody asked for. So `TaskViews` orders
+  by ALIAS (numerically — plain text puts p10 before p2) for BOTH surfaces, the board lays one card per grid
+  cell, and a status change repaints the chip in place. A phase is a COUNT in one line above the grid, zeros
+  included, so that line cannot move either. The board offers no sort control: what it offers is narrowing —
+  a filter over alias, id and title, plus needs-my-action — because a filter is an explicit act with a visible
+  control, while automatic reordering is what costs a human the position they had learnt. An alias is the lowest
+  free number, so closing one task and starting another can shift the grid by one place; that is motion from the
+  human's OWN action, which is the only motion this design allows.
 - `Phase`/`Owner` are a PROJECTION for humans, never persisted and never a second state machine: `TaskStatus`
   stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
 - Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at
@@ -754,7 +764,7 @@ link to it, because no file here is named after one vendor.
   rows, and `boardTest` seeds one application's state.
 - THE BOARD IS TESTED IN A BROWSER: `./gradlew boardTest` (source set `src/boardTest/java`, NOT in `check`)
   boots the app on a random port and drives the real page in Playwright's own headless Chromium — the page's
-  logic (which phases get a column, which buttons a card offers, what a click POSTs, the SSE repaint, the ⌘K
+  logic (the grid's order, the filter, which buttons a card offers, what a click POSTs, the SSE repaint, the ⌘K
   palette's client-side verdict) runs nowhere else and was hand-checked until 2026-08-17. Three write paths are
   `@MockitoBean`s because a real one would act on the developer's machine: `CommandService`, `TaskLauncher`,
   `NaturalLanguageDispatch`. The browser is Playwright's, never the machine's, so a Mac and a runner drive the

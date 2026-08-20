@@ -10,8 +10,9 @@ const PHASES = [
 ];
 
 const board = document.getElementById('board');
+const phaseBar = document.getElementById('phases');
 const toasts = document.getElementById('toasts');
-const sortBy = document.getElementById('sort');
+const filterBox = document.getElementById('filter');
 const onlyMine = document.getElementById('mine');
 const live = document.getElementById('live');
 const projectSelect = document.getElementById('project');
@@ -173,13 +174,16 @@ function fillProjects() {
   }
 }
 
-function sorted(list) {
-  const copy = [...list];
-  const by = sortBy.value;
-  if (by === 'alias') copy.sort((a, b) => (a.alias || '').localeCompare(b.alias || ''));
-  else if (by === 'title') copy.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  else copy.sort((a, b) => b.lastActiveAt - a.lastActiveAt);
-  return copy;
+// No re-sorting of any kind: the server's order is the alias, and a position a human has learnt is worth more
+// than any ordering a click could produce. Narrowing is the one thing offered instead — the set changes only
+// while a control visibly says so.
+const matches = (task, needle) => [task.alias, task.id, task.title]
+  .some((field) => (field || '').toLowerCase().includes(needle));
+
+function shownTasks() {
+  const needle = filterBox.value.trim().toLowerCase();
+  return tasks.filter((task) => (!onlyMine.checked || task.owner === 'YOU')
+    && (!needle || matches(task, needle)));
 }
 
 // `title` shows only after a wait, and a push rebuilds the element it was waiting on.
@@ -231,7 +235,7 @@ function renderJobs() {
 
 function render() {
   hideTip();
-  const shown = onlyMine.checked ? tasks.filter((t) => t.owner === 'YOU') : tasks;
+  const shown = shownTasks();
   const waiting = tasks.filter((t) => t.owner === 'YOU').length;
   const waitingLabel = document.getElementById('waiting');
   waitingLabel.hidden = waiting === 0;
@@ -241,17 +245,16 @@ function render() {
   chip.classList.toggle('on', autoReview.enabled);
   renderJobs();
   document.getElementById('empty').hidden = tasks.length > 0;
-  // Only phases that HAVE tasks get a column: `done` deletes the task outright, so a DONE column could never
-  // hold anything, and empty columns are noise on a board of two.
-  board.replaceChildren(...PHASES.map(([phase, label]) => {
-    const inPhase = sorted(shown.filter((task) => task.phase === phase));
-    if (!inPhase.length) return null;
-    const section = document.createElement('section');
-    const heading = document.createElement('h2');
-    heading.append(`${label} `, span('count', inPhase.length));
-    section.append(heading, ...inPhase.map(card));
-    return section;
-  }).filter(Boolean));
+  // The pipeline is a COUNT, never a position: a phase that owns a column has to move the card it describes,
+  // and re-finding it is the cost. Every phase is here, zeros included, so this line never moves either.
+  phaseBar.hidden = tasks.length === 0;
+  phaseBar.replaceChildren(...PHASES.map(([phase, label]) => {
+    const held = shown.filter((task) => task.phase === phase).length;
+    const segment = span(held ? `phase ${label}` : 'phase empty', `${label} `);
+    segment.append(span('count', held));
+    return segment;
+  }));
+  board.replaceChildren(...shown.map(card));
 }
 
 function card(task) {
@@ -449,7 +452,7 @@ launchForm.onsubmit = async (event) => {
   }
 };
 
-sortBy.onchange = render;
+filterBox.oninput = render;
 onlyMine.onchange = render;
 
 // Push, not poll: the backend tells us when state changed. The slow interval only refreshes the relative
@@ -483,12 +486,21 @@ function togglePalette(show) {
 }
 
 document.getElementById('open-palette').onclick = () => { togglePalette(palette.hidden); judgeAsk(); };
+const typingInto = (target) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+  || target instanceof HTMLSelectElement;
+
 document.addEventListener('keydown', (event) => {
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault();
     togglePalette(palette.hidden);
   } else if (event.key === 'Escape' && !palette.hidden) {
     togglePalette(false);
+  } else if (event.key === '/' && !typingInto(event.target)) {
+    event.preventDefault();
+    filterBox.focus();
+  } else if (event.key === 'Escape' && event.target === filterBox) {
+    filterBox.value = '';
+    render();
   }
 });
 

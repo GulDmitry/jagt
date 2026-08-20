@@ -90,16 +90,11 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 #terminal::backdrop { background: rgb(0 0 0 / 45%); }
 #terminal-frame { display: block; width: 100%; height: calc(86vh - 46px); border: 0; background: #000; }
 
-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; padding: 16px; }
-section { min-width: 0; }
-section h2 {
-  font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
-  margin: 0 0 8px; display: flex; gap: 6px; align-items: baseline;
-}
-section h2 .count { color: var(--text); font-weight: 600; }
+/* One cell per TASK: a card keeps its place, and only its own contents change under it. */
+main { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; padding: 16px; }
 article {
   background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--line);
-  border-radius: 8px; padding: 10px; margin-bottom: 10px;
+  border-radius: 8px; padding: 10px; align-self: start;
 }
 article.you { border-left-color: var(--you); }
 article.agent { border-left-color: var(--agent); }

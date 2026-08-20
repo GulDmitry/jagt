@@ -96,8 +96,9 @@ class DashboardRendererTest {
         assertThat(out).doesNotContain("MR ");
     }
 
+    /** A row that moves on the agent's next keep-alive costs a human the position they had learnt. */
     @Test
-    void ordersRowsByLastActiveDescendingUnderTheSortedActiveColumn(@TempDir Path root) {
+    void keepsARowWhereItIsWhateverAgentReportedLast(@TempDir Path root) {
         StateService state = stateIn(root);
         long older = 1_700_000_000_000L;
         long newer = older + 3_600_000;
@@ -108,8 +109,7 @@ class DashboardRendererTest {
 
         String out = rendererFor(state).render();
 
-        assertThat(out).contains("ACTIVE ▼");
-        assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
+        assertThat(out.indexOf("ABC-1")).isLessThan(out.indexOf("ABC-2"));
         assertThat(out).contains(DashboardRenderer.stamp(older), DashboardRenderer.stamp(newer));
     }
 

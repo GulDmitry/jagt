@@ -158,8 +158,9 @@ class BoardPageTest {
         assertThat(page.locator("article .pulse")).hasCount(0);
     }
 
+    /** Every phase is counted, zeros included: a line that appears and disappears moves everything beside it. */
     @Test
-    void onlyThePhasesThatHaveATaskGetAColumn() {
+    void countsEveryPhaseWhetherOrNotItHoldsATask() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
         state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
@@ -169,8 +170,52 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("#board > section > h2"))
-                .hasText(new String[]{"build 1", "review 1", "deploy 1"});
+        assertThat(page.locator("#phases .phase")).hasText(
+                new String[]{"build 1", "review 1", "check 0", "ready 0", "deploy 1", "done 0"});
+    }
+
+    /**
+     * A card keeps its place while its status changes under it, so the order cannot follow activity: the alias
+     * is what a human types and what they remember the position by.
+     */
+    @Test
+    void ordersTasksByAliasRatherThanByWhicheverAgentReportedLast() {
+        state.putTask("ABC-10", TaskState.builder("alpha", root.resolve("ABC-10-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a10").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(now() - 60_000).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .alias")).hasText(new String[]{"a2", "a10"});
+    }
+
+    @Test
+    void narrowsTheBoardToWhateverMatchesTheTypedText() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a1").title("Widget layout is off")
+                .lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a2").title("Invoice totals are wrong")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("#filter").fill("invoice");
+
+        assertThat(page.locator("article .alias")).hasText(new String[]{"a2"});
+    }
+
+    @Test
+    void findsATaskByItsTicketNumberAsWellAsItsTitle() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("XYZ-9", TaskState.builder("alpha", root.resolve("XYZ-9-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("x1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("#filter").fill("xyz-9");
+
+        assertThat(page.locator("article .alias")).hasText(new String[]{"x1"});
     }
 
     @Test
