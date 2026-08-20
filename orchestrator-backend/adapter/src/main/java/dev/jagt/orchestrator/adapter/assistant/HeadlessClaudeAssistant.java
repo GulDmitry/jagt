@@ -53,11 +53,16 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "targetBranch":{"type":"string"},\
             "title":{"type":"string"}},\
             "required":["exists","sourceBranch","targetBranch","title"]}""";
+    /**
+     * {@code pipelineStatus} is an ENUM rather than a string because {@link dev.jagt.orchestrator.flow.Pipeline}
+     * reads it by keyword: a sentence like {@code mergeable (CodeRabbit check failed)} carries "fail" and turns
+     * a mergeable request red. The four words are the whole vocabulary that parser recognises.
+     */
     private static final String REVIEW_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
             "approved":{"type":"boolean"},\
-            "pipelineStatus":{"type":"string"},\
+            "pipelineStatus":{"type":"string","enum":["success","failed","running","none"]},\
             "comments":{"type":"array","items":{"type":"string"}}},\
             "required":["exists","approved","pipelineStatus","comments"]}""";
     private static final String COMMAND_SCHEMA = """
@@ -119,8 +124,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
         String prompt = "Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
                 + " MCP tools. Return exists, approved (true only if the request is actually APPROVED by a human"
-                + " reviewer — not merely mergeable), pipelineStatus (latest pipeline/checks result, e.g."
-                + " success/failed/none), and comments — every UNRESOLVED discussion note (bots like"
+                + " reviewer — not merely mergeable), pipelineStatus — the CI PIPELINE's own latest result and"
+                + " nothing else: exactly one of success | failed | running | none, never the merge status"
+                + " (mergeable, can_be_merged) and never a review bot's verdict, and none when the request has"
+                + " no pipeline at all — and comments — every UNRESOLVED discussion note (bots like"
                 + " CodeRabbit + humans), each as one string \"author (file:line): body\". Empty array if none.";
         return ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT).map(n -> {
             List<String> comments = new ArrayList<>();

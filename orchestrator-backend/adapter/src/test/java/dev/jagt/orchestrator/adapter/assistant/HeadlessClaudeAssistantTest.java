@@ -135,6 +135,22 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void constrainsThePipelineToFourWordsSoAMergeableRequestCannotComeBackFailed() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty());
+
+        assistant.readReview("https://host/mr/9");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).anyMatch(argument -> argument.contains(
+                "\"pipelineStatus\":{\"type\":\"string\",\"enum\":[\"success\",\"failed\",\"running\",\"none\"]}"));
+    }
+
+    @Test
     void readsTheTicketOutOfTheEnvelopesStructuredOutput() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
