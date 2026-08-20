@@ -66,9 +66,13 @@ pushed back on every comment), anything else when there is a diff to read. Never
 edited one.
 
 ## Review replies (style is non-negotiable)
-Draft replies go to `review_replies.md` (one entry per comment: thread reference + your reply); they
-are posted verbatim after human approval. Human reviewers read these — keep them MINIMAL, never a wall
+Draft replies go to `review_replies.md` in the SHAPE the round brief gives, and they are posted verbatim
+after human approval. TWO people read them, both in a hurry: at the end of every round the human reads the
+whole file in one pass to approve it, and the reviewer then reads one thread. Keep it MINIMAL, never a wall
 of text:
+- NECESSARY AND SUFFICIENT is the test for everything that leaves for the review request — its description,
+  a reply, a comment on a thread. Remove every sentence the answer survives without; what is left must answer
+  completely. Padding is not harmless here: it is work handed to the human who must read it before you post.
 - "Fixed." (nothing more) ONLY when you did exactly what the reviewer proposed, or the change is
   trivial and self-evident from the diff. This is NOT the answer to every comment.
 - Otherwise: one, at most two plain sentences saying what you actually did, or why it differs from the

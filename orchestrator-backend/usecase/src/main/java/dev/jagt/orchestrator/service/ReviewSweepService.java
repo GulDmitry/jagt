@@ -215,10 +215,23 @@ public class ReviewSweepService {
                     compliance is invisible in a diff. Never report a fix you did not make.
                     </how_to_judge>
                     <replies>
-                    For EACH comment write a block in review_replies.md: the original comment (with its thread
-                    link if available) followed by the reply you intend to post — including the ones you push
-                    back on and the ones you are asking about. The file holds DRAFTS: post nothing and resolve
-                    no thread this round. Nothing leaves this machine until the human ships.
+                    review_replies.md is what the human READS to approve this round — end to end, in one pass,
+                    before anything is posted. Write ONE block per comment, in this shape and nothing else:
+
+                    ## <thread link, or file:line>
+                    > <the comment, trimmed to the sentence that matters>
+                    FIXED | NO CHANGE | QUESTION - <the reply, one or two sentences>
+
+                    The verdict word is for the human; what follows the dash is posted verbatim. Every comment
+                    gets a block, including the ones you push back on and the ones you are asking about.
+
+                    NECESSARY AND SUFFICIENT is the test for every line: drop it if the answer survives without
+                    it, and answer completely with what is left. No restating the comment beyond the quoted
+                    line, no thanks, no re-describing the diff, no test or build status, no headers or bullets
+                    inside a reply. If the file is longer than the diff it explains, it is wrong.
+
+                    The file holds DRAFTS: post nothing and resolve no thread this round. Nothing leaves this
+                    machine until the human ships.
                     </replies>
                     <comments>
                     """);

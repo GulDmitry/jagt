@@ -292,6 +292,12 @@ link to it, because no file here is named after one vendor.
   still reads CI_POLLING is exactly what a status word cannot show. The human is tapped ONCE per run, on the
   transition INTO red: an unattended poll that notified every time would be a loop, and a red run that is already
   known is not news.
+- THE REPLY FILE IS A REVIEW ARTIFACT, SO ITS SHAPE IS PRESCRIBED IN ONE PLACE — the round brief
+  (`ReviewSweepService.brief`), which is relayed EVERY round and therefore reaches sessions whose worktree was
+  briefed before the wording changed: one block per comment (thread, the quoted line, `FIXED | NO CHANGE |
+  QUESTION` and the reply), and necessary-and-sufficient as the test on every line. The human reads the whole
+  file in one pass to approve a round, so a per-comment essay is work handed to them, not thoroughness. The
+  sub-agent brief keeps the STYLE and points at the shape rather than restating it.
 - Drafted review replies are a FILE, not state: `TaskViews` stats `review_replies.md` in the worktree and puts
   a boolean on the projection (presence, not a count — the agent's brief prescribes no per-comment marker, so
   a number would be a guess). Both surfaces announce it, because a human who does not know the convention

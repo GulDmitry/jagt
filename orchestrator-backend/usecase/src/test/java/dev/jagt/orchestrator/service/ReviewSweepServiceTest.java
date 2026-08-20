@@ -85,6 +85,21 @@ class ReviewSweepServiceTest {
         verify(statusReports, never()).markReviewed("ABC-1");
     }
 
+    /** The human reads the whole file to approve the round, so the brief hands the agent one shape to fill. */
+    @Test
+    void asksForRepliesInAShapeAHumanCanReadInOnePass() {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("reviewer (a.java:3): drop the cache"))));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(sessions).writeTaskContext(eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue())
+                .contains("FIXED | NO CHANGE | QUESTION")
+                .contains("NECESSARY AND SUFFICIENT");
+    }
+
     /**
      * A relayed list of comments reads as a work order, and an agent handed a work order complies with the
      * wrong comments too — after which the human mistakes obedience in the diff for agreement. The brief has
