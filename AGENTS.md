@@ -213,6 +213,12 @@ link to it, because no file here is named after one vendor.
   machines, one of which has 100 GB of RAM, so a number picked here is wrong for almost everyone and refusing
   a `do` on that basis is jagt deciding something it cannot know. Whoever wants a bound has the machine's own
   tools for it. Do not reintroduce a cap, a queue, or a "slots" indicator.
+- A STATUS SAYS ITSELF IN WORDS, ONCE: `TaskStatus.label()` is the spelling both surfaces render (`out for
+  review`, `not shipped`, `review clear`), while the enum name stays the wire value, what `state.json` carries and
+  what the board hangs in the chip's tooltip. It names a STATE and never a next move — the highlighted action
+  already gives that, and a status that advised too would be the third copy of one sentence. The board binds the
+  age INSIDE that chip, because `CI_POLLING · 18m · sng` reads as three unrelated items with the middle one
+  anybody's guess; the console prints the same pair in the same order.
 - `Phase`/`Owner` are a PROJECTION for humans, never persisted and never a second state machine: `TaskStatus`
   stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
 - Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at
@@ -457,9 +463,10 @@ link to it, because no file here is named after one vendor.
   `cadence.summary()` and each task a `└ auto-review:` line; the board has the chip (`Board.autoReview`) and, per
   card, a `↻ <countdown>` PULSE in the meta row rather than a line of prose. Whether polling runs at all is a
   property of the INSTALL, so it is stated ONCE per surface and never repeated per card — which is exactly why the
-  words are the tooltip and only the countdown is on the card. A watch that has STOPPED keeps a full line on both
-  surfaces (window elapsed, or a task whose own `autoReview` is false while the install polls): that one task
-  standing still is what the install-wide statement cannot cover. The countdown is an ABSOLUTE stamp on the wire
+  words are the tooltip and only the countdown is on the card. A watch that has STOPPED — window elapsed, or a
+  task whose own `autoReview` is false while the install polls — is that same slot wearing the STATE instead of a
+  countdown, never a paragraph: one task standing still is what the install-wide statement cannot cover, and
+  saying so does not need the sentence repeated where the header already stands. The countdown is an ABSOLUTE stamp on the wire
   and formatted per surface (`DurationFormat.countdown` / the page's own mirror), exactly as the two clocks on a
   card already are — a remaining-duration would be stale the moment it was fetched. It is a FLOOR, not a promise:
   the scan runs every 60s, so a poll shown as due happens within the next tick. One more rule the surfaces share:
