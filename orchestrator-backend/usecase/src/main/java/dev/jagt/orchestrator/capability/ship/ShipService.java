@@ -213,7 +213,9 @@ public class ShipService {
                         + " just made (e.g. \"" + taskId + " Guard null sort key, fix header toggle\").\n";
         String requestStep = firstShip
                 ? "3. No review request exists yet — create one via your code-host MCP: source " + taskId
-                        + " -> target " + targetBranch + ", title \"" + title + "\".\n"
+                        + " -> target " + targetBranch + ", title \"" + title + "\" EXACTLY as given. Leave the"
+                        + " description empty, or one line for a decision the diff cannot show — never a report"
+                        + " of what you did.\n"
                 : "3. The review request already exists — do NOT create a new one or retitle it.\n";
         return "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"
                 + commitStep

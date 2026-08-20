@@ -218,6 +218,13 @@ class ShipServiceTest {
     }
 
     @Test
+    void tellsARelayedAgentToOpenTheRequestWithoutADescriptionEssay() {
+        String instruction = ShipService.shipInstruction(true, "ABC-42 Widget layout is off", "ABC-42", "dev", "");
+
+        assertThat(instruction).contains("Leave the description empty");
+    }
+
+    @Test
     void tellsARelayedAgentToKeepTheRequestTitleOnAFurtherRound() {
         String instruction = ShipService.shipInstruction(false, "ABC-42 Widget layout is off", "ABC-42", "dev", "");
 

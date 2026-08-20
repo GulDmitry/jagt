@@ -679,6 +679,14 @@ link to it, because no file here is named after one vendor.
   DECIDED decision is not a TODO: it lives in the code, with the rule in CLAUDE.md and the road to it in git
   history — TODO.md holds only what is still open, and holding nothing is its normal state. If an entry needs
   three paragraphs, the code needs the explanation, not the file.
+- THE SAME STANDARD IS DEMANDED OF THE AGENTS, and it is one section of `sub-agent-context.md` ("How you
+  write") rather than a clause repeated per artifact: a status line, a commit message, the review request's
+  title and description, a reply and a code comment are the same reader in the same hurry. It ends by sending
+  the agent to the machine's OWN writing or commenting skill where one exists, and says that skill outranks the
+  section — house style belongs to whoever's machine it is, and jagt cannot ship one. Two limits: the brief is
+  written by `initialize_task` alone, so a worktree that already exists keeps the wording it was created with
+  (recreate the task, or patch its file); and the relay `ship` names the description rule itself, since that is
+  the one artifact jagt does not write when a host is configured.
 - `USE-CASES.md` is the one-line answer per SITUATION ("the request does not target the base branch → …").
   When a case turns out to be non-obvious — or a session re-derives one that was already decided — append a
   row there instead of only fixing the code. CLAUDE.md keeps the rules; USE-CASES.md keeps the answers.
