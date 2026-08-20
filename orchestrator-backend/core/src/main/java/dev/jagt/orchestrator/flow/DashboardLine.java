@@ -12,21 +12,19 @@ public final class DashboardLine {
     private DashboardLine() {
     }
 
-    public static String forTask(TaskState task) {
+    public static String forTask(TaskState task, String usableRequestLink) {
         String message = task.message();
         AgentReport report = AgentReport.of(message);
         return switch (task.status()) {
             case CI_FAILED -> "PROBLEM: " + orDefault(message, "checks failed");
             case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict — resolve in the deploy worktree");
-            case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED ->
-                    checks(task) + orDefault(task.mrUrl(), "review request link missing");
+            case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED -> requestProblem(task, usableRequestLink);
             // A question OUTRANKS the request link: a link reads as "ready to ship", so the human ships and the
             // unanswered question goes out as a review reply.
             case REVIEW_PENDING -> switch (report) {
                 case QUESTION -> needsInput(message);
-                case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change")
-                        + (hasMr(task) ? " · " + task.mrUrl() : "");
-                case PLAIN -> hasMr(task) ? task.mrUrl() : "";
+                case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change");
+                case PLAIN -> requestProblem(task, usableRequestLink);
             };
             case NEW, IN_PROGRESS -> report == AgentReport.QUESTION ? needsInput(message) : silence(task);
             case SHIPPING -> silence(task);
@@ -35,15 +33,14 @@ public final class DashboardLine {
     }
 
     /**
-     * The checks, only when they are not green: a red run while the task still reads CI_POLLING is what the status
-     * alone cannot show.
+     * A request every surface links from needs no line of its own; one nothing can link to does. Only a web URL
+     * can be followed, so a stored value that is not one leaves the task with a request and no way to reach it.
      */
-    private static String checks(TaskState task) {
-        return switch (Pipeline.of(task.pipelineStatus())) {
-            case RED -> "CHECKS RED · ";
-            case RUNNING -> "checks running · ";
-            case GREEN, NONE -> "";
-        };
+    private static String requestProblem(TaskState task, String usableRequestLink) {
+        if (!hasMr(task)) {
+            return "";
+        }
+        return usableRequestLink == null ? "PROBLEM: review request link unusable: " + task.mrUrl() : "";
     }
 
     /**

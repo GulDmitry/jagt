@@ -59,15 +59,16 @@ const countdown = (millis) => {
 // the server's (watch.note), so the console and this cannot drift; only the countdown is formatted here, from the
 // absolute stamp, so the slow repaint keeps it honest without another fetch.
 //
-// Whether the poller runs at all is a property of the install, stated once per surface — so a poll that is
-// COMING needs only its countdown. A watch that has STOPPED is the one thing that statement cannot cover.
+// Whether the poller runs at all is a property of the install, stated once per surface, so neither shape repeats
+// it: a poll that is COMING is its countdown, one that has STOPPED is the state that stopped it. What to do
+// instead is the tooltip, since the card already highlights that button.
 const watchLine = (watch) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
     const remaining = watch.nextPollAt - Date.now();
     return {pulse: remaining <= 0 ? 'now' : countdown(remaining), tip: watch.note};
   }
-  return {text: watch.note, stalled: true};
+  return {pulse: watch.state.toLowerCase().replace(/_/g, ' '), tip: watch.note, stalled: true};
 };
 
 // `openedAt` is 0 until a host read has said when the request opened.
@@ -279,10 +280,10 @@ function card(task) {
   // Two clocks, because the status one restarts on every round and on a respawned agent re-reporting itself
   // while the review keeps waiting. The activity age is not a third: on a status the agent does not own, it
   // says only that nothing has happened.
-  const status = document.createElement('span');
-  status.className = 'status';
-  status.textContent = `${task.status} · ${duration(Date.now() - task.statusSince)}`;
-  status.dataset.tip = timeline(task);
+  // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
+  const status = span('status', task.statusLabel);
+  status.append(span('age', duration(Date.now() - task.statusSince)));
+  status.dataset.tip = `${task.status}\n${timeline(task)}`;
   // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
   const repos = task.repos || [];
   const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
@@ -304,16 +305,15 @@ function card(task) {
     meta.append(checks);
   }
   const watch = watchLine(task.autoReview);
-  if (watch && watch.pulse) {
-    const pulse = span('pulse', `↻ ${watch.pulse}`);
+  if (watch) {
+    const pulse = span(watch.stalled ? 'pulse stalled' : 'pulse', `↻ ${watch.pulse}`);
     pulse.dataset.tip = [watch.tip, autoReview.summary].filter(Boolean).join('\n');
     meta.append(pulse);
   }
 
   const article_children = [top, title, meta];
 
-  // A detail that is nothing but a URL is the request, and the meta row already links it.
-  if (task.detail && !/^https?:/.test(task.detail)) {
+  if (task.detail) {
     const detail = document.createElement('div');
     detail.className = /^(PROBLEM|NEEDS)/.test(task.detail) ? 'detail problem' : 'detail';
     detail.textContent = task.detail;
@@ -327,14 +327,6 @@ function card(task) {
     drafts.textContent = 'drafted review replies — read them before you ship';
     drafts.dataset.tip = 'review_replies.md in the worktree; open it with the IDE action';
     article_children.push(drafts);
-  }
-
-  if (watch && watch.stalled) {
-    const node = document.createElement('div');
-    node.className = 'watch stalled';
-    node.textContent = watch.text;
-    node.dataset.tip = autoReview.summary;
-    article_children.push(node);
   }
 
   // A row per group, broken wherever the order the server sent changes it: which groups exist, and which

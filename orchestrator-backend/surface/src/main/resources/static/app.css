@@ -2,13 +2,13 @@
 :root {
   --bg: #f6f7f9; --panel: #fff; --line: #d9dde3; --text: #1c2024; --muted: #6b7280;
   --you: #b45309; --you-bg: #fef3c7; --agent: #1d4ed8; --ci: #6d28d9;
-  --accent: #1d4ed8; --danger: #b42318; --ok: #15803d;
+  --accent: #1d4ed8; --danger: #b42318; --ok: #15803d; --chip-bg: #eceef1;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14171a; --panel: #1c2024; --line: #2c3238; --text: #e6e8ea; --muted: #9aa3ad;
     --you: #fbbf24; --you-bg: #3a2c08; --agent: #93b4ff; --ci: #c4b5fd;
-    --accent: #93b4ff; --danger: #fca5a5; --ok: #86efac;
+    --accent: #93b4ff; --danger: #fca5a5; --ok: #86efac; --chip-bg: #24282c;
   }
 }
 * { box-sizing: border-box; }
@@ -113,9 +113,12 @@ article.ci { border-left-color: var(--ci); }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
 .badge { padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; }
 .badge.you { background: var(--you-bg); color: var(--you); }
-.status, .mr-age, .pulse {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+.mr-age, .pulse { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.status {
+  display: inline-flex; gap: 5px; align-items: baseline; padding: 1px 7px; border-radius: 999px;
+  background: var(--chip-bg); color: var(--text); font-size: 11px; font-weight: 600;
 }
+.status .age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 400; opacity: .7; }
 /* Clickable without a link's colour: a whole meta row in accent would compete with the buttons. */
 a.id, a.mr-age {
   color: inherit; text-decoration: underline dotted; text-underline-offset: 2px;
@@ -123,12 +126,12 @@ a.id, a.mr-age {
 a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid; }
 .detail { font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
 .detail.problem { color: var(--danger); font-weight: 600; }
+.pulse.stalled { color: var(--you); }
 /* Drafted replies are a "read this before you ship" nudge, not an error: warm, not red. */
 .drafts {
   font-size: 12px; margin: 4px 0; padding: 3px 7px; border-radius: 6px;
   background: var(--you-bg); color: var(--you); font-weight: 600;
 }
-.watch.stalled { font-size: 12px; margin: 4px 0; color: var(--you); }
 a { color: var(--accent); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .actions button { font-size: 12px; padding: 3px 8px; }

@@ -60,12 +60,13 @@ class TaskViewTest {
     }
 
     /**
-     * The DASHBOARD's own detail line is built from the raw state, so a dropped link must not silently turn a
-     * CI_POLLING card into a blank one: the fallback text is what tells the human the link is missing.
+     * A dropped link must not silently turn the card into a blank one: nothing can be followed, so the task has a
+     * request nobody can reach, and that is the one thing worth a line of its own.
      */
     @Test
     void stillSaysSomethingWhenTheStoredRequestLinkWasUnusable() {
-        assertThat(viewOf(null, "javascript:alert(1)").detail()).isEqualTo("javascript:alert(1)");
+        assertThat(viewOf(null, "javascript:alert(1)").detail())
+                .isEqualTo("PROBLEM: review request link unusable: javascript:alert(1)");
     }
 
     @Test

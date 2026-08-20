@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
+import dev.jagt.orchestrator.flow.Pipeline;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +28,7 @@ public class DashboardRenderer {
     // Defined ONCE: a surface that colours one column finds it by the offsets below.
     public static final int ALIAS_W = 5;
     public static final int TASK_W = 11;
-    private static final int STATUS_W = 14;
+    private static final int STATUS_W = 15;
     private static final int PROJECT_W = 8;
     private static final int ACTIVE_W = 11;
     private static final int TOKENS_W = 7;
@@ -57,10 +58,14 @@ public class DashboardRenderer {
                 "TITLE"));
         for (TaskView task : tasks) {
             out.append(String.format(ROW_FORMAT, task.alias() == null ? "-" : task.alias(), task.id(),
-                    task.status(), task.project(), stamp(task.lastActiveAt()), tokens(task.tokens()),
+                    task.statusLabel(), task.project(), stamp(task.lastActiveAt()), tokens(task.tokens()),
                     oneLineTitle(task.title())));
             if (task.ticketUrl() != null && !task.ticketUrl().isBlank()) {
                 out.append("                    └ ").append(task.ticketUrl()).append('\n');
+            }
+            if (task.reviewRequestUrl() != null) {
+                out.append("                    └ ").append(checks(task.pipeline()))
+                        .append(task.reviewRequestUrl()).append('\n');
             }
             if (task.detail() != null && !task.detail().isBlank()) {
                 out.append("                    └ ").append(task.detail()).append('\n');
@@ -79,14 +84,26 @@ public class DashboardRenderer {
             // Lead with WHOSE move it is: on a board of five tasks that is the fact a human scans for. The
             // duration is time in THIS status, not since the last activity — a keep-alive resets that stamp.
             out.append("                    → ").append(task.owner().label()).append(" · ")
-                    .append(task.hint()).append("  (")
-                    .append(DurationFormat.compact(System.currentTimeMillis() - task.statusSince()))
-                    .append(" in ").append(task.status()).append(requestOpen(task)).append(")\n");
+                    .append(task.hint()).append("  (").append(task.statusLabel()).append(' ')
+                    .append(DurationFormat.compact(now - task.statusSince()))
+                    .append(requestOpen(task)).append(")\n");
         }
         if (tasks.isEmpty()) {
             out.append("(no tasks)\n");
         }
         return out.toString();
+    }
+
+    /**
+     * The checks, only when they are not green: a red run while the task still reads out-for-review is what the
+     * status alone cannot show.
+     */
+    private static String checks(Pipeline pipeline) {
+        return switch (pipeline) {
+            case RED -> "CHECKS RED · ";
+            case RUNNING -> "checks running · ";
+            case GREEN, NONE -> "";
+        };
     }
 
     /**

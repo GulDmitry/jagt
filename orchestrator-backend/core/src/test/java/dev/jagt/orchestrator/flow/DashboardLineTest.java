@@ -17,23 +17,32 @@ class DashboardLineTest {
     void showsNoDetailWhileThereIsNothingForAHumanToActOn(TaskStatus status, String message) {
         TaskState task = TaskState.builder("p", "/wt", status).message(message).build();
 
-        assertThat(DashboardLine.forTask(task)).isEmpty();
+        assertThat(DashboardLine.forTask(task, null)).isEmpty();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_POLLING", "REVIEWED", "APPROVED",
             "DEPLOYED", "REVERTED"})
-    void showsTheRequestLinkForEveryStatusThatHasOneOut(TaskStatus status) {
+    void saysNothingAboutARequestEverySurfaceCanLinkToItself(TaskStatus status) {
         TaskState task = TaskState.builder("p", "/wt", status).mrUrl("https://gitlab/x/-/merge_requests/9").build();
 
-        assertThat(DashboardLine.forTask(task)).isEqualTo("https://gitlab/x/-/merge_requests/9");
+        assertThat(DashboardLine.forTask(task, "https://gitlab/x/-/merge_requests/9")).isEmpty();
     }
 
     @Test
-    void saysTheLinkIsMissingWhenAReviewedTaskHasNone() {
+    void saysSoWhenTheTaskHasARequestNothingCanLinkTo() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEWED)
+                .mrUrl("javascript:alert(1)").build();
+
+        assertThat(DashboardLine.forTask(task, null))
+                .isEqualTo("PROBLEM: review request link unusable: javascript:alert(1)");
+    }
+
+    @Test
+    void saysNothingAboutARequestAReviewedTaskDoesNotHaveYet() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEWED).build();
 
-        assertThat(DashboardLine.forTask(task)).isEqualTo("review request link missing");
+        assertThat(DashboardLine.forTask(task, null)).isEmpty();
     }
 
     @Test
@@ -41,7 +50,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_FAILED)
                 .message("trigger_commons failed").mrUrl("https://mr").build();
 
-        assertThat(DashboardLine.forTask(task)).startsWith("PROBLEM: ").contains("trigger_commons");
+        assertThat(DashboardLine.forTask(task, "https://mr")).startsWith("PROBLEM: ").contains("trigger_commons");
     }
 
     @Test
@@ -49,7 +58,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT)
                 .message("resolve conflict in /repos/ABC-1-deploy").build();
 
-        assertThat(DashboardLine.forTask(task)).startsWith("NEEDS YOU: ").contains("ABC-1-deploy");
+        assertThat(DashboardLine.forTask(task, null)).startsWith("NEEDS YOU: ").contains("ABC-1-deploy");
     }
 
     @Test
@@ -57,7 +66,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
                 .message("awaiting: FE or BE decision").build();
 
-        assertThat(DashboardLine.forTask(task)).isEqualTo("NEEDS INPUT: FE or BE decision");
+        assertThat(DashboardLine.forTask(task, null)).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
 
     /** The one case where the status itself lies: it reads as work in progress and nothing is progressing. */
@@ -66,7 +75,7 @@ class DashboardLineTest {
     void shoutsThatAnAgentTheWatchdogFoundSilentIsNowTheHumansProblem(TaskStatus status) {
         TaskState task = TaskState.builder("p", "/wt", status).message("step 2").silentSince(1_000).build();
 
-        assertThat(DashboardLine.forTask(task))
+        assertThat(DashboardLine.forTask(task, null))
                 .isEqualTo("NEEDS YOU: agent silent — no report and a quiet window");
     }
 
@@ -76,7 +85,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
                 .message("awaiting: FE or BE decision").silentSince(1_000).build();
 
-        assertThat(DashboardLine.forTask(task)).isEqualTo("NEEDS INPUT: FE or BE decision");
+        assertThat(DashboardLine.forTask(task, null)).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
 
     @Test
@@ -84,40 +93,24 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("awaiting: cache or index?").mrUrl("https://host/mr/425").build();
 
-        assertThat(DashboardLine.forTask(task)).isEqualTo("NEEDS INPUT: cache or index?");
+        assertThat(DashboardLine.forTask(task, "https://host/mr/425")).isEqualTo("NEEDS INPUT: cache or index?");
     }
 
     @Test
-    void saysTheRoundChangedNothingWithoutDroppingTheLinkToTheThreadsItNames() {
+    void saysTheRoundChangedNothing() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("no changes: every comment already handled").mrUrl("https://host/mr/440").build();
 
-        assertThat(DashboardLine.forTask(task))
-                .isEqualTo("ANSWERED: every comment already handled · https://host/mr/440");
-    }
-
-    @Test
-    void shoutsThatTheChecksWentRedBeforeShowingTheRequestLink() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
-                .mrUrl("https://host/mr/501").pipelineStatus("failed").build();
-
-        assertThat(DashboardLine.forTask(task)).isEqualTo("CHECKS RED · https://host/mr/501");
-    }
-
-    @Test
-    void saysTheChecksAreStillRunningWhileTheHostHasNoAnswerYet() {
-        TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
-                .mrUrl("https://host/mr/502").pipelineStatus("running").build();
-
-        assertThat(DashboardLine.forTask(task)).isEqualTo("checks running · https://host/mr/502");
+        assertThat(DashboardLine.forTask(task, "https://host/mr/440"))
+                .isEqualTo("ANSWERED: every comment already handled");
     }
 
     @ParameterizedTest
-    @CsvSource(nullValues = "UNREAD", value = {"success", "UNREAD"})
-    void showsOnlyTheRequestLinkWhenTheChecksHaveNothingToAdd(String pipelineStatus) {
+    @CsvSource({"failed", "running", "success"})
+    void leavesTheChecksToWhicheverSurfaceIsShowingThem(String pipelineStatus) {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
-                .mrUrl("https://host/mr/503").pipelineStatus(pipelineStatus).build();
+                .mrUrl("https://host/mr/501").pipelineStatus(pipelineStatus).build();
 
-        assertThat(DashboardLine.forTask(task)).isEqualTo("https://host/mr/503");
+        assertThat(DashboardLine.forTask(task, "https://host/mr/501")).isEmpty();
     }
 }

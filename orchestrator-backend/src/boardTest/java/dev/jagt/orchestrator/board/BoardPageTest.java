@@ -259,6 +259,41 @@ class BoardPageTest {
     }
 
     @Test
+    void showsTheStatusInWordsWithItsOwnAgeInsideTheSameChip() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .status")).hasText("out for review0m");
+        assertThat(page.locator("article .status .age")).hasText("0m");
+    }
+
+    @Test
+    void saysNothingUnderACardAboutARequestItAlreadyLinksTo() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .pipelineStatus("running").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .detail")).hasCount(0);
+    }
+
+    @Test
+    void showsAPollThatStoppedInTheSlotThePulseWouldHaveUsed() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .mrCreatedAt(now() - java.time.Duration.ofDays(9).toMillis())
+                .lastPolledAt(now()).lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .pulse.stalled")).hasText("↻ window elapsed");
+    }
+
+    @Test
     void opensTheTicketFromTheTaskNumber() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.IN_PROGRESS).alias("a1").ticketUrl("https://tracker.example/ABC-1")

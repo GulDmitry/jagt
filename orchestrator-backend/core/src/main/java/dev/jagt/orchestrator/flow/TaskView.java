@@ -27,6 +27,8 @@ public record TaskView(
         String project,
         String title,
         TaskStatus status,
+        // The same status in words a human needs no glossary for; the enum name stays the wire value.
+        String statusLabel,
         Phase phase,
         Owner owner,
         String hint,
@@ -70,10 +72,12 @@ public record TaskView(
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
                         action == move.primary(), action.group().id()))
                 .toList();
-        return new TaskView(id, task.alias(), task.project(), task.title(), task.status(), move.phase(),
+        return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),
+                task.status().label(), move.phase(),
                 move.owner(), move.hint(), actions,
                 move.primary() == null ? null : move.primary().id(),
-                DashboardLine.forTask(task), webLink(task.ticketUrl()), webLink(task.mrUrl()),
+                DashboardLine.forTask(task, webLink(task.mrUrl())), webLink(task.ticketUrl()),
+                webLink(task.mrUrl()),
                 task.repos().stream()
                         .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl()),
                                 deployBranches.get(repo.project())))
