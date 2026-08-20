@@ -438,6 +438,21 @@ class BoardPageTest {
         assertThat(page.locator("article a.id")).hasCount(0);
     }
 
+    /** A card with no highlighted button is the one a human stares at, and the badge that carried the hint is
+     *  absent exactly there. */
+    @Test
+    void spellsOutTheNextMoveOnACardThatOffersNoObviousOne() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/7")
+                .message("no changes: already handled").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .badge")).hasCount(0);
+        assertThat(page.locator("article .hint"))
+                .hasText("nothing to ship; the open threads are the reviewer's to close");
+    }
+
     @Test
     void namesTheOwnerOnlyWhenTheMoveIsYours() {
         long shipped = now();

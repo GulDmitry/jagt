@@ -24,11 +24,18 @@ import java.util.List;
  */
 public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskAction primary, String hint) {
 
+    /** For a caller describing a task in a sentence rather than owning a card: it has no poller to speak for. */
     public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round,
                                boolean agentSilent) {
-        return new Move(phaseOf(status), ownerOf(status, round, agentSilent),
+        return forTask(status, hasReviewRequest, round, agentSilent, false);
+    }
+
+    public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round,
+                               boolean agentSilent, boolean pollStopped) {
+        return new Move(phaseOf(status), ownerOf(status, hasReviewRequest, round, agentSilent, pollStopped),
                 FlowRules.allowed(status, Facts.projected(hasReviewRequest)),
-                primaryOf(status, hasReviewRequest, round), hint(status, round, agentSilent));
+                primaryOf(status, hasReviewRequest, round),
+                hint(status, hasReviewRequest, round, agentSilent, pollStopped));
     }
 
     private static Phase phaseOf(TaskStatus status) {
@@ -47,7 +54,19 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
      * simply went quiet. The wait is the human's either way, and a card that still reads "agent" is dropped by
      * every filter and count that looks for their own move.
      */
-    private static Owner ownerOf(TaskStatus status, RoundState round, boolean agentSilent) {
+    private static Owner ownerOf(TaskStatus status, boolean hasReviewRequest, RoundState round,
+                                 boolean agentSilent, boolean pollStopped) {
+        // The only move left is a ship that commits nothing and hands the same threads back to the poller, so
+        // the wait belongs to whoever writes the next comment — which takes a request for them to write it on.
+        if (status == TaskStatus.REVIEW_PENDING && hasReviewRequest
+                && round.report() == AgentReport.NO_CHANGES && !round.draftedReplies()) {
+            return Owner.CI;
+        }
+        // A poll this install makes for other tasks has stopped for this one, so it moves only if a human moves
+        // it. An install that polls nothing says so once per surface, and does not turn every card into a task.
+        if (status == TaskStatus.CI_POLLING && (pollStopped || !hasReviewRequest)) {
+            return Owner.YOU;
+        }
         Owner owner = ownerOf(status);
         return owner == Owner.AGENT && stopped(round, agentSilent) ? Owner.YOU : owner;
     }
@@ -58,7 +77,9 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
 
     /**
      * Whose turn a status ALONE means. Public because a view that adds up time per owner must not map it a second
-     * way, and it has only statuses to add up.
+     * way, and it has only statuses to add up — which is also why a CARD can differ from it: the two cells that
+     * need the round or the poller are not in a history of statuses, so a total booked from one is the closest
+     * answer that data can give.
      */
     public static Owner ownerOf(TaskStatus status) {
         return switch (status) {
@@ -74,10 +95,11 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         return switch (status) {
             case NEW, IN_PROGRESS, SHIPPING -> TaskAction.FOCUS;
             // Shipping a round that changed nothing commits nothing and drops the task back into
-            // CI_POLLING, where the poll relays the threads it just answered — unless replies are waiting,
-            // because `ship` is the only thing that posts them.
+            // CI_POLLING, where the poll relays the threads it just answered — unless replies are waiting
+            // (`ship` is the only thing that posts them), or no request exists yet, where a ship opens one
+            // instead of looping.
             case REVIEW_PENDING -> switch (round.report()) {
-                case NO_CHANGES -> round.draftedReplies() ? TaskAction.SHIP : null;
+                case NO_CHANGES -> round.draftedReplies() || !hasReviewRequest ? TaskAction.SHIP : null;
                 case QUESTION -> TaskAction.FOCUS;
                 case PLAIN -> TaskAction.SHIP;
             };
@@ -94,7 +116,8 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
     }
 
     /** One line of prose, for a hint line or a button tooltip. */
-    private static String hint(TaskStatus status, RoundState round, boolean agentSilent) {
+    private static String hint(TaskStatus status, boolean hasReviewRequest, RoundState round,
+                               boolean agentSilent, boolean pollStopped) {
         if (ownerOf(status) == Owner.AGENT && stopped(round, agentSilent)) {
             return round.report() == AgentReport.QUESTION
                     ? "answer the question in the agent's window (focus)"
@@ -103,14 +126,20 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent is working; no action required";
             case REVIEW_PENDING -> switch (round.report()) {
-                case NO_CHANGES -> round.draftedReplies()
-                        ? "no code changed; ship posts the drafted replies and nothing else"
-                        : "nothing to ship; the open threads are the reviewer's to close";
+                case NO_CHANGES -> !hasReviewRequest
+                        ? "no code changed this round; ship opens the review request"
+                        : round.draftedReplies()
+                                ? "no code changed; ship posts the drafted replies and nothing else"
+                                : "nothing to ship; the open threads are the reviewer's to close";
                 case QUESTION -> "answer the question (focus), then ship";
                 case PLAIN -> "read the diff (ide), then ship";
             };
             case SHIPPING -> "agent is committing and pushing; wait";
-            case CI_POLLING -> "waiting for comments and checks; sweep reads them now";
+            case CI_POLLING -> !hasReviewRequest
+                    ? "no review request on this task; focus the agent, or ship to open one"
+                    : pollStopped
+                            ? "nothing polls this round any more; sweep reads the comments and checks now"
+                            : "waiting for comments and checks; sweep reads them now";
             case CI_FAILED -> "sweep relays the failure to the agent";
             case REVIEWED -> "no open comments, checks green: deploy or done";
             case APPROVED -> "approved: deploy or done";

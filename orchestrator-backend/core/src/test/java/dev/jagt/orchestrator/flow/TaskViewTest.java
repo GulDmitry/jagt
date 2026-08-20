@@ -26,6 +26,30 @@ class TaskViewTest {
                 AutoReviewWatch.none(), Map.of("proj", "dev"));
     }
 
+    private static TaskView polling(AutoReviewWatch watch) {
+        return TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").mrUrl("http://host/mr/1").build(), false, watch, Map.of("proj", "dev"));
+    }
+
+    private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> watches() {
+        return java.util.stream.Stream.of(
+                org.junit.jupiter.params.provider.Arguments.of(AutoReviewWatch.watching(1L), Owner.CI),
+                org.junit.jupiter.params.provider.Arguments.of(AutoReviewWatch.none(), Owner.CI),
+                org.junit.jupiter.params.provider.Arguments.of(AutoReviewWatch.windowElapsed(24), Owner.YOU),
+                org.junit.jupiter.params.provider.Arguments.of(AutoReviewWatch.offForTask(), Owner.YOU),
+                org.junit.jupiter.params.provider.Arguments.of(AutoReviewWatch.noRound(), Owner.YOU));
+    }
+
+    /**
+     * The card asks for a human when the poll expected here has stopped — and NOT when the install polls nothing
+     * at all, which is stated once per surface rather than on every card.
+     */
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.MethodSource("watches")
+    void asksForAHumanOnlyWhereAnExpectedPollHasStopped(AutoReviewWatch watch, Owner expected) {
+        assertThat(polling(watch).owner()).isEqualTo(expected);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "javascript:fetch('/api/tasks/a1/actions/deploy',{method:'POST'})",

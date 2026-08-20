@@ -42,6 +42,7 @@ class MoveTest {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, false), false);
 
         assertThat(move.primary()).isNull();
+        assertThat(move.owner()).isEqualTo(Owner.CI);
         assertThat(move.hint()).isEqualTo("nothing to ship; the open threads are the reviewer's to close");
         assertThat(move.actions()).contains(TaskAction.SHIP);
     }
@@ -54,6 +55,51 @@ class MoveTest {
         assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
         assertThat(move.hint())
                 .isEqualTo("no code changed; ship posts the drafted replies and nothing else");
+    }
+
+    /** Nothing is out for review yet, so there is no reviewer to wait for — the ship opens the request. */
+    @Test
+    void asksTheHumanToShipARoundThatChangedNothingBeforeAnyRequestExists() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, false, new RoundState(AgentReport.NO_CHANGES, false),
+                false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.primary()).isEqualTo(TaskAction.SHIP);
+        assertThat(move.hint()).contains("ship opens the review request");
+    }
+
+    @Test
+    void keepsTheRoundWithTheHumanWhenTheDraftedRepliesStillNeedAShip() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, true),
+                false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+    }
+
+    /** Waiting on the host is only true while something is still reading the round for you. */
+    @Test
+    void asksTheHumanToSweepARoundThePollHasGivenUpOn() {
+        Move move = Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE, false, true);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.hint()).contains("nothing polls this round");
+    }
+
+    @Test
+    void leavesARoundStillBeingPolledWithTheHost() {
+        Move move = Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE, false, false);
+
+        assertThat(move.owner()).isEqualTo(Owner.CI);
+    }
+
+    /** A host that has never seen the task cannot be what it is waiting for, and `sweep` is refused without one. */
+    @Test
+    void asksTheHumanAboutATaskWaitingOnChecksWithNoRequestToRead() {
+        Move move = Move.forTask(TaskStatus.CI_POLLING, false, RoundState.NONE, false, false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.hint()).contains("no review request");
+        assertThat(move.actions()).doesNotContain(TaskAction.SWEEP);
     }
 
     @Test
@@ -106,11 +152,15 @@ class MoveTest {
                 .isEqualTo(Move.forTask(status, true, RoundState.NONE, false));
     }
 
-    /** Read off every status there is rather than a sample, so a status added later cannot go unowned. */
+    /**
+     * Read off every status there is rather than a sample, so a status added later cannot go unowned. An open
+     * request for all of them, because the question is which STATUS waits for a human — the cells that need more
+     * than a status are asserted one by one above.
+     */
     @Test
     void namesTheHumanAsTheOwnerOfExactlyTheStatusesThatWaitForOne() {
         var waitingOnYou = Arrays.stream(TaskStatus.values())
-                .filter(status -> Move.forTask(status, false, RoundState.NONE, false).owner() == Owner.YOU).toList();
+                .filter(status -> Move.forTask(status, true, RoundState.NONE, false).owner() == Owner.YOU).toList();
 
         assertThat(waitingOnYou).containsExactly(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED,
                 TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.DEPLOYED,

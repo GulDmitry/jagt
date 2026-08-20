@@ -22,6 +22,18 @@ public record AutoReviewWatch(State state, long nextPollAt, String note, String 
      */
     public enum State { NONE, WATCHING, WINDOW_ELAPSED, OFF_FOR_TASK, NO_ROUND }
 
+    /**
+     * Whether polling was expected here and has stopped, as opposed to an install that polls nothing at all —
+     * {@link State#NONE} says the topic does not apply to this task, and the surfaces state the install-wide
+     * answer once instead of on every card.
+     */
+    public boolean stopped() {
+        return switch (state) {
+            case WINDOW_ELAPSED, OFF_FOR_TASK, NO_ROUND -> true;
+            case NONE, WATCHING -> false;
+        };
+    }
+
     public static AutoReviewWatch none() {
         return new AutoReviewWatch(State.NONE, 0, null, null);
     }

@@ -231,6 +231,16 @@ link to it, because no file here is named after one vendor.
   human's OWN action, which is the only motion this design allows.
 - `Phase`/`Owner` are a PROJECTION for humans, never persisted and never a second state machine: `TaskStatus`
   stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
+- `Owner.YOU` MEANS AN ACTION OF THEIRS EXISTS, and a status alone cannot always say so — the board's badge, its
+  "action required" count and its own-move filter all read that one value, so a card that asks for a human who
+  has nothing to do teaches them to ignore all three. Two cells are therefore decided by more than the status
+  (`Move.ownerOf`): a REVIEW_PENDING round that changed nothing and drafted no reply waits on the REVIEWER (the
+  only move left is a ship jagt itself advises against), and a CI_POLLING round whose EXPECTED poll has stopped
+  waits on the HUMAN. That second one is `AutoReviewWatch.stopped()`, not "is not being polled": an install that
+  polls nothing at all says so once per surface, and flipping every card in it to "action required" would be the
+  same badge nobody reads, in the other direction. The projection reads it off the very watch the card renders,
+  so the badge and the countdown cannot disagree; a caller that only wants the sentence keeps the four-argument
+  `forTask`.
 - Liveness is deliberately NOT an input to the projection (a tmux probe per task per render); a task stuck at
   SHIPPING is therefore offered SHIP and the gate refuses at execution time if its agent is alive.
 - THE BOARD LISTENS ON LOOPBACK (`server.address: 127.0.0.1`), because it asks for no password and can deploy,

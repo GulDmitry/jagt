@@ -67,7 +67,8 @@ public record TaskView(
     public static TaskView of(String id, TaskState task, boolean draftedReplies, AutoReviewWatch autoReview,
                               Map<String, String> deployBranches) {
         Move move = Move.forTask(task.status(), task.hasReviewRequest(),
-                RoundState.of(task.message(), draftedReplies), task.agentIsSilent());
+                RoundState.of(task.message(), draftedReplies), task.agentIsSilent(),
+                autoReview != null && autoReview.stopped());
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
                         action == move.primary(), action.group().id()))
