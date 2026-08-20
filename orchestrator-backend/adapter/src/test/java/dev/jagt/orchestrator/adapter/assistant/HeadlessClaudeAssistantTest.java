@@ -171,6 +171,27 @@ class HeadlessClaudeAssistantTest {
         assertThat(facts.get().labels()).containsExactly("backend");
     }
 
+    /**
+     * `resume` adopts requests that are weeks old, and linking one dates it by the clock as a floor — so a read
+     * that cannot say when it was opened leaves the card reading brand new.
+     */
+    @Test
+    void datesTheRequestFromTheHostsOwnTimestampRatherThanLeavingItBrandNew() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,
+                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success",\
+                "openedAt":"2026-08-01T09:15:00Z","comments":[]}}""", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty());
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().openedAt()).isEqualTo(1785575700000L);
+    }
+
     @Test
     void fallsBackToTheResultStringWhenTheEnvelopeCarriesNoParsedOutput() {
         ProcessRunner runner = mock(ProcessRunner.class);

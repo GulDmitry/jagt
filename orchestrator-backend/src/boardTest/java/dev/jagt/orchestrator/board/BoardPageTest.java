@@ -445,8 +445,11 @@ class BoardPageTest {
      */
     @Test
     void answersWhoseMoveItIsOnTheCardThatOffersNoButtonToPress() {
+        // Stamped as a round the poller can time: a round it has STOPPED polling is a different card — that one
+        // does ask for the human, since nothing else will read those threads again.
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/7")
+                .mrCreatedAt(now()).lastPolledAt(now())
                 .message("no changes: already handled").lastActiveTimestamp(now()).build());
 
         Page page = open();

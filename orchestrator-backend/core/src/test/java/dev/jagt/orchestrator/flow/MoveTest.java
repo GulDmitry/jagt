@@ -41,12 +41,37 @@ class MoveTest {
      */
     @Test
     void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, false), false);
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true,
+                new RoundState(AgentReport.NO_CHANGES, false), false, watching());
 
         assertThat(move.primary()).isNull();
         assertThat(move.owner()).isEqualTo(Owner.CI);
-        assertThat(move.hint()).isEqualTo("nothing to ship");
+        assertThat(move.hint()).isEqualTo("nothing to ship; the open threads are the reviewer's move");
         assertThat(move.actions()).contains(TaskAction.SHIP);
+    }
+
+    /**
+     * The threads this round is waiting on are read by the poller, so a round it has stopped polling waits on
+     * NOBODY — the card said "the reviewer's move" and nothing would ever look at that request again.
+     */
+    @Test
+    void handsAReviewRoundBackToTheHumanOncePollingHasStoppedForIt() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true,
+                new RoundState(AgentReport.NO_CHANGES, false), false, elapsed());
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.primary()).isEqualTo(TaskAction.SWEEP);
+        assertThat(move.hint())
+                .isEqualTo("nothing is polling this round; sweep reads the comments and checks now");
+    }
+
+    /** An agent at work is not waiting on a poller, so a window that has elapsed says nothing about its card. */
+    @Test
+    void leavesATaskWithItsAgentWhenThePollingWindowElapsedWhileItWorks() {
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, true, RoundState.NONE, false, elapsed());
+
+        assertThat(move.owner()).isEqualTo(Owner.AGENT);
+        assertThat(move.hint()).isEqualTo("agent is working; no action required");
     }
 
     /** `ship` is the only thing that posts review_replies.md, so "nothing to ship" would strand the answers. */

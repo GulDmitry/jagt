@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.codehost;
 
+import dev.jagt.orchestrator.adapter.HostStamp;
 import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.config.CodeHostProperties;
 import dev.jagt.orchestrator.port.JsonHttp;

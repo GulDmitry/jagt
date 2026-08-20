@@ -70,19 +70,30 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         if (asking(status, round)) {
             return Owner.YOU;
         }
+        Owner owner = waitingOn(status, hasReviewRequest, round);
+        if (owner == Owner.AGENT && agentSilent) {
+            return Owner.YOU;
+        }
+        // A wait on the code host that nothing will look at again is a wait on the HUMAN: only a `sweep` of
+        // theirs reads that request now. Read off the OWNER rather than off a set of statuses, so the round a
+        // reviewer is sitting on cannot keep pointing at a poll that has stopped. An install that polls nothing
+        // at all is NOT this case — it says so once per surface (`AutoReviewWatch.stopped`).
+        return owner == Owner.CI && pollStopped ? Owner.YOU : owner;
+    }
+
+    /** Whose turn it is before liveness and the poller are taken into account. */
+    private static Owner waitingOn(TaskStatus status, boolean hasReviewRequest, RoundState round) {
         // The only move left is a ship that commits nothing and hands the same threads back to the poller, so
         // the wait belongs to whoever writes the next comment — which takes a request for them to write it on.
         if (status == TaskStatus.REVIEW_PENDING && hasReviewRequest
                 && round.report() == AgentReport.NO_CHANGES && !round.draftedReplies()) {
             return Owner.CI;
         }
-        // A poll this install makes for other tasks has stopped for this one, so it moves only if a human moves
-        // it. An install that polls nothing says so once per surface, and does not turn every card into a task.
-        if (status.outForReview() && (pollStopped || !hasReviewRequest)) {
+        // Out with the reviewers, with nothing for them to review: nobody but a human can move that.
+        if (status.outForReview() && !hasReviewRequest) {
             return Owner.YOU;
         }
-        Owner owner = ownerOf(status);
-        return owner == Owner.AGENT && agentSilent ? Owner.YOU : owner;
+        return ownerOf(status);
     }
 
     /** A closed task's leftover message is not a question anybody still owes an answer to. */
@@ -124,7 +135,10 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
             // (`ship` is the only thing that posts them), or no request exists yet, where a ship opens one
             // instead of looping.
             case REVIEW_PENDING -> switch (round.report()) {
-                case NO_CHANGES -> round.draftedReplies() || !hasReviewRequest ? TaskAction.SHIP : null;
+                // Nothing polling means nothing will read the threads this round is waiting on, so the read is
+                // the move — exactly as it is at REVIEWED, and for the same reason.
+                case NO_CHANGES -> round.draftedReplies() || !hasReviewRequest ? TaskAction.SHIP
+                        : polled ? null : TaskAction.SWEEP;
                 // A question never reaches here: it is answered above, from whatever status it was asked.
                 case QUESTION, PLAIN -> TaskAction.SHIP;
             };
@@ -165,7 +179,10 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
                         ? "no code changed this round; ship opens the review request"
                         : round.draftedReplies()
                                 ? "no code changed; ship posts the drafted replies and nothing else"
-                                : "nothing to ship";
+                                : polled
+                                        ? "nothing to ship; the open threads are the reviewer's move"
+                                        : "nothing is polling this round; sweep reads the comments and checks"
+                                                + " now";
                 // A question never reaches here — it is answered above, in the same words from every status.
                 case QUESTION, PLAIN -> "read the diff (ide), then ship";
             };

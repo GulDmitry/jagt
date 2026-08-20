@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.adapter.HostStamp;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -63,8 +64,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "exists":{"type":"boolean"},\
             "approved":{"type":"boolean"},\
             "pipelineStatus":{"type":"string","enum":["success","failed","running","none"]},\
+            "openedAt":{"type":"string"},\
             "comments":{"type":"array","items":{"type":"string"}}},\
-            "required":["exists","approved","pipelineStatus","comments"]}""";
+            "required":["exists","approved","pipelineStatus","openedAt","comments"]}""";
     private static final String COMMAND_SCHEMA = """
             {"type":"object","properties":{\
             "command":{"type":"string"},\
@@ -127,13 +129,16 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " reviewer — not merely mergeable), pipelineStatus — the CI PIPELINE's own latest result and"
                 + " nothing else: exactly one of success | failed | running | none, never the merge status"
                 + " (mergeable, can_be_merged) and never a review bot's verdict, and none when the request has"
-                + " no pipeline at all — and comments — every UNRESOLVED discussion note (bots like"
-                + " CodeRabbit + humans), each as one string \"author (file:line): body\". Empty array if none.";
+                + " no pipeline at all — openedAt, the request's OWN creation timestamp as the host reports it"
+                + " (ISO-8601; empty string if it does not say), and comments — every UNRESOLVED discussion note"
+                + " (bots like CodeRabbit + humans), each as one string \"author (file:line): body\". Empty array"
+                + " if none.";
         return ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT).map(n -> {
             List<String> comments = new ArrayList<>();
             n.path("comments").forEach(c -> comments.add(c.asString("")));
             return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
-                    n.path("pipelineStatus").asString(""), comments);
+                    n.path("pipelineStatus").asString(""), comments,
+                    HostStamp.epochMillis(n.path("openedAt").asString("")));
         });
     }
 

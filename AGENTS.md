@@ -221,7 +221,7 @@ link to it, because no file here is named after one vendor.
   a `do` on that basis is jagt deciding something it cannot know. Whoever wants a bound has the machine's own
   tools for it. Do not reintroduce a cap, a queue, or a "slots" indicator.
 - A STATUS SAYS ITSELF IN WORDS, ONCE: `TaskStatus.label()` is the spelling both surfaces render (`out for
-  review`, `not shipped`, `awaiting approval`), while the enum name stays the wire value, what `state.json` carries and
+  review`, `not shipped`, `not approved`), while the enum name stays the wire value, what `state.json` carries and
   what the board hangs in the chip's tooltip. It names a STATE and never a next move — the highlighted action
   already gives that, and a status that advised too would be the third copy of one sentence. The board binds the
   age INSIDE that chip, because `CI_POLLING · 18m · sng` reads as three unrelated items with the middle one
@@ -322,15 +322,14 @@ link to it, because no file here is named after one vendor.
   (any MCP call, keep-alives included) — a console column and a tooltip line, never a card row: on a status the
   agent does not own, its own age says only that nothing has happened, which the status already said.
   `TaskState.requestOpenedAt` is the review's own age, and it is stamped TWICE from two different clocks. First by
-  jagt's own, the moment a request new to the task is LINKED (`TaskState.relinked`): a request only ever reaches
-  that method as jagt or its agent has just opened it, so the clock is right to within seconds — leaving it at 0
-  meant no age on the card at all until a sweep, and on an install with no `code-host` (where the model read
-  carries no `created_at`) for as long as the task lived. Then by the CODE HOST's `created_at`, which REPLACES it
-  on every review read (`ReviewFacts.openedAt`, one write with the pipeline wording) and is the value that
-  survives; a read that cannot say passes 0 and `withRequestOpenedAt` keeps what is there. The one request that
-  stays ageless is the one nobody here opened: a `resume` adopting someone's week-old request links it through the
-  BUILDER, which stamps nothing, rather than reading as opened just now. Not to be confused with `mrCreatedAt`,
-  the round window `AutoReviewCadence` measures. That window is PER ROUND, and a round
+  jagt's own, the moment a request new to the task is LINKED (`TaskState.relinked`) — a FLOOR, so the card has an
+  age from the first second: `ship`, an agent reporting the url and `resume` all reach that method, and for the
+  first two the clock is right to within seconds. Then by the request's OWN creation time, which REPLACES it on
+  every review read (`ReviewFacts.openedAt`) and is the value that survives — asked of BOTH readers, the host's
+  `created_at` and the model read's `openedAt`, because `resume` adopts requests that are weeks old and a floor
+  would read as opened just now until something corrected it. A read that cannot say passes 0 and
+  `withRequestOpenedAt` keeps what is there, so a correction can never blank an age. Not to be confused with
+  `mrCreatedAt`, the round window `AutoReviewCadence` measures. That window is PER ROUND, and a round
   begins on every ENTRY into CI_POLLING — whether `ship` put it there or the agent reported it — while a repeated
   CI_POLLING keeps it: measured from the first request ever linked instead, a task sent back out for review was
   past its window the moment it arrived, with nothing polling it and a card reading `CI_POLLING · 1h` beside
