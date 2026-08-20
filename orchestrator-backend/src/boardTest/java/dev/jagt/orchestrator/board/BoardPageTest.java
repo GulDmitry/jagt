@@ -290,7 +290,20 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .pulse.stalled")).hasText("↻ window elapsed");
+        assertThat(page.locator("article .pulse.stalled")).hasText("↻ polling stopped");
+    }
+
+    @Test
+    void namesThePollerOnceOnACardThatIsAlreadyItsPulse() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .mrCreatedAt(now() - java.time.Duration.ofDays(9).toMillis())
+                .lastPolledAt(now()).lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .pulse.stalled")).hasAttribute("data-tip",
+                "stopped polling this round after 24h; sweep it yourself");
     }
 
     @Test

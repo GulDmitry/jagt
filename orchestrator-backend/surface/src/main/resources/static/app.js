@@ -60,15 +60,15 @@ const countdown = (millis) => {
 // absolute stamp, so the slow repaint keeps it honest without another fetch.
 //
 // Whether the poller runs at all is a property of the install, stated once per surface, so neither shape repeats
-// it: a poll that is COMING is its countdown, one that has STOPPED is the state that stopped it. What to do
-// instead is the tooltip, since the card already highlights that button.
+// it: a poll that is COMING is its countdown, one that has STOPPED says what stopped. What to do instead is the
+// tooltip, since the card already highlights that button.
 const watchLine = (watch) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
     const remaining = watch.nextPollAt - Date.now();
     return {pulse: remaining <= 0 ? 'now' : countdown(remaining), tip: watch.note};
   }
-  return {pulse: watch.state.toLowerCase().replace(/_/g, ' '), tip: watch.note, stalled: true};
+  return {pulse: watch.label, tip: watch.note, stalled: true};
 };
 
 // `openedAt` is 0 until a host read has said when the request opened.
@@ -307,7 +307,7 @@ function card(task) {
   const watch = watchLine(task.autoReview);
   if (watch) {
     const pulse = span(watch.stalled ? 'pulse stalled' : 'pulse', `↻ ${watch.pulse}`);
-    pulse.dataset.tip = [watch.tip, autoReview.summary].filter(Boolean).join('\n');
+    pulse.dataset.tip = watch.tip;
     meta.append(pulse);
   }
 

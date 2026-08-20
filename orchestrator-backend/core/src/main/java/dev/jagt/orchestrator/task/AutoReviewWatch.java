@@ -7,9 +7,13 @@ package dev.jagt.orchestrator.task;
  * @param nextPollAt epoch millis of the next poll; 0 unless {@link State#WATCHING}. Absolute rather than a
  *                   remaining duration, because a page repaints its own clocks long after it fetched them
  * @param note       what a human is told, written ONCE here so the surfaces cannot drift apart in wording; null
- *                   when there is nothing to say. The countdown is not in it — that is formatted per surface
+ *                   when there is nothing to say. It names no topic: whoever shows it is already the poller's
+ *                   own element or line, and a heading inside the sentence would be the second one in three
+ *                   words. The countdown is not in it either — that is formatted per surface
+ * @param label      the same state in the two or three words a chip holds; null while a countdown says it
+ *                   better. It says what stopped, not which internal condition stopped it
  */
-public record AutoReviewWatch(State state, long nextPollAt, String note) {
+public record AutoReviewWatch(State state, long nextPollAt, String note, String label) {
 
     /**
      * {@link #NONE} covers every "there is nothing to poll here" case at once, including polling switched off for
@@ -19,30 +23,27 @@ public record AutoReviewWatch(State state, long nextPollAt, String note) {
     public enum State { NONE, WATCHING, WINDOW_ELAPSED, OFF_FOR_TASK, NO_ROUND }
 
     public static AutoReviewWatch none() {
-        return new AutoReviewWatch(State.NONE, 0, null);
+        return new AutoReviewWatch(State.NONE, 0, null, null);
     }
 
     public static AutoReviewWatch watching(long nextPollAt) {
-        return new AutoReviewWatch(State.WATCHING, nextPollAt, "auto-review · next poll");
+        return new AutoReviewWatch(State.WATCHING, nextPollAt, "next poll", null);
     }
 
     public static AutoReviewWatch windowElapsed(long windowHours) {
-        return new AutoReviewWatch(State.WINDOW_ELAPSED, 0, "auto-review · " + stoppedPolling(windowHours));
-    }
-
-    /** The same sentence for a surface that has its own heading for the topic. */
-    public static String stoppedPolling(long windowHours) {
-        return "stopped polling this round after " + windowHours + "h; sweep it yourself";
+        return new AutoReviewWatch(State.WINDOW_ELAPSED, 0,
+                "stopped polling this round after " + windowHours + "h; sweep it yourself",
+                "polling stopped");
     }
 
     public static AutoReviewWatch offForTask() {
-        return new AutoReviewWatch(State.OFF_FOR_TASK, 0,
-                "auto-review · off for this task; sweep it yourself");
+        return new AutoReviewWatch(State.OFF_FOR_TASK, 0, "off for this task; sweep it yourself",
+                "polling off");
     }
 
     /** A request nothing can time — its round was never stamped, so no interval can be measured from it. */
     public static AutoReviewWatch noRound() {
         return new AutoReviewWatch(State.NO_ROUND, 0,
-                "auto-review · cannot time this round (no stamp); sweep it yourself");
+                "cannot time this round (no stamp); sweep it yourself", "cannot time this");
     }
 }

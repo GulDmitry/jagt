@@ -139,9 +139,10 @@ public class DashboardRenderer {
         if (watch.state() == AutoReviewWatch.State.NONE) {
             return "";
         }
+        // A terminal line has nothing else to say what this is about, unlike a chip that IS the poller.
         return watch.state() == AutoReviewWatch.State.WATCHING
-                ? watch.note() + " " + due(watch.nextPollAt())
-                : watch.note();
+                ? "auto-review · " + watch.note() + " " + due(watch.nextPollAt())
+                : "auto-review · " + watch.note();
     }
 
     private static String due(long nextPollAt) {
