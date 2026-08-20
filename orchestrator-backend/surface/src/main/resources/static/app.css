@@ -90,6 +90,14 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 #terminal::backdrop { background: rgb(0 0 0 / 45%); }
 #terminal-frame { display: block; width: 100%; height: calc(86vh - 46px); border: 0; background: #000; }
 
+#phases {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline;
+  padding: 10px 16px 0; font-size: 12px; color: var(--muted);
+}
+#phases .phase.empty { opacity: .5; }
+#phases .count { font-weight: 700; color: var(--text); }
+#phases .phase.empty .count { font-weight: 400; color: var(--muted); }
+#phases .sep { opacity: .4; }
 /* One cell per TASK: a card keeps its place, and only its own contents change under it. */
 main { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; padding: 16px; }
 article {
@@ -109,8 +117,10 @@ article.ci { border-left-color: var(--ci); }
 .badge { padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; }
 .badge.you { background: var(--you-bg); color: var(--you); }
 .mr-age, .pulse { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+/* Not a flex container: a flex box drops the space between two words, leaving the text legible only for as
+   long as a stylesheet says so. */
 .status {
-  display: inline-flex; gap: 5px; align-items: baseline; padding: 1px 7px; border-radius: 999px;
+  padding: 1px 7px; border-radius: 999px;
   background: var(--chip-bg); color: var(--text); font-size: 11px; font-weight: 600;
 }
 .status .age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 400; opacity: .7; }

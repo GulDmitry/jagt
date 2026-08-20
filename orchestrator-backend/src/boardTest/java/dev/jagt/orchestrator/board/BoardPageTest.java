@@ -172,6 +172,8 @@ class BoardPageTest {
 
         assertThat(page.locator("#phases .phase")).hasText(
                 new String[]{"build 1", "review 1", "check 0", "ready 0", "deploy 1", "done 0"});
+        assertThat(page.locator("#phases"))
+                .hasText("build 1 · review 1 · check 0 · ready 0 · deploy 1 · done 0");
     }
 
     /**
@@ -311,7 +313,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .status")).hasText("out for review0m");
+        assertThat(page.locator("article .status")).hasText("out for review 0m");
         assertThat(page.locator("article .status .age")).hasText("0m");
     }
 

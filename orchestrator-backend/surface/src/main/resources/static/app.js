@@ -248,11 +248,13 @@ function render() {
   // The pipeline is a COUNT, never a position: a phase that owns a column has to move the card it describes,
   // and re-finding it is the cost. Every phase is here, zeros included, so this line never moves either.
   phaseBar.hidden = tasks.length === 0;
-  phaseBar.replaceChildren(...PHASES.map(([phase, label]) => {
+  // The separator is CONTENT, not a gap: a line whose words only come apart when a stylesheet loads is one
+  // stylesheet away from reading `build 0review 1`.
+  phaseBar.replaceChildren(...PHASES.flatMap(([phase, label], index) => {
     const held = shown.filter((task) => task.phase === phase).length;
-    const segment = span(held ? `phase ${label}` : 'phase empty', `${label} `);
+    const segment = span(held ? 'phase' : 'phase empty', `${label} `);
     segment.append(span('count', held));
-    return segment;
+    return index === 0 ? [segment] : [span('sep', ' · '), segment];
   }));
   board.replaceChildren(...shown.map(card));
 }
@@ -285,7 +287,7 @@ function card(task) {
   // says only that nothing has happened.
   // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
   const status = span('status', task.statusLabel);
-  status.append(span('age', duration(Date.now() - task.statusSince)));
+  status.append(' ', span('age', duration(Date.now() - task.statusSince)));
   status.dataset.tip = `${task.status}\n${timeline(task)}`;
   // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
   const repos = task.repos || [];
