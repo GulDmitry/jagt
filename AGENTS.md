@@ -254,9 +254,9 @@ link to it, because no file here is named after one vendor.
   action list for an install that needs no approval, because gating it was already decided against. Three things
   follow, and none of them is optional: APPROVED is the one the human IS tapped for (`AgentStatusReports.ping`
   asks `Move` whose move it is and sends nothing unless the answer is YOU — a second list of statuses worth
-  interrupting for would drift from the badge); a REVIEWED round is STILL POLLED (`TaskStatus.outForReview`, read
-  by `Move`, `AutoReviewCadence` and `AutoReviewScheduler` alike), because an approval arrives after the round
-  came back clean and a poll that stopped at the status it produced would never see one; and where NOTHING is
+  interrupting for would drift from the badge); a REVIEWED round is STILL POLLED, as is every other status —
+  `AutoReviewCadence.polls` asks only whether a request is OPEN — because an approval arrives after the round came
+  back clean and a poll that stopped at the status it produced would never see one; and where NOTHING is
   polling for the approval, the read is what the card highlights. That last one is why `Move.forTask` takes the
   `AutoReviewWatch` and not a flag off it: "the poll this round was promised has STOPPED" (the wait becomes the
   human's) and "nothing is polling at all" (an install with auto-review off, where the approval is fetched only
@@ -525,6 +525,15 @@ link to it, because no file here is named after one vendor.
   an explicit human `ship`; the loop never ships, deploys, pushes or posts on its own. Every round hands the
   human two artifacts to inspect via `ide <alias>` — the local diff and the drafted replies. Do not erode
   this: the human-in-the-loop gate lives in the OUTCOME, not in who triggered the sweep.
+- AN OPEN REQUEST IS WHAT THE POLLER WATCHES, NEVER A STATUS (the owner's rule, 2026-08-20). A reviewer writes on
+  a request whatever the task is doing meanwhile, so `AutoReviewCadence.polls` asks exactly two things: is there a
+  request, and is the task still alive (DONE is the one status that ends it — no worktree left to relay a round
+  into). Gating on CI_POLLING/REVIEWED meant a round the agent handed back stopped being read at all, and every
+  comment written after that — which is most of a bot's review — reached nobody until a human typed `sweep`. The
+  window is unchanged and stays the whole bound on polling: per round from `mrCreatedAt`, falling back to
+  `requestOpenedAt` so a request adopted by `resume` is polled instead of reading as untimeable. Two consequences
+  that are not optional: the relay is guarded (`relayIfChanged` — the same round read twice must not interrupt the
+  agent twice), and the poll may now find a task mid-work, which is fine because a sweep only READS and drafts.
 - WORK THAT RUNS UNATTENDED MUST BE VISIBLE WHILE IT WAITS, not only after it acts. `AutoReviewCadence` is the
   WHOLE auto-review policy — enabled, the interval ramp, AND `watch(task, now)` answering what a human is owed
   about one task (`task/AutoReviewWatch`: watching + the absolute next-poll stamp, window elapsed, off for this
@@ -547,17 +556,19 @@ link to it, because no file here is named after one vendor.
   and the human then reads agreement into code that was only obedient. `ReviewSweepService.brief` therefore
   opens with the three routes per comment (fix / change NOTHING and say why / ask via `awaiting:` before
   guessing), and `sub-agent-context.md` carries the same stance for the task itself. A question ENDS the round
-  (REVIEW_PENDING, message `awaiting: …`) instead of parking in CI_POLLING — a parked task is re-briefed by
-  every auto-review poll on the very comments it was told to hold, paying for a review read each time.
+  (REVIEW_PENDING, message `awaiting: …`) rather than parking in CI_POLLING, because the wait is the human's and
+  the card has to say so — what keeps the agent from being re-briefed on the comments it was told to hold is
+  `AgentSessions.relayIfChanged`, not the status it left: a relay NUDGES the session, so a brief the file already
+  holds is an interruption to re-decide answered comments, and the poll writes nothing and says nothing instead.
   Deliberately NOT extended to jagt's orchestration steps: a commit/ship instruction IS the human's approval
   and is executed as given.
 - A ROUND REPORTS ITS OUTCOME, because all three end at REVIEW_PENDING and the human is advised from the
   MESSAGE: `awaiting: …` = a question, `no changes: …` = nothing was edited (already handled, or every comment
   pushed back on), anything else = there is a diff to read. `flow/AgentReport` is the ONE parser of that
   vocabulary (`Move` and `DashboardLine` both read it, so they cannot disagree), and `Move` is total over
-  (status × report). Why it matters: advising SHIP for a no-change round is a LOOP — the ship commits nothing
-  and returns the task to CI_POLLING, the only status the auto-poll watches, which relays the same threads
-  again. So NO_CHANGES highlights nothing and says the open threads are the reviewer's move.
+  (status × report). Why it matters: advising SHIP for a no-change round is a LOOP — the ship commits nothing and
+  starts another round on the same unresolved threads. So NO_CHANGES highlights nothing and says the open threads
+  are the reviewer's move.
 - A REPLY DOES NOT RESOLVE A THREAD, and the sweep relays every UNRESOLVED one (`resolvable && !resolved`), so
   a comment the agent pushed back on comes back every round forever. The agent therefore resolves — at SHIP
   time, with its own MCP, never jagt's `CodeHost` — ONLY the threads whose code it actually changed

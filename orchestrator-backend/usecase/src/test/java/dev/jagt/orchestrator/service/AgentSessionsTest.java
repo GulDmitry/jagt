@@ -135,6 +135,31 @@ class AgentSessionsTest {
                 .isEqualTo("NEW ROUND: fix the pipeline").doesNotContain("STALE");
     }
 
+    /**
+     * The poller reads the same round every interval while the request stands still, and a relay NUDGES the
+     * session — so an unchanged brief would interrupt the agent to re-decide comments it has already answered.
+     */
+    @Test
+    void leavesTheAgentAloneWhenTheRoundIsTheOneItWasAlreadyHanded() throws Exception {
+        worktreeWithRelay("Review round for http://mr/1.\nComment: rename x");
+
+        assertThat(sessions().relayIfChanged("ABC-1", "Review round for http://mr/1.\nComment: rename x"))
+                .isFalse();
+        verifyNoInteractions(tmux);
+    }
+
+    @Test
+    void relaysARoundThatDiffersFromTheOneTheAgentWasHanded() throws Exception {
+        Path worktree = worktreeWithRelay("Review round for http://mr/1.\nComment: rename x");
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
+
+        assertThat(sessions().relayIfChanged("ABC-1", "Review round for http://mr/1.\nComment: drop the cache"))
+                .isTrue();
+        assertThat(Files.readString(worktree.resolve("task_context.md"))).contains("drop the cache");
+    }
+
     private Path worktreeWithRelay(String existingContent) throws Exception {
         Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
         Files.writeString(worktree.resolve("task_context.md"), existingContent);

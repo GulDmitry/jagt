@@ -136,6 +136,25 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         return relay(taskId, instructions, true);
     }
 
+    /**
+     * Relays only what the agent has not already been handed. The poller reads the same round every interval
+     * while the request stands still, and a relay does not merely write a file — it NUDGES the session, so an
+     * unchanged brief would interrupt an agent every interval to re-decide comments it has already answered.
+     *
+     * @return false when the file already holds exactly this brief, so nothing was written and nobody nudged
+     */
+    public boolean relayIfChanged(String taskId, String instructions) {
+        String id = stateService.canonicalTaskId(taskId);
+        Path contextFile = Path.of(requireTask(id).worktreePath()).resolve("task_context.md");
+        synchronized (relayLock(id)) {
+            if (WorktreeFiles.read(contextFile).filter(instructions::equals).isPresent()) {
+                return false;
+            }
+            writeTaskContext(id, instructions);
+            return true;
+        }
+    }
+
     private String relay(String taskId, String instructions, boolean append) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);

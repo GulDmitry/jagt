@@ -30,9 +30,9 @@ public enum TaskStatus {
     }
 
     /**
-     * A round is out with the reviewers, so only the code host moves it on — which is also what the unattended
-     * poll watches. REVIEWED is one of them: "nothing unresolved, checks green" is still waiting for an approval,
-     * and a poll that stopped at the status it produced would never see one arrive.
+     * A round is out with the reviewers, so only the code host moves it on. REVIEWED is one of them: "nothing
+     * unresolved, checks green" is still waiting for an approval. NOT what the unattended poll watches — that is
+     * an open request whatever the status ({@code AutoReviewCadence.polls}).
      */
     public boolean outForReview() {
         return this == CI_POLLING || this == REVIEWED;

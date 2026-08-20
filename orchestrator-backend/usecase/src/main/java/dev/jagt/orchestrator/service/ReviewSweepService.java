@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 public class ReviewSweepService {
 
     public record SweepResult(Kind kind, String message) {
-        public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED, IN_FLIGHT }
+        public enum Kind { NO_MR, UNREADABLE, APPROVED, REVIEWED, PENDING, RELAYED, UNCHANGED, IN_FLIGHT }
     }
 
     private final ReviewReader reviewReader;
@@ -117,7 +117,11 @@ public class ReviewSweepService {
                     "sweep " + taskId + ": checks " + r.pipelineStatus()
                             + ", nothing unresolved yet, not approved — waiting");
         }
-        sessions.writeTaskContext(taskId, brief(mrUrl, r, pipelineFailed));
+        if (!sessions.relayIfChanged(taskId, brief(mrUrl, r, pipelineFailed))) {
+            return new SweepResult(SweepResult.Kind.UNCHANGED, "sweep " + taskId + ": "
+                    + r.comments().size() + " comment(s), checks " + r.pipelineStatus()
+                    + " — unchanged since the last relay, so the agent was left alone");
+        }
         return new SweepResult(SweepResult.Kind.RELAYED,
                 "sweep " + taskId + ": " + r.comments().size() + " comment(s) relayed, checks "
                         + r.pipelineStatus());

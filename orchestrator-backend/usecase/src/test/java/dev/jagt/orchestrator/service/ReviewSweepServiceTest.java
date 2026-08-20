@@ -43,6 +43,7 @@ class ReviewSweepServiceTest {
     @BeforeEach
     void aTaskWithAnOpenRequest() {
         when(stateService.canonicalTaskId(anyString())).thenAnswer(call -> call.getArgument(0));
+        when(sessions.relayIfChanged(anyString(), anyString())).thenReturn(true);
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
                 .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));
     }
@@ -97,10 +98,26 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
-        verify(sessions).writeTaskContext(eq("ABC-1"),
+        verify(sessions).relayIfChanged(eq("ABC-1"),
                 contains("review_replies.md"));
         verify(statusReports, never()).markApproved("ABC-1");
         verify(statusReports, never()).markReviewed("ABC-1");
+    }
+
+    /**
+     * Polling runs on any task with an open request, so the same unresolved threads come back every interval —
+     * relaying them again would interrupt the agent to re-decide comments it has already pushed back on.
+     */
+    @Test
+    void reportsARoundUnchangedInsteadOfRelayingItASecondTime() {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("reviewer (a.java:3): drop the cache"))));
+        when(sessions.relayIfChanged(anyString(), anyString())).thenReturn(false);
+
+        var result = sweep.sweep("ABC-1");
+
+        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNCHANGED);
+        assertThat(result.message()).contains("unchanged since the last relay");
     }
 
     /** The human reads the whole file to approve the round, so the brief hands the agent one shape to fill. */
@@ -112,7 +129,7 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(sessions).writeTaskContext(eq("ABC-1"), relayed.capture());
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
                 .contains("FIXED | NO CHANGE | QUESTION")
                 .contains("NECESSARY AND SUFFICIENT");
@@ -131,7 +148,7 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(sessions).writeTaskContext(eq("ABC-1"), relayed.capture());
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
                 .contains("Wrong: change NOTHING")
                 .contains("awaiting:")
@@ -151,7 +168,7 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(sessions).writeTaskContext(eq("ABC-1"), relayed.capture());
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
                 .contains("\"no changes: <why, few words>\"")
                 .contains("Never say this if you edited a file")
@@ -171,7 +188,7 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(sessions).writeTaskContext(eq("ABC-1"), relayed.capture());
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue()).contains("When the build is fixed locally, set status REVIEW_PENDING.");
     }
 
@@ -313,7 +330,7 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         ArgumentCaptor<String> brief = ArgumentCaptor.captor();
-        verify(sessions).writeTaskContext(eq("ABC-1"), brief.capture());
+        verify(sessions).relayIfChanged(eq("ABC-1"), brief.capture());
         assertThat(brief.getValue()).contains("[api] bot: tighten this", "[web] bot: rename that");
         assertThat(result.message()).contains("2 comment(s) relayed");
     }

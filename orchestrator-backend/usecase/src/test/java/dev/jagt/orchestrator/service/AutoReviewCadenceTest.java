@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.flow.TaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.time.Duration;
 import java.util.List;
@@ -84,10 +85,48 @@ class AutoReviewCadenceTest {
     }
 
     @Test
-    void watchesNothingAboutATaskThatIsNotOutForReview() {
+    void watchesNothingAboutATaskWithNoRequestToRead() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build();
 
         assertThat(cadence.watch(task, 2L).state()).isEqualTo(AutoReviewWatch.State.NONE);
+    }
+
+    /**
+     * An open request is reviewed whatever the task is doing meanwhile, so no status may drop out of polling —
+     * every one of them is a row here, which is what stops the next status added from being forgotten.
+     */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = "DONE", mode = EnumSource.Mode.EXCLUDE)
+    void pollsAnOpenRequestWhateverTheTaskIsDoingMeanwhile(TaskStatus status) {
+        long opened = 1_000_000_000_000L;
+        TaskState task = TaskState.builder("proj", "/wt", status)
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(opened).lastPolledAt(opened).build();
+
+        assertThat(cadence.watch(task, opened + Duration.ofMinutes(11).toMillis()).state())
+                .isEqualTo(AutoReviewWatch.State.WATCHING);
+    }
+
+    /** A closed task has no worktree left, so a round read there could be relayed to nobody. */
+    @Test
+    void stopsPollingATaskThatIsClosed() {
+        long opened = 1_000_000_000_000L;
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                .mrUrl("https://host/x/-/merge_requests/1").mrCreatedAt(opened).build();
+
+        assertThat(cadence.watch(task, opened + 1000).state()).isEqualTo(AutoReviewWatch.State.NONE);
+    }
+
+    /** A request adopted rather than shipped starts no round, and used to be a request nothing would ever read. */
+    @Test
+    void timesTheWindowFromWhenTheRequestOpenedWhenNoRoundWasEverStamped() {
+        long opened = 1_000_000_000_000L;
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .mrUrl("https://host/x/-/merge_requests/1").requestOpenedAt(opened).build();
+
+        AutoReviewWatch watch = cadence.watch(task, opened + Duration.ofMinutes(5).toMillis());
+
+        assertThat(watch.state()).isEqualTo(AutoReviewWatch.State.WATCHING);
+        assertThat(watch.nextPollAt()).isEqualTo(Duration.ofMinutes(10).toMillis());
     }
 
     @Test

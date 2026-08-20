@@ -20,9 +20,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
 /**
- * Polls the request of every task out for review through the SHARED {@link ReviewSweepService}, so an unattended
- * poll can do no more than a human asking for one. REVIEWED is polled too: an approval arrives after the round
- * came back clean, and it is the one thing a human is told about without asking.
+ * Polls the request of every task that HAS one through the SHARED {@link ReviewSweepService}, so an unattended
+ * poll can do no more than a human asking for one. What the task is doing meanwhile decides nothing — see
+ * {@link AutoReviewCadence#polls}.
  */
 @Service
 @Slf4j
@@ -89,8 +89,9 @@ public class AutoReviewScheduler implements Job {
         // its marker for the life of the process.
         windowElapsedNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
         tasks.forEach((taskId, task) -> {
-            // A task no longer out for review (deployed, done) re-arms its window-elapsed ping.
-            if (!task.status().outForReview()) {
+            // A task the poller has no business with any more (closed, or its request gone) re-arms its
+            // window-elapsed ping.
+            if (!cadence.polls(task)) {
                 windowElapsedNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
                 return;
             }
