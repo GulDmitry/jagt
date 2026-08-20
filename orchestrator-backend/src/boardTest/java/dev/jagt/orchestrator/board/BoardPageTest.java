@@ -824,6 +824,24 @@ class BoardPageTest {
         verify(launcher).launch(new LaunchRequest("ABC-9", null, null, null, null, null));
     }
 
+    /**
+     * The one field on the page whose loss is silent: an agent given no extra instructions simply works without
+     * them, and nothing on either surface says the human typed any.
+     */
+    @Test
+    void sendsTheExtraInstructionsTypedForTheAgent() {
+        when(launcher.launch(any())).thenReturn("Started ABC-9.");
+
+        Page page = open();
+        page.locator("#ref").fill("ABC-9");
+        page.locator("#notes").fill("start with the failing test");
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, null, null,
+                "start with the failing test"));
+    }
+
     @Test
     void showsWhatJagtDidOnItsOwnReadBackFromItsLog() throws IOException {
         Files.writeString(root.resolve("jagt.log"), """
