@@ -298,16 +298,19 @@ public record TaskState(
     }
 
     /**
-     * Points one repository at a request, and DROPS every answer a read gave about the OLD one when that changes
-     * what is linked — its age, its checks, its approval. All three describe the requests a read saw, so a second
-     * request opened on the same task would otherwise read as days old, green and approved until the next read.
+     * Points one repository at a request, DROPS every answer a read gave about the OLD one when that changes what
+     * is linked — its checks and its approval describe the request a read saw — and stamps the new one as opened
+     * NOW: a request reaches this method only as jagt or its agent has just opened it, so the clock is right to
+     * within seconds, and a host read replaces it with the host's own {@code created_at}. A {@code resume} that
+     * adopts somebody's week-old request is linked through the builder instead, and keeps its unknown age.
      */
     private Builder relinked(String project, String mrUrl) {
         List<TaskRepo> repos = mapRepo(project, repo -> repo.withMrUrl(mrUrl));
         if (repos.equals(this.repos)) {
             return toBuilder().repos(repos);
         }
-        return toBuilder().repos(repos).requestOpenedAt(0).pipelineStatus(null).approved(null);
+        return toBuilder().repos(repos).requestOpenedAt(System.currentTimeMillis())
+                .pipelineStatus(null).approved(null);
     }
 
     public TaskState withMrUrl(String mrUrl) {

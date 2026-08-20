@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 class TaskStateTest {
 
@@ -232,13 +233,17 @@ class TaskStateTest {
         assertThat(stamped.withRequestOpenedAt(0).requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     }
 
-    /** The stamp describes the request that was linked; a second one would otherwise read as days old. */
+    /**
+     * A request is linked at the moment jagt or its agent opened it, so the age is knowable without a host read —
+     * blank until the next sweep was the same request, minus its age.
+     */
     @Test
-    void dropsTheRequestAgeWhenTheTaskIsPointedAtAnotherRequest() {
+    void datesARequestItJustOpenedByTheClockInsteadOfLeavingTheAgeBlank() {
         TaskState stamped = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("http://mr/1").requestOpenedAt(1_700_000_000_000L).build();
 
-        assertThat(stamped.withMrUrl("http://mr/2").requestOpenedAt()).isZero();
+        assertThat(stamped.withMrUrl("http://mr/2").requestOpenedAt())
+                .isCloseTo(System.currentTimeMillis(), within(60_000L));
         assertThat(stamped.withMrUrl("http://mr/1").requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     }
 
@@ -255,7 +260,7 @@ class TaskStateTest {
 
         assertThat(relinked.approved()).isNull();
         assertThat(relinked.pipelineStatus()).isNull();
-        assertThat(relinked.requestOpenedAt()).isZero();
+        assertThat(relinked.requestOpenedAt()).isCloseTo(System.currentTimeMillis(), within(60_000L));
     }
 
     /** The same call with the link it already carries is not a new request, and drops nothing. */

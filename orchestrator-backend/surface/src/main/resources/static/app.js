@@ -78,7 +78,7 @@ const requestLink = (url, label, openedAt) => {
   anchor.className = 'mr-age';
   anchor.dataset.tip = openedAt > 0
     ? `review request; opened ${new Date(openedAt).toLocaleString()}`
-    : 'review request; opening time unknown until the first sweep';
+    : 'review request; opened before this task adopted it — a sweep dates it';
   return anchor;
 };
 

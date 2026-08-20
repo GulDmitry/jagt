@@ -321,16 +321,20 @@ link to it, because no file here is named after one vendor.
   is why it cannot answer "how long has this been waiting". `lastActiveTimestamp` is liveness for the watchdog
   (any MCP call, keep-alives included) — a console column and a tooltip line, never a card row: on a status the
   agent does not own, its own age says only that nothing has happened, which the status already said.
-  `TaskState.requestOpenedAt` is the review's own age (dropped the moment the task is pointed at another request,
-  so a stamp cannot outlive what it describes), and it is the CODE
-  HOST's `created_at` — stamped by every review read (`ReviewFacts.openedAt`, one write with the pipeline
-  wording), never jagt's own stamp: `mrCreatedAt` is the round window `AutoReviewCadence` measures, and a task
-  RESUMED on someone's week-old request would read as opened just now. That window is PER ROUND, and a round
+  `TaskState.requestOpenedAt` is the review's own age, and it is stamped TWICE from two different clocks. First by
+  jagt's own, the moment a request new to the task is LINKED (`TaskState.relinked`): a request only ever reaches
+  that method as jagt or its agent has just opened it, so the clock is right to within seconds — leaving it at 0
+  meant no age on the card at all until a sweep, and on an install with no `code-host` (where the model read
+  carries no `created_at`) for as long as the task lived. Then by the CODE HOST's `created_at`, which REPLACES it
+  on every review read (`ReviewFacts.openedAt`, one write with the pipeline wording) and is the value that
+  survives; a read that cannot say passes 0 and `withRequestOpenedAt` keeps what is there. The one request that
+  stays ageless is the one nobody here opened: a `resume` adopting someone's week-old request links it through the
+  BUILDER, which stamps nothing, rather than reading as opened just now. Not to be confused with `mrCreatedAt`,
+  the round window `AutoReviewCadence` measures. That window is PER ROUND, and a round
   begins on every ENTRY into CI_POLLING — whether `ship` put it there or the agent reported it — while a repeated
   CI_POLLING keeps it: measured from the first request ever linked instead, a task sent back out for review was
   past its window the moment it arrived, with nothing polling it and a card reading `CI_POLLING · 1h` beside
-  `stopped polling this round after 24h`. A read that cannot say (the paid model
-  read) leaves it at 0 and the surfaces show no age, which is the honest answer. On the board that age is also the
+  `stopped polling this round after 24h`. On the board that age is also the
   LINK to the request, and the task number the link to the ticket — one element per fact, so no row spends a line
   naming what it points at; several repositories mean several requests against ONE stamp, so those links are named
   by project and ageless.
