@@ -57,13 +57,16 @@ public class AgentStatusReports {
         // What the machine lets this report land on: a status the human owns keeps the task where it is, and the
         // agent is told so rather than left reading its own word back.
         TaskStatus landed = previous == null ? newStatus : FlowRules.reported(previous, newStatus);
-        boolean updated = flow.report(taskId, newStatus, shortMessage, next -> {
+        boolean updated = flow.report(taskId, newStatus, shortMessage, (was, next) -> {
             if (url == null) {
                 return next;
             }
-            TaskState linked = next.withMrUrl(url);
-            // First time a request is linked = the auto-review window start; never reset it on later rounds.
-            return next.mrCreatedAt() == 0 ? linked.withMrCreatedAt(System.currentTimeMillis()) : linked;
+            // A task repeating CI_POLLING on the request it already carries is the same round; entering the
+            // status, or naming another request, hands a new one over.
+            boolean sameRound = was == TaskStatus.CI_POLLING && url.equals(next.mrUrl());
+            return next.status() == TaskStatus.CI_POLLING && !sameRound
+                    ? next.withReviewRound(url)
+                    : next.withMrUrl(url);
         });
         if (!updated) {
             throw new IllegalArgumentException("Task " + taskId + " not found in state.json");

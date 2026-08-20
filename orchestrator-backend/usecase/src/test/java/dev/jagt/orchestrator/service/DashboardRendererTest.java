@@ -66,7 +66,7 @@ class DashboardRendererTest {
 
         String out = rendererFor(state).render();
 
-        assertThat(out).contains("(2h in REVIEW_PENDING)");
+        assertThat(out).contains("(not shipped 2h)");
     }
 
     /** The status clock restarts on every round; how long the review has been waiting is the other clock. */
@@ -82,7 +82,7 @@ class DashboardRendererTest {
 
         String out = rendererFor(state).render();
 
-        assertThat(out).contains("(10m in CI_POLLING · MR 8h)");
+        assertThat(out).contains("(out for review 10m · MR 8h)");
     }
 
     @Test
@@ -181,7 +181,7 @@ class DashboardRendererTest {
         String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state),
                 new Jobs(List.of())).render();
 
-        assertThat(out).contains("└ auto-review · window elapsed");
+        assertThat(out).contains("└ auto-review · stopped polling this round after 24h");
     }
 
     @Test

@@ -100,7 +100,7 @@ public class AutoReviewScheduler implements Job {
                     // ever leaving CI_POLLING, and that round deserves its own reminder.
                     if (windowElapsedNotified.add(taskId + "@" + task.mrCreatedAt())) {
                         notifications.send(Notification.fromAgent(taskId, "auto-review",
-                                "window elapsed — `sweep` manually"));
+                                AutoReviewWatch.stoppedPolling(cadence.windowHours())));
                     }
                 }
                 case POLL -> poll(taskId, task.alias());

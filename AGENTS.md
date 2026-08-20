@@ -259,7 +259,11 @@ link to it, because no file here is named after one vendor.
   so a stamp cannot outlive what it describes), and it is the CODE
   HOST's `created_at` — stamped by every review read (`ReviewFacts.openedAt`, one write with the pipeline
   wording), never jagt's own stamp: `mrCreatedAt` is the round window `AutoReviewCadence` measures, and a task
-  RESUMED on someone's week-old request would read as opened just now. A read that cannot say (the paid model
+  RESUMED on someone's week-old request would read as opened just now. That window is PER ROUND, and a round
+  begins on every ENTRY into CI_POLLING — whether `ship` put it there or the agent reported it — while a repeated
+  CI_POLLING keeps it: measured from the first request ever linked instead, a task sent back out for review was
+  past its window the moment it arrived, with nothing polling it and a card reading `CI_POLLING · 1h` beside
+  `stopped polling this round after 24h`. A read that cannot say (the paid model
   read) leaves it at 0 and the surfaces show no age, which is the honest answer. On the board that age is also the
   LINK to the request, and the task number the link to the ticket — one element per fact, so no row spends a line
   naming what it points at; several repositories mean several requests against ONE stamp, so those links are named

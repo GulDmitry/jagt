@@ -59,7 +59,7 @@ class FlowReportsTest {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
 
         reports.report("ABC-1", TaskStatus.CI_POLLING, "review request: http://host/1",
-                task -> task.withMrUrl("http://host/1"));
+                (was, task) -> task.withMrUrl("http://host/1"));
 
         TaskState after = written("ABC-1").apply(current(TaskStatus.SHIPPING));
         assertThat(after.status()).isEqualTo(TaskStatus.CI_POLLING);

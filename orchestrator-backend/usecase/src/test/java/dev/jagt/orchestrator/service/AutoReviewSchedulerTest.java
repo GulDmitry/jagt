@@ -102,7 +102,7 @@ class AutoReviewSchedulerTest {
         scheduler.run();
 
         verify(notifications).send(argThat(sent -> sent.topic() == Notification.Topic.AGENT
-                && "ABC-1".equals(sent.taskId()) && sent.body().contains("window elapsed")));
+                && "ABC-1".equals(sent.taskId()) && sent.body().contains("stopped polling this round after 24h")));
         verifyNoInteractions(sweep);
     }
 
@@ -122,8 +122,8 @@ class AutoReviewSchedulerTest {
         scheduler.run();
 
         verify(notifications, times(2)).send(
-                argThat(sent -> sent.topic() == Notification.Topic.AGENT
-                        && "ABC-1".equals(sent.taskId()) && sent.body().contains("window elapsed")));
+                argThat(sent -> sent.topic() == Notification.Topic.AGENT && "ABC-1".equals(sent.taskId())
+                        && sent.body().contains("stopped polling this round after 24h")));
     }
 
     /**
@@ -147,8 +147,8 @@ class AutoReviewSchedulerTest {
         scheduler.run();
 
         verify(notifications, times(2)).send(
-                argThat(sent -> sent.topic() == Notification.Topic.AGENT
-                        && "ABC-1".equals(sent.taskId()) && sent.body().contains("window elapsed")));
+                argThat(sent -> sent.topic() == Notification.Topic.AGENT && "ABC-1".equals(sent.taskId())
+                        && sent.body().contains("stopped polling this round after 24h")));
     }
 
     @Test

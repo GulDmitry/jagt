@@ -26,9 +26,13 @@ public record AutoReviewWatch(State state, long nextPollAt, String note) {
         return new AutoReviewWatch(State.WATCHING, nextPollAt, "auto-review · next poll");
     }
 
-    public static AutoReviewWatch windowElapsed() {
-        return new AutoReviewWatch(State.WINDOW_ELAPSED, 0,
-                "auto-review · window elapsed — nothing polls this any more; sweep it");
+    public static AutoReviewWatch windowElapsed(long windowHours) {
+        return new AutoReviewWatch(State.WINDOW_ELAPSED, 0, "auto-review · " + stoppedPolling(windowHours));
+    }
+
+    /** The same sentence for a surface that has its own heading for the topic. */
+    public static String stoppedPolling(long windowHours) {
+        return "stopped polling this round after " + windowHours + "h; sweep it yourself";
     }
 
     public static AutoReviewWatch offForTask() {

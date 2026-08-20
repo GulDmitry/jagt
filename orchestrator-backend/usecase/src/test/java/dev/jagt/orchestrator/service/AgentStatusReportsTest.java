@@ -17,6 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -186,9 +187,44 @@ class AgentStatusReportsTest {
     }
 
     @Test
-    void neverResetsTheWindowStartOnLaterRounds(@TempDir Path root) {
+    void startsAFreshPollingWindowForEachRoundHandedBackOnTheSameRequest(@TempDir Path root) {
+        StateService state = stateIn(root);
+        long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
+                .alias("a1").mrUrl("http://mr/1").mrCreatedAt(lastRound).lastPolledAt(lastRound).build());
+
+        reports(state).report("CI_POLLING", "MR: http://mr/1", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isGreaterThan(lastRound);
+    }
+
+    @Test
+    void startsAFreshWindowWhenTheAgentNamesAnotherRequestWithoutLeavingCiPolling(@TempDir Path root) {
+        StateService state = stateIn(root);
+        long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").mrUrl("http://mr/1").mrCreatedAt(lastRound).build());
+
+        reports(state).report("CI_POLLING", "MR: http://mr/2", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isGreaterThan(lastRound);
+    }
+
+    @Test
+    void dropsThePreviousRoundsChecksVerdictWhenARoundGoesBackOutForReview(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
+                .alias("a1").mrUrl("http://mr/1").mrCreatedAt(12345L).pipelineStatus("failed").build());
+
+        reports(state).report("CI_POLLING", "MR: http://mr/1", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().pipelineStatus()).isNull();
+    }
+
+    @Test
+    void keepsThePollingWindowWhileTheAgentRepeatsThatItIsWaitingOnTheSameChecks(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(12345L).build());
 
         reports(state).report("CI_POLLING", "MR: http://mr/1", "ABC-1");

@@ -34,6 +34,10 @@ public final class AutoReviewCadence {
         return enabled;
     }
 
+    public long windowHours() {
+        return window.toHours();
+    }
+
     /** What a human is owed about this task: is anything watching it, and when will it next look. */
     public AutoReviewWatch watch(TaskState task, long now) {
         if (!enabled || task.status() != TaskStatus.CI_POLLING) {
@@ -54,7 +58,7 @@ public final class AutoReviewCadence {
         }
         Duration interval = pollInterval(Duration.ofMillis(now - task.mrCreatedAt()));
         return interval == null
-                ? AutoReviewWatch.windowElapsed()
+                ? AutoReviewWatch.windowElapsed(windowHours())
                 : AutoReviewWatch.watching(task.lastPolledAt() + interval.toMillis());
     }
 

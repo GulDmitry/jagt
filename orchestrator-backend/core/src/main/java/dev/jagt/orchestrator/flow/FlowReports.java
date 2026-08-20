@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 
-import java.util.function.UnaryOperator;
+import java.util.function.BiFunction;
 
 /**
  * The second door into the machine: a status the task itself reports, rather than one an action led to. Every
@@ -20,14 +20,17 @@ public class FlowReports {
     private final TaskStore tasks;
 
     public boolean report(String taskId, TaskStatus status, String message) {
-        return report(taskId, status, message, UnaryOperator.identity());
+        return report(taskId, status, message, (was, next) -> next);
     }
 
     /**
      * The same, plus whatever else the report established — a request link, the start of a polling window. Applied
      * in the SAME write, because a status that refuses to exist without its link must not be able to land first.
+     * What it is given is the status the task was in BEFORE the report, so a repeat can be told from an entry
+     * without reading the task a moment earlier.
      */
-    public boolean report(String taskId, TaskStatus status, String message, UnaryOperator<TaskState> alsoRecord) {
+    public boolean report(String taskId, TaskStatus status, String message,
+                          BiFunction<TaskStatus, TaskState, TaskState> alsoRecord) {
         if (!FlowRules.reportable(status)) {
             throw new IllegalArgumentException(FlowRules.refusedReport(status, status).orElseThrow());
         }
@@ -37,7 +40,8 @@ public class FlowReports {
             FlowRules.refusedReport(task.status(), status).ifPresent(why -> {
                 throw new IllegalArgumentException(why);
             });
-            return alsoRecord.apply(task.withStatus(FlowRules.reported(task.status(), status), message));
+            return alsoRecord.apply(task.status(),
+                    task.withStatus(FlowRules.reported(task.status(), status), message));
         });
     }
 }
