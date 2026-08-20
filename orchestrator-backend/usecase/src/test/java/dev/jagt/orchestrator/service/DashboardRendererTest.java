@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.job.Jobs;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -17,6 +18,7 @@ import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -159,7 +161,8 @@ class DashboardRendererTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withAutoReview(new ConfigService.ConfigFile.AutoReviewConfig(true, null, null, null)));
 
-        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state)).render();
+        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state),
+                new Jobs(List.of())).render();
 
         assertThat(out).contains("\n  auto-review on\n");
         assertThat(out).contains("└ auto-review · next poll in 10m");
@@ -175,7 +178,8 @@ class DashboardRendererTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withAutoReview(new ConfigService.ConfigFile.AutoReviewConfig(true, null, null, null)));
 
-        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state)).render();
+        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state),
+                new Jobs(List.of())).render();
 
         assertThat(out).contains("└ auto-review · window elapsed");
     }
@@ -190,7 +194,8 @@ class DashboardRendererTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withAutoReview(new ConfigService.ConfigFile.AutoReviewConfig(true, null, null, null)));
 
-        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state)).render();
+        String out = new DashboardRenderer(new TaskViews(state, config), new UsageTracker(state),
+                new Jobs(List.of())).render();
 
         assertThat(out).contains("└ auto-review · off for this task");
     }
@@ -212,9 +217,37 @@ class DashboardRendererTest {
         return rendererFor(state, new UsageTracker(state));
     }
 
+    @Test
+    void headerSaysWhenTheNextUnattendedRunIsDue(@TempDir Path root) {
+        Jobs jobs = mock(Jobs.class);
+        when(jobs.summary(anyLong()))
+                .thenReturn(new Jobs.Summary(1, System.currentTimeMillis() + Duration.ofHours(2).toMillis(), 0));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        String out = new DashboardRenderer(new TaskViews(stateIn(root), config),
+                new UsageTracker(stateIn(root)), jobs).render();
+
+        assertThat(out).contains("· jobs next in 2h");
+    }
+
+    @Test
+    void headerSaysAJobFailedInsteadOfWhenItRunsNext(@TempDir Path root) {
+        Jobs jobs = mock(Jobs.class);
+        when(jobs.summary(anyLong()))
+                .thenReturn(new Jobs.Summary(1, System.currentTimeMillis() + 1_000, 1));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+
+        String out = new DashboardRenderer(new TaskViews(stateIn(root), config),
+                new UsageTracker(stateIn(root)), jobs).render();
+
+        assertThat(out).contains("· 1 job(s) failing");
+    }
+
     private static DashboardRenderer rendererFor(StateService state, UsageTracker tracker) {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        return new DashboardRenderer(new TaskViews(state, config), tracker);
+        return new DashboardRenderer(new TaskViews(state, config), tracker, new Jobs(List.of()));
     }
 }

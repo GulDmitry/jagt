@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
 import org.springframework.http.MediaType;
@@ -22,7 +23,7 @@ import java.util.List;
 public class BoardApiController {
 
     public record Board(List<TaskView> tasks, Spend spend, List<String> projects, String autoReview,
-                        boolean autoReviewEnabled) {
+                        boolean autoReviewEnabled, Jobs.Summary jobs) {
     }
 
     /** What jagt's OWN model calls have cost this session; an agent's own session spends elsewhere. */
@@ -33,13 +34,15 @@ public class BoardApiController {
     private final UsageTracker usageTracker;
     private final TaskEventStream events;
     private final GlobalCommands globals;
+    private final Jobs jobs;
 
     @GetMapping("/tasks")
     public Board tasks() {
         var session = usageTracker.session();
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), new Spend(session.calls(), session.total()), snapshot.projects(),
-                snapshot.cadence().summary(), snapshot.cadence().enabled());
+                snapshot.cadence().summary(), snapshot.cadence().enabled(),
+                jobs.summary(System.currentTimeMillis()));
     }
 
     /**

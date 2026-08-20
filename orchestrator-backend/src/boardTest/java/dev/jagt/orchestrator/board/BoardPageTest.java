@@ -252,6 +252,13 @@ class BoardPageTest {
     }
 
     @Test
+    void saysWhenTheNextUnattendedRunIsDueWithoutAReportBeingOpened() {
+        Page page = open();
+
+        assertThat(page.locator("#jobs-pulse")).containsText("jobs ↻");
+    }
+
+    @Test
     void opensTheTicketFromTheTaskNumber() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.IN_PROGRESS).alias("a1").ticketUrl("https://tracker.example/ABC-1")

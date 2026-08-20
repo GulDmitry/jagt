@@ -32,7 +32,8 @@ class BoardApiControllerTest {
             mock(TaskEventStream.class), new GlobalCommands(List.of(
                     new Declared("stats", "what the calls cost", true, false),
                     new Declared("do", "start a task", false, false),
-                    new Declared("status", "show the dashboard", false, true))));
+                    new Declared("status", "show the dashboard", false, true))),
+            new dev.jagt.orchestrator.job.Jobs(List.of()));
 
     /**
      * The palette completes and validates against THIS list, so a verb the console accepts and this omits is a

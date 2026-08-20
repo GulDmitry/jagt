@@ -18,6 +18,7 @@ const projectSelect = document.getElementById('project');
 let tasks = [];
 let projects = [];
 let autoReview = {summary: '', enabled: false};
+let jobsSummary = null;
 let renderedProjects = null;
 // An untouched default is not a decision, and naming a project SKIPS the ticket read — the escape hatch a
 // typed `do ABC-1 <project>` deliberately takes. So the list opens on a real project, and only a pick is sent.
@@ -140,6 +141,7 @@ async function load() {
     tasks = data.tasks;
     projects = data.projects || [];
     autoReview = {summary: data.autoReview, enabled: data.autoReviewEnabled};
+    jobsSummary = data.jobs;
     fillProjects();
     render();
   } catch (e) {
@@ -209,6 +211,23 @@ for (const event of ['pointerover', 'focusin']) {
 document.addEventListener('pointerdown', hideTip);
 window.addEventListener('scroll', hideTip, true);
 
+// A failed run OUTRANKS the countdown: the next run is not news while the last one is still broken.
+function renderJobs() {
+  const chip = document.getElementById('jobs-pulse');
+  chip.hidden = !jobsSummary || !jobsSummary.count;
+  if (chip.hidden) {
+    return;
+  }
+  const failing = jobsSummary.failing;
+  chip.textContent = failing
+    ? `${failing} job(s) failing`
+    : `jobs ↻ ${jobsSummary.nextRunAt ? countdown(jobsSummary.nextRunAt - Date.now()) : '-'}`;
+  chip.classList.toggle('bad', failing > 0);
+  chip.dataset.tip = failing
+    ? 'a job\u2019s last run threw — open the Jobs report'
+    : 'the soonest run of anything unattended';
+}
+
 function render() {
   hideTip();
   const shown = onlyMine.checked ? tasks.filter((t) => t.owner === 'YOU') : tasks;
@@ -219,6 +238,7 @@ function render() {
   const chip = document.getElementById('auto-review');
   chip.textContent = autoReview.summary || '';
   chip.classList.toggle('on', autoReview.enabled);
+  renderJobs();
   document.getElementById('empty').hidden = tasks.length > 0;
   // Only phases that HAVE tasks get a column: `done` deletes the task outright, so a DONE column could never
   // hold anything, and empty columns are noise on a board of two.

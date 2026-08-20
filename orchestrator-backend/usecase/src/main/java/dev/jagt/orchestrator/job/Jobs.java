@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,6 +25,14 @@ public class Jobs {
     /** What a human is owed about one job, whether or not it has ever run. */
     public record Status(String id, String describe, Duration every, Long lastStartedAt, String lastError,
                          Long nextRunAt, boolean running) {
+    }
+
+    /**
+     * Small enough to sit in a header, so unattended work is visible without being asked for.
+     *
+     * @param nextRunAt the soonest run of any job, or null when nothing is scheduled
+     */
+    public record Summary(int count, Long nextRunAt, int failing) {
     }
 
     private static final class Run {
@@ -67,6 +76,13 @@ public class Jobs {
             return new Status(job.id(), job.describe(), job.every(), run.startedAt, run.lastError, next,
                     run.running.get());
         }).toList();
+    }
+
+    public Summary summary(long now) {
+        List<Status> all = statuses(now);
+        return new Summary(all.size(),
+                all.stream().map(Status::nextRunAt).filter(Objects::nonNull).min(Long::compareTo).orElse(null),
+                (int) all.stream().filter(status -> status.lastError() != null).count());
     }
 
     @Scheduled(fixedDelay = 1000)

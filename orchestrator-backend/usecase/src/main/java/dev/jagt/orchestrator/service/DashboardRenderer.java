@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -39,8 +40,10 @@ public class DashboardRenderer {
 
     private final TaskViews taskViews;
     private final UsageTracker usageTracker;
+    private final Jobs jobs;
 
     public String render() {
+        long now = System.currentTimeMillis();
         TaskViews.Snapshot snapshot = taskViews.snapshot();
         List<TaskView> tasks = snapshot.tasks();
         StringBuilder out = new StringBuilder();
@@ -48,7 +51,8 @@ public class DashboardRenderer {
                 .append(LocalTime.now().format(CLOCK)).append(sessionSpend()).append('\n');
         // Its own line: an 80-column header has no room left, and a wrapped header costs a dashboard row.
         // INDENTED, because a line starting with a space is what marks a task row for colouring.
-        out.append("  ").append(snapshot.cadence().summary()).append('\n');
+        out.append("  ").append(snapshot.cadence().summary())
+                .append(unattended(jobs.summary(now), now)).append('\n');
         out.append(String.format(ROW_FORMAT, "ALIAS", "TASK", "STATUS", "PROJECT", "ACTIVE ▼", "TOKENS",
                 "TITLE"));
         for (TaskView task : tasks) {
@@ -83,6 +87,18 @@ public class DashboardRenderer {
             out.append("(no tasks)\n");
         }
         return out.toString();
+    }
+
+    /**
+     * Work nobody watches, said before it acts rather than only in the report that has to be asked for. A failed
+     * run outranks the countdown: the next run is not news while the last one is still broken.
+     */
+    private static String unattended(Jobs.Summary summary, long now) {
+        if (summary.failing() > 0) {
+            return " · " + summary.failing() + " job(s) failing";
+        }
+        return summary.nextRunAt() == null ? ""
+                : " · jobs next in " + DurationFormat.countdown(summary.nextRunAt() - now);
     }
 
     /**

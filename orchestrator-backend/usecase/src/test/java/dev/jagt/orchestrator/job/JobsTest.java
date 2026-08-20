@@ -116,4 +116,32 @@ class JobsTest {
                 .containsExactly(tuple("poll-reviews", "reads open review requests", Duration.ofMinutes(1), null,
                         null, false));
     }
+
+    @Test
+    void summarisesTheSoonestRunOfAnythingUnattended() {
+        Job soon = mock(Job.class);
+        when(soon.id()).thenReturn("poll-reviews");
+        when(soon.every()).thenReturn(Duration.ofMinutes(1));
+        Job later = mock(Job.class);
+        when(later.id()).thenReturn("clean-recents");
+        when(later.every()).thenReturn(Duration.ofHours(1));
+        Jobs jobs = new Jobs(List.of(soon, later), Runnable::run);
+
+        jobs.tick(1_000);
+
+        assertThat(jobs.summary(1_000)).isEqualTo(new Jobs.Summary(2, 61_000L, 0));
+    }
+
+    @Test
+    void summaryCountsAJobWhoseLastRunThrew() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        when(job.every()).thenReturn(Duration.ofMinutes(1));
+        doThrow(new IllegalStateException("host unreachable")).when(job).run();
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+
+        jobs.tick(1_000);
+
+        assertThat(jobs.summary(1_000).failing()).isEqualTo(1);
+    }
 }
