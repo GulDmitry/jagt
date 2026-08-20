@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
-import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +96,18 @@ class LinuxKittyTerminalDriverLinuxTest {
             }
             Thread.sleep(250);
         }
-        throw new AssertionError("kitty never answered on " + socket());
+        throw new AssertionError("kitty never answered on " + socket() + " — asked in the foreground, it says: "
+                + inTheForeground());
+    }
+
+    /** {@code --detach} exits ZERO whatever becomes of the instance, so a kitty that died on the way up says
+     *  why only when it is asked again in the foreground — with the options it was refusing, over a command
+     *  that exits at once. */
+    private String inTheForeground() {
+        var probe = runner.run(null, PROBE, List.of("kitty",
+                "--listen-on", "unix:" + Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-probe"),
+                "-o", "allow_remote_control=yes", "--title", "jagt-kitty-probe", "--", "true"));
+        return "exit " + probe.exitCode() + " " + (probe.stderr() + probe.stdout()).strip();
     }
 
     /** Asks the PROCESS TABLE, not the socket: "the instance is gone" is exactly what closeViewerWindow claims

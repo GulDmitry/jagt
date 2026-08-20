@@ -8,7 +8,7 @@ set -euo pipefail
 
 if ! command -v apt-get >/dev/null; then
     echo "linux-test-deps: no apt-get here — install the equivalents by hand:"
-    echo "  git tmux nodejs kitty xvfb dbus-x11 dunst libnotify-bin procps lsof"
+    echo "  git tmux nodejs kitty xvfb fontconfig dbus-x11 dunst libnotify-bin procps lsof"
     echo "  plus the shared libraries a headless Chromium links against (see the list below)"
     exit 0
 fi
@@ -21,6 +21,7 @@ apt-get install -y --no-install-recommends \
     nodejs \
     kitty \
     xvfb \
+    fontconfig \
     dbus-x11 \
     dunst \
     libnotify-bin \
@@ -55,6 +56,8 @@ rm -rf /var/lib/apt/lists/*
 #   nodejs     — the MCP proxy every worktree symlinks
 #   kitty      — the Linux TerminalDriver, tested against the real binary
 #   xvfb       — kitty is a GUI application even when nobody is looking at it
+#   fontconfig — kitty exits before opening a window without it ("Failed to find and load fontconfig") and
+#     its own package dependencies do not bring it in; it also carries the fonts kitty then looks for
 #   dbus-x11   — a session bus, which is how a notification reaches a desktop
 #   dunst      — a notification daemon: notify-send exits non-zero when nothing owns the bus name
 #   libnotify-bin — notify-send itself, what LibNotifyNotifier runs
