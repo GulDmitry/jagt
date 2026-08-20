@@ -180,10 +180,28 @@ function fillProjects() {
 const matches = (task, needle) => [task.alias, task.id, task.title]
   .some((field) => (field || '').toLowerCase().includes(needle));
 
-function shownTasks() {
+// Every phase clicked stays selected until it is clicked again: narrowing to two of them is a real question
+// ("what is not finished yet"), and a single-choice control cannot ask it.
+const pickedPhases = new Set();
+
+// Deliberately in two steps. The phase counts are the set narrowed by everything EXCEPT the phase choice: a
+// count that obeyed it would read `build 0` the moment `review` was picked, and nothing could be clicked back.
+function narrowed() {
   const needle = filterBox.value.trim().toLowerCase();
   return tasks.filter((task) => (!onlyMine.checked || task.owner === 'YOU')
     && (!needle || matches(task, needle)));
+}
+
+const shownTasks = () => narrowed()
+  .filter((task) => pickedPhases.size === 0 || pickedPhases.has(task.phase));
+
+const filtersOn = () => (filterBox.value.trim() ? 1 : 0) + (onlyMine.checked ? 1 : 0) + pickedPhases.size;
+
+function clearFilters() {
+  filterBox.value = '';
+  onlyMine.checked = false;
+  pickedPhases.clear();
+  render();
 }
 
 // `title` shows only after a wait, and a push rebuilds the element it was waiting on.
@@ -244,19 +262,49 @@ function render() {
   chip.textContent = autoReview.summary || '';
   chip.classList.toggle('on', autoReview.enabled);
   renderJobs();
-  document.getElementById('empty').hidden = tasks.length > 0;
+  renderEmpty(shown.length);
   // The pipeline is a COUNT, never a position: a phase that owns a column has to move the card it describes,
   // and re-finding it is the cost. Every phase is here, zeros included, so this line never moves either.
   phaseBar.hidden = tasks.length === 0;
+  const perPhase = narrowed();
   // The separator is CONTENT, not a gap: a line whose words only come apart when a stylesheet loads is one
   // stylesheet away from reading `build 0review 1`.
   phaseBar.replaceChildren(...PHASES.flatMap(([phase, label], index) => {
-    const held = shown.filter((task) => task.phase === phase).length;
-    const segment = span(held ? 'phase' : 'phase empty', `${label} `);
-    segment.append(span('count', held));
+    const held = perPhase.filter((task) => task.phase === phase).length;
+    const segment = document.createElement('button');
+    segment.className = held ? 'phase' : 'phase empty';
+    segment.append(`${label} `, span('count', held));
+    // Nothing to show is nothing to press, and an empty phase says so rather than answering with a blank board.
+    segment.disabled = held === 0;
+    segment.setAttribute('aria-pressed', String(pickedPhases.has(phase)));
+    segment.dataset.tip = pickedPhases.has(phase) ? `stop showing only ${label}` : `show only ${label}`;
+    segment.onclick = () => {
+      if (!pickedPhases.delete(phase)) pickedPhases.add(phase);
+      render();
+    };
     return index === 0 ? [segment] : [span('sep', ' · '), segment];
   }));
+  if (filtersOn()) {
+    const clear = document.createElement('button');
+    clear.className = 'clear-filters';
+    clear.textContent = `clear ${filtersOn()} filter(s)`;
+    clear.onclick = clearFilters;
+    phaseBar.append(clear);
+  }
   board.replaceChildren(...shown.map(card));
+}
+
+// An empty board has two causes and a human cannot act on the wrong one: nothing exists yet, or everything is
+// hidden by controls they may not be looking at. Two elements rather than one message rewritten in place, so
+// neither can be left showing the other's text.
+function renderEmpty(showing) {
+  const filteredOut = tasks.length > 0 && showing === 0;
+  document.getElementById('empty').hidden = tasks.length > 0;
+  const filtered = document.getElementById('filtered');
+  filtered.hidden = !filteredOut;
+  if (filteredOut) {
+    filtered.textContent = `No task matches: ${filtersOn()} filter(s) on, ${tasks.length} task(s) hidden.`;
+  }
 }
 
 function card(task) {

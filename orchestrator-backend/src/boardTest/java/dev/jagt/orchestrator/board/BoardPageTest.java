@@ -193,6 +193,70 @@ class BoardPageTest {
     }
 
     @Test
+    void showsOnlyThePhaseWhoseCountWasClicked() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.REVIEW_PENDING).alias("a2").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("#phases button.phase").nth(1).click();
+
+        assertThat(page.locator("article .alias")).hasText(new String[]{"a2"});
+    }
+
+    /** A count that obeyed the phase choice would read zero the moment another phase was picked. */
+    @Test
+    void keepsEveryPhaseCountWhileOneOfThemIsTheFilter() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.REVIEW_PENDING).alias("a2").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("#phases button.phase").nth(1).click();
+
+        assertThat(page.locator("#phases")).containsText("build 1 · review 1");
+    }
+
+    @Test
+    void refusesToFilterByAPhaseThatHoldsNothing() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("#phases button.phase").nth(1)).isDisabled();
+    }
+
+    @Test
+    void saysThatFiltersAreHidingEverythingRatherThanShowingABlankBoard() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a1").title("Widget layout is off")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("#filter").fill("nothing matches this");
+
+        assertThat(page.locator("article")).hasCount(0);
+        assertThat(page.locator("#filtered")).hasText("No task matches: 1 filter(s) on, 1 task(s) hidden.");
+    }
+
+    @Test
+    void clearsEveryFilterAtOnce() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.REVIEW_PENDING).alias("a2").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("#phases button.phase").nth(1).click();
+        page.locator("#phases .clear-filters").click();
+
+        assertThat(page.locator("article .alias")).hasText(new String[]{"a1", "a2"});
+    }
+
+    @Test
     void narrowsTheBoardToWhateverMatchesTheTypedText() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.IN_PROGRESS).alias("a1").title("Widget layout is off")
@@ -376,9 +440,10 @@ class BoardPageTest {
 
     @Test
     void namesTheOwnerOnlyWhenTheMoveIsYours() {
+        long shipped = now();
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
-                .lastActiveTimestamp(now()).build());
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .mrCreatedAt(shipped).lastPolledAt(shipped).lastActiveTimestamp(shipped).build());
 
         Page page = open();
 

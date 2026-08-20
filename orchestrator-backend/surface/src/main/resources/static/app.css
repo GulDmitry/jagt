@@ -94,7 +94,13 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
   display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline;
   padding: 10px 16px 0; font-size: 12px; color: var(--muted);
 }
-#phases .phase.empty { opacity: .5; }
+#phases button.phase {
+  font: inherit; font-size: 12px; color: var(--muted); background: none; border: 0; border-radius: 999px;
+  padding: 1px 6px; cursor: pointer;
+}
+#phases button.phase[aria-pressed="true"] { background: var(--chip-bg); color: var(--text); }
+#phases button.phase:disabled { opacity: .5; cursor: default; }
+#phases .clear-filters { font-size: 11px; padding: 1px 8px; margin-left: 6px; }
 #phases .count { font-weight: 700; color: var(--text); }
 #phases .phase.empty .count { font-weight: 400; color: var(--muted); }
 #phases .sep { opacity: .4; }
