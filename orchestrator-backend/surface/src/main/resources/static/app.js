@@ -242,13 +242,16 @@ function renderJobs() {
     return;
   }
   const failing = jobsSummary.failing;
+  // A run writes no state, so nothing pushes a fresh stamp here: this one is from the last state change and
+  // goes into the past within the minute. Past means DUE, not `0s` — a countdown frozen at zero reads as broken.
+  const due = jobsSummary.nextRunAt ? jobsSummary.nextRunAt - Date.now() : null;
   chip.textContent = failing
     ? `jobs: ${failing} failed`
-    : `jobs: next ${jobsSummary.nextRunAt ? countdown(jobsSummary.nextRunAt - Date.now()) : '-'}`;
+    : `jobs: ${due === null ? 'next -' : due > 0 ? `next ${countdown(due)}` : 'due'}`;
   chip.classList.toggle('bad', failing > 0);
   chip.dataset.tip = failing
     ? 'a job\u2019s last run failed; open the Jobs report'
-    : 'next scheduled run of any unattended job';
+    : 'next scheduled run of any unattended job; the ticker runs every minute';
 }
 
 function render() {
