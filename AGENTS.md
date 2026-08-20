@@ -233,7 +233,10 @@ link to it, because no file here is named after one vendor.
   own thread, never overlapping itself, a run that throws booked against that job and nothing else, so no job needs
   a guard or a catch-all of its own. A hidden `@Scheduled` cannot be listed, reported on or validated, which is the
   point: the `jobs` report (a `GlobalCommand`, so both surfaces show it) names each job, its cadence, when it last
-  ran and when it runs next — work nobody watches is visible BEFORE it acts, not only after. An adapter's own
+  ran and when it runs next — work nobody watches is visible BEFORE it acts, not only after. A report only answers
+  whoever OPENS it, so `Jobs.summary` puts the two facts a human is owed unasked into both headers: the soonest run
+  of anything, and — outranking it, since the next run is not news while the last one is broken — that a run threw.
+  It is derived from the statuses already kept, never a second count. An adapter's own
   workaround is a job THAT ADAPTER contributes (the IDEA recent-projects cleanup), never a permanent timer for
   everybody.
 - WHAT JAGT DID UNATTENDED IS READ BACK FROM ITS OWN LOG, never from a second store: `command/ActivityReport`
@@ -250,11 +253,17 @@ link to it, because no file here is named after one vendor.
 - THREE CLOCKS, THREE QUESTIONS, AND NONE OF THEM ANSWERS ANOTHER'S. `statusSince` is time in THIS status —
   it restarts on every real transition, including a respawned agent re-reporting itself out of REVERTED, which
   is why it cannot answer "how long has this been waiting". `lastActiveTimestamp` is liveness for the watchdog
-  (any MCP call, keep-alives included). `TaskState.requestOpenedAt` is the review's own age (dropped the moment the task is pointed at another request, so a stamp cannot outlive what it describes), and it is the CODE
+  (any MCP call, keep-alives included) — a console column and a tooltip line, never a card row: on a status the
+  agent does not own, its own age says only that nothing has happened, which the status already said.
+  `TaskState.requestOpenedAt` is the review's own age (dropped the moment the task is pointed at another request,
+  so a stamp cannot outlive what it describes), and it is the CODE
   HOST's `created_at` — stamped by every review read (`ReviewFacts.openedAt`, one write with the pipeline
   wording), never jagt's own stamp: `mrCreatedAt` is the round window `AutoReviewCadence` measures, and a task
   RESUMED on someone's week-old request would read as opened just now. A read that cannot say (the paid model
-  read) leaves it at 0 and the surfaces show no age, which is the honest answer.
+  read) leaves it at 0 and the surfaces show no age, which is the honest answer. On the board that age is also the
+  LINK to the request, and the task number the link to the ticket — one element per fact, so no row spends a line
+  naming what it points at; several repositories mean several requests against ONE stamp, so those links are named
+  by project and ageless.
 - THE CHECKS ARE READ WHERE THE COMMENTS ARE, AND SHOWN WITHOUT BEING ASKED FOR. A sweep already pulls the review
   round, so it stamps what the host said about the pipeline onto the task (`TaskState.pipelineStatus`, the host's
   OWN wording) and `flow/Pipeline` is the one parser that turns it into GREEN / RED / RUNNING / NONE — every host
@@ -441,10 +450,12 @@ link to it, because no file here is named after one vendor.
   about one task (`task/AutoReviewWatch`: watching + the absolute next-poll stamp, window elapsed, off for this
   task, or nothing). `AutoReviewScheduler.decide` is a translation of that same watch, so a card cannot promise a
   poll the scheduler will not make. Both surfaces show it — the console's dashboard header carries
-  `cadence.summary()` and each task a `└ auto-review:` line; the board has the chip (`Board.autoReview`) and a
-  per-card line. Whether polling runs at all is a property of the INSTALL, so it is stated ONCE per surface and
-  never repeated per card; the one per-task exception is a task whose own `autoReview` is false while the install
-  polls, which would otherwise sit still with nothing saying why. The countdown is an ABSOLUTE stamp on the wire
+  `cadence.summary()` and each task a `└ auto-review:` line; the board has the chip (`Board.autoReview`) and, per
+  card, a `↻ <countdown>` PULSE in the meta row rather than a line of prose. Whether polling runs at all is a
+  property of the INSTALL, so it is stated ONCE per surface and never repeated per card — which is exactly why the
+  words are the tooltip and only the countdown is on the card. A watch that has STOPPED keeps a full line on both
+  surfaces (window elapsed, or a task whose own `autoReview` is false while the install polls): that one task
+  standing still is what the install-wide statement cannot cover. The countdown is an ABSOLUTE stamp on the wire
   and formatted per surface (`DurationFormat.countdown` / the page's own mirror), exactly as the two clocks on a
   card already are — a remaining-duration would be stale the moment it was fetched. It is a FLOOR, not a promise:
   the scan runs every 60s, so a poll shown as due happens within the next tick. One more rule the surfaces share:
