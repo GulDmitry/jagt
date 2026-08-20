@@ -1,15 +1,13 @@
 /* One stylesheet, no imports, no fonts to fetch: the board must work with the machine offline. */
 :root {
   --bg: #f6f7f9; --panel: #fff; --line: #d9dde3; --text: #1c2024; --muted: #6b7280;
-  --you: #b45309; --you-bg: #fef3c7; --agent: #1d4ed8; --agent-bg: #e0e9ff;
-  --ci: #6d28d9; --ci-bg: #ede4ff; --nobody: #6b7280; --nobody-bg: #eceef1;
+  --you: #b45309; --you-bg: #fef3c7; --agent: #1d4ed8; --ci: #6d28d9;
   --accent: #1d4ed8; --danger: #b42318; --ok: #15803d;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #14171a; --panel: #1c2024; --line: #2c3238; --text: #e6e8ea; --muted: #9aa3ad;
-    --you: #fbbf24; --you-bg: #3a2c08; --agent: #93b4ff; --agent-bg: #16233d;
-    --ci: #c4b5fd; --ci-bg: #241a3d; --nobody: #9aa3ad; --nobody-bg: #24282c;
+    --you: #fbbf24; --you-bg: #3a2c08; --agent: #93b4ff; --ci: #c4b5fd;
     --accent: #93b4ff; --danger: #fca5a5; --ok: #86efac;
   }
 }
@@ -114,11 +112,14 @@ article.ci { border-left-color: var(--ci); }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
 .badge { padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; }
 .badge.you { background: var(--you-bg); color: var(--you); }
-.badge.agent { background: var(--agent-bg); color: var(--agent); }
-.badge.ci { background: var(--ci-bg); color: var(--ci); }
-.badge.nobody { background: var(--nobody-bg); color: var(--nobody); }
-.status, .mr-age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
-.hint { font-size: 12px; color: var(--muted); margin: 6px 0; }
+.status, .mr-age, .pulse {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px;
+}
+/* Clickable without a link's colour: a whole meta row in accent would compete with the buttons. */
+a.id, a.mr-age {
+  color: inherit; text-decoration: underline dotted; text-underline-offset: 2px;
+}
+a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid; }
 .detail { font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
 .detail.problem { color: var(--danger); font-weight: 600; }
 /* Drafted replies are a "read this before you ship" nudge, not an error: warm, not red. */
@@ -126,15 +127,14 @@ article.ci { border-left-color: var(--ci); }
   font-size: 12px; margin: 4px 0; padding: 3px 7px; border-radius: 6px;
   background: var(--you-bg); color: var(--you); font-weight: 600;
 }
-.watch { font-size: 12px; margin: 4px 0; color: var(--muted); }
-.watch.stalled { color: var(--you); }
-.links { display: flex; gap: 10px; font-size: 12px; margin: 4px 0; }
+.watch.stalled { font-size: 12px; margin: 4px 0; color: var(--you); }
 a { color: var(--accent); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .actions button { font-size: 12px; padding: 3px 8px; }
-/* Recedes: nothing in this row writes a branch or ends a session. */
-.actions.tool { margin-top: 4px; }
-.actions.tool button:not(.primary) { color: var(--muted); }
+/* Recedes: nothing in this row writes a branch or ends a session. `:not(.primary)` matters — while the agent
+   works the primary IS `focus`, a button of this row, and the highlighted move must not shrink. */
+.actions.tool { margin-top: 4px; gap: 4px; }
+.actions.tool button:not(.primary) { font-size: 11px; padding: 2px 7px; color: var(--muted); }
 .empty { color: var(--muted); padding: 0 16px 16px; }
 
 #show-log {

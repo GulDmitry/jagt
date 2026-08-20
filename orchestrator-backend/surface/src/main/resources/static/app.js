@@ -35,14 +35,6 @@ const span = (className, text) => {
   return node;
 };
 
-const relative = (millis) => {
-  const seconds = Math.max(0, Math.round((Date.now() - millis) / 1000));
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.round(seconds / 3600)}h ago`;
-  return `${Math.round(seconds / 86400)}d ago`;
-};
-
 // FLOOR everywhere, matching DurationFormat.compact exactly: with `orchestrator.ui=both` the two
 // surfaces sit side by side, and 90 minutes reading "1h" here and "2h" there is the drift the shared
 // projection exists to prevent — sharing the data is not enough if a derived number is formatted twice.
@@ -65,13 +57,26 @@ const countdown = (millis) => {
 // What the unattended poller is about to do with this task, or nothing when it is not its business. The WORDS are
 // the server's (watch.note), so the console and this cannot drift; only the countdown is formatted here, from the
 // absolute stamp, so the slow repaint keeps it honest without another fetch.
+//
+// Whether the poller runs at all is a property of the install, stated once per surface — so a poll that is
+// COMING needs only its countdown. A watch that has STOPPED is the one thing that statement cannot cover.
 const watchLine = (watch) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
     const remaining = watch.nextPollAt - Date.now();
-    return {text: `${watch.note} ${remaining <= 0 ? 'due now' : `in ${countdown(remaining)}`}`};
+    return {pulse: remaining <= 0 ? 'now' : countdown(remaining), tip: watch.note};
   }
   return {text: watch.note, stalled: true};
+};
+
+// `openedAt` is 0 until a host read has said when the request opened.
+const requestLink = (url, label, openedAt) => {
+  const anchor = link(url, openedAt > 0 ? `${label} ${duration(Date.now() - openedAt)}` : label);
+  anchor.className = 'mr-age';
+  anchor.dataset.tip = openedAt > 0
+    ? `review request, open since ${new Date(openedAt).toLocaleString()}`
+    : 'review request';
+  return anchor;
 };
 
 // The transitions as a tooltip: the card stays one line, the record is one hover away.
@@ -235,11 +240,15 @@ function card(task) {
 
   const top = document.createElement('div');
   top.className = 'card-top';
-  top.append(span('alias', task.alias || '-'), span('id', task.id));
-  const badge = document.createElement('span');
-  badge.className = `badge ${owner}`;
-  badge.textContent = task.owner === 'YOU' ? 'your move' : task.owner.toLowerCase();
-  top.append(badge);
+  top.append(span('alias', task.alias || '-'),
+    task.ticketUrl ? Object.assign(link(task.ticketUrl, task.id), {className: 'id'}) : span('id', task.id));
+  // Only YOUR move is news; every other owner is the status word again. The case this keeps is an agent that
+  // stopped, which flips the owner in a phase where nothing else says so.
+  if (task.owner === 'YOU') {
+    const badge = span('badge you', 'your move');
+    badge.dataset.tip = task.hint;
+    top.append(badge);
+  }
 
   const title = document.createElement('div');
   title.className = 'title';
@@ -247,9 +256,9 @@ function card(task) {
 
   const meta = document.createElement('div');
   meta.className = 'meta';
-  // Three clocks, three questions: how long it has been in THIS status, how long the review request has been
-  // open (below), and when the session last did anything (a keep-alive bumps only the last one). All but the
-  // status one are LABELLED — bare durations in one row read as several ages of the same thing.
+  // Two clocks, because the status one restarts on every round and on a respawned agent re-reporting itself
+  // while the review keeps waiting. The activity age is not a third: on a status the agent does not own, it
+  // says only that nothing has happened.
   const status = document.createElement('span');
   status.className = 'status';
   status.textContent = `${task.status} · ${duration(Date.now() - task.statusSince)}`;
@@ -258,14 +267,15 @@ function card(task) {
   const repos = task.repos || [];
   const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
   meta.append(status, span(null, where));
-  // The clock a status word cannot give: how long the REQUEST has been open. The status clock restarts on
-  // every round — and on a respawned agent re-reporting itself — while the review keeps waiting.
-  if (task.requestOpenedAt > 0) {
-    const open = span('mr-age', `MR ${duration(Date.now() - task.requestOpenedAt)}`);
-    open.dataset.tip = `review request open since ${new Date(task.requestOpenedAt).toLocaleString()}`;
-    meta.append(open);
+  // ONE stamp for several requests — the oldest — so it can be worn only where there is one request to wear
+  // it. Several are named by project and ageless: the same number under each would read as each one's own.
+  if (task.reviewRequestUrl && repos.length < 2) {
+    meta.append(requestLink(task.reviewRequestUrl, 'MR', task.requestOpenedAt));
+  } else {
+    for (const repo of repos.filter((each) => each.reviewRequestUrl)) {
+      meta.append(requestLink(repo.reviewRequestUrl, `${repo.project} MR`, 0));
+    }
   }
-  meta.append(span(null, `active ${relative(task.lastActiveAt)}`));
   // The checks, as one dot: the sweep already reads the pipeline, and a red run while the card still says
   // CI_POLLING is the thing a status word cannot show.
   if (task.pipeline && task.pipeline !== 'NONE') {
@@ -273,14 +283,16 @@ function card(task) {
     checks.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
     meta.append(checks);
   }
+  const watch = watchLine(task.autoReview);
+  if (watch && watch.pulse) {
+    const pulse = span('pulse', `↻ ${watch.pulse}`);
+    pulse.dataset.tip = [watch.tip, autoReview.summary].filter(Boolean).join('\n');
+    meta.append(pulse);
+  }
 
-  const hint = document.createElement('div');
-  hint.className = 'hint';
-  hint.textContent = task.hint;
+  const article_children = [top, title, meta];
 
-  const article_children = [top, title, meta, hint];
-
-  // A detail that is nothing but a URL is the request, and that already has its own row below.
+  // A detail that is nothing but a URL is the request, and the meta row already links it.
   if (task.detail && !/^https?:/.test(task.detail)) {
     const detail = document.createElement('div');
     detail.className = /^(PROBLEM|NEEDS)/.test(task.detail) ? 'detail problem' : 'detail';
@@ -297,28 +309,13 @@ function card(task) {
     article_children.push(drafts);
   }
 
-  const watch = watchLine(task.autoReview);
-  if (watch) {
+  if (watch && watch.stalled) {
     const node = document.createElement('div');
-    node.className = watch.stalled ? 'watch stalled' : 'watch';
+    node.className = 'watch stalled';
     node.textContent = watch.text;
     node.dataset.tip = autoReview.summary;
     article_children.push(node);
   }
-
-  const links = document.createElement('div');
-  links.className = 'links';
-  if (task.ticketUrl) links.append(link(task.ticketUrl, 'ticket'));
-  if (repos.length > 1) {
-    // Each repository has its own request, its own reviewers and its own diff, so one link cannot stand for
-    // the task: an unlabelled second link would be indistinguishable from the first.
-    for (const repo of repos.filter((r) => r.reviewRequestUrl)) {
-      links.append(link(repo.reviewRequestUrl, `${repo.project} request`));
-    }
-  } else if (task.reviewRequestUrl) {
-    links.append(link(task.reviewRequestUrl, 'review request'));
-  }
-  if (links.children.length) article_children.push(links);
 
   // A row per group, broken wherever the order the server sent changes it: which groups exist, and which
   // comes first, stays the projection's answer.

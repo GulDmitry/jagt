@@ -144,7 +144,7 @@ class BoardPageTest {
 
         assertThat(page.locator("#auto-review")).hasText("auto-review on");
         assertThat(page.locator("#auto-review")).hasClass(java.util.regex.Pattern.compile("on"));
-        assertThat(page.locator("article .watch")).hasText("auto-review · next poll in 10m");
+        assertThat(page.locator("article .pulse")).hasText("↻ 10m");
     }
 
     @Test
@@ -155,7 +155,7 @@ class BoardPageTest {
         Page page = open();
 
         assertThat(page.locator("article")).hasCount(1);
-        assertThat(page.locator("article .watch")).hasCount(0);
+        assertThat(page.locator("article .pulse")).hasCount(0);
     }
 
     @Test
@@ -192,8 +192,6 @@ class BoardPageTest {
         assertThat(page.locator("article .id")).hasText("ABC-1");
         assertThat(page.locator("article .badge")).hasText("your move");
         assertThat(page.locator("article .title")).hasText("Widget layout is off");
-        assertThat(page.locator("article .hint")).hasText("your move: deploy or done");
-        assertThat(page.locator("article .links a")).hasText(new String[]{"review request"});
         assertThat(page.locator("article .detail")).hasCount(0);
     }
 
@@ -214,14 +212,75 @@ class BoardPageTest {
     }
 
     @Test
-    void aCardSaysNothingAboutTheRequestsAgeWhileNoReadHasSaidWhenItWasOpened() {
+    void offersTheRequestUnagedWhileNoReadHasSaidWhenItWasOpened() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .lastActiveTimestamp(now()).build());
 
         Page page = open();
 
-        assertThat(page.locator("article .mr-age")).hasCount(0);
+        assertThat(page.locator("article .mr-age")).hasText("MR");
+    }
+
+    @Test
+    void opensTheReviewRequestFromTheAgeItIsWearing() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article a.mr-age")).hasAttribute("href", "https://host.example/mr/7");
+    }
+
+    @Test
+    void namesEachRequestByProjectAndAgesNoneWhenATaskSpansRepositories() {
+        state.putTask("ABC-1", TaskState.builder(List.of(
+                        new dev.jagt.orchestrator.task.TaskRepo("alpha",
+                                root.resolve("ABC-1-alpha").toString(), null,
+                                "https://host.example/alpha/mr/7", null),
+                        new dev.jagt.orchestrator.task.TaskRepo("beta",
+                                root.resolve("ABC-1-beta").toString(), null,
+                                "https://host.example/beta/mr/3", null)),
+                TaskStatus.CI_POLLING).alias("a1")
+                .requestOpenedAt(now() - java.time.Duration.ofHours(8).toMillis())
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .mr-age")).hasText(new String[]{"alpha MR", "beta MR"});
+    }
+
+    @Test
+    void opensTheTicketFromTheTaskNumber() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a1").ticketUrl("https://tracker.example/ABC-1")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article a.id")).hasAttribute("href", "https://tracker.example/ABC-1");
+    }
+
+    @Test
+    void showsTheTaskNumberAsPlainTextWhenNoTrackerGaveItAUrl() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article a.id")).hasCount(0);
+    }
+
+    @Test
+    void namesTheOwnerOnlyWhenTheMoveIsYours() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .badge")).hasCount(0);
     }
 
     @Test
@@ -590,16 +649,6 @@ class BoardPageTest {
 
         assertThat(page.locator("#report-title")).containsText("activity");
         assertThat(page.locator("#report-body")).containsText("2 comment(s) relayed");
-    }
-
-    @Test
-    void labelsTheSessionClockSoItDoesNotReadAsASecondAgeOfTheStatus() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
-
-        Page page = open();
-
-        assertThat(page.locator("article .meta span").last()).containsText("active");
     }
 
     @Test
