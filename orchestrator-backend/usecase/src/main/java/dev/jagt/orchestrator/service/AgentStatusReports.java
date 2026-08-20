@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.task.TaskLabel;
@@ -53,6 +54,9 @@ public class AgentStatusReports {
                             + " \"review request: https://...\"");
         }
         TaskStatus previous = current.map(TaskState::status).orElse(null);
+        // What the machine lets this report land on: a status the human owns keeps the task where it is, and the
+        // agent is told so rather than left reading its own word back.
+        TaskStatus landed = previous == null ? newStatus : FlowRules.reported(previous, newStatus);
         boolean updated = flow.report(taskId, newStatus, shortMessage, next -> {
             if (url == null) {
                 return next;
@@ -69,23 +73,27 @@ public class AgentStatusReports {
         // and nobody is watching its window.
         boolean askedNow = AgentReport.of(shortMessage) == AgentReport.QUESTION
                 && AgentReport.of(current.map(TaskState::message).orElse(null)) != AgentReport.QUESTION;
-        if (newStatus != previous) {
+        if (landed != previous) {
             log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
-                    .addKeyValue("status", newStatus).addKeyValue("from", previous)
-                    .log("<- agent {}: {}{}", TaskLabel.of(taskId, alias), newStatus,
+                    .addKeyValue("status", landed).addKeyValue("from", previous)
+                    .log("<- agent {}: {}{}", TaskLabel.of(taskId, alias), landed,
                             shortMessage == null ? "" : " — " + shortMessage);
         } else if (askedNow) {
             log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
-                    .addKeyValue("status", newStatus)
+                    .addKeyValue("status", landed)
                     .log("<- agent {}: {}", TaskLabel.of(taskId, alias), shortMessage);
         }
         // A keep-alive says nothing new; a task handing control back, or stopping to ask, does.
-        boolean handedBack = newStatus != previous
-                && (newStatus == TaskStatus.REVIEW_PENDING || newStatus == TaskStatus.CI_FAILED);
+        boolean handedBack = landed != previous
+                && (landed == TaskStatus.REVIEW_PENDING || landed == TaskStatus.CI_FAILED);
         if (handedBack || askedNow) {
-            ping(taskId, newStatus, shortMessage, current);
+            ping(taskId, landed, shortMessage, current);
         }
-        return "Task " + taskId + " -> " + newStatus + (shortMessage == null ? "" : " (" + shortMessage + ")");
+        if (landed != newStatus) {
+            return "Task " + taskId + " stays " + landed + ": that one is a human's to move on from. Your line"
+                    + " was recorded" + (shortMessage == null ? "" : " (" + shortMessage + ")");
+        }
+        return "Task " + taskId + " -> " + landed + (shortMessage == null ? "" : " (" + shortMessage + ")");
     }
 
     /**

@@ -130,18 +130,46 @@ public final class FlowRules {
         return AGENT_REPORTABLE.contains(status);
     }
 
-    /**
-     * The same question with the status the task is IN. One report is not source-agnostic: saying CI_POLLING is
-     * saying "a request is open and waiting", which for a task the review has already passed drags it backwards
-     * and re-arms the unattended poll on work that is done. Everything else an agent may say about itself holds
-     * wherever it is — a task being fixed after a revert really is IN_PROGRESS again.
-     */
+    /** The same question with the status the task is IN. */
     public static boolean reportable(TaskStatus from, TaskStatus to) {
-        if (!reportable(to)) {
-            return false;
-        }
-        return to != TaskStatus.CI_POLLING || BEFORE_THE_VERDICT.contains(from);
+        return refusedReport(from, to).isEmpty();
     }
+
+    /**
+     * Why a task in {@code from} may not report {@code to}, or empty when it may — one owner for the answer AND
+     * the reason, because the reason is what an agent has to act on.
+     *
+     * <p>Two reports are not source-agnostic. Saying CI_POLLING is saying "a request is open and waiting", which
+     * for a task the review has already passed drags it backwards and re-arms the unattended poll on work that
+     * is done. And a task at REVERTED is one whose deploy was taken back out — that record is not an agent's to
+     * erase by starting up and announcing itself, which is exactly what a `respawn` used to do (through
+     * IN_PROGRESS and straight on to CI_POLLING, laundering the guard above). Everything else an agent may say
+     * about itself holds wherever it got to.
+     */
+    public static Optional<String> refusedReport(TaskStatus from, TaskStatus to) {
+        if (!reportable(to)) {
+            return Optional.of(to + " is jagt's to set, not a task's to report");
+        }
+        if (to == TaskStatus.CI_POLLING && !BEFORE_THE_VERDICT.contains(from)) {
+            return Optional.of(to + " cannot be reported by a task that is already " + from
+                    + " — that would take it backwards and start polling finished work");
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * The status a report actually lands on. A task at REVERTED KEEPS it: what came back out of a shared branch
+     * is a human's to move on from (`ship` for another round, `done` to close it), and a restarted agent
+     * announcing itself used to erase that record — then reach CI_POLLING through the IN_PROGRESS it had just
+     * claimed, laundering the guard above and re-arming the unattended poll on reverted work. The report is
+     * ACCEPTED rather than refused, because the agent's own protocol is to keep saying what it is doing and to
+     * ask questions without moving its task: a status it cannot report is a session whose every call errors.
+     */
+    public static TaskStatus reported(TaskStatus from, TaskStatus to) {
+        return STANDS_UNTIL_MOVED_BY_A_HUMAN.contains(from) ? from : to;
+    }
+
+    private static final Set<TaskStatus> STANDS_UNTIL_MOVED_BY_A_HUMAN = EnumSet.of(TaskStatus.REVERTED);
 
     /** Statuses a task can still be waiting on its checks from. */
     private static final Set<TaskStatus> BEFORE_THE_VERDICT = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,

@@ -41,6 +41,18 @@ class FlowReportsTest {
         verifyNoInteractions(stateService);
     }
 
+    /** What a `respawn` used to do to a task whose deploy had been taken back out. */
+    @Test
+    void recordsAStartingAgentsLineWithoutTakingARevertedDeployOffTheRecord() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
+
+        reports.report("ABC-1", TaskStatus.IN_PROGRESS, "picking the task back up");
+
+        TaskState after = written("ABC-1").apply(current(TaskStatus.REVERTED));
+        assertThat(after.status()).isEqualTo(TaskStatus.REVERTED);
+        assertThat(after.message()).isEqualTo("picking the task back up");
+    }
+
     /** A CI_POLLING with no request link is a lie on the dashboard, so the link cannot land in a later write. */
     @Test
     void recordsTheRequestLinkInTheSameWriteAsTheStatusThatNeedsIt() {

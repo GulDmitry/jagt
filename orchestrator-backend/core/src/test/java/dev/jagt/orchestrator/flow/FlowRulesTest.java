@@ -148,10 +148,29 @@ class FlowRulesTest {
         assertThat(FlowRules.reportable(waiting, TaskStatus.CI_POLLING)).isTrue();
     }
 
-    /** A task being fixed after a revert really is in progress again, so the rest hold wherever it got to. */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "SHIPPING", "REVIEW_PENDING", "CI_FAILED"})
     void letsATaskSayWhatItIsDoingWhereverItGotTo(TaskStatus said) {
         assertThat(FlowRules.reportable(TaskStatus.DEPLOYED, said)).isTrue();
+    }
+
+    /**
+     * A respawned agent announces itself: reporting IN_PROGRESS took a reverted deploy off the record, and
+     * CI_POLLING then landed through it — laundering the guard above, since CI_POLLING is reportable FROM
+     * IN_PROGRESS. The report is accepted (the agent's protocol is to keep saying what it is doing), the STATUS
+     * stands until a human moves it.
+     */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "SHIPPING", "REVIEW_PENDING", "CI_FAILED"})
+    void keepsARevertedDeployOnTheRecordWhateverItsAgentReports(TaskStatus said) {
+        assertThat(FlowRules.reportable(TaskStatus.REVERTED, said)).isTrue();
+        assertThat(FlowRules.reported(TaskStatus.REVERTED, said)).isEqualTo(TaskStatus.REVERTED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING", "REVIEW_PENDING",
+            "CI_POLLING", "CI_FAILED", "REVIEWED", "APPROVED", "DEPLOYED"})
+    void landsEveryOtherTasksReportOnTheStatusItReported(TaskStatus from) {
+        assertThat(FlowRules.reported(from, TaskStatus.REVIEW_PENDING)).isEqualTo(TaskStatus.REVIEW_PENDING);
     }
 }

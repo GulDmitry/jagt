@@ -163,8 +163,12 @@ link to it, because no file here is named after one vendor.
     as "no" because it costs a process spawn per row), and what each outcome of that action leads to. Door one is
     `flow/FlowEngine.run`: check the rules, run the `capability/TaskCapability` registered for the action, write
     the status the table gives for its `flow/Outcome`. Door two is `flow/FlowReports`: a status the task itself
-    reports — its agent over MCP, or a round jagt read for it — refused unless `FlowRules.reportable` allows it,
-    which is what stops a task talking itself onto a shared branch, out of one, or closed. NOTHING BELOW `flow/`
+    reports — its agent over MCP, or a round jagt read for it — refused unless `FlowRules.refusedReport` allows it
+    (and it OWNS the reason, which is what the agent acts on), which is what stops a task talking itself onto a
+    shared branch, out of one, or closed. A status a HUMAN owns is not refused but HELD: `FlowRules.reported`
+    keeps a REVERTED task where it is and records the line, because an agent's protocol is to keep saying what it
+    is doing — a status it cannot report is a session whose every call errors, while a status that follows it took
+    the revert off the record and laundered the CI_POLLING guard through the `IN_PROGRESS` it had just claimed. NOTHING BELOW `flow/`
     NAMES A STATUS: a capability does the work and reports OK / RELAYED / CONFLICT / PARTIAL / GONE plus the
     sentence and the stamp, so the same work can be reached from several statuses without every doer learning the
     machine. `withStatus` therefore appears in `flow/` and in the record that implements it, nowhere else — that
