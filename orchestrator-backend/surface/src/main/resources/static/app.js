@@ -7,6 +7,8 @@
 import {api, refusal, text} from './core/api.js';
 import {link, span} from './core/dom.js';
 import {countdown, duration} from './core/format.js';
+import * as store from './core/store.js';
+import * as filters from './ui/filters.js';
 
 const PHASES = [
   ['BUILD', 'build'], ['REVIEW', 'review'], ['CHECK', 'check'],
@@ -16,20 +18,13 @@ const PHASES = [
 const board = document.getElementById('board');
 const phaseBar = document.getElementById('phases');
 const toasts = document.getElementById('toasts');
-const filterBox = document.getElementById('filter');
-const onlyMine = document.getElementById('mine');
 const live = document.getElementById('live');
 const projectSelect = document.getElementById('project');
-let tasks = [];
-let projects = [];
-let autoReview = {summary: '', enabled: false};
-let jobsSummary = null;
 let renderedProjects = null;
 // An untouched default is not a decision, and naming a project SKIPS the ticket read — the escape hatch a
 // typed `do ABC-1 <project>` deliberately takes. So the list opens on a real project, and only a pick is sent.
 let projectPicked = false;
 projectSelect.onchange = () => { projectPicked = true; };
-let verbs = [];
 // What is in flight, and it is TWO questions because they refuse different clicks. `pending` is this exact
 // button (`<task>:<action>`), so a slow launch cannot be fired twice; `writing` is the task whose state
 // something is changing, and every OTHER writing button on that card is refused while it is — two ships on one
@@ -96,9 +91,9 @@ function toast(message, isError) {
 // console accepts can never be missing from the suggestions here.
 async function loadVerbs() {
   try {
-    verbs = await api('/api/commands');
+    store.set({verbs: await api('/api/commands')});
   } catch (e) {
-    verbs = [];                      // no suggestions is a degraded palette, not a broken one
+    store.set({verbs: []});          // no suggestions is a degraded palette, not a broken one
   }
   refreshSuggestions();
 }
@@ -106,10 +101,12 @@ async function loadVerbs() {
 async function load() {
   try {
     const data = await api('/api/tasks');
-    tasks = data.tasks;
-    projects = data.projects || [];
-    autoReview = {summary: data.autoReview, enabled: data.autoReviewEnabled};
-    jobsSummary = data.jobs;
+    store.set({
+      tasks: data.tasks,
+      projects: data.projects || [],
+      autoReview: {summary: data.autoReview, enabled: data.autoReviewEnabled},
+      jobs: data.jobs,
+    });
     fillProjects();
     render();
   } catch (e) {
@@ -124,50 +121,21 @@ function pickedProjects() {
 }
 
 function fillProjects() {
-  const signature = projects.join('\n');
+  const configured = store.projects();
+  const signature = configured.join('\n');
   if (renderedProjects === signature) {
     return;                       // a rebuild collapses the list under a human who has it open
   }
   renderedProjects = signature;
   const chosen = projectSelect.value;
-  projectSelect.replaceChildren(...(projects.length
-    ? projects.map((p) => new Option(p, p))
+  projectSelect.replaceChildren(...(configured.length
+    ? configured.map((p) => new Option(p, p))
     : [Object.assign(new Option('no projects in config.json', ''), {disabled: true})]));
-  if (projects.includes(chosen)) {
+  if (configured.includes(chosen)) {
     projectSelect.value = chosen;
   } else {
     projectPicked = false;
   }
-}
-
-// No re-sorting of any kind: the server's order is the alias, and a position a human has learnt is worth more
-// than any ordering a click could produce. Narrowing is the one thing offered instead — the set changes only
-// while a control visibly says so.
-const matches = (task, needle) => [task.alias, task.id, task.title]
-  .some((field) => (field || '').toLowerCase().includes(needle));
-
-// Every phase clicked stays selected until it is clicked again: narrowing to two of them is a real question
-// ("what is not finished yet"), and a single-choice control cannot ask it.
-const pickedPhases = new Set();
-
-// Deliberately in two steps. The phase counts are the set narrowed by everything EXCEPT the phase choice: a
-// count that obeyed it would read `build 0` the moment `review` was picked, and nothing could be clicked back.
-function narrowed() {
-  const needle = filterBox.value.trim().toLowerCase();
-  return tasks.filter((task) => (!onlyMine.checked || task.owner === 'YOU')
-    && (!needle || matches(task, needle)));
-}
-
-const shownTasks = () => narrowed()
-  .filter((task) => pickedPhases.size === 0 || pickedPhases.has(task.phase));
-
-const filtersOn = () => (filterBox.value.trim() ? 1 : 0) + (onlyMine.checked ? 1 : 0) + pickedPhases.size;
-
-function clearFilters() {
-  filterBox.value = '';
-  onlyMine.checked = false;
-  pickedPhases.clear();
-  render();
 }
 
 // `title` shows only after a wait, and a push rebuilds the element it was waiting on.
@@ -203,14 +171,14 @@ window.addEventListener('scroll', hideTip, true);
 // A failed run OUTRANKS the countdown: the next run is not news while the last one is still broken.
 function renderJobs() {
   const chip = document.getElementById('jobs-pulse');
-  chip.hidden = !jobsSummary || !jobsSummary.count;
+  chip.hidden = !store.jobs() || !store.jobs().count;
   if (chip.hidden) {
     return;
   }
-  const failing = jobsSummary.failing;
+  const failing = store.jobs().failing;
   // A run writes no state, so nothing pushes a fresh stamp here: this one is from the last state change and
   // goes into the past within the minute. Past means DUE, not `0s` — a countdown frozen at zero reads as broken.
-  const due = jobsSummary.nextRunAt ? jobsSummary.nextRunAt - Date.now() : null;
+  const due = store.jobs().nextRunAt ? store.jobs().nextRunAt - Date.now() : null;
   chip.textContent = failing
     ? `jobs: ${failing} failed`
     : `jobs: ${due === null ? 'next -' : due > 0 ? `next ${countdown(due)}` : 'due'}`;
@@ -222,20 +190,21 @@ function renderJobs() {
 
 function render() {
   hideTip();
-  const shown = shownTasks();
+  const tasks = store.tasks();
+  const shown = filters.shown(tasks);
   const waiting = tasks.filter((t) => t.owner === 'YOU').length;
   const waitingLabel = document.getElementById('waiting');
   waitingLabel.hidden = waiting === 0;
   waitingLabel.textContent = `${waiting} need your action`;
   const chip = document.getElementById('auto-review');
-  chip.textContent = autoReview.summary || '';
-  chip.classList.toggle('on', autoReview.enabled);
+  chip.textContent = store.autoReview().summary || '';
+  chip.classList.toggle('on', store.autoReview().enabled);
   renderJobs();
   renderEmpty(shown.length);
   // The pipeline is a COUNT, never a position: a phase that owns a column has to move the card it describes,
   // and re-finding it is the cost. Every phase is here, zeros included, so this line never moves either.
   phaseBar.hidden = tasks.length === 0;
-  const perPhase = narrowed();
+  const perPhase = filters.narrowed(tasks);
   // The separator is CONTENT, not a gap: a line whose words only come apart when a stylesheet loads is one
   // stylesheet away from reading `build 0review 1`.
   phaseBar.replaceChildren(...PHASES.flatMap(([phase, label], index) => {
@@ -245,19 +214,19 @@ function render() {
     segment.append(`${label} `, span('count', held));
     // Nothing to show is nothing to press, and an empty phase says so rather than answering with a blank board.
     segment.disabled = held === 0;
-    segment.setAttribute('aria-pressed', String(pickedPhases.has(phase)));
-    segment.dataset.tip = pickedPhases.has(phase) ? `stop showing only ${label}` : `show only ${label}`;
+    segment.setAttribute('aria-pressed', String(filters.holds(phase)));
+    segment.dataset.tip = filters.holds(phase) ? `stop showing only ${label}` : `show only ${label}`;
     segment.onclick = () => {
-      if (!pickedPhases.delete(phase)) pickedPhases.add(phase);
+      filters.togglePhase(phase);
       render();
     };
     return index === 0 ? [segment] : [span('sep', ' · '), segment];
   }));
-  if (filtersOn()) {
+  if (filters.on()) {
     const clear = document.createElement('button');
     clear.className = 'clear-filters';
-    clear.textContent = `clear ${filtersOn()} filter(s)`;
-    clear.onclick = clearFilters;
+    clear.textContent = `clear ${filters.on()} filter(s)`;
+    clear.onclick = () => { filters.clear(); render(); };
     phaseBar.append(clear);
   }
   board.replaceChildren(...shown.map(card));
@@ -267,12 +236,13 @@ function render() {
 // hidden by controls they may not be looking at. Two elements rather than one message rewritten in place, so
 // neither can be left showing the other's text.
 function renderEmpty(showing) {
-  const filteredOut = tasks.length > 0 && showing === 0;
-  document.getElementById('empty').hidden = tasks.length > 0;
+  const held = store.tasks().length;
+  const filteredOut = held > 0 && showing === 0;
+  document.getElementById('empty').hidden = held > 0;
   const filtered = document.getElementById('filtered');
   filtered.hidden = !filteredOut;
   if (filteredOut) {
-    filtered.textContent = `No task matches: ${filtersOn()} filter(s) on, ${tasks.length} task(s) hidden.`;
+    filtered.textContent = `No task matches: ${filters.on()} filter(s) on, ${held} task(s) hidden.`;
   }
 }
 
@@ -491,8 +461,7 @@ launchForm.onsubmit = async (event) => {
   }
 };
 
-filterBox.oninput = render;
-onlyMine.onchange = render;
+filters.onChange(render);
 
 // A desktop notification about one task links here with `?task=<id>`, and it lands in the FILTER rather than in
 // a selection of its own: the card then stands alone with its actions, the control that did it is visible, and
@@ -500,7 +469,7 @@ onlyMine.onchange = render;
 // is the truth — the task was closed while the banner sat there.
 const deepLink = new URLSearchParams(window.location.search).get('task');
 if (deepLink) {
-  filterBox.value = deepLink;
+  filters.box.value = deepLink;
 }
 
 // Push, not poll: the backend tells us when state changed. The slow interval only refreshes the relative
@@ -545,9 +514,9 @@ document.addEventListener('keydown', (event) => {
     togglePalette(false);
   } else if (event.key === '/' && !typingInto(event.target)) {
     event.preventDefault();
-    filterBox.focus();
-  } else if (event.key === 'Escape' && event.target === filterBox) {
-    filterBox.value = '';
+    filters.box.focus();
+  } else if (event.key === 'Escape' && event.target === filters.box) {
+    filters.box.value = '';
     render();
   }
 });
@@ -557,7 +526,8 @@ document.addEventListener('keydown', (event) => {
 function verbFor(word) {
   const typed = word.toLowerCase();
   // Its own name first, exactly as the server resolves it: an alias must never shadow another verb's id.
-  return verbs.find((v) => v.id === typed) || verbs.find((v) => (v.aliases || []).includes(typed));
+  return store.verbs().find((v) => v.id === typed)
+    || store.verbs().find((v) => (v.aliases || []).includes(typed));
 }
 
 // Understood WITHOUT a model: a known verb, and — for the per-task ones — a task that actually exists. Anything
@@ -569,24 +539,24 @@ function parseCommand(line) {
   if (!verb) return null;
   const argument = tokens.slice(1).join(' ');
   if (!verb.takesTask) return {verb, argument};
-  const task = tasks.find((t) => t.id === argument || (t.alias || '') === argument);
-  return {verb, argument, task};
+  return {verb, argument, task: store.taskFor(argument)};
 }
 
 function refreshSuggestions() {
   document.getElementById('ask-options').replaceChildren(
-    ...verbs.map((verb) => Object.assign(document.createElement('option'),
+    ...store.verbs().map((verb) => Object.assign(document.createElement('option'),
       {value: verb.id, label: verb.hint})));
   // One button per report the SERVER declares, so a new one appears in the toolbar without this page learning
   // its name.
-  document.getElementById('reports').replaceChildren(...verbs.filter((verb) => verb.report).map((verb) => {
-    const button = document.createElement('button');
-    button.id = `show-${verb.id}`;
-    button.textContent = verb.id.charAt(0).toUpperCase() + verb.id.slice(1);
-    button.dataset.tip = verb.hint;
-    button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`);
-    return button;
-  }));
+  document.getElementById('reports').replaceChildren(
+    ...store.verbs().filter((verb) => verb.report).map((verb) => {
+      const button = document.createElement('button');
+      button.id = `show-${verb.id}`;
+      button.textContent = verb.id.charAt(0).toUpperCase() + verb.id.slice(1);
+      button.dataset.tip = verb.hint;
+      button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`);
+      return button;
+    }));
   const resume = verbFor('resume');
   if (resume) {
     document.querySelectorAll('#resume-task, #resume button[type=submit]')
