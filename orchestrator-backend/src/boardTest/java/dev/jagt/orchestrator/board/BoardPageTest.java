@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.board;
 import dev.jagt.orchestrator.flow.Refusal;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
+import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
@@ -813,6 +814,36 @@ class BoardPageTest {
         } finally {
             sweeping.countDown();
         }
+    }
+
+    @Test
+    void aTypedLaunchThatIsRefusedSaysSoInsteadOfSittingThere() {
+        when(launcher.launch(any())).thenThrow(new IllegalArgumentException("No ticket ABC-9 anywhere"));
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("do ABC-9");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#toasts .toast.error")).containsText("No ticket ABC-9 anywhere");
+    }
+
+    /** An alias is short enough to be another task's ticket id, and the card carries the id. */
+    @Test
+    void aClickActsOnTheTaskWhoseCardItIsWhenAnotherTasksAliasReadsLikeItsId() {
+        state.putTask("4", TaskState.builder("alpha", root.resolve("4-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("41").lastActiveTimestamp(now()).build());
+        state.putTask("41", TaskState.builder("alpha", root.resolve("41-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("42").lastActiveTimestamp(now()).build());
+        when(commands.execute("41", TaskAction.SHIP)).thenReturn("Shipped 41.");
+
+        Page page = open();
+        page.locator("article", new Page.LocatorOptions().setHas(page.locator(".alias:text-is(\"42\")")))
+                .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Ship").setExact(true))
+                .click();
+
+        assertThat(page.locator("#toasts .toast")).hasText("Shipped 41.");
+        verify(commands, never()).execute("4", TaskAction.SHIP);
     }
 
     @Test

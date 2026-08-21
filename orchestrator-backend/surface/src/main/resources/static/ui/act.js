@@ -18,9 +18,10 @@ const actionOf = (task, actionId) => (task.actions || []).find((each) => each.id
   || {id: actionId, label: actionId, hint: '', readOnly: false};
 
 export async function run(taskId, actionId) {
-  const task = store.taskFor(taskId);
+  const task = store.taskById(taskId);
   if (!task) {
-    return;                       // the card went away between the click and this line
+    toast(`no task ${taskId} on the board any more`, true);
+    return;
   }
   const action = actionOf(task, actionId);
   if (blocked(task, action)) {

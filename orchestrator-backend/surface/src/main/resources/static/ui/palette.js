@@ -2,10 +2,11 @@
 // use. Kept behind ⌘K rather than in the way, because tier 1 (a button, a typed command) costs nothing and this
 // costs a model call — the point is flexibility when it is wanted, not by default.
 
-import {api, text} from '../core/api.js';
+import {api, refusal, text} from '../core/api.js';
 import * as store from '../core/store.js';
 import {run} from './act.js';
 import {openReport, showReport} from './dialogs.js';
+import {refresh} from './refresh.js';
 import {sending} from './submit.js';
 import {toast} from './toast.js';
 
@@ -175,9 +176,13 @@ form.onsubmit = async (event) => {
         close();
         return;
       }
+    } catch (e) {
+      toast(refusal(e), true);      // a line that reached the backend and was refused is not tier 2's to retry
+      return;
     } finally {
       button.disabled = false;
       judge();
+      await refresh();
     }
   }
   await sending(form, {
