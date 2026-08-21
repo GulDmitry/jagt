@@ -9,7 +9,7 @@ public enum Owner {
     YOU("you"),
     /** The code host — a pipeline or a reviewer. */
     CI("code host"),
-    /** Nobody: the task is closed. */
+    /** Nobody: nothing is waiting on anyone — the task is closed, or its change is already live. */
     NOBODY("none");
 
     private final String label;

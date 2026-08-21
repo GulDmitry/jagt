@@ -463,6 +463,23 @@ class BoardPageTest {
                 "ANSWERED: already handled — the open threads are the reviewer's to close");
     }
 
+    /**
+     * The change is live: what is left is the close, whenever the human wants it. A badge here reads as an alarm
+     * beside the cards that really are blocked, which is what teaches them to ignore all three of badge, count
+     * and filter.
+     */
+    @Test
+    void asksForNothingOnACardWhoseChangeIsAlreadyDeployed() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.DEPLOYED).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .badge")).hasCount(0);
+        assertThat(page.locator("#waiting")).isHidden();
+    }
+
     @Test
     void namesTheOwnerOnlyWhenTheMoveIsYours() {
         long shipped = now();

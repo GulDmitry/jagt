@@ -262,6 +262,11 @@ link to it, because no file here is named after one vendor.
   human's) and "nothing is polling at all" (an install with auto-review off, where the approval is fetched only
   when a human asks) are different questions, and a card that answered the second with the first offered no move
   at all on the default install.
+- NEITHER IS WORK THAT IS ALREADY LIVE (the owner's rule, 2026-08-21): DEPLOYED's owner is NOBODY, exactly as
+  DONE's is. Closing the task is housekeeping a human does when they feel like it — `done` stays the highlighted
+  move and nothing else is left — so a badge there sat next to a stalled session and a deploy conflict wearing
+  the same colour and the same word, which is precisely how a human is taught that "action required" means
+  nothing. A question asked from DEPLOYED still flips it, since a stopped session IS their move.
 - A QUESTION OUTRANKS THE STATUS IT WAS ASKED FROM, in all four places that read a round: `Move.ownerOf` (the
   wait is the human's), `Move.primaryOf` (FOCUS — the status alone would highlight a verb that ACTS, and a SHIP
   on a round the agent said it cannot finish is the worst button on the board), `Move.hint` and `DashboardLine`.

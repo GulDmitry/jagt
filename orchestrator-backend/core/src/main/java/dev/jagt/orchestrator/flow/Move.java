@@ -114,8 +114,10 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
             // for a reviewer to come. Deploy stays offered for an install that needs no approval, but nothing
             // here is a move of the human's, and a card that claimed one teaches them to ignore the badge.
             case CI_POLLING, REVIEWED -> Owner.CI;
-            case REVIEW_PENDING, CI_FAILED, APPROVED, DEPLOYED, DEPLOY_CONFLICT,
-                 REVERTED -> Owner.YOU;
+            case REVIEW_PENDING, CI_FAILED, APPROVED, DEPLOY_CONFLICT, REVERTED -> Owner.YOU;
+            // The change is live and closing is housekeeping with no clock on it, so a badge here wore the same
+            // word as a stalled session and a deploy conflict — which is how a badge stops being read at all.
+            case DEPLOYED -> Owner.NOBODY;
             case DONE -> Owner.NOBODY;
         };
     }

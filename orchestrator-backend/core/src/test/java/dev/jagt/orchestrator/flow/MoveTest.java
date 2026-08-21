@@ -190,7 +190,28 @@ class MoveTest {
                 .filter(status -> Move.forTask(status, true, RoundState.NONE, false).owner() == Owner.YOU).toList();
 
         assertThat(waitingOnYou).containsExactly(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED,
-                TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.DEPLOYED, TaskStatus.REVERTED);
+                TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.REVERTED);
+    }
+
+    /**
+     * The change is live and closing the task is housekeeping: an install that badged this taught the human that
+     * the badge means nothing, which costs the stalled session and the deploy conflict their only signal.
+     */
+    @Test
+    void asksForNothingOnceTheChangeIsLiveWhileStillOfferingTheClose() {
+        Move move = Move.forTask(TaskStatus.DEPLOYED, true, RoundState.NONE, false);
+
+        assertThat(move.owner()).isEqualTo(Owner.NOBODY);
+        assertThat(move.primary()).isEqualTo(TaskAction.DONE);
+    }
+
+    /** A session that stopped to ask is the human's whatever its task has already landed. */
+    @Test
+    void stillAsksForTheHumanWhenAnAgentQuestionOutlivesTheDeploy() {
+        Move move = Move.forTask(TaskStatus.DEPLOYED, true, new RoundState(AgentReport.QUESTION, false), false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.hint()).contains("answer the question");
     }
 
     /**
