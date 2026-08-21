@@ -50,7 +50,7 @@ public class AgentStatusReports {
                          String taskId) {
         TaskStatus newStatus;
         try {
-            newStatus = TaskStatus.valueOf(status.trim().toUpperCase());
+            newStatus = TaskStatus.valueOf(status.trim().toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Unknown status '" + status + "'. Allowed: "
                     + List.of(TaskStatus.values()));
@@ -214,9 +214,9 @@ public class AgentStatusReports {
         if (outcome == null || outcome.isBlank()) {
             return AgentReport.of(message);
         }
-        return switch (outcome.strip().toLowerCase()) {
+        return switch (outcome.strip().toLowerCase(java.util.Locale.ROOT)) {
             case "question" -> AgentReport.QUESTION;
-            case "no_changes" -> AgentReport.NO_CHANGES;
+            case "no_changes", "no-changes", "no changes" -> AgentReport.NO_CHANGES;
             default -> AgentReport.of(message);
         };
     }

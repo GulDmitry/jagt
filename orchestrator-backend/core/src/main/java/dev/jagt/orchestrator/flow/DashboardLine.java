@@ -58,7 +58,7 @@ public final class DashboardLine {
     }
 
     private static String needsInput(String message) {
-        return "NEEDS INPUT: " + AgentReport.QUESTION.detailOf(message);
+        return "NEEDS INPUT: " + orDefault(AgentReport.QUESTION.detailOf(message), "the agent is waiting on you");
     }
 
     private static boolean hasMr(TaskState task) {

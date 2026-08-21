@@ -98,15 +98,28 @@ class AgentStatusReportsTest {
         assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message())).isEqualTo(AgentReport.PLAIN);
     }
 
-    @Test
-    void keepsANoChangesRoundThatTheWorktreeBearsOut(@TempDir Path root) {
+    @ParameterizedTest
+    @ValueSource(strings = {"no_changes", "no-changes", "no changes"})
+    void keepsANoChangesRoundThatTheWorktreeBearsOut(String outcome, @TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .mrUrl("https://host/mr/1").build());
 
-        reports(state).report("REVIEW_PENDING", "already handled", "no_changes", null, "ABC-1");
+        reports(state).report("REVIEW_PENDING", "already handled", outcome, null, "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("no changes: already handled");
+    }
+
+    @Test
+    void recordsTheOutcomeAnAgentTypedIntoTheMessageInsteadOfTheField(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .mrUrl("https://host/mr/1").build());
+
+        reports(state).report("REVIEW_PENDING", "outcome=no_changes: withdrawn thread relayed again", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().message())
+                .isEqualTo("no changes: withdrawn thread relayed again");
     }
 
     @Test

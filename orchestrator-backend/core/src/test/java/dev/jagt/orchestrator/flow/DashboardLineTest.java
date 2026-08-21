@@ -107,6 +107,15 @@ class DashboardLineTest {
     }
 
     @Test
+    void stillSaysWhoIsWaitedOnWhenTheQuestionCarriesNoWordsOfItsOwn() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
+                .message("outcome=question").mrUrl("https://host/mr/441").build();
+
+        assertThat(DashboardLine.forTask(task, "https://host/mr/441"))
+                .isEqualTo("NEEDS INPUT: the agent is waiting on you");
+    }
+
+    @Test
     void saysTheRoundChangedNothing() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("no changes: every comment already handled").mrUrl("https://host/mr/440").build();
