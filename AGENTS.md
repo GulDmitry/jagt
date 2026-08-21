@@ -369,6 +369,22 @@ link to it, because no file here is named after one vendor.
   verbatim instead of dropping it — the file is agent-written, and a parser that hid what it did not recognise
   would hide exactly the round that went wrong. `GET /api/commands/{id}?about=<task>` is how a report narrows to
   one task: the same command the console types, so no second endpoint.
+  PRESENCE IS NOT ENOUGH: DRAFTS BELONG TO THE ROUND THEY WERE WRITTEN IN (the owner's complaint, 2026-08-21 —
+  a leftover file kept a task reading "action required" for a day). `ReviewDrafts.pending` is the one answer: the
+  file is there AND newer than `mrCreatedAt`, because the ship that opened the round now open is the ship that
+  posted it. WHO POSTS THEM DECIDES THAT (`CodeReviewConfig.shipPostsEveryDraft`): with
+  `postReviewReplies=false`, or an `reviewReplyAuthors` filter under which the agent posts some replies and
+  deliberately keeps the rest, nothing is ever spent — the answers are the human's to send, so the announcement
+  stands until THEY end it. `replies` still prints a spent file, since it is the only record of what was
+  answered, but says it was already sent rather than promising a ship will send it.
+  JAGT DOES NOT DELETE THE FILE, and that was decided against with a mechanism already written (2026-08-21). A
+  round stamp says a ship happened, never that the replies went out: posting is RELAYED to the agent and
+  deliberately off the critical path, so a dead session leaves "posted, not cleaned up" and "never posted" as the
+  same bytes on disk. Every deleting version also had to run before the ship it belongs to — the drafts of the
+  round being shipped are what that ship posts — which put it outside `ShipService`'s in-flight guard and in
+  front of every refusal, so a second click or a ship that then refused took the answers with it. Not announcing
+  a file is recoverable; unlinking it is not. The agent is still asked to delete what it posted (the ship brief),
+  and that stays a courtesy rather than the mechanism.
 - `dashboard-layout-smoke.sh` drives the CONSOLE, so it must pass `--orchestrator.ui=tui` now that the board
   is the default. Run it after ANY change to `MasterShell` rendering. `tui-push-repaint-smoke.sh` is its
   sibling for the event-driven repaint: refresh 60s + a status pushed through `POST /mcp`, so only the listener

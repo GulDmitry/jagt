@@ -50,7 +50,8 @@ public class TaskViews {
         List<TaskView> views = stateService.tasks().entrySet().stream()
                 .sorted(Comparator.comparing(TaskViews::aliasOrder))
                 .map(entry -> TaskView.of(entry.getKey(), entry.getValue(),
-                        WorktreeFiles.draftedReplies(entry.getValue()),
+                        ReviewDrafts.pending(entry.getValue(), entry.getValue().status(),
+                                config.codeReview().shipPostsEveryDraft()),
                         cadence.watch(entry.getValue(), now), deployBranches))
                 .toList();
         return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()));

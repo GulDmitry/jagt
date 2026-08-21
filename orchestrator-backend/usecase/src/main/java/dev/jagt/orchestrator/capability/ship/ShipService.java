@@ -166,7 +166,7 @@ public class ShipService {
     }
 
     private String relayDraftedReplies(String taskId, Path worktree, ConfigService.ConfigFile config) {
-        if (!Files.isRegularFile(worktree.resolve("review_replies.md"))) {
+        if (!Files.isRegularFile(worktree.resolve(dev.jagt.orchestrator.service.WorktreeFiles.REVIEW_REPLIES))) {
             return "";
         }
         if (!config.codeReview().postReviewRepliesOrDefault()) {

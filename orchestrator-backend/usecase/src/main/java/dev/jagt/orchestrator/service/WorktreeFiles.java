@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 @Slf4j
 public final class WorktreeFiles {
 
+    public static final String REVIEW_REPLIES = "review_replies.md";
+
     /** Directories never worth scanning for local files (huge and/or generated). */
     private static final Set<String> COPY_SCAN_SKIP =
             Set.of(".git", "node_modules", "build", "target", "out", "dist", ".gradle", ".idea");
@@ -34,7 +36,7 @@ public final class WorktreeFiles {
      * those is the agent's own work.
      */
     public static final List<String> GENERATED = List.of(".mcp.json", ".claude/settings.local.json",
-            ".jagt", "task_context.md", "review_replies.md");
+            ".jagt", "task_context.md", REVIEW_REPLIES);
 
     /**
      * Keeps orchestrator plumbing out of `git status` in every worktree of the project. info/exclude only
@@ -42,7 +44,7 @@ public final class WorktreeFiles {
      */
     public static void excludeOrchestratorPlumbing(Path gitCommonDir) {
         List<String> entries = List.of("mcp_client.js", ".mcp.json", "AGENTS.md", "CLAUDE.md",
-                "CLAUDE.local.md", "task_context.md", "review_replies.md", ".claude/", ".jagt/", ".run/");
+                "CLAUDE.local.md", "task_context.md", REVIEW_REPLIES, ".claude/", ".jagt/", ".run/");
         try {
             Path exclude = gitCommonDir.resolve("info").resolve("exclude");
             Files.createDirectories(exclude.getParent());
@@ -125,23 +127,6 @@ public final class WorktreeFiles {
                         : Stream.of(glob))
                 .map(glob -> FileSystems.getDefault().getPathMatcher("glob:" + glob))
                 .toList();
-    }
-
-    /** Announced only where it is actionable: the file survives until the agent deletes it. */
-    public static boolean draftedReplies(dev.jagt.orchestrator.task.TaskState task) {
-        return draftedReplies(task, task.status());
-    }
-
-    /** The same, for a status the task is being MOVED to rather than the one it still carries. */
-    public static boolean draftedReplies(dev.jagt.orchestrator.task.TaskState task,
-                                         dev.jagt.orchestrator.flow.TaskStatus status) {
-        if (status != dev.jagt.orchestrator.flow.TaskStatus.REVIEW_PENDING
-                && status != dev.jagt.orchestrator.flow.TaskStatus.CI_FAILED) {
-            return false;
-        }
-        String worktree = task.worktreePath();
-        return worktree != null && !worktree.isBlank()
-                && java.nio.file.Files.isRegularFile(Path.of(worktree).resolve("review_replies.md"));
     }
 
     /** The file's content, or empty when it is not there — an absent relay file is the normal first case. */

@@ -112,6 +112,14 @@ public class ConfigService {
                 return mrTitlePattern == null || mrTitlePattern.isBlank() ? "{ticket} {title}" : mrTitlePattern;
             }
 
+            /**
+             * Whether a ship posts EVERY drafted reply, so the file it left behind is spent. False also for an
+             * author filter: there the agent posts some and leaves the rest, and those are the human's to send.
+             */
+            public boolean shipPostsEveryDraft() {
+                return postReviewRepliesOrDefault() && reviewReplyAuthorsOrEmpty().isEmpty();
+            }
+
             /** False: drafted replies stay in the worktree for the human, and only code is pushed. */
             public boolean postReviewRepliesOrDefault() {
                 return postReviewReplies == null || postReviewReplies;

@@ -38,6 +38,7 @@ class AgentStatusReportsTest {
 
     private final Notifications notifications = mock(Notifications.class);
     private final WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
+    private final ConfigService configService = mock(ConfigService.class);
 
     private static StateService stateIn(Path root) {
         return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -45,7 +46,9 @@ class AgentStatusReportsTest {
     }
 
     private AgentStatusReports reports(StateService state) {
-        return new AgentStatusReports(state, notifications, new FlowReports(state), worktreeChanges);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        return new AgentStatusReports(state, notifications, new FlowReports(state), worktreeChanges,
+                new ReviewDrafts(configService));
     }
 
     @Test
@@ -375,7 +378,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.APPROVED)
                 .alias("a1").mrUrl("https://host/mr/1").build());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state), worktreeChanges);
+        AgentStatusReports reports = reports(state);
 
         assertThatThrownBy(() -> reports.report("CI_POLLING", "review request: https://host/mr/1", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)

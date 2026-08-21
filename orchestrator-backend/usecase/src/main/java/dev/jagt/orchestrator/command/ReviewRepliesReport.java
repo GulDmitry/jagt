@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.TaskView;
+import dev.jagt.orchestrator.service.ReviewDrafts;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.WorktreeFiles;
@@ -35,6 +36,7 @@ public class ReviewRepliesReport {
 
     private final TaskViews views;
     private final StateService state;
+    private final ReviewDrafts drafts;
 
     public String render(String tail) {
         String asked = tail == null ? "" : tail.strip();
@@ -63,17 +65,25 @@ public class ReviewRepliesReport {
      * task whose status has moved on would read as holding no drafts while the answers sat in its worktree.
      */
     private Optional<String> section(TaskView task) {
-        return state.task(task.id())
-                .map(TaskState::worktreePath)
+        Optional<TaskState> state = this.state.task(task.id());
+        return state.map(TaskState::worktreePath)
                 .filter(worktree -> !worktree.isBlank())
-                .flatMap(worktree -> WorktreeFiles.read(Path.of(worktree).resolve("review_replies.md")))
+                .flatMap(worktree -> WorktreeFiles.read(Path.of(worktree)
+                        .resolve(WorktreeFiles.REVIEW_REPLIES)))
                 .filter(text -> !text.isBlank())
-                .map(text -> header(task) + "\n\n" + body(text));
+                .map(text -> header(task, state.filter(drafts::spent).isPresent()) + "\n\n" + body(text));
     }
 
-    private static String header(TaskView task) {
-        return "review replies drafted for " + name(task) + " — nothing is posted until `ship "
-                + reference(task) + "`";
+    /**
+     * A spent file is still PRINTED — it is the only record of what was answered — but never advertised as
+     * something a ship will send.
+     */
+    private static String header(TaskView task, boolean spent) {
+        return spent
+                ? "review replies for " + name(task) + " — drafted in a round already shipped, so these were"
+                        + " posted; nothing here is waiting to go out"
+                : "review replies drafted for " + name(task) + " — nothing is posted until `ship "
+                        + reference(task) + "`";
     }
 
     private static String name(TaskView task) {

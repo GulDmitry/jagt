@@ -35,6 +35,7 @@ public class AgentStatusReports {
     private final Notifications notifications;
     private final FlowReports flow;
     private final WorktreeChanges worktreeChanges;
+    private final ReviewDrafts reviewDrafts;
 
     /** For jagt's own reports, which carry no outcome of an agent's and no request to link. */
     public String report(String status, String message, String taskId) {
@@ -159,7 +160,7 @@ public class AgentStatusReports {
      */
     private void ping(String taskId, TaskStatus status, String message, Optional<TaskState> task) {
         RoundState round = RoundState.of(message,
-                task.map(t -> WorktreeFiles.draftedReplies(t, status)).orElse(false));
+                task.map(t -> reviewDrafts.pending(t, status)).orElse(false));
         // Not silent: whoever this ping is about has just spoken, or jagt has just read the round for it.
         Move move = Move.forTask(status, task.map(TaskState::hasReviewRequest).orElse(true), round, false);
         if (move.owner() != Owner.YOU) {
