@@ -218,7 +218,7 @@ public class ReviewSweepService {
                     - You cannot tell, or it is right but forces a design decision nobody gave you: do not guess
                       and do not half-implement it. Leave that comment's code alone, put the question in its
                       review_replies.md block, and hand the round back — notify_user, then set REVIEW_PENDING
-                      with message "awaiting: <question, few words>".
+                      with outcome=question and the question in the message (few words).
                     Implementing a change you believe is wrong is the worst outcome available to you: silent
                     compliance is invisible in a diff. Never report a fix you did not make.
                     </how_to_judge>
@@ -250,18 +250,18 @@ public class ReviewSweepService {
         // auto-review poll re-brief the agent on the very comments it was told to hold, paying for another
         // review read every interval. With no comments this is a failed pipeline, and an agent that cannot push
         // cannot watch the build turn green either — its exit is the local fix.
-        // The round's OUTCOME rides in the message, because all three end at the same status: a ship for a round
-        // that changed nothing only returns the task to CI_POLLING, where the next poll relays the same threads
-        // (a reply does not resolve one) and the lap repeats.
+        // The round's OUTCOME is a field of its own, because all three end at the same status: a ship for a
+        // round that changed nothing only starts another one on the same unresolved threads.
         brief.append(r.comments().isEmpty()
-                ? "When the build is fixed locally, set status REVIEW_PENDING."
+                ? "When the build is fixed locally, set status REVIEW_PENDING (outcome=progress)."
                 : """
-                        When every comment is fixed, answered or asked about, set status REVIEW_PENDING, and open
-                        the message with the outcome of THIS round:
-                        - "awaiting: <question>" — a question of yours is still open.
-                        - "no changes: <why, few words>" — you changed no code (all already handled, or you
-                          pushed back on every comment). Never say this if you edited a file.
-                        - anything else — you fixed code locally and there is a diff to read.""");
+                        When every comment is fixed, answered or asked about, set status REVIEW_PENDING with the
+                        outcome of THIS round:
+                        - outcome=question — a question of yours is still open; it rides in the message.
+                        - outcome=no_changes — you changed no code (all already handled, or you pushed back on
+                          every comment). jagt reads the worktree, so claiming this over an edited file records a
+                          round with a diff instead.
+                        - outcome=progress — you fixed code locally and there is a diff to read.""");
         brief.append("\nDo NOT push or post anything yourself.");
         return brief.toString();
     }

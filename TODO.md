@@ -18,17 +18,17 @@ before. Decide it deliberately, then the split is mechanical.
 
 Each of the three is a small interface change plus a check. None of them is worth doing before something needs it.
 
-## Take the structure out of the agent's prose (open, needs one decision)
+## Move the code host's credentials into the orchestrator (open, conceptual)
 
-`update_agent_status` takes `message` free text, and jagt reads two structural facts out of it: the round's
-outcome by prefix (`AgentReport.of`) and the request url by regex (`AgentStatusReports.extractUrl`). Same class as
-`Pipeline.of` reading a verdict out of a sentence. The alternative is typed tool arguments (`outcome:
-question|no_changes|changes`, `reviewRequestUrl`) with the prefix parsing left as a fallback, because a worktree
-keeps the brief it was created with.
+Today jagt holds a token only when `orchestrator.code-host.*` / `tracker.*` are set; everything else reaches a
+host through the AGENT's own MCP session, i.e. the human's credentials. Making jagt the credential holder is what
+would let it do the outside reads and writes itself, deterministically, with no model in the path.
 
-- For: the MCP schema is enforced, so the shape stops being a guess; `message` becomes human text only.
-- Against: shape is not truth — `no_changes` can be reported over edited files, and `git status --porcelain` in
-  the worktree answers that one for certain. The url is not needed at all from a configured host: `ship` opens
-  the request itself.
-- So the question is which facts jagt should ASK for and which it should MEASURE. Typing a fact jagt can measure
-  buys nothing.
+- For: `ship`, a review round and a resume stop depending on an agent session and on a paid read. One place to
+  configure, one place to fail, and every failure names a key instead of a lost round.
+- Against: jagt becomes a secret store. The board listens on loopback WITHOUT auth and can already deploy — with
+  credentials behind it, whoever reaches that port acts as the human on the host. `AGENTS.md` states the current
+  property plainly ("with neither configured the backend holds no credential at all"), and that sentence is what
+  would have to go.
+- So the question is not the wiring (it exists) but the guarantee: what jagt must promise before it is allowed to
+  keep a token — where it is read from, what may act with it, and what the board needs before it may.

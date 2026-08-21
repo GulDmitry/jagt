@@ -29,6 +29,11 @@ public enum AgentReport {
 
     /** The message without its marker, for a line that supplies its own label. */
     public String detailOf(String message) {
+        return withoutMarker(message);
+    }
+
+    /** The same, for a caller that is DECIDING which marker belongs there rather than reading one. */
+    public static String withoutMarker(String message) {
         return message == null ? "" : message.replaceFirst("(?i)^(awaiting|no[ -]changes):?\\s*", "");
     }
 }

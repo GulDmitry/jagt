@@ -151,14 +151,14 @@ class ReviewSweepServiceTest {
         verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
                 .contains("Wrong: change NOTHING")
-                .contains("awaiting:")
+                .contains("outcome=question")
                 .contains("drop the cache");
     }
 
     /**
-     * All three outcomes of a round end at REVIEW_PENDING, so the human is advised from the MESSAGE. Without
-     * the "no changes" marker a round that touched nothing is advised as a ship, and that ship returns the task
-     * to CI_POLLING where the next poll relays the same threads.
+     * All three outcomes of a round end at REVIEW_PENDING, so the human is advised from the OUTCOME the agent
+     * reports. Without it a round that touched nothing is advised as a ship, and that ship only starts another
+     * round on the same unresolved threads.
      */
     @Test
     void asksTheAgentToReportWhetherTheRoundChangedAnything() {
@@ -170,8 +170,8 @@ class ReviewSweepServiceTest {
 
         verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
-                .contains("\"no changes: <why, few words>\"")
-                .contains("Never say this if you edited a file")
+                .contains("outcome=no_changes")
+                .contains("jagt reads the worktree")
                 .contains("The file holds DRAFTS: post nothing and resolve");
     }
 
@@ -189,7 +189,8 @@ class ReviewSweepServiceTest {
         sweep.sweep("ABC-1");
 
         verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue()).contains("When the build is fixed locally, set status REVIEW_PENDING.");
+        assertThat(relayed.getValue())
+                .contains("When the build is fixed locally, set status REVIEW_PENDING (outcome=progress).");
     }
 
     @Test

@@ -34,8 +34,20 @@ public class AgentStatusReports {
     private final StateService stateService;
     private final Notifications notifications;
     private final FlowReports flow;
+    private final WorktreeChanges worktreeChanges;
 
+    /** For jagt's own reports, which carry no outcome of an agent's and no request to link. */
     public String report(String status, String message, String taskId) {
+        return report(status, message, null, null, taskId);
+    }
+
+    /**
+     * @param outcome          what this report SAYS about a review round, from the tool's own vocabulary; null
+     *                         falls back to the marker the message opens with
+     * @param reviewRequestUrl the request this report is about, instead of one scraped out of the message
+     */
+    public String report(String status, String message, String outcome, String reviewRequestUrl,
+                         String taskId) {
         TaskStatus newStatus;
         try {
             newStatus = TaskStatus.valueOf(status.trim().toUpperCase());
@@ -43,10 +55,13 @@ public class AgentStatusReports {
             throw new IllegalArgumentException("Unknown status '" + status + "'. Allowed: "
                     + List.of(TaskStatus.values()));
         }
-        String shortMessage = abbreviate(message);
         Optional<TaskState> current = stateService.task(taskId);
-        // A message is cut down to one dashboard line, and a cut URL is a dead link.
-        String url = extractUrl(message);
+        String shortMessage = abbreviate(stated(message, outcome, current));
+        // A message is cut down to one dashboard line, and a cut URL is a dead link. The named request wins: a
+        // url is a fact, and finding it in prose is a guess about where the agent put it.
+        String url = reviewRequestUrl == null || reviewRequestUrl.isBlank()
+                ? extractUrl(message)
+                : reviewRequestUrl.strip();
         // The dashboard is the SSOT for "where is my request" — a linkless CI_POLLING is a lie. An agent with
         // a question hands the round back at REVIEW_PENDING instead, where the question IS what the board shows.
         if (newStatus == TaskStatus.CI_POLLING && url == null) {
@@ -169,6 +184,45 @@ public class AgentStatusReports {
         return round.draftedReplies() && round.report() != AgentReport.NO_CHANGES
                 ? hint + " — drafted replies wait in review_replies.md"
                 : hint;
+    }
+
+    /**
+     * What this report SAYS about a round, written into the message as the one marker `AgentReport` parses — the
+     * typed argument first, the agent's own opening as the fallback for a session briefed before it existed.
+     *
+     * <p>NO_CHANGES is then CHECKED: "I changed nothing" is the one claim jagt can measure, and a round that
+     * edited files is a diff for the human to read whatever it called itself. Nothing else here is verifiable —
+     * a question is a question because the agent says so.
+     */
+    private String stated(String message, String outcome, Optional<TaskState> task) {
+        AgentReport claimed = claimed(outcome, message);
+        String detail = AgentReport.withoutMarker(message);
+        if (claimed == AgentReport.NO_CHANGES && task.filter(worktreeChanges::anyUncommitted).isPresent()) {
+            log.atInfo().addKeyValue("task", task.get().alias())
+                    .log("report says no changes, but the worktree has uncommitted work — recorded as a round"
+                            + " with a diff");
+            claimed = AgentReport.PLAIN;
+        }
+        return switch (claimed) {
+            case QUESTION -> marked("awaiting", detail);
+            case NO_CHANGES -> marked("no changes", detail);
+            case PLAIN -> message == null ? null : detail;
+        };
+    }
+
+    private static AgentReport claimed(String outcome, String message) {
+        if (outcome == null || outcome.isBlank()) {
+            return AgentReport.of(message);
+        }
+        return switch (outcome.strip().toLowerCase()) {
+            case "question" -> AgentReport.QUESTION;
+            case "no_changes" -> AgentReport.NO_CHANGES;
+            default -> AgentReport.of(message);
+        };
+    }
+
+    private static String marked(String marker, String detail) {
+        return detail.isBlank() ? marker : marker + ": " + detail;
     }
 
     private static String extractUrl(String text) {

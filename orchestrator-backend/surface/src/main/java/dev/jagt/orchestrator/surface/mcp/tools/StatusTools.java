@@ -26,16 +26,19 @@ public class StatusTools implements McpTools {
     public void declare(McpToolRegistry tools) {
         tools.tool("update_agent_status", """
                 {
-                  "description": "Update the task status and keep-alive timestamp in state.json. Sub-agents MUST call this frequently to avoid Watchdog alerts, and MUST call it with a message starting `awaiting:` BEFORE putting any question to the human — an interactive choice in your own window reaches nobody, and this call is the only thing that puts the question on their board. taskId defaults to the calling worktree's task.",
+                  "description": "Update the task status and keep-alive timestamp in state.json. Sub-agents MUST call this frequently to avoid Watchdog alerts, and MUST call it with outcome=question BEFORE putting any question to the human — an interactive choice in your own window reaches nobody, and this call is the only thing that puts the question on their board. taskId defaults to the calling worktree's task.",
                   "type": "object",
                   "properties": {
                     "status": {"type": "string", "enum": [%s]},
-                    "message": {"type": "string", "description": "Progress note, 10 words MAX — it renders as one narrow dashboard table line (longer text is truncated). Three openings are read by jagt, not just by the human: `awaiting: <question>` hands the task to them and pings, `no changes: <why>` says a review round edited nothing, anything else is a plain note."},
+                    "outcome": {"type": "string", "enum": ["progress", "question", "no_changes"], "description": "What this report says about the work, in jagt's own words rather than yours: `question` = you have STOPPED and need the human (the message is the question), `no_changes` = a review round edited no code (all comments already handled, or you pushed back on every one), `progress` = anything else. Checked where it can be: report no_changes over an edited worktree and it is recorded as a round with a diff."},
+                    "reviewRequestUrl": {"type": "string", "description": "The review request this report is about. Required with CI_POLLING (jagt links it, and the board is where the human follows it)."},
+                    "message": {"type": "string", "description": "For the HUMAN, 10 words MAX — it renders as one narrow dashboard table line (longer text is truncated). No marker words: what the report MEANS is the outcome field."},
                     "taskId": {"type": "string", "description": "Optional explicit task id or alias (Master use). Sub-agents may only target their own task."}
                   },
                   "required": ["status"]
                 }""".formatted(STATUS_ENUM),
                 (args, caller) -> statusReports.report(text(args, "status"), text(args, "message"),
+                        text(args, "outcome"), text(args, "reviewRequestUrl"),
                         callerScope.resolve(text(args, "taskId"), caller)));
 
         tools.tool("notify_user", """

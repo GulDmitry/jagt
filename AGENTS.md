@@ -104,7 +104,7 @@ link to it, because no file here is named after one vendor.
     `ShipService.requireShippable` calls — the dashboard used to advise independently of the gate, which is
     exactly how they drifted apart.
   - A BLOCKED SESSION IS ON THE DASHBOARD, WHATEVER BLOCKED IT — the owner's rule (2026-08-19), and it has two
-    halves because a stopped agent may or may not manage to say so. The agent's own half is `awaiting: …` BEFORE
+    halves because a stopped agent may or may not manage to say so. The agent's own half is `outcome=question` BEFORE
     it puts any question to a human (`sub-agent-context.md` rule 1, and the `update_agent_status` tool
     description says it too — a worktree is briefed once, while a tool description reaches every session): `AgentReport.QUESTION` flips `Move.owner`
     to YOU from whatever status it kept, `DashboardLine` reads NEEDS INPUT, and `AgentStatusReports` pings once,
@@ -115,7 +115,7 @@ link to it, because no file here is named after one vendor.
     LIVE SESSION SITTING AT A PROMPT, and that is measured, not assumed: a Claude window waiting on a question
     repaints every 10-30s (2026-08-20), so the window half of the probe stays warm forever and no stamp is ever
     written. An agent asking anything — its own question tool, a plan to approve, a permission prompt — is
-    therefore reachable ONLY through its own `awaiting:` report, which is why that rule is rule 1 of the brief and
+    therefore reachable ONLY through its own `outcome=question` report, which is why that rule is rule 1 of the brief and
     why the `update_agent_status` tool description carries it as well: a worktree is briefed once, at creation,
     while a tool description is read by every session that starts. Three things hold it up: every
     status whose `Move.ownerOf` is AGENT is watched by the watchdog (pinned in `WatchdogServiceTest` — a status
@@ -553,19 +553,25 @@ link to it, because no file here is named after one vendor.
 - A REVIEW ROUND IS A JUDGEMENT, NOT A WORK ORDER. Relay a bare list of comments and the agent implements all
   of them — including the ones wrong about the architecture, which the reviewer could not see from the diff —
   and the human then reads agreement into code that was only obedient. `ReviewSweepService.brief` therefore
-  opens with the three routes per comment (fix / change NOTHING and say why / ask via `awaiting:` before
-  guessing), and `sub-agent-context.md` carries the same stance for the task itself. A question ENDS the round
-  (REVIEW_PENDING, message `awaiting: …`) rather than parking in CI_POLLING, because the wait is the human's and
+  opens with the three routes per comment (fix / change NOTHING and say why / ask via `outcome=question`
+  before guessing), and `sub-agent-context.md` carries the same stance for the task itself. A question ENDS the round
+  (REVIEW_PENDING, `outcome=question`) rather than parking in CI_POLLING, because the wait is the human's and
   the card has to say so — what keeps the agent from being re-briefed on the comments it was told to hold is
   `AgentSessions.relayIfChanged`, not the status it left: a relay NUDGES the session, so a brief the file already
   holds is an interruption to re-decide answered comments, and the poll writes nothing and says nothing instead.
   Deliberately NOT extended to jagt's orchestration steps: a commit/ship instruction IS the human's approval
   and is executed as given.
-- A ROUND REPORTS ITS OUTCOME, because all three end at REVIEW_PENDING and the human is advised from the
-  MESSAGE: `awaiting: …` = a question, `no changes: …` = nothing was edited (already handled, or every comment
-  pushed back on), anything else = there is a diff to read. `flow/AgentReport` is the ONE parser of that
-  vocabulary (`Move` and `DashboardLine` both read it, so they cannot disagree), and `Move` is total over
-  (status × report). Why it matters: advising SHIP for a no-change round is a LOOP — the ship commits nothing and
+- A ROUND REPORTS ITS OUTCOME AS A FIELD, NOT AS A TURN OF PHRASE, because all three end at REVIEW_PENDING and
+  the human is advised from it: `update_agent_status` takes `outcome` (`question` | `no_changes` | `progress`) and
+  `reviewRequestUrl`, so the two structural facts stop being scraped out of prose — the marker that
+  `flow/AgentReport` parses is then written by JAGT (`AgentStatusReports.stated`), and the message is the human's
+  sentence. The prefix an agent typed itself is still read, as the FALLBACK: a worktree keeps the brief it was
+  created with. `AgentReport` stays the ONE parser of the vocabulary (`Move` and `DashboardLine` both read it, so
+  they cannot disagree), and `Move` is total over (status × report). ONE of the three is CHECKED rather than
+  believed: `no_changes` over a worktree holding uncommitted work is recorded as a round WITH a diff
+  (`WorktreeChanges` — one `git status` per report, never per render), because that claim is the one that
+  suppresses the ship advice and a hidden diff is what a human would then never read. A question is not
+  checkable, and no schema makes it so. Why it matters: advising SHIP for a no-change round is a LOOP — the ship commits nothing and
   starts another round on the same unresolved threads. So NO_CHANGES highlights nothing and says the open threads
   are the reviewer's move.
 - A REPLY DOES NOT RESOLVE A THREAD, and the sweep relays every UNRESOLVED one (`resolvable && !resolved`), so

@@ -230,6 +230,31 @@ public class GitService {
     }
 
     /**
+     * Whether the agent's work is sitting in this worktree uncommitted — what a round that says it changed
+     * nothing can be CHECKED against, rather than believed. jagt's own generated files are excluded exactly as
+     * they are from a commit, so a freshly provisioned worktree does not read as work.
+     */
+    public boolean hasUncommittedChanges(Path projectPath, Path worktree) {
+        return withRepoLock(projectPath, () -> branchNames(processRunner.run(worktree, GIT_TIMEOUT,
+                                List.of("git", "status", "--porcelain"))
+                        .expectSuccess("git status in " + worktree).stdout()).stream()
+                .map(GitService::changedPath)
+                .anyMatch(path -> !WorktreeFiles.GENERATED.contains(path)));
+    }
+
+    /**
+     * The path out of one {@code git status --porcelain} line — {@code XY path}, or {@code XY old -> new} for a
+     * rename. Split at the FIRST space of the already-stripped line rather than at a fixed offset: the status
+     * field is one or two letters wide, and a path may hold spaces of its own.
+     */
+    private static String changedPath(String porcelainLine) {
+        int afterStatus = porcelainLine.indexOf(' ');
+        String path = afterStatus < 0 ? porcelainLine : porcelainLine.substring(afterStatus + 1).strip();
+        int renamed = path.indexOf(" -> ");
+        return renamed < 0 ? path : path.substring(renamed + 4);
+    }
+
+    /**
      * Pushes ONE branch, with a refspec explicit on both sides so it cannot follow HEAD or an upstream.
      * Never {@code --force} (a diverged branch is a human's call) and never {@code -u} (see
      * {@link #detachUpstream}).

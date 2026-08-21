@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * What an agent reports about itself. The rules here are about NOT lying to the human: a linkless CI_POLLING,
@@ -35,6 +37,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class AgentStatusReportsTest {
 
     private final Notifications notifications = mock(Notifications.class);
+    private final WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
 
     private static StateService stateIn(Path root) {
         return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -42,7 +45,7 @@ class AgentStatusReportsTest {
     }
 
     private AgentStatusReports reports(StateService state) {
-        return new AgentStatusReports(state, notifications, new FlowReports(state));
+        return new AgentStatusReports(state, notifications, new FlowReports(state), worktreeChanges);
     }
 
     @Test
@@ -53,6 +56,57 @@ class AgentStatusReportsTest {
         reports(state).report("CI_POLLING", "MR: https://gitlab/x/-/merge_requests/9", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo("https://gitlab/x/-/merge_requests/9");
+    }
+
+    /** The url is a fact the caller has; finding it in prose is a guess about where the agent put it. */
+    @Test
+    void takesTheRequestLinkFromTheArgumentRatherThanFromTheProse(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+
+        reports(state).report("CI_POLLING", "handed over", null,
+                "https://gitlab/x/-/merge_requests/9", "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo("https://gitlab/x/-/merge_requests/9");
+    }
+
+    /** The marker is jagt's vocabulary, so the agent picks the outcome and jagt writes the word. */
+    @Test
+    void readsTheOutcomeFromTheArgumentWhenTheMessageCarriesNoMarker(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+
+        reports(state).report("IN_PROGRESS", "which cache should this use", "question", null, "ABC-1");
+
+        assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message()))
+                .isEqualTo(AgentReport.QUESTION);
+    }
+
+    /**
+     * "I changed nothing" is the one claim jagt can measure, and a NO_CHANGES round is advised as nothing to
+     * ship — over an edited worktree that advice would hide a diff the human has not read.
+     */
+    @Test
+    void recordsARoundWithADiffWhenTheWorktreeContradictsANoChangesClaim(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .mrUrl("https://host/mr/1").build());
+        when(worktreeChanges.anyUncommitted(any())).thenReturn(true);
+
+        reports(state).report("REVIEW_PENDING", "already handled", "no_changes", null, "ABC-1");
+
+        assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message())).isEqualTo(AgentReport.PLAIN);
+    }
+
+    @Test
+    void keepsANoChangesRoundThatTheWorktreeBearsOut(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .mrUrl("https://host/mr/1").build());
+
+        reports(state).report("REVIEW_PENDING", "already handled", "no_changes", null, "ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("no changes: already handled");
     }
 
     @Test
@@ -308,7 +362,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.APPROVED)
                 .alias("a1").mrUrl("https://host/mr/1").build());
-        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state));
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state), worktreeChanges);
 
         assertThatThrownBy(() -> reports.report("CI_POLLING", "review request: https://host/mr/1", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)

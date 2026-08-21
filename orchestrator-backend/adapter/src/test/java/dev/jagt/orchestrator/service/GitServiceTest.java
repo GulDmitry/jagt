@@ -45,6 +45,30 @@ class GitServiceTest {
     }
 
     /**
+     * What a round claiming it changed nothing is checked against. jagt writes its own files into every
+     * worktree, so counting those as work would call every task dirty the moment it was created.
+     */
+    @Test
+    void readsTheWorkAWorktreeHoldsUncommittedAndIgnoresJagtsOwnFiles(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        Files.createDirectories(repo);
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        Files.writeString(repo.resolve("a file.java"), "class A {}");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+
+        Files.writeString(repo.resolve("task_context.md"), "the round brief");
+        assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
+
+        Files.writeString(repo.resolve("a file.java"), "class A { int x; }");
+        assertThat(git.hasUncommittedChanges(repo, repo)).isTrue();
+    }
+
+    /**
      * A fetch refreshes {@code origin/main} but never fast-forwards a checkout-less local branch, so cutting
      * from the local spelling would inherit whatever the clone last saw instead of what the teammate pushed.
      */
