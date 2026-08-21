@@ -1,13 +1,5 @@
 # jagt — TODO
 
-## Split `:usecase` from `:adapter` (open, needs one decision)
-
-`:core` is its own module and the compiler now enforces the centre's direction. The next split cycles:
-`adapter/Executables` (PATH + the known install directories) is read by `config/` and `startup/ToolchainCheck`,
-while `adapter/` reads `config/` 21 times. The way out is to resolve a binary WHERE IT IS SPAWNED instead of when
-the config record is built — a change to how binaries are found, which is what broke `ide` on this machine once
-before. Decide it deliberately, then the split is mechanical.
-
 ## Composition checks nobody can write yet (open)
 
 - every (status × capability × outcome) decided — needs a capability to declare which outcomes it can return.
