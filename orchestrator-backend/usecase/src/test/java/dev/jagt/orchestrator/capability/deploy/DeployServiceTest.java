@@ -60,6 +60,23 @@ class DeployServiceTest {
         assertThat(outcome.stamp()).isEqualTo("deployed to dev");
     }
 
+    @Test
+    void aBlockedDeployWithNothingLandedNamesTheObstacleInsteadOfAdvisingTheSameRunAgain(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenThrow(
+                new GitService.ForeignDeployWorktreeException(Path.of("/repos/ABC-1-deploy"), Path.of("/repos/x")));
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        Outcome outcome = deploys.deploy("a1");
+
+        assertThat(outcome.message()).contains("/repos/ABC-1-deploy")
+                .doesNotContain("Run `deploy ABC-1` again");
+    }
+
     /** Without the commit stored, `revert` has nothing exact to undo and can only send the human to git. */
     @Test
     void recordsTheMergeCommitTheDeployCreatedSoItCanBeReverted(@TempDir Path root) {

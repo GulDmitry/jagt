@@ -125,6 +125,62 @@ class GitServiceTest {
     }
 
     @Test
+    void deploysThroughADeployPathAnEditorRecreatedAfterTheWorktreeWasRemoved(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("g.txt"), "task");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+        Files.createDirectories(dir.resolve("ABC-1-deploy").resolve(".idea"));
+        Files.writeString(dir.resolve("ABC-1-deploy").resolve(".idea").resolve("misc.xml"), "<project/>");
+
+        new GitService(runner, new LsofWorktreeProcesses(runner)).mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
+                .contains("task");
+        assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    }
+
+    @Test
+    void refusesToDeployThroughADeployPathHoldingSomethingJagtDidNotPutThere(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("g.txt"), "task");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+        Files.createDirectories(dir.resolve("ABC-1-deploy"));
+        Files.writeString(dir.resolve("ABC-1-deploy").resolve("notes.txt"), "mine");
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitService.StaleDeployPathException.class)
+                .hasMessageContaining("ABC-1-deploy")
+                .hasMessageContaining("notes.txt");
+        assertThat(dir.resolve("ABC-1-deploy").resolve("notes.txt")).hasContent("mine");
+    }
+
+    @Test
     void deployConflictLeavesADeployWorktreeAndNeverModifiesTheTaskBranch(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);

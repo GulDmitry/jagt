@@ -52,6 +52,7 @@ public class DeployService {
         List<String> nothingToDo = new ArrayList<>();
         List<String> blocked = new ArrayList<>();
         GitService.NothingToDeployException idle = null;
+        GitService.ForeignDeployWorktreeException obstacle = null;
         int from = resumeFrom(task, taskId, targets);
         for (int i = from; i < targets.size(); i++) {
             Target target = targets.get(i);
@@ -67,6 +68,7 @@ public class DeployService {
                 // Coming back to this repository beats refusing the whole sequence — the sibling holding the
                 // shared path is in this very list.
                 blocked.add(target.project());
+                obstacle = obstacle == null ? e : obstacle;
                 continue;
             } catch (GitService.MergeConflictException e) {
                 return handBackConflict(taskId, targets, i, e);
@@ -78,7 +80,7 @@ public class DeployService {
             editorDriver.forgetProject(GitService.deployWorktreePath(target.path(), taskId));
         }
         if (!blocked.isEmpty()) {
-            return notFinished(taskId, merged, blocked);
+            return notFinished(taskId, merged, blocked, obstacle);
         }
         // Nothing landed and nothing resumed past means there was nothing to deploy at all; a RESUMED sequence
         // whose remainder is all idle is finished.
@@ -88,12 +90,20 @@ public class DeployService {
         return deployed(taskId, targets, from, merged, nothingToDo);
     }
 
-    /** Some repositories landed and at least one never started, so the task is NOT deployed and deploy repeats. */
-    private Outcome notFinished(String taskId, Map<String, String> merged, List<String> blocked) {
+    /**
+     * At least one repository never started, so the task is NOT deployed. A repeat is advised only where
+     * something DID land: the holder of the shared path is then a sibling that has just released it, and the next
+     * pass gets through. With nothing landed nothing was released either, so the same run would refuse again —
+     * there the obstacle itself is what the human is told, in the words that name the path and what to do with it.
+     */
+    private Outcome notFinished(String taskId, Map<String, String> merged, List<String> blocked,
+                                GitService.ForeignDeployWorktreeException obstacle) {
         List<String> landed = List.copyOf(merged.keySet());
-        return Outcome.partial("deploy " + taskId + ": merged " + names(landed)
-                + ", but " + names(blocked) + " could not start while the shared deploy worktree path held"
-                + " another repository's checkout. Run `deploy " + taskId + "` again.",
+        String next = landed.isEmpty()
+                ? " never started: " + obstacle.getMessage()
+                : " could not start while the shared deploy worktree path held another repository's checkout."
+                        + " Run `deploy " + taskId + "` again.";
+        return Outcome.partial("deploy " + taskId + ": merged " + names(landed) + ", but " + names(blocked) + next,
                 "deploy stopped part way — live on the deploy branch: " + names(landed)
                         + ". NOT deployed: " + names(blocked) + ".", null);
     }

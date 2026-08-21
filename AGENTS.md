@@ -506,7 +506,15 @@ link to it, because no file here is named after one vendor.
     anything: `GitService.hasDeployWorktree` asks git who cut it, `mergeIntoAndPush` REFUSES to finish a worktree
     another repository owns (it would push that repository's work to this one's remote), and only a task handed
     back at DEPLOY_CONFLICT resumes at one — a leftover from any other round would make the deploy skip the
-    repositories before it and still call the task deployed. NOTHING TO DEPLOY IS NOT A FAILURE
+    repositories before it and still call the task deployed. A DIRECTORY THAT IS NO CHECKOUT IS NOT AN OBSTACLE
+    AND NEVER A SIBLING'S CONFLICT (2026-08-21, and it cost a whole morning of `deploy` refusing the same task):
+    `ide` on a deploy worktree leaves the editor holding it, so after the worktree is removed the editor writes
+    its project files back into the empty directory — and a path holding `.idea` and nothing else was reported as
+    another repository's checkout, which no repeat could ever clear. That residue is DELETED and the deploy goes
+    on (`clearEditorResidue`); a path holding anything else is left untouched and NAMED
+    (`StaleDeployPathException`). The blocked sentence follows the same rule: a repeat is advised only when
+    something LANDED, because that is the case where the sibling holding the path has just released it — with
+    nothing landed the human gets the obstacle instead of an instruction that loops. NOTHING TO DEPLOY IS NOT A FAILURE
     (`GitService.NothingToDeployException`): a repository whose branch adds nothing — never touched by the change,
     or already on the branch — is passed over and named, which is also what makes starting the sequence over
     harmless when no worktree answers. A stop for any OTHER reason leaves the status alone (there is nothing to

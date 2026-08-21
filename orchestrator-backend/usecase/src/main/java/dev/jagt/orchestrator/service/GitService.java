@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
@@ -28,6 +29,8 @@ import java.util.stream.Stream;
 public class GitService {
 
     private static final Duration GIT_TIMEOUT = Duration.ofMinutes(3);
+    /** What an editor or the OS writes into a directory of its own accord; none of it is anybody's work. */
+    private static final Set<String> EDITOR_RESIDUE = Set.of(".idea", ".vscode", ".fleet", ".DS_Store");
 
     private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();
     private final Processes processRunner;
@@ -330,10 +333,13 @@ public class GitService {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
             if (Files.isDirectory(deployWorktree)) {
-                if (!hasDeployWorktree(projectPath, sourceBranch)) {
+                if (hasDeployWorktree(projectPath, sourceBranch)) {
+                    return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
+                }
+                if (worktreeOwner(deployWorktree).isPresent()) {
                     throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
                 }
-                return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
+                clearEditorResidue(deployWorktree);
             }
             // Deploy is decoupled from review state: its ONLY precondition is committed work to ship.
             String ahead = processRunner.run(projectPath, GIT_TIMEOUT,
@@ -521,6 +527,27 @@ public class GitService {
                 .isPresent();
     }
 
+    /**
+     * A path that is no checkout at all cannot be another repository's conflict, and calling it one refuses every
+     * later deploy for good. It is jagt's own leftover: git removed the worktree, and the editor jagt had opened
+     * on it wrote its project files back into the empty directory. That is deleted and the deploy goes on;
+     * anything else found there is left untouched and named, since only a human knows what put it there.
+     */
+    private void clearEditorResidue(Path path) {
+        List<String> kept;
+        try (var entries = Files.list(path)) {
+            kept = entries.map(entry -> entry.getFileName().toString())
+                    .filter(name -> !EDITOR_RESIDUE.contains(name)).sorted().toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not read the deploy worktree path " + path, e);
+        }
+        if (!kept.isEmpty()) {
+            throw new StaleDeployPathException(path, kept);
+        }
+        log.info("Deleting {} — an editor left it behind after the deploy worktree was removed", path);
+        forceDeleteDir(path);
+    }
+
     /** The repository a checkout belongs to, empty when it is not a checkout at all. */
     private Optional<Path> worktreeOwner(Path worktree) {
         if (!Files.isDirectory(worktree)) {
@@ -569,6 +596,16 @@ public class GitService {
      * repository's remote, so nothing is attempted; typed so a caller landing SEVERAL repositories can come back
      * to this one once the path is free.
      */
+    /** The path a deploy needs is occupied by something jagt did not put there, so nothing was touched. */
+    public static class StaleDeployPathException extends IllegalStateException {
+
+        public StaleDeployPathException(Path deployWorktree, List<String> kept) {
+            super("The deploy worktree path " + deployWorktree + " is not a checkout but holds "
+                    + String.join(", ", kept) + ", so nothing can be deployed from there. Move or delete that"
+                    + " directory, then deploy again.");
+        }
+    }
+
     public static class ForeignDeployWorktreeException extends IllegalStateException {
 
         public ForeignDeployWorktreeException(Path deployWorktree, Path projectPath) {
