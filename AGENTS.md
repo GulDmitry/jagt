@@ -379,15 +379,18 @@ link to it, because no file here is named after one vendor.
   background `TicketTitleBackfill` filled the title in later) is GONE, and so is the backfill — a card being
   worked on whose ticket link is missing cannot be repaired afterwards, because no later read can tell an item
   that HAS no link from one that was never reached, and that is exactly the state a task sat in for a day
-  (2026-08-20). `TicketFacts.usable()` is the gate — a key AND a link; the title is optional, an item may honestly
-  have none — and an answer that fails it is asked AGAIN (`TicketReader`: 5 attempts, 2s apart, bounded by two
+  (2026-08-20). `TicketFacts.usable()` is the gate — a key, a title AND a link, all three, because an item that
+  EXISTS has all three and a card missing one is a card nobody can tell from the next — and an answer that
+  fails it is asked AGAIN (`TicketReader`: 5 attempts, 2s apart, bounded by two
   minutes so a launch a human is waiting on cannot hang on five CLI timeouts), because a model that never found
   its tracker tool reports precisely the `exists=false` a deleted item reports. Believing the first denial is what
   lost a live ticket its title and its url while the agent worked on it. Only a MODEL's negative is re-asked: a
   configured `Tracker`'s "no such item" is a fact, and re-reading it through a paid call is the fallback that rule
   already forbids. A bare key whose read answers a DIFFERENT key is refused as well, naming both. The price is
   deliberate: every `do` now pays for one ticket read — free with a tracker configured, one metered model call
-  without one.
+  without one. A SOURCE WITH NO SUMMARY OF ITS OWN IS NOT AN EXCEPTION TO THE GATE, it is the read's job: the
+  prompt has the reader write a title of its own from the description in that case, since a reader that reached
+  the item at all can name it in a few words. Nothing invents a URL — that one is read or the launch refuses.
 - `ship` is DETERMINISTIC when a `CodeHost` owns the repository: `ShipService` commits the worktree, pushes the
   task branch and opens/updates the review request in-process (`GitService.commitAll`/`pushBranch` +
   `CodeHost.createOrUpdateMergeRequest`), then sets CI_POLLING with the link. No model on that path, so

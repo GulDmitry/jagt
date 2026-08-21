@@ -81,9 +81,8 @@ public class TaskLauncher {
         }
         String taskId = f.key();
         List<String> resolved = chosen != null ? chosen : List.of(resolveByLabels(f));
-        String titled = f.title() == null || f.title().isBlank() ? "" : " — \"" + f.title() + "\"";
-        String instructions = withNotes("Implement " + taskId + titled
-                + ". Read it via your issue-tracker MCP for full details, then work.", request.notes());
+        String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
+                + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
         String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
                 .title(f.title()).ticketUrl(f.url()).build());
         // Only NOW does the task exist, so only now can the read that named it be charged to it —

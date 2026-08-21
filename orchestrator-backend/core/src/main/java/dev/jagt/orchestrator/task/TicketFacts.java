@@ -19,14 +19,15 @@ public record TicketFacts(boolean exists, String key, String title, String track
                           String url) {
 
     /**
-     * Whether the read came back with the two facts nothing downstream can be reconstructed without — the key
-     * that names the work and the link a human opens. A reader that never reached the item reports the same
-     * {@code exists=false} as an item that is genuinely gone, and an {@code exists=true} missing either of those
-     * is that same non-answer in a shape a schema accepts, so a caller decides on this and never on
-     * {@link #exists} alone. A title is NOT required: an item may honestly have none.
+     * Whether the read came back with everything an item that EXISTS must have: the key that names the work, the
+     * link a human opens, and a title to tell it apart from the next one. A reader that never reached the item
+     * reports the same {@code exists=false} as an item that is genuinely gone, and an {@code exists=true}
+     * missing any of the three is that same non-answer in a shape a schema accepts — so a caller decides on
+     * this and never on {@link #exists} alone. A source with no summary of its own is not the exception: a
+     * reader that can read the item at all can name it in a few words.
      */
     public boolean usable() {
-        return exists && notBlank(key) && notBlank(url);
+        return exists && notBlank(key) && notBlank(title) && notBlank(url);
     }
 
     private static boolean notBlank(String value) {

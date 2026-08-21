@@ -94,8 +94,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " with the matching MCP tool: if it is a URL, follow the URL — do NOT try to parse a key"
                 + " out of it. Return exists=true with its canonical issue key as key, its summary as"
                 + " title, its project key as trackerProject, its labels, and its canonical web URL as url"
-                + " (the human-facing link to the item; empty string if the tracker has none). If it"
-                + " cannot be read, exists=false with empty strings and array.";
+                + " — the link the item itself reports, never one you assemble. Where the item carries no"
+                + " summary of its own, WRITE the title yourself: at most eight words naming what the item"
+                + " asks for, from its description. Never answer exists=true with an empty title or an"
+                + " empty url. If it cannot be read at all, exists=false with empty strings and array.";
         return ask(prompt, TICKET_SCHEMA, ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
