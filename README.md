@@ -188,7 +188,7 @@ branch and the other deletes a worktree.
 
 `orchestrator.ui=tui` gives the full-screen terminal UI instead. Its dashboard repaints the moment an agent
 reports in (the timer only refreshes the relative clock), tells you how long each task has been in its current
-status, and points at drafted review replies when the agent has written any. Talk to it:
+status, and points at drafted review replies when the agent has written any (`replies <ticket>` shows them). Talk to it:
 
 | command | effect |
 |---------|--------|
@@ -200,6 +200,7 @@ status, and points at drafted review replies when the agent has written any. Tal
 | `focus <ticket>` | jump to the agent's session — **talk to the agent directly there** |
 | `ide <ticket>` | open the worktree as a project (**Git → Local Changes** = live diff). `ide <ticket> diff` opens a static snapshot vs the `deployBranch` (a task started `from <branch>` diffs against that branch instead; falls back to `baseBranch`) — does not auto-refresh |
 | `sweep <ticket>` | pull the request's checks + comments; the agent fixes locally and drafts replies (nothing pushed). The checks stay visible afterwards — a dot on the card, `CHECKS RED · …` on the console line, and one notification the first time a run goes red. `review` still works — the old spelling of the same verb |
+| `replies [ticket]` | every comment of the round with the verdict and the reply that will be posted for it, on screen — the drafted answers themselves, not a pointer at `review_replies.md`. Named no ticket it shows every round that is holding drafts. On the board the line announcing them on the card opens the same report |
 | `ship <ticket>` | approved: jagt itself commits (title from `mrTitlePattern`), pushes the task branch and opens or updates the review request over the code host's API — no model involved, so nothing can stall or reword it. Only the drafted replies stay with the agent, as a follow-up. Without `orchestrator.code-host` configured it falls back to instructing the agent, as before |
 | `resume <request-url>` | reopened review request: resume its branch with existing commits and link that request → `CI_POLLING` (no new one is opened). The request's own target branch is remembered, so the next `ship` updates it instead of opening a second one |
 | `deploy <ticket>` | merge the task branch into `deployBranch` and push — always as a merge commit (`--no-ff`), which is what lets `revert` take the whole task back out in one go. On conflict nothing is pushed: the task goes `DEPLOY_CONFLICT`, `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, then `deploy` again |

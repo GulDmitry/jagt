@@ -22,7 +22,7 @@ class BoardApiControllerTest {
     private record Declared(String id, String hint, boolean report, boolean consoleOnly) implements GlobalCommand {
         @Override
         public String run(String tail) {
-            return id + " report";
+            return tail.isBlank() ? id + " report" : id + " report about " + tail;
         }
     }
 
@@ -72,19 +72,24 @@ class BoardApiControllerTest {
     /** One address for every report, so declaring another one needs no endpoint. */
     @Test
     void servesAReportUnderTheIdOfTheCommandThatProducesIt() {
-        assertThat(api.report("stats")).isEqualTo("stats report");
+        assertThat(api.report("stats", null)).isEqualTo("stats report");
+    }
+
+    @Test
+    void passesWhatTheBoardAsksAboutToTheCommandItself() {
+        assertThat(api.report("stats", "a1")).isEqualTo("stats report about a1");
     }
 
     /** A GET must not be able to start a task, whatever id is put in the URL. */
     @Test
     void refusesToRunACommandThatIsNotAReport() {
-        assertThatThrownBy(() -> api.report("do")).isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> api.report("do", null)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No report 'do'");
     }
 
     @Test
     void refusesAReportOnlyTheConsoleCouldShow() {
-        assertThatThrownBy(() -> api.report("status")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> api.report("status", null)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

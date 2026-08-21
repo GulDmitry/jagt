@@ -139,10 +139,14 @@ a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid;
 .detail.problem { color: var(--danger); font-weight: 600; }
 .pulse.stalled { color: var(--you); }
 /* Drafted replies are a "read this before you ship" nudge, not an error: warm, not red. */
+/* A button, because it opens the round it announces; it keeps the badge's look rather than a button's frame,
+   so the card gains no second control row. */
 .drafts {
   font-size: 12px; margin: 4px 0; padding: 3px 7px; border-radius: 6px;
   background: var(--you-bg); color: var(--you); font-weight: 600;
+  display: block; width: 100%; text-align: left; border: 1px solid transparent;
 }
+.drafts:hover:not(:disabled) { border-color: var(--you); color: var(--you); }
 a { color: var(--accent); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .actions button { font-size: 12px; padding: 3px 8px; }

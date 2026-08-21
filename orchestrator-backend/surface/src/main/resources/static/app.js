@@ -26,7 +26,15 @@ let renderedProjects = null;
 let projectPicked = false;
 projectSelect.onchange = () => { projectPicked = true; };
 let verbs = [];
-let busy = new Set();
+// What is in flight, and it is TWO questions because they refuse different clicks. `pending` is this exact
+// button (`<task>:<action>`), so a slow launch cannot be fired twice; `writing` is the task whose state
+// something is changing, and every OTHER writing button on that card is refused while it is — two ships on one
+// worktree race. A read-only action is in neither set's way: `sweep` runs for minutes, and being unable to look
+// at the session meanwhile is exactly when a human wants to. WHICH actions write is the server's answer
+// (`action.readOnly`), never a list of ids kept here — and `writing` remembers WHICH move, because a refusal
+// that cannot name what it is waiting for reads as a dead button.
+const pending = new Set();
+const writing = new Map();
 
 // Every piece of a card is BUILT, never interpolated into markup: ids, aliases and project keys come out of a
 // state file the human is invited to edit by hand, and an assumption about their shape is invisible from here.
@@ -383,12 +391,16 @@ function card(task) {
     article_children.push(detail);
   }
 
-  // Nothing else on the page would say the drafted answers exist, and `ship` is what posts them.
+  // Nothing else on the page would say the drafted answers exist, and `ship` is what posts them. The line that
+  // announces them is also what OPENS them: a human approving a round reads it here, not in an editor.
   if (task.draftedReplies) {
-    const drafts = document.createElement('div');
+    const drafts = document.createElement('button');
     drafts.className = 'drafts';
-    drafts.textContent = 'review replies drafted, not posted; ship posts them';
-    drafts.dataset.tip = 'review_replies.md in the worktree';
+    drafts.textContent = 'review replies drafted, not posted \u2014 read them; ship posts them';
+    drafts.dataset.tip = 'every comment and the reply that will be sent for it';
+    const reference = task.alias || task.id;
+    drafts.onclick = () => openReport(`replies ${reference}`,
+      `/api/commands/replies?about=${encodeURIComponent(reference)}`);
     article_children.push(drafts);
   }
 
@@ -404,13 +416,20 @@ function card(task) {
     button.textContent = action.label;
     button.dataset.tip = action.hint;
     if (action.primary) button.className = 'primary';
-    button.disabled = busy.has(task.id);
+    button.disabled = blocked(task, action);
     button.onclick = () => run(task, action);
     row.append(button);
   }
   article.append(...article_children);
   return article;
 }
+
+const inFlightKey = (task, action) => `${task.id}:${action.id}`;
+
+// The palette reaches `run` with no button in between, so what DISABLES a button is also what refuses the click:
+// one expression, or a typed line starts exactly what the card forbids.
+const blocked = (task, action) => pending.has(inFlightKey(task, action))
+  || (!action.readOnly && writing.has(task.id));
 
 function actionRow(group) {
   const row = document.createElement('div');
@@ -458,13 +477,19 @@ const revertQuestion = (task) => {
 const QUESTIONS = {deploy: deployQuestion, revert: revertQuestion};
 
 async function run(task, action) {
+  if (blocked(task, action)) {
+    toast(`${task.id} is already running ${writing.get(task.id) || action.id} — wait for that to finish`, true);
+    return;
+  }
   // `done` destroys a worktree; the shared-branch writes name what they push.
   const ask = QUESTIONS[action.id];
   const question = ask ? ask(task) : `${action.label} ${task.id}?\n\n${action.hint}`;
   if ((ask || action.id === 'done') && !confirm(question)) {
     return;
   }
-  busy.add(task.id);
+  const key = inFlightKey(task, action);
+  pending.add(key);
+  if (!action.readOnly) writing.set(task.id, action.id);
   render();
   try {
     const result = await api(`/api/tasks/${encodeURIComponent(task.id)}/actions/${action.id}`, {method: 'POST'});
@@ -473,7 +498,8 @@ async function run(task, action) {
   } catch (e) {
     toast(refusal(e), true);
   } finally {
-    busy.delete(task.id);
+    pending.delete(key);
+    if (!action.readOnly) writing.delete(task.id);
     await load();
   }
 }
@@ -653,13 +679,20 @@ ask.addEventListener('input', judgeAsk);
 async function runParsed(parsed) {
   const {verb, argument, task} = parsed;
   if (verb.takesTask) {
-    await run(task, {id: verb.id, label: verb.id, hint: verb.hint});
+    // The card's own action carries what the projection said about this verb — whether it writes, above all, so
+    // a typed line locks exactly what the button of the same name locks. A verb the card does not offer counts
+    // as a write, which is the safe side: every read-only action is offered from every status.
+    const offered = (task.actions || []).find((action) => action.id === verb.id);
+    await run(task, offered || {id: verb.id, label: verb.id, hint: verb.hint});
     return `${verb.id} ${task.alias || task.id}`;
   }
-  // Reports are named by the server rather than listed here, so one more needs no branch in this page.
+  // Reports are named by the server rather than listed here, so one more needs no branch in this page. What was
+  // typed after the verb goes with it: a report that narrows to one task must not silently answer for all of them.
   if (verb.report) {
-    showReport(`${verb.id} — ${verb.hint}`, await text(`/api/commands/${encodeURIComponent(verb.id)}`));
-    return verb.id;
+    const about = argument ? `?about=${encodeURIComponent(argument)}` : '';
+    showReport(`${verb.id} ${argument}`.trim(),
+      await text(`/api/commands/${encodeURIComponent(verb.id)}${about}`));
+    return `${verb.id} ${argument}`.trim();
   }
   if (verb.id === 'do') {
     if (!argument) { document.getElementById('ref').focus(); return 'do'; }

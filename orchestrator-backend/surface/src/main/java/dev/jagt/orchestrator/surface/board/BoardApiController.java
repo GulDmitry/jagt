@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.service.UsageTracker;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,12 +57,15 @@ public class BoardApiController {
                 .filter(verb -> !verb.consoleOnly()).toList();
     }
 
-    /** Reports ONLY: a GET must not be able to start work. */
+    /**
+     * Reports ONLY: a GET must not be able to start work. {@code about} carries what a typed line puts after the
+     * verb, so a report that narrows to one task needs no endpoint of its own.
+     */
     @GetMapping(value = "/commands/{id}", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String report(@PathVariable String id) {
+    public String report(@PathVariable String id, @RequestParam(required = false) String about) {
         return globals.byId(id).filter(GlobalCommand::report).filter(command -> !command.consoleOnly())
                 .orElseThrow(() -> new IllegalArgumentException("No report '" + id + "'"))
-                .run("");
+                .run(about == null ? "" : about);
     }
 
     @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

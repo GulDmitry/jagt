@@ -36,11 +36,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -721,6 +723,98 @@ class BoardPageTest {
         assertThat(page.locator("#toasts .toast.error")).containsText("The board is up to date now.");
     }
 
+    /**
+     * The latch IS the behaviour: what a card offers while a move is still running cannot be asserted without
+     * holding one there.
+     */
+    @Test
+    void aMoveInFlightLocksTheButtonsThatWriteAndLeavesTheLookOnlyOnesClickable() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+        CountDownLatch sweeping = new CountDownLatch(1);
+        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenAnswer(invocation -> {
+            sweeping.await(10, TimeUnit.SECONDS);
+            return "sweep ABC-1: checks success";
+        });
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Check review").setExact(true)).click();
+
+        try {
+            assertThat(page.getByRole(AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Focus").setExact(true))).isEnabled();
+            assertThat(page.getByRole(AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Open IDE").setExact(true))).isEnabled();
+            assertThat(page.getByRole(AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Diff").setExact(true))).isEnabled();
+            assertThat(page.getByRole(AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Ship").setExact(true))).isDisabled();
+            assertThat(page.getByRole(AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Restart agent").setExact(true))).isDisabled();
+        } finally {
+            sweeping.countDown();
+        }
+    }
+
+    @Test
+    void aLookOnlyClickThatFinishesLeavesTheLockOfTheMoveStillRunning() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+        CountDownLatch sweeping = new CountDownLatch(1);
+        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenAnswer(invocation -> {
+            sweeping.await(10, TimeUnit.SECONDS);
+            return "sweep ABC-1: checks success";
+        });
+        when(commands.execute("ABC-1", TaskAction.DIFF)).thenReturn("Opened the diff for ABC-1.");
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Check review").setExact(true)).click();
+
+        try {
+            page.waitForResponse(
+                    response -> response.url().endsWith("/api/tasks")
+                            && "GET".equals(response.request().method()),
+                    () -> page.getByRole(AriaRole.BUTTON,
+                            new Page.GetByRoleOptions().setName("Diff").setExact(true)).click());
+
+            assertThat(page.getByRole(AriaRole.BUTTON,
+                    new Page.GetByRoleOptions().setName("Ship").setExact(true))).isDisabled();
+        } finally {
+            sweeping.countDown();
+        }
+    }
+
+    @Test
+    void aTypedMoveIsRefusedWhileAnotherOneIsStillRunningOnTheSameTask() throws Exception {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+        CountDownLatch sweeping = new CountDownLatch(1);
+        when(commands.execute("ABC-1", TaskAction.SWEEP)).thenAnswer(invocation -> {
+            sweeping.await(10, TimeUnit.SECONDS);
+            return "sweep ABC-1: checks success";
+        });
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON,
+                new Page.GetByRoleOptions().setName("Check review").setExact(true)).click();
+
+        try {
+            page.keyboard().press("Control+k");
+            page.locator("#ask").fill("ship a1");
+            page.locator("#ask").press("Enter");
+
+            assertThat(page.locator("#toasts .toast.error")).containsText("already running sweep");
+            verify(commands, never()).execute("ABC-1", TaskAction.SHIP);
+        } finally {
+            sweeping.countDown();
+        }
+    }
+
     @Test
     void aStateChangeRepaintsAnOpenBoardWithNobodyReloadingIt() {
         Page page = open();
@@ -766,6 +860,38 @@ class BoardPageTest {
         Page page = open();
 
         assertThat(page.locator("article .drafts")).containsText("review replies drafted, not posted");
+    }
+
+    @Test
+    void theDraftedRepliesLineOpensEveryCommentAndTheReplyItWillSend() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"),
+                "## !12 thread 1\n> the canonical row count is wrong\nFIXED - Measured it and pinned the count.\n");
+        state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a1").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article .drafts").click();
+
+        assertThat(page.locator("#report-body")).containsText("1 · FIXED · !12 thread 1");
+        assertThat(page.locator("#report-body")).containsText("Measured it and pinned the count.");
+    }
+
+    @Test
+    void aTypedReportNarrowsToTheTaskItNamesInsteadOfAnsweringForAllOfThem() throws IOException {
+        Path drafting = Files.createDirectories(root.resolve("ABC-2-alpha"));
+        Files.writeString(drafting.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.REVIEW_PENDING).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", drafting.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a2").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies a1");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#report-body")).containsText("a1 has no drafted replies");
     }
 
     @Test

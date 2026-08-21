@@ -352,9 +352,18 @@ link to it, because no file here is named after one vendor.
   file in one pass to approve a round, so a per-comment essay is work handed to them, not thoroughness. The
   sub-agent brief keeps the STYLE and points at the shape rather than restating it.
 - Drafted review replies are a FILE, not state: `TaskViews` stats `review_replies.md` in the worktree and puts
-  a boolean on the projection (presence, not a count — the agent's brief prescribes no per-comment marker, so
-  a number would be a guess). Both surfaces announce it, because a human who does not know the convention
-  ships a round and posts replies they never read.
+  a boolean on the projection (presence, not a count — a number is the host's claim about the round, not one a
+  file read can make). Both surfaces announce it, because a human who does not know the convention ships a round
+  and posts replies they never read. THE ANNOUNCEMENT IS ALSO WHERE IT IS READ (the owner's rule, 2026-08-21):
+  `replies [task]` is a report (`command/ReviewRepliesReport`) that puts every comment, its verdict and the reply
+  that will be posted for it on the screen the human already has — the console line names the verb, and on the
+  board the drafted-replies line IS the button that opens it. Approving a round by opening an editor in a
+  worktree is a step nobody takes, which is how a round gets shipped unread. Two things it deliberately does:
+  it reads the FILE rather than the card's badge (that one is announced only where it is actionable, so a status
+  that moved on would otherwise read as "nothing drafted"), and it prints what does NOT fit the prescribed shape
+  verbatim instead of dropping it — the file is agent-written, and a parser that hid what it did not recognise
+  would hide exactly the round that went wrong. `GET /api/commands/{id}?about=<task>` is how a report narrows to
+  one task: the same command the console types, so no second endpoint.
 - `dashboard-layout-smoke.sh` drives the CONSOLE, so it must pass `--orchestrator.ui=tui` now that the board
   is the default. Run it after ANY change to `MasterShell` rendering. `tui-push-repaint-smoke.sh` is its
   sibling for the event-driven repaint: refresh 60s + a status pushed through `POST /mcp`, so only the listener

@@ -76,9 +76,9 @@ public class DashboardRenderer {
             // The one artifact of a review round nothing else announces: the agent's intended answers, sitting
             // in the worktree. A human who does not know the convention ships them unread.
             if (task.draftedReplies()) {
-                out.append("                    └ drafted review replies in review_replies.md — `ide ")
+                out.append("                    └ drafted review replies — `replies ")
                         .append(task.alias() == null ? task.id() : task.alias())
-                        .append("` before you ship\n");
+                        .append("` reads them before you ship\n");
             }
             String watch = autoReviewLine(task.autoReview());
             if (!watch.isEmpty()) {

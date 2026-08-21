@@ -87,7 +87,7 @@ class DashboardRendererTest {
 
         String out = rendererFor(state).render();
 
-        assertThat(out).contains("└ drafted review replies in review_replies.md — `ide a1` before you ship");
+        assertThat(out).contains("└ drafted review replies — `replies a1` reads them before you ship");
     }
 
     @Test

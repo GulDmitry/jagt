@@ -23,7 +23,7 @@ public final class CommandReference {
 
     /** Most-used first; a verb missing here sorts to the end rather than being dropped. */
     private static final List<String> BY_USE = List.of(
-            "sweep", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
+            "sweep", "replies", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
             "revert", "done", "activity", "jobs", "status", "help");
 
     private static final int HINT_COLUMN = 29;
