@@ -4,6 +4,10 @@
 // actions), and a button posts the action id back. If the server did not list an action, there is no button —
 // and if the page is stale, the POST is refused with a sentence, which is what the toast shows.
 
+import {api, refusal, text} from './core/api.js';
+import {link, span} from './core/dom.js';
+import {countdown, duration} from './core/format.js';
+
 const PHASES = [
   ['BUILD', 'build'], ['REVIEW', 'review'], ['CHECK', 'check'],
   ['READY', 'ready'], ['DEPLOY', 'deploy'], ['DONE', 'done'],
@@ -35,34 +39,6 @@ let verbs = [];
 // that cannot name what it is waiting for reads as a dead button.
 const pending = new Set();
 const writing = new Map();
-
-// Every piece of a card is BUILT, never interpolated into markup: ids, aliases and project keys come out of a
-// state file the human is invited to edit by hand, and an assumption about their shape is invisible from here.
-const span = (className, text) => {
-  const node = document.createElement('span');
-  if (className) node.className = className;
-  node.textContent = text;
-  return node;
-};
-
-// FLOOR everywhere, matching DurationFormat.compact exactly: with `orchestrator.ui=both` the two
-// surfaces sit side by side, and 90 minutes reading "1h" here and "2h" there is the drift the shared
-// projection exists to prevent — sharing the data is not enough if a derived number is formatted twice.
-const duration = (millis) => {
-  const minutes = Math.max(0, Math.floor(millis / 60000));
-  if (minutes < 60) return `${minutes}m`;
-  if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
-  return `${Math.floor(minutes / 1440)}d`;
-};
-
-// A countdown is watched ticking, unlike an age in a column: seconds matter while the wait is under a minute.
-const countdown = (millis) => {
-  const seconds = Math.max(0, Math.floor(millis / 1000));
-  if (seconds < 60) return `${seconds}s`;
-  // CEILING, mirroring DurationFormat.countdown: a ten-minute wait must not read "9m" for its first minute.
-  const minutes = Math.ceil(seconds / 60);
-  return minutes < 60 ? `${minutes}m` : `${Math.ceil(minutes / 60)}h`;
-};
 
 // What the unattended poller is about to do with this task, or nothing when it is not its business. The WORDS are
 // the server's (watch.note), so the console and this cannot drift; only the countdown is formatted here, from the
@@ -115,24 +91,6 @@ function toast(message, isError) {
   toasts.append(node);
   setTimeout(() => node.remove(), isError ? 12000 : 7000);
 }
-
-async function api(path, options) {
-  const response = await fetch(path, options);
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const failure = new Error(body.error || `${response.status} ${response.statusText}`);
-    failure.code = body.code;
-    throw failure;
-  }
-  return body;
-}
-
-// Refusals that mean "this page was describing a task that has moved on". Every action reloads the board
-// afterwards, so by the time the message is read the view is already right — say so, or it reads as jagt
-// refusing something it will keep refusing.
-const STALE_VIEW = ['NO_SUCH_TASK', 'ACTION_NOT_AVAILABLE'];
-
-const refusal = (e) => (STALE_VIEW.includes(e.code) ? `${e.message}\n\nThe board is up to date now.` : e.message);
 
 // Fetched, not hardcoded: the palette completes and validates against the SERVER's verb list, so a command the
 // console accepts can never be missing from the suggestions here.
@@ -436,15 +394,6 @@ function actionRow(group) {
   row.className = `actions ${group}`;
   row.dataset.group = group;
   return row;
-}
-
-function link(href, text) {
-  const anchor = document.createElement('a');
-  anchor.href = href;
-  anchor.target = '_blank';
-  anchor.rel = 'noreferrer';
-  anchor.textContent = text;
-  return anchor;
 }
 
 // A deploy is the one click that writes a branch other people build on, so the question names the exact writes
@@ -795,13 +744,6 @@ function closeOnBackdrop(dialog) {
 
 closeOnBackdrop(report);
 document.getElementById('show-log').onclick = () => showReport('log — this session', messages.join('\n'));
-
-async function text(path, options) {
-  const response = await fetch(path, options);
-  const body = await response.text();
-  if (!response.ok) throw new Error(body || `${response.status} ${response.statusText}`);
-  return body;
-}
 
 // Focus, rendered rather than announced: the action selects the agent's tmux window whatever surface asked, and
 // when a web terminal serves that session the board shows it right here. With none configured there is nothing
