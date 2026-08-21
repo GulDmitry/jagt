@@ -60,7 +60,8 @@ public record TaskView(
         long tokens
 ) {
 
-    public record ActionView(String id, String label, String hint, boolean primary, String group) {
+    public record ActionView(String id, String label, String hint, boolean primary, String group,
+                            boolean readOnly) {
     }
 
     /**
@@ -77,7 +78,7 @@ public record TaskView(
                 autoReview == null ? AutoReviewWatch.none() : autoReview);
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
-                        action == move.primary(), action.group().id()))
+                        action == move.primary(), action.group().id(), action.readOnly()))
                 .toList();
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),
                 task.status().label(), move.phase(),

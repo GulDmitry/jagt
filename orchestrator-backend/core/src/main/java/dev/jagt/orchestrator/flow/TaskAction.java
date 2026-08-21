@@ -41,6 +41,13 @@ public enum TaskAction {
         }
     }
 
+    /**
+     * Actions that only LOOK at a task. What a click writes is not the same question as which half of the card it
+     * is rendered on: `respawn` sits with the tools and kills a running session, so a surface that locks a card
+     * while a move of its own is in flight has to ask this rather than the group.
+     */
+    private static final java.util.Set<TaskAction> READ_ONLY = java.util.EnumSet.of(FOCUS, IDE, DIFF);
+
     /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
     private static final java.util.Map<String, TaskAction> RENAMED = java.util.Map.of("review", SWEEP);
 
@@ -64,6 +71,11 @@ public enum TaskAction {
 
     public Group group() {
         return group;
+    }
+
+    /** Whether this action changes nothing, so nothing else being in flight is a reason to refuse it. */
+    public boolean readOnly() {
+        return READ_ONLY.contains(this);
     }
 
     public String id() {
