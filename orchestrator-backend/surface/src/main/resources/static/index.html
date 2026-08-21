@@ -34,13 +34,13 @@
   <label class="checkbox" data-tip="agent writes a plan and waits for approval before changing code"><input type="checkbox" id="plan"> plan first</label>
   <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
   <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button>
-  <span id="launch-state" class="muted"></span>
+  <span id="launch-state" class="muted state"></span>
 </form>
 
 <form id="resume" hidden>
   <input id="resume-url" placeholder="review-request URL (…/merge_requests/42 or …/pull/42)" autocomplete="off" required>
   <button type="submit" class="primary">Resume</button>
-  <span id="resume-state" class="muted"></span>
+  <span id="resume-state" class="muted state"></span>
 </form>
 
 <form id="palette" hidden>
@@ -48,7 +48,7 @@
          autocomplete="off" required>
   <datalist id="ask-options"></datalist>
   <button type="submit" class="primary">Run</button>
-  <span id="palette-state" class="muted"></span>
+  <span id="palette-state" class="muted state"></span>
 </form>
 
 <dialog id="report">

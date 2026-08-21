@@ -281,7 +281,12 @@ link to it, because no file here is named after one vendor.
   config line the human writes themselves, and ttyd was already bound this way; a board on 0.0.0.0 with no auth
   was the asymmetry.
 - The board is vanilla HTML/CSS/JS under `src/main/resources/static` — NO build step, NO CDN, no external
-  asset of any kind (it must work with the machine offline and stay inside the one jar).
+  asset of any kind (it must work with the machine offline and stay inside the one jar). Native ES modules in
+  TWO RINGS, the same rule as the backend's: `core/` answers a question without owning a node on the page,
+  `ui/` owns the nodes it renders, `app.js` only wires them — and a module never reaches for another's element
+  (it takes a callback at wiring time). A card carries `data-action`, never a closure: `ui/render` holds the ONE
+  delegated listener on the grid, so a card rebuilt under the pointer cannot act for the task it used to
+  describe. `ARCHITECTURE.md` has the file-by-file map.
 - A DESKTOP BANNER CLICKS THROUGH TO THE TASK IT IS ABOUT (`DesktopNotifier` → `UserNotifier.notify(…, link)`):
   a banner that only NAMES a task leaves the human to find it, which on macOS means finding the browser tab
   first. The link is the board narrowed to that task by the FILTER the page already has — not a second way to

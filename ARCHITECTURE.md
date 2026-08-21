@@ -133,8 +133,39 @@ Three things the sketch does not show:
 renders; `service/TaskViews` builds both. A new verb reaches both surfaces because both are generated from the
 `flow/TaskAction` declaration: the board renders `Move.actions()` — the legal ones only, which is
 `FlowRules.allowed(...)` — while the console offers every verb and `FlowEngine` refuses an illegal one with a
-sentence. Neither surface holds a list, and the usual way to break that is to add markup to
-`surface/src/main/resources/static/app.js` instead of a declaration.
+sentence. Neither surface holds a list, and the usual way to break that is to build a button in
+`surface/src/main/resources/static/ui/card.js` instead of declaring an action.
+
+## The board is two rings too
+
+`surface/src/main/resources/static` is vanilla HTML/CSS/JS served from the jar — no build step, no CDN, nothing
+fetched from a network. Native ES modules, so that costs nothing, and the split follows the same rule as the
+backend's: `core/` answers a question without owning a node on the page (`api`, `store`, `format`, `dom`), `ui/`
+owns the nodes it renders, and `app.js` only WIRES them.
+
+| file | the question it answers |
+| --- | --- |
+| `core/api` | how the backend is called, and what a refusal carries |
+| `core/store` | what the page knows; only `set` writes it |
+| `core/format` | the two clocks, mirroring `DurationFormat` |
+| `core/dom` | how an element is built (never markup: ids come from a hand-edited state file) |
+| `ui/render` | one repaint from the snapshot, and the ONE delegated click on the grid |
+| `ui/card`, `ui/header` | what a task looks like, and the line above the grid — pure, no listeners of their own |
+| `ui/filters`, `ui/projects` | the controls that narrow, and the project picker |
+| `ui/act`, `ui/inflight`, `ui/confirm` | running one action: what is in flight, what it asks first |
+| `ui/submit`, `ui/launch`, `ui/resume` | one submit pipeline, and the two forms that use it |
+| `ui/palette`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
+| `ui/dialogs`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
+
+Four rules hold it together, and each replaced a bug that had already happened:
+
+- A module owns its own nodes. Nobody calls `getElementById` for somebody else's element; a module that needs
+  another one to act takes a callback at wiring time (`palette.wire`, `header.onNarrow`, `toast.showLog`).
+- Rendering is pure and total: a card is a function of the task, the grid is `replaceChildren`, and no card
+  carries a closure — a button carries `data-action`/`data-report`, and `ui/render` delegates the ONE listener.
+- One answer per question: one transport, one toast, one submit pipeline, one key table. Three copies of the
+  submit dance is how a fix reached one form and was forgotten in the next.
+- A page over ~150 lines in one file is the signal to split, not to add a section comment.
 
 ## The agent system is a ring, not the centre
 

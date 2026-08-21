@@ -7,6 +7,9 @@ const messages = [];
 
 export const sessionLog = () => messages.join('\n');
 
+// What the log button OPENS is a dialog, which this module does not own: it hands over the click instead.
+export const showLog = (open) => { opener.onclick = open; };
+
 export function toast(message, isError) {
   messages.push(`${new Date().toLocaleTimeString()}  ${message}`);
   opener.hidden = false;
