@@ -21,30 +21,30 @@ import java.util.regex.Pattern;
 @Service
 public class TaskLauncher {
 
-    /** A bare issue key like {@code ABC-123} — used only to skip the read on the fast path, never parsed out of a URL. */
+    /** A bare issue key like {@code ABC-123}, as opposed to a url — never parsed OUT of one. */
     private static final Pattern KEY_REF = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
-
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TaskLauncher.class);
 
     private final TaskProvisioning provisioning;
     private final TicketReader tickets;
     private final ConfigService configService;
     private final TaskResume resumes;
-    private final TicketTitleBackfill titles;
 
     public TaskLauncher(TaskProvisioning provisioning, TicketReader tickets, ConfigService configService,
-                        TaskResume resumes, TicketTitleBackfill titles) {
+                        TaskResume resumes) {
         this.provisioning = provisioning;
         this.tickets = tickets;
         this.configService = configService;
         this.resumes = resumes;
-        this.titles = titles;
     }
 
     /**
      * Spins up a task for {@code ref} — an issue key or a URL to it in any tracker. Returns the message to
      * show the human; throws {@link IllegalArgumentException} when the request itself is unusable (unknown
      * project, ambiguous labels).
+     *
+     * <p>NO TASK IS CREATED WITHOUT THE ITEM'S OWN FACTS. A card being worked on whose link is missing is a
+     * state nothing downstream can repair — a later read cannot tell an item that has no link from one that was
+     * never reached — so an unreadable reference is answered with a sentence instead of half a task.
      */
     public String launch(LaunchRequest request) {
         String ref = request.ref();
@@ -63,48 +63,32 @@ public class TaskLauncher {
                         + " or `do " + ref + " resume` (continue its commits).";
             }
         }
+        // An unknown project is settled before the read, not after paying for one.
+        List<String> chosen = project != null ? resolveProjects(project) : null;
 
-        // Fast path: a bare key + explicit project needs no read — the key IS the task id.
-        if (bareKey && project != null) {
-            String result = provisioning.initializeTask(newTask(ref, resolveProjects(project),
-                    readAndImplement(ref, request), request).build());
-            titles.of(ref);
-            return result;
-        }
         // The read takes a key or a URL to any tracker and answers with the canonical key, which is what names
         // the branch and the worktree.
         var read = tickets.read(ref);
-        var facts = read.facts();
-        if (facts.isPresent() && !facts.get().exists()) {
-            return "error: could not read " + ref + " (bad/inaccessible URL or unknown key?)";
+        var facts = read.facts().filter(TicketFacts::usable);
+        if (facts.isEmpty()) {
+            return "error: could not read " + ref + " — no task created (unknown key, inaccessible url, or"
+                    + " the reader never answered). Check the reference and retry.";
         }
-        if (facts.isPresent()) {
-            TicketFacts f = facts.get();
-            // A URL has no fallback of its own when the read gave back no key.
-            String taskId = f.key() != null && !f.key().isBlank() ? f.key() : (bareKey ? ref : null);
-            if (taskId == null) {
-                return "error: read " + ref + " but got no issue key back to name the task";
-            }
-            List<String> resolved = project != null
-                    ? resolveProjects(project)
-                    : List.of(resolveByLabels(f));
-            String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
-                    + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
-            String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
-                    .title(f.title()).ticketUrl(f.url()).build());
-            // Only NOW does the task exist, so only now can the read that named it be charged to it —
-            // charging earlier silently dropped the most expensive call in a task's life.
-            tickets.charge(taskId, read.usage());
-            return result;
+        TicketFacts f = facts.get();
+        if (bareKey && !ref.equalsIgnoreCase(f.key())) {
+            return "error: asked for " + ref + " and got " + f.key() + " back — no task created. Launch it"
+                    + " under the key the tracker itself reports.";
         }
-        if (!bareKey) {
-            return "error: could not read " + ref + " — pass an issue key (not a URL), or name the project";
-        }
-        String result = provisioning.initializeTask(newTask(ref, resolveProjects(project),
-                readAndImplement(ref, request), request).build());
-        // The read FAILED but may still have been paid for, and the key alone was enough to create the task —
-        // so the one case where money bought nothing must not be the one case the task reports as free.
-        tickets.charge(ref, read.usage());
+        String taskId = f.key();
+        List<String> resolved = chosen != null ? chosen : List.of(resolveByLabels(f));
+        String titled = f.title() == null || f.title().isBlank() ? "" : " — \"" + f.title() + "\"";
+        String instructions = withNotes("Implement " + taskId + titled
+                + ". Read it via your issue-tracker MCP for full details, then work.", request.notes());
+        String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
+                .title(f.title()).ticketUrl(f.url()).build());
+        // Only NOW does the task exist, so only now can the read that named it be charged to it —
+        // charging earlier silently dropped the most expensive call in a task's life.
+        tickets.charge(taskId, read.usage());
         return result;
     }
 
@@ -173,10 +157,6 @@ public class TaskLauncher {
                 .mode(request.mode())
                 .branchStrategy(request.strategy())
                 .baseBranch(request.baseBranch());
-    }
-
-    private static String readAndImplement(String ref, LaunchRequest request) {
-        return withNotes("Read " + ref + " via your issue-tracker MCP and implement it.", request.notes());
     }
 
     private static String withNotes(String instructions, String notes) {

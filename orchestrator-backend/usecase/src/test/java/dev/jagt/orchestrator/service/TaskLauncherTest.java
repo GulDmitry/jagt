@@ -30,9 +30,8 @@ class TaskLauncherTest {
     private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
     private final TicketReader tickets = mock(TicketReader.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final TicketTitleBackfill titles = mock(TicketTitleBackfill.class);
     private final TaskLauncher launcher = new TaskLauncher(provisioning, tickets, configService,
-            mock(TaskResume.class), titles);
+            mock(TaskResume.class));
 
     @BeforeEach
     void configIsReadable() {
@@ -63,7 +62,8 @@ class TaskLauncherTest {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
         oneProject("group-a");
         when(tickets.read("https://tracker/ABC-123")).thenReturn(new Answer<>(
-                Optional.of(new TicketFacts(true, "ABC-123", "t", "ABC", List.of(), "")), spent));
+                Optional.of(new TicketFacts(true, "ABC-123", "t", "ABC", List.of(),
+                        "https://tracker/ABC-123")), spent));
 
         launcher.launch(new LaunchRequest("https://tracker/ABC-123", "group-a", null, null, null, null));
 
@@ -72,19 +72,33 @@ class TaskLauncherTest {
         order.verify(tickets).charge("ABC-123", spent);
     }
 
+    /**
+     * A card whose ticket link is missing cannot be repaired later — nothing can tell an item that has no link
+     * from one that was never reached — so the launch says so instead of starting work on half a task.
+     */
     @Test
-    void chargesAFailedTicketReadToTheTaskTheBareKeyStillCreated() {
-        TokenUsage spent = TokenUsage.ofCall(38_000, 0, 60, 0.41);
+    void createsNoTaskWhenTheTicketCouldNotBeRead() {
         oneProject("group-a");
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.empty(), spent));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(
+                Optional.of(new TicketFacts(false, "", "", "", List.of(), "")),
+                TokenUsage.ofCall(38_000, 0, 60, 0.41)));
 
-        launcher.launch(LaunchRequest.of("ABC-42"));
+        String out = launcher.launch(LaunchRequest.of("ABC-42"));
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue()).extracting(NewTask::taskId, NewTask::projectKey)
-                .containsExactly("ABC-42", "group-a");
-        verify(tickets).charge("ABC-42", spent);
+        assertThat(out).contains("could not read ABC-42", "no task created");
+        verify(provisioning, never()).initializeTask(any());
+    }
+
+    @Test
+    void createsNoTaskWhenTheReadAnsweredAboutADifferentItem() {
+        oneProject("group-a");
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-99",
+                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-99")), TokenUsage.NONE));
+
+        String out = launcher.launch(LaunchRequest.of("ABC-42"));
+
+        assertThat(out).contains("asked for ABC-42 and got ABC-99 back", "no task created");
+        verify(provisioning, never()).initializeTask(any());
     }
 
     @Test
@@ -102,6 +116,8 @@ class TaskLauncherTest {
     @Test
     void relaysTheHumansNotesToTheAgentAlongsideTheTicket() {
         oneProject("demo");
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
+                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
 
@@ -113,6 +129,8 @@ class TaskLauncherTest {
     @Test
     void carriesTheModeTheHumanAskedForThroughToTheAgent() {
         oneProject("demo");
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
+                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
 
@@ -124,6 +142,8 @@ class TaskLauncherTest {
     @Test
     void carriesTheHumansBranchStrategyThroughToTheWorktreeCut() {
         oneProject("demo");
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
+                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", null, "recreate", null, null));
 
@@ -135,6 +155,8 @@ class TaskLauncherTest {
     @Test
     void carriesTheHumansBaseBranchThroughToTheWorktreeCut() {
         oneProject("demo");
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
+                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", null, null, "feature/parent", null));
 
@@ -155,20 +177,13 @@ class TaskLauncherTest {
     }
 
     @Test
-    void asksForTheTitleAfterALaunchThatSkippedTheTicketRead() {
-        oneProject("group-a");
-
-        launcher.launch(new LaunchRequest("ABC-7", "group-a", null, null, null, null));
-
-        verify(provisioning).initializeTask(any());
-        verify(titles).of("ABC-7");
-    }
-
-    @Test
     void createsOneTaskAcrossEveryProjectNamedInTheSameToken() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
+                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "web,api", null, null, null, null).normalized());
 

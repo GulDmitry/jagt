@@ -374,6 +374,20 @@ link to it, because no file here is named after one vendor.
   asserts the invariants (one dashboard header, input pinned to the bottom row, dashboard above it) across
   startup + resize both ways + task-count changes. Run it after ANY change to `MasterShell` rendering.
   No-TTY (e.g. `gradlew bootRun`) falls back to a plain inline line-REPL.
+- A TASK IS CREATED WITH ITS ITEM'S OWN FACTS OR NOT AT ALL (the owner's rule, 2026-08-21). `TaskLauncher` reads
+  the reference on EVERY launch: the fast path (a bare key plus an explicit project skipped the read, and a
+  background `TicketTitleBackfill` filled the title in later) is GONE, and so is the backfill — a card being
+  worked on whose ticket link is missing cannot be repaired afterwards, because no later read can tell an item
+  that HAS no link from one that was never reached, and that is exactly the state a task sat in for a day
+  (2026-08-20). `TicketFacts.usable()` is the gate — a key AND a link; the title is optional, an item may honestly
+  have none — and an answer that fails it is asked AGAIN (`TicketReader`: 5 attempts, 2s apart, bounded by two
+  minutes so a launch a human is waiting on cannot hang on five CLI timeouts), because a model that never found
+  its tracker tool reports precisely the `exists=false` a deleted item reports. Believing the first denial is what
+  lost a live ticket its title and its url while the agent worked on it. Only a MODEL's negative is re-asked: a
+  configured `Tracker`'s "no such item" is a fact, and re-reading it through a paid call is the fallback that rule
+  already forbids. A bare key whose read answers a DIFFERENT key is refused as well, naming both. The price is
+  deliberate: every `do` now pays for one ticket read — free with a tracker configured, one metered model call
+  without one.
 - `ship` is DETERMINISTIC when a `CodeHost` owns the repository: `ShipService` commits the worktree, pushes the
   task branch and opens/updates the review request in-process (`GitService.commitAll`/`pushBranch` +
   `CodeHost.createOrUpdateMergeRequest`), then sets CI_POLLING with the link. No model on that path, so
