@@ -1,0 +1,164 @@
+# Control surfaces
+
+[← AGENTS.md](../../AGENTS.md)
+
+## Control surfaces
+
+Two front-ends, **one core**, and the seam is `OperatorUi` (`…surface.ui`, selected by `orchestrator.ui`:
+`web` | `tui` | `both`, default web). `OperatorUiRunner` is the only `ApplicationRunner`; a blocking surface
+(the TUI, which owns the terminal) starts last, so the board is already serving.
+
+**Adding a surface must not add a second answer to any question the others already answer.**
+
+### One projection answers "what is this task and what can I do with it"
+
+`flow/Move` + `flow/TaskView`, built by `service/TaskViews`. The TUI, `/status` and `/api/tasks` all render
+that. `Move.shippable` is also what `ShipService.requireShippable` calls — the dashboard used to advise
+independently of the gate, which is exactly how they drifted apart.
+
+`TaskViews.snapshot()` reads the configuration **once** per render and hands back the tasks with the policy
+that explains them: the console redraws on every keystroke, and two reads could disagree inside one frame.
+
+### Parity is an invariant, not an aspiration
+
+A capability that exists in one surface only is a bug.
+
+- Per-task verbs come from `Move.actions()`, so a new action appears on both at once — **grouped** there too
+  (`TaskAction.Group`: FLOW moves the task on, and closing it counts; TOOL only looks at it or restarts the
+  agent). `Move` **sorts** by that group rather than trusting the order somebody appended in, so a new verb
+  lands on the right side of the card by declaring its group and nothing else.
+- The board renders one row per group and reads which groups exist **off the wire** — a page that knew the
+  names would be a second answer.
+- Shared text lives in `command/CommandReference` (the grammar) and `command/StateViews` (dashboard + stats),
+  so neither surface renders its own version.
+- **A hint is `data-tip`, never `title`**: one node placed on hover (`showTip`), because `title` waits and a
+  push rebuilds the element it waited on.
+- Reports open in a `<dialog>` over the board, never a new page. **Every dialog closes three ways**: Escape,
+  its own button, and the dimmed area around it — the click a human makes first. The backdrop close is guarded
+  by where the press **started**, so dragging a selection out of a report does not dismiss what is being read.
+
+One deliberate exception: **`quit` is console-only.** Stopping the backend belongs to whoever owns the process
+(Ctrl-C / kill), not to a browser button, and nothing is lost since agents live in tmux. A shutdown endpoint
+was built and removed — do not add one back.
+
+### "What commands exist" has exactly two answers, and both are declarations
+
+| the verb | is | executed by |
+|---|---|---|
+| one a task owns | a `flow/TaskAction` row, gated by `Move` | `CommandService` |
+| one no task owns | a `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) — id, hint, usage, whether its answer is a report, whether it is console-only | itself |
+
+`CommandReference` **renders both** — `help`'s text and the palette's verb list — so a hint is written once.
+`GrammarDispatch` **looks a typed word up** in the two instead of switching on it. `GET /api/commands/{id}`
+serves any report, so declaring another one needs no endpoint, no console arm and no button in the page (the
+board *builds* its report buttons from that list).
+
+This is what parity failed on before (2026-08-19): the per-task verbs always had this shape, while
+`do`/`resume`/`stats`/`activity`/`help` were hand-written in six places each.
+
+Three deliberate limits: that endpoint refuses anything that is not a report (a GET must not be able to start
+a task); a console-only command is filtered out of what the board is told at all; and tier 2 stays narrower on
+purpose — a prose request cannot ask for a dialog, so `NaturalLanguageDispatch` names the two launches itself
+and offers no report.
+
+### Two-tier dispatch
+
+**Tier 1** is the grammar (a typed command or a board button) and it stays LLM-free.
+
+**Tier 2** is `service/NaturalLanguageDispatch`: free text — an unknown console line, or the board's ⌘K
+palette → `POST /api/interpret` — goes to a model that only **proposes** one grammar command. The dispatcher
+validates that the task exists and the verb is real, then executes through `CommandService`, so **tier 2 can
+never do more than a button**.
+
+The call is deliberately stripped (`--strict-mcp-config --mcp-config '{"mcpServers":{}}'`, no
+`--setting-sources`): text→command needs no tools, and a loaded MCP server would be paid for in context.
+
+It answers with the interpretation **first** ("understood as `ship a1` — …"), and a single unknown word is a
+typo, not a request — it never reaches the model.
+
+### A renamed verb keeps its old spelling, and advertises only the new one
+
+`sweep`, typed as `review` since 2026-08-18. **One map owns it** — `TaskAction.RENAMED`, read through
+`byRetiredVerb` — and every surface where a human types has to consult it: the console's grammar, the palette
+(`CommandReference.Verb.aliases`, which the page matches and offers nowhere) and a tier-2 proposal that echoed
+the word.
+
+Two things it deliberately is not: `byId` stays **strict**, because that one answers a URL segment and a
+retired verb is not a wire id; and the lookup resolves retired spellings **only**, never a current id — the
+grammar's verb set is the switch, so `diff …` keeps reaching the model as free text.
+
+`CommandReference` names just the current verb: two spellings in `help` are two answers to one question.
+
+### How an action is executed
+
+`service/CommandService` validates against `Move` first, so a stale board tab is refused with a sentence, not
+with a git error three layers down. `service/TaskLauncher` is how a task is started. The console parses a
+command line, the controller parses JSON; **neither owns rules.**
+
+The sentence stays the whole answer for a human. A refusal a caller must **act** on also carries a
+`flow/Refusal.Code`, and that enum grows **only** when something branches on the new value — a reason nobody
+handles differently keeps throwing plain.
+
+### There is no tools facade any more
+
+Do not bring one back. `OrchestratorTools` grew to 871 lines and eleven collaborators, and every attempt to
+thin it *added* one, because a delegating aggregate keeps what it does not shed. It was dissolved
+(2026-08-14).
+
+Each MCP tool group declares its own tools (`surface/mcp/McpTools` + `surface/mcp/McpToolRegistry`,
+implementations under `surface/mcp/tools`). Every other caller takes the small service it actually uses:
+`AgentSessions` (tmux window, focus, kill, relay), `TaskProvisioning` + `WorktreeSetup` + `SubAgentBriefing`
+(creation), `AgentStatusReports`, `IdeLauncher`, `DeployService` (the only shared-branch writes),
+`TaskRetirement`, `TaskResume`. Per-task verbs are a class each under `capability/`, reached through the flow
+engine. `surface/mcp/CallerScope` owns the X-Working-Directory rule for all of them.
+
+### No limit on concurrent tasks
+
+A decision, not an omission. A cap (`agent.maxConcurrentTasks` + `TaskAdmission`) was built and then **removed
+on the owner's instruction**: jagt runs on other people's machines, one of which has 100 GB of RAM, so a
+number picked here is wrong for almost everyone, and refusing a `do` on that basis is jagt deciding something
+it cannot know. Whoever wants a bound has the machine's own tools for it.
+
+Do not reintroduce a cap, a queue, or a "slots" indicator.
+
+### The board listens on loopback
+
+`server.address: 127.0.0.1`, because it asks for no password and can deploy, close a task, start an agent and
+— with the web terminal on — hand out a writable shell. Widening it is a config line the human writes
+themselves.
+
+### The board is two rings too
+
+Vanilla HTML/CSS/JS under `src/main/resources/static` — **no build step, no CDN, no external asset of any
+kind** (it must work with the machine offline and stay inside the one jar).
+
+Native ES modules in two rings, the same rule as the backend's: `core/` answers a question without owning a
+node on the page, `ui/` owns the nodes it renders, `app.js` only wires them — and a module never reaches for
+another's element (it takes a callback at wiring time).
+
+A card carries `data-action`, never a closure: `ui/render` holds the one delegated listener on the grid, so a
+card rebuilt under the pointer cannot act for the task it used to describe.
+
+`ARCHITECTURE.md` has the file-by-file map.
+
+### Neither surface polls
+
+`StateService.onChange` is the one event both use: `TaskEventStream` forwards it as SSE, and `MasterShell` sets
+a dirty **flag** its render loop consumes (Lanterna's screen belongs to the UI thread; the listener runs on
+whichever thread served the agent's MCP call — never paint from there).
+
+The SSE event carries **no payload** on purpose: a payload would be a second serialization that could disagree
+with `/api/tasks`. The periodic tick survives in both only for the relative "ACTIVE" clock.
+
+### A desktop banner clicks through to the task it is about
+
+`DesktopNotifier` → `UserNotifier.notify(…, link)`. A banner that only **names** a task leaves the human to
+find it, which on macOS means finding the browser tab first.
+
+The link is the board narrowed to that task by the filter the page already has — not a second way to address a
+card — and it is omitted when there is no board (`orchestrator.ui=tui`) or no task, since a click onto a dead
+page is worse than one that does nothing.
+
+It exists at all only because macOS banners cannot carry an action without `terminal-notifier` (`-open`),
+which `MacNotifier` already prefers for its own reasons. osascript and `notify-send` both drop the link, and
+**no caller may depend on it.**

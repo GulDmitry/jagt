@@ -13,7 +13,8 @@ Those sessions carry no worktree header, so they count as Master.
 | Codex | `AGENTS.md` (its own convention) | `.codex/config.toml` — the stdio bridge, so it needs Node |
 | Qwen Code | `AGENTS.md` via `.qwen/settings.json` | `.qwen/settings.json` (HTTP) |
 
-**There is one rules file: [`AGENTS.md`](../AGENTS.md).** Never write a project rule into a vendor-named file.
+**Rules live in [`AGENTS.md`](../AGENTS.md)** — the hard ones inline, the rest in `docs/rules/`, read on
+demand. Never write a project rule into a vendor-named file.
 
 > [!NOTE]
 > Codex loads a project layer only for a *trusted* project, and resolves the bridge from the working
@@ -67,5 +68,5 @@ the real `claude` CLI, and a live code host or tracker.
 ## Where things go
 
 [`ARCHITECTURE.md`](../ARCHITECTURE.md) is the map — what kinds of thing jagt has and where a new one belongs.
-[`AGENTS.md`](../AGENTS.md) holds the rules. [`USE-CASES.md`](../USE-CASES.md) holds the one-line answer to a
+[`AGENTS.md`](../AGENTS.md) plus `docs/rules/` hold the rules. [`USE-CASES.md`](../USE-CASES.md) holds the one-line answer to a
 situation somebody already worked out.
