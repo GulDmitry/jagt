@@ -34,6 +34,9 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 | a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
 | a comment, a doc, a prompt, the shape of a class | [`docs/rules/style.md`](docs/rules/style.md) |
 
+`.claude/rules/` carries the same table as path-scoped pointers, so a Claude session is reminded when it opens
+one of those files. They hold no rule of their own — this table is the answer every CLI gets.
+
 Adding a **kind** of thing no rule covers: read `ARCHITECTURE.md` first. If it fits no kind, the kind is
 missing — add a kind, never an exception.
 
