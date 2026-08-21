@@ -1,0 +1,79 @@
+# Troubleshooting
+
+[← README](../README.md)
+
+## Agents
+
+| symptom | fix |
+|---------|-----|
+| Task stuck at `SHIPPING`, no request appears | `ship <ticket>` again — jagt respawns the dead agent to finish |
+| Agent seems hung | `focus <ticket>` to look; `respawn <ticket>` if the session is dead |
+| `API Error: 529 Overloaded` | transient, server-side. Re-run; task state is unchanged |
+| Nothing pastes in a kitty window | non-UTF-8 shell locale — see [Installation](installation.md#notes) |
+
+The agent that stops without saying so is the case jagt cannot promise to catch. A session sitting at a prompt
+looks alive, so an agent is asked to report `outcome=question` *before* it asks a human anything — that is what
+puts NEEDS INPUT on the card. The watchdog catches the rest: no MCP call and a quiet window means the card
+flips to you.
+
+## Deploy and revert
+
+| symptom | fix |
+|---------|-----|
+| `deploy` says `MERGE CONFLICT` | `ide <ticket>` opens the **deploy** worktree — resolve, `git add`, `deploy` again |
+| `revert` has no record of the merge commit | do it by hand (below) |
+| `revert` says the revert conflicts | jagt aborts and pushes nothing; revert by hand and decide |
+
+Nothing is pushed on a conflicting deploy, and the task goes `DEPLOY_CONFLICT`. Your task branch and its
+review request are untouched.
+
+For a deploy made before jagt recorded merge commits, it will not guess which merge to revert on a shared
+branch:
+
+```sh
+git log --merges --grep ABC-42 origin/dev   # find it
+git revert -m 1 <sha> && git push
+```
+
+Deploys made since are revertible with one command.
+
+## Startup and the jar
+
+| symptom | fix |
+|---------|-----|
+| jagt refuses to start and prints a numbered list | fix the whole list — each line names the key |
+| The jar exits at once, saying nothing new | usually a port still held: `lsof -ti tcp:8290 \| xargs kill` |
+| `/status` and `/stats` answer 500 while `/` works | you rebuilt while it ran. Restart from the staged jar |
+
+> [!IMPORTANT]
+> `./gradlew build` rewrites `jagt.jar` **in place**, so a running JVM keeps reading a file whose content
+> changed: already-loaded classes work, everything else dies with `NoClassDefFoundError`. Run
+> `./gradlew stageJar && java -jar build/libs/jagt-run.jar` — staging writes a new file each time. jagt also
+> notices this itself within a minute and says so.
+
+A `NoClassDefFoundError` during a startup failure or on exit is the same cause, not a code bug. The missing
+class varies precisely because no single class is the problem.
+
+## The board and the terminal
+
+| symptom | fix |
+|---------|-----|
+| Focus shows no terminal | `grep ttyd jagt-backend.log` — install ttyd, or move `web-terminal.port` |
+| You cannot find the log | `tail -f jagt-backend.log` next to where you started the jar |
+
+With `ui=tui` or `both`, the console owns the terminal, so log lines only go to the file. Copy it before
+restarting: **every start empties the log and deletes the archives beside it**, so what you read is always the
+running session.
+
+Focus itself still works with no web terminal — the session is in the window the toast named.
+
+## State on disk
+
+| symptom | what jagt does |
+|---------|----------------|
+| `state.json` is corrupted | recovers from `state.json.bak`, moves the bad file to `state.json.corrupt` |
+| Both the file and its backup are unusable | **refuses to start** rather than begin with an empty task list |
+| A worktree directory nobody owns is left on disk | pings you once at startup and WARNs — it never deletes it |
+
+An orphaned worktree can hold uncommitted work and copies of your secrets (`worktree.copyGlobs`), so removing
+it is your call. The log names each directory and how many copied secret files are inside.

@@ -53,7 +53,7 @@ link to it, because no file here is named after one vendor.
   record (`ConfigService.ConfigFile.*Config`) with `defaults()` + `withX` withers + `*OrDefault`
   accessors; a whole section may be omitted (ConfigFile's accessors coalesce a null section to its
   defaults, so callers never null-check). Gitignored; created by copying committed `config.json.dist`.
-  Never commit user-specific paths. ALL config keys are documented in README's Configuration section —
+  Never commit user-specific paths. ALL config keys are documented in `docs/configuration.md` —
   keep it in sync.
 - Orchestrator root is auto-detected at startup: nearest parent dir containing `config.json.dist` OR
   `mcp_client.js` (`OrchestratorPaths`); overridable via `ORCHESTRATOR_ROOT`. Two markers on purpose — the
@@ -766,7 +766,7 @@ link to it, because no file here is named after one vendor.
   the AX tree, no URI, Warp keeps them after process death) — whole windows ARE closable via
   addressed AXPress. Hence viewMode `shared` is the default; `tab-per-task` leaves dead tabs for
   the human to close.
-- Every new install requirement (e.g. tmux via brew) MUST be documented in README's Prerequisites table —
+- Every new install requirement (e.g. tmux via brew) MUST be documented in `docs/installation.md` —
   never install things silently.
 - MCP permission gating: Claude Code's auto-mode classifier silently blocks tool calls unless
   pre-approved. The Master needs no permissions at all (it is Java; the committed root

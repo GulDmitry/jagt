@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * Machine/OS-level settings, bound from {@code application.yml} (see README's Configuration section). Every value
+ * Machine/OS-level settings, bound from {@code application.yml} (see {@code docs/configuration.md}). Every value
  * is WHAT THE HUMAN WROTE, VERBATIM: a configured binary name is resolved where it is SPAWNED, not here, so the
  * configuration does not depend on the edge that knows the install locations. A bare name is still the right
  * default: an absolute install path defaults to one machine's layout and fails to start on every other.
