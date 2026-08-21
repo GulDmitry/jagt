@@ -447,7 +447,12 @@ link to it, because no file here is named after one vendor.
   names the writes it is asking for before it makes them — `deploy` and `revert` alike, one `project → branch`
   line per repository, read from `TaskView.RepoView.deployBranch`, because "the deploy branch" is not something a
   human can check. `revert` names its SCOPE too: a deploy overwrites the one recorded merge commit, so only the
-  last one comes out.
+  last one comes out. THAT IS ALL EITHER CONFIRM SAYS, and the deploy one ADVISES NOTHING about the round (the
+  owner's instruction, 2026-08-21): it used to warn that a REVIEW_PENDING round was never shipped and that a
+  `review_replies.md` was still in the worktree, and both were wrong often enough to train a human to click the
+  dialog away — which costs the branch lines the only reader they had. A deploy is the human's to make at any
+  moment; jagt states the writes and gets out of the way. Do not add a warning, a badge or a gate to that
+  question.
   The base branch (`baseBranch`, tasks are cut from it) is READ-ONLY: nothing ever
   pushes/merges to it — and that holds for a PER-TASK base too (`do <ticket> from <branch>`, persisted as
   `TaskState.baseBranch`): it moves what the worktree is cut from and what the merge request TARGETS, never

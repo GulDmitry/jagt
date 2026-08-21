@@ -663,37 +663,17 @@ class BoardPageTest {
         verifyNoInteractions(commands);
     }
 
-    /** A deploy lands what was SHIPPED, and a round that edited files is not that — the question has to say so. */
-    @Test
-    void deployingWarnsWhenTheTaskHasWorkThatWasNeverShipped() throws Exception {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/9")
-                .message("widget layout fixed").lastActiveTimestamp(now()).build());
-        CompletableFuture<String> asked = new CompletableFuture<>();
-
-        Page page = open();
-        page.onDialog(dialog -> {
-            asked.complete(dialog.message());
-            dialog.dismiss();
-        });
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Deploy").setExact(true)).click();
-
-        org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
-                .contains("never shipped")
-                .contains("lands the last SHIP");
-        verifyNoInteractions(commands);
-    }
-
     /**
-     * A round that reported `no changes` EDITED nothing, so there is nothing unshipped to warn about — the task
-     * is at REVIEW_PENDING only because that is where every round ends. Warning anyway is what makes a human
-     * doubt a ship they watched succeed.
+     * Whether the work is worth shipping first is the human's call, and the readings jagt tried were wrong often
+     * enough to be clicked past — which is what costs the branch lines their reader.
      */
     @Test
-    void deployingSaysNothingAboutUnshippedWorkAfterARoundThatChangedNothing() throws Exception {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/9")
-                .message("no changes: every thread already resolved").lastActiveTimestamp(now()).build());
+    void deployingAsksAboutTheBranchesAndAdvisesNothingAboutTheRound() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nagreed, fixed\n");
+        state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a1").mrUrl("https://host.example/mr/9").message("widget layout fixed")
+                .lastActiveTimestamp(now()).build());
         CompletableFuture<String> asked = new CompletableFuture<>();
 
         Page page = open();
@@ -704,8 +684,7 @@ class BoardPageTest {
         page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Deploy").setExact(true)).click();
 
         org.assertj.core.api.Assertions.assertThat(asked.get(5, TimeUnit.SECONDS))
-                .startsWith("Deploy ABC-1?")
-                .doesNotContain("never shipped");
+                .isEqualTo("Deploy ABC-1?\n\nThis merges and pushes:\nalpha → dev");
         verifyNoInteractions(commands);
     }
 

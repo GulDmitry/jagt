@@ -2,22 +2,13 @@
 // back get one: a question on every button is a question nobody reads.
 
 // A deploy is the one click that writes a branch other people build on, so the question names the exact writes
-// it is asking for — one line per repository, since a task can move several and each has its own target.
+// it is asking for — one line per repository, since a task can move several and each has its own target. It
+// advises nothing about whether the work is worth shipping first: that reading was wrong often enough to be
+// clicked past, and a dialog nobody reads takes the rest of itself with it.
 const deployQuestion = (task) => {
   const lands = (task.repos || []).map((repo) =>
     `${repo.project} → ${repo.deployBranch || 'no deployBranch in config.json'}`);
-  // A deploy lands what was SHIPPED, and only `ship` moves what a round left behind — so the question names what
-  // would be left out rather than letting a click quietly deploy the previous round and mark the task DEPLOYED.
-  // TWO facts, never one sentence: a round that reported `no changes` edited nothing, so there is nothing
-  // unshipped to warn about, while its drafted answers may still be sitting in the worktree unposted.
-  const unshipped = task.status === 'REVIEW_PENDING' && task.round !== 'NO_CHANGES'
-    ? '\n\nCareful: the agent\u2019s latest changes were never shipped — a deploy lands the last SHIP, not the'
-      + ' worktree. Ship first to include them.'
-    : '';
-  const drafts = task.draftedReplies
-    ? '\n\nreview_replies.md is still in the worktree: if those answers were never posted, ship posts them.'
-    : '';
-  return `Deploy ${task.id}?\n\nThis merges and pushes:\n${lands.join('\n')}${unshipped}${drafts}`;
+  return `Deploy ${task.id}?\n\nThis merges and pushes:\n${lands.join('\n')}`;
 };
 
 const revertQuestion = (task) => {
