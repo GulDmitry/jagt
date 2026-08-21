@@ -2,6 +2,12 @@ plugins {
     id 'java-library'
 }
 
+// A tool writing its state relative to the working directory lands it in `static/`, gitignored and therefore
+// invisible in a diff — and everything there is packaged into the jar and served on loopback.
+processResources {
+    exclude '**/.*', '**/.*/**'
+}
+
 dependencies {
     api project(':core')
     api project(':usecase')
