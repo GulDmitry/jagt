@@ -129,7 +129,9 @@ Three things the sketch does not show:
 
 ## Parity is an invariant, and this is how it is kept
 
-`flow/Move` answers "what can be done to this task, and whose turn is it"; `flow/TaskView` is what the board
+`flow/Move` answers "what can be done to this task, whose turn is it and how loudly it asks" (`flow/Owner` is
+who, `flow/Attention` is whether the card is an interruption — one value, read by the badge, the header count and
+the own-move filter alike); `flow/TaskView` is what the board
 renders; `service/TaskViews` builds both. A new verb reaches both surfaces because both are generated from the
 `flow/TaskAction` declaration: the board renders `Move.actions()` — the legal ones only, which is
 `FlowRules.allowed(...)` — while the console offers every verb and `FlowEngine` refuses an illegal one with a

@@ -52,7 +52,7 @@ function renderEmpty(held, showing) {
 }
 
 export function render(tasks, showing) {
-  const waiting = tasks.filter((task) => task.owner === 'YOU').length;
+  const waiting = tasks.filter((task) => task.attention === 'REQUIRED').length;
   waitingLabel.hidden = waiting === 0;
   waitingLabel.textContent = `${waiting} need your action`;
   autoReviewChip.textContent = store.autoReview().summary || '';

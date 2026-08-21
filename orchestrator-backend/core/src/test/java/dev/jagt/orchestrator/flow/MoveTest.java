@@ -215,6 +215,66 @@ class MoveTest {
     }
 
     /**
+     * The badge, the header count and the own-move filter read the tier, so a card counted as needing the human
+     * while its badge says otherwise is the drift this pins shut.
+     */
+    @ParameterizedTest
+    @EnumSource(TaskStatus.class)
+    void saysNothingAboutAttentionUnlessTheMoveIsTheHumansOwn(TaskStatus status) {
+        Move move = Move.forTask(status, true, RoundState.NONE, false);
+
+        assertThat(move.attention() == Attention.NONE).isEqualTo(move.owner() != Owner.YOU);
+    }
+
+    /** The same invariant for the round that hands a task BACK to the code host: an answered round is no badge. */
+    @Test
+    void saysNothingAboutARoundWhoseOpenThreadsAreTheReviewersToClose() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true,
+                new RoundState(AgentReport.NO_CHANGES, false), false);
+
+        assertThat(move.owner()).isEqualTo(Owner.CI);
+        assertThat(move.attention()).isEqualTo(Attention.NONE);
+    }
+
+    /**
+     * An approval that landed and a revert the human made themselves: nothing is stuck, so the next move is
+     * theirs whenever they want it. Shouting at somebody about the click they just made is what teaches them to
+     * stop reading the badge.
+     */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"APPROVED", "REVERTED"})
+    void offersTheNextMoveWithoutInterruptingWhenNothingIsStuck(TaskStatus status) {
+        Move move = Move.forTask(status, true, RoundState.NONE, false);
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.attention()).isEqualTo(Attention.OPTIONAL);
+    }
+
+    /** The tier jagt exists for: a session that cannot go on, and a round that only a human will read. */
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_FAILED", "DEPLOY_CONFLICT"})
+    void interruptsForATaskThatMovesNoFurtherWithoutTheHuman(TaskStatus status) {
+        assertThat(Move.forTask(status, true, RoundState.NONE, false).attention())
+                .isEqualTo(Attention.REQUIRED);
+    }
+
+    /** A stopped session is an interruption whatever the status it stopped in was worth. */
+    @Test
+    void interruptsWhenAnAgentAsksFromAStatusThatWouldOtherwiseWait() {
+        Move move = Move.forTask(TaskStatus.APPROVED, true, new RoundState(AgentReport.QUESTION, false), false);
+
+        assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
+    }
+
+    /** The watchdog found the session gone; nothing but a human moves it, whatever it last reported. */
+    @Test
+    void interruptsForAnAgentThatWentQuietWithoutReportingAnything() {
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE, true);
+
+        assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
+    }
+
+    /**
      * A round that came back clean is not approved — that is the status after it — so the wait is a reviewer's,
      * and the deploy stays offered without being advised for whoever needs no approval.
      */

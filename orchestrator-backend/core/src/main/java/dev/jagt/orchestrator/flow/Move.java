@@ -23,7 +23,8 @@ import java.util.List;
  * alive. {@code agentSilent} is the other direction and costs nothing here — the watchdog already probed and
  * stamped it, and a stopped agent must not read as a working one.
  */
-public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskAction primary, String hint) {
+public record Move(Phase phase, Owner owner, Attention attention, List<TaskAction> actions, TaskAction primary,
+                   String hint) {
 
     /** For a caller describing a task in a sentence rather than owning a card: it has no poller to speak for. */
     public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round,
@@ -40,7 +41,8 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
     public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round,
                                boolean agentSilent, AutoReviewWatch watch) {
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
-        return new Move(phaseOf(status), ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped()),
+        Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());
+        return new Move(phaseOf(status), owner, attentionOf(owner, status, round),
                 FlowRules.allowed(status, Facts.projected(hasReviewRequest)),
                 primaryOf(status, hasReviewRequest, round, polled),
                 hint(status, hasReviewRequest, round, agentSilent, polled));
@@ -79,6 +81,21 @@ public record Move(Phase phase, Owner owner, List<TaskAction> actions, TaskActio
         // reviewer is sitting on cannot keep pointing at a poll that has stopped. An install that polls nothing
         // at all is NOT this case — it says so once per surface (`AutoReviewWatch.stopped`).
         return owner == Owner.CI && pollStopped ? Owner.YOU : owner;
+    }
+
+    /**
+     * Whether the human is INTERRUPTED or merely offered the next step. Read off the owner rather than a second
+     * set of statuses, so a card can never be counted as needing them while its badge says otherwise. The quiet
+     * tier is a good state whose next move is theirs whenever: an approval that landed, and a revert they made
+     * themselves — shouting at somebody about the click they just made is what teaches them to stop reading the
+     * badge, and the badge is the whole reason jagt has a board.
+     */
+    private static Attention attentionOf(Owner owner, TaskStatus status, RoundState round) {
+        if (owner != Owner.YOU) {
+            return Attention.NONE;
+        }
+        boolean quiet = status == TaskStatus.APPROVED || status == TaskStatus.REVERTED;
+        return quiet && !asking(status, round) ? Attention.OPTIONAL : Attention.REQUIRED;
     }
 
     /** Whose turn it is before liveness and the poller are taken into account. */

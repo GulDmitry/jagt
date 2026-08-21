@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Attention;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.flow.Pipeline;
@@ -86,7 +87,7 @@ public class DashboardRenderer {
             }
             // Lead with WHOSE move it is: on a board of five tasks that is the fact a human scans for. The
             // duration is time in THIS status, not since the last activity — a keep-alive resets that stamp.
-            out.append("                    → ").append(task.owner().label()).append(" · ")
+            out.append("                    → ").append(whose(task)).append(" · ")
                     .append(task.hint()).append("  (").append(task.statusLabel()).append(' ')
                     .append(DurationFormat.compact(now - task.statusSince()))
                     .append(requestOpen(task)).append(")\n");
@@ -95,6 +96,15 @@ public class DashboardRenderer {
             out.append("(no tasks)\n");
         }
         return out.toString();
+    }
+
+    /**
+     * The human's own tier rather than the bare word "you": the console has no colour to spend on a badge, so the
+     * two are one word each — an interruption, or a move of theirs whenever they want it.
+     */
+    private static String whose(TaskView task) {
+        return task.attention() == Attention.NONE
+                ? task.owner().label() : task.attention().label();
     }
 
     /**

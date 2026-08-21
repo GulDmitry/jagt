@@ -16,7 +16,7 @@ const matches = (task, needle) => [task.alias, task.id, task.title]
 // count that obeyed it would read `build 0` the moment `review` was picked, and nothing could be clicked back.
 export const narrowed = (tasks) => {
   const needle = box.value.trim().toLowerCase();
-  return tasks.filter((task) => (!onlyMine.checked || task.owner === 'YOU')
+  return tasks.filter((task) => (!onlyMine.checked || task.attention === 'REQUIRED')
     && (!needle || matches(task, needle)));
 };
 

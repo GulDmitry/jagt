@@ -304,7 +304,7 @@ class BoardPageTest {
 
         assertThat(page.locator("article .alias")).hasText("a1");
         assertThat(page.locator("article .id")).hasText("ABC-1");
-        assertThat(page.locator("article .badge")).hasText("action required");
+        assertThat(page.locator("article .badge")).hasText("your move");
         assertThat(page.locator("article .title")).hasText("Widget layout is off");
         assertThat(page.locator("article .detail")).hasCount(0);
     }
@@ -461,6 +461,27 @@ class BoardPageTest {
         assertThat(page.locator("article .hint")).hasCount(0);
         assertThat(page.locator("article .detail")).hasText(
                 "ANSWERED: already handled — the open threads are the reviewer's to close");
+    }
+
+    /**
+     * TWO tiers, or the badge is worth nothing: an approval that landed can wait, a red run cannot. Only the loud
+     * one is counted in the header and kept by the own-move filter — that count is what a human glances at.
+     */
+    @Test
+    void interruptsForABlockedTaskAndOnlyOffersTheNextMoveForOneThatCanWait() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_FAILED).alias("a1").mrUrl("https://host.example/mr/7")
+                .lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                        TaskStatus.APPROVED).alias("a2").mrUrl("https://host.example/mr/8")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .badge")).hasText(new String[]{"action required", "your move"});
+        assertThat(page.locator("#waiting")).hasText("1 need your action");
+        page.locator("#mine").check();
+        assertThat(page.locator("article .alias")).hasText(new String[]{"a1"});
     }
 
     /**

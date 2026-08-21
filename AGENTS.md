@@ -239,8 +239,8 @@ link to it, because no file here is named after one vendor.
 - `Phase`/`Owner` are a PROJECTION for humans, never persisted and never a second state machine: `TaskStatus`
   stays the SSOT. Eleven statuses collapse into six phases because four of them read as the one word "review".
 - `Owner.YOU` MEANS AN ACTION OF THEIRS EXISTS, and a status alone cannot always say so — the board's badge, its
-  "action required" count and its own-move filter all read that one value, so a card that asks for a human who
-  has nothing to do teaches them to ignore all three. Two cells are therefore decided by more than the status
+  "action required" count and its own-move filter all read the tier BELOW, which is NONE exactly when the owner is
+  not YOU, so a card that asks for a human who has nothing to do teaches them to ignore all three. Two cells are therefore decided by more than the status
   (`Move.ownerOf`): a REVIEW_PENDING round that changed nothing and drafted no reply waits on the REVIEWER (the
   only move left is a ship jagt itself advises against), and a round whose EXPECTED poll has stopped
   waits on the HUMAN. That second one is `AutoReviewWatch.stopped()`, not "is not being polled": an install that
@@ -262,6 +262,17 @@ link to it, because no file here is named after one vendor.
   human's) and "nothing is polling at all" (an install with auto-review off, where the approval is fetched only
   when a human asks) are different questions, and a card that answered the second with the first offered no move
   at all on the default install.
+- AN ACTION THAT CAN WAIT IS NOT AN INTERRUPTION, so the human's own turn has TWO tiers and `flow/Attention` is
+  the one value that says which (the owner's rule, 2026-08-21): REQUIRED is what jagt exists to surface — a
+  session that stopped or asked, a round back from review, a red run, a conflict, a round nothing will read again
+  — and OPTIONAL is a good state whose next move is theirs whenever, which today is an approval that landed and a
+  revert they made themselves. `NONE` exactly when the owner is not YOU, pinned over every status in `MoveTest`,
+  because a card counted in "N need your action" while its badge says the move can wait is the drift that makes
+  the badge worth nothing. What each tier gets is deliberate: only REQUIRED is counted in the header and kept by
+  the own-move filter, OPTIONAL is a card-level chip in the flat chip colour with the alarm edge dropped, and the
+  words come from the enum (`attentionLabel` on the wire, exactly as a status ships its label) so the console
+  prints the same two. The PING is the one thing that still reads the OWNER rather than the tier — an approval
+  landing is an event worth a banner even though it can wait, which is the rule from 2026-08-20 unchanged.
 - NEITHER IS WORK THAT IS ALREADY LIVE (the owner's rule, 2026-08-21): DEPLOYED's owner is NOBODY, exactly as
   DONE's is. Closing the task is housekeeping a human does when they feel like it — `done` stays the highlighted
   move and nothing else is left — so a badge there sat next to a stalled session and a deploy conflict wearing

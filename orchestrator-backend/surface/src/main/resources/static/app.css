@@ -111,6 +111,8 @@ article {
   border-radius: 8px; padding: 10px; align-self: start;
 }
 article.you { border-left-color: var(--you); }
+/* A move of theirs that nothing is waiting on keeps the plain edge: the colour is for the cards that are stuck. */
+article.you.optional { border-left-color: var(--line); }
 article.agent { border-left-color: var(--agent); }
 article.ci { border-left-color: var(--ci); }
 .card-top { display: flex; gap: 8px; align-items: baseline; }
@@ -121,7 +123,10 @@ article.ci { border-left-color: var(--ci); }
 .title { margin: 6px 0; }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
 .badge { padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; }
-.badge.you { background: var(--you-bg); color: var(--you); }
+/* Two tiers, and the quiet one has to LOOK quiet: an interruption filled in the owner's colour, a move that can
+   wait wearing the same chip as a status. */
+.badge.required { background: var(--you-bg); color: var(--you); }
+.badge.optional { background: var(--chip-bg); color: var(--muted); font-weight: 400; }
 .mr-age, .pulse { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
 /* Not a flex container: a flex box drops the space between two words, leaving the text legible only for as
    long as a stylesheet says so. */
