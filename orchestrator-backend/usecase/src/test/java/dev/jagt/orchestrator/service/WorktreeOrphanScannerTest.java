@@ -96,7 +96,7 @@ class WorktreeOrphanScannerTest {
                 "something-else", "XYZ-1-other");
 
         Set<String> orphans = WorktreeOrphanScanner.orphanNames(onDisk, "demo",
-                Set.of("ABC-41-demo", "ABC-41-deploy"));
+                Set.of("ABC-41-demo", "ABC-41-deploy"), name -> true);
 
         assertThat(orphans).containsExactly("ABC-40-demo");
     }
@@ -104,9 +104,45 @@ class WorktreeOrphanScannerTest {
     @Test
     void treatsADeployLeftoverOfARetiredTaskAsAnOrphan() {
         Set<String> orphans = WorktreeOrphanScanner.orphanNames(
-                List.of("ABC-40-deploy", "demo-repo"), "demo", Set.of());
+                List.of("ABC-40-deploy", "demo-repo"), "demo", Set.of(), name -> true);
 
         assertThat(orphans).containsExactly("ABC-40-deploy");
+    }
+
+    @Test
+    void treatsARevertLeftoverAsAnOrphanJustLikeADeployOne() {
+        Set<String> orphans = WorktreeOrphanScanner.orphanNames(
+                List.of("ABC-40-revert", "demo-repo"), "demo", Set.of(), name -> true);
+
+        assertThat(orphans).containsExactly("ABC-40-revert");
+    }
+
+    @Test
+    void reportsADeployDirectoryHoldingNoCheckoutWhileItsTaskIsStillAlive(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+        Path residue = Files.createDirectories(root.resolve("ABC-41-deploy"));
+        Files.createDirectories(residue.resolve(".idea"));
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"),
+                Map.of("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build()));
+
+        assertThat(scanner.scan()).singleElement()
+                .satisfies(found -> assertThat(found.path()).isEqualTo(residue));
+    }
+
+    @Test
+    void reportsADeployDirectoryWhoseCheckoutWasUnregisteredButNeverDeleted(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
+        Path unregistered = Files.createDirectories(root.resolve("ABC-41-deploy"));
+        Files.writeString(unregistered.resolve(".git"),
+                "gitdir: " + repo.resolve(".git/worktrees/ABC-41-deploy") + "\n");
+        Files.writeString(unregistered.resolve(".env"), "TOKEN=secret");
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"),
+                Map.of("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build()));
+
+        assertThat(scanner.scan()).singleElement()
+                .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
     }
 
     private static WorktreeOrphanScanner scannerFor(Path root, Path repo, List<String> copyGlobs) {

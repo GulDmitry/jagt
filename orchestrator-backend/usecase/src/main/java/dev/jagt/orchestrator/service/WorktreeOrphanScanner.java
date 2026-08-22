@@ -94,7 +94,8 @@ public class WorktreeOrphanScanner implements Job {
             if (parent == null || !Files.isDirectory(parent)) {
                 return;
             }
-            for (String name : orphanNames(directoryNames(parent), projectKey, owned)) {
+            for (String name : orphanNames(directoryNames(parent), projectKey, owned,
+                    name -> holdsCheckout(parent.resolve(name)))) {
                 Path path = parent.resolve(name);
                 if (!path.equals(projectPath)) {
                     found.putIfAbsent(path, new Orphan(path, projectKey,
@@ -105,12 +106,38 @@ public class WorktreeOrphanScanner implements Job {
         return List.copyOf(found.values());
     }
 
-    /** A {@code -deploy} suffix is a conflicted deploy nobody finished, and a leftover just the same. */
-    static Set<String> orphanNames(List<String> directoryNames, String projectKey, Set<String> ownedNames) {
+    /**
+     * A {@code -deploy} or {@code -revert} suffix is a round nobody finished, and a leftover just the same.
+     * Naming a DEPLOY directory after a live task protects a real checkout only: what is left once git removed
+     * the worktree is nobody's, whatever that task is doing.
+     */
+    static Set<String> orphanNames(List<String> directoryNames, String projectKey, Set<String> ownedNames,
+                                   java.util.function.Predicate<String> holdsCheckout) {
         return directoryNames.stream()
-                .filter(name -> name.endsWith("-" + projectKey) || name.endsWith("-deploy"))
-                .filter(name -> !ownedNames.contains(name))
+                .filter(name -> name.endsWith("-" + projectKey) || name.endsWith("-deploy")
+                        || name.endsWith("-revert"))
+                .filter(name -> !ownedNames.contains(name)
+                        || (name.endsWith("-deploy") && !holdsCheckout.test(name)))
                 .collect(java.util.stream.Collectors.toCollection(TreeSet::new));
+    }
+
+    /**
+     * A linked worktree's {@code .git} is a POINTER, and it outlives the registration it names: a removal that
+     * unregistered the worktree and then failed to delete the directory leaves one behind, checkout and copied
+     * secrets and all — which is the leftover worth reporting, not the one to keep quiet about.
+     */
+    private static boolean holdsCheckout(Path directory) {
+        Path marker = directory.resolve(".git");
+        if (Files.isDirectory(marker)) {
+            return true;
+        }
+        try {
+            String pointer = Files.readString(marker).strip();
+            return pointer.startsWith("gitdir:")
+                    && Files.exists(directory.resolve(pointer.substring("gitdir:".length()).strip()));
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     /**
