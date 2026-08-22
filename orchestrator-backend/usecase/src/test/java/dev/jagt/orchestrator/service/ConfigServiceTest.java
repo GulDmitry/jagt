@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.DashboardConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -94,5 +95,21 @@ class ConfigServiceTest {
         DashboardConfig dashboard = DashboardConfig.defaults().withReservedRows(configured);
 
         assertThat(dashboard.reservedRowsOrDefault()).isEqualTo(expected);
+    }
+
+    static Stream<Arguments> probeIntervals() {
+        return Stream.of(
+                Arguments.of(null, 600),
+                Arguments.of(-5, 600),
+                Arguments.of(0, 600),
+                Arguments.of(300, 300));
+    }
+
+    @ParameterizedTest
+    @MethodSource("probeIntervals")
+    void resolvesHowOftenARunningSessionIsLookedAt(Integer configured, int expected) {
+        AgentConfig agent = AgentConfig.defaults().withProbeSeconds(configured);
+
+        assertThat(agent.probeSecondsOrDefault()).isEqualTo(expected);
     }
 }

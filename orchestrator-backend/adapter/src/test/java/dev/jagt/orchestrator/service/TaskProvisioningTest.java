@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.ClaudeProperties;
 import dev.jagt.orchestrator.port.SessionHost;
 
 import dev.jagt.orchestrator.adapter.agent.ClaudeAgentRuntime;
+import dev.jagt.orchestrator.adapter.agent.HookEndpoint;
 import dev.jagt.orchestrator.adapter.agent.McpEndpoint;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -64,13 +65,17 @@ class TaskProvisioningTest {
 
     private TaskProvisioning provisioning() {
         OrchestratorPaths paths = new OrchestratorPaths(properties);
-        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, ClaudeProperties.defaults(), new McpEndpoint("http://localhost:8290/mcp"));
+        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, ClaudeProperties.defaults(),
+                new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
         return provisioning(new WorktreeSetup(runtime, paths, config,
                 new SubAgentBriefing(new PromptTemplates(), properties, paths, config, state)));
     }
 
     private TaskProvisioning provisioning(WorktreeSetup setup) {
-        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, ClaudeProperties.defaults(), new McpEndpoint("http://localhost:8290/mcp"));
+        ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, ClaudeProperties.defaults(),
+                new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
         AgentSessions sessions = new AgentSessions(config, state, mock(SessionHost.class),
                 mock(TerminalDriver.class), runtime);
         return new TaskProvisioning(config, state, git, sessions, setup);

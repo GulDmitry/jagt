@@ -71,12 +71,41 @@ class DashboardLineTest {
 
     /** The one case where the status itself lies: it reads as work in progress and nothing is progressing. */
     @ParameterizedTest
-    @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING"})
+    @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "SHIPPING"})
     void shoutsThatAnAgentTheWatchdogFoundSilentIsNowTheHumansProblem(TaskStatus status) {
-        TaskState task = TaskState.builder("p", "/wt", status).message("step 2").silentSince(1_000).build();
+        TaskState task = TaskState.builder("p", "/wt", status).message("step 2").silentSince(1_000)
+                .silentBecause("waiting for input").build();
 
         assertThat(DashboardLine.forTask(task, null))
-                .isEqualTo("NEEDS YOU: agent stopped: no MCP call and no process in its window");
+                .isEqualTo("NEEDS YOU: agent stopped: waiting for input");
+    }
+
+    /** A session that ended and one waiting for a keypress need different moves from the human. */
+    @Test
+    void saysWhatToLookAtWhenNothingWasEverReported() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).silentSince(1_000).build();
+
+        assertThat(DashboardLine.forTask(task, null))
+                .isEqualTo("NEEDS YOU: agent stopped: the agent never reported — check that the CLI started");
+    }
+
+    /** A session that came up and stopped at a prompt before its first report is blocked THERE, not at launch. */
+    @Test
+    void quotesWhatTheSessionReportedEvenBeforeItsFirstStatus() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).silentSince(1_000)
+                .silentBecause("waiting for input").build();
+
+        assertThat(DashboardLine.forTask(task, null))
+                .isEqualTo("NEEDS YOU: agent stopped: waiting for input");
+    }
+
+    /** A state file written before the reason was recorded still has to say something a human can read. */
+    @Test
+    void fallsBackToAGeneralSentenceWhereNoReasonWasRecorded() {
+        TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS).silentSince(1_000).build();
+
+        assertThat(DashboardLine.forTask(task, null))
+                .isEqualTo("NEEDS YOU: agent stopped: nothing has moved in its session");
     }
 
     /** What it asked is worth more than the fact it then stopped; the next-move line still names the silence. */

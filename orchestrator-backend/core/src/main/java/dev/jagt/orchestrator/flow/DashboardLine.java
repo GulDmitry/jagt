@@ -52,9 +52,22 @@ public final class DashboardLine {
     /**
      * The status says the agent is working and the watchdog found otherwise — the one case where the status
      * itself misleads, so it is shouted rather than left to the next-move line.
+     *
+     * <p>Where nothing was reported about the session there is no sentence to carry, so this one is the
+     * status's to make: at NEW the agent has not reported at all, and the launch is what a human should be
+     * looking at rather than the agent. A session that DID report is quoted whatever its status.
      */
     private static String silence(TaskState task) {
-        return task.agentIsSilent() ? "NEEDS YOU: agent stopped: no MCP call and no process in its window" : "";
+        if (!task.agentIsSilent()) {
+            return "";
+        }
+        String because = task.silentBecause();
+        if (because == null || because.isBlank()) {
+            because = task.status() == TaskStatus.NEW
+                    ? "the agent never reported — check that the CLI started"
+                    : "nothing has moved in its session";
+        }
+        return "NEEDS YOU: agent stopped: " + because;
     }
 
     private static String needsInput(String message) {

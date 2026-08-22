@@ -80,6 +80,7 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 | key | default | meaning |
 |-----|---------|---------|
 | `agent.outputStyle` | `""` | output style for the agent CLI; empty = the agent's own |
+| `agent.probeSeconds` | `600` | how often every running session is looked at; a session whose hooks report needs no wait |
 | `worktree.copyGlobs` | `["**/.env"]` | gitignored local files copied into each worktree |
 
 ## application.yml
@@ -127,6 +128,7 @@ Shows the agent's session inside the board when you press Focus. Needs ttyd inst
 | `orchestrator.agent-prompt` | *(built in)* | bootstrap prompt every sub-agent starts with |
 | `orchestrator.agent-disabled-plugins` | *(empty)* | plugins disabled per agent worktree |
 | `orchestrator.mcp-url` | `http://localhost:<port>/mcp` | where an agent reaches jagt |
+| `orchestrator.hook-url` | `http://127.0.0.1:<port>/api/agent/session` | where an agent CLI's hooks report a stopped session |
 | `orchestrator.stub.script` | — | only for `orchestrator.agent=stub` |
 
 ### Code host and tracker
@@ -160,7 +162,7 @@ The one place jagt spends model money — a headless one-shot read, used when no
 | key | default | meaning |
 |-----|---------|---------|
 | `orchestrator.startup-checks` | `true` | refuse to start when the installation is incomplete |
-| `orchestrator.watchdog.stale-after` | `5m` | silence before an "agent unresponsive" alert |
+| `orchestrator.watchdog.stale-after` | `5m` | silence before an "agent stopped" alert; a hook report needs no wait |
 | `orchestrator.config-file` | *(root)* | where `config.json` lives |
 | `orchestrator.state-file` | *(root)* | where `state.json` lives |
 | `orchestrator.root` / `ORCHESTRATOR_ROOT` | *(auto)* | override the detected orchestrator root |

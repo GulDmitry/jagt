@@ -36,6 +36,10 @@ carries only the verbs a create-or-update needs.
 The pluggable AI-agent CLI. `launchCommand` **and** worktree provisioning (`provisionWorktree`, a template in
 `AbstractAgentRuntime` plus one per-agent hook) both live here.
 
+Liveness is the runtime's too (`lastSessionActivityMillis`): where a CLI keeps a log of a session, only that
+runtime knows where — and the same file is what a session's own hooks name back, so the derivation is a
+fallback rather than the answer.
+
 `mcp_client.js` is a **standard, agent-agnostic** MCP stdio↔HTTP proxy — keep it that way — and is linked by
 the template. Only the config that declares it differs per agent (Claude: `.mcp.json` +
 `.claude/settings.local.json`; Codex: `.jagt/codex/config.toml` with `CODEX_HOME` pointed at it — **not** at the

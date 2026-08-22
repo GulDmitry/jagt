@@ -121,6 +121,29 @@ Safety on shared branches is **not** this allow-list — it is the detached upst
 Regenerated only by `initialize_task`, so an **existing** worktree keeps its old file: patch it in place or
 re-create the task to pick up a changed allow-list.
 
+### A session reports itself through its CLI's own hooks, never through the model
+
+The same generated file declares them, and `adapter/agent/HookEndpoint` writes the one line each runs: a POST
+to `/api/agent/session/<state>` carrying the worktree as `X-Working-Directory`, with whatever the harness handed
+the hook forwarded on stdin unread by the shell. The line ends in `|| true`, because a failure reported here
+would put jagt's plumbing in front of the human working in that session.
+
+**Which of a CLI's events mean what is a resource, not code**: `adapter/src/main/resources/hooks/<runtime>.properties`,
+one line per event, so the mapping a human comes looking for is one file to open and the vendor's vocabulary
+never reaches Java. A runtime with no resource writes no hooks. jagt's three states are `waiting` (nothing moves
+until a human answers), `gone` and `working`.
+
+Two things the payload buys, and neither is required: the file the session appends to (otherwise derived from
+the worktree path, which is a guess) and nothing else. **A missing or changed payload costs a detail, never the
+report.**
+
+A report has `WatchdogService.check` judge that one task at once — otherwise a session answered by a human
+would keep its NEEDS YOU for a whole probe interval, which is exactly what a ten-minute interval makes
+unbearable.
+
+**This is not a git hook** and the ban does not reach it: a git hook enforces, and these only report — the
+verdict stays `WatchdogService`'s.
+
 ### Agent resource hygiene
 
 Each sub-agent is a Claude Code session in a worktree, so each spawns its **own** language server (jdtls

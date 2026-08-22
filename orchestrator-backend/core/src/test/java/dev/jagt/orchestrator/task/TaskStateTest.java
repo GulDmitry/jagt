@@ -148,7 +148,7 @@ class TaskStateTest {
     @Test
     void dropsTheSilenceStampAsSoonAsTheAgentReportsAnything() {
         TaskState silent = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
-                .withSilentSince(1_000);
+                .withSilentSince(1_000, "waiting for input");
 
         assertThat(silent.touched().agentIsSilent()).isFalse();
     }
@@ -280,6 +280,6 @@ class TaskStateTest {
     private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
                                         List<StatusChange> history) {
         return new TaskState(List.of(TaskRepo.of("proj", "/wt")), status, lastActive, message, "a1", null,
-                null, null, 0, 0, 0, 0, null, null, null, null, history);
+                null, null, 0, 0, 0, 0, null, null, null, null, null, history);
     }
 }

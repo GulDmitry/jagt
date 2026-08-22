@@ -14,15 +14,34 @@ while a tool description reaches every session). `AgentReport.QUESTION` flips `M
 status it kept, `DashboardLine` reads NEEDS INPUT, and `AgentStatusReports` pings once, on the transition
 **into** asking.
 
-**The half no prompt can promise** is the agent that never got the chance — a token limit, a crash. So
-`WatchdogService` **stamps** what it probes (`TaskState.silentSince`: stale MCP plus a quiet tmux window)
-instead of only sending a ping a human dismisses, and the same owner flip plus a NEEDS YOU line happen with
-the agent saying nothing.
+**The half no prompt can promise** is the agent that never got the chance — a token limit, a crash, a
+permission prompt nobody answered. So `WatchdogService` **stamps** what `service/SessionProbe` finds
+(`TaskState.silentSince`) instead of only sending a ping a human dismisses, and the same owner flip plus a
+NEEDS YOU line happen with the agent saying nothing.
 
-**What the watchdog cannot see is a live session sitting at a prompt**, and that is measured, not assumed: a
-Claude window waiting on a question repaints every 10–30s (2026-08-20), so the window half of the probe stays
-warm forever and no stamp is ever written. An agent asking anything — its own question tool, a plan to
-approve, a permission prompt — is therefore reachable **only** through its own `outcome=question` report.
+**Terminal output cannot answer whether a session is waiting**, and that is measured rather than assumed: a
+Claude window waiting on a question repaints every 10–30s (2026-08-20), so a window-activity probe stays warm
+forever and no stamp is ever written. Two signs that do carry that half, neither costing a token:
+
+- **the CLI's own hooks**, which say so within seconds because the harness fires them rather than the model —
+  a session out of tokens still reports, and `WatchdogService.check` runs that one task at once rather than
+  letting it wait out the interval. Kept in memory: losing them on a restart costs promptness only.
+- **the log a session keeps of itself** (`AgentRuntime.lastSessionActivityMillis`, or the path a session
+  reported), which grows only when something happened.
+
+Terminal output survives as the **last** sign rather than the first, and that is not a hedge: a log gets its
+entry when a tool call is issued and nothing while it runs, so an eight-minute build reads as death without
+it. What a prompt looks like is the harness's to report, never this threshold's to infer.
+
+**A hook reports; it decides nothing.** The stamp stays the watchdog's single verdict, or one surface would
+start calling a session blocked while the other has it working. A session reporting itself **alive** drops what
+was said before rather than outranking it by time: the two hooks of one restart are stamped on arrival and can
+share a millisecond.
+
+**Why it stopped is stamped beside when** (`TaskState.silentBecause`), because a session that ENDED and one
+waiting for a keypress need different moves, and a timestamp cannot tell them apart. Both surfaces read the one
+sentence `DashboardLine` builds from it — and at NEW it is overruled, since nothing has reported at all yet and
+the launch is what a human should be looking at.
 
 Three things hold it up:
 

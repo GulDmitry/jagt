@@ -25,6 +25,12 @@ public abstract class AbstractAgentRuntime implements AgentRuntime {
         wireAgent(worktree);
     }
 
+    /** Answering nothing degrades to the signs jagt can take itself; a guess would be read as certainty. */
+    @Override
+    public long lastSessionActivityMillis(Path worktree) {
+        return 0;
+    }
+
     /** A fresh worktree holds nothing but the checkout; jagt's own plumbing is written as links. */
     protected static boolean broughtByCheckout(Path file) {
         return Files.exists(file, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(file);

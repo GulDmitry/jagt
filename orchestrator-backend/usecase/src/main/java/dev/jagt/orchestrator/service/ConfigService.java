@@ -137,10 +137,10 @@ public class ConfigService {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record AgentConfig(String outputStyle) {
+        public record AgentConfig(String outputStyle, Integer probeSeconds) {
 
             public static AgentConfig defaults() {
-                return new AgentConfig(null);
+                return new AgentConfig(null, null);
             }
 
             /**
@@ -149,6 +149,15 @@ public class ConfigService {
              */
             public String outputStyleOrNull() {
                 return outputStyle == null || outputStyle.isBlank() ? null : outputStyle.strip();
+            }
+
+            /**
+             * How often every running session is looked at. It is the cadence for a session whose harness
+             * reports NOTHING — one that does says so in seconds either way, which is what makes ten minutes
+             * a sane default rather than a gamble.
+             */
+            public int probeSecondsOrDefault() {
+                return probeSeconds == null || probeSeconds <= 0 ? 600 : probeSeconds;
             }
         }
 

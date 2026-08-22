@@ -11,10 +11,15 @@
 | `API Error: 529 Overloaded` | transient, server-side. Re-run; task state is unchanged |
 | Nothing pastes in a kitty window | non-UTF-8 shell locale — see [Installation](installation.md#notes) |
 
-The agent that stops without saying so is the case jagt cannot promise to catch. A session sitting at a prompt
-looks alive, so an agent is asked to report `outcome=question` *before* it asks a human anything — that is what
-puts NEEDS INPUT on the card. The watchdog catches the rest: no MCP call and a quiet window means the card
-flips to you.
+The agent that stops without saying so is caught by three signs, none of which costs a token: its own
+`outcome=question` report (NEEDS INPUT on the card), the hooks its CLI fires when it stops or waits, and the
+log a session keeps of itself. Terminal output is the last resort, and only because a long tool call writes
+nothing anywhere else.
+
+| symptom | fix |
+|---------|-----|
+| A session at a prompt is never flagged | Hooks are written at `initialize_task`; an older worktree reports nothing until the task is recreated |
+| No session ever reports | `curl` is not on the session's PATH. The flag still arrives, one `staleAfter` window later |
 
 ## Deploy and revert
 

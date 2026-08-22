@@ -1,36 +1,41 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.SessionHost;
-
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.port.Notification;
-import dev.jagt.orchestrator.notify.Notifications;
-import lombok.extern.slf4j.Slf4j;
-import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.Notification;
+import dev.jagt.orchestrator.task.TaskState;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Detects silently DEAD agents (token limit, pending prompt, crash) — not merely busy ones. A task
- * is only flagged when it is both silent on MCP (stale lastActiveTimestamp) AND its tmux window has
- * produced no output for the threshold: a working agent keeps printing (spinner, tokens, build logs)
- * even between MCP calls, so the window-activity check removes the false "unresponsive" alerts.
+ * Finds the sessions that have stopped rather than the ones that are merely busy, and says so where a human
+ * looks.
  *
  * <p>What it finds is STAMPED on the task, not only sent as a desktop ping: a notification is gone the moment
- * it is dismissed, and a blocked session has to be readable off the board for as long as it is blocked. This is
- * the only place that probe is paid for, so it is the only place that may write the stamp.
+ * it is dismissed, and a blocked session has to be readable off the board for as long as it is blocked. This
+ * is the only place that stamp is written, so no sign can be recorded without this verdict having agreed.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WatchdogService implements Job {
+
+    private final StateService stateService;
+    private final Notifications notifications;
+    private final OrchestratorProperties properties;
+    private final SessionProbe probe;
+    private final Map<String, Long> lastAlertAt = new ConcurrentHashMap<>();
+
     @Override
     public String id() {
         return "watchdog";
@@ -43,16 +48,8 @@ public class WatchdogService implements Job {
 
     @Override
     public Duration every() {
-        return Duration.ofMinutes(1);
+        return probe.every();
     }
-
-
-    private final StateService stateService;
-    private final Notifications notifications;
-    private final OrchestratorProperties properties;
-    private final SessionHost sessions;
-    private final ConfigService configService;
-    private final Map<String, Long> lastAlertAt = new ConcurrentHashMap<>();
 
     /**
      * The statuses where the agent is EXPECTED to be doing something, so silence means death — NEW included,
@@ -69,50 +66,67 @@ public class WatchdogService implements Job {
 
     @Override
     public void run() {
-        long staleMs = properties.watchdog().staleAfter().toMillis();
         long now = System.currentTimeMillis();
-        String session = sessions.sessionName(configService.load().viewer().tmuxSession());
-        stateService.tasks().forEach((taskId, task) -> {
-            long silentSince = silentSince(session, taskId, task, staleMs, now);
-            stamp(taskId, task, silentSince);
-            if (silentSince == 0) {
-                lastAlertAt.remove(taskId);
-                return;
-            }
-            // Re-alert at most once per stale window to avoid notification spam.
-            if (now - lastAlertAt.getOrDefault(taskId, 0L) < staleMs) {
-                return;
-            }
-            lastAlertAt.put(taskId, now);
-            long silentMinutes = (now - silentSince) / 60_000;
-            log.warn("Watchdog: task {} silent for {} min", taskId, silentMinutes);
-            notifications.send(Notification.watchdog(taskId, "agent unresponsive",
-                    "silent for " + silentMinutes + " min"));
-        });
+        Map<String, TaskState> tasks = stateService.tasks();
+        probe.keepOnly(tasks.keySet());
+        tasks.forEach((taskId, task) -> verdict(taskId, task, now));
     }
 
-    /**
-     * When life was last seen, if that is longer ago than the threshold in a status where the agent should be
-     * working; 0 when there is nothing to flag. The LATER of the two signs, so the duration a human is shown is
-     * the whole truth — and the window is asked only once MCP is already stale, because the probe is a process
-     * spawn and a task that reported a minute ago needs no second opinion.
-     */
-    private long silentSince(String session, String taskId, TaskState task, long staleMs, long now) {
-        if (!watches(task.status()) || now - task.lastActiveTimestamp() < staleMs) {
-            return 0;
-        }
-        long lastSign = Math.max(task.lastActiveTimestamp(), sessions.lastWindowActivityMillis(session, taskId));
-        return now - lastSign < staleMs ? 0 : lastSign;
+    /** One task on its own, for a session that just reported itself and must not wait out the interval. */
+    public void check(String taskId) {
+        stateService.task(taskId).ifPresent(task -> verdict(taskId, task, System.currentTimeMillis()));
     }
 
-    /**
-     * Written only on the TRANSITION in or out of silence: every surface repaints on a state write, and this runs
-     * once a minute. Keeping the first detection's stamp is also what makes the duration grow instead of resetting.
-     */
-    private void stamp(String taskId, TaskState task, long silentSince) {
-        if (task.agentIsSilent() == (silentSince > 0)) {
+    private void verdict(String taskId, TaskState task, long now) {
+        long staleMs = properties.watchdog().staleAfter().toMillis();
+        Optional<SessionProbe.Silence> silence = watches(task.status())
+                ? probe.of(taskId, task, staleMs, now)
+                : Optional.empty();
+        stamp(taskId, task, silence.orElse(null));
+        if (silence.isEmpty()) {
+            lastAlertAt.remove(taskId);
             return;
         }
-        stateService.updateTask(taskId, current -> current.withSilentSince(silentSince));
+        // The wait that FOLLOWS an agent's own question was announced when it asked — but a question left
+        // unanswered until the session died is a different event, and the one most worth a banner.
+        boolean announcedWhenItAsked = silence.get().reported() == SessionProbe.State.WAITING
+                && AgentReport.of(task.message()) == AgentReport.QUESTION;
+        // Re-alert at most once per stale window to avoid notification spam.
+        if (announcedWhenItAsked || now - lastAlertAt.getOrDefault(taskId, 0L) < staleMs) {
+            return;
+        }
+        String said = body(silence.get());
+        lastAlertAt.put(taskId, now);
+        log.warn("Watchdog: task {} stopped — {} ({} min)", taskId, said,
+                (now - silence.get().since()) / 60_000);
+        notifications.send(Notification.watchdog(taskId, "agent stopped", said));
+    }
+
+    /** A banner has one line and no clock, so the absence of any word about a session has to become one. */
+    private static String body(SessionProbe.Silence silence) {
+        return silence.detail() == null ? "no sign of life" : silence.detail();
+    }
+
+    /**
+     * Written only when the verdict CHANGES — in or out of silence, or into a different reason for it: every
+     * surface repaints on a state write, and this runs against every task there is. Keeping the first
+     * detection's timestamp is also what makes the duration grow instead of resetting.
+     */
+    void stamp(String taskId, TaskState task, SessionProbe.Silence silence) {
+        String because = silence == null ? null : silence.detail();
+        if (task.agentIsSilent() == (silence != null) && Objects.equals(task.silentBecause(), because)) {
+            return;
+        }
+        long since = silence == null ? 0 : silence.since();
+        // Only over the state this verdict was reached from: a report can land on its own thread in between,
+        // and the pass that decided before it arrived must not be the one that erases it.
+        stateService.updateTask(taskId, current -> unchanged(current, task)
+                ? current.withSilentSince(since, because)
+                : current);
+    }
+
+    private static boolean unchanged(TaskState current, TaskState decidedFrom) {
+        return current.silentSince() == decidedFrom.silentSince()
+                && Objects.equals(current.silentBecause(), decidedFrom.silentBecause());
     }
 }

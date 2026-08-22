@@ -38,7 +38,7 @@ public class McpEndpoint {
         return url;
     }
 
-    public String callerHeaderValue(Path worktree) {
+    public static String callerHeaderValue(Path worktree) {
         return worktree.toAbsolutePath().normalize().toString();
     }
 }

@@ -23,7 +23,8 @@ class ClaudeAgentRuntimeTest {
     void launchesTheClaudeCliWithTheBootstrapPromptQuoted() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults()
                 .withAgentPrompt("Read AGENTS.md and work"), new ClaudeProperties("claude"),
-                new McpEndpoint("http://localhost:8290/mcp"));
+                new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
 
         assertThat(runtime.launchCommand(Path.of("/wt"), false))
                 .isEqualTo("claude 'Read AGENTS.md and work'");
@@ -32,7 +33,8 @@ class ClaudeAgentRuntimeTest {
     @Test
     void startsTheAgentInPlanModeWhenTheHumanAskedToAgreeOnTheApproachFirst() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
-                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
 
         assertThat(runtime.launchCommand(Path.of("/wt"), true))
                 .isEqualTo("claude --permission-mode plan 'go'");
@@ -41,7 +43,8 @@ class ClaudeAgentRuntimeTest {
     @Test
     void keepsAPromptWithAnApostropheOneShellArgumentInsteadOfBreakingTheLaunch() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("it's fine"),
-                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
 
         assertThat(runtime.launchCommand(Path.of("/wt"), false))
                 .isEqualTo("claude 'it'\\''s fine'");
@@ -58,7 +61,8 @@ class ClaudeAgentRuntimeTest {
         worktree.toFile().mkdirs();
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
-                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"))
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"))
                 .provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
         var config = new JsonMapper().readTree(Files.readString(worktree.resolve(".mcp.json")))
@@ -76,7 +80,8 @@ class ClaudeAgentRuntimeTest {
         worktree.toFile().mkdirs();
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
-                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"))
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"))
                 .provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
         assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
@@ -88,7 +93,8 @@ class ClaudeAgentRuntimeTest {
         worktree.toFile().mkdirs();
 
         new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
-                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"))
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"))
                 .provisionWorktree(new AgentWorktree(worktree, root, null, null));
         Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "system knowledge");
 
@@ -102,7 +108,8 @@ class ClaudeAgentRuntimeTest {
         Files.writeString(worktree.resolve("CLAUDE.md"), "project rules");
 
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
-                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
         Path briefing = runtime.systemKnowledgeFile(worktree);
         runtime.provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
@@ -117,7 +124,8 @@ class ClaudeAgentRuntimeTest {
         Files.writeString(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE), "project rules");
 
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
-                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
         Path briefing = runtime.systemKnowledgeFile(worktree);
         runtime.provisionWorktree(new AgentWorktree(worktree, root, null, null));
 
@@ -135,7 +143,8 @@ class ClaudeAgentRuntimeTest {
         Files.writeString(worktree.resolve("CLAUDE.local.md"), "personal rules");
 
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
-                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"));
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
 
         assertThatThrownBy(() -> runtime.systemKnowledgeFile(worktree))
                 .isInstanceOf(IllegalStateException.class)
@@ -144,7 +153,7 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void pinsConfiguredOutputStyleInGeneratedAgentSettings() {
-        String json = ClaudeAgentRuntime.settingsJson("sob-ai:Engineer", null);
+        String json = ClaudeAgentRuntime.settingsJson("sob-ai:Engineer", null, null);
 
         String style = new JsonMapper().readTree(json).path("outputStyle").asString(null);
 
@@ -153,7 +162,7 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
-        String json = ClaudeAgentRuntime.settingsJson(null, null);
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null);
 
         List<String> allow = new ArrayList<>();
         new JsonMapper().readTree(json).path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
@@ -163,11 +172,31 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void disablesConfiguredPluginsInGeneratedAgentSettings() {
-        String json = ClaudeAgentRuntime.settingsJson(null, List.of("jdtls-lsp@claude-plugins-official"));
+        String json = ClaudeAgentRuntime.settingsJson(null, List.of("jdtls-lsp@claude-plugins-official"), null);
 
         boolean enabled = new JsonMapper().readTree(json)
                 .path("enabledPlugins").path("jdtls-lsp@claude-plugins-official").asBoolean(true);
 
         assertThat(enabled).isFalse();
+    }
+
+    /**
+     * A hook fires from the harness rather than from the model, so a session stopped at a prompt, out of
+     * tokens or gone still says so. Which events those are is declared in {@code hooks/claude.properties}.
+     */
+    @Test
+    void writesADeclaredEventAsAHookThatReportsTheStateItMeans(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+
+        new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+
+        String command = new JsonMapper()
+                .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
+                .path("hooks").path("Stop").path(0).path("hooks").path(0).path("command").asString("");
+        assertThat(command).contains("/api/agent/session/waiting", worktree.toString());
     }
 }

@@ -40,7 +40,7 @@ Anything that runs, tells, decides, or is done to a task is one of the **kinds**
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job` + `Jobs`; the five impls still live in `service/` |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
-| `surface/` | who is asking | built — `console`, `board`, `mcp`, `ui` |
+| `surface/` | who is asking | built — `console`, `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
 
 `service/` is the rest: work more than one kind shares — git, the state file, config, worktrees, agent
@@ -213,6 +213,10 @@ session in a worktree, provision it, name the file it reads its instructions fro
   where `CLAUDE.md` is a link to it. One file, never two copies to drift.
 - **How an agent reaches the MCP server is the adapter's business** — direct HTTP with a working-directory
   header, or a stdio bridge for a CLI that can only spawn a server. Nothing above the port knows which.
+- **What a session is doing is read, never asked.** The log a CLI keeps of a session answers liveness
+  (`lastSessionActivityMillis`) and its own hooks report a stop (`surface/agent`) — no model in either path, so
+  a session out of tokens still reaches the board. Which events a CLI reports is a resource
+  (`adapter/…/resources/hooks/`), not a table in Java.
 - **The one-shot assistant is a separate port** from the session runtime: an install may run a local model for
   text-to-command and a vendor CLI for the sessions. It is also the only place jagt spends money, so it is
   metered.

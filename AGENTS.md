@@ -47,7 +47,8 @@ missing — add a kind, never an exception.
   request; it never merges. `revert` adds a commit — no history rewrite, no force-push.
 - A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`.** Several sessions share this tree — stage the explicit paths you touched.
-- **No git hooks, ever.** Never propose, add or rely on one; enforce invariants in code and prompts.
+- **No git hooks, ever.** Never propose, add or rely on one; enforce invariants in code and prompts. An
+  agent CLI's own hooks are a different thing — they report a session's state and enforce nothing.
 - Never add a warning, a badge or a gate to the deploy confirm. It names the writes and gets out of the way.
 
 ## Committing

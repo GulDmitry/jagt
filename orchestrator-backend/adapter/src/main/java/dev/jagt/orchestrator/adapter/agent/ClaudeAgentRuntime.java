@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import tools.jackson.databind.json.JsonMapper;
+
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,12 +26,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
+    private static final JsonMapper JSON = new JsonMapper();
     private static final String CLAUDE_MEMORY_FILE = "CLAUDE.md";
     private static final String LOCAL_MEMORY_FILE = "CLAUDE.local.md";
 
     private final OrchestratorProperties properties;
     private final ClaudeProperties claude;
     private final McpEndpoint mcp;
+    private final HookEndpoint hooks;
 
     @Override
     public String displayName() {
@@ -41,6 +45,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         return claude.command()
                 + (planMode ? " --permission-mode plan" : "")
                 + " " + shellQuote(properties.agentPrompt());
+    }
+
+    @Override
+    public long lastSessionActivityMillis(Path worktree) {
+        return ClaudeTranscripts.lastEntryMillis(ClaudeTranscripts.projectsDir(), worktree);
     }
 
     @Override
@@ -59,13 +68,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     protected void wireAgent(AgentWorktree worktree) {
         write(worktree.path().resolve(".mcp.json"), mcpJson(mcp.url(),
-                mcp.callerHeaderValue(worktree.path())));
+                McpEndpoint.callerHeaderValue(worktree.path())));
         if (rootNamesFree(worktree.path())) {
             symlink(worktree.path().resolve(CLAUDE_MEMORY_FILE),
                     worktree.path().resolve(SYSTEM_KNOWLEDGE_FILE));
         }
         write(worktree.path().resolve(".claude").resolve("settings.local.json"),
-                settingsJson(worktree.outputStyle(), worktree.disabledPlugins()));
+                settingsJson(worktree.outputStyle(), worktree.disabledPlugins(), hooksJson(worktree.path())));
     }
 
     /**
@@ -88,12 +97,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                   "mcpServers": {
                     "jagt-orchestrator": {
                       "type": "http",
-                      "url": "%s",
-                      "headers": { "%s": "%s" }
+                      "url": %s,
+                      "headers": { %s: %s }
                     }
                   }
                 }
-                """.formatted(url, McpEndpoint.CALLER_HEADER, worktreePath.replace("\\", "\\\\"));
+                """.formatted(quoted(url), quoted(McpEndpoint.CALLER_HEADER), quoted(worktreePath));
     }
 
     /**
@@ -104,26 +113,46 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
      * project where the human's global style may not apply; disabled plugins keep a ~1-2GB language server per
      * worktree from spawning when the human opted into that.
      */
-    static String settingsJson(String outputStyle, List<String> disabledPlugins) {
+    static String settingsJson(String outputStyle, List<String> disabledPlugins, String hooksLine) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
-                : "\n  \"outputStyle\": \"" + outputStyle.replace("\\", "\\\\").replace("\"", "\\\"") + "\",";
+                : "\n  \"outputStyle\": " + quoted(outputStyle) + ",";
         String pluginsLine = "";
         if (disabledPlugins != null) {
             String entries = disabledPlugins.stream()
                     .filter(p -> p != null && !p.isBlank())
-                    .map(p -> "\"" + p.strip() + "\": false")
+                    .map(p -> quoted(p.strip()) + ": false")
                     .collect(Collectors.joining(", "));
             if (!entries.isBlank()) {
                 pluginsLine = "\n  \"enabledPlugins\": {" + entries + "},";
             }
         }
         return """
-                {%s%s
+                {%s%s%s
                   "enableAllProjectMcpServers": true,
                   "permissions": {
                     "allow": ["mcp__jagt-orchestrator", "Bash(git:*)"]
                   }
                 }
-                """.formatted(styleLine, pluginsLine);
+                """.formatted(styleLine, pluginsLine, hooksLine == null ? "" : hooksLine);
+    }
+
+    /** Which of Claude's events mean what is declared in {@code hooks/claude.properties}, not here. */
+    private String hooksJson(Path worktree) {
+        String events = SessionHooks.of("claude").entrySet().stream()
+                .map(event -> """
+                        %s: [{"hooks": [{"type": "command", "command": %s, "timeout": 5}]}]"""
+                        .formatted(quoted(event.getKey()),
+                                quoted(hooks.command(worktree, event.getValue()))))
+                .collect(Collectors.joining(",\n    "));
+        return events.isBlank() ? "" : "\n  \"hooks\": {\n    " + events + "\n  },";
+    }
+
+    /**
+     * Serialized rather than quoted by hand: a control character anywhere in a path or a configured style would
+     * otherwise make the whole file unreadable, and Claude discards it whole — taking the MCP declaration and
+     * the unattended-run permissions with it.
+     */
+    private static String quoted(String value) {
+        return JSON.writeValueAsString(value);
     }
 }

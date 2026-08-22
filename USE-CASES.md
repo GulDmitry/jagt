@@ -94,8 +94,10 @@ A deploy worktree lives at the shared `<task>-deploy` path, so the directory alo
 | situation | run | what happens |
 |---|---|---|
 | An agent stops mid-work to ask | — | Its `outcome=question` report turns the card over to you: NEEDS INPUT, and one desktop ping the first time it asks |
-| An agent stops and never says so | — | The watchdog probes (stale MCP + a quiet tmux window), stamps the task, and the card turns over: NEEDS YOU, Focus highlighted |
-| A session is asking in its own window and the board says nothing | answer it there | Only its own `outcome=question` can put it on the board — a live CLI at a prompt keeps repainting, so the watchdog never fires |
+| An agent stops and never says so | — | The watchdog probes (stale MCP + the session's own log), stamps the task, and the card turns over: NEEDS YOU, Focus highlighted |
+| A session sits at a permission prompt | — | Its own hooks report it within seconds, and its log stops growing either way — the card turns over with the agent saying nothing |
+| A worktree created before the hooks existed | recreate the task | Its settings file is written once, at `initialize_task`; the log a session keeps still answers, one threshold later |
+| The agent CLI never came up at all | `focus <task>` | The card says so in those words rather than "no sign of life": at NEW nothing has reported yet, so the launch is what to look at |
 | The agent is asking something | `focus <task>` | Its tmux window is selected — over the board with `web-terminal` on, in the viewer otherwise |
 | No web terminal configured | Focus | The same selection; the sentence names the window. There is nothing to embed |
 | Panel closed by mistake | — | Nothing stops. The agent lives in tmux; Focus starts another terminal server |

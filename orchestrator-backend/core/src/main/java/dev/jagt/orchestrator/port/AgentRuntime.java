@@ -45,4 +45,13 @@ public interface AgentRuntime {
      * {@link #SYSTEM_KNOWLEDGE_FILE}. Called once per task, before the agent starts.
      */
     void provisionWorktree(AgentWorktree worktree);
+
+    /**
+     * Epoch millis of the last entry in the session's own record of itself; 0 where this runtime keeps none.
+     *
+     * <p>Such a record grows only when something actually happened, which is what makes it the one clock that
+     * tells a working session from one waiting at a prompt — a measure of terminal output cannot, because a
+     * session waiting for an answer keeps repainting.
+     */
+    long lastSessionActivityMillis(Path worktree);
 }
