@@ -294,6 +294,83 @@ class GitServiceTest {
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
     }
 
+    @Test
+    void stopsSendingTheHumanBackToTheDeployWorktreeWhenTheDeployBranchAlreadyHoldsWhatItHeld(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("f.txt"), "dev change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "dev"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
+        Files.writeString(repo.resolve("f.txt"), "task change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitService.MergeConflictException.class);
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        Files.writeString(deployWorktree.resolve("f.txt"), "resolved");
+        runner.run(deployWorktree, t, List.of("git", "add", "f.txt"));
+        runner.run(deployWorktree, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-q", "--no-edit"));
+        runner.run(deployWorktree, t, List.of("git", "push", "-q", "origin", "HEAD:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "_dev"));
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "reset", "-q", "--hard", "origin/dev"));
+        Files.writeString(repo.resolve("later.txt"), "release");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "later"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitService.NothingToDeployException.class)
+                .hasMessageContaining("Nothing left to push");
+
+        assertThat(deployWorktree).doesNotExist();
+    }
+
+    @Test
+    void deploysAgainAfterTheDeployWorktreeDirectoryWasDeletedByHand(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("g.txt"), "task");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        runner.run(repo, t, List.of("git", "worktree", "add", "-q", "-B", "jagt-deploy-ABC-1",
+                deployWorktree.toString(), "origin/dev"));
+        runner.run(dir, t, List.of("rm", "-rf", deployWorktree.toString()));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+
+        git.mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
+                .contains("task");
+    }
+
     /**
      * Needs the real {@code lsof} — the reap has no other way to ask which processes sit in a directory. A
      * minimal image (many Linux containers) has none, and there the reap is a documented no-op, so this SKIPS

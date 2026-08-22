@@ -348,6 +348,9 @@ public class GitService {
             if ("0".equals(ahead)) {
                 throw new NothingToDeployException(sourceBranch, targetBranch);
             }
+            // A registration outlives a directory deleted by hand, and the add then refuses the branch as
+            // still checked out — which is every later deploy of this task, not just the next one.
+            clearWorktreePath(projectPath, deployWorktree);
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "add",
                             "-B", deployBranch, deployWorktree.toString(), "origin/" + targetBranch))
                     .expectSuccess("git worktree add (deploy) " + targetBranch);
@@ -369,7 +372,7 @@ public class GitService {
                 }
                 throw new MergeConflictException(sourceBranch, targetBranch, details, deployWorktree);
             }
-            return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
+            return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
         });
     }
 
@@ -386,24 +389,42 @@ public class GitService {
             processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "commit", "--no-edit"))
                     .expectSuccess("git commit (deploy resolution) " + deployWorktree);
         }
-        return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, targetBranch);
+        return pushAndRemoveDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
     }
 
     /** KEEPS the worktree on a rejected push (the target moved under the merge) so the resolution isn't lost.
      *  Returns the pushed merge commit — what `revert` undoes, and knowable only before the worktree is gone. */
-    private String pushAndRemoveDeploy(Path projectPath, Path deployWorktree, String deployBranch, String targetBranch) {
+    private String pushAndRemoveDeploy(Path projectPath, Path deployWorktree, String deployBranch,
+                                       String sourceBranch, String targetBranch) {
         var push = processRunner.run(deployWorktree, GIT_TIMEOUT,
                 List.of("git", "push", "origin", "HEAD:" + targetBranch));
         if (push.exitCode() != 0) {
+            if (nothingLeftToPush(deployWorktree, targetBranch)) {
+                removeDeployWorktree(projectPath, deployWorktree, deployBranch);
+                throw new NothingToDeployException("Nothing left to push: what the deploy worktree held is"
+                        + " already on " + targetBranch + ", which has moved on since. That worktree is gone —"
+                        + " deploy again if '" + sourceBranch + "' still holds work " + targetBranch + " lacks.");
+            }
             String d = push.stderr().isBlank() ? push.stdout() : push.stderr();
-            throw new IllegalStateException("Deploy push to " + targetBranch + " was rejected — it moved under"
-                    + " the merge. In " + deployWorktree + " run `git merge origin/" + targetBranch
-                    + "`, resolve, then deploy again. Details: " + d);
+            throw new IllegalStateException("Deploy push to " + targetBranch + " was rejected. In " + deployWorktree
+                    + " run `git merge origin/" + targetBranch + "`, resolve, then deploy again. Details: " + d);
         }
         String merged = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
                 .expectSuccess("git rev-parse HEAD in " + deployWorktree).stdout().trim();
         removeDeployWorktree(projectPath, deployWorktree, deployBranch);
         return merged;
+    }
+
+    /**
+     * Whether the worktree holds nothing the target lacks — landed by hand, or never merged at all because the
+     * resolution was aborted. Repeating the push cannot get past a rejection either way, and the merge is NOT
+     * claimed as this task's: the commit reached here may be the target tip the worktree was cut from.
+     */
+    private boolean nothingLeftToPush(Path deployWorktree, String targetBranch) {
+        boolean fetched = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "fetch", "origin",
+                "+refs/heads/" + targetBranch + ":refs/remotes/origin/" + targetBranch)).exitCode() == 0;
+        return fetched && processRunner.run(deployWorktree, GIT_TIMEOUT,
+                List.of("git", "merge-base", "--is-ancestor", "HEAD", "origin/" + targetBranch)).exitCode() == 0;
     }
 
     private String unmergedPaths(Path worktree) {
@@ -625,6 +646,10 @@ public class GitService {
         public NothingToDeployException(String sourceBranch, String targetBranch) {
             super("Nothing to deploy: branch '" + sourceBranch + "' has no commits beyond " + targetBranch
                     + " (commit work first, or it is already deployed).");
+        }
+
+        NothingToDeployException(String message) {
+            super(message);
         }
     }
 
