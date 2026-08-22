@@ -10,8 +10,8 @@ import java.nio.file.Path;
  * by the harness rather than by the model, so what arrives here costs no tokens and still arrives from a
  * session that has run out of them.
  *
- * <p>The line carries nothing but what jagt wrote into it and reads no payload, so a vendor changing the
- * shape of what it passes a hook cannot quietly stop the reports.
+ * <p>Which session it is and what happened to it come from what jagt itself wrote into the line, so a vendor
+ * changing the shape of what it hands a hook cannot quietly stop the reports.
  */
 @Component
 public class HookEndpoint {
