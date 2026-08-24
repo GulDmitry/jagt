@@ -40,6 +40,7 @@ public class Jobs {
         private volatile long nextAt;
         private volatile Long startedAt;
         private volatile String lastError;
+        private volatile Duration every;
     }
 
     private final Map<String, Job> jobs = new LinkedHashMap<>();
@@ -73,9 +74,18 @@ public class Jobs {
             // Never behind the present: a job that has not run yet carries no schedule of its own, and its
             // honest next run is the tick about to happen.
             Long next = run.nextAt == Long.MAX_VALUE ? null : Math.max(run.nextAt, now);
-            return new Status(job.id(), job.describe(), job.every(), run.startedAt, run.lastError, next,
+            return new Status(job.id(), job.describe(), every(job, run), run.startedAt, run.lastError, next,
                     run.running.get());
         }).toList();
+    }
+
+    /** The last interval a job managed to name stands in for one it cannot: a report answers for all of them. */
+    private static Duration every(Job job, Run run) {
+        try {
+            return job.every();
+        } catch (RuntimeException e) {
+            return run.every;
+        }
     }
 
     public Summary summary(long now) {
@@ -96,12 +106,15 @@ public class Jobs {
             if (run.nextAt > now || !run.running.compareAndSet(false, true)) {
                 return;
             }
-            // Stamped before the run, not after: a job that takes longer than its interval is due again the
-            // moment it finishes, which is what a rate rather than a delay means.
             run.startedAt = now;
-            run.nextAt = job.every() == null ? Long.MAX_VALUE : now + job.every().toMillis();
             workers.execute(() -> {
                 try {
+                    // Asked in here rather than before the dispatch, so an interval that cannot be answered
+                    // is booked like any other failed run and leaves the job due instead of stuck. Stamped
+                    // from the tick and not from the finish: a job that takes longer than its interval is due
+                    // again the moment it ends, which is what a rate rather than a delay means.
+                    run.every = job.every();
+                    run.nextAt = run.every == null ? Long.MAX_VALUE : now + run.every.toMillis();
                     job.run();
                     run.lastError = null;
                 } catch (Throwable t) {

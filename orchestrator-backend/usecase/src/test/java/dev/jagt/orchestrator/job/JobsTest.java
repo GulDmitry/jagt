@@ -144,4 +144,31 @@ class JobsTest {
 
         assertThat(jobs.summary(1_000).failing()).isEqualTo(1);
     }
+
+    @Test
+    void retriesAJobThatCouldNotSayHowOftenItWantsToRun() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        when(job.every()).thenThrow(new IllegalStateException("config unreadable"));
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+
+        jobs.tick(1_000);
+        jobs.tick(2_000);
+
+        verify(job, times(2)).every();
+    }
+
+    @Test
+    void reportsAJobThatCannotSayHowOftenItWantsToRunAlongsideTheRest() {
+        Job mute = mock(Job.class);
+        when(mute.id()).thenReturn("poll-reviews");
+        when(mute.every()).thenThrow(new IllegalStateException("config unreadable"));
+        Job healthy = mock(Job.class);
+        when(healthy.id()).thenReturn("clean-recents");
+        when(healthy.every()).thenReturn(Duration.ofHours(1));
+        Jobs jobs = new Jobs(List.of(mute, healthy), Runnable::run);
+
+        assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id, Jobs.Status::every)
+                .containsExactly(tuple("poll-reviews", null), tuple("clean-recents", Duration.ofHours(1)));
+    }
 }
