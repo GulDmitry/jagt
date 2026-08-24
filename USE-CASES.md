@@ -141,6 +141,7 @@ A deploy worktree lives at the shared `<task>-deploy` path, so the directory alo
 | Its source branch is not a legal task name (`feature/x`) | — | Refused with that branch named — the name becomes a directory and a tmux window too |
 | The URL belongs to the configured code host | `resume <url>` | Branches and title read over that host's API — no model call |
 | The request lives on a host jagt was never pointed at | `resume <url>` | The headless assistant follows the URL (paid) |
+| That host's MCP server needs an interactive login | `resume <url>` | Refused as "not found": no headless session can authenticate one, so the read answers exists=false. The log names the source |
 | The configured host claims the URL and the read fails | — | Refused, **not** retried through a paid read |
 | Unreadable altogether | — | Refused. A guessed branch name would point the task at a branch the request does not track |
 

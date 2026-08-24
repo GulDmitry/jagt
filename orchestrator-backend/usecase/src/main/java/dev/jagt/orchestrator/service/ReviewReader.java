@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 /**
  * Where the facts of a review request come from — its round for a sweep, its branches for a task re-entering on
@@ -37,13 +38,13 @@ public class ReviewReader {
     public Optional<ReviewFacts> read(String taskId, String reviewRequestUrl) {
         Optional<CodeHost> host = claiming(reviewRequestUrl);
         if (host.isPresent()) {
-            return host.get().readReview(reviewRequestUrl);
+            return hostRead(host.get().readReview(reviewRequestUrl), host.get(), reviewRequestUrl);
         }
         var answer = assistant.readReview(reviewRequestUrl);
         // Charged even when the read came back empty: the call was paid for either way, and the poll repeats
         // up to hourly for a day, so an uncharged failure would understate what the task actually costs.
         assistant.chargeTask(taskId, answer.usage());
-        return answer.facts();
+        return paidRead(answer.facts(), ReviewFacts::exists, reviewRequestUrl);
     }
 
     /**
@@ -53,13 +54,36 @@ public class ReviewReader {
     public Answer<MergeRequestFacts> readRequest(String reviewRequestUrl) {
         Optional<CodeHost> host = claiming(reviewRequestUrl);
         if (host.isPresent()) {
-            return new Answer<>(host.get().readRequest(reviewRequestUrl), TokenUsage.NONE);
+            return new Answer<>(hostRead(host.get().readRequest(reviewRequestUrl), host.get(),
+                    reviewRequestUrl), TokenUsage.NONE);
         }
-        return assistant.readMergeRequest(reviewRequestUrl);
+        var answer = assistant.readMergeRequest(reviewRequestUrl);
+        return new Answer<>(paidRead(answer.facts(), MergeRequestFacts::exists, reviewRequestUrl),
+                answer.usage());
     }
 
     public void charge(String taskId, TokenUsage usage) {
         assistant.chargeTask(taskId, usage);
+    }
+
+    /** The transport logged its own call; nothing below names the request the caller is now refusing. */
+    private <T> Optional<T> hostRead(Optional<T> facts, CodeHost host, String url) {
+        if (facts.isEmpty()) {
+            log.warn("Unreadable: {} — the {} API did not answer it", url, host.displayName());
+        }
+        return facts;
+    }
+
+    /**
+     * A paid read cannot tell a request that is gone from a host it never reached — it answers exists=false for
+     * both and logs nothing — so this is the only line the human gets for either.
+     */
+    private <T> Optional<T> paidRead(Optional<T> facts, Predicate<T> exists, String url) {
+        if (facts.isPresent() && !exists.test(facts.get())) {
+            log.warn("Gone or unreachable: {} — the headless assistant answers that it does not exist, and its"
+                    + " only way in are the MCP servers its setting-sources load", url);
+        }
+        return facts;
     }
 
     private Optional<CodeHost> claiming(String reviewRequestUrl) {
