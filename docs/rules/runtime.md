@@ -49,6 +49,11 @@ A wrapper that always starts also means a missing binary is no longer an `IOExce
 **fails** the launch when the wrapper exits non-zero at once — without that, no ttyd installed reads as "no web
 terminal configured".
 
+Each launch logs its pid and whether it got a session of its own, and its end logs what ended it and how long
+it lived — `128 + signal` naming the signal. Without those two lines an IDE that died cannot be told from one
+that was quit. The line says what arrived, never who sent it: jagt's own shutdown terminates what it started,
+so a TERM beside the shutdown lines is jagt's, and one on its own is not.
+
 ### No GUI or keystroke automation, ever
 
 System Events keystrokes race with the human typing: they land in whatever is focused.

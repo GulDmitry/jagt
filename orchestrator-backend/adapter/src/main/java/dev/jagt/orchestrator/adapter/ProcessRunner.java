@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.Processes;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@Slf4j
 public class ProcessRunner implements Processes {
 
     /** POSIX tools that can put a launch in its own session; absolute because they ARE the mechanism. */
@@ -33,7 +35,9 @@ public class ProcessRunner implements Processes {
     @Override
     public Process runDetached(Path workingDir, List<String> command) {
         try {
-            ProcessBuilder builder = new ProcessBuilder(detachedFrom(command));
+            List<String> detached = detachedFrom(command);
+            long startedAt = System.nanoTime();
+            ProcessBuilder builder = new ProcessBuilder(detached);
             if (workingDir != null) {
                 builder.directory(workingDir.toFile());
             }
@@ -48,6 +52,7 @@ public class ProcessRunner implements Processes {
                 throw new IllegalStateException("Failed to launch: " + String.join(" ", command)
                         + " (exit " + launched.exitValue() + ")");
             }
+            reportLifeOf(launched, command, !detached.equals(command), startedAt);
             return launched;
         } catch (IOException e) {
             throw new IllegalStateException("Failed to launch: " + String.join(" ", command), e);
@@ -82,6 +87,28 @@ public class ProcessRunner implements Processes {
         }
         wrapped.addAll(command);
         return List.copyOf(wrapped);
+    }
+
+    /**
+     * A launch outlives the call, so how it ENDED is the only thing that can later attribute a death nobody
+     * asked for — and whether it got a session of its own is what says whether a terminal could have been the
+     * one to end it.
+     */
+    private static void reportLifeOf(Process launched, List<String> command, boolean ownSession, long startedAt) {
+        log.info("Launched pid {} in {} session: {}", launched.pid(), ownSession ? "its own" : "jagt's",
+                String.join(" ", command));
+        launched.onExit().thenAccept(ended -> log.info("Launched pid {} ended {} after {}", ended.pid(),
+                endedBy(ended.exitValue()), Duration.ofNanos(System.nanoTime() - startedAt)));
+    }
+
+    /** Only the signal numbers that agree across platforms; anything else stays the number it exited with. */
+    private static final Map<Integer, String> SIGNALS = Map.of(1, "HUP", 2, "INT", 3, "QUIT", 6, "ABRT",
+            9, "KILL", 11, "SEGV", 13, "PIPE", 15, "TERM");
+
+    /** A process killed by a signal exits {@code 128 + signal}, which is what tells a kill from a quit. */
+    static String endedBy(int exitValue) {
+        String signal = SIGNALS.get(exitValue - 128);
+        return signal != null ? "on SIG" + signal + " (" + exitValue + ")" : "with exit " + exitValue;
     }
 
     private static String firstExecutable(List<String> candidates) {
