@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -55,6 +56,16 @@ public interface MasterAssistant {
 
     /** The sweep: checks state + unresolved comments of a review request (a slow, multi-call read). */
     Answer<ReviewFacts> readReview(String mrUrl);
+
+    /**
+     * The MCP servers this assistant cannot use right now, each as {@code name (status)} — costs no tokens, and
+     * is the only way to tell "there is no such request" from "the read had nothing to read it with": a model
+     * that found no tool answers the same "no" as a host whose request is gone.
+     *
+     * <p>Empty {@code Optional} = it could NOT be established (the probe itself failed, or the servers are
+     * declared rather than resolved). An empty LIST is the different, stronger answer: nothing is down.
+     */
+    Optional<List<String>> brokenMcpServers();
 
     /**
      * Maps a free-text request ("push the login one for review") onto one grammar command. {@code context} is the

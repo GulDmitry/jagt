@@ -34,7 +34,10 @@ record ReviewRoundCase(String name, ReviewFacts round, TaskStatus expected, Stri
                         facts(false, "running", List.of()),
                         TaskStatus.CI_POLLING, "nothing unresolved yet, not approved — waiting", false),
                 new ReviewRoundCase("the request cannot be read", null,
-                        TaskStatus.CI_POLLING, "error: could not read", false));
+                        TaskStatus.CI_POLLING, "error: could not READ", false),
+                new ReviewRoundCase("the host says there is no such request",
+                        new ReviewFacts(false, false, "none", List.of()),
+                        TaskStatus.CI_POLLING, "does not exist", false));
     }
 
     private static ReviewFacts facts(boolean approved, String pipeline, List<String> comments) {

@@ -75,15 +75,31 @@ public class ReviewReader {
     }
 
     /**
-     * A paid read cannot tell a request that is gone from a host it never reached — it answers exists=false for
-     * both and logs nothing — so this is the only line the human gets for either.
+     * A paid read answering "no such request" is either the truth or a read with no tool to read it with, and
+     * the model cannot tell the two apart — so the CLI is asked which of its MCP servers are down.
      */
     private <T> Optional<T> paidRead(Optional<T> facts, Predicate<T> exists, String url) {
         if (facts.isPresent() && !exists.test(facts.get())) {
-            log.warn("Gone or unreachable: {} — the headless assistant answers that it does not exist, and its"
-                    + " only way in are the MCP servers its setting-sources load", url);
+            log.warn("The headless read answers that {} does not exist. {}", url,
+                    whatItsServersSay(assistant.brokenMcpServers()));
         }
         return facts;
+    }
+
+    /**
+     * Down servers are evidence; "none is down" is NOT the counter-evidence, because the probe cannot see the
+     * exact set a read loaded (its setting-sources, its allow-list) — and claiming it could would send the human
+     * off to the host with a clean bill jagt has no way to give.
+     */
+    private static String whatItsServersSay(Optional<List<String>> broken) {
+        if (broken.isEmpty()) {
+            return "Whether the MCP servers it needed were up could NOT be established — see the error above";
+        }
+        if (broken.get().isEmpty()) {
+            return "No MCP server reports as down, which is not proof the read had its tool";
+        }
+        return "These MCP servers are down, and one of them is probably the reader: "
+                + String.join(", ", broken.get());
     }
 
     private Optional<CodeHost> claiming(String reviewRequestUrl) {

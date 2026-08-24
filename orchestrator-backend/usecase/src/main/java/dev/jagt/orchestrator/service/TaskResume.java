@@ -31,8 +31,13 @@ public class TaskResume {
     public String resume(String reviewRequestUrl) {
         var read = reviewReader.readRequest(reviewRequestUrl);
         var request = read.facts();
-        if (request.isEmpty() || !request.get().exists()) {
-            return "error: could not read the review request (or not found): " + reviewRequestUrl;
+        // Two different answers, and merging them into one is what let a live request be reported as missing.
+        if (request.isEmpty()) {
+            return "error: the review request could not be READ, so nothing is known about it (the log names"
+                    + " what failed): " + reviewRequestUrl;
+        }
+        if (!request.get().exists()) {
+            return "error: the host answers that there is no such review request: " + reviewRequestUrl;
         }
         String taskId = request.get().sourceBranch();
         if (taskId == null || taskId.isBlank()) {

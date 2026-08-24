@@ -79,6 +79,9 @@ public class TicketReader {
                 break;
             }
         }
+        assistant.brokenMcpServers().filter(broken -> !broken.isEmpty()).ifPresent(broken ->
+                log.error("These MCP servers are down, and one of them is probably the reader of {}: {}",
+                        ticketRef, String.join(", ", broken)));
         return new Answer<>(answer.facts(), spent);
     }
 

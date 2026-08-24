@@ -141,7 +141,9 @@ A deploy worktree lives at the shared `<task>-deploy` path, so the directory alo
 | Its source branch is not a legal task name (`feature/x`) | — | Refused with that branch named — the name becomes a directory and a tmux window too |
 | The URL belongs to the configured code host | `resume <url>` | Branches and title read over that host's API — no model call |
 | The request lives on a host jagt was never pointed at | `resume <url>` | The headless assistant follows the URL (paid) |
-| That host's MCP server needs an interactive login | `resume <url>` | Refused as "not found": no headless session can authenticate one, so the read answers exists=false. The log names the source |
+| The headless read has no working MCP server for that host | `resume <url>` | Refused as **unread**, never as missing: ERROR names what stopped the read, plus which MCP servers are down (`claude mcp list`) |
+| That probe cannot run either (no CLI, declared servers) | `resume <url>` | Says so. "Nothing is down" is only ever printed where the servers were actually asked |
+| The host itself answers that there is no such request | `resume <url>` | Refused with that in those words — the one case the wording "does not exist" belongs to |
 | The configured host claims the URL and the read fails | — | Refused, **not** retried through a paid read |
 | Unreadable altogether | — | Refused. A guessed branch name would point the task at a branch the request does not track |
 

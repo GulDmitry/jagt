@@ -168,6 +168,28 @@ and the model would stop resolving (verified). Declared servers lose their plugi
 `allowed-tools` written for the inherited spelling silently stops matching — jagt cannot detect that without
 parsing the declaration, so it is documented, not guarded.
 
+### A read that failed is never an answer
+
+**"I could not look" and "there is no such thing" are two different answers, and jagt must never merge them.**
+This one cost a live merge request being reported as missing, with nothing in the log at all: the prompt told the
+model to answer `exists=false` when it could not read, so a `resume` refused with "or not found" while no request
+had ever been fetched.
+
+- Every read's schema carries a **`failure`** string, and the prompt allows it to be empty **only** when the host
+  itself answered. Anything that stopped the read — no MCP tool for that host, a tool that errored, auth,
+  network, a denied permission — goes in it, naming the tool or server.
+- A non-empty `failure` comes back as **empty facts** (unreadable), logged at ERROR with what it says. It never
+  becomes `exists=false`.
+- On an unreadable read the callers ask `brokenMcpServers()` (`adapter/assistant/McpHealthProbe`, `claude mcp
+  list`, free and token-less) and log which servers are down, because the read cannot see that itself. Its
+  answer has **three** values, and collapsing the last two is the same bug one layer down: servers are down /
+  nothing is down / **could not be established** — the probe failed, was interrupted, or the servers are
+  declared through `assistant.mcp-config`, which `claude mcp list` cannot be asked about. A cached answer is
+  reused for two minutes, because every probe starts every configured server.
+- `permission_denials` in the envelope is logged at ERROR too: a read that was allowed fewer tool calls than it
+  tried answered with less than it was asked for.
+- The surfaces say which of the two happened, in those words. **Never "could not read (or not found)" again.**
+
 ### Every assistant call is metered
 
 It is the only place jagt spends model money. `--output-format json` wraps the schema-validated answer

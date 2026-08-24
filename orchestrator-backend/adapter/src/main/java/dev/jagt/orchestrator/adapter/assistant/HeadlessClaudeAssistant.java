@@ -41,19 +41,21 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private static final String TICKET_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
+            "failure":{"type":"string"},\
             "key":{"type":"string"},\
             "title":{"type":"string"},\
             "trackerProject":{"type":"string"},\
             "labels":{"type":"array","items":{"type":"string"}},\
             "url":{"type":"string"}},\
-            "required":["exists","key","title","trackerProject","labels","url"]}""";
+            "required":["exists","failure","key","title","trackerProject","labels","url"]}""";
     private static final String MR_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
+            "failure":{"type":"string"},\
             "sourceBranch":{"type":"string"},\
             "targetBranch":{"type":"string"},\
             "title":{"type":"string"}},\
-            "required":["exists","sourceBranch","targetBranch","title"]}""";
+            "required":["exists","failure","sourceBranch","targetBranch","title"]}""";
     /**
      * {@code pipelineStatus} is an ENUM rather than a string because {@link dev.jagt.orchestrator.flow.Pipeline}
      * reads it by keyword: a sentence like {@code mergeable (CodeRabbit check failed)} carries "fail" and turns
@@ -62,11 +64,12 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private static final String REVIEW_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
+            "failure":{"type":"string"},\
             "approved":{"type":"boolean"},\
             "pipelineStatus":{"type":"string","enum":["success","failed","running","none"]},\
             "openedAt":{"type":"string"},\
             "comments":{"type":"array","items":{"type":"string"}}},\
-            "required":["exists","approved","pipelineStatus","openedAt","comments"]}""";
+            "required":["exists","failure","approved","pipelineStatus","openedAt","comments"]}""";
     private static final String COMMAND_SCHEMA = """
             {"type":"object","properties":{\
             "command":{"type":"string"},\
@@ -74,6 +77,16 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "ticket":{"type":"string"},\
             "reason":{"type":"string"}},\
             "required":["command","task","ticket","reason"]}""";
+    /**
+     * Appended to every read. A model has no other way to distinguish "the host says there is no such thing"
+     * from "I never got to look" — and jagt reporting the second as the first is how a live merge request came
+     * back as missing, with nothing anywhere saying a tool had been unavailable.
+     */
+    private static final String FAILURE_RULE = " Answer failure=\"\" ONLY when the host itself answered you:"
+            + " with an answer, or with a no such item — that one is exists=false and empty fields. If ANYTHING"
+            + " stopped you from reading it instead — no MCP tool for that host, a tool that errored, an"
+            + " authentication or network failure, a denied permission — then failure=<one line naming exactly"
+            + " what stopped you, and which tool or server it was>, and NEVER report that as not existing.";
     /** The review sweep makes several code-host calls; give it much longer than a single lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
     /** Mapping text to a command reads nothing and must feel like typing — a slow answer is worse than none. */
@@ -81,6 +94,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
 
     private final ProcessRunner processRunner;
     private final ClaudeProperties claude;
+    private final McpHealthProbe mcpHealth;
     private final AssistantProperties assistant;
     private final JsonMapper mapper = new JsonMapper();
 
@@ -97,8 +111,8 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " — the link the item itself reports, never one you assemble. Where the item carries no"
                 + " summary of its own, WRITE the title yourself: at most eight words naming what the item"
                 + " asks for, from its description. Never answer exists=true with an empty title or an"
-                + " empty url. If it cannot be read at all, exists=false with empty strings and array.";
-        return ask(prompt, TICKET_SCHEMA, ticketRef).map(n -> {
+                + " empty url." + FAILURE_RULE;
+        return readable(ask(prompt, TICKET_SCHEMA, ticketRef), ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
             return new TicketFacts(n.path("exists").asBoolean(false), n.path("key").asString(""),
@@ -115,8 +129,8 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         String prompt = "Fetch the merge/pull request at " + mrUrl + " via the matching code-host MCP tools"
                 + " (GitLab MR, GitHub PR, Bitbucket PR — whichever the URL points to). Return exists=true"
                 + " with its source branch as sourceBranch, the branch it merges INTO as targetBranch, and its"
-                + " title. If it does not exist, exists=false with empty strings.";
-        return ask(prompt, MR_SCHEMA, mrUrl).map(n -> new MergeRequestFacts(
+                + " title." + FAILURE_RULE;
+        return readable(ask(prompt, MR_SCHEMA, mrUrl), mrUrl).map(n -> new MergeRequestFacts(
                 n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
                 n.path("targetBranch").asString(""), n.path("title").asString("")));
     }
@@ -134,14 +148,33 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " no pipeline at all — openedAt, the request's OWN creation timestamp as the host reports it"
                 + " (ISO-8601; empty string if it does not say), and comments — every UNRESOLVED discussion note"
                 + " (bots like CodeRabbit + humans), each as one string \"author (file:line): body\". Empty array"
-                + " if none.";
-        return ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT).map(n -> {
+                + " if none." + FAILURE_RULE;
+        return readable(ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT), mrUrl).map(n -> {
             List<String> comments = new ArrayList<>();
             n.path("comments").forEach(c -> comments.add(c.asString("")));
             return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
                     n.path("pipelineStatus").asString(""), comments,
                     HostStamp.epochMillis(n.path("openedAt").asString("")));
         });
+    }
+
+    /**
+     * A read that says what stopped it knows NOTHING about the request, so it comes back unreadable rather than
+     * as an answer: empty facts are what every caller already treats as "could not read".
+     */
+    private Answer<JsonNode> readable(Answer<JsonNode> answer, String label) {
+        String failure = answer.facts().map(n -> n.path("failure").asString("")).orElse("").trim();
+        if (failure.isEmpty()) {
+            return answer;
+        }
+        log.error("Read of {} did not happen: {}. Nothing about it is known — this is NOT an answer that it"
+                + " does not exist.", label, failure);
+        return new Answer<>(Optional.empty(), answer.usage());
+    }
+
+    @Override
+    public Optional<List<String>> brokenMcpServers() {
+        return mcpHealth.brokenServers();
     }
 
     @Override
@@ -207,7 +240,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         } catch (RuntimeException e) {
             // A timeout kills the CLI, so there is no envelope and no number: the tokens it already burned
             // are unknowable, not zero.
-            log.warn("Headless assistant call for {} never returned ({}) — it was killed after {}, so its"
+            log.error("Headless assistant call for {} never returned ({}) — it was killed after {}, so its"
                     + " token cost is UNMEASURED and missing from the totals", label, e.getMessage(), timeout);
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         }
@@ -219,13 +252,18 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             log.warn("Headless assistant call for {} produced no usage data — its cost is not accounted"
                     + " for (the CLI aborted before reaching a model, or reported nothing)", label);
         }
+        JsonNode denials = envelope == null ? null : envelope.path("permission_denials");
+        if (denials != null && denials.isArray() && !denials.isEmpty()) {
+            log.error("The call for {} was denied {} tool call(s) it tried to make: {}. It answered with"
+                    + " whatever it could still reach.", label, denials.size(), denials);
+        }
         if (result.exitCode() != 0 || envelope == null) {
-            log.warn("Headless assistant failed for {} (exit {}): {}", label, result.exitCode(),
+            log.error("Headless assistant failed for {} (exit {}): {}", label, result.exitCode(),
                     result.stderr().isBlank() ? result.stdout() : result.stderr());
             return new Answer<>(Optional.empty(), usage);
         }
         if (envelope.path("is_error").asBoolean(false)) {
-            log.warn("Headless assistant reported an error for {}: {}", label,
+            log.error("Headless assistant reported an error for {}: {}", label,
                     envelope.path("result").asString(""));
             return new Answer<>(Optional.empty(), usage);
         }
@@ -239,7 +277,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         try {
             return mapper.readTree(stdout);
         } catch (RuntimeException e) {
-            log.warn("Headless assistant returned unparseable JSON for {}: {}", label, e.toString());
+            log.error("Headless assistant returned unparseable JSON for {}: {}", label, e.toString());
             return null;
         }
     }
@@ -255,7 +293,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
         String raw = envelope.path("result").asString("");
         if (raw.isBlank()) {
-            log.warn("Headless assistant returned no answer for {}", label);
+            log.error("Headless assistant returned no answer for {}", label);
             return Optional.empty();
         }
         JsonNode answer = parseEnvelope(raw, label);

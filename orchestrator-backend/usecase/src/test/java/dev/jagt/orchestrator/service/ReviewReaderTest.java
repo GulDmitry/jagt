@@ -12,6 +12,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -44,6 +45,27 @@ class ReviewReaderTest {
                 .read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
         assertThat(facts).contains(new ReviewFacts(true, false, "running", List.of()));
+    }
+
+    @Test
+    void asksWhichMcpServersAreDownWhenAPaidReadDeniesTheRequest() {
+        when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
+                new Answer<>(Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
+
+        new ReviewReader(List.of(), assistant).readRequest("https://other.example.com/g/p/-/merge_requests/7");
+
+        verify(assistant).brokenMcpServers();
+    }
+
+    @Test
+    void doesNotProbeTheMcpServersForARequestItReadFine() {
+        when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
+                new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "main", "Excel export")),
+                        TokenUsage.NONE));
+
+        new ReviewReader(List.of(), assistant).readRequest("https://other.example.com/g/p/-/merge_requests/7");
+
+        verify(assistant, never()).brokenMcpServers();
     }
 
     @Test

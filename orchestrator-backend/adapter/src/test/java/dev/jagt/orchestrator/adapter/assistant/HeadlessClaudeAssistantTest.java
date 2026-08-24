@@ -24,11 +24,25 @@ import static org.mockito.Mockito.when;
 class HeadlessClaudeAssistantTest {
 
     @Test
+    void aReadThatNamesWhatStoppedItComesBackUnreadableInsteadOfAsAMissingRequest() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"structured_output":{"exists":false,"failure":"no GitLab MCP tool in this session",\
+                "sourceBranch":"","targetBranch":"","title":""}}""", ""));
+
+        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty()).readMergeRequest("https://git.example.com/g/p/-/merge_requests/7");
+
+        assertThat(answer.facts()).isEmpty();
+    }
+
+    @Test
     void liftsThePermissionGateSoTheHeadlessReadCanCallMcpTools() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty().withPermissionMode("bypassPermissions"));
 
         assistant.readTicket("ABC-42");
@@ -43,7 +57,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty().withPermissionMode("bypassPermissions")
                         .withAllowedTools(List.of("mcp__acme_jira", "mcp__acme_gitlab")));
 
@@ -60,7 +74,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty()
                         .withMcpConfig("{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"));
 
@@ -79,7 +93,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), AssistantProperties.empty());
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class), AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
 
@@ -94,7 +108,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty().withModel("haiku"));
 
         assistant.readTicket("ABC-42");
@@ -109,7 +123,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty().withModel(""));
 
         assistant.readTicket("ABC-42");
@@ -124,7 +138,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
@@ -139,7 +153,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readReview("https://host/mr/9");
@@ -160,7 +174,7 @@ class HeadlessClaudeAssistantTest {
                 "cache_read_input_tokens":0,"output_tokens":170},
                  "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
                 "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-42").facts();
@@ -183,7 +197,7 @@ class HeadlessClaudeAssistantTest {
                 {"type":"result","is_error":false,
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success",\
                 "openedAt":"2026-08-01T09:15:00Z","comments":[]}}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -200,7 +214,7 @@ class HeadlessClaudeAssistantTest {
                 {"type":"result","is_error":false,
                  "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
                 \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-7").facts();
@@ -219,7 +233,7 @@ class HeadlessClaudeAssistantTest {
                  "usage":{"input_tokens":5,"cache_creation_input_tokens":25000,\
                 "cache_read_input_tokens":0,"output_tokens":40},
                  "result":"the tracker MCP is not available"}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty());
 
         var answer = assistant.readReview("https://host/mr/9");

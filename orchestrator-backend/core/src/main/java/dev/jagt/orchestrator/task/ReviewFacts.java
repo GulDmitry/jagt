@@ -10,7 +10,8 @@ import java.util.List;
  * ({@link dev.jagt.orchestrator.port.CodeHost}, free) or from a model read
  * ({@link dev.jagt.orchestrator.port.MasterAssistant}, paid), and no consumer may care which.
  *
- * @param exists   false = the request could not be read at all (gone, or the read failed)
+ * @param exists   false = the HOST says there is no such request. A read that failed carries no facts at all
+ *                 (empty {@code Optional}) — the two are different answers and no caller may merge them
  * @param openedAt when the HOST says the request was opened, 0 = unknown — a read that cannot answer it (the
  *                 model read) must not have jagt's own stamp substituted for it: "open since jagt noticed" is a
  *                 different fact, and wrong by days for a request a task was resumed on

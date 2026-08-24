@@ -10,6 +10,9 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * The master's outside-reader with its meter attached: every read lands in the session total the moment it
  * returns, so a paid call can never go uncounted, and the returned {@link Answer} still carries its cost for
@@ -43,6 +46,11 @@ public class MeteredAssistant {
 
     public Answer<MasterAssistant.CommandProposal> mapCommand(String text, String context) {
         return metered(AssistantCallKind.COMMAND_MAP, assistant.mapCommand(text, context));
+    }
+
+    /** Free and token-less, so no meter: what the CLI itself says about the servers a read needs. */
+    public Optional<List<String>> brokenMcpServers() {
+        return assistant.brokenMcpServers();
     }
 
     public void chargeTask(String taskId, TokenUsage usage) {

@@ -90,9 +90,13 @@ public class ReviewSweepService {
         List<ReviewFacts> rounds = new ArrayList<>();
         for (TaskRepo repo : reviewed) {
             Optional<ReviewFacts> read = reviewReader.read(taskId, repo.mrUrl());
-            if (read.isEmpty() || !read.get().exists()) {
+            if (read.isEmpty()) {
                 return new SweepResult(SweepResult.Kind.UNREADABLE,
-                        "error: could not read " + repo.mrUrl());
+                        "error: could not READ " + repo.mrUrl() + " — the log names what failed");
+            }
+            if (!read.get().exists()) {
+                return new SweepResult(SweepResult.Kind.UNREADABLE,
+                        "error: the host answers that " + repo.mrUrl() + " does not exist");
             }
             rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
         }

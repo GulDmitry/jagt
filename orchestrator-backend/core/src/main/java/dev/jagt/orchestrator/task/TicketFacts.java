@@ -9,7 +9,8 @@ import java.util.List;
  * ({@link dev.jagt.orchestrator.port.Tracker}, free) or from a model read
  * ({@link dev.jagt.orchestrator.port.MasterAssistant}, paid), and no consumer may care which.
  *
- * @param exists         false = the item could not be read at all (gone, or the read failed)
+ * @param exists         false = the TRACKER says there is no such item. A read that failed carries no facts
+ *                       at all (empty {@code Optional}) — no caller may merge the two
  * @param key            the item's CANONICAL key, read back from the item and never parsed out of a URL — it
  *                       becomes a branch and a directory name
  * @param trackerProject the key of the project the item lives in
@@ -25,6 +26,9 @@ public record TicketFacts(boolean exists, String key, String title, String track
      * missing any of the three is that same non-answer in a shape a schema accepts — so a caller decides on
      * this and never on {@link #exists} alone. A source with no summary of its own is not the exception: a
      * reader that can read the item at all can name it in a few words.
+     *
+     * <p>A read that KNOWS it failed says so and comes back with no facts at all; this covers the one that does
+     * not know.
      */
     public boolean usable() {
         return exists && notBlank(key) && notBlank(title) && notBlank(url);

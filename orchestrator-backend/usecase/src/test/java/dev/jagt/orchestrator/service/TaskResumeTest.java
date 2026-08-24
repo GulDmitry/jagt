@@ -63,11 +63,19 @@ class TaskResumeTest {
     }
 
     @Test
-    void refusesARequestItCouldNotRead() {
+    void saysTheReadFailedInsteadOfCallingTheRequestMissing() {
         when(reviewReader.readRequest("https://host/mr/1")).thenReturn(Answer.unavailable());
 
-        assertThat(resume.resume("https://host/mr/1")).contains("could not read the review request");
+        assertThat(resume.resume("https://host/mr/1")).contains("could not be READ");
         verifyNoInteractions(git, provisioning);
+    }
+
+    @Test
+    void refusesARequestTheHostItselfSaysDoesNotExist() {
+        when(reviewReader.readRequest("https://host/mr/1")).thenReturn(new Answer<>(
+                Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
+
+        assertThat(resume.resume("https://host/mr/1")).contains("no such review request");
     }
 
     /**

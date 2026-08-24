@@ -69,10 +69,19 @@ public class TaskLauncher {
         // The read takes a key or a URL to any tracker and answers with the canonical key, which is what names
         // the branch and the worktree.
         var read = tickets.read(ref);
+        // Three different answers, and the launch says which: one names a missing item, the others a read that
+        // never got there. Merging them sent the human to the tracker for a reference that was never fetched.
+        if (read.facts().isEmpty()) {
+            return "error: " + ref + " could not be READ, so nothing is known about it (the log names what"
+                    + " failed) — no task created.";
+        }
+        if (!read.facts().get().exists()) {
+            return "error: the tracker answers that there is no such item as " + ref + " — no task created.";
+        }
         var facts = read.facts().filter(TicketFacts::usable);
         if (facts.isEmpty()) {
-            return "error: could not read " + ref + " — no task created (unknown key, inaccessible url, or"
-                    + " the reader never answered). Check the reference and retry.";
+            return "error: the read of " + ref + " came back without the key, title or url an item that exists"
+                    + " must have (the log names what failed) — no task created.";
         }
         TicketFacts f = facts.get();
         if (bareKey && !ref.equalsIgnoreCase(f.key())) {

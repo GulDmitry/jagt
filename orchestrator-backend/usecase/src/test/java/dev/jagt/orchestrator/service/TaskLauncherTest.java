@@ -77,7 +77,7 @@ class TaskLauncherTest {
      * from one that was never reached — so the launch says so instead of starting work on half a task.
      */
     @Test
-    void createsNoTaskWhenTheTicketCouldNotBeRead() {
+    void createsNoTaskWhenTheTrackerSaysThereIsNoSuchItem() {
         oneProject("group-a");
         when(tickets.read("ABC-42")).thenReturn(new Answer<>(
                 Optional.of(new TicketFacts(false, "", "", "", List.of(), "")),
@@ -85,8 +85,16 @@ class TaskLauncherTest {
 
         String out = launcher.launch(LaunchRequest.of("ABC-42"));
 
-        assertThat(out).contains("could not read ABC-42", "no task created");
+        assertThat(out).contains("no such item as ABC-42", "no task created");
         verify(provisioning, never()).initializeTask(any());
+    }
+
+    @Test
+    void saysTheReadFailedInsteadOfCallingTheTicketMissing() {
+        oneProject("group-a");
+        when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
+
+        assertThat(launcher.launch(LaunchRequest.of("ABC-42"))).contains("could not be READ");
     }
 
     @Test
