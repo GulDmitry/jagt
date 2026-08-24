@@ -1,14 +1,15 @@
 package dev.jagt.orchestrator.adapter.macos;
 
-import dev.jagt.orchestrator.port.UserNotifier;
+import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.UserNotifier;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,37 +19,56 @@ import java.util.List;
  * confusing failure. terminal-notifier has its own bundle id and reliably
  * shows a banner — and its banner can carry a CLICK: `-open <url>`, which is
  * the only reason jagt can put the human on the task the banner is about.
- * Falls back to osascript when it isn't installed.
+ *
+ * <p>Which build of it sits on the machine is not jagt's to know: it is found by name wherever it was
+ * installed, and one that REFUSES the banner falls back to osascript exactly like one that is absent — 3.x
+ * asks macOS for permission through its own bundle, and an ad-hoc signature is not one macOS will authorise.
+ * A failure late enough to have already shown something therefore costs a second banner, which is the cheaper
+ * of the two mistakes.
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "macos", matchIfMissing = true)
 @Slf4j
 public class MacNotifier implements UserNotifier {
 
-    private static final List<String> TN_CANDIDATES =
-            List.of("/opt/homebrew/bin/terminal-notifier", "/usr/local/bin/terminal-notifier");
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private final OsaScript osaScript;
     private final ProcessRunner processRunner;
     private final String terminalNotifier;
 
-    public MacNotifier(OsaScript osaScript, ProcessRunner processRunner) {
+    public MacNotifier(OsaScript osaScript, ProcessRunner processRunner,
+                       @Value("${orchestrator.terminal-notifier-command:terminal-notifier}")
+                       String terminalNotifierCommand) {
         this.osaScript = osaScript;
         this.processRunner = processRunner;
-        this.terminalNotifier = TN_CANDIDATES.stream().filter(p -> Files.isExecutable(Path.of(p)))
-                .findFirst().orElse(null);
+        String resolved = Executables.resolve(terminalNotifierCommand);
+        this.terminalNotifier = Executables.unresolved(resolved) ? null : resolved;
     }
 
     @Override
     public void notify(String title, String message, String link) {
+        if (terminalNotifier != null && bannerShown(title, message, link)) {
+            return;
+        }
+        displayNotification(title, message);
+    }
+
+    private boolean bannerShown(String title, String message, String link) {
         try {
-            if (terminalNotifier != null) {
-                processRunner.run(null, Duration.ofSeconds(10), command(terminalNotifier, title, message, link))
-                        .expectSuccess("terminal-notifier");
-            } else {
-                osaScript.run("display notification " + OsaScript.string(message)
-                        + " with title " + OsaScript.string(title));
-            }
+            processRunner.run(null, TIMEOUT, command(terminalNotifier, title, message, link))
+                    .expectSuccess("terminal-notifier");
+            return true;
+        } catch (RuntimeException e) {
+            log.warn("terminal-notifier failed, falling back to osascript: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    private void displayNotification(String title, String message) {
+        try {
+            osaScript.run("display notification " + OsaScript.string(message == null ? "" : message)
+                    + " with title " + OsaScript.string(title == null ? "jagt" : title));
         } catch (RuntimeException e) {
             // A broken notification must never fail the flow that raised it.
             log.warn("notification failed: {}", e.getMessage());
@@ -60,7 +80,7 @@ public class MacNotifier implements UserNotifier {
      * terminal-notifier gets the same words and no click.
      */
     static List<String> command(String terminalNotifier, String title, String message, String link) {
-        List<String> command = new java.util.ArrayList<>(List.of(terminalNotifier,
+        List<String> command = new ArrayList<>(List.of(terminalNotifier,
                 "-title", title == null ? "jagt" : title, "-message", message == null ? "" : message,
                 "-sound", "default"));
         if (link != null) {

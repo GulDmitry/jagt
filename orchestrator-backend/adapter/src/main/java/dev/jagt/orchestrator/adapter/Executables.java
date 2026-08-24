@@ -41,7 +41,7 @@ public final class Executables {
 
     /** True when {@link #resolve} found nothing and handed the bare name back, so a caller can say so itself. */
     public static boolean unresolved(String resolved) {
-        return resolved != null && !resolved.isBlank() && !resolved.contains("/");
+        return resolved == null || resolved.isBlank() || !resolved.contains("/");
     }
 
     /** Whether a bare name is on {@code PATH} — all a plain spawn looks at, none of the fallbacks below. */

@@ -84,4 +84,11 @@ class ExecutablesTest {
         assertThat(Executables.resolve(command, "/usr/bin", path -> path.toString().equals("/usr/bin/tmux")))
                 .isEmpty();
     }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"", "  "})
+    void countsAnUnsetCommandAsSomethingNobodyMaySpawn(String resolved) {
+        assertThat(Executables.unresolved(resolved)).isTrue();
+    }
 }
