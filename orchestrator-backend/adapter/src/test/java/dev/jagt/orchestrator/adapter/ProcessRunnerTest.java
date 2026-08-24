@@ -8,11 +8,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 class ProcessRunnerTest {
 
@@ -57,12 +59,13 @@ class ProcessRunnerTest {
         Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "30"));
 
         new ProcessBuilder("kill", "-TERM", String.valueOf(launched.pid())).start().waitFor();
-        launched.onExit().get(5, TimeUnit.SECONDS);
 
-        assertThat(log.list).filteredOn(event -> "process ended".equals(event.getMessage()))
-                .flatExtracting(ILoggingEvent::getKeyValuePairs)
-                .extracting(pair -> pair.key + "=" + pair.value)
-                .contains("pid=" + launched.pid(), "exit=on SIGTERM (143)");
+        // The record is written by ITS OWN stage of the same future, which does not run before the test's.
+        await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+                assertThat(log.list).filteredOn(event -> "process ended".equals(event.getMessage()))
+                        .flatExtracting(ILoggingEvent::getKeyValuePairs)
+                        .extracting(pair -> pair.key + "=" + pair.value)
+                        .contains("pid=" + launched.pid(), "exit=on SIGTERM (143)"));
     }
 
     @Test

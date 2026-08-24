@@ -100,14 +100,21 @@ class LinuxKittyTerminalDriverLinuxTest {
                 + inTheForeground());
     }
 
-    /** {@code --detach} exits ZERO whatever becomes of the instance, so a kitty that died on the way up says
-     *  why only when it is asked again in the foreground — with the options it was refusing, over a command
-     *  that exits at once. */
+    /**
+     * {@code --detach} exits ZERO whatever becomes of the instance, so a kitty that died on the way up says
+     * why only when it is asked again in the foreground — with the options it was refusing, over a command
+     * that exits at once. It runs on the failure path only, so it gets the full timeout and throws NOTHING:
+     * a diagnostic that fails must still report, or it replaces the failure it was called to explain.
+     */
     private String inTheForeground() {
-        var probe = runner.run(null, PROBE, List.of("kitty",
-                "--listen-on", "unix:" + Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-probe"),
-                "-o", "allow_remote_control=yes", "--title", "jagt-kitty-probe", "--", "true"));
-        return "exit " + probe.exitCode() + " " + (probe.stderr() + probe.stdout()).strip();
+        try {
+            var probe = runner.run(null, T, List.of("kitty",
+                    "--listen-on", "unix:" + Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-probe"),
+                    "-o", "allow_remote_control=yes", "--title", "jagt-kitty-probe", "--", "true"));
+            return "exit " + probe.exitCode() + " " + (probe.stderr() + probe.stdout()).strip();
+        } catch (RuntimeException couldNotAsk) {
+            return "it could not be asked: " + couldNotAsk.getMessage();
+        }
     }
 
     /** Asks the PROCESS TABLE, not the socket: "the instance is gone" is exactly what closeViewerWindow claims
