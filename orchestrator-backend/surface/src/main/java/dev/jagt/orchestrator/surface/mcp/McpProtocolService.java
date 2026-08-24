@@ -72,7 +72,11 @@ public class McpProtocolService {
             response.set("result", result);
             return Optional.of(response);
         } catch (Exception e) {
-            log.error("MCP {} failed: {}", method, e.getMessage(), e);
+            log.atError().setMessage("mcp request failed")
+                    .addKeyValue("method", method)
+                    .addKeyValue("cause", e.getMessage())
+                    .setCause(e)
+                    .log();
             return isNotification ? Optional.empty() : Optional.of(error(id, -32603, describe(e)));
         }
     }
@@ -132,7 +136,10 @@ public class McpProtocolService {
         try {
             return toolResult(spec.handler().call(args, callerTaskId), false);
         } catch (Exception e) {
-            log.warn("Tool {} failed: {}", name, e.getMessage());
+            log.atWarn().setMessage("mcp tool failed")
+                    .addKeyValue("tool", name)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
             return toolResult("Error: " + describe(e), true);
         }
     }

@@ -35,7 +35,10 @@ public class WorktreeChanges {
                     Path.of(configService.project(repo.project()).path()).toAbsolutePath().normalize(),
                     Path.of(repo.worktreePath()));
         } catch (RuntimeException e) {
-            log.warn("Could not read the working tree of {}: {}", repo.worktreePath(), e.toString());
+            log.atWarn().setMessage("worktree read failed")
+                    .addKeyValue("path", repo.worktreePath())
+                    .addKeyValue("cause", e.toString())
+                    .log();
             return false;
         }
     }

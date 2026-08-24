@@ -26,7 +26,9 @@ public class WebOperatorUi implements OperatorUi {
         // otherwise leaves a human staring at a terminal with no banner, no address and no sign of life.
         System.out.println("jagt board → http://localhost:" + port
                 + "   (plain text: /status /stats · console UI: --orchestrator.ui=tui · Ctrl-C stops)");
-        log.info("Board serving on http://localhost:{}", port);
+        log.atInfo().setMessage("board serving")
+                .addKeyValue("url", "http://localhost:" + port)
+                .log();
     }
 
     @Override

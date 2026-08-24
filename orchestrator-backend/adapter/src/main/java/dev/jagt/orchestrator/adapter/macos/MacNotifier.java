@@ -60,7 +60,10 @@ public class MacNotifier implements UserNotifier {
                     .expectSuccess("terminal-notifier");
             return true;
         } catch (RuntimeException e) {
-            log.warn("terminal-notifier failed, falling back to osascript: {}", e.getMessage());
+            log.atWarn().setMessage("terminal-notifier failed")
+                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("effect", "falling back to osascript")
+                    .log();
             return false;
         }
     }
@@ -71,7 +74,9 @@ public class MacNotifier implements UserNotifier {
                     + " with title " + OsaScript.string(title == null ? "jagt" : title));
         } catch (RuntimeException e) {
             // A broken notification must never fail the flow that raised it.
-            log.warn("notification failed: {}", e.getMessage());
+            log.atWarn().setMessage("notification failed")
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 

@@ -29,14 +29,18 @@ public class OperatorUiRunner implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         if (surfaces.isEmpty()) {
             // Reachable only by asking for a UI that does not exist.
-            log.warn("No operator UI is enabled — check orchestrator.ui (web | tui | both)."
-                    + " The HTTP endpoints are still up.");
+            log.atWarn().setMessage("no operator ui enabled")
+                    .addKeyValue("fix", "orchestrator.ui (web|tui|both)")
+                    .addKeyValue("http", "up")
+                    .log();
             return;
         }
         surfaces.stream()
                 .sorted(Comparator.comparing(OperatorUi::blocking))
                 .forEach(surface -> {
-                    log.info("Operator UI: {}", surface.name());
+                    log.atInfo().setMessage("operator ui started")
+                            .addKeyValue("surface", surface.name())
+                            .log();
                     surface.start();
                 });
     }

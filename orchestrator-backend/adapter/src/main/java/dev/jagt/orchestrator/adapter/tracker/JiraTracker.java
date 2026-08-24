@@ -43,8 +43,12 @@ public class JiraTracker implements Tracker {
         this.http = http;
         this.config = config;
         if (!config.isUsable()) {
-            log.warn("orchestrator.tracker.type=jira but base-url or token is missing — reading a ticket keeps"
-                    + " using the (paid) headless read. Set orchestrator.tracker.base-url and .token.");
+            log.atWarn().setMessage("tracker unusable")
+                    .addKeyValue("type", "jira")
+                    .addKeyValue("cause", "base-url or token missing")
+                    .addKeyValue("effect", "reads stay on the paid headless call")
+                    .addKeyValue("fix", "orchestrator.tracker.base-url and .token")
+                    .log();
         }
     }
 

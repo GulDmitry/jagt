@@ -68,7 +68,10 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
             });
         } catch (RejectedExecutionException e) {
             broadcastQueued.set(false);
-            log.debug("No board broadcast, the backend is stopping: {}", e.toString());
+            log.atDebug().setMessage("board broadcast skipped")
+                    .addKeyValue("cause", "backend stopping")
+                    .addKeyValue("detail", e.toString())
+                    .log();
         }
     }
 
@@ -126,7 +129,9 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
             // and the shutdown sweep can only end what is still in this list.
             browsers.remove(browser);
             end(browser);
-            log.debug("Dropping a closed board connection: {}", e.toString());
+            log.atDebug().setMessage("board connection dropped")
+                    .addKeyValue("cause", e.toString())
+                    .log();
         }
     }
 
@@ -134,7 +139,9 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
         try {
             browser.complete();
         } catch (RuntimeException e) {
-            log.debug("A board connection was already gone: {}", e.toString());
+            log.atDebug().setMessage("board connection already gone")
+                    .addKeyValue("cause", e.toString())
+                    .log();
         }
     }
 }

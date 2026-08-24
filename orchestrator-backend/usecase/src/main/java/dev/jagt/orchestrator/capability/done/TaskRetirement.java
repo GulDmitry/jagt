@@ -44,8 +44,11 @@ public class TaskRetirement {
             ProjectConfig project = projects.get(repo.project());
             if (project == null) {
                 anyProjectMissing = true;
-                log.warn("Project '{}' of task {} no longer in config.json; skipping worktree removal",
-                        repo.project(), taskId);
+                log.atWarn().setMessage("worktree removal skipped")
+                        .addKeyValue("task", taskId)
+                        .addKeyValue("project", repo.project())
+                        .addKeyValue("cause", "not in config.json")
+                        .log();
                 continue;
             }
             Path projectPath = Path.of(project.path());

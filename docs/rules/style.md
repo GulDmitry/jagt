@@ -32,6 +32,48 @@ decisions before it was emptied (2026-08-18), and the owner's complaint was that
 history. TODO.md holds only what is still open, and holding nothing is its normal state. If an entry needs three
 paragraphs, the code needs the explanation, not the file.
 
+### Every log line has the same grammar
+
+The file log is ECS JSON, so **nothing is interpolated into the message**: a constant event, and every value
+as its own key-value pair. That is what structured logging is for — the message groups, the fields carry.
+
+```java
+log.atWarn().setMessage("read failed")          // constant, never built from a value
+        .addKeyValue("url", url)
+        .addKeyValue("cause", failure)
+        .log();
+```
+
+```json
+{"log":{"level":"WARN"},"message":"read failed","url":"https://…/451","cause":"no gitlab mcp tool"}
+```
+
+**Never** `log.warn("read failed: " + url)`, and never a `{}` placeholder in a message: both bury the value in
+prose, and every consumer is back to parsing English. Spring Boot's ECS formatter writes the pairs as top-level
+JSON fields, and `logging.pattern.console` carries `%kvp` so the console shows the same fields.
+
+- **event** — 2 to 4 lowercase words, subject then state, past tense: `read failed`, `mcp probe skipped`,
+  `worktree orphaned`, `process launched`. No punctuation, no values inside it. It is what a human greps for.
+- **keys** — one word each, lowercase, from the shared vocabulary and never invented twice for one thing:
+  `ref url api task alias project repo path file from to branch session window pid cmd exit tool method
+  channel job port attempt limit tokens mcp servers status previous outcome said cause effect fix note`. `ref`
+  is whatever was being read (a url, a ticket key), `url` an address that was fetched or served, `said` the
+  sentence a surface showed a human.
+- **values** — a number stays a number (`secrets=102`), and one key means one type everywhere: a field that is
+  a count in one line and prose in another is rejected at ingest by any index that types it.
+- **`cause`** is always the failure itself (exception message, stderr, exit line); a throwable goes in
+  `setCause(e)`. **`effect`** is what jagt did instead. **`fix`** is exactly one command or one setting, never
+  advice.
+- No prose, no sentences, no em dashes, no trailing period, no capital first word (identifiers keep their
+  case), never two facts in one value.
+
+Levels carry meaning and nothing else does: **ERROR** = jagt could not do what it was asked; **WARN** = it
+degraded, skipped or fell back; **INFO** = a state change a human wants to see; **DEBUG** = internal.
+
+A failure that mentions no `cause=` is not a log line, it is a shrug. **Never** write a message that explains,
+reassures or advises in prose — that belongs in `docs/`, and in a log it is noise a human has to read past at
+the moment they are least able to.
+
 ### The same standard is demanded of the agents
 
 It is one section of `sub-agent-context.md` ("How you write") rather than a clause repeated per artifact: a

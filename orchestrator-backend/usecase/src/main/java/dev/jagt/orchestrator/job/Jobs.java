@@ -57,7 +57,10 @@ public class Jobs {
         for (Job job : declared) {
             // A job that cannot name itself cannot be keyed, listed or reported on, so it does not run.
             if (job.id() == null || job.id().isBlank()) {
-                log.warn("{} declares no job id — not registered", job.getClass().getSimpleName());
+                log.atWarn().setMessage("job not registered")
+                        .addKeyValue("class", job.getClass().getSimpleName())
+                        .addKeyValue("cause", "no job id")
+                        .log();
                 continue;
             }
             if (jobs.put(job.id(), job) != null) {
@@ -119,7 +122,10 @@ public class Jobs {
                     run.lastError = null;
                 } catch (Throwable t) {
                     run.lastError = t.toString();
-                    log.warn("job {} failed: {}", id, t.toString());
+                    log.atError().setMessage("job failed")
+                            .addKeyValue("job", id)
+                            .addKeyValue("cause", t.toString())
+                            .log();
                 } finally {
                     run.running.set(false);
                 }

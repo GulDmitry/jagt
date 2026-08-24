@@ -130,8 +130,9 @@ public class AutoReviewScheduler implements Job {
         if (!inFlight.add(taskId)) {
             return;
         }
-        log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
-                .log("auto-review {}: poll due, reading the review request", TaskLabel.of(taskId, alias));
+        log.atInfo().setMessage("auto-review poll due").addKeyValue("task", taskId)
+                .addKeyValue("alias", alias)
+                .log();
         try {
             executor.execute(() -> pollNow(taskId));
         } catch (RejectedExecutionException e) {
@@ -139,7 +140,10 @@ public class AutoReviewScheduler implements Job {
             // exception thrown by the sweep must not land here, or it would be logged as a scheduling failure
             // and — with a same-thread executor — leave lastPolledAt unadvanced, re-running the sweep forever.
             inFlight.remove(taskId);
-            log.warn("Could not schedule an auto-review poll for {}: {}", taskId, e.toString());
+            log.atWarn().setMessage("auto-review poll not scheduled")
+                    .addKeyValue("task", taskId)
+                    .addKeyValue("cause", e.toString())
+                    .log();
         }
     }
 
@@ -147,7 +151,10 @@ public class AutoReviewScheduler implements Job {
         try {
             OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> reviewSweep.sweep(taskId));
         } catch (RuntimeException e) {
-            log.warn("Auto-review sweep failed for {}: {}", taskId, e.toString());
+            log.atWarn().setMessage("auto-review sweep failed")
+                    .addKeyValue("task", taskId)
+                    .addKeyValue("cause", e.toString())
+                    .log();
         } finally {
             // Release the marker LAST and unconditionally: stamping the poll writes state.json, which throws
             // when the disk is full or the file turns unwritable. Losing the release there would exclude this

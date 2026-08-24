@@ -76,8 +76,12 @@ public class GitHubCodeHost implements CodeHost {
         this.http = http;
         this.config = config;
         if (!config.isUsable()) {
-            log.warn("orchestrator.code-host.type=github but base-url or token is missing — review sweeps keep"
-                    + " using the (paid) headless read. Set orchestrator.code-host.base-url and .token.");
+            log.atWarn().setMessage("code host unusable")
+                    .addKeyValue("type", "github")
+                    .addKeyValue("cause", "base-url or token missing")
+                    .addKeyValue("effect", "reads stay on the paid headless call")
+                    .addKeyValue("fix", "orchestrator.code-host.base-url and .token")
+                    .log();
         }
     }
 
@@ -129,15 +133,20 @@ public class GitHubCodeHost implements CodeHost {
             }
             cursor = threads.path("pageInfo").path("endCursor").asString("");
             if (cursor.isBlank()) {
-                log.warn("GitHub reports more review threads for {} but no cursor to read them with",
-                        reviewRequestUrl);
+                log.atWarn().setMessage("github threads unreadable")
+                        .addKeyValue("url", reviewRequestUrl)
+                        .addKeyValue("cause", "more threads reported, no cursor")
+                        .log();
                 return Optional.empty();
             }
         }
         // Truncating would be the same lie as a failed page: the sweep cannot tell a short list from a
         // complete one, and a complete-looking clean list advances the task.
-        log.warn("GitHub review of {} exceeds {} thread pages — refusing to relay a truncated round",
-                reviewRequestUrl, MAX_THREAD_PAGES);
+        log.atWarn().setMessage("github review too long")
+                .addKeyValue("url", reviewRequestUrl)
+                .addKeyValue("maxPages", MAX_THREAD_PAGES)
+                .addKeyValue("effect", "round not relayed")
+                .log();
         return Optional.empty();
     }
 
@@ -164,8 +173,10 @@ public class GitHubCodeHost implements CodeHost {
         // GraphQL answers a broken query, a missing scope or a deleted repository with HTTP 200 and an errors
         // array, so the status code alone would read a failed read as an empty one.
         if (!answer.get().path("errors").isEmpty()) {
-            log.warn("GitHub refused the query for {}: {}", reviewRequestUrl,
-                    answer.get().path("errors").toString());
+            log.atWarn().setMessage("github query refused")
+                    .addKeyValue("url", reviewRequestUrl)
+                    .addKeyValue("cause", answer.get().path("errors").toString())
+                    .log();
             return null;
         }
         JsonNode pullRequest = answer.get().path("data").path("repository").path("pullRequest");
@@ -233,8 +244,10 @@ public class GitHubCodeHost implements CodeHost {
     /** Empty = the round could only be relayed in part, which must fail the sweep rather than look clean. */
     private Optional<List<String>> threadComments(JsonNode reviewThreads, String reviewRequestUrl) {
         if (!reviewThreads.path("nodes").isArray()) {
-            log.warn("GitHub returned no thread list for {} — refusing to read it as a clean review",
-                    reviewRequestUrl);
+            log.atWarn().setMessage("github returned no threads")
+                    .addKeyValue("url", reviewRequestUrl)
+                    .addKeyValue("effect", "not read as a clean review")
+                    .log();
             return Optional.empty();
         }
         List<String> unresolved = new ArrayList<>();
@@ -245,8 +258,10 @@ public class GitHubCodeHost implements CodeHost {
             JsonNode comments = thread.path("comments");
             if (!comments.path("nodes").isArray()
                     || comments.path("pageInfo").path("hasNextPage").asBoolean(false)) {
-                log.warn("A GitHub thread in {} is longer than one read carries — refusing to relay a"
-                        + " truncated round", reviewRequestUrl);
+                log.atWarn().setMessage("github thread too long")
+                        .addKeyValue("url", reviewRequestUrl)
+                        .addKeyValue("effect", "round not relayed")
+                        .log();
                 return Optional.empty();
             }
             // Every comment of an open thread, not just the first: the ask often moves on ("no, do X instead"),

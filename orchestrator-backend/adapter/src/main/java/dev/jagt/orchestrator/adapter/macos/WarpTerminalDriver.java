@@ -40,8 +40,9 @@ public class WarpTerminalDriver implements TerminalDriver {
     @Override
     public void openViewer(String tmuxSession, String dedicatedTitle, Path tabCwd) {
         if (!properties.openWarpWindow()) {
-            log.info("Warp auto-open disabled; attach manually: {} attach -t {}",
-                    Executables.resolve(properties.tmuxCommand()), tmuxSession);
+            log.atInfo().setMessage("terminal auto-open disabled")
+                    .addKeyValue("fix", Executables.resolve(properties.tmuxCommand()) + " attach -t " + tmuxSession)
+                    .log();
             return;
         }
         long now = System.currentTimeMillis();
@@ -55,8 +56,11 @@ public class WarpTerminalDriver implements TerminalDriver {
                 : "warp://tab_config/" + tmuxSession + "?new_window=true";
         var open = processRunner.run(null, TIMEOUT, List.of("open", uri));
         if (open.exitCode() != 0) {
-            log.warn("Could not open Warp tab for tmux session '{}': {}. Attach manually: {} attach -t {}",
-                    tmuxSession, open.stderr(), Executables.resolve(properties.tmuxCommand()), tmuxSession);
+            log.atWarn().setMessage("warp tab open failed")
+                    .addKeyValue("session", tmuxSession)
+                    .addKeyValue("cause", open.stderr())
+                    .addKeyValue("fix", Executables.resolve(properties.tmuxCommand()) + " attach -t " + tmuxSession)
+                    .log();
         }
     }
 
@@ -94,7 +98,10 @@ public class WarpTerminalDriver implements TerminalDriver {
                     end tell
                     """.formatted(OsaScript.string(dedicatedTitle)));
         } catch (RuntimeException e) {
-            log.warn("Could not close the agents window '{}': {}", dedicatedTitle, e.getMessage());
+            log.atWarn().setMessage("warp window close failed")
+                    .addKeyValue("window", dedicatedTitle)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 

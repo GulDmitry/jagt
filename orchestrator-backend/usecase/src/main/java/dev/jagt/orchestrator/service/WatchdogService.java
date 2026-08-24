@@ -97,8 +97,11 @@ public class WatchdogService implements Job {
         }
         String said = body(silence.get());
         lastAlertAt.put(taskId, now);
-        log.warn("Watchdog: task {} stopped — {} ({} min)", taskId, said,
-                (now - silence.get().since()) / 60_000);
+        log.atWarn().setMessage("task stopped")
+                .addKeyValue("task", taskId)
+                .addKeyValue("said", said)
+                .addKeyValue("silent", (now - silence.get().since()) / 60_000 + " min")
+                .log();
         notifications.send(Notification.watchdog(taskId, "agent stopped", said));
     }
 

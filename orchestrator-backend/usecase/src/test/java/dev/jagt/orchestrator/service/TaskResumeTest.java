@@ -66,7 +66,7 @@ class TaskResumeTest {
     void saysTheReadFailedInsteadOfCallingTheRequestMissing() {
         when(reviewReader.readRequest("https://host/mr/1")).thenReturn(Answer.unavailable());
 
-        assertThat(resume.resume("https://host/mr/1")).contains("could not be READ");
+        assertThat(resume.resume("https://host/mr/1")).contains("read failed");
         verifyNoInteractions(git, provisioning);
     }
 

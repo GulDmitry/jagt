@@ -240,7 +240,10 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             try {
                 listener.accept(snapshot);
             } catch (RuntimeException e) {
-                log.warn("A state-change listener failed (the write itself is done): {}", e.toString());
+                log.atWarn().setMessage("state listener failed")
+                        .addKeyValue("cause", e.toString())
+                        .addKeyValue("effect", "the write itself is done")
+                        .log();
             }
         }
     }
@@ -278,8 +281,11 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         try {
             writeUnlocked(recovered);
         } catch (RuntimeException e) {
-            log.error("Recovered {} task(s) but could not write them back to {}: {}",
-                    recovered.tasks().size(), stateFile, e.getMessage());
+            log.atError().setMessage("state writeback failed")
+                    .addKeyValue("file", stateFile)
+                    .addKeyValue("tasks", recovered.tasks().size())
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
         return recovered;
     }
@@ -312,13 +318,20 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         if (Files.exists(backupFile)) {
             try {
                 StateFile recovered = parse(backupFile);
-                log.error("state file {} is unreadable ({}) — recovered {} task(s) from {}; the bad file is"
-                                + " kept at {}", stateFile, primaryFailure.getMessage(),
-                        recovered.tasks().size(), backupFile, corruptFile);
+                log.atError().setMessage("state file unreadable")
+                        .addKeyValue("file", stateFile)
+                        .addKeyValue("cause", primaryFailure.getMessage())
+                        .addKeyValue("tasks", recovered.tasks().size())
+                        .addKeyValue("from", backupFile)
+                        .addKeyValue("kept", corruptFile)
+                        .log();
                 setAsideCorruptFile();
                 return recovered;
             } catch (RuntimeException | IOException backupFailure) {
-                log.error("backup {} is unreadable too: {}", backupFile, backupFailure.getMessage());
+                log.atError().setMessage("state backup unreadable")
+                        .addKeyValue("file", backupFile)
+                        .addKeyValue("cause", backupFailure.getMessage())
+                        .log();
             }
         }
         throw new UncheckedIOException("Cannot read state file " + stateFile + " and no usable backup at "
@@ -330,7 +343,11 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         try {
             Files.move(stateFile, corruptFile, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            log.warn("Could not move the unreadable {} aside to {}: {}", stateFile, corruptFile, e.getMessage());
+            log.atWarn().setMessage("state file move aside failed")
+                    .addKeyValue("from", stateFile)
+                    .addKeyValue("to", corruptFile)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 
@@ -361,7 +378,11 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         try {
             Files.copy(stateFile, backupFile, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            log.warn("Could not back up {} to {}: {}", stateFile, backupFile, e.getMessage());
+            log.atWarn().setMessage("state backup failed")
+                    .addKeyValue("from", stateFile)
+                    .addKeyValue("to", backupFile)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 }

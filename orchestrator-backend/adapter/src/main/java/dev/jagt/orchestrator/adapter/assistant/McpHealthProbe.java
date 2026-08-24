@@ -45,14 +45,17 @@ class McpHealthProbe {
 
     synchronized Optional<List<String>> brokenServers() {
         if (Thread.currentThread().isInterrupted()) {
-            log.warn("Not asking which MCP servers are up: this thread is interrupted");
+            log.atWarn().setMessage("mcp probe skipped")
+                    .addKeyValue("cause", "thread interrupted")
+                    .log();
             return Optional.empty();
         }
         // `claude mcp list` takes neither --mcp-config nor --strict-mcp-config (verified 2026-08-24), so with a
         // declared set it would report the servers of a resolution the read never used.
         if (!assistant.mcpConfig().isBlank()) {
-            log.warn("The read's MCP servers come from orchestrator.assistant.mcp-config, and the CLI cannot be"
-                    + " asked about that set — which of them is down is NOT established");
+            log.atWarn().setMessage("mcp probe skipped")
+                    .addKeyValue("cause", "servers declared in orchestrator.assistant.mcp-config")
+                    .log();
             return Optional.empty();
         }
         if (lastAt != 0 && System.nanoTime() - lastAt < FRESH_FOR.toNanos()) {
@@ -69,13 +72,18 @@ class McpHealthProbe {
             result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), TIMEOUT,
                     List.of(claude.command(), "mcp", "list"));
         } catch (RuntimeException e) {
-            log.error("Could not ask which MCP servers are up ({}), so a failed read cannot be explained: {}",
-                    claude.command(), e.toString());
+            log.atError().setMessage("mcp probe failed")
+                    .addKeyValue("cmd", claude.command() + " mcp list")
+                    .addKeyValue("cause", e.toString())
+                    .log();
             return Optional.empty();
         }
         if (result.exitCode() != 0) {
-            log.error("`{} mcp list` exited {}, so a failed read cannot be explained: {}", claude.command(),
-                    result.exitCode(), result.stderr().isBlank() ? result.stdout() : result.stderr());
+            log.atError().setMessage("mcp probe failed")
+                    .addKeyValue("cmd", claude.command() + " mcp list")
+                    .addKeyValue("exit", result.exitCode())
+                    .addKeyValue("cause", result.stderr().isBlank() ? result.stdout() : result.stderr())
+                    .log();
             return Optional.empty();
         }
         List<String> servers = result.stdout().lines()
@@ -85,8 +93,10 @@ class McpHealthProbe {
         // No line was a server line: either nothing is configured, or the output no longer looks like this.
         // Answering "nothing is down" here would clear the very failure the caller asked about.
         if (servers.isEmpty()) {
-            log.error("`{} mcp list` named no server at all, so a failed read cannot be explained: {}",
-                    claude.command(), result.stdout().strip());
+            log.atError().setMessage("mcp probe listed no server")
+                    .addKeyValue("cmd", claude.command() + " mcp list")
+                    .addKeyValue("cause", result.stdout().strip())
+                    .log();
             return Optional.empty();
         }
         List<String> broken = servers.stream().filter(server -> !server.endsWith(CONNECTED)).toList();

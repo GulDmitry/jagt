@@ -56,7 +56,9 @@ public class LibNotifyNotifier implements UserNotifier, StartupCheck {
                     .expectSuccess("notify-send");
         } catch (RuntimeException e) {
             // A broken notification must never fail the flow that raised it.
-            log.warn("notification failed: {}", e.getMessage());
+            log.atWarn().setMessage("notification failed")
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 

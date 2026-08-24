@@ -75,8 +75,11 @@ public class WorktreeOrphanScanner implements Job {
             return;
         }
         int secrets = orphans.stream().mapToInt(Orphan::secretFiles).sum();
-        orphans.forEach(orphan -> log.warn("Orphaned worktree {} ({} copied secret file(s)) — no task owns it,"
-                + " delete it yourself once you are sure", orphan.path(), orphan.secretFiles()));
+        orphans.forEach(orphan -> log.atWarn().setMessage("worktree orphaned")
+                .addKeyValue("path", orphan.path())
+                .addKeyValue("secrets", orphan.secretFiles())
+                .addKeyValue("owner", "none")
+                .log());
         notifications.send(Notification.housekeeping(orphans.size() + " orphaned worktree(s)",
                 secrets > 0 ? secrets + " copied secret file(s) left on disk — see the log"
                         : "left over from a crashed or abandoned task — see the log"));
@@ -165,7 +168,10 @@ public class WorktreeOrphanScanner implements Job {
             entries.filter(Files::isDirectory).forEach(dir -> names.add(dir.getFileName().toString()));
             return names;
         } catch (IOException e) {
-            log.warn("Could not list {} for orphaned worktrees: {}", parent, e.getMessage());
+            log.atWarn().setMessage("worktree scan failed")
+                    .addKeyValue("path", parent)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
             return List.of();
         }
     }
@@ -193,7 +199,10 @@ public class WorktreeOrphanScanner implements Job {
                 }
             });
         } catch (IOException e) {
-            log.warn("Could not scan {} for copied secrets: {}", worktree, e.getMessage());
+            log.atWarn().setMessage("secret scan failed")
+                    .addKeyValue("path", worktree)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
         return hits[0];
     }

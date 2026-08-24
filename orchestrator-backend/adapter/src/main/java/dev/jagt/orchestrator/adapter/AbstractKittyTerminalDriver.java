@@ -51,8 +51,9 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     @Override
     public void openViewer(String tmuxSession, String dedicatedTitle, Path tabCwd) {
         if (!properties.openWarpWindow()) {
-            log.info("Terminal auto-open disabled; attach manually: {} attach -t {}",
-                    properties.tmuxCommand(), tmuxSession);
+            log.atInfo().setMessage("terminal auto-open disabled")
+                    .addKeyValue("fix", properties.tmuxCommand() + " attach -t " + tmuxSession)
+                    .log();
             return;
         }
         long now = System.currentTimeMillis();
@@ -68,15 +69,21 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
                     "launch", "--type=tab", "--tab-title", dedicatedTitle, "--cwd", tabCwd.toString(),
                     "--", tmux, "attach", "-t", tmuxSession));
             if (launch.exitCode() != 0) {
-                log.warn("Could not open kitty tab for '{}': {}", tmuxSession, launch.stderr());
+                log.atWarn().setMessage("kitty tab open failed")
+                        .addKeyValue("session", tmuxSession)
+                        .addKeyValue("cause", launch.stderr())
+                        .log();
             }
             return;
         }
         var open = processRunner.run(null, TIMEOUT, firstOpenCommand(kittyCommand, kittyFontSize, socket,
                 dedicatedTitle, tabCwd.toString(), tmux, tmuxSession, platformOptions()));
         if (open.exitCode() != 0) {
-            log.warn("Could not launch kitty for tmux session '{}': {}. Attach manually: {} attach -t {}",
-                    tmuxSession, open.stderr(), tmux, tmuxSession);
+            log.atWarn().setMessage("kitty launch failed")
+                    .addKeyValue("session", tmuxSession)
+                    .addKeyValue("cause", open.stderr())
+                    .addKeyValue("fix", tmux + " attach -t " + tmuxSession)
+                    .log();
         }
     }
 

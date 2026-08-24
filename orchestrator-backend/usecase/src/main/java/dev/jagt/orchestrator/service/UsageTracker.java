@@ -48,8 +48,12 @@ public class UsageTracker {
         }
         String canonical = stateService.canonicalTaskId(taskId);
         if (!stateService.updateTask(canonical, t -> t.withUsageAdded(usage))) {
-            log.warn("Cannot charge {} tokens to task {}: not in state.json (retired?) — it stays in the"
-                    + " session total only", usage.total(), canonical);
+            log.atWarn().setMessage("task charge skipped")
+                    .addKeyValue("task", canonical)
+                    .addKeyValue("tokens", usage.total())
+                    .addKeyValue("cause", "not in state.json")
+                    .addKeyValue("effect", "session total only")
+                    .log();
         }
     }
 

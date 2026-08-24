@@ -109,7 +109,10 @@ public final class WorktreeFiles {
                 }
             });
         } catch (IOException e) {
-            log.warn("Could not scan {} for local files: {}", projectPath, e.getMessage());
+            log.atWarn().setMessage("local file scan failed")
+                    .addKeyValue("path", projectPath)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 
@@ -137,7 +140,10 @@ public final class WorktreeFiles {
         try {
             return java.util.Optional.of(Files.readString(file));
         } catch (IOException e) {
-            log.warn("Could not read {}: {}", file, e.getMessage());
+            log.atWarn().setMessage("file read failed")
+                    .addKeyValue("path", file)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
             return java.util.Optional.empty();
         }
     }
@@ -169,7 +175,11 @@ public final class WorktreeFiles {
                 }
             });
         } catch (IOException e) {
-            log.warn("Could not copy {} into {}: {}", source, worktreePath, e.getMessage());
+            log.atWarn().setMessage("file copy failed")
+                    .addKeyValue("from", source)
+                    .addKeyValue("to", worktreePath)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 
@@ -178,7 +188,11 @@ public final class WorktreeFiles {
             Files.createDirectories(to.getParent());
             Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            log.warn("Could not copy {} -> {}: {}", from, to, e.getMessage());
+            log.atWarn().setMessage("file copy failed")
+                    .addKeyValue("from", from)
+                    .addKeyValue("to", to)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 
@@ -186,7 +200,10 @@ public final class WorktreeFiles {
         try {
             Files.createDirectories(dir);
         } catch (IOException e) {
-            log.warn("Could not create {}: {}", dir, e.getMessage());
+            log.atWarn().setMessage("directory create failed")
+                    .addKeyValue("path", dir)
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 }

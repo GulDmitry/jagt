@@ -91,13 +91,19 @@ public class TtydWebTerminal implements WebTerminal, StartupCheck {
         try {
             process = processRunner.runDetached(null, command);
         } catch (RuntimeException notLaunched) {
-            log.warn("Could not start a web terminal for tmux session '{}': {}. Ran: {}",
-                    tmuxSession, notLaunched.getMessage(), String.join(" ", command));
+            log.atWarn().setMessage("web terminal start failed")
+                    .addKeyValue("session", tmuxSession)
+                    .addKeyValue("cause", notLaunched.getMessage())
+                    .addKeyValue("cmd", String.join(" ", command))
+                    .log();
             throw notLaunched;
         }
         if (exited(process)) {
-            log.warn("Nothing serves tmux session '{}': ttyd exited at once (exit {}). Ran: {}",
-                    tmuxSession, process.exitValue(), String.join(" ", command));
+            log.atWarn().setMessage("web terminal exited at once")
+                    .addKeyValue("session", tmuxSession)
+                    .addKeyValue("exit", process.exitValue())
+                    .addKeyValue("cmd", String.join(" ", command))
+                    .log();
             return Optional.empty();
         }
         return Optional.of(new Server(port, process));
@@ -121,7 +127,9 @@ public class TtydWebTerminal implements WebTerminal, StartupCheck {
             try (ServerSocket probe = new ServerSocket(port)) {
                 return probe.getLocalPort();
             } catch (IOException taken) {
-                log.debug("Port {} is taken, trying the next one for a web terminal", port);
+                log.atDebug().setMessage("web terminal port taken")
+                        .addKeyValue("port", port)
+                        .log();
             }
         }
         return first;

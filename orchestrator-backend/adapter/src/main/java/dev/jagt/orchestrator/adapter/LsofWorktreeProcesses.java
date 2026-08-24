@@ -34,8 +34,11 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
         } catch (RuntimeException e) {
             // Hygiene, not state: a machine without `lsof` (most minimal Linux images) or a kill that is
             // refused must never stop a worktree from being removed.
-            log.warn("Could not reap processes rooted in {} ({}) — removing it anyway; a language server may"
-                    + " survive and hold memory", worktree, e.getMessage());
+            log.atWarn().setMessage("worktree process reap failed")
+                    .addKeyValue("path", worktree)
+                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("effect", "removed anyway, a language server may survive and hold memory")
+                    .log();
         }
     }
 
@@ -56,7 +59,11 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
         }
         for (Reapable r : reapable(lsof.stdout(), target)) {
             processRunner.run(null, TIMEOUT, List.of("kill", "-9", r.pid()));
-            log.info("Reaped worktree-rooted process {} ({}, {})", r.pid(), r.command(), r.cwd());
+            log.atInfo().setMessage("worktree process reaped")
+                    .addKeyValue("pid", r.pid())
+                    .addKeyValue("cmd", r.command())
+                    .addKeyValue("cwd", r.cwd())
+                    .log();
         }
     }
 

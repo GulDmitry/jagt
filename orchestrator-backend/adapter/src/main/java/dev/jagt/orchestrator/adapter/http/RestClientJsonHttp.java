@@ -61,8 +61,11 @@ public class RestClientJsonHttp implements JsonHttp {
             return Optional.ofNullable(answer);
         } catch (RuntimeException e) {
             // Includes 4xx/5xx (RestClient throws by default) as well as transport failures.
-            log.warn("{} {} failed: {}", body == null ? "GET" : update ? "PUT" : "POST", url,
-                    e.toString());
+            log.atWarn().setMessage("http request failed")
+                    .addKeyValue("method", body == null ? "GET" : update ? "PUT" : "POST")
+                    .addKeyValue("url", url)
+                    .addKeyValue("cause", e.toString())
+                    .log();
             return Optional.empty();
         }
     }

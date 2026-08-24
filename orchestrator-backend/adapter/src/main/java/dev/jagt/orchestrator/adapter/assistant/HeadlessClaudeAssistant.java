@@ -89,6 +89,8 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             + " what stopped you, and which tool or server it was>, and NEVER report that as not existing.";
     /** The review sweep makes several code-host calls; give it much longer than a single lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
+    /** A log value, not a transcript: the whole stderr belongs in the CLI's own output, not in one field. */
+    private static final int MAX_CAUSE = 400;
     /** Mapping text to a command reads nothing and must feel like typing — a slow answer is worse than none. */
     private static final Duration MAP_TIMEOUT = Duration.ofSeconds(90);
 
@@ -167,8 +169,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (failure.isEmpty()) {
             return answer;
         }
-        log.error("Read of {} did not happen: {}. Nothing about it is known — this is NOT an answer that it"
-                + " does not exist.", label, failure);
+        log.atError().setMessage("read failed")
+                .addKeyValue("ref", label)
+                .addKeyValue("cause", failure)
+                .log();
         return new Answer<>(Optional.empty(), answer.usage());
     }
 
@@ -226,7 +230,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         // calls the read needs; an allow-list or a permission mode lifts that gate. A call with no MCP has
         // nothing to gate, so it stays off that path entirely.
         if (!withMcp) {
-            log.debug("Stripped (no-MCP) assistant call for {}", label);
+            log.atDebug().setMessage("assistant call without mcp")
+                    .addKeyValue("ref", label)
+                    .log();
         } else if (!assistant.allowedTools().isEmpty()) {
             cmd.add("--allowedTools");
             cmd.addAll(assistant.allowedTools());
@@ -240,8 +246,12 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         } catch (RuntimeException e) {
             // A timeout kills the CLI, so there is no envelope and no number: the tokens it already burned
             // are unknowable, not zero.
-            log.error("Headless assistant call for {} never returned ({}) — it was killed after {}, so its"
-                    + " token cost is UNMEASURED and missing from the totals", label, e.getMessage(), timeout);
+            log.atError().setMessage("assistant call did not return")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("after", timeout)
+                    .addKeyValue("effect", "token cost unmeasured")
+                    .log();
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         }
         JsonNode envelope = parseEnvelope(result.stdout(), label);
@@ -249,25 +259,41 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         // paid for, and dropping it would make the setup that fails most look like the cheapest.
         TokenUsage usage = usageOf(envelope);
         if (usage.isNone()) {
-            log.warn("Headless assistant call for {} produced no usage data — its cost is not accounted"
-                    + " for (the CLI aborted before reaching a model, or reported nothing)", label);
+            log.atWarn().setMessage("assistant call reported no usage")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("effect", "token cost unaccounted")
+                    .log();
         }
         JsonNode denials = envelope == null ? null : envelope.path("permission_denials");
         if (denials != null && denials.isArray() && !denials.isEmpty()) {
-            log.error("The call for {} was denied {} tool call(s) it tried to make: {}. It answered with"
-                    + " whatever it could still reach.", label, denials.size(), denials);
+            log.atError().setMessage("assistant tool calls denied")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("denied", denials.size())
+                    .addKeyValue("calls", oneLine(denials.toString()))
+                    .log();
         }
         if (result.exitCode() != 0 || envelope == null) {
-            log.error("Headless assistant failed for {} (exit {}): {}", label, result.exitCode(),
-                    result.stderr().isBlank() ? result.stdout() : result.stderr());
+            log.atError().setMessage("assistant call failed")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("exit", result.exitCode())
+                    .addKeyValue("cause", oneLine(result.stderr().isBlank() ? result.stdout() : result.stderr()))
+                    .log();
             return new Answer<>(Optional.empty(), usage);
         }
         if (envelope.path("is_error").asBoolean(false)) {
-            log.error("Headless assistant reported an error for {}: {}", label,
-                    envelope.path("result").asString(""));
+            log.atError().setMessage("assistant call errored")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("cause", envelope.path("result").asString(""))
+                    .log();
             return new Answer<>(Optional.empty(), usage);
         }
         return new Answer<>(answerOf(envelope, label), usage);
+    }
+
+    /** `%kvp` quotes a value but escapes nothing, so a multi-line stderr would break the console line apart. */
+    private static String oneLine(String value) {
+        String flat = value == null ? "" : value.replaceAll("\\s+", " ").replace('"', '\'').strip();
+        return flat.length() <= MAX_CAUSE ? flat : flat.substring(0, MAX_CAUSE) + "…";
     }
 
     private JsonNode parseEnvelope(String stdout, String label) {
@@ -277,7 +303,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         try {
             return mapper.readTree(stdout);
         } catch (RuntimeException e) {
-            log.error("Headless assistant returned unparseable JSON for {}: {}", label, e.toString());
+            log.atError().setMessage("assistant json unparseable")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("cause", e.toString())
+                    .log();
             return null;
         }
     }
@@ -293,7 +322,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
         String raw = envelope.path("result").asString("");
         if (raw.isBlank()) {
-            log.error("Headless assistant returned no answer for {}", label);
+            log.atError().setMessage("assistant answer empty")
+                    .addKeyValue("ref", label)
+                    .log();
             return Optional.empty();
         }
         JsonNode answer = parseEnvelope(raw, label);

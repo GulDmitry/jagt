@@ -132,14 +132,21 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
                         Path tmp = recent.resolveSibling(recent.getFileName() + ".jagt.tmp");
                         Files.writeString(tmp, pruned);
                         Files.move(tmp, recent, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                        log.info("Pruned dead worktree entries from {}", recent);
+                        log.atInfo().setMessage("jetbrains recent projects pruned")
+                                .addKeyValue("file", recent)
+                                .log();
                     }
                 } catch (IOException e) {
-                    log.debug("Could not prune {}: {}", recent, e.getMessage());
+                    log.atDebug().setMessage("jetbrains prune failed")
+                            .addKeyValue("file", recent)
+                            .addKeyValue("cause", e.getMessage())
+                            .log();
                 }
             }
         } catch (IOException e) {
-            log.debug("Could not scan JetBrains config: {}", e.getMessage());
+            log.atDebug().setMessage("jetbrains config scan failed")
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 

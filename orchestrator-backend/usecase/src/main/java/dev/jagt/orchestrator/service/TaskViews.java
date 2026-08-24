@@ -84,7 +84,10 @@ public class TaskViews {
         try {
             return configService.load();
         } catch (RuntimeException e) {
-            log.warn("Could not read the configuration for this render: {}", e.toString());
+            log.atWarn().setMessage("config read failed")
+                    .addKeyValue("scope", "render")
+                    .addKeyValue("cause", e.toString())
+                    .log();
             return ConfigService.ConfigFile.defaults();
         }
     }

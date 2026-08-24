@@ -21,6 +21,16 @@ logging:
   # No console threshold here: `ui/ConsoleLogging` decides it per surface, and this would outrank that.
   file:
     name: ${LOG_FILE:jagt-backend.log}
+  pattern:
+    # `%kvp` is the point: the values are key-value pairs, not part of the message, and a pattern without it
+    # prints the event and drops every field — including the file pattern, which is what a blanked
+    # `structured.format.file` falls back to. Spelled out rather than derived from Boot's, whose
+    # `${X:-default}` placeholders are logback's syntax and would be resolved by Spring first.
+    # Quoted values (`%kvp` defaults to DOUBLE): most of them contain spaces, and unquoted they run into
+    # the next key.
+    console: "%clr(%d{HH:mm:ss.SSS}){faint} %clr(%5p) %clr([%12.12t]){faint} %clr(%-40.40logger{39}){cyan}\
+      \ %clr(:){faint} %m %kvp%n%wEx"
+    file: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [%12.12t] %-40.40logger{39} : %m %kvp%n%wEx"
   structured:
     format:
       # The console is what a human reads while jagt runs; blank this to make the file readable too.

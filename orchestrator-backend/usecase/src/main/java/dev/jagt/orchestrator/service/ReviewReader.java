@@ -69,7 +69,11 @@ public class ReviewReader {
     /** The transport logged its own call; nothing below names the request the caller is now refusing. */
     private <T> Optional<T> hostRead(Optional<T> facts, CodeHost host, String url) {
         if (facts.isEmpty()) {
-            log.warn("Unreadable: {} — the {} API did not answer it", url, host.displayName());
+            log.atWarn().setMessage("review read failed")
+                    .addKeyValue("ref", url)
+                    .addKeyValue("api", host.displayName())
+                    .addKeyValue("cause", "no answer")
+                    .log();
         }
         return facts;
     }
@@ -80,32 +84,23 @@ public class ReviewReader {
      */
     private <T> Optional<T> paidRead(Optional<T> facts, Predicate<T> exists, String url) {
         if (facts.isPresent() && !exists.test(facts.get())) {
-            log.warn("The headless read answers that {} does not exist. {}", url,
-                    whatItsServersSay(assistant.brokenMcpServers()));
+            Optional<List<String>> broken = assistant.brokenMcpServers();
+            log.atWarn().setMessage("read says not found")
+                    .addKeyValue("ref", url)
+                    .addKeyValue("mcp", broken.map(down -> down.isEmpty() ? "none-reported" : "down").orElse("unknown"))
+                    .addKeyValue("servers", broken.map(down -> String.join(", ", down)).orElse(""))
+                    .log();
         }
         return facts;
     }
 
-    /**
-     * Down servers are evidence; "none is down" is NOT the counter-evidence, because the probe cannot see the
-     * exact set a read loaded (its setting-sources, its allow-list) — and claiming it could would send the human
-     * off to the host with a clean bill jagt has no way to give.
-     */
-    private static String whatItsServersSay(Optional<List<String>> broken) {
-        if (broken.isEmpty()) {
-            return "Whether the MCP servers it needed were up could NOT be established — see the error above";
-        }
-        if (broken.get().isEmpty()) {
-            return "No MCP server reports as down, which is not proof the read had its tool";
-        }
-        return "These MCP servers are down, and one of them is probably the reader: "
-                + String.join(", ", broken.get());
-    }
-
     private Optional<CodeHost> claiming(String reviewRequestUrl) {
         Optional<CodeHost> host = codeHosts.stream().filter(h -> h.supports(reviewRequestUrl)).findFirst();
-        host.ifPresent(claimed -> log.debug("Reading {} over the {} API (no tokens spent)", reviewRequestUrl,
-                claimed.displayName()));
+        host.ifPresent(claimed -> log.atDebug().setMessage("review read")
+                .addKeyValue("ref", reviewRequestUrl)
+                .addKeyValue("api", claimed.displayName())
+                .addKeyValue("tokens", 0)
+                .log());
         return host;
     }
 }

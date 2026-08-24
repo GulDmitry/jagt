@@ -47,8 +47,12 @@ public class GitLabCodeHost implements CodeHost {
         this.http = http;
         this.config = config;
         if (!config.isUsable()) {
-            log.warn("orchestrator.code-host.type=gitlab but base-url or token is missing — review sweeps keep"
-                    + " using the (paid) headless read. Set orchestrator.code-host.base-url and .token.");
+            log.atWarn().setMessage("code host unusable")
+                    .addKeyValue("type", "gitlab")
+                    .addKeyValue("cause", "base-url or token missing")
+                    .addKeyValue("effect", "reads stay on the paid headless call")
+                    .addKeyValue("fix", "orchestrator.code-host.base-url and .token")
+                    .log();
         }
     }
 
@@ -114,7 +118,10 @@ public class GitLabCodeHost implements CodeHost {
         Optional<JsonNode> updated = http.put(url, authHeaders(), Map.of(
                 "remove_source_branch", spec.removeSourceBranch(), "squash", spec.squash()));
         if (updated.isEmpty()) {
-            log.warn("Could not align the merge flags of {} — the merge request itself is unaffected", url);
+            log.atWarn().setMessage("merge flags not aligned")
+                    .addKeyValue("url", url)
+                    .addKeyValue("effect", "request unaffected")
+                    .log();
         }
         return found;
     }
@@ -135,7 +142,10 @@ public class GitLabCodeHost implements CodeHost {
             return Optional.empty();
         }
         boolean approved = get(mrApi + "/approvals").map(GitLabCodeHost::isApproved).orElseGet(() -> {
-            log.warn("GitLab approvals for {} are unreadable — treating the request as NOT approved", mrApi);
+            log.atWarn().setMessage("gitlab approvals unreadable")
+                    .addKeyValue("api", mrApi)
+                    .addKeyValue("effect", "treated as not approved")
+                    .log();
             return false;
         });
         return Optional.of(new ReviewFacts(true, approved, pipelineStatus(detail.get()), comments.get(),
@@ -177,8 +187,11 @@ public class GitLabCodeHost implements CodeHost {
         }
         // Truncating here would be the same lie as a failed page: the sweep cannot tell a short list from a
         // complete one, and a complete-looking clean list advances the task.
-        log.warn("GitLab discussions for {} exceed {} pages — refusing to relay a truncated review round",
-                mrApi, MAX_PAGES);
+        log.atWarn().setMessage("gitlab discussions too long")
+                .addKeyValue("api", mrApi)
+                .addKeyValue("maxPages", MAX_PAGES)
+                .addKeyValue("effect", "round not relayed")
+                .log();
         return Optional.empty();
     }
 

@@ -59,8 +59,10 @@ class ProcessRunnerTest {
         new ProcessBuilder("kill", "-TERM", String.valueOf(launched.pid())).start().waitFor();
         launched.onExit().get(5, TimeUnit.SECONDS);
 
-        assertThat(log.list).extracting(ILoggingEvent::getFormattedMessage)
-                .anySatisfy(line -> assertThat(line).contains("pid " + launched.pid(), "ended on SIGTERM (143)"));
+        assertThat(log.list).filteredOn(event -> "process ended".equals(event.getMessage()))
+                .flatExtracting(ILoggingEvent::getKeyValuePairs)
+                .extracting(pair -> pair.key + "=" + pair.value)
+                .contains("pid=" + launched.pid(), "exit=on SIGTERM (143)");
     }
 
     @Test

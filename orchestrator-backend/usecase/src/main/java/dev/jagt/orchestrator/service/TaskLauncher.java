@@ -72,16 +72,14 @@ public class TaskLauncher {
         // Three different answers, and the launch says which: one names a missing item, the others a read that
         // never got there. Merging them sent the human to the tracker for a reference that was never fetched.
         if (read.facts().isEmpty()) {
-            return "error: " + ref + " could not be READ, so nothing is known about it (the log names what"
-                    + " failed) — no task created.";
+            return "error: read failed: " + ref + " (cause in the log) — no task created";
         }
         if (!read.facts().get().exists()) {
-            return "error: the tracker answers that there is no such item as " + ref + " — no task created.";
+            return "error: no such item: " + ref + " (the tracker says so) — no task created";
         }
         var facts = read.facts().filter(TicketFacts::usable);
         if (facts.isEmpty()) {
-            return "error: the read of " + ref + " came back without the key, title or url an item that exists"
-                    + " must have (the log names what failed) — no task created.";
+            return "error: read incomplete: " + ref + " (no key, title or url) — no task created";
         }
         TicketFacts f = facts.get();
         if (bareKey && !ref.equalsIgnoreCase(f.key())) {

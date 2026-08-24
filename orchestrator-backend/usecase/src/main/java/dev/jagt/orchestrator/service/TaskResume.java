@@ -33,11 +33,10 @@ public class TaskResume {
         var request = read.facts();
         // Two different answers, and merging them into one is what let a live request be reported as missing.
         if (request.isEmpty()) {
-            return "error: the review request could not be READ, so nothing is known about it (the log names"
-                    + " what failed): " + reviewRequestUrl;
+            return "error: read failed: " + reviewRequestUrl + " (cause in the log) — nothing is known about it";
         }
         if (!request.get().exists()) {
-            return "error: the host answers that there is no such review request: " + reviewRequestUrl;
+            return "error: no such review request: " + reviewRequestUrl + " (the host says so)";
         }
         String taskId = request.get().sourceBranch();
         if (taskId == null || taskId.isBlank()) {

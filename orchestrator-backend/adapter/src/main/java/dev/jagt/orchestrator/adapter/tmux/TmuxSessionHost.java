@@ -58,7 +58,10 @@ public class TmuxSessionHost implements SessionHost {
             var rename = processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
                     "-w", "-t", windowId, "automatic-rename", "off"));
             if (rename.exitCode() != 0) {
-                log.warn("Could not pin tmux window name for {}: {}", taskId, rename.stderr());
+                log.atWarn().setMessage("tmux window rename failed")
+                        .addKeyValue("task", taskId)
+                        .addKeyValue("cause", rename.stderr())
+                        .log();
             }
             // Window NAME stays the taskId (findWindowId/killTaskWindows match on it); the alias
             // rides in a window user-option so the terminal title can show "taskId (alias)".
@@ -142,7 +145,11 @@ public class TmuxSessionHost implements SessionHost {
                 if (kill.exitCode() == 0) {
                     killed++;
                 } else {
-                    log.warn("tmux kill-window {} ({}) failed: {}", id, taskId, kill.stderr());
+                    log.atWarn().setMessage("tmux kill-window failed")
+                            .addKeyValue("window", id)
+                            .addKeyValue("task", taskId)
+                            .addKeyValue("cause", kill.stderr())
+                            .log();
                 }
             }
             return killed;

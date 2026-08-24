@@ -85,7 +85,7 @@ class TaskLauncherTest {
 
         String out = launcher.launch(LaunchRequest.of("ABC-42"));
 
-        assertThat(out).contains("no such item as ABC-42", "no task created");
+        assertThat(out).contains("no such item: ABC-42", "no task created");
         verify(provisioning, never()).initializeTask(any());
     }
 
@@ -94,7 +94,7 @@ class TaskLauncherTest {
         oneProject("group-a");
         when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
 
-        assertThat(launcher.launch(LaunchRequest.of("ABC-42"))).contains("could not be READ");
+        assertThat(launcher.launch(LaunchRequest.of("ABC-42"))).contains("read failed");
     }
 
     @Test

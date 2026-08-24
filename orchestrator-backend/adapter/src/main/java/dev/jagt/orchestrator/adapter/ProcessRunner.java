@@ -95,10 +95,16 @@ public class ProcessRunner implements Processes {
      * one to end it.
      */
     private static void reportLifeOf(Process launched, List<String> command, boolean ownSession, long startedAt) {
-        log.info("Launched pid {} in {} session: {}", launched.pid(), ownSession ? "its own" : "jagt's",
-                String.join(" ", command));
-        launched.onExit().thenAccept(ended -> log.info("Launched pid {} ended {} after {}", ended.pid(),
-                endedBy(ended.exitValue()), Duration.ofNanos(System.nanoTime() - startedAt)));
+        log.atInfo().setMessage("process launched")
+                .addKeyValue("pid", launched.pid())
+                .addKeyValue("session", ownSession ? "own" : "jagt")
+                .addKeyValue("cmd", String.join(" ", command))
+                .log();
+        launched.onExit().thenAccept(ended -> log.atInfo().setMessage("process ended")
+                .addKeyValue("pid", ended.pid())
+                .addKeyValue("exit", endedBy(ended.exitValue()))
+                .addKeyValue("after", Duration.ofNanos(System.nanoTime() - startedAt))
+                .log());
     }
 
     /** Only the signal numbers that agree across platforms; anything else stays the number it exited with. */

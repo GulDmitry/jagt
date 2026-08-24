@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.port.SessionHost;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import lombok.RequiredArgsConstructor;
@@ -168,10 +167,12 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                     : instructions);
         }
         // The opening line only: a brief runs to hundreds of lines.
-        log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", task.alias())
-                .addKeyValue("chars", instructions.length()).addKeyValue("appended", append)
-                .log("-> agent {}: {}", TaskLabel.of(taskId, task.alias()),
-                        instructions.lines().findFirst().orElse("(empty)"));
+        log.atInfo().setMessage("instructions relayed").addKeyValue("task", taskId)
+                .addKeyValue("alias", task.alias())
+                .addKeyValue("chars", instructions.length())
+                .addKeyValue("appended", append)
+                .addKeyValue("said", instructions.lines().findFirst().orElse("(empty)"))
+                .log();
         // A file on disk doesn't wake a running agent session — nudge it directly.
         String session = agentSession(configService.load(), taskId);
         if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING
@@ -179,9 +180,10 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                         "The Master updated task_context.md — re-read it now and follow the new instructions.")) {
             return "Instructions written to task_context.md and the agent was nudged to re-read them.";
         }
-        log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", task.alias())
-                .log("-> agent {}: its session was down, respawning it to read the instructions",
-                        TaskLabel.of(taskId, task.alias()));
+        log.atInfo().setMessage("agent session respawning").addKeyValue("task", taskId)
+                .addKeyValue("alias", task.alias())
+                .addKeyValue("cause", "session was down when instructions were relayed")
+                .log();
         // A fresh session reads task_context.md on start, so a relay cannot dead-end against a dead agent.
         openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), false);
         return "Instructions written to task_context.md; the agent session was down, so it was respawned"

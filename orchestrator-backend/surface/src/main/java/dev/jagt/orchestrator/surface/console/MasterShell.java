@@ -91,14 +91,19 @@ public class MasterShell {
                 runTui(screen, refreshMillis);
             }
         } catch (IOException e) {
-            log.warn("Master shell terminal unavailable — running inline ({})", e.getMessage());
+            log.atWarn().setMessage("master shell terminal unavailable")
+                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("effect", "running inline")
+                    .log();
             runInlineFallback();
         } finally {
             if (screen != null) {
                 try {
                     screen.stopScreen();
                 } catch (Throwable t) {                           // best-effort — a corrupted jar may fail here
-                    log.debug("screen stop failed: {}", t.toString());
+                    log.atDebug().setMessage("screen stop failed")
+                            .addKeyValue("cause", t.toString())
+                            .log();
                 }
             }
             shutdownBackend();
@@ -115,7 +120,10 @@ public class MasterShell {
             try {
                 stopBackend();
             } catch (Throwable t) {
-                log.debug("backend stop failed (jar may have been rebuilt in place): {}", t.toString());
+                log.atDebug().setMessage("backend stop failed")
+                        .addKeyValue("cause", t.toString())
+                        .addKeyValue("note", "jar may have been rebuilt in place")
+                        .log();
             }
         }, "jagt-shutdown");
         closer.setDaemon(true);
@@ -710,7 +718,10 @@ public class MasterShell {
 
     /** No-TTY fallback ({@code gradlew bootRun} pipes stdout): a plain line REPL, with no terminal to draw on. */
     private void runInlineFallback() {
-        log.info("No interactive terminal — Master shell running inline (dashboard after each command).");
+        log.atInfo().setMessage("master shell running inline")
+                .addKeyValue("cause", "no interactive terminal")
+                .addKeyValue("dashboard", "after each command")
+                .log();
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
         System.out.println(withDashboard("", views.dashboard()));
         try {
@@ -726,7 +737,9 @@ public class MasterShell {
                 System.out.println(withDashboard(grammar.run(cmd), views.dashboard()));
             }
         } catch (IOException e) {
-            log.warn("inline shell input closed: {}", e.getMessage());
+            log.atWarn().setMessage("inline shell input closed")
+                    .addKeyValue("cause", e.getMessage())
+                    .log();
         }
     }
 
@@ -737,7 +750,10 @@ public class MasterShell {
      * closing → NoClassDefFoundError. Closing now does that logging early and quietly. Agents live in tmux.
      */
     void stopBackend() {
-        log.info("Master shell exited — stopping backend (agents keep running in tmux).");
+        log.atInfo().setMessage("master shell exited")
+                .addKeyValue("backend", "stopping")
+                .addKeyValue("agents", "keep running in tmux")
+                .log();
         context.close();
     }
 

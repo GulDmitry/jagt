@@ -102,6 +102,10 @@ missing — add a kind, never an exception.
 
 - **Load `sob-ai:commenting` before writing or editing any comment.** The default is **no** comment; one
   non-obvious WHY at most. A file may only speak its own layer.
+- **Every log line is structured, never interpolated**: `log.atWarn().setMessage("read failed")
+  .addKeyValue("url", url).addKeyValue("cause", why).log()` — constant event, values as fields, `cause` on
+  every failure. Never `{}` in a message, never `+` into one. Grammar and keys:
+  [`docs/rules/style.md`](docs/rules/style.md).
 - **Every text jagt writes is read by an engineer in a hurry**: one fact per line, a decision plus at most one
   clause of why — never the road to it. This binds command sentences, docs, prompts and commit messages alike.
 - **English only, everywhere.** The NL palette *accepts* any language; jagt *writes* nothing but English. The

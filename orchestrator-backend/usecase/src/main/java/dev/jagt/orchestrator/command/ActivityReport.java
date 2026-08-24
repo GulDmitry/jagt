@@ -16,6 +16,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -29,6 +30,9 @@ import java.util.stream.Stream;
 @Service
 public class ActivityReport {
 
+    /** ECS's own envelope (`logging.structured.format.file: ecs`), not what jagt did. */
+    private static final Set<String> ENVELOPE = Set.of("@timestamp", "message", "log", "process", "service",
+            "ecs", "tags", "task", "alias", "error");
     /** How much of the tail to read: enough for a working day of entries, small enough to be free. */
     private static final int TAIL_BYTES = 256 * 1024;
     private static final int MAX_ENTRIES = 40;
@@ -110,11 +114,22 @@ public class ActivityReport {
         return null;
     }
 
+    /** The event names what happened; everything that happened TO is in the fields, so both are rendered. */
     private String entry(JsonNode event, String task) {
         String alias = text(event, "alias");
         String message = text(event, "message");
         return String.format("  %-14s %-10s %s", when(event), alias == null ? task : alias,
-                message == null ? "" : abbreviate(message));
+                abbreviate((message == null ? "" : message) + fields(event)));
+    }
+
+    private static String fields(JsonNode event) {
+        StringBuilder rendered = new StringBuilder();
+        event.propertyStream()
+                .filter(field -> !ENVELOPE.contains(field.getKey()))
+                .filter(field -> !field.getValue().isNull() && !field.getValue().asString("").isBlank())
+                .forEach(field -> rendered.append(' ').append(field.getKey()).append('=')
+                        .append(field.getValue().asString("")));
+        return rendered.toString();
     }
 
     private static String when(JsonNode event) {

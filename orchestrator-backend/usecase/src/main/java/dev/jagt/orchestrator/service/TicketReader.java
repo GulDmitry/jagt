@@ -53,7 +53,11 @@ public class TicketReader {
     public Answer<TicketFacts> read(String ticketRef) {
         Optional<Tracker> tracker = trackers.stream().filter(t -> t.supports(ticketRef)).findFirst();
         if (tracker.isPresent()) {
-            log.debug("Reading {} over the {} API (no tokens spent)", ticketRef, tracker.get().displayName());
+            log.atDebug().setMessage("ticket read")
+                    .addKeyValue("ref", ticketRef)
+                    .addKeyValue("api", tracker.get().displayName())
+                    .addKeyValue("tokens", 0)
+                    .log();
             return new Answer<>(tracker.get().readTicket(ticketRef), TokenUsage.NONE);
         }
         return askUntilUsable(ticketRef);
@@ -74,14 +78,20 @@ public class TicketReader {
             if (answer.facts().filter(TicketFacts::usable).isPresent()) {
                 return new Answer<>(answer.facts(), spent);
             }
-            log.warn("Read of {} answered nothing usable on attempt {} of {}", ticketRef, attempt, maxAttempts);
+            log.atWarn().setMessage("ticket read unusable")
+                    .addKeyValue("ref", ticketRef)
+                    .addKeyValue("attempt", attempt)
+                    .addKeyValue("limit", maxAttempts)
+                    .log();
             if (attempt == maxAttempts || System.nanoTime() > deadline || !pause()) {
                 break;
             }
         }
         assistant.brokenMcpServers().filter(broken -> !broken.isEmpty()).ifPresent(broken ->
-                log.error("These MCP servers are down, and one of them is probably the reader of {}: {}",
-                        ticketRef, String.join(", ", broken)));
+                log.atError().setMessage("mcp servers down")
+                        .addKeyValue("ref", ticketRef)
+                        .addKeyValue("servers", String.join(", ", broken))
+                        .log());
         return new Answer<>(answer.facts(), spent);
     }
 

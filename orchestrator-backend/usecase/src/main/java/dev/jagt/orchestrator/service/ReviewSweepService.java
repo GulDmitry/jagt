@@ -57,9 +57,10 @@ public class ReviewSweepService {
         try {
             SweepResult result = sweepExclusively(taskId);
             String alias = stateService.task(taskId).map(TaskState::alias).orElse(null);
-            log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
+            log.atInfo().setMessage("sweep done").addKeyValue("task", taskId).addKeyValue("alias", alias)
                     .addKeyValue("outcome", result.kind())
-                    .log("sweep {}: {}", TaskLabel.of(taskId, alias), result.message());
+                    .addKeyValue("said", result.message())
+                    .log();
             return result;
         } finally {
             inFlight.remove(taskId);
@@ -92,11 +93,11 @@ public class ReviewSweepService {
             Optional<ReviewFacts> read = reviewReader.read(taskId, repo.mrUrl());
             if (read.isEmpty()) {
                 return new SweepResult(SweepResult.Kind.UNREADABLE,
-                        "error: could not READ " + repo.mrUrl() + " — the log names what failed");
+                        "error: read failed: " + repo.mrUrl() + " (cause in the log)");
             }
             if (!read.get().exists()) {
                 return new SweepResult(SweepResult.Kind.UNREADABLE,
-                        "error: the host answers that " + repo.mrUrl() + " does not exist");
+                        "error: no such request: " + repo.mrUrl() + " (the host says so)");
             }
             rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
         }

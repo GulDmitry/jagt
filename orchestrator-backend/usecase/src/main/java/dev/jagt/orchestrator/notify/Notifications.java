@@ -46,7 +46,11 @@ public class Notifications {
             try {
                 delivery.execute(() -> deliver(channel, notification));
             } catch (RejectedExecutionException e) {
-                log.warn("notification dropped, {} is backed up: {}", channel.id(), notification.title());
+                log.atWarn().setMessage("notification dropped")
+                        .addKeyValue("channel", channel.id())
+                        .addKeyValue("title", notification.title())
+                        .addKeyValue("cause", "channel backed up")
+                        .log();
             }
         }
     }
@@ -55,7 +59,11 @@ public class Notifications {
         try {
             channel.deliver(notification);
         } catch (Throwable t) {
-            log.warn("channel {} failed to deliver \"{}\": {}", channel.id(), notification.title(), t.toString());
+            log.atWarn().setMessage("notification delivery failed")
+                    .addKeyValue("channel", channel.id())
+                    .addKeyValue("title", notification.title())
+                    .addKeyValue("cause", t.toString())
+                    .log();
         }
     }
 }

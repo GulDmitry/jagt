@@ -50,9 +50,11 @@ public class RunningJarWatch implements Job {
             return;
         }
         warnedAboutTheBuildsOwnJar = true;
-        log.warn("Running from {} — the jar the build REWRITES. The next `./gradlew build` in this tree corrupts"
-                + " this process. Run the staged copy instead: ./gradlew stageJar && java -jar"
-                + " build/libs/jagt-run.jar", jar);
+        log.atWarn().setMessage("running from the jar the build rewrites")
+                .addKeyValue("jar", jar)
+                .addKeyValue("effect", "next ./gradlew build corrupts this process")
+                .addKeyValue("fix", "./gradlew stageJar && java -jar build/libs/jagt-run.jar")
+                .log();
     }
 
     /** What a jar file looked like: the two cheap facts that a rewrite cannot leave both unchanged. */
@@ -97,10 +99,12 @@ public class RunningJarWatch implements Job {
             return;
         }
         reported = true;                       // once: the condition does not go away until a restart
-        log.warn("The jar this jagt is running from was rewritten underneath it ({}). Classes not yet loaded"
-                + " will fail with NoClassDefFoundError — /status and /stats typically go 500 first."
-                + " Restart from a copy the build does not touch: ./gradlew stageJar && java -jar"
-                + " build/libs/jagt-run.jar. Agents keep running in tmux.", jar);
+        log.atError().setMessage("jar rewritten under the running process")
+                .addKeyValue("jar", jar)
+                .addKeyValue("effect", "NoClassDefFoundError on not-yet-loaded classes, /status and /stats go 500")
+                .addKeyValue("fix", "./gradlew stageJar && java -jar build/libs/jagt-run.jar")
+                .addKeyValue("agents", "keep running in tmux")
+                .log();
         notifications.send(Notification.install("restart needed",
                 "the running jar was rebuilt — parts of the board will fail until you restart"));
     }

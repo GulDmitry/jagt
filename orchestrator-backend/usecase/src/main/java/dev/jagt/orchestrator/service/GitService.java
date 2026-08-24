@@ -49,7 +49,9 @@ public class GitService {
             // A worktree can end up unregistered with its directory still on disk, which makes
             // `git worktree add` fail "already exists".
             if (Files.exists(worktreePath)) {
-                log.warn("Clearing a stale leftover worktree directory before creating {}", worktreePath);
+                log.atWarn().setMessage("stale worktree directory cleared")
+                        .addKeyValue("path", worktreePath)
+                        .log();
                 clearWorktreePath(projectPath, worktreePath);
             }
             boolean branchExists = processRunner.run(projectPath, GIT_TIMEOUT,
@@ -127,9 +129,11 @@ public class GitService {
             throw new IllegalStateException("Branch '" + branch + "' is checked out at " + held
                     + " and freeing it failed: " + switched.stderr().strip());
         }
-        log.atWarn().addKeyValue("task", branch)
-                .log("{} was on '{}', which this task needs — detached it there, files untouched. The branch"
-                        + " itself moves to the task's worktree.", held, branch);
+        log.atWarn().setMessage("repository detached").addKeyValue("task", branch)
+                .addKeyValue("repo", held)
+                .addKeyValue("branch", branch)
+                .addKeyValue("effect", "files untouched, the branch moves to the task worktree")
+                .log();
         return () -> reattach(held, branch);
     }
 
@@ -149,7 +153,11 @@ public class GitService {
                 return null;
             }
             String why = switched.stderr().isBlank() ? switched.stdout().strip() : switched.stderr().strip();
-            log.warn("Could not put {} back on '{}': {}", repository, branch, why);
+            log.atWarn().setMessage("branch restore failed")
+                    .addKeyValue("repo", repository)
+                    .addKeyValue("branch", branch)
+                    .addKeyValue("cause", why)
+                    .log();
             return why;
         });
     }
@@ -304,8 +312,12 @@ public class GitService {
             if (removed.exitCode() != 0) {
                 // git often unregisters the worktree and still fails to delete the directory (a file held
                 // open), so stopping here leaks it on disk.
-                log.warn("git worktree remove {} exited {}: {} — pruning and deleting the directory",
-                        worktreePath, removed.exitCode(), removed.stderr());
+                log.atWarn().setMessage("git worktree remove failed")
+                        .addKeyValue("path", worktreePath)
+                        .addKeyValue("exit", removed.exitCode())
+                        .addKeyValue("cause", removed.stderr())
+                        .addKeyValue("effect", "pruned and deleted")
+                        .log();
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
             }
             forceDeleteDir(worktreePath);
@@ -313,7 +325,10 @@ public class GitService {
                 var branch = processRunner.run(projectPath, GIT_TIMEOUT,
                         List.of("git", "branch", "-D", branchToDelete));
                 if (branch.exitCode() != 0) {
-                    log.warn("git branch -D {} failed: {}", branchToDelete, branch.stderr());
+                    log.atWarn().setMessage("git branch delete failed")
+                            .addKeyValue("branch", branchToDelete)
+                            .addKeyValue("cause", branch.stderr())
+                            .log();
                 }
             }
         });
@@ -565,7 +580,9 @@ public class GitService {
         if (!kept.isEmpty()) {
             throw new StaleDeployPathException(path, kept);
         }
-        log.info("Deleting {} — an editor left it behind after the deploy worktree was removed", path);
+        log.atInfo().setMessage("editor leftover deleted")
+                .addKeyValue("path", path)
+                .log();
         forceDeleteDir(path);
     }
 
@@ -728,7 +745,10 @@ public class GitService {
                 try {
                     Files.deleteIfExists(index);
                 } catch (IOException e) {
-                    log.warn("Could not delete temp diff index {}: {}", index, e.getMessage());
+                    log.atWarn().setMessage("temp diff index delete failed")
+                            .addKeyValue("path", index)
+                            .addKeyValue("cause", e.getMessage())
+                            .log();
                 }
             }
         });
@@ -754,11 +774,18 @@ public class GitService {
             try (var paths = Files.walk(dir)) {
                 paths.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
             } catch (IOException e) {
-                log.warn("Delete of {} failed (attempt {}): {}", dir, attempt + 1, e.getMessage());
+                log.atWarn().setMessage("directory delete failed")
+                        .addKeyValue("path", dir)
+                        .addKeyValue("attempt", attempt + 1)
+                        .addKeyValue("cause", e.getMessage())
+                        .log();
             }
         }
         if (Files.exists(dir)) {
-            log.warn("Directory {} still present after delete passes — a live process keeps repopulating it", dir);
+            log.atWarn().setMessage("directory still present after delete")
+                    .addKeyValue("path", dir)
+                    .addKeyValue("cause", "a live process repopulates it")
+                    .log();
         }
     }
 
