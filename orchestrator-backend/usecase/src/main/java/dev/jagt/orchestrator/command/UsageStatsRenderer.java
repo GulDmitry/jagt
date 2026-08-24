@@ -12,8 +12,9 @@ import java.util.Comparator;
 import java.util.Map;
 
 /**
- * The {@code stats} view: what jagt's own model calls have consumed, per task and in total, in TOKENS —
- * the unit that is actually comparable across models and over time.
+ * The {@code stats} view: what a task has consumed, per task and in total, in TOKENS — the unit that is actually
+ * comparable across models and over time. Two sources, kept apart because only one of them is jagt's to make
+ * fewer of: its own metered reads, and what each task's agent sessions burned.
  *
  * <p>Deliberately two bottom lines, because they are NOT the same number: the tasks still open, against every
  * call since the backend started.
@@ -29,8 +30,8 @@ public class UsageStatsRenderer {
     private final UsageTracker usageTracker;
 
     public String render(Map<String, TaskState> tasks) {
-        StringBuilder out = new StringBuilder("assistant token spend — jagt's own calls only"
-                + " (a sub-agent's own session is invisible to jagt)\n\n");
+        StringBuilder out = new StringBuilder("token spend — jagt's own reads, then what the agent"
+                + " sessions burned\n\n");
         out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL"));
 
         TokenUsage tasksTotal = TokenUsage.NONE;
@@ -49,6 +50,22 @@ public class UsageStatsRenderer {
         }
         TokenUsage session = usageTracker.session();
         out.append("\n").append(row("current tasks", tasksTotal)).append(row("this session", session));
+
+        var agents = tasks.entrySet().stream()
+                .filter(e -> !e.getValue().agentSpendOrNone().usageOrNone().isNone())
+                .sorted(Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
+                        e.getValue().agentSpendOrNone().usageOrNone().total()).reversed())
+                .toList();
+        if (!agents.isEmpty()) {
+            out.append('\n').append(String.format(ROW, "AGENT SESSION", "TURNS", "IN", "CACHED", "OUT", "TOTAL"));
+            TokenUsage agentTotal = TokenUsage.NONE;
+            for (var entry : agents) {
+                TokenUsage usage = entry.getValue().agentSpendOrNone().usageOrNone();
+                agentTotal = agentTotal.plus(usage);
+                out.append(row(entry.getKey(), usage));
+            }
+            out.append(row("agents", agentTotal));
+        }
 
         var byKind = usageTracker.sessionByKind();
         if (!byKind.isEmpty()) {

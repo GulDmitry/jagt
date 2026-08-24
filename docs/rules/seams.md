@@ -142,9 +142,11 @@ It is the only place jagt spends model money. `--output-format json` wraps the s
 `UsageTracker` books it to the task that triggered it (persisted in `state.json`, so it survives a restart) and
 to the session (in memory). **A call is billed before its answer is judged** — an errored call was paid for too.
 
-Surfaces: the `TOKENS` dashboard column, the `stats` command and `GET /stats`. Sub-agent spend is **not**
-visible here (it lives in the agent's own session) — never present these numbers as a task's total cost.
+A sub-agent's own spend is read separately, from the log that session keeps of itself
+(`AgentSpendReader`, tokens only — the log prices nothing), and the two are kept apart in `stats` because only
+one of them is jagt's to make fewer of. The `TOKENS` column and the card show the SUM, which is what a task
+actually cost.
 
 Measured floor per call (2026-08): ~25k input tokens of CLI baseline context, ~$0.41 on the inherited default
 model vs ~$0.06 on haiku — which is why `orchestrator.assistant.model` **ships as `haiku`** (blank it to
-inherit the human's own model). **The lever is fewer calls** (deterministic REST reads), not shorter prompts.
+inherit the human's own model). **The lever is fewer calls**, not shorter prompts.

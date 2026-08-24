@@ -47,6 +47,8 @@ public record TaskState(
         Boolean approved,
         // Null until the first metered call.
         TokenUsage usage,
+        // What this task's own agent sessions have burned, and how far their log has been read.
+        AgentSpend agentSpend,
         // Append-only, oldest first: every status this task actually moved TO, with when.
         List<StatusChange> history
 ) {
@@ -89,6 +91,7 @@ public record TaskState(
             @JsonProperty("pipelineStatus") String pipelineStatus,
             @JsonProperty("approved") Boolean approved,
             @JsonProperty("usage") TokenUsage usage,
+            @JsonProperty("agentSpend") AgentSpend agentSpend,
             @JsonProperty("history") List<StatusChange> history) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
@@ -96,7 +99,7 @@ public record TaskState(
         return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus, approved,
-                usage, history);
+                usage, agentSpend, history);
     }
 
     @JsonIgnore
@@ -367,6 +370,21 @@ public record TaskState(
         return usage == null ? TokenUsage.NONE : usage;
     }
 
+    public AgentSpend agentSpendOrNone() {
+        return agentSpend == null ? AgentSpend.NONE : agentSpend;
+    }
+
+    /** Every token this task has cost, jagt's own reads and its agent's session alike. */
+    @JsonIgnore
+    public TokenUsage totalUsage() {
+        return usageOrNone().plus(agentSpendOrNone().usageOrNone());
+    }
+
+    /** Does NOT touch lastActiveTimestamp: reading a session's own log is not that session moving. */
+    public TaskState withAgentSpend(AgentSpend spend) {
+        return toBuilder().agentSpend(spend).build();
+    }
+
     /** Does NOT touch lastActiveTimestamp: metering is not agent activity. */
     public TaskState withUsageAdded(TokenUsage added) {
         return toBuilder().usage(usageOrNone().plus(added)).build();
@@ -387,7 +405,7 @@ public record TaskState(
                 .mrCreatedAt(mrCreatedAt).requestOpenedAt(requestOpenedAt)
                 .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
                 .autoReview(autoReview).pipelineStatus(pipelineStatus).approved(approved)
-                .usage(usage).history(history);
+                .usage(usage).agentSpend(agentSpend).history(history);
     }
 
     /**
@@ -412,6 +430,7 @@ public record TaskState(
         private String pipelineStatus;
         private Boolean approved;
         private TokenUsage usage;
+        private AgentSpend agentSpend;
         /** Null means "a brand-new task". */
         private List<StatusChange> history;
 
@@ -524,6 +543,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder agentSpend(AgentSpend agentSpend) {
+            this.agentSpend = agentSpend;
+            return this;
+        }
+
         public Builder history(List<StatusChange> history) {
             this.history = history;
             return this;
@@ -538,7 +562,7 @@ public record TaskState(
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
-                    autoReview, pipelineStatus, approved, usage, log);
+                    autoReview, pipelineStatus, approved, usage, agentSpend, log);
         }
     }
 }

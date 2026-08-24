@@ -54,4 +54,13 @@ public interface AgentRuntime {
      * session waiting for an answer keeps repainting.
      */
     long lastSessionActivityMillis(Path worktree);
+
+    /**
+     * What this CLI calls a start that follows a COMPACTION — the one start that has lost the brief and needs it
+     * again. Blank where a CLI says nothing about why a session started, which briefs nothing rather than
+     * briefing every start.
+     */
+    default String compactedStart() {
+        return "";
+    }
 }

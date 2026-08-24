@@ -2,8 +2,8 @@ package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.SessionProbe;
+import dev.jagt.orchestrator.service.SessionReports;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.service.WatchdogService;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 
@@ -11,9 +11,8 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,41 +24,40 @@ class AgentSessionControllerTest {
         StateService state = mock(StateService.class);
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
-        SessionProbe probe = mock(SessionProbe.class);
+        SessionReports reports = mock(SessionReports.class);
 
-        new AgentSessionController(state, probe, mock(WatchdogService.class))
-                .report("waiting", "/wt/ABC-1-proj", null);
+        new AgentSessionController(state, reports).report("waiting", "/wt/ABC-1-proj",
+                new AgentSessionController.Session("/logs/session.jsonl", "compact"));
 
-        verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WAITING), anyLong());
+        verify(reports).record("ABC-1", SessionProbe.State.WAITING, Path.of("/logs/session.jsonl"), "compact");
     }
 
-    /** Waiting out the sweep would leave the board claiming the session is working for a whole interval. */
+    /** Deriving where a session writes its log is a guess, and a payload that named none must not become one. */
     @Test
-    void hasTheTaskJudgedAtOnceRatherThanOnTheNextSweep() {
+    void namesNoLogWhenThePayloadCarriedNone() {
         StateService state = mock(StateService.class);
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
-        WatchdogService watchdog = mock(WatchdogService.class);
+        SessionReports reports = mock(SessionReports.class);
 
-        new AgentSessionController(state, mock(SessionProbe.class), watchdog)
-                .report("working", "/wt/ABC-1-proj", null);
+        new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj", null);
 
-        verify(watchdog).check("ABC-1");
+        verify(reports).record("ABC-1", SessionProbe.State.WORKING, null, null);
     }
 
-    /** Deriving where a session writes its log is a guess; the session itself naming the file is not. */
     @Test
-    void believesTheLogFileThePayloadNames() {
+    void answersTheSessionWithWhateverTheReportProduced() {
         StateService state = mock(StateService.class);
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
-        SessionProbe probe = mock(SessionProbe.class);
+        SessionReports reports = mock(SessionReports.class);
+        when(reports.record("ABC-1", SessionProbe.State.WORKING, null, "compact"))
+                .thenReturn("re-read task_context.md");
 
-        new AgentSessionController(state, probe, mock(WatchdogService.class))
-                .report("waiting", "/wt/ABC-1-proj",
-                        new AgentSessionController.Session("/logs/session.jsonl"));
+        String answered = new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj",
+                new AgentSessionController.Session(null, "compact"));
 
-        verify(probe).logAt("ABC-1", Path.of("/logs/session.jsonl"));
+        assertThat(answered).isEqualTo("re-read task_context.md");
     }
 
     @Test
@@ -67,8 +65,8 @@ class AgentSessionControllerTest {
         StateService state = mock(StateService.class);
         when(state.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> new AgentSessionController(state, mock(SessionProbe.class),
-                mock(WatchdogService.class)).report("waiting", "/elsewhere", null))
+        assertThatThrownBy(() -> new AgentSessionController(state, mock(SessionReports.class))
+                .report("waiting", "/elsewhere", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("/elsewhere");
     }
@@ -80,8 +78,8 @@ class AgentSessionControllerTest {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
-        assertThatThrownBy(() -> new AgentSessionController(state, mock(SessionProbe.class),
-                mock(WatchdogService.class)).report("busy", "/wt/ABC-1-proj", null))
+        assertThatThrownBy(() -> new AgentSessionController(state, mock(SessionReports.class))
+                .report("busy", "/wt/ABC-1-proj", null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("busy");
     }

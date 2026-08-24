@@ -13,6 +13,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * {@code CLAUDE.md} is a symlink to the shared system-knowledge file rather than a second copy of it: Claude
@@ -136,13 +137,26 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                 """.formatted(styleLine, pluginsLine, hooksLine == null ? "" : hooksLine);
     }
 
+    @Override
+    public String compactedStart() {
+        return SessionHooks.compactedStart("claude");
+    }
+
     /** Which of Claude's events mean what is declared in {@code hooks/claude.properties}, not here. */
     private String hooksJson(Path worktree) {
-        String events = SessionHooks.of("claude").entrySet().stream()
-                .map(event -> """
-                        %s: [{"hooks": [{"type": "command", "command": %s, "timeout": 5}]}]"""
-                        .formatted(quoted(event.getKey()),
-                                quoted(hooks.command(worktree, event.getValue()))))
+        String events = Stream.concat(
+                        SessionHooks.of("claude").entrySet().stream()
+                                .map(event -> """
+                                        %s: [{"hooks": [{"type": "command", "command": %s, "timeout": 5}]}]"""
+                                        .formatted(quoted(event.getKey()),
+                                                quoted(hooks.command(worktree, event.getValue())))),
+                        // Scoped to the one tool that can push: every other call is not jagt's to see, and a
+                        // hook on all of them would sit in front of every step the agent takes.
+                        SessionHooks.gate("claude").stream()
+                                .map(event -> """
+                                        %s: [{"matcher": "Bash", "hooks": [{"type": "command", "command": %s,\
+                                         "timeout": 5}]}]"""
+                                        .formatted(quoted(event), quoted(hooks.gateCommand(worktree)))))
                 .collect(Collectors.joining(",\n    "));
         return events.isBlank() ? "" : "\n  \"hooks\": {\n    " + events + "\n  },";
     }

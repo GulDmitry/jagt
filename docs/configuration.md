@@ -130,6 +130,7 @@ Shows the agent's session inside the board when you press Focus. Needs ttyd inst
 | `orchestrator.agent-disabled-plugins` | *(empty)* | plugins disabled per agent worktree |
 | `orchestrator.mcp-url` | `http://localhost:<port>/mcp` | where an agent reaches jagt |
 | `orchestrator.hook-url` | `http://127.0.0.1:<port>/api/agent/session` | where an agent CLI's hooks report a stopped session |
+| `orchestrator.gate-url` | `http://127.0.0.1:<port>/api/agent` | where a session asks before it pushes |
 | `orchestrator.stub.script` | — | only for `orchestrator.agent=stub` |
 
 ### Master assistant

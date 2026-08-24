@@ -124,6 +124,15 @@ project must not block another.
 
 Never propose, add, or rely on any git hook anywhere. Enforce invariants in code and prompts.
 
+The one exception is not a git hook: a session's CLI asks jagt before it runs a tool, and jagt REFUSES a push
+whose destination is not the task's own branch (`ToolGate`, answered at `POST /api/agent/tool`). It closes the
+hole the detached upstream leaves — that one removes the default target, and an explicit
+`git push origin dev` was still the agent's to run.
+
+Three things keep it from growing into an enforcement layer: it answers on **pushes only**, everything else is
+allowed without a word, and jagt being down or slow allows the call (`curl -sf` prints nothing to refuse with).
+A shared branch is still written by `deploy` alone, and that is still a human's move.
+
 ## One session, many repositories
 
 What multiplies is **worktrees**, never agents. A task holds a list (`task/TaskRepo`, `repos.get(0)` = where

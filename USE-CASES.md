@@ -53,6 +53,8 @@ every start) and anything over the network.
 | One change moving two repositories (a service and its client) | `do ABC-1 api,web` | One task, one agent session, a worktree per repository. The session runs in the first named |
 | It reaches review | `ship ABC-1` | A commit, push and request **per repository**, each targeting its own base branch |
 | It spans repositories | `ship ABC-1` | One instruction naming every one of them: a request each, all reported back in one call as one round |
+| The agent runs `git push origin dev` | — | Refused before it runs, with the reason: only the task's own branch may be pushed from its worktree |
+| jagt is down when the agent pushes | — | Nothing is refused. A stopped backend must not read as a rule |
 | A round comes back | `sweep ABC-1` | Merged as the **least finished** repository: approved only when all are, the pipeline the worst one |
 | It is ready to deploy | `deploy ABC-1` | Merged and pushed repository by repository, in the order the task holds them |
 | One repository conflicts after another landed | `deploy ABC-1` | Stops there, DEPLOY_CONFLICT, and the sentence names both sides. Resolve, then `deploy` again — it continues from the one that stalled |

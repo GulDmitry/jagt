@@ -99,7 +99,7 @@ public record TaskView(
                 task.history(), draftedReplies, AgentReport.of(task.message()), autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(),
                 task.hasReviewRequest() ? task.approved() : null,
-                task.usageOrNone().total());
+                task.totalUsage().total());
     }
 
     /**

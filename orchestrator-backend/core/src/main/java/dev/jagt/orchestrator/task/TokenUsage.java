@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * What jagt's own model calls cost. A sub-agent's spend lives in its own session where jagt cannot see it, so
- * this is never a task's total cost.
+ * Tokens a model was handed and answered with, whoever the call belonged to: jagt's own metered reads carry a
+ * cost with them, a session's own log prices nothing and carries zero.
  *
  * <p>{@code inputTokens} counts fresh context, cache writes included — both bill at input rates;
  * {@code cachedInputTokens} counts cache reads, an order of magnitude cheaper.

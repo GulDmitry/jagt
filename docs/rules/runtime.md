@@ -139,15 +139,31 @@ never reaches Java. A runtime with no resource writes no hooks. jagt's three sta
 until a human answers), `gone` and `working`.
 
 Two things the payload buys, and neither is required: the file the session appends to (otherwise derived from
-the worktree path, which is a guess) and nothing else. **A missing or changed payload costs a detail, never the
-report.**
+the worktree path, which is a guess) and what STARTED the session. **A missing or changed payload costs a
+detail, never the report.**
+
+The log that file names is read twice over: for the last sign of life, and for what the session spent
+(`AgentSpendReader`, from the mark the task carries, so an append adds only what is new).
+
+**What jagt ANSWERS a hook is context, not output.** A harness adds a hook's stdout to the session, so the line
+prints the body (`curl -sf`, which prints nothing at all on a failure — an error page in a model's context is
+worse than silence). jagt answers exactly one thing: a session that started from a COMPACTION gets one line
+naming its brief, because a compaction drops it silently and an agent that cannot see the rules starts breaking
+them. Every other report answers empty. This is the only model-facing text jagt writes outside a task's own
+brief — do not grow it into a second briefing.
 
 A report has `WatchdogService.check` judge that one task at once — otherwise a session answered by a human
 would keep its NEEDS YOU for a whole probe interval, which is exactly what a ten-minute interval makes
 unbearable.
 
-**This is not a git hook** and the ban does not reach it: a git hook enforces, and these only report — the
-verdict stays `WatchdogService`'s.
+**One hook is a gate, and it is declared as one.** `gate=PreToolUse` in the same resource is answered rather
+than recorded: `POST /api/agent/tool` refuses a push whose destination is not the task's own branch
+(`ToolGate`) and answers everything else with nothing. It is scoped to the shell tool, so no other call waits on
+jagt, and an unreachable jagt refuses nothing — a stopped backend must not read as a rule.
+
+**This is not a git hook** and the ban does not reach it: a git hook enforces for every user of the repository
+and cannot be reasoned with, while this one refuses a single command in a single session and hands the model the
+reason. The verdicts stay jagt's own (`WatchdogService`, `ToolGate`).
 
 ### Agent resource hygiene
 

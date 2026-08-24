@@ -20,29 +20,14 @@ board listens on loopback WITHOUT auth and can already deploy — whoever reache
 on the host. What jagt must promise before it may keep a token — where it is read from, what may act with it,
 what the board needs first — is the work, not the adapters.
 
-## What a session's hooks could also do (open, needs the owner)
+## Make the small reads thin (open)
 
-Both are reachable now that a CLI's own hooks report into jagt, and neither is a reporting change — they change
-what the session itself does, so they are not a sub-agent's to take.
+A read that fetches one ticket, or one merge request, loads whatever MCP the human's config carries — today ~35
+servers, most of them irrelevant, two of them named something with "gitlab" in it. That is what makes the
+cheapest call in jagt cost ~25k tokens of context before it reads anything, and what lets a model pick a server
+that cannot answer.
 
-**Re-brief a compacted session.** A `SessionStart` hook's stdout is added to the model's context, so jagt could
-hand a session one line back after a compaction ("you are the sub-agent for ABC-42; re-read task_context.md").
-Mechanically it is the hook line no longer throwing its own output away, plus the text to hand back.
-
-- For: today a compaction silently drops the brief, and an agent that can no longer see the rules starts
-  breaking them. It is the largest determinism hole left.
-- Against: jagt would be writing model-facing text from a hook — a kind it has never had — and it costs tokens
-  on every session start, including the ones that needed nothing.
-
-**Refuse a shared-branch write from `PreToolUse`.** A hook may block a tool call with a reason the model reads.
-
-- For: "never write to a shared branch" becomes enforced instead of asked for, in the one place that can see
-  the command about to run.
-- Against: `AGENTS.md` states the current guarantee is the detached upstream plus prompt rules, and a hook that
-  enforces is one step from a git hook, which is banned outright. Where that safety lives is the owner's call.
-
-## Small and decided, not done (open)
-
-- **A sub-agent's token spend is readable for nothing.** The log a session keeps carries `usage` per turn, and a
-  session now names that file itself, so the reading no longer has to find it. `UsageTracker` meters only the
-  headless assistant — so the card shows no cost for the work that spends most.
+Thin means per PURPOSE: one or two servers named in the local config — a ticket read loads the tracker, a request
+read loads the code host, neither loads the rest. `orchestrator.assistant.mcp-config` already pins a server
+list, but one list for every call; the open part is a list per kind of read (`AssistantCallKind` already names
+the kinds) and what a kind with no list of its own falls back to.

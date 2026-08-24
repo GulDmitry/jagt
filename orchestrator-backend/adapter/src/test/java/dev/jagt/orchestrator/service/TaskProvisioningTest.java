@@ -67,7 +67,7 @@ class TaskProvisioningTest {
         OrchestratorPaths paths = new OrchestratorPaths(properties);
         ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, ClaudeProperties.defaults(),
                 new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
         return provisioning(new WorktreeSetup(runtime, paths, config,
                 new SubAgentBriefing(new PromptTemplates(), properties, paths, config, state)));
     }
@@ -75,7 +75,7 @@ class TaskProvisioningTest {
     private TaskProvisioning provisioning(WorktreeSetup setup) {
         ClaudeAgentRuntime runtime = new ClaudeAgentRuntime(properties, ClaudeProperties.defaults(),
                 new McpEndpoint("http://localhost:8290/mcp"),
-                new HookEndpoint("http://127.0.0.1:8290/api/agent/session"));
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
         AgentSessions sessions = new AgentSessions(config, state, mock(SessionHost.class),
                 mock(TerminalDriver.class), runtime);
         return new TaskProvisioning(config, state, git, sessions, setup);

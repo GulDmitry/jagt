@@ -48,7 +48,8 @@ missing — add a kind, never an exception.
 - A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`.** Several sessions share this tree — stage the explicit paths you touched.
 - **No git hooks, ever.** Never propose, add or rely on one; enforce invariants in code and prompts. An
-  agent CLI's own hooks are a different thing — they report a session's state and enforce nothing.
+  agent CLI's own hooks are a different thing: they report a session's state, and they refuse exactly one thing
+  — a push to anything but the task's own branch. Nothing else is ever gated there.
 - Never add a warning, a badge or a gate to the deploy confirm. It names the writes and gets out of the way.
 
 ## Committing
