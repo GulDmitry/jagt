@@ -6,6 +6,8 @@ import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
@@ -83,15 +85,19 @@ class TaskResumeTest {
      * jagt task IS its branch (also a directory and a tmux window). Naming the branch and the way out beats
      * the generic id check reporting a regex against a name the human never typed.
      */
-    @Test
-    void explainsWhyASlashedSourceBranchCannotBecomeATask() {
+    @ParameterizedTest
+    @CsvSource(quoteCharacter = '"', value = {
+            "feature/widget-layout, \"'/' is not allowed\"",
+            "-widget-layout, \"it starts with '-'\"",
+    })
+    void namesWhatInASourceBranchStopsItFromBecomingATask(String branch, String reason) {
         when(reviewReader.readRequest("https://host/mr/426")).thenReturn(new Answer<>(
-                Optional.of(new MergeRequestFacts(true, "feature/widget-layout", "main",
-                        "Widget layout is off")), TokenUsage.NONE));
+                Optional.of(new MergeRequestFacts(true, branch, "main", "Widget layout is off")),
+                TokenUsage.NONE));
 
         String result = resume.resume("https://host/mr/426");
 
-        assertThat(result).contains("feature/widget-layout").contains("do <ticket> from");
+        assertThat(result).contains(branch).contains(reason).contains("do <ticket> from");
         verifyNoInteractions(git, provisioning);
     }
 

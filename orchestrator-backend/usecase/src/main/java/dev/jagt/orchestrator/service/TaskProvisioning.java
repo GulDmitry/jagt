@@ -24,7 +24,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TaskProvisioning {
 
-    private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_-]{0,63}");
+    private static final String ID_CHARS = "A-Za-z0-9_-";
+    private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9][" + ID_CHARS + "]{0,63}");
+    private static final Pattern ID_CHAR = Pattern.compile("[" + ID_CHARS + "]");
 
     private final ConfigService configService;
     private final StateService stateService;
@@ -193,14 +195,40 @@ public class TaskProvisioning {
     }
 
     public static void requireSafeId(String value, String name) {
-        if (!isSafeId(value)) {
+        String reason = unsafeIdReason(value);
+        if (reason != null) {
             throw new IllegalArgumentException("Argument '" + name + "' must match " + SAFE_ID.pattern()
-                    + " (it becomes a branch, directory and tmux window name); got: " + value);
+                    + " (it becomes a branch, directory and tmux window name): " + reason + "; got: " + value);
         }
     }
 
-    /** For a caller that must EXPLAIN an unusable id rather than throw the generic message. */
-    public static boolean isSafeId(String value) {
+    private static boolean isSafeId(String value) {
         return value != null && SAFE_ID.matcher(value).matches();
+    }
+
+    /**
+     * Names the one thing that makes {@code value} unusable, or null when it is usable — the allowed set alone
+     * never tells a reader which character of theirs broke it.
+     */
+    public static String unsafeIdReason(String value) {
+        if (isSafeId(value)) {
+            return null;
+        }
+        if (value == null || value.isEmpty()) {
+            return "it is empty";
+        }
+        String offender = value.codePoints().mapToObj(Character::toString)
+                .filter(c -> !ID_CHAR.matcher(c).matches())
+                .findFirst().orElse(null);
+        if (offender != null) {
+            return "'" + offender + "' is not allowed";
+        }
+        if (value.charAt(0) == '-' || value.charAt(0) == '_') {
+            return "it starts with '" + value.charAt(0) + "'";
+        }
+        if (value.length() > 64) {
+            return "it is longer than 64 characters";
+        }
+        return "it must match " + SAFE_ID.pattern();
     }
 }

@@ -44,9 +44,10 @@ public class TaskResume {
         }
         // Someone else's branch is not bound by jagt's naming, and a task IS its branch — so say which branch
         // and why, instead of letting the generic id check report a regex the human never typed.
-        if (!TaskProvisioning.isSafeId(taskId)) {
-            return "error: branch '" + taskId + "' cannot be a task name (letters, digits, '-', '_' only;"
-                    + " it becomes a directory and a tmux window too). Try `do <ticket> from " + taskId + "`.";
+        String unusable = TaskProvisioning.unsafeIdReason(taskId);
+        if (unusable != null) {
+            return "error: branch '" + taskId + "' cannot be a task name (" + unusable
+                    + "; it becomes a directory and a tmux window too). Try `do <ticket> from " + taskId + "`.";
         }
         String result = link(taskId, reviewRequestUrl, request.get().title(), request.get().targetBranch());
         reviewReader.charge(taskId, read.usage());       // the task exists only now
