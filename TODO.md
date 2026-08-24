@@ -1,16 +1,13 @@
 # jagt — TODO
 
-## Composition checks nobody can write yet (open)
+## A port does not declare what it can do (open)
 
-- every (status × capability × outcome) decided — needs a capability to declare which outcomes it can return.
-- a job's declared capability and watched statuses exist — needs `Job` to declare what it needs.
-- a required port capability present in the SELECTED adapter — needs ports to declare their capabilities
-  (`Viewer.supports(TAB_TITLES)`, `CodeHost.supports(RESOLVES_THREADS)`), which is also what would let jagt refuse
-  auto-review on a host that cannot report thread resolution instead of relaying the same comments forever.
-  `AgentRuntime.lastSessionActivityMillis` returning 0 for "this CLI keeps no log" is the newest instance: a
-  capability answered by a magic value nothing can be asked about.
+`Viewer.supports(TAB_TITLES)`, `CodeHost.supports(RESOLVES_THREADS)`: nothing can ask whether the SELECTED adapter
+carries what a capability needs. `AgentRuntime.lastSessionActivityMillis` answering 0 for "this CLI keeps no log"
+is the same hole with a magic value in it. The one consequence that costs something today is auto-review on a host
+that cannot report thread resolution: jagt relays the same comments round after round instead of refusing.
 
-Each of the three is a small interface change plus a check. None of them is worth doing before something needs it.
+A small interface change plus a check. Not worth doing before a second consequence turns up.
 
 ## Move the code host's credentials into the orchestrator (open, conceptual)
 
@@ -34,6 +31,7 @@ what the session itself does, so they are not a sub-agent's to take.
 
 **Re-brief a compacted session.** A `SessionStart` hook's stdout is added to the model's context, so jagt could
 hand a session one line back after a compaction ("you are the sub-agent for ABC-42; re-read task_context.md").
+Mechanically it is the hook line no longer throwing its own output away, plus the text to hand back.
 
 - For: today a compaction silently drops the brief, and an agent that can no longer see the rules starts
   breaking them. It is the largest determinism hole left.
@@ -49,11 +47,6 @@ hand a session one line back after a compaction ("you are the sub-agent for ABC-
 
 ## Small and decided, not done (open)
 
-- **`Jobs.tick` strands a job whose `every()` throws.** It is asked outside the try and after
-  `running.compareAndSet(false, true)`, so one exception leaves the flag set and that job never runs again.
-  `SessionProbe.every()` is total for exactly this reason; the scheduler should not depend on every job being.
-  The same line asks `every()` twice per run, which is now two config reads where it used to be two constants.
-- **A sub-agent's token spend is readable for nothing.** The log a session keeps carries `usage` per turn, while
-  `UsageTracker` meters only the headless assistant — so the card shows no cost for the work that spends most.
-- **`CLAUDE_CONFIG_DIR` is read from the backend's environment**, not the session's, so a human who exports it in
-  their shell and starts jagt from elsewhere loses the derived log path. A session that reports its own is unaffected.
+- **A sub-agent's token spend is readable for nothing.** The log a session keeps carries `usage` per turn, and a
+  session now names that file itself, so the reading no longer has to find it. `UsageTracker` meters only the
+  headless assistant — so the card shows no cost for the work that spends most.

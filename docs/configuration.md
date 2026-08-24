@@ -94,6 +94,7 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 | `server.address` | `127.0.0.1` | which interface the board listens on |
 | `server.port` | `8290` | the board's port |
 | `orchestrator.notify-send-command` | `notify-send` | Linux only |
+| `orchestrator.terminal-notifier-command` | `terminal-notifier` | macOS only; a build that refuses the banner falls back to osascript |
 
 ### Terminal and editor
 
@@ -192,6 +193,10 @@ from its own.
 inherited config, which rides the prompt cache your own sessions keep warm. Server names also lose their
 plugin scope here (`mcp__gitlab__…`, not `mcp__plugin_<x>_gitlab__…`), so an `allowed-tools` list written for
 the inherited names silently stops matching.
+
+**`CLAUDE_CONFIG_DIR` is read from jagt's own environment**, not from the session's. Exporting it in one shell
+and starting jagt from another loses the derived path to a session's log; a session that reports the file it
+appends to is unaffected either way.
 
 **Binaries are resolved by bare name** — PATH first, then the usual install directories (Homebrew included, a
 GUI-launched process has neither on PATH), then inside application bundles. Give an absolute path to pin one.
