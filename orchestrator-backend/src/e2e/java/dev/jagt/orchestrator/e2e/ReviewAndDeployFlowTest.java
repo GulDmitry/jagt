@@ -1,11 +1,12 @@
 package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.port.MasterAssistant;
+import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
-import dev.jagt.orchestrator.task.MergeRequestSpec;
+import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -29,9 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -45,17 +44,18 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * What happens to a task AFTER an agent is done with it: ship, the review rounds it comes back for, deploy and
- * the undo — over real git, with the code host faked and no model anywhere. The verbs are driven the way the
- * board drives them, so what is asserted is what a human is actually told; the agent reports the way a real one
- * does, over {@code POST /mcp} with its worktree in the header, which is what makes its status carry an origin
- * of its own.
+ * the undo — over real git, with the reads stubbed and no model anywhere. The verbs are driven the way the board
+ * drives them, so what is asserted is what a human is actually told; the agent reports the way a real one does,
+ * over {@code POST /mcp} with its worktree in the header, which is what makes its status carry an origin of its
+ * own — and it commits, pushes and opens its request itself, which is what {@code ship} asks of it.
  *
  * <p>Not part of {@code ./gradlew test}. It complements the lifecycle matrix in {@code TaskFlowMatrixTest}:
  * that one covers creation and teardown across the viewer combinations, this one everything in between on a
@@ -73,6 +73,14 @@ class ReviewAndDeployFlowTest {
 
     private static final String TASK = "ABC-1";
     private static final String TITLE = "Widget layout is off";
+    /** What the agent opens and reports back; jagt only ever reads it. */
+    private static String request() {
+        return E2eWorkspace.requestUrl(workspace.resolve("origin.git"));
+    }
+
+    private static String webRequest() {
+        return E2eWorkspace.requestUrl(workspace.resolve("web-origin.git"));
+    }
 
     private final HttpClient client = HttpClient.newHttpClient();
 
@@ -86,15 +94,6 @@ class ReviewAndDeployFlowTest {
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 
-    @TestConfiguration
-    static class TheOnlyHostThisRunHas {
-
-        @Bean
-        FakeCodeHost fakeCodeHost() {
-            return new FakeCodeHost(E2eWorkspace.requestUrl(workspace.resolve("origin.git")));
-        }
-    }
-
     @MockitoBean
     private MasterShell masterShell;
     @MockitoBean
@@ -105,12 +104,9 @@ class ReviewAndDeployFlowTest {
     private EditorDriver editorDriver;
     @MockitoBean
     private UserNotifier userNotifier;
-    /** Doubled so that a flow which stopped routing its reads through the host fails instead of paying. */
+    /** Every outside read is this one: the round, and the request a resume adopts. */
     @MockitoBean
     private MasterAssistant assistant;
-
-    @Autowired
-    private FakeCodeHost host;
     @Autowired
     private TaskProvisioning provisioning;
     @Autowired
@@ -130,9 +126,8 @@ class ReviewAndDeployFlowTest {
     }
 
     @BeforeEach
-    void oneProjectAndAHostThatRemembersNothing() throws Exception {
+    void oneProject() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), repo(), "shared", false);
-        host.forgetEverything();
     }
 
     @AfterEach
@@ -152,7 +147,7 @@ class ReviewAndDeployFlowTest {
     void aSweptRoundEndsWhereItsFactsSayAndBriefsTheAgentOnlyWhenThereIsWork(ReviewRoundCase round)
             throws Exception {
         shipTheFirstRound();
-        host.answers(round.round());
+        reads(round.round());
 
         assertThat(act("sweep")).contains(round.sentence());
 
@@ -164,16 +159,16 @@ class ReviewAndDeployFlowTest {
     @Test
     void aRoundTripFromShipToDeployAndBackOutAgain() throws Exception {
         String shipped = shipTheFirstRound();
-        assertThat(shipped).contains("file(s), pushed, opened " + host.requestUrl(), "CI_POLLING");
-        assertThat(host.writes()).singleElement()
-                .extracting(MergeRequestSpec::sourceBranch, MergeRequestSpec::targetBranch,
-                        MergeRequestSpec::title)
-                .containsExactly(TASK, "main", TASK + " " + TITLE);
-        assertThat(task().mrUrl()).isEqualTo(host.requestUrl());
+        assertThat(shipped).contains("relayed to the agent", "SHIPPING");
+        assertThat(Files.readString(worktree().resolve("task_context.md")))
+                .contains("proj: " + worktree() + ", merges into main",
+                        "EXACTLY \"" + TASK + " " + TITLE + "\"",
+                        "reviewRequestUrl=<the url>");
+        assertThat(task().mrUrl()).isEqualTo(request());
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", TASK))
                 .contains(TASK + " " + TITLE);
 
-        host.answers(new ReviewFacts(true, false, "success", List.of("bot (Widget.java:12): tighten this")));
+        reads(new ReviewFacts(true, false, "success", List.of("bot (Widget.java:12): tighten this")));
         act("sweep");
         assertThat(Files.readString(worktree().resolve("task_context.md")))
                 .contains("bot (Widget.java:12): tighten this", "Do NOT push or post anything yourself");
@@ -182,15 +177,16 @@ class ReviewAndDeployFlowTest {
         Files.writeString(worktree().resolve("review_replies.md"), "> tighten this\n\nDone.\n");
         agentReports("REVIEW_PENDING", "comment addressed");
 
-        assertThat(act("ship")).contains("updated " + host.requestUrl(),
-                "drafted replies relayed");
-        assertThat(host.writes()).hasSize(2);
+        assertThat(act("ship")).contains("relayed to the agent");
+        assertThat(Files.readString(worktree().resolve("task_context.md")))
+                .contains("its request is already open", "do NOT create another or retitle it",
+                        "post each drafted reply to its thread");
+        agentCommitsAndPushes(worktree(), TASK + " address review comments");
+        agentReports("CI_POLLING", "review request: " + request(), request());
         assertThat(E2eWorkspace.git(origin(), "log", "-1", "--format=%s", TASK))
                 .contains(TASK + " address review comments");
-        assertThat(Files.readString(worktree().resolve("task_context.md")))
-                .contains("there is NOTHING to commit or push");
 
-        host.answers(new ReviewFacts(true, true, "success", List.of()));
+        reads(new ReviewFacts(true, true, "success", List.of()));
         assertThat(act("sweep")).contains("approved, checks success");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
@@ -204,9 +200,9 @@ class ReviewAndDeployFlowTest {
                 .contains("Revert \"Merge branch '" + TASK + "' into dev\"");
 
         assertThat(task().history()).extracting(StatusChange::status)
-                .containsExactly(TaskStatus.NEW, TaskStatus.REVIEW_PENDING, TaskStatus.CI_POLLING,
-                        TaskStatus.REVIEW_PENDING, TaskStatus.CI_POLLING, TaskStatus.APPROVED,
-                        TaskStatus.DEPLOYED, TaskStatus.REVERTED);
+                .containsExactly(TaskStatus.NEW, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING,
+                        TaskStatus.CI_POLLING, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING,
+                        TaskStatus.CI_POLLING, TaskStatus.APPROVED, TaskStatus.DEPLOYED, TaskStatus.REVERTED);
         assertThat(task().history()).extracting(StatusChange::status, StatusChange::origin)
                 .contains(tuple(TaskStatus.REVIEW_PENDING, ActionOrigin.MCP),
                         tuple(TaskStatus.DEPLOYED, ActionOrigin.BOARD));
@@ -233,7 +229,10 @@ class ReviewAndDeployFlowTest {
         Files.writeString(webWorktree().resolve("widget.txt"), "web side\n");
         agentReports("REVIEW_PENDING", "both sides done");
         act("ship");
-        host.answers(new ReviewFacts(true, true, "success", List.of()));
+        agentCommitsAndPushes(worktree(), TASK + " " + TITLE);
+        agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
+        agentReportsRequests(Map.of("proj", request(), "web", webRequest()));
+        reads(new ReviewFacts(true, true, "success", List.of()));
         act("sweep");
         E2eWorkspace.commitOnDeployBranch(webRepo(), "widget.txt", "someone else's line\n");
 
@@ -270,15 +269,23 @@ class ReviewAndDeployFlowTest {
 
         String shipped = act("ship");
 
-        assertThat(shipped).contains("proj 1 file(s), pushed", "web 1 file(s), pushed");
-        assertThat(host.writes()).extracting(MergeRequestSpec::remoteUrl)
-                .containsExactly(E2eWorkspace.remoteUrl(origin()), E2eWorkspace.remoteUrl(webOrigin()));
+        assertThat(shipped).contains("relayed to the agent", "requests");
+        assertThat(Files.readString(worktree().resolve("task_context.md")))
+                .contains("proj: " + worktree() + ", merges into main",
+                        "web: " + webWorktree() + ", merges into main",
+                        "reviewRequests={\"proj\": \"<its url>\", \"web\": \"<its url>\"}");
+        agentCommitsAndPushes(worktree(), TASK + " " + TITLE);
+        agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
+        agentReportsRequests(Map.of("proj", request(), "web", webRequest()));
         assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", TASK))
                 .contains(TASK + " " + TITLE);
+        assertThat(task().repos()).extracting(dev.jagt.orchestrator.task.TaskRepo::mrUrl)
+                .containsExactly(request(), webRequest());
         assertThat(task().history()).extracting(StatusChange::status)
-                .containsExactly(TaskStatus.NEW, TaskStatus.REVIEW_PENDING, TaskStatus.CI_POLLING);
+                .containsExactly(TaskStatus.NEW, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING,
+                        TaskStatus.CI_POLLING);
 
-        host.answers(new ReviewFacts(true, true, "success", List.of()));
+        reads(new ReviewFacts(true, true, "success", List.of()));
         act("sweep");
         assertThat(task().status()).isEqualTo(TaskStatus.APPROVED);
 
@@ -296,18 +303,19 @@ class ReviewAndDeployFlowTest {
     @Test
     void resumeAdoptsAnOpenRequestOnTheBranchThatIsAlreadyThere() throws Exception {
         E2eWorkspace.git(repo(), "branch", TASK, "main");
-        host.answers(new MergeRequestFacts(true, TASK, "main", TASK + " " + TITLE));
+        when(assistant.readMergeRequest(request())).thenReturn(
+                new Answer<>(Optional.of(new MergeRequestFacts(true, TASK, "main", TASK + " " + TITLE)),
+                        TokenUsage.NONE));
 
         String resumed = post("/api/tasks/resume",
-                "{\"reviewRequestUrl\": \"" + host.requestUrl() + "\"}", Map.of());
+                "{\"reviewRequestUrl\": \"" + request() + "\"}", Map.of());
 
         assertThat(resumed).contains("Resumed " + TASK + " on its existing branch", "CI_POLLING");
         assertThat(task().status()).isEqualTo(TaskStatus.CI_POLLING);
-        assertThat(task().mrUrl()).isEqualTo(host.requestUrl());
+        assertThat(task().mrUrl()).isEqualTo(request());
         assertThat(task().baseBranch()).isEqualTo("main");
         assertThat(task().title()).isEqualTo(TITLE);
         assertThat(worktree().resolve("task_context.md")).exists();
-        verifyNoInteractions(assistant);
     }
 
     private String shipTheFirstRound() throws Exception {
@@ -315,17 +323,51 @@ class ReviewAndDeployFlowTest {
                 .instructions("Fix the widget").title(TITLE).build());
         Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
         agentReports("REVIEW_PENDING", "widget fixed");
-        return act("ship");
+        String shipped = act("ship");
+        agentCommitsAndPushes(worktree(), TASK + " " + TITLE);
+        agentReports("CI_POLLING", "review request: " + request(), request());
+        return shipped;
+    }
+
+    /** What `ship` asks of the agent, and nothing jagt does for it. */
+    private void agentCommitsAndPushes(Path worktree, String message) throws Exception {
+        E2eWorkspace.git(worktree, "add", "-A");
+        E2eWorkspace.git(worktree, "commit", "-m", message);
+        E2eWorkspace.git(worktree, "push", "-u", "origin", TASK);
+    }
+
+    private void reads(ReviewFacts facts) {
+        Answer<ReviewFacts> answer = new Answer<>(Optional.ofNullable(facts), TokenUsage.NONE);
+        when(assistant.readReview(request())).thenReturn(answer);
+        when(assistant.readReview(webRequest())).thenReturn(answer);
     }
 
     private void agentReports(String status, String message) throws Exception {
+        agentReports(status, message, null);
+    }
+
+    private void agentReports(String status, String message, String requestUrl) throws Exception {
+        String request = requestUrl == null ? "" : ", \"reviewRequestUrl\": \"" + requestUrl + "\"";
         String call = """
                 {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                  "params": {"name": "update_agent_status",
-                            "arguments": {"status": "%s", "message": "%s"}}}"""
-                .formatted(status, message);
+                            "arguments": {"status": "%s", "message": "%s"%s}}}"""
+                .formatted(status, message, request);
         assertThat(post("/mcp", call, Map.of("X-Working-Directory", worktree().toString())))
                 .contains("-> " + status);
+    }
+
+    private void agentReportsRequests(Map<String, String> byProject) throws Exception {
+        String requests = byProject.entrySet().stream()
+                .map(entry -> "\"" + entry.getKey() + "\": \"" + entry.getValue() + "\"")
+                .collect(java.util.stream.Collectors.joining(", "));
+        String call = """
+                {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                 "params": {"name": "update_agent_status",
+                            "arguments": {"status": "CI_POLLING", "message": "requests up",
+                                          "reviewRequests": {%s}}}}""".formatted(requests);
+        assertThat(post("/mcp", call, Map.of("X-Working-Directory", worktree().toString())))
+                .contains("-> CI_POLLING");
     }
 
     private String act(String action) throws Exception {

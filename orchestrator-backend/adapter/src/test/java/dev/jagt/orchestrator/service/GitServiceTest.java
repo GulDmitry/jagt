@@ -757,33 +757,6 @@ class GitServiceTest {
     }
 
     @Test
-    void commitsTheTasksWorkWithoutTheMcpConfigWrittenForThatWorktree(@TempDir Path dir) throws Exception {
-        Processes runner = new ProcessRunner();
-        Duration timeout = Duration.ofSeconds(30);
-        Path origin = dir.resolve("origin.git");
-        Path repo = dir.resolve("repo");
-        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
-        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
-        Files.writeString(repo.resolve("f.txt"), "base");
-        Files.writeString(repo.resolve(".mcp.json"), "{\"mcpServers\": {}}");
-        runner.run(repo, timeout, List.of("git", "add", "."));
-        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
-        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
-        Path wt = dir.resolve("wt");
-        git.createWorktree(repo, wt, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
-        Files.writeString(wt.resolve("f.txt"), "the task's work");
-        Files.writeString(wt.resolve(".mcp.json"), "{\"headers\": {\"X-Working-Directory\": \"" + wt + "\"}}");
-
-        git.commitAll(repo, wt, "ABC-1 work");
-
-        assertThat(runner.run(wt, timeout, List.of("git", "show", "--name-only", "--format=", "HEAD")).stdout())
-                .contains("f.txt")
-                .doesNotContain(".mcp.json");
-        assertThat(wt.resolve(".mcp.json")).content().contains("X-Working-Directory");
-    }
-
-    @Test
     void refusesDeployWhenBranchHasNoCommitsBeyondTheTarget(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

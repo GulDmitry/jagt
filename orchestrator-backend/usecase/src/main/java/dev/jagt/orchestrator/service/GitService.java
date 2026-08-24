@@ -17,7 +17,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Stream;
 
 /**
  * Serialized per repository: index.lock races are per-repository, and a slow fetch in one project must not
@@ -217,29 +216,6 @@ public class GitService {
         return stdout.lines().map(String::strip).filter(line -> !line.isEmpty()).toList();
     }
 
-    public record Commit(boolean created, int changedFiles) {
-    }
-
-    /** Nothing staged = no commit, and not an error. */
-    public Commit commitAll(Path projectPath, Path worktree, String message) {
-        return withRepoLock(projectPath, () -> {
-            processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "add", "-A"))
-                    .expectSuccess("git add -A in " + worktree);
-            processRunner.run(worktree, GIT_TIMEOUT, Stream.concat(
-                            Stream.of("git", "reset", "-q", "--"), WorktreeFiles.GENERATED.stream()).toList())
-                    .expectSuccess("git reset in " + worktree);
-            List<String> staged = branchNames(processRunner.run(worktree, GIT_TIMEOUT,
-                            List.of("git", "diff", "--cached", "--name-only"))
-                    .expectSuccess("git diff --cached in " + worktree).stdout());
-            if (staged.isEmpty()) {
-                return new Commit(false, 0);
-            }
-            processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "commit", "-m", message))
-                    .expectSuccess("git commit in " + worktree);
-            return new Commit(true, staged.size());
-        });
-    }
-
     /**
      * Whether the agent's work is sitting in this worktree uncommitted — what a round that says it changed
      * nothing can be CHECKED against, rather than believed. jagt's own generated files are excluded exactly as
@@ -263,22 +239,6 @@ public class GitService {
         String path = afterStatus < 0 ? porcelainLine : porcelainLine.substring(afterStatus + 1).strip();
         int renamed = path.indexOf(" -> ");
         return renamed < 0 ? path : path.substring(renamed + 4);
-    }
-
-    /**
-     * Pushes ONE branch, with a refspec explicit on both sides so it cannot follow HEAD or an upstream.
-     * Never {@code --force} (a diverged branch is a human's call) and never {@code -u} (see
-     * {@link #detachUpstream}).
-     */
-    public void pushBranch(Path projectPath, Path worktree, String branch) {
-        withRepoLock(projectPath, () -> {
-            var push = processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "push", "origin",
-                    "refs/heads/" + branch + ":refs/heads/" + branch));
-            if (push.exitCode() != 0) {
-                String details = push.stderr().isBlank() ? push.stdout() : push.stderr();
-                throw new IllegalStateException("Could not push branch '" + branch + "': " + details.strip());
-            }
-        });
     }
 
     public boolean branchExists(Path projectPath, String branch) {

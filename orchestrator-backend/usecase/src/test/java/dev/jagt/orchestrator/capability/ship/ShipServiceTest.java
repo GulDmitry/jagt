@@ -1,41 +1,28 @@
 package dev.jagt.orchestrator.capability.ship;
 
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.GitService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.port.CodeHost;
 import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.task.MergeRequestRef;
-import dev.jagt.orchestrator.task.MergeRequestSpec;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,26 +30,78 @@ class ShipServiceTest {
 
     private final StateService stateService = mock(StateService.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final GitService gitService = mock(GitService.class);
     private final AgentSessions sessions = mock(AgentSessions.class);
-    private final CodeHost host = mock(CodeHost.class);
 
     @BeforeEach
-    void oneProjectOnGitLabAndTasksAddressedByTheirId() {
+    void oneProjectAndTasksAddressedByTheirId() {
         when(stateService.canonicalTaskId(anyString())).thenAnswer(call -> call.getArgument(0));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
-        when(host.displayName()).thenReturn("GitLab");
-        when(host.hostsRepository(anyString())).thenReturn(true);
-        when(gitService.commitAll(any(), any(), anyString())).thenReturn(new GitService.Commit(true, 3));
+        when(configService.project("web")).thenReturn(new ProjectConfig("/web", "origin/master", "dev", List.of()));
     }
 
-    /**
-     * A reply does not resolve a thread, and the next round relays every unresolved one — so without this the
-     * comments an agent pushed back on come back forever. Resolving a disagreement would hide it instead, which
-     * is why the rule is about what was FIXED, and why it cannot appear where nothing is posted at all.
-     */
+    @Test
+    void handsTheShipToTheAgentAndWaitsForTheRequestItOpens() {
+        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git")
+                .title("Widget layout is off").build()));
+
+        Outcome outcome = new ShipService(stateService, configService, sessions).ship("ABC-42");
+
+        verify(sessions).writeTaskContext(eq("ABC-42"), contains("This IS the human approval to ship"));
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
+        assertThat(outcome.message()).contains("relayed to the agent", "SHIPPING");
+        assertThat(outcome.stamp()).isEqualTo("shipping");
+    }
+
+    @Test
+    void namesTheTasksOwnBaseBranchAsWhatTheRequestMergesIntoWhenItHasOne() {
+        when(stateService.task("ABC-7")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t")
+                .baseBranch("feature/parent").build()));
+
+        new ShipService(stateService, configService, sessions).ship("ABC-7");
+
+        ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
+        verify(sessions).writeTaskContext(eq("ABC-7"), instruction.capture());
+        assertThat(instruction.getValue()).contains("merges into feature/parent");
+    }
+
+    @Test
+    void namesEveryRepositoryTheTaskSpansSoNoneIsLeftUnshipped() {
+        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).title("Widget layout is off")
+                .repos(List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
+                        new TaskRepo("web", "/wt-web", "git@host:demo/web.git", null, null))).build()));
+
+        new ShipService(stateService, configService, sessions).ship("ABC-42");
+
+        ArgumentCaptor<String> instruction = ArgumentCaptor.captor();
+        verify(sessions).writeTaskContext(eq("ABC-42"), instruction.capture());
+        assertThat(instruction.getValue())
+                .contains("demo: /wt, merges into main")
+                .contains("web: /wt-web, merges into master")
+                .contains("a repository left behind is a half-shipped task");
+    }
+
+    @Test
+    void refusesASecondShipWhileTheFirstIsStillRunning() {
+        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build()));
+        ShipService shipService = new ShipService(stateService, configService, sessions);
+        AtomicReference<Outcome> reentrant = new AtomicReference<>();
+        doAnswer(call -> {
+            reentrant.set(shipService.ship("ABC-42"));
+            return null;
+        }).when(sessions).writeTaskContext(eq("ABC-42"), anyString());
+
+        shipService.ship("ABC-42");
+
+        assertThat(reentrant.get().message()).contains("already running");
+        verify(sessions).writeTaskContext(eq("ABC-42"), anyString());
+    }
+
     @Test
     void tellsTheAgentToResolveOnlyTheThreadsItActuallyFixed() {
         var posting = ConfigService.ConfigFile.defaults();
@@ -75,293 +114,51 @@ class ShipServiceTest {
         assertThat(ShipService.repliesStep(notPosting)).doesNotContain("Resolve a thread");
     }
 
-    /** No prose relayed to a model, so nothing stalls on a permission prompt and SHIPPING cannot hang. */
     @Test
-    void commitsPushesAndOpensTheReviewRequestWithoutInvolvingTheAgent() {
-        havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "Widget layout is off");
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", true)));
+    void namesTheExactTitleAndTheRepositoryWhoseRequestIsStillMissing() {
+        String instruction = ShipService.shipInstruction("ABC-42 Widget layout is off", "ABC-42",
+                List.of(new ShipService.Target("demo", "/wt", "dev", false)), "");
 
-        Outcome outcome = ship().ship("ABC-42");
-
-        ArgumentCaptor<MergeRequestSpec> spec = ArgumentCaptor.captor();
-        verify(gitService).commitAll(any(), eq(Path.of("/wt")), eq("ABC-42 Widget layout is off"));
-        verify(gitService).pushBranch(any(), eq(Path.of("/wt")), eq("ABC-42"));
-        verify(host).createOrUpdateMergeRequest(spec.capture());
-        assertThat(spec.getValue().sourceBranch()).isEqualTo("ABC-42");
-        assertThat(spec.getValue().targetBranch()).isEqualTo("main");
-        verify(stateService).updateTask(eq("ABC-42"), any());
-        verify(sessions, never()).writeTaskContext(anyString(), anyString());
-        verify(sessions, never()).appendTaskContext(anyString(), anyString());
-        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
-        assertThat(outcome.message()).contains("3 file(s), pushed, opened https://host/mr/9", "CI_POLLING");
-        assertThat(outcome.stamp()).isEqualTo("review request: https://host/mr/9");
+        assertThat(instruction).contains("EXACTLY \"ABC-42 Widget layout is off\"")
+                .contains("demo: /wt, merges into dev — NO request yet, open one")
+                .contains("Leave the description empty");
     }
 
     @Test
-    void targetsTheReviewRequestAtTheTasksOwnBaseBranchWhenItHasOne() {
-        when(stateService.task("ABC-7")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).mrUrl(null).remoteUrl("git@host:demo/demo.git").title("t")
-                .baseBranch("feature/parent").build()));
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/12", true)));
+    void asksForARoundMessageAndNoNewRequestWhereOneIsAlreadyOpen() {
+        String instruction = ShipService.shipInstruction("ABC-42 Widget layout is off", "ABC-42",
+                List.of(new ShipService.Target("demo", "/wt", "dev", true)), "");
 
-        ship().ship("ABC-7");
-
-        ArgumentCaptor<MergeRequestSpec> spec = ArgumentCaptor.captor();
-        verify(host).createOrUpdateMergeRequest(spec.capture());
-        assertThat(spec.getValue().targetBranch()).isEqualTo("feature/parent");
+        assertThat(instruction).contains("demo: /wt, merges into dev — its request is already open")
+                .contains("STARTS with \"ABC-42\"")
+                .contains("do NOT create another or retitle it");
     }
 
     @Test
-    void commitsAReviewRoundWithAMechanicalMessageBecauseTheBackendCannotDescribeTheFix() {
-        havingTask("ABC-42", TaskStatus.CI_FAILED, "https://host/mr/9", "Widget layout is off");
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
+    void tellsTheAgentWhichRepositoryOfATwoRepoTaskIsARoundBehind() {
+        String instruction = ShipService.shipInstruction("ABC-42 Widget layout is off", "ABC-42",
+                List.of(new ShipService.Target("demo", "/wt", "dev", true),
+                        new ShipService.Target("web", "/wt-web", "dev", false)), "");
 
-        Outcome outcome = ship().ship("ABC-42");
-
-        verify(gitService).commitAll(any(), any(), eq("ABC-42 address review comments"));
-        assertThat(outcome.message()).contains("updated https://host/mr/9");
-    }
-
-    /** Losing that distinction would send the human looking for an unpushed branch. */
-    @Test
-    void saysThePushLandedWhenTheHostThenRefusesTheRequest() {
-        havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "t");
-        when(host.createOrUpdateMergeRequest(any())).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> ship().ship("ABC-42"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Pushed branch ABC-42")
-                .hasMessageContaining("GitLab would not open the review request");
-    }
-
-    /** An unconfigured setup must behave as it always did: opening a request needs an API jagt lacks. */
-    @Test
-    void fallsBackToTheAgentRelayForARepositoryNoConfiguredHostOwns() {
-        havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "Widget layout is off");
-        when(host.hostsRepository(anyString())).thenReturn(false);
-
-        Outcome outcome = ship().ship("ABC-42");
-
-        verify(sessions).writeTaskContext(eq("ABC-42"), contains("This IS the human approval to ship"));
-        verify(gitService, never()).pushBranch(any(), any(), anyString());
-        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.RELAYED);
-        assertThat(outcome.message()).contains("relayed to the agent", "SHIPPING");
-        assertThat(outcome.stamp()).isEqualTo("shipping");
+        assertThat(instruction).contains("demo: /wt, merges into dev — its request is already open")
+                .contains("web: /wt-web, merges into dev — NO request yet, open one");
     }
 
     @Test
-    void refusesASecondShipWhileTheFirstIsStillRunning() {
-        havingTask("ABC-42", TaskStatus.REVIEW_PENDING, null, "t");
-        ShipService shipService = ship();
-        AtomicReference<Outcome> reentrant = new AtomicReference<>();
-        when(host.createOrUpdateMergeRequest(any())).thenAnswer(call -> {
-            reentrant.set(shipService.ship("ABC-42"));
-            return Optional.of(new MergeRequestRef("https://host/mr/9", true));
-        });
+    void asksForOneLinkBackFromATaskWithASingleRepository() {
+        String instruction = ShipService.shipInstruction("ABC-42 Widget layout is off", "ABC-42",
+                List.of(new ShipService.Target("demo", "/wt", "dev", false)), "");
 
-        shipService.ship("ABC-42");
-
-        assertThat(reentrant.get().message()).contains("already running");
-        verify(gitService, never()).commitAll(any(), any(), eq("t"));
-        verify(host).createOrUpdateMergeRequest(any());
-    }
-
-    /**
-     * Off the critical path on purpose: posting a reply needs the thread it answers, which the sweep does not
-     * carry, but a dead agent must no longer be able to block the ship itself. It APPENDS, because a sweep may
-     * have just relayed a brief and truncating it would lose the comments.
-     */
-    @Test
-    void asksTheAgentToPostItsDraftedRepliesAfterTheRequestIsUpToDate(@TempDir Path worktree) throws IOException {
-        Files.writeString(worktree.resolve("review_replies.md"), "- reply");
-        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", worktree.toString(),
-                TaskStatus.CI_FAILED).mrUrl("https://host/mr/9").remoteUrl("git@host:demo/demo.git")
-                .title("t").build()));
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
-
-        Outcome outcome = ship().ship("ABC-42");
-
-        verify(sessions).appendTaskContext(eq("ABC-42"), contains("NOTHING to commit or push"));
-        assertThat(outcome.message()).contains("drafted replies relayed");
+        assertThat(instruction).contains("CI_POLLING and reviewRequestUrl=<the url>");
     }
 
     @Test
-    void leavesTheDraftsAloneWhenTheHumanTurnedPostingOff(@TempDir Path worktree) throws IOException {
-        Files.writeString(worktree.resolve("review_replies.md"), "- reply");
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())))
-                .withCodeReview(ConfigService.ConfigFile.CodeReviewConfig.defaults()
-                        .withPostReviewReplies(false)));
-        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", worktree.toString(),
-                TaskStatus.CI_FAILED).mrUrl("https://host/mr/9").remoteUrl("git@host:demo/demo.git")
-                .title("t").build()));
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
+    void asksForOneLinkPerProjectFromATaskSpanningRepositories() {
+        String instruction = ShipService.shipInstruction("ABC-42 Widget layout is off", "ABC-42",
+                List.of(new ShipService.Target("demo", "/wt", "dev", false),
+                        new ShipService.Target("web", "/wt-web", "dev", false)), "");
 
-        Outcome outcome = ship().ship("ABC-42");
-
-        verify(sessions, never()).writeTaskContext(anyString(), anyString());
-        verify(sessions, never()).appendTaskContext(anyString(), anyString());
-        assertThat(outcome.message()).contains("yours to post");
-    }
-
-    @Test
-    void firstShipTellsTheRelayedAgentTheExactTitleAndToOpenTheRequest() {
-        String instruction = ShipService.shipInstruction(true, "ABC-42 Widget layout is off", "ABC-42", "dev", "");
-
-        assertThat(instruction).contains("EXACTLY this message: \"ABC-42 Widget layout is off\"")
-                .contains("create one via your code-host MCP");
-    }
-
-    @Test
-    void tellsARelayedAgentToOpenTheRequestWithoutADescriptionEssay() {
-        String instruction = ShipService.shipInstruction(true, "ABC-42 Widget layout is off", "ABC-42", "dev", "");
-
-        assertThat(instruction).contains("Leave the description empty");
-    }
-
-    @Test
-    void tellsARelayedAgentToKeepTheRequestTitleOnAFurtherRound() {
-        String instruction = ShipService.shipInstruction(false, "ABC-42 Widget layout is off", "ABC-42", "dev", "");
-
-        assertThat(instruction).contains("STARTS with \"ABC-42\"")
-                .contains("do NOT create a new one or retitle it")
-                .doesNotContain("EXACTLY this message");
-    }
-
-    /** Another round onto the same request does not change the status, so nothing else re-arms the window. */
-    @Test
-    void armsAFreshPollingWindowForAnotherRoundShippedOntoTheSameRequest() {
-        havingTask("ABC-42", TaskStatus.CI_POLLING, "https://host/mr/9", "Widget layout is off");
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/9", false)));
-
-        ship().ship("ABC-42");
-
-        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
-        verify(stateService).updateTask(eq("ABC-42"), update.capture());
-        TaskState before = TaskState.builder("demo", "/wt", TaskStatus.CI_POLLING)
-                .mrUrl("https://host/mr/9").mrCreatedAt(1_000L).lastPolledAt(9_000L).build();
-        TaskState after = update.getValue().apply(before);
-        assertThat(after.mrCreatedAt()).isGreaterThan(1_000L);
-        assertThat(after.lastPolledAt()).isZero();
-    }
-
-    @Test
-    void commitsPushesAndOpensARequestInEveryRepositoryTheTaskWorksIn() {
-        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
-                List.of()));
-        when(stateService.task("ABC-5")).thenReturn(Optional.of(TaskState.builder(List.of(
-                        new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
-                        new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null)),
-                TaskStatus.REVIEW_PENDING).title("Widget layout is off").build()));
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", true)),
-                        Optional.of(new MergeRequestRef("https://host/mr/2", true)));
-
-        Outcome outcome = ship().ship("ABC-5");
-
-        ArgumentCaptor<MergeRequestSpec> specs = ArgumentCaptor.captor();
-        verify(host, times(2)).createOrUpdateMergeRequest(specs.capture());
-        assertThat(specs.getAllValues()).extracting(MergeRequestSpec::remoteUrl, MergeRequestSpec::targetBranch)
-                .containsExactly(tuple("git@host:demo/demo.git", "main"),
-                        tuple("git@host:demo/web.git", "release"));
-        verify(gitService).pushBranch(any(), eq(Path.of("/wt")), eq("ABC-5"));
-        verify(gitService).pushBranch(any(), eq(Path.of("/web-wt")), eq("ABC-5"));
-        assertThat(outcome.message()).contains("demo 3 file(s), pushed", "web 3 file(s), pushed",
-                "https://host/mr/1", "https://host/mr/2");
-    }
-
-    @Test
-    void keepsBothRequestsOnTheirOwnRepositoriesAndRecordsTheRoundOnce() {
-        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
-                List.of()));
-        List<TaskRepo> repos = List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
-                new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null));
-        when(stateService.task("ABC-5")).thenReturn(Optional.of(
-                TaskState.builder(repos, TaskStatus.REVIEW_PENDING).title("Widget layout is off").build()));
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", true)),
-                        Optional.of(new MergeRequestRef("https://host/mr/2", true)));
-
-        ship().ship("ABC-5");
-
-        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
-        verify(stateService).updateTask(eq("ABC-5"), update.capture());
-        TaskState after = update.getValue().apply(TaskState.builder(repos, TaskStatus.REVIEW_PENDING).build());
-        assertThat(after.repo("demo").orElseThrow().mrUrl()).isEqualTo("https://host/mr/1");
-        assertThat(after.repo("web").orElseThrow().mrUrl()).isEqualTo("https://host/mr/2");
-        assertThat(after.mrCreatedAt()).isPositive();
-    }
-
-    @Test
-    void commitsTheOpeningTitleInARepositoryThatIsStillARoundBehind() {
-        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
-                List.of()));
-        when(stateService.task("ABC-5")).thenReturn(Optional.of(TaskState.builder(List.of(
-                        new TaskRepo("demo", "/wt", "git@host:demo/demo.git", "https://host/mr/1", null),
-                        new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null)),
-                TaskStatus.CI_POLLING).title("Widget layout is off").build()));
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", false)),
-                        Optional.of(new MergeRequestRef("https://host/mr/2", true)));
-
-        ship().ship("ABC-5");
-
-        verify(gitService).commitAll(any(), eq(Path.of("/wt")), eq("ABC-5 address review comments"));
-        verify(gitService).commitAll(any(), eq(Path.of("/web-wt")), eq("ABC-5 Widget layout is off"));
-    }
-
-    @Test
-    void refusesToShipAMultiRepoTaskWhoseRepositoriesAreNotAllHosted() {
-        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
-                List.of()));
-        when(host.hostsRepository("git@host:demo/web.git")).thenReturn(false);
-        when(stateService.task("ABC-5")).thenReturn(Optional.of(TaskState.builder(List.of(
-                        new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
-                        new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null)),
-                TaskStatus.REVIEW_PENDING).title("Widget layout is off").build()));
-
-        assertThatThrownBy(() -> ship().ship("ABC-5"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("web has no code host")
-                .hasMessageContaining("orchestrator.code-host");
-
-        verify(host, never()).createOrUpdateMergeRequest(any());
-        verify(gitService, never()).pushBranch(any(), any(), any());
-        verify(sessions, never()).writeTaskContext(anyString(), anyString());
-    }
-
-    @Test
-    void keepsTheRequestOfARepositoryThatLandedWhenALaterOneFails() {
-        when(configService.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/release", "dev",
-                List.of()));
-        List<TaskRepo> repos = List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
-                new TaskRepo("web", "/web-wt", "git@host:demo/web.git", null, null));
-        when(stateService.task("ABC-5")).thenReturn(Optional.of(
-                TaskState.builder(repos, TaskStatus.REVIEW_PENDING).title("Widget layout is off").build()));
-        when(host.createOrUpdateMergeRequest(any()))
-                .thenReturn(Optional.of(new MergeRequestRef("https://host/mr/1", true)), Optional.empty());
-
-        assertThatThrownBy(() -> ship().ship("ABC-5")).isInstanceOf(IllegalStateException.class);
-
-        ArgumentCaptor<UnaryOperator<TaskState>> saved = ArgumentCaptor.captor();
-        verify(stateService).updateTask(eq("ABC-5"), saved.capture());
-        TaskState after = saved.getValue().apply(TaskState.builder(repos, TaskStatus.REVIEW_PENDING).build());
-        assertThat(after.repo("demo").orElseThrow().mrUrl()).isEqualTo("https://host/mr/1");
-        assertThat(after.status()).isEqualTo(TaskStatus.REVIEW_PENDING);
-    }
-
-    private ShipService ship() {
-        return new ShipService(stateService, configService, gitService, sessions, List.of(host));
-    }
-
-    private void havingTask(String taskId, TaskStatus status, String requestUrl, String title) {
-        when(stateService.task(taskId)).thenReturn(Optional.of(TaskState.builder("demo", "/wt", status)
-                .mrUrl(requestUrl).remoteUrl("git@host:demo/demo.git").title(title).build()));
+        assertThat(instruction)
+                .contains("reviewRequests={\"demo\": \"<its url>\", \"web\": \"<its url>\"}");
     }
 }

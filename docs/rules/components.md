@@ -10,14 +10,11 @@ The Spring Boot app ("The Brain") **and** the Master console itself: state manag
 (`POST /mcp`), watchdog, auto-review scheduler, macOS automation. Run the jar in a real terminal — the process
 *is* the Master TUI.
 
-**Outside writes are the sub-agent's job**, via its own MCP: push, merge request, review replies. The one
-exception the backend may ever make itself is opening a task's review request over `CodeHost` (`ShipService`),
-and only with a host configured.
+**Outside writes are the sub-agent's job**, via its own MCP: push, merge request, review replies. The backend
+makes none of them, ever.
 
-Outside **reads** have two paths, both opt-in and both needing a token in the environment: a one-shot headless
-agent that inherits the human's own MCP, and the read-only `CodeHost` / `Tracker` seams
-(`orchestrator.code-host.*`, `orchestrator.tracker.*`). With neither configured, **the backend holds no
-credential at all.**
+Outside **reads** have one path: a one-shot headless agent that inherits the human's own MCP. **The backend
+holds no credential at all**, and nothing in it is configured with a host or a tracker.
 
 ### How an agent reaches the MCP server
 
@@ -157,14 +154,11 @@ all three and a card missing one is a card nobody can tell from the next.
 
 An answer that fails it is asked **again** (`TicketReader`: 5 attempts, 2s apart, bounded by two minutes so a
 launch a human is waiting on cannot hang on five CLI timeouts), because a model that never found its tracker
-tool reports precisely the `exists=false` a deleted item reports. **Only a model's negative is re-asked**: a
-configured `Tracker`'s "no such item" is a fact, and re-reading it through a paid call is the fallback that
-rule already forbids.
+tool reports precisely the `exists=false` a deleted item reports. Every negative is re-asked, because every read is a model's.
 
 A bare key whose read answers a **different** key is refused as well, naming both.
 
-The price is deliberate: every `do` now pays for one ticket read — free with a tracker configured, one metered
-model call without one.
+The price is deliberate: every `do` pays for one metered model call to read its ticket.
 
 **A source with no summary of its own is not an exception to the gate**, it is the read's job: the prompt has
 the reader write a title of its own from the description, since a reader that reached the item at all can name
@@ -201,7 +195,7 @@ non-idempotent tool.
 ### Watchdog scope is deliberate
 
 `WatchdogService.watches` alerts only for statuses where the **agent** is expected to be working: NEW,
-IN_PROGRESS, SHIPPING. Every other status idles by design (CI_POLLING waits on the code host,
+IN_PROGRESS, SHIPPING. Every other status idles by design (CI_POLLING waits on the review request,
 REVIEW_PENDING/REVIEWED/APPROVED/DEPLOY_CONFLICT on the human), and watching those turns the alert into noise.
 
 ### `WorktreeOrphanScanner` only ever looks

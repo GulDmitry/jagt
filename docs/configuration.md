@@ -132,23 +132,10 @@ Shows the agent's session inside the board when you press Focus. Needs ttyd inst
 | `orchestrator.hook-url` | `http://127.0.0.1:<port>/api/agent/session` | where an agent CLI's hooks report a stopped session |
 | `orchestrator.stub.script` | — | only for `orchestrator.agent=stub` |
 
-### Code host and tracker
-
-Both optional and **read-only**. Set them and reads cost an API call instead of a model call.
-
-| key | meaning |
-|-----|---------|
-| `orchestrator.code-host.type` | `gitlab`, `github`, or blank = off (default) |
-| `orchestrator.code-host.base-url` | the host's **web** root, e.g. `https://gitlab.example.com` |
-| `orchestrator.code-host.token` | read-only API token, e.g. `${CODE_HOST_TOKEN}` |
-| `orchestrator.tracker.type` | `jira`, or blank = off (default) |
-| `orchestrator.tracker.base-url` | the tracker root, e.g. `https://tracker.example.com` |
-| `orchestrator.tracker.user` | the account a token belongs to (Jira Cloud); blank for a self-hosted PAT |
-| `orchestrator.tracker.token` | read-only API token, e.g. `${TRACKER_TOKEN}` |
-
 ### Master assistant
 
-The one place jagt spends model money — a headless one-shot read, used when no tracker or code host covers it.
+The one place jagt spends model money, and the only way it reads a ticket or a review round: a headless
+one-shot read through the MCP servers of whoever runs jagt.
 
 | key | default | meaning |
 |-----|---------|---------|
@@ -184,10 +171,6 @@ resolves `::1` first and would cost a refused connection per call.
 serves may open a socket into the session (`--check-origin`); this key decides who may ask for that page at
 all. Widen it only on a network you trust. The panel always asks for that port on the host you opened the
 board under, so a board opened from a second machine needs a bind that machine can reach.
-
-**`code-host.base-url` is the web root, not the API root.** A review URL is only read under this prefix, and
-the API endpoints are derived from it — github.com serves its API from another host, an Enterprise install
-from its own.
 
 **`assistant.mcp-config` buys determinism, not money.** Measured cold it cost $0.09 against $0.04 for the
 inherited config, which rides the prompt cache your own sessions keep warm. Server names also lose their

@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.flow.RoundState;
-import dev.jagt.orchestrator.task.TaskLabel;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
@@ -16,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -49,6 +49,16 @@ public class AgentStatusReports {
      */
     public String report(String status, String message, String outcome, String reviewRequestUrl,
                          String taskId) {
+        return report(status, message, outcome, reviewRequestUrl, Map.of(), taskId);
+    }
+
+    /**
+     * @param requestsByProject one request per project when the ship landed in several repositories, and it
+     *                          wins over a single named one. It stays ONE round however many it names — a
+     *                          round per repository would read as several
+     */
+    public String report(String status, String message, String outcome, String reviewRequestUrl,
+                         Map<String, String> requestsByProject, String taskId) {
         TaskStatus newStatus;
         try {
             newStatus = TaskStatus.valueOf(status.trim().toUpperCase(java.util.Locale.ROOT));
@@ -57,12 +67,14 @@ public class AgentStatusReports {
                     + List.of(TaskStatus.values()));
         }
         Optional<TaskState> current = stateService.task(taskId);
-        String shortMessage = abbreviate(stated(message, outcome, current));
+        refuseUnknownProjects(requestsByProject, current, taskId);
+        String shortMessage = abbreviate(stated(message, outcome, current, taskId));
         // A message is cut down to one dashboard line, and a cut URL is a dead link. The named request wins: a
         // url is a fact, and finding it in prose is a guess about where the agent put it.
-        String url = reviewRequestUrl == null || reviewRequestUrl.isBlank()
-                ? extractUrl(message)
-                : reviewRequestUrl.strip();
+        String named = requestsByProject.isEmpty()
+                ? (reviewRequestUrl == null || reviewRequestUrl.isBlank() ? null : reviewRequestUrl.strip())
+                : sessionRepoRequest(requestsByProject, current);
+        String url = named == null ? extractUrl(message) : named;
         // The dashboard is the SSOT for "where is my request" — a linkless CI_POLLING is a lie. An agent with
         // a question hands the round back at REVIEW_PENDING instead, where the question IS what the board shows.
         if (newStatus == TaskStatus.CI_POLLING && url == null) {
@@ -80,10 +92,15 @@ public class AgentStatusReports {
             }
             // A task repeating CI_POLLING on the request it already carries is the same round; entering the
             // status, or naming another request, hands a new one over.
-            boolean sameRound = was == TaskStatus.CI_POLLING && url.equals(next.mrUrl());
-            return next.status() == TaskStatus.CI_POLLING && !sameRound
-                    ? next.withReviewRound(url)
-                    : next.withMrUrl(url);
+            boolean sameRound = was == TaskStatus.CI_POLLING && (requestsByProject.isEmpty()
+                    ? url.equals(next.mrUrl())
+                    : requestsByProject.entrySet().stream().allMatch(request ->
+                            next.reviewRequestOf(request.getKey()).filter(request.getValue()::equals).isPresent()));
+            boolean newRound = next.status() == TaskStatus.CI_POLLING && !sameRound;
+            if (!requestsByProject.isEmpty()) {
+                return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
+            }
+            return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
         });
         if (!updated) {
             throw new IllegalArgumentException("Task " + taskId + " not found in state.json");
@@ -94,14 +111,18 @@ public class AgentStatusReports {
         boolean askedNow = AgentReport.of(shortMessage) == AgentReport.QUESTION
                 && AgentReport.of(current.map(TaskState::message).orElse(null)) != AgentReport.QUESTION;
         if (landed != previous) {
-            log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
-                    .addKeyValue("status", landed).addKeyValue("from", previous)
-                    .log("<- agent {}: {}{}", TaskLabel.of(taskId, alias), landed,
-                            shortMessage == null ? "" : " — " + shortMessage);
-        } else if (askedNow) {
-            log.atInfo().addKeyValue("task", taskId).addKeyValue("alias", alias)
+            log.atInfo().setMessage("agent status changed").addKeyValue("task", taskId)
+                    .addKeyValue("alias", alias)
                     .addKeyValue("status", landed)
-                    .log("<- agent {}: {}", TaskLabel.of(taskId, alias), shortMessage);
+                    .addKeyValue("previous", previous)
+                    .addKeyValue("said", shortMessage == null ? "" : shortMessage)
+                    .log();
+        } else if (askedNow) {
+            log.atInfo().setMessage("agent asked").addKeyValue("task", taskId)
+                    .addKeyValue("alias", alias)
+                    .addKeyValue("status", landed)
+                    .addKeyValue("said", shortMessage)
+                    .log();
         }
         // A keep-alive says nothing new; a task handing control back, or stopping to ask, does.
         boolean handedBack = landed != previous
@@ -195,13 +216,16 @@ public class AgentStatusReports {
      * edited files is a diff for the human to read whatever it called itself. Nothing else here is verifiable —
      * a question is a question because the agent says so.
      */
-    private String stated(String message, String outcome, Optional<TaskState> task) {
+    private String stated(String message, String outcome, Optional<TaskState> task, String taskId) {
         AgentReport claimed = claimed(outcome, message);
         String detail = AgentReport.withoutMarker(message);
         if (claimed == AgentReport.NO_CHANGES && task.filter(worktreeChanges::anyUncommitted).isPresent()) {
-            log.atInfo().addKeyValue("task", task.get().alias())
-                    .log("report says no changes, but the worktree has uncommitted work — recorded as a round"
-                            + " with a diff");
+            log.atInfo().setMessage("report overruled").addKeyValue("task", taskId)
+                    .addKeyValue("alias", task.get().alias())
+                    .addKeyValue("claimed", "no changes")
+                    .addKeyValue("uncommitted", true)
+                    .addKeyValue("effect", "recorded as a round with a diff")
+                    .log();
             claimed = AgentReport.PLAIN;
         }
         return switch (claimed) {
@@ -224,6 +248,30 @@ public class AgentStatusReports {
 
     private static String marked(String marker, String detail) {
         return detail.isBlank() ? marker : marker + ": " + detail;
+    }
+
+    /**
+     * A key nothing in the task answers to would be dropped silently by the link itself, leaving a task that
+     * reads as shipped with a repository that holds no request.
+     */
+    private static void refuseUnknownProjects(Map<String, String> requestsByProject, Optional<TaskState> task,
+                                              String taskId) {
+        if (requestsByProject.isEmpty() || task.isEmpty()) {
+            return;
+        }
+        List<String> known = task.get().projects();
+        List<String> unknown = requestsByProject.keySet().stream().filter(key -> !known.contains(key)).toList();
+        if (!unknown.isEmpty()) {
+            throw new IllegalArgumentException("Task " + taskId + " has no " + String.join(", ", unknown)
+                    + " in it. Its projects are: " + String.join(", ", known));
+        }
+    }
+
+    /** The link a human follows first, and the one a repeat is compared against. */
+    private static String sessionRepoRequest(Map<String, String> requestsByProject, Optional<TaskState> task) {
+        String sessionRepo = task.map(state -> state.primary().project()).orElse(null);
+        return sessionRepo == null ? requestsByProject.values().iterator().next()
+                : requestsByProject.getOrDefault(sessionRepo, requestsByProject.values().iterator().next());
     }
 
     private static String extractUrl(String text) {

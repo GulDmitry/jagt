@@ -136,10 +136,10 @@ jagt refuses a move that makes no sense for a task's current status, with a sent
 
 ## Notes on the tricky ones
 
-**`ship`.** With a code host configured, jagt itself commits (title from `mrTitlePattern`), pushes the task
-branch and opens or updates the request over the host's API — no model in the path, so nothing can stall or
-reword it. Posting the drafted replies stays with the agent, as a follow-up. Without a code host, `ship` falls
-back to instructing the agent.
+**`ship`.** The agent does the work with its own code-host tools: commit (title from `mrTitlePattern`), push
+the task branch, and open or update one request **per repository** — jagt hands over the instruction and waits
+in SHIPPING until the agent reports the links back. Posting the drafted replies is part of the same
+instruction.
 
 **`sweep` and drafted replies.** A sweep only **reads and drafts**. The agent fixes locally and writes its
 intended answers to `review_replies.md`; nothing is pushed or posted until you `ship`. Read them with

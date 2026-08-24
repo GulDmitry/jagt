@@ -2,27 +2,23 @@
 
 ## A port does not declare what it can do (open)
 
-`Viewer.supports(TAB_TITLES)`, `CodeHost.supports(RESOLVES_THREADS)`: nothing can ask whether the SELECTED adapter
-carries what a capability needs. `AgentRuntime.lastSessionActivityMillis` answering 0 for "this CLI keeps no log"
-is the same hole with a magic value in it. The one consequence that costs something today is auto-review on a host
-that cannot report thread resolution: jagt relays the same comments round after round instead of refusing.
+`Viewer.supports(TAB_TITLES)`: nothing can ask whether the SELECTED adapter carries what a capability needs.
+`AgentRuntime.lastSessionActivityMillis` answering 0 for "this CLI keeps no log" is the same hole with a magic
+value in it.
 
-A small interface change plus a check. Not worth doing before a second consequence turns up.
+A small interface change plus a check. Not worth doing before a consequence turns up that costs something.
 
-## Move the code host's credentials into the orchestrator (open, conceptual)
+## An orchestrator that reads the code host and the tracker itself (concept, someday)
 
-Today jagt holds a token only when `orchestrator.code-host.*` / `tracker.*` are set; everything else reaches a
-host through the AGENT's own MCP session, i.e. the human's credentials. Making jagt the credential holder is what
-would let it do the outside reads and writes itself, deterministically, with no model in the path.
+Today every ticket and every review round is read by a model through the MCP servers of whoever runs jagt, and
+jagt holds no credential. Doing those reads — and a `ship`'s write — itself would take the model out of the
+path: one place to configure, one place to fail, every failure naming a key instead of a lost round.
 
-- For: `ship`, a review round and a resume stop depending on an agent session and on a paid read. One place to
-  configure, one place to fail, and every failure names a key instead of a lost round.
-- Against: jagt becomes a secret store. The board listens on loopback WITHOUT auth and can already deploy — with
-  credentials behind it, whoever reaches that port acts as the human on the host. `docs/rules/components.md`
-  states the current property plainly ("with neither configured, the backend holds no credential at all"), and
-  that sentence is what would have to go.
-- So the question is not the wiring (it exists) but the guarantee: what jagt must promise before it is allowed to
-  keep a token — where it is read from, what may act with it, and what the board needs before it may.
+It was built once (a `CodeHost` / `Tracker` seam over REST, removed 2026-08-24) and it never held: the wiring is
+the easy half, and the question it never answered is the guarantee. jagt would become a secret store, while the
+board listens on loopback WITHOUT auth and can already deploy — whoever reaches that port would act as the human
+on the host. What jagt must promise before it may keep a token — where it is read from, what may act with it,
+what the board needs first — is the work, not the adapters.
 
 ## What a session's hooks could also do (open, needs the owner)
 

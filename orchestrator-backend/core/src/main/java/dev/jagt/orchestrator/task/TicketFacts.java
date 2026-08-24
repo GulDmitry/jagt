@@ -4,10 +4,7 @@ import java.util.List;
 
 /**
  * The facts a launch needs about a work item.
- *
- * <p>Source-agnostic on purpose: the same facts come either from a tracker's own API
- * ({@link dev.jagt.orchestrator.port.Tracker}, free) or from a model read
- * ({@link dev.jagt.orchestrator.port.MasterAssistant}, paid), and no consumer may care which.
+
  *
  * @param exists         false = the TRACKER says there is no such item. A read that failed carries no facts
  *                       at all (empty {@code Optional}) — no caller may merge the two

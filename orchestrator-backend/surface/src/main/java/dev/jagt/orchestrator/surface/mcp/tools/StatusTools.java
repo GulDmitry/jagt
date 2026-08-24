@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.AgentStatusReports;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.pairs;
 import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 
 @Component
@@ -32,6 +33,7 @@ public class StatusTools implements McpTools {
                     "status": {"type": "string", "enum": [%s]},
                     "outcome": {"type": "string", "enum": ["progress", "question", "no_changes"], "description": "What this report says about the work, in jagt's own words rather than yours: `question` = you have STOPPED and need the human (the message is the question), `no_changes` = a review round edited no code (all comments already handled, or you pushed back on every one), `progress` = anything else. Checked where it can be: report no_changes over an edited worktree and it is recorded as a round with a diff."},
                     "reviewRequestUrl": {"type": "string", "description": "The review request this report is about. Required with CI_POLLING (jagt links it, and the board is where the human follows it)."},
+                    "reviewRequests": {"type": "object", "additionalProperties": {"type": "string"}, "description": "One request URL per project key, for a task spanning several repositories: {\\"<project>\\": \\"<url>\\"}. Give it instead of reviewRequestUrl and name EVERY repository you opened one in — it is still one round.", "examples": [{"api": "https://host/api/-/merge_requests/7", "web": "https://host/web/-/merge_requests/3"}]},
                     "message": {"type": "string", "description": "For the HUMAN, 10 words MAX — it renders as one narrow dashboard table line (longer text is truncated). No marker words: what the report MEANS is the outcome field."},
                     "taskId": {"type": "string", "description": "Optional explicit task id or alias (Master use). Sub-agents may only target their own task."}
                   },
@@ -39,6 +41,7 @@ public class StatusTools implements McpTools {
                 }""".formatted(STATUS_ENUM),
                 (args, caller) -> statusReports.report(text(args, "status"), text(args, "message"),
                         text(args, "outcome"), text(args, "reviewRequestUrl"),
+                        pairs(args, "reviewRequests"),
                         callerScope.resolve(text(args, "taskId"), caller)));
 
         tools.tool("notify_user", """

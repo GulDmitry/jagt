@@ -30,7 +30,8 @@ flowchart LR
 - **One agent per ticket**, each in its own worktree — they cannot see or break each other's code.
 - **You own every outward move.** jagt never commits to a shared branch, opens a request or deploys by itself.
 - **Two surfaces, one core** — a browser board or a terminal console. Anything one can do, the other can too.
-- **No lock-in** — tracker, code host, agent CLI, terminal, editor and notifier are all swappable in config.
+- **No lock-in** — agent CLI, terminal, editor and notifier are all swappable in config; the tracker and the
+  code host are whatever your own MCP servers reach.
 - **Free to drive** — commands are parsed and run in plain Java. No model call, no tokens, no drift.
 - **Survives everything** — agents live in tmux, state is one JSON file. Restart the backend, nothing is lost.
 

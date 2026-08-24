@@ -63,7 +63,7 @@ Neither pipeline needs Docker or a privileged runner — the container image is 
 installs from the same deps script.
 
 **Not covered, and not pretended to be:** IntelliJ, the macOS AppleScript window raise, the Warp URI scheme,
-the real `claude` CLI, and a live code host or tracker.
+the real `claude` CLI, and the MCP servers its reads need.
 
 ## Where things go
 

@@ -119,8 +119,6 @@ the gate uses the real probe. That is why a stuck SHIPPING card offers SHIP and 
 | `TaskCapability` | one per verb under `capability/` |
 | `CapabilityInterceptor` | nothing yet — the seam is there for an install to add its own step |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`) |
-| `CodeHost` | `adapter/codehost/{GitLab,GitHub}CodeHost` |
-| `Tracker` | `adapter/tracker/JiraTracker` |
 | `MasterAssistant` | `adapter/assistant/HeadlessClaudeAssistant` |
 | `Notifier` | `adapter/DesktopNotifier` — a channel; `notify/Notifications` fans out to every one it finds |
 | `Processes` | `adapter/ProcessRunner` |
@@ -154,7 +152,6 @@ Four things those rows do not fit:
 - Two equal `priority()` values are refused rather than ordered arbitrarily.
 - `do` and `resume` are named literally in `app.js` and `TaskCommandsController`, which is why a new launch
   shortcut costs the board a change.
-- A new host or tracker type must also be accepted by `startup/OutsideReadsCheck`.
 
 ## How parity is kept
 

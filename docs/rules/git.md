@@ -104,19 +104,16 @@ Four things that are not incidental:
 
 Two cases stay refusals: tracked changes in that checkout, and a branch held by **another** worktree.
 
-### `ship` is deterministic when a `CodeHost` owns the repository
+### `ship` hands the work to the agent, in every repository at once
 
-`ShipService` commits the worktree, pushes the task branch and opens or updates the review request in-process
-(`GitService.commitAll`/`pushBranch` + `CodeHost.createOrUpdateMergeRequest`), then sets CI_POLLING with the
-link. **No model on that path**, so SHIPPING is no longer a state a task can hang in.
+`ShipService` writes ONE instruction: commit, push the task branch and open or update a review request **per
+repository**, each against that repository's own target, then report every link back in one
+`update_agent_status` call (`reviewRequests` carries one URL per project, and it stays one round). jagt runs no
+git and calls no host — the agent has the code-host tools, jagt has none — and the task waits in SHIPPING until
+the links arrive.
 
-Two things stay deliberate: a review-round commit message is **mechanical** (`<task> address review comments`)
-because the backend cannot describe what the agent fixed; and posting the drafted `review_replies.md` is still
-relayed to the agent — a reply needs the thread it answers, which `ReviewFacts` does not carry — but as a
-**follow-up**, never on the critical path.
-
-With no host configured the old prose relay is kept verbatim: an unconfigured setup must behave as it always
-did.
+Naming every repository in the instruction is what makes it safe: a repository left out is a half-shipped task,
+and jagt cannot tell which half from the outside.
 
 ### All git ops under a per-repository lock
 
@@ -132,8 +129,8 @@ Never propose, add, or rely on any git hook anywhere. Enforce invariants in code
 What multiplies is **worktrees**, never agents. A task holds a list (`task/TaskRepo`, `repos.get(0)` = where
 the session runs) and every per-repo step iterates it: creation cuts a worktree each
 (`TaskProvisioning.resolveRepos` validates **all** of them before cutting **any**, and a failure part way
-unwinds the ones already cut), `ship` commits/pushes/opens a request per repository against that repository's
-own base branch, `done` deletes every worktree — the siblings hold checkouts and copied secrets nothing else
+unwinds the ones already cut), `ship` asks the agent for a commit, a push and a request per repository against that
+repository's own base branch, `done` deletes every worktree — the siblings hold checkouts and copied secrets nothing else
 would remove.
 
 A task's **own** repositories are one scope, not several: `StateService.findByWorktree` answers from any of
@@ -146,9 +143,6 @@ Three rules that are not obvious from the loop:
 (`ReviewSweepService.merged`): approved only when all are, the pipeline the single **worst** one — never a
 concatenation, which reads as "success" to the caller's own check — and each comment prefixed with the
 repository it came from. Reading only the session's request would let a green half advance the whole task.
-
-**`ship` is all-or-nothing about hosting**: one repository without a `CodeHost` sends the **whole** task down
-the prose relay, because half pushed by jagt and half asked of the agent is a state nobody can describe.
 
 **`deploy` lands in order and stops at the first conflict**, and the sentence names both sides — what is live
 on the deploy branch and what is not. A shared branch cannot be written atomically whatever jagt does, so the

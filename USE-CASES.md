@@ -22,7 +22,6 @@ re-deciding it next session. The rules live in [`AGENTS.md`](AGENTS.md), the map
 |---|---|---|
 | Something the setup needs is missing or unconfigured | start jagt | Refused, with **every** problem at once, each naming the key that fixes it |
 | A project path is missing, is no git repository, or `deployBranch` equals the base | start jagt | Refused, naming the project key |
-| `code-host.type` / `tracker.type` has a typo, or its token is unset | start jagt | Refused — otherwise every read silently falls back to a paid model call |
 | A token is set but wrong, or the host is unreachable | start jagt | Not detected. No check reaches the network; validity is the first read's business |
 | A suite or smoke script boots on a machine with no desktop | `--orchestrator.startup-checks=false` | Skips them all — they ask about a human's machine, and a runner is not one |
 | You work **on** jagt with Codex or Qwen rather than Claude | open the repository | Same rules, same MCP server: `AGENTS.md` is the one knowledge file, and each CLI has its own server declaration committed at the root |
@@ -53,7 +52,7 @@ every start) and anything over the network.
 | Two repositories that move **independently** | two tasks | Every verb is per task; one task with two statuses is not a thing |
 | One change moving two repositories (a service and its client) | `do ABC-1 api,web` | One task, one agent session, a worktree per repository. The session runs in the first named |
 | It reaches review | `ship ABC-1` | A commit, push and request **per repository**, each targeting its own base branch |
-| One of its repositories has no code host configured | `ship ABC-1` | The whole task falls back to instructing the agent — half by jagt and half by the agent describes nothing |
+| It spans repositories | `ship ABC-1` | One instruction naming every one of them: a request each, all reported back in one call as one round |
 | A round comes back | `sweep ABC-1` | Merged as the **least finished** repository: approved only when all are, the pipeline the worst one |
 | It is ready to deploy | `deploy ABC-1` | Merged and pushed repository by repository, in the order the task holds them |
 | One repository conflicts after another landed | `deploy ABC-1` | Stops there, DEPLOY_CONFLICT, and the sentence names both sides. Resolve, then `deploy` again — it continues from the one that stalled |
@@ -74,14 +73,12 @@ A deploy worktree lives at the shared `<task>-deploy` path, so the directory alo
 
 | situation | run | what happens |
 |---|---|---|
-| A tracker is configured and the ref is its own | `do ABC-1` | Title, labels and project read over the tracker's API — no model call |
-| A tracker is configured but the ref points elsewhere | `do <url>` | The headless assistant follows the URL (paid) — the one thing no configured API can do |
-| The configured tracker refuses the read | `do ABC-1` | Refused, and **no task is created**. It is not retried through a paid read |
-| The read says "does not exist" for a ticket that plainly does | `do ABC-1` | Asked again — 5 attempts, 2s apart, at most two minutes. A tracker's own 404 is a fact and is not re-asked |
+| The ref is a key or a URL | `do ABC-1`, `do <url>` | Title, labels and project read by a model through your own MCP (paid) |
+| The read says "does not exist" for a ticket that plainly does | `do ABC-1` | Asked again — 5 attempts, 2s apart, at most two minutes: a read with no tool for that host answers the same way |
 | The read answers with no key, no title or no link | `do ABC-1` | No task, and the sentence says why. A card whose ticket link is missing cannot be repaired later |
 | The item genuinely has no summary | `do ABC-1` | The read **writes** a title, at most eight words, from the description. A url is never invented |
 | The read answers about a different key | `do ABC-1` | Refused, naming both. The key becomes a branch, a directory and a tmux window |
-| No tracker at all | `do ABC-1 <project>` | The read is skipped; the task carries no title |
+| No MCP server reaches the tracker | `do ABC-1 <project>` | The read fails and names what stopped it; the task carries no title |
 | A paid read must not depend on today's MCP servers | `assistant.mcp-config` | Only the declared servers load. Determinism only — it costs **more** than inheriting |
 
 > [!NOTE]
@@ -139,7 +136,7 @@ A deploy worktree lives at the shared `<task>-deploy` path, so the directory alo
 | The request targets a branch that has since been deleted | `resume <url>` | Works. Only the next `ship` needs a target that still exists |
 | Its source branch already belongs to a task | — | Refused: a task **is** its branch, so two cannot share one |
 | Its source branch is not a legal task name (`feature/x`) | — | Refused with that branch named — the name becomes a directory and a tmux window too |
-| The URL belongs to the configured code host | `resume <url>` | Branches and title read over that host's API — no model call |
+| The URL is a review request | `resume <url>` | Branches and title read by a model through your own MCP (paid) |
 | The request lives on a host jagt was never pointed at | `resume <url>` | The headless assistant follows the URL (paid) |
 | The headless read has no working MCP server for that host | `resume <url>` | Refused as **unread**, never as missing: ERROR names what stopped the read, plus which MCP servers are down (`claude mcp list`) |
 | That probe cannot run either (no CLI, declared servers) | `resume <url>` | Says so. "Nothing is down" is only ever printed where the servers were actually asked |
@@ -151,7 +148,6 @@ GitHub specifics:
 
 | situation | what happens |
 |---|---|
-| A round is read (`code-host.type=github`) | Threads, the approval decision and the check rollup come from one GraphQL query — REST cannot say whether a thread is resolved |
 | A reviewer wrote the request in the review body, no inline thread | Relayed all the same. A "changes requested" decision never comes back as "nothing to answer" |
 | The repository requires no review, and someone approved | Counted as approved — the host reports no decision on an unprotected repo, so reviewer states are read instead |
 | A ship opens the request | Squash and delete-branch-on-merge are not sent: they are repository settings, and jagt configures no repository |
@@ -179,12 +175,11 @@ What the agent does with a comment:
 | "Where are the other comments, and what will actually be posted?" | `replies <task>` — every block of `review_replies.md` on screen. On the board, the card's drafted-replies line opens it |
 | `review_replies.md` is too long to read before shipping | The round brief prescribes the shape and is relayed every round, so a re-`sweep` re-briefs an agent that ignored it |
 | An agent writes an essay in a request, a reply or a comment | It broke the brief's "How you write", which defers to the machine's own writing skill |
-| The round came back clean, nobody approved | REVIEWED, and **nothing** is asked of the human: the owner is the code host. `deploy` stays listed for whoever needs no approval |
+| The round came back clean, nobody approved | REVIEWED, and **nothing** is asked of the human: the owner is the reviewer. `deploy` stays listed for whoever needs no approval |
 | An approval arrives | Lands unattended, and is the one thing the human is tapped for — it is now theirs to deploy |
 | "Is this request approved?" | The dot beside the MR link: filled when it is, an empty ring while it waits, absent until a read has said |
 | The pipeline goes red while the request is open | A red dot on the card, `CHECKS RED · …` on the console, and one notification the first time that run goes red |
 | The dot is red while the request itself is mergeable | Read its tip — it prints the host's word verbatim |
-| A big round with no `code-host` configured | Expect comments to go **missing**: the paid read returned 5 of 9 when measured. Configure the host before trusting a round |
 | You type `review <task>` out of habit | It runs the sweep — the old spelling still resolves, and only the new one is advertised |
 
 ## Auto-review

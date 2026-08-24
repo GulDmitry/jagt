@@ -3,7 +3,10 @@ package dev.jagt.orchestrator.surface.mcp.tools;
 import tools.jackson.databind.JsonNode;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /** Blank is absent: the protocol checks required arguments for presence, and "" would pass that check. */
 public final class ToolArgs {
@@ -29,5 +32,20 @@ public final class ToolArgs {
             }
         });
         return List.copyOf(items);
+    }
+
+    /** Insertion order is kept: the first entry is the one a reader is shown first. */
+    public static Map<String, String> pairs(JsonNode args, String field) {
+        JsonNode value = args.path(field);
+        if (!value.isObject()) {
+            return Map.of();
+        }
+        Map<String, String> pairs = new LinkedHashMap<>();
+        value.propertyStream().forEach(property -> {
+            if (!property.getValue().isNull() && !property.getValue().asText().isBlank()) {
+                pairs.put(property.getKey(), property.getValue().asText());
+            }
+        });
+        return Collections.unmodifiableMap(pairs);
     }
 }

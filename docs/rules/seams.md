@@ -14,7 +14,7 @@ interface**, selected by config, so adding a new one is "implement the interface
 The agent-agnostic task flow (create worktree → provision → launch → talk over MCP) must stay free of any
 single agent's assumptions.
 
-### The six seams
+### The four seams
 
 | seam | selected by | today |
 |------|-------------|-------|
@@ -22,14 +22,12 @@ single agent's assumptions.
 | `TerminalDriver` | `orchestrator.terminal` | kitty (default), warp |
 | `EditorDriver` | `orchestrator.editor-command` | any CLI launcher |
 | `AgentRuntime` | `orchestrator.agent` | claude (default), codex |
-| `CodeHost` | `orchestrator.code-host.type` | none (default), gitlab, github |
-| `Tracker` | `orchestrator.tracker.type` | none (default), jira |
 
 Ports live in `…port`, implementations in `…adapter`.
 
-`JsonHttp` (`…adapter.http`) is the transport both reads go over, and it is **not** a seventh seam: it exists
-so a host or a tracker is testable without a socket (every implementation's test drives a fake of it), and it
-carries only the verbs a create-or-update needs.
+**The tracker and the code host are not seams of jagt's.** They are read by a model through the MCP servers of
+whoever runs it, and jagt holds no credential for either. An orchestrator that reads them itself is an open
+idea, in `TODO.md`.
 
 ### `AgentRuntime`
 
@@ -66,61 +64,6 @@ that file carries is worse than a task that would not start.
 The bootstrap prompt therefore names **no** file: which one holds the briefing varies, and a prompt that says
 `AGENTS.md` is wrong exactly where the fallback applies.
 
-### `CodeHost`
-
-Reads of a review request (the round a sweep decides on, and the branches a `resume` adopts, so neither costs a
-model call) plus **exactly one** write: `createOrUpdateMergeRequest`, opening the artifact a human then reviews.
-
-Never a push, a merge, a comment or an approval — those belong to the human's gates or to the agent's own MCP.
-**A `CodeHost` that merges is a bug.**
-
-The write is idempotent per (source, target) and **never retitles an open request** (`ship` reruns every review
-round, and the human may have edited the title). Its one caller is `ShipService`, and only when a host is
-configured.
-
-`ReviewReader` deliberately does **not** fall back to the paid headless read when a configured host fails: that
-would spend money invisibly and hide the misconfiguration. A partial REST read must **fail whole** — "no
-unresolved comments + green pipeline" advances a task.
-
-**Which protocol a host speaks is its business, not the seam's.** GitHub's read is one GraphQL query because
-thread resolution exists nowhere in its REST API, and a round that cannot tell resolved from open relays every
-comment it ever saw, forever.
-
-Two GitHub facts a reader will not guess, and that make the difference between advising `deploy` and advising a
-fix:
-
-- The substance of a review usually sits in the review **body** rather than in inline threads, so a round read
-  from threads alone can miss the whole request — and a CHANGES_REQUESTED decision must never come back with an
-  empty comment list.
-- `reviewDecision` is only populated where the repository **requires** a review; on an unprotected repo it is
-  null however many people clicked Approve, so the reviewers' own latest states are the fallback.
-
-`base-url` is the **web** root (the prefix that decides which URLs the host may claim) and each host derives its
-own API endpoints from it — github.com serves its API from another host entirely.
-
-Two flags have no GitHub counterpart on purpose: squash and delete-branch-on-merge are **repository** settings
-there, and a `CodeHost` configures no repository.
-
-The relay **line** is shared (`adapter/codehost/RelayLine`), so an agent never has to learn a second format for
-a round.
-
-### `Tracker`
-
-Reads the one ticket a launch needs (title, labels, project) so `do <ticket>` costs no model call either.
-
-**Read-only in the strong sense**: a tracker that transitions, comments or assigns is a bug — an issue's state
-is the human's to move.
-
-`service/TicketReader` routes it exactly as `ReviewReader` routes a host, including the no-fallback rule: a
-tracker that **claimed** the ref owns it, and paying a model to retry the same read spends money invisibly and
-hides the misconfiguration.
-
-The assistant keeps one thing no configured tracker can do: follow a URL into a tracker jagt was never pointed
-at.
-
-Jira is read over the `v2` API on purpose — Cloud and Data Center both serve it, and the three fields read here
-are identical in v2 and v3.
-
 ### What a port is
 
 A new agent = one `AgentRuntime` implementation. A Linux port = new `UserNotifier` / `TerminalDriver` /
@@ -128,13 +71,14 @@ A new agent = one `AgentRuntime` implementation. A Linux port = new `UserNotifie
 
 ## Master assistant
 
-A headless one-shot, and now the **fallback**, not the path: `do <ticket>` needs the ticket read before a
-worktree or agent exists, and `service/TicketReader` takes a configured `Tracker` first, `ReviewReader` a
-configured `CodeHost` first. With both wired, the only call left is the ⌘K palette, which is a model call by
-design.
+A headless one-shot, and the **only** way jagt reads anything outside itself: `service/TicketReader` for the
+ticket a `do` needs before a worktree or agent exists, `service/ReviewReader` for the round a sweep decides on
+and the branches a `resume` adopts. The ⌘K palette is the third caller, and a model call by design.
 
-What the assistant keeps that no configured API has: it **follows a URL** into a tracker — or onto a code host
-— jagt was never pointed at.
+What it can do that no configured API could: **follow a URL** into a tracker or onto a code host jagt was never
+told about. What it cannot: reach a server that only an interactive login authenticates — a print-mode session
+authenticates none, and plugin-scoped servers do not load in it at all. Such a server has to be declared to the
+read with `orchestrator.assistant.mcp-config`.
 
 ### How it runs
 

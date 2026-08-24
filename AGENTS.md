@@ -29,7 +29,7 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 | git, `ship`, `deploy`, `revert`, worktrees, multi-repo | [`docs/rules/git.md`](docs/rules/git.md) |
 | a review round, drafted replies, auto-review, jobs | [`docs/rules/review.md`](docs/rules/review.md) |
 | a terminal, tmux, a spawned process | [`docs/rules/runtime.md`](docs/rules/runtime.md) |
-| a seam (agent, code host, tracker, OS), the assistant | [`docs/rules/seams.md`](docs/rules/seams.md) |
+| a seam (agent, terminal, editor, OS), the assistant | [`docs/rules/seams.md`](docs/rules/seams.md) |
 | `state.json`, task creation, MCP scoping, startup checks | [`docs/rules/components.md`](docs/rules/components.md) |
 | a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
 | a comment, a doc, a prompt, the shape of a class | [`docs/rules/style.md`](docs/rules/style.md) |

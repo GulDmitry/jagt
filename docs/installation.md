@@ -57,20 +57,14 @@ Add at least one project to `config.json` — see [Configuration](configuration.
 If something is missing or half-configured, jagt refuses to start and prints the **whole** list of problems,
 each line naming the key that fixes it. Fix them all, start again.
 
-## Optional: no model calls for reads
+## Reads cost a model call
 
-By default jagt pays for a small model call to read a ticket or a review round. Point it at your tracker and
-code host and those reads become free API calls:
+Every ticket and review-round read is a headless model call that uses **your** MCP servers — jagt holds no
+credential and talks to no service itself. A tracker or code-host server that only an interactive login can
+reach cannot answer one: declare a token-based server for it with
+`orchestrator.assistant.mcp-config`.
 
-```yaml
-orchestrator:
-  tracker:   { type: jira,   base-url: https://tracker.example.com, token: "${TRACKER_TOKEN}" }
-  code-host: { type: gitlab, base-url: https://gitlab.example.com,  token: "${CODE_HOST_TOKEN}" }
-```
-
-Both tokens are **read-only**: jagt never transitions an issue, never pushes, merges or comments.
-
-Worth it if you turn on auto-review — 24 h of polling one request costs $3–$7 without it.
+Budget for it before turning auto-review on: 24 h of polling one request costs $3–$7.
 
 ## Notes
 

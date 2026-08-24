@@ -93,10 +93,10 @@ Two matrices, on purpose:
 - `ReviewRoundCase` × `ReviewAndDeployFlowTest` — everything between (ship, a round, deploy, revert, resume) on
   **one** combination, because a review round does not vary with how terminals are arranged. There the verbs go
   through the board's own HTTP endpoints and the agent reports over `POST /mcp` with its worktree header, so
-  origins (`board` vs `mcp`) are asserted end to end and a surface cannot drift from the core. Its two doubles
-  are `FakeCodeHost` and `MasterAssistant` — the second is a **guard** rather than a stub: nothing in these
-  flows may reach a model any more, so a read that stopped routing through the host fails the run instead of
-  paying for it.
+  origins (`board` vs `mcp`) are asserted end to end and a surface cannot drift from the core. Its one double is
+  `MasterAssistant`: the round and the request a resume adopts are stubbed on it, and the agent's own half of a
+  ship — commit, push, request — is driven by the test, because that is what jagt asks of an agent rather than
+  doing itself.
 
 ### Linux is testable from a Mac
 

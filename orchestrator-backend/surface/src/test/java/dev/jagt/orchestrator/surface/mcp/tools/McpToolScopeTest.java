@@ -88,7 +88,7 @@ class McpToolScopeTest {
 
         handler.call(args("{\"status\":\"IN_PROGRESS\",\"message\":\"working\"}"), "MINE-1");
 
-        verify(statusReports).report("IN_PROGRESS", "working", null, null, "MINE-1");
+        verify(statusReports).report("IN_PROGRESS", "working", null, null, java.util.Map.of(), "MINE-1");
     }
 
     @Test

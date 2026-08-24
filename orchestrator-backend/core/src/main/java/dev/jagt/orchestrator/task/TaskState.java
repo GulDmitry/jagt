@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * One task, as {@code state.json} holds it.
@@ -137,6 +138,13 @@ public record TaskState(
     @JsonIgnore
     public java.util.Optional<TaskRepo> repo(String project) {
         return repos.stream().filter(r -> r.project() != null && r.project().equals(project)).findFirst();
+    }
+
+    /** Empty when that project is not one of the task's, or holds no request yet. */
+    @JsonIgnore
+    public Optional<String> reviewRequestOf(String project) {
+        return repos.stream().filter(repo -> repo.project().equals(project))
+                .map(TaskRepo::mrUrl).filter(url -> url != null && !url.isBlank()).findFirst();
     }
 
     /** True when ANY of the repos has a review request open. */

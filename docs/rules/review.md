@@ -58,7 +58,7 @@ same unresolved threads. So NO_CHANGES highlights nothing and says the open thre
 The sweep relays every **unresolved** one (`resolvable && !resolved`), so a comment the agent pushed back on
 comes back every round forever.
 
-The agent therefore resolves — at **ship** time, with its own MCP, never jagt's `CodeHost`
+The agent therefore resolves — at **ship** time, with its own MCP
 (`ShipService.repliesStep`) — **only** the threads whose code it actually changed. A thread it disagreed with
 or asked about stays unresolved: that disagreement is the reviewer's to settle, and resolving it would read as
 agreement.

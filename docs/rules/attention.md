@@ -83,7 +83,7 @@ caller that only wants the sentence keeps the four-argument `forTask`.
 ### Work handed in and waiting for a reviewer is not an action required
 
 The owner's rule, 2026-08-20. REVIEWED means "nothing unresolved, checks green, **not** approved" — the status
-*before* an approval. Its owner is the **code host**, nothing is highlighted on the card, and no desktop ping
+*before* an approval. Its owner is the **review request**, nothing is highlighted on the card, and no desktop ping
 goes out. `deploy` stays in the action list for an install that needs no approval, because gating it was
 already decided against.
 

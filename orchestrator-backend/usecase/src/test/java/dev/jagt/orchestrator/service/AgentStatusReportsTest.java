@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
@@ -19,6 +21,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -71,6 +75,53 @@ class AgentStatusReportsTest {
                 "https://gitlab/x/-/merge_requests/9", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo("https://gitlab/x/-/merge_requests/9");
+    }
+
+    @Test
+    void linksEveryRepositoryToItsOwnRequestAndRecordsOneRound(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", null, null),
+                        new TaskRepo("web", "/wt-web", "git@host:web.git", null, null))).build());
+
+        reports(state).report("CI_POLLING", "requests up", null, null,
+                Map.of("proj", "https://host/proj/-/merge_requests/9",
+                        "web", "https://host/web/-/merge_requests/3"), "ABC-1");
+
+        TaskState reported = state.task("ABC-1").orElseThrow();
+        assertThat(reported.repos()).extracting(TaskRepo::mrUrl)
+                .containsExactly("https://host/proj/-/merge_requests/9", "https://host/web/-/merge_requests/3");
+        assertThat(reported.history()).extracting(StatusChange::status)
+                .containsOnlyOnce(TaskStatus.CI_POLLING);
+    }
+
+    @Test
+    void refusesARequestReportedUnderAProjectTheTaskDoesNotHold(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+
+        assertThatThrownBy(() -> reports(state).report("CI_POLLING", "requests up", null, null,
+                Map.of("frontend", "https://host/x/-/merge_requests/9"), "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("has no frontend in it")
+                .hasMessageContaining("proj");
+    }
+
+    @Test
+    void armsAFreshRoundWhenASecondRepositoryFinallyOpensItsRequest(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
+                .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", "https://host/proj/mr/9", null),
+                        new TaskRepo("web", "/wt-web", "git@host:web.git", null, null)))
+                .mrCreatedAt(1_000L).lastPolledAt(9_000L).build());
+
+        reports(state).report("CI_POLLING", "web is up too", null, null,
+                Map.of("proj", "https://host/proj/mr/9", "web", "https://host/web/mr/3"), "ABC-1");
+
+        TaskState reported = state.task("ABC-1").orElseThrow();
+        assertThat(reported.reviewRequestOf("web")).contains("https://host/web/mr/3");
+        assertThat(reported.mrCreatedAt()).isGreaterThan(1_000L);
+        assertThat(reported.lastPolledAt()).isZero();
     }
 
     /** The marker is jagt's vocabulary, so the agent picks the outcome and jagt writes the word. */

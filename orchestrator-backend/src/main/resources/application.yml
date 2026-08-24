@@ -83,18 +83,6 @@ orchestrator:
     # declared file's ${ENV} placeholders and the model resolve as usual; only the server list is pinned.
     # Measured cold: it costs MORE than inheriting, which rides the prompt cache the human's own sessions keep warm.
     # mcp-config: /path/to/mcp-servers.json
-  # Blank type = not wired, and reading a ticket falls back to a paid headless read.
-  tracker:
-    type: ${TRACKER_TYPE:}            # jira; blank = disabled
-    base-url: ${TRACKER_URL:}         # https://tracker.example.com — refs are only read under this prefix
-    user: ${TRACKER_USER:}            # the account an API token belongs to; blank = the token stands alone
-    token: ${TRACKER_TOKEN:}          # read-only API token; keep it in the environment, never in a file
-  # Blank type = not wired, and the review sweep falls back to a paid headless read.
-  code-host:
-    type: ${CODE_HOST_TYPE:}          # gitlab | github; blank = disabled
-    base-url: ${CODE_HOST_URL:}       # the WEB root (https://gitlab.example.com, https://github.com) — URLs
-                                      # are only read under this prefix, and API endpoints are derived from it
-    token: ${CODE_HOST_TOKEN:}        # read-only API token; keep it in the environment, never in a file
   # Opt-in for RAM-constrained setups; disabling an LSP plugin buys memory and costs the agent its
   # code intelligence.
   # agent-disabled-plugins:
