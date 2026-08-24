@@ -371,7 +371,7 @@ class ReviewAndDeployFlowTest {
     }
 
     private String act(String action) throws Exception {
-        return post("/api/tasks/" + TASK + "/actions/" + action, "", Map.of());
+        return post("/api/tasks/actions/" + action + "?task=" + TASK, "", Map.of());
     }
 
     private String post(String path, String body, Map<String, String> headers) throws Exception {

@@ -53,6 +53,11 @@ class ToolGateTest {
     }
 
     @Test
+    void letsATaskWhoseBranchOpensWithAHashPushItQuoted() {
+        assertThat(ToolGate.refusal("Bash", "git push origin '#123'", "#123")).isEmpty();
+    }
+
+    @Test
     void refusesAPushThatNamesNoBranchBecauseTheConfigWouldDecide() {
         assertThat(ToolGate.refusal("Bash", "git push", "ABC-42")).get()
                 .asString().contains("names no branch");

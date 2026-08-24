@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
@@ -151,7 +152,7 @@ public class WorktreeOrphanScanner implements Job {
     private Set<String> ownedDirectoryNames() {
         Set<String> owned = new java.util.HashSet<>();
         stateService.tasks().forEach((taskId, task) -> {
-            owned.add(taskId + "-deploy");
+            owned.add(TaskName.slug(taskId) + "-deploy");
             task.repos().stream()
                     .map(TaskRepo::worktreePath)
                     .filter(path -> path != null && !path.isBlank())

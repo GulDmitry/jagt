@@ -115,8 +115,11 @@ public final class ToolGate {
         boolean valueExpected = false;
         for (String raw : arguments) {
             String argument = unquoted(raw);
-            if (argument.isBlank() || argument.startsWith("#") || argument.contains(">")
-                    || argument.contains("<") || "&".equals(argument)) {
+            // The shell's own words end the command; a QUOTED word is data, and a branch may be named `#123`.
+            boolean shellSyntax = argument.equals(raw)
+                    && (argument.startsWith("#") || argument.contains(">") || argument.contains("<")
+                    || "&".equals(argument));
+            if (argument.isBlank() || shellSyntax) {
                 break;
             }
             if (valueExpected) {

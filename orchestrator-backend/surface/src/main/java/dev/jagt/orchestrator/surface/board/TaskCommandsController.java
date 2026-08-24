@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -39,8 +40,8 @@ public class TaskCommandsController {
      * renamed FROM, which is accepted where a human types and nowhere else. A page still offering the old id is
      * a stale page, and it reloads.
      */
-    @PostMapping("/tasks/{taskId}/actions/{actionId}")
-    public ActionResult act(@PathVariable String taskId, @PathVariable String actionId) {
+    @PostMapping("/tasks/actions/{actionId}")
+    public ActionResult act(@RequestParam("task") String taskId, @PathVariable String actionId) {
         TaskAction action = TaskAction.byId(actionId).orElseThrow(() ->
                 new IllegalArgumentException("Unknown action '" + actionId + "'"));
         return new ActionResult(commands.execute(taskId, action));

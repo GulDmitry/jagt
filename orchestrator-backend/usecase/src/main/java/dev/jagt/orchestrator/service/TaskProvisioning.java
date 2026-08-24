@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +25,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TaskProvisioning {
 
-    private static final String ID_CHARS = "A-Za-z0-9_-";
-    private static final Pattern SAFE_ID = Pattern.compile("[A-Za-z0-9][" + ID_CHARS + "]{0,63}");
-    private static final Pattern ID_CHAR = Pattern.compile("[" + ID_CHARS + "]");
+    private static final Pattern SAFE_KEY = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_-]{0,63}");
 
     private final ConfigService configService;
     private final StateService stateService;
@@ -48,13 +47,22 @@ public class TaskProvisioning {
 
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();
-        requireSafeId(taskId, "taskId");
+        TaskName.require(taskId, "taskId");
         boolean plan = AgentSessions.planMode(request.mode());
         GitService.BranchStrategy strategy = parseBranchStrategy(request.branchStrategy());
         if (stateService.task(taskId).isPresent()) {
             throw new IllegalArgumentException("Task " + taskId + " is already registered in state.json. "
                     + "Use open_task_tab to respawn its agent or remove_task to retire it first.");
         }
+        // Two branches flatten to one directory, and cutting the second clears the first as a stale worktree.
+        stateService.tasks().keySet().stream()
+                .filter(registered -> TaskName.slug(registered).equals(TaskName.slug(taskId)))
+                .findFirst()
+                .ifPresent(registered -> {
+                    throw new IllegalArgumentException("Task " + taskId + " and " + registered + " both become"
+                            + " the directory " + TaskName.slug(taskId) + ". Retire " + registered
+                            + " first, or take a different branch.");
+                });
         ConfigService.ConfigFile config = configService.load();
         List<NewRepo> repos = resolveRepos(request, config, strategy);
         NewRepo session = repos.get(0);
@@ -90,7 +98,7 @@ public class TaskProvisioning {
                                        GitService.BranchStrategy strategy) {
         List<NewRepo> repos = new ArrayList<>();
         for (String projectKey : request.projectKeys()) {
-            requireSafeId(projectKey, "projectKey");
+            requireSafeProjectKey(projectKey);
             ProjectConfig project = config.projects().get(projectKey);
             if (project == null) {
                 throw new IllegalArgumentException(
@@ -102,7 +110,7 @@ public class TaskProvisioning {
                 requireOnOrigin(override, projectKey, projectPath, strategy);
             }
             repos.add(new NewRepo(projectKey, project, projectPath,
-                    projectPath.getParent().resolve(request.taskId() + "-" + projectKey),
+                    projectPath.getParent().resolve(TaskName.slug(request.taskId()) + "-" + projectKey),
                     gitService.gitCommonDir(projectPath),
                     override != null ? override : project.baseBranch(),
                     gitService.remoteUrl(projectPath), repos.isEmpty()));
@@ -194,41 +202,11 @@ public class TaskProvisioning {
         }
     }
 
-    public static void requireSafeId(String value, String name) {
-        String reason = unsafeIdReason(value);
-        if (reason != null) {
-            throw new IllegalArgumentException("Argument '" + name + "' must match " + SAFE_ID.pattern()
-                    + " (it becomes a branch, directory and tmux window name): " + reason + "; got: " + value);
+    /** A project key is a config key and a directory suffix, not a branch — it stays plain. */
+    private static void requireSafeProjectKey(String value) {
+        if (value == null || !SAFE_KEY.matcher(value).matches()) {
+            throw new IllegalArgumentException("Argument 'projectKey' must match " + SAFE_KEY.pattern()
+                    + "; got: " + value);
         }
-    }
-
-    private static boolean isSafeId(String value) {
-        return value != null && SAFE_ID.matcher(value).matches();
-    }
-
-    /**
-     * Names the one thing that makes {@code value} unusable, or null when it is usable — the allowed set alone
-     * never tells a reader which character of theirs broke it.
-     */
-    public static String unsafeIdReason(String value) {
-        if (isSafeId(value)) {
-            return null;
-        }
-        if (value == null || value.isEmpty()) {
-            return "it is empty";
-        }
-        String offender = value.codePoints().mapToObj(Character::toString)
-                .filter(c -> !ID_CHAR.matcher(c).matches())
-                .findFirst().orElse(null);
-        if (offender != null) {
-            return "'" + offender + "' is not allowed";
-        }
-        if (value.charAt(0) == '-' || value.charAt(0) == '_') {
-            return "it starts with '" + value.charAt(0) + "'";
-        }
-        if (value.length() > 64) {
-            return "it is longer than 64 characters";
-        }
-        return "it must match " + SAFE_ID.pattern();
     }
 }

@@ -35,7 +35,7 @@ export async function run(taskId, actionId) {
   hold(task, action);
   render();
   try {
-    const result = await api(`/api/tasks/${encodeURIComponent(task.id)}/actions/${action.id}`, {method: 'POST'});
+    const result = await api(`/api/tasks/actions/${action.id}?task=${encodeURIComponent(task.id)}`, {method: 'POST'});
     toast(result.message);
     if (action.id === 'focus') await openTerminal(task);
   } catch (e) {

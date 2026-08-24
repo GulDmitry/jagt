@@ -63,7 +63,7 @@ every start) and anything over the network.
 | Taking it back out | `revert ABC-1` | Reverse order, only what landed. Each forgets its merge commit as it comes out, so a repeat touches only what is still live |
 | On the card | — | One `<project> MR` link per repository and no age on any: there is one stamp for the whole task |
 
-A deploy worktree lives at the shared `<task>-deploy` path, so the directory alone decides nothing:
+A deploy worktree lives at the shared `<flattened task>-deploy` path, so the directory alone decides nothing:
 
 | situation | what happens |
 |---|---|
@@ -137,7 +137,7 @@ A deploy worktree lives at the shared `<task>-deploy` path, so the directory alo
 | The request does not target the base branch | `resume <url>` | Nothing special — its own target is stored, so the next `ship` updates that request |
 | The request targets a branch that has since been deleted | `resume <url>` | Works. Only the next `ship` needs a target that still exists |
 | Its source branch already belongs to a task | — | Refused: a task **is** its branch, so two cannot share one |
-| Its source branch is not a legal task name (`feature/x`) | — | Refused with that branch and the one character that broke it named (`'/' is not allowed`) |
+| Its source branch is someone else's convention (`feature/x`) | `resume <url>` | Taken over as-is: a task id is any git branch name. The worktree directory is the flattened `feature-x-<project>` |
 | The URL is a review request | `resume <url>` | Branches and title read by a model through your own MCP (paid) |
 | The request lives on a host jagt was never pointed at | `resume <url>` | The headless assistant follows the URL (paid) |
 | The headless read has no working MCP server for that host | `resume <url>` | Refused as **unread**, never as missing: ERROR names what stopped the read, plus which MCP servers are down (`claude mcp list`) |

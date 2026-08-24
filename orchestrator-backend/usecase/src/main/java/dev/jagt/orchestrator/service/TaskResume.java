@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.task.GitRemote;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewRequestTitle;
+import dev.jagt.orchestrator.task.TaskName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -42,12 +43,10 @@ public class TaskResume {
         if (taskId == null || taskId.isBlank()) {
             return "error: the review request names no source branch: " + reviewRequestUrl;
         }
-        // Someone else's branch is not bound by jagt's naming, and a task IS its branch — so say which branch
-        // and why, instead of letting the generic id check report a regex the human never typed.
-        String unusable = TaskProvisioning.unsafeIdReason(taskId);
+        String unusable = TaskName.unusableReason(taskId);
         if (unusable != null) {
             return "error: branch '" + taskId + "' cannot be a task name (" + unusable
-                    + "; it becomes a directory and a tmux window too). Try `do <ticket> from " + taskId + "`.";
+                    + "). Try `do <ticket> from " + taskId + "`.";
         }
         String result = link(taskId, reviewRequestUrl, request.get().title(), request.get().targetBranch());
         reviewReader.charge(taskId, read.usage());       // the task exists only now
@@ -58,7 +57,7 @@ public class TaskResume {
         if (mrUrl == null || !mrUrl.contains("http")) {
             throw new IllegalArgumentException("resume needs the request url: resume <ticket> <request-url>");
         }
-        TaskProvisioning.requireSafeId(taskId, "taskId");
+        TaskName.require(taskId, "taskId");
         String instructions = "Reopened for review. Your branch is resumed with its existing commits and"
                 + " review request " + mrUrl + " is open — there is NOTHING to build or commit right now."
                 + " Do NOT re-implement, and"

@@ -42,7 +42,7 @@ function closeOnBackdrop(dialog) {
 export async function openTerminal(task) {
   let port;
   try {
-    ({port} = await api(`/api/tasks/${encodeURIComponent(task.id)}/terminal`, {method: 'POST'}));
+    ({port} = await api(`/api/tasks/terminal?task=${encodeURIComponent(task.id)}`, {method: 'POST'}));
   } catch (e) {
     toast(refusal(e), true);      // no port is silence; a refusal is not, or a gone task reads as "not set up"
     return;

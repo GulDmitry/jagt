@@ -179,8 +179,10 @@ X-Working-Directory scoping is enforced in `surface/mcp/CallerScope`, and its wi
 `McpToolScopeTest` pins — the rule was real for three tools and **missing from four** until 2026-08-14, so a
 new tool taking a taskId gets a row in that test, not a promise.
 
-`initialize_task` / `remove_task` / `deploy_task` / `revert_task` are Master-only. Task ids are validated
-(`[A-Za-z0-9][A-Za-z0-9_-]*`) — they become branch, directory and tmux names.
+`initialize_task` / `remove_task` / `deploy_task` / `revert_task` are Master-only. **A task id is any name git
+accepts as a branch** (`core/task/TaskName`), because a task IS its branch — `feature/PAN-42` and
+`hotfix/but/whatever` included. What such a name cannot be is a file: every directory, tmux session, socket and
+temp file goes through `TaskName.slug`, which is the only flat form.
 
 Every MCP tool call from a registered worktree bumps `lastActiveTimestamp` (the watchdog keep-alive).
 

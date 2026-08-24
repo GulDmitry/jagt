@@ -80,15 +80,30 @@ class TaskResumeTest {
         assertThat(resume.resume("https://host/mr/1")).contains("no such review request");
     }
 
+    @Test
+    void takesOverABranchNamedBySomeoneElsesConvention() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("proj", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        when(git.remoteUrl(Path.of("/p"))).thenReturn("git@host:group/proj.git");
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/426"))
+                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "feature/widget-layout",
+                        "main", "Widget layout is off")), TokenUsage.NONE));
+
+        resume.resume("https://host/group/proj/-/merge_requests/426");
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue().taskId()).isEqualTo("feature/widget-layout");
+    }
+
     /**
-     * Taking over someone else's request means taking over a branch named by someone else's convention, and a
-     * jagt task IS its branch (also a directory and a tmux window). Naming the branch and the way out beats
-     * the generic id check reporting a regex against a name the human never typed.
+     * The host answers with whatever it holds, and a name git itself would refuse cannot become a task — so
+     * say which part of it is refused, not which set of characters is allowed.
      */
     @ParameterizedTest
     @CsvSource(quoteCharacter = '"', value = {
-            "feature/widget-layout, \"'/' is not allowed\"",
             "-widget-layout, \"it starts with '-'\"",
+            "feature/.widget, \"a part of it starts with '.'\"",
     })
     void namesWhatInASourceBranchStopsItFromBecomingATask(String branch, String reason) {
         when(reviewReader.readRequest("https://host/mr/426")).thenReturn(new Answer<>(
@@ -116,9 +131,9 @@ class TaskResumeTest {
      */
     @Test
     void refusesAnUnusableTicketIdBeforeResolvingTheProjectFromTheMrUrl() {
-        assertThatThrownBy(() -> resume.link("feature/X", "https://host/mr/1", null, null))
+        assertThatThrownBy(() -> resume.link("a b", "https://host/mr/1", null, null))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("must match");
+                .hasMessageContaining("is not a branch name");
         verifyNoInteractions(git, provisioning);
     }
 

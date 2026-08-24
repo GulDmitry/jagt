@@ -208,7 +208,7 @@ requests against one stamp, so those links are named by project and ageless.
 
 With `orchestrator.web-terminal.enabled`, a Focus click on the board also opens the task's tmux session in a
 `<dialog>`. `adapter/TtydWebTerminal` serves **one ttyd per tmux session** (not per task — a task is a window
-inside one), and `POST /api/tasks/{id}/terminal` hands back its address, `null` meaning none is configured.
+inside one), and `POST /api/tasks/terminal?task=<id>` hands back its address, `null` meaning none is configured.
 
 It selects no window and executes nothing; the action itself still goes through `CommandService`, so the
 console keeps raising the native viewer and the card grows no button outside `Move.actions()`.

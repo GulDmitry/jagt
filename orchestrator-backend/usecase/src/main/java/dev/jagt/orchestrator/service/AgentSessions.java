@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.port.SessionHost;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import lombok.RequiredArgsConstructor;
@@ -207,7 +208,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         String base = sessions.sessionName(config.viewer().tmuxSession());
         return config.viewer().sharedView()
                 ? base
-                : base + "-" + taskId;
+                : base + "-" + TaskName.slug(taskId);
     }
 
     /** `plan` = the agent plans first and the human approves the plan in its window; `auto` = straight to work. */

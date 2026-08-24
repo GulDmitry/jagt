@@ -3,8 +3,8 @@ package dev.jagt.orchestrator.surface.board;
 import dev.jagt.orchestrator.port.WebTerminal;
 import dev.jagt.orchestrator.service.AgentSessions;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,8 +26,8 @@ public class AgentTerminalController {
     private final AgentSessions sessions;
     private final WebTerminal webTerminal;
 
-    @PostMapping("/tasks/{taskId}/terminal")
-    public Terminal terminal(@PathVariable String taskId) {
+    @PostMapping("/tasks/terminal")
+    public Terminal terminal(@RequestParam("task") String taskId) {
         OptionalInt port = webTerminal.serve(sessions.sessionOf(taskId));
         return new Terminal(port.isPresent() ? port.getAsInt() : null);
     }

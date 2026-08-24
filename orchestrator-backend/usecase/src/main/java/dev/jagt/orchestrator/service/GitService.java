@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
+import dev.jagt.orchestrator.task.TaskName;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -508,7 +509,8 @@ public class GitService {
     }
 
     public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
-        return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-deploy");
+        return projectPath.toAbsolutePath().normalize().getParent()
+                .resolve(TaskName.slug(sourceBranch) + "-deploy");
     }
 
     /**
@@ -571,7 +573,8 @@ public class GitService {
 
     /** Where a revert is staged — separate from the deploy worktree, which may be sitting in a conflict. */
     public static Path revertWorktreePath(Path projectPath, String sourceBranch) {
-        return projectPath.toAbsolutePath().normalize().getParent().resolve(sourceBranch + "-revert");
+        return projectPath.toAbsolutePath().normalize().getParent()
+                .resolve(TaskName.slug(sourceBranch) + "-revert");
     }
 
     /** Best-effort: nothing is thrown when the removal fails. */
@@ -662,7 +665,7 @@ public class GitService {
         return withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jagt-diff-" + taskId);
+            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jagt-diff-" + TaskName.slug(taskId));
             clearWorktreePath(projectPath, temp);
             processRunner.run(projectPath, GIT_TIMEOUT,
                             List.of("git", "worktree", "add", "--detach", temp.toString(), baseBranch))
@@ -678,11 +681,11 @@ public class GitService {
      */
     public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
-            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jagt-diff-new-" + taskId);
+            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jagt-diff-new-" + TaskName.slug(taskId));
             clearWorktreePath(projectPath, temp);
             Path index;
             try {
-                index = Files.createTempFile("jagt-diff-index-" + taskId + "-", "");
+                index = Files.createTempFile("jagt-diff-index-" + TaskName.slug(taskId) + "-", "");
             } catch (IOException e) {
                 throw new UncheckedIOException("Cannot allocate temp git index for diff of " + taskId, e);
             }

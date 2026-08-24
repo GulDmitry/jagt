@@ -81,14 +81,45 @@ class TaskProvisioningTest {
         return new TaskProvisioning(config, state, git, sessions, setup);
     }
 
-    /** A task id becomes a branch name, a directory name and a tmux window name — so it is validated first. */
+    /** A task id becomes a branch name, so it is validated first — against what git itself accepts. */
     @ParameterizedTest
-    @ValueSource(strings = {"feature/X", "../escape", "a b"})
-    void rejectsTaskIdBeforeTouchingGitWhenItCannotBeABranchName(String unsafeTaskId) {
+    @ValueSource(strings = {"../escape", "a b", "-lead", "feature/", "feature//x", "x.lock"})
+    void rejectsTaskIdBeforeTouchingGitWhenGitWouldRefuseItAsABranch(String unsafeTaskId) {
         assertThatThrownBy(() -> provisioning().initializeTask(NewTask.builder(unsafeTaskId, "proj").build()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("must match");
+                .hasMessageContaining("is not a branch name");
         verifyNoInteractions(git);
+    }
+
+    @Test
+    void cutsOneFlatWorktreeForASlashedBranchTakenOverFromSomeoneElse() throws Exception {
+        Files.createDirectories(root.resolve("feature-PAN-42-proj"));
+        Path projectPath = withProject("proj");
+        when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
+        when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+
+        provisioning().initializeTask(NewTask.builder("feature/PAN-42", "proj").build());
+
+        verify(git).createWorktree(projectPath.toAbsolutePath().normalize(), root.resolve("feature-PAN-42-proj"),
+                "feature/PAN-42", "origin/main", GitService.BranchStrategy.FRESH);
+    }
+
+    /**
+     * Two branches flatten to one directory, and cutting the second clears the first as a stale worktree —
+     * uncommitted work included.
+     */
+    @Test
+    void refusesASecondTaskWhoseBranchBecomesTheDirectoryOfALiveOne() throws Exception {
+        Files.createDirectories(root.resolve("feature-PAN-42-proj"));
+        withProject("proj");
+        when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
+        when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        provisioning().initializeTask(NewTask.builder("feature/PAN-42", "proj").build());
+
+        assertThatThrownBy(() -> provisioning().initializeTask(
+                NewTask.builder("feature-PAN-42", "proj").build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("both become the directory feature-PAN-42");
     }
 
     @Test
