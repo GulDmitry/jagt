@@ -8,6 +8,7 @@
 // THIS file only WIRES them together — which is why no module has to know that another one exists, and why
 // nothing below it reaches for a node it did not create.
 
+import * as store from './core/store.js';
 import {run} from './ui/act.js';
 import {openReport, showReport} from './ui/dialogs.js';
 import * as filters from './ui/filters.js';
@@ -24,7 +25,8 @@ const live = document.getElementById('live');
 
 onClick({
   action: run,
-  report: (id, about) => openReport(`${id} ${about}`, `/api/commands/${id}?about=${encodeURIComponent(about)}`),
+  report: (id, about) => openReport(`${id} ${store.nameOf(about)}`,
+    `/api/commands/${id}?about=${encodeURIComponent(about)}`),
 });
 header.onNarrow(render);
 filters.onChange(render);

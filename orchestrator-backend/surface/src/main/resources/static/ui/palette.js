@@ -121,7 +121,7 @@ async function runParsed(parsed) {
   // all of them.
   if (verb.report) {
     const about = argument ? `?about=${encodeURIComponent(argument)}` : '';
-    showReport(`${verb.id} ${argument}`.trim(),
+    showReport(`${verb.id} ${store.nameOf(argument)}`.trim(),
       await text(`/api/commands/${encodeURIComponent(verb.id)}${about}`));
     return `${verb.id} ${argument}`.trim();
   }

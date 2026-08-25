@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Refusal;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
+import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
@@ -464,6 +465,23 @@ class BoardPageTest {
     }
 
     /**
+     * Comments keep arriving on an open request, and the next of them may be the answer — so a round the poll is
+     * still reading is the human's whenever, not an alarm they learn to scroll past.
+     */
+    @Test
+    void doesNotShoutAboutAQuestionWhileAPollIsStillReadingTheRoundItWasAskedOn() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/7")
+                .mrCreatedAt(now()).lastPolledAt(now()).message("awaiting: which lock do we take")
+                .lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .detail.problem")).hasCount(0);
+        assertThat(page.locator("#waiting")).isHidden();
+    }
+
+    /**
      * TWO tiers, or the badge is worth nothing: an approval that landed can wait, a red run cannot. Only the loud
      * one is counted in the header and kept by the own-move filter — that count is what a human glances at.
      */
@@ -502,16 +520,23 @@ class BoardPageTest {
         assertThat(page.locator("#waiting")).isHidden();
     }
 
+    /**
+     * The one thing only a browser can answer: a card is built from a phrase that may not be broken and a title
+     * that may, and a window narrow enough is what puts them in conflict. Dragging the board sideways to read a
+     * card is the failure — nothing in the DOM says it happened.
+     */
     @Test
-    void namesTheOwnerOnlyWhenTheMoveIsYours() {
-        long shipped = now();
+    void aCardStaysInsideAWindowTooNarrowForItsBadgeAndItsTitleAtOnce() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
-                .mrCreatedAt(shipped).lastPolledAt(shipped).lastActiveTimestamp(shipped).build());
+                        TaskStatus.CI_FAILED).alias("a1").mrUrl("https://host.example/mr/7")
+                .title("Widget layout is off on every window narrower than a laptop screen")
+                .lastActiveTimestamp(now()).build());
 
         Page page = open();
+        page.setViewportSize(400, 1200);
 
-        assertThat(page.locator("article .badge")).hasCount(0);
+        assertThat(page.locator("article"))
+                .isInViewport(new LocatorAssertions.IsInViewportOptions().setRatio(1));
     }
 
     @Test
@@ -916,7 +941,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .drafts")).containsText("review replies drafted, not posted");
+        assertThat(page.locator("article .drafts")).containsText("replies drafted");
     }
 
     @Test
@@ -932,6 +957,19 @@ class BoardPageTest {
 
         assertThat(page.locator("#report-body")).containsText("1 · FIXED · !12 thread 1");
         assertThat(page.locator("#report-body")).containsText("Measured it and pinned the count.");
+    }
+
+    @Test
+    void aReportAboutOneTaskIsTitledByBothTheNamesItAnswersTo() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-7", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a7").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article .drafts").click();
+
+        assertThat(page.locator("#report-title")).hasText("replies a7 \u00b7 ABC-7");
     }
 
     @Test

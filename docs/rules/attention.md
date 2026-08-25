@@ -119,9 +119,10 @@ same two words over a session waiting on an answer, a red run and a deploy confl
 opened before it said anything. `Move.ask` (`ask` on the wire) names the act instead, in the words a chip has
 room for.
 
-It names what the **highlighted verb** does, so a badge can never advertise an act the card has no button for
-— which is what keeps it from becoming a second, drifting copy of `Move.hint`, the same act at sentence
-length that the badge carries as its tooltip.
+It never names an act the card cannot serve, which is what keeps it from becoming a second, drifting copy of
+`Move.hint` — the same act at sentence length, which the badge carries as its tooltip. Usually that means the
+highlighted verb. Where the act is **reading**, it is the card: its diff, its drafted replies and its session
+are each one click away, and no one verb is the whole of it.
 
 The tier keeps the loudness and loses the words: it is what the header count, the own-move filter and the
 card's colour read. `MoveTest` pins `ask` non-null over exactly the statuses whose tier is not `NONE` — with a
@@ -153,6 +154,24 @@ A question asked from DEPLOYED still flips it: a stopped session **is** their mo
 In all four places that read a round: `Move.ownerOf` (the wait is the human's), `Move.primaryOf` (FOCUS — the
 status alone would highlight a verb that *acts*, and a SHIP on a round the agent said it cannot finish is the
 worst button on the board), `Move.hint` and `DashboardLine`.
+
+**A question that came back WITH its round is read first, not answered first** (the owner's rule, 2026-08-25).
+The session is blocked either way — that is why the primary stays FOCUS, which is where the answer goes. What
+differs is the human's first act: at REVIEW_PENDING the round is finished and on the card, so the badge says
+`review the round` and the hint names `focus` after it. Asked from any other status there is no round to read
+and `answer the session` is the whole of the move.
+
+**And a question on a round a poll is still reading is not an alarm** (the owner's rule, 2026-08-25). Comments
+keep arriving on an open request from people who are not the one being shouted at, and the next of them may be
+the answer — so a question at REVIEW_PENDING whose `AutoReviewWatch` is still WATCHING is `OPTIONAL`: no header
+count, no own-move filter, no alarm colour, and the `NEEDS` line drops its red with the tier. A `PROBLEM` line
+does not: a broken request link is broken on a card whose move can wait.
+
+Both halves are narrow on purpose. **Only REVIEW_PENDING**, because that is the one status where the question
+is about a round comments are still arriving on; asked from anywhere else it sits in the agent's own window,
+which nothing on a request can reach. **Only while the poll runs**, because a stopped one leaves the round to
+this human and nobody else. The poll itself is untouched — `AutoReviewCadence.polls` asks only whether a
+request is open, and a round nobody answered is exactly the one worth another sweep.
 
 Reachable from **every** status, because an agent may ask without moving its task — and the statuses a
 question is not expected from are exactly the ones nothing else flips. A closed task's leftover message is the

@@ -116,17 +116,22 @@ export function card(task) {
 
   if (task.detail) {
     const detail = document.createElement('div');
-    detail.className = /^(PROBLEM|NEEDS)/.test(task.detail) ? 'detail problem' : 'detail';
+    // A problem is loud whatever the tier says — a broken link is broken on a card whose move can wait. What a
+    // task NEEDS follows the tier: a question a poll is still reading is the human's whenever, and a line that
+    // shouts on every round they have not answered yet is one they stop reading.
+    const loud = /^PROBLEM/.test(task.detail)
+      || (/^NEEDS/.test(task.detail) && task.attention !== 'OPTIONAL');
+    detail.className = loud ? 'detail problem' : 'detail';
     detail.textContent = task.detail;
     parts.push(detail);
   }
 
-  // Nothing else on the page would say the drafted answers exist, and `ship` is what posts them. The line that
-  // announces them is also what OPENS them: a human approving a round reads it here, not in an editor.
+  // Nothing else on the page would say the drafted answers exist. The line that announces them is also what
+  // OPENS them, so it says so: a human approving a round reads it here, not in an editor.
   if (task.draftedReplies) {
     const drafts = document.createElement('button');
     drafts.className = 'drafts';
-    drafts.textContent = 'review replies drafted, not posted \u2014 read them; ship posts them';
+    drafts.textContent = 'replies drafted \u2014 click to read';
     drafts.dataset.tip = 'every comment and the reply that will be sent for it';
     drafts.dataset.report = 'replies';
     drafts.dataset.about = task.alias || task.id;

@@ -64,10 +64,11 @@ button.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.12); }
 button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 #palette-state.ok { color: var(--ok); }
 #palette-state.bad { color: var(--danger); }
-/* Plain <pre> inside: the text is column-aligned, and a table would only misrepresent it. */
+/* Plain <pre> inside: a report is written in columns and a table would only misrepresent them. The body wraps
+   anyway (below), which trades a narrow window's alignment for never having to drag the view sideways. */
 #report {
   border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text);
-  padding: 0; max-width: min(900px, 92vw); max-height: 82vh; overflow: hidden;
+  padding: 0; max-width: min(1000px, 94vw); max-height: 92vh; overflow: hidden;
   box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
 }
 #report::backdrop { background: rgb(0 0 0 / 45%); }
@@ -75,8 +76,12 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
   display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line);
   position: sticky; top: 0; background: var(--panel);
 }
+/* Wraps rather than scrolling sideways: a report carries prose a human reads, and a line they have to drag the
+   view along is one they read twice. Only a word longer than the dialog is ever broken, so a path stays one
+   thing you can copy. */
 #report-body {
-  margin: 0; padding: 12px 14px; max-height: calc(82vh - 46px); overflow: auto;
+  margin: 0; padding: 12px 14px; max-height: calc(92vh - 46px); overflow: auto;
+  white-space: pre-wrap; overflow-wrap: break-word;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45;
 }
 
@@ -152,6 +157,7 @@ a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid;
   font-size: 12px; margin: 4px 0; padding: 3px 7px; border-radius: 6px;
   background: var(--you-bg); color: var(--you); font-weight: 600;
   display: block; width: 100%; text-align: left; border: 1px solid transparent;
+  text-decoration: underline dotted; text-underline-offset: 2px;
 }
 .drafts:hover:not(:disabled) { border-color: var(--you); color: var(--you); }
 a { color: var(--accent); }

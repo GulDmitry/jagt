@@ -135,7 +135,42 @@ class MoveTest {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.QUESTION, false), false);
 
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
-        assertThat(move.hint()).contains("answer the question");
+        assertThat(move.hint()).isEqualTo("read the round and the question it left (focus), then ship");
+    }
+
+    @Test
+    void leavesAQuestionUnshoutedWhileAPollIsStillReadingTheRoundItWasAskedOn() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.QUESTION, false),
+                false, watching());
+
+        assertThat(move.owner()).isEqualTo(Owner.YOU);
+        assertThat(move.attention()).isEqualTo(Attention.OPTIONAL);
+        assertThat(move.ask()).isEqualTo("you can review the round");
+    }
+
+    @Test
+    void interruptsForTheSameQuestionOnceNothingIsPollingTheRoundAnyMore() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.QUESTION, false),
+                false, elapsed());
+
+        assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "CI_FAILED", "DEPLOY_CONFLICT", "APPROVED",
+            "DEPLOYED"})
+    void interruptsForAQuestionNoCommentOnTheRequestCanReachEvenWhileThatRequestIsPolled(TaskStatus status) {
+        Move move = Move.forTask(status, true, new RoundState(AgentReport.QUESTION, false), false, watching());
+
+        assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
+    }
+
+    @Test
+    void asksForTheRoundToBeReadRatherThanTheSessionAnsweredWhenTheQuestionCameBackWithIt() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.QUESTION, false),
+                false);
+
+        assertThat(move.ask()).isEqualTo("review the round");
     }
 
     @ParameterizedTest

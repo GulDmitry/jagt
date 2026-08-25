@@ -42,7 +42,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
                                boolean agentSilent, AutoReviewWatch watch) {
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
         Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());
-        Attention attention = attentionOf(owner, status, round);
+        Attention attention = attentionOf(owner, status, round, polled);
         return new Move(phaseOf(status), owner, attention,
                 ask(status, hasReviewRequest, round, agentSilent, attention),
                 FlowRules.allowed(status, Facts.projected(hasReviewRequest)),
@@ -91,19 +91,28 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
      * tier is a good state whose next move is theirs whenever: an approval that landed, and a revert they made
      * themselves — shouting at somebody about the click they just made is what teaches them to stop reading the
      * badge, and the badge is the whole reason jagt has a board.
+     *
+     * <p>A question asked on a round that came back is the quiet tier too, while a poll is still reading that
+     * round: comments keep arriving from people who are not the one being shouted at, and the next of them may
+     * be the answer. Only there — anywhere else the question is in the agent's own window, where no comment on a
+     * request can reach it — and only while the poll runs, since a stopped one leaves the round to this human.
      */
-    private static Attention attentionOf(Owner owner, TaskStatus status, RoundState round) {
+    private static Attention attentionOf(Owner owner, TaskStatus status, RoundState round, boolean polled) {
         if (owner != Owner.YOU) {
             return Attention.NONE;
         }
-        boolean quiet = status == TaskStatus.APPROVED || status == TaskStatus.REVERTED;
-        return quiet && !asking(status, round) ? Attention.OPTIONAL : Attention.REQUIRED;
+        if (asking(status, round)) {
+            return polled && status == TaskStatus.REVIEW_PENDING ? Attention.OPTIONAL : Attention.REQUIRED;
+        }
+        return status == TaskStatus.APPROVED || status == TaskStatus.REVERTED
+                ? Attention.OPTIONAL : Attention.REQUIRED;
     }
 
     /**
      * WHICH act is wanted, in the words a chip has room for — never the state it is in, which the status already
-     * spells. It names the act the highlighted verb performs, so a badge can never advertise something the card
-     * has no button for, and null exactly when {@link Attention} is {@code NONE}.
+     * spells. It never names something the card cannot serve, and is null exactly when {@link Attention} is
+     * {@code NONE}. Usually that is the highlighted verb; where the act is READING it is the card itself, whose
+     * diff, drafted replies and session are all one click away.
      *
      * <p>The quiet tier says so in GRAMMAR rather than in colour, because a badge a human can only tell apart by
      * its shade is one they cannot tell apart at all: an interruption is an imperative, a move of theirs
@@ -115,13 +124,20 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
             return null;
         }
         String act = act(status, hasReviewRequest, round, agentSilent);
+        // A status that reached the tier without an act of its own falls to the invariant below rather than
+        // wearing the word "null" on a card: null exactly when NONE is what MoveTest pins.
+        if (act == null) {
+            return null;
+        }
         return attention == Attention.OPTIONAL ? "you can " + act : act;
     }
 
     private static String act(TaskStatus status, boolean hasReviewRequest, RoundState round,
                               boolean agentSilent) {
         if (asking(status, round)) {
-            return "answer the session";
+            // A round already back is READ, not answered: the session that asked it has finished the round, and
+            // its question is one more thing waiting on the card beside the diff and the drafted replies.
+            return status == TaskStatus.REVIEW_PENDING ? "review the round" : "answer the session";
         }
         if (ownerOf(status) == Owner.AGENT && agentSilent) {
             return "check the stopped session";
@@ -231,7 +247,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
             // At REVIEW_PENDING the round is already back, so the answer is followed by a ship; asked from
             // anywhere else, the question is the whole of what there is to say.
             return status == TaskStatus.REVIEW_PENDING
-                    ? "answer the question (focus), then ship"
+                    ? "read the round and the question it left (focus), then ship"
                     : "answer the question in the agent's window (focus)";
         }
         if (ownerOf(status) == Owner.AGENT && agentSilent) {
