@@ -14,8 +14,8 @@ import java.util.List;
  * application but does not bring it in front of other ones.
  */
 @Component
-@ConditionalOnExpression("'${orchestrator.terminal:kitty}'.equals('kitty')"
-        + " and '${orchestrator.platform:macos}'.equals('macos')")
+@ConditionalOnExpression("'${orchestrator.terminal:kitty}'.equalsIgnoreCase('kitty')"
+        + " and '${orchestrator.platform:macos}'.equalsIgnoreCase('macos')")
 public class KittyTerminalDriver extends AbstractKittyTerminalDriver {
 
     /**

@@ -90,7 +90,7 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 | key | default | meaning |
 |-----|---------|---------|
 | `orchestrator.ui` | `web` | `web`, `tui` or `both` |
-| `orchestrator.platform` | `macos` | `macos` or `linux`; selects the notifier and kitty driver |
+| `orchestrator.platform` | `macos` | `macos` or `linux`; selects the notifier and kitty driver. Refused when it is not what the machine reports |
 | `server.address` | `127.0.0.1` | which interface the board listens on |
 | `server.port` | `8290` | the board's port |
 | `orchestrator.notify-send-command` | `notify-send` | Linux only |
@@ -100,7 +100,7 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 
 | key | default | meaning |
 |-----|---------|---------|
-| `orchestrator.terminal` | `kitty` | `kitty` or `warp`; both run over tmux |
+| `orchestrator.terminal` | `kitty` | `kitty` or `warp`; both run over tmux. `warp` is macOS-only — it is opened through a URI scheme |
 | `orchestrator.kitty-command` | `kitty` | the kitty binary |
 | `orchestrator.kitty-font-size` | *(blank)* | blank keeps kitty.conf's own |
 | `orchestrator.tmux-command` | `tmux` | the tmux binary |

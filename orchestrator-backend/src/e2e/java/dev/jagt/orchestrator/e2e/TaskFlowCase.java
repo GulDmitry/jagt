@@ -17,17 +17,19 @@ import java.util.List;
  * arranged, and running them four times over would only pay for that twice. {@link ReviewAndDeployFlowTest}
  * covers them on one combination, over its own matrix of what a round can report.
  *
- * @param viewMode   {@code viewer.viewMode} — shared vs one terminal tab per task
- * @param autoReview {@code autoReview.enabled} — whether a shipped task gets polled unattended
+ * @param viewMode      {@code viewer.viewMode} — shared vs one terminal tab per task
+ * @param autoReview    {@code autoReview.enabled} — whether a shipped task gets polled unattended
+ * @param agentSession  the tmux session the agent's window must end up in, spelled out rather than derived:
+ *                      a row that computes it the way the code does would agree with any renaming of it
  */
-record TaskFlowCase(String viewMode, boolean autoReview) {
+record TaskFlowCase(String viewMode, boolean autoReview, String agentSession) {
 
     static List<TaskFlowCase> matrix() {
         return List.of(
-                new TaskFlowCase("shared", false),
-                new TaskFlowCase("shared", true),
-                new TaskFlowCase("tab-per-task", false),
-                new TaskFlowCase("tab-per-task", true));
+                new TaskFlowCase("shared", false, "jagt-e2e"),
+                new TaskFlowCase("shared", true, "jagt-e2e"),
+                new TaskFlowCase("tab-per-task", false, "jagt-e2e-ABC-1"),
+                new TaskFlowCase("tab-per-task", true, "jagt-e2e-ABC-1"));
     }
 
     @Override

@@ -21,8 +21,8 @@ import java.util.List;
  * </ul>
  */
 @Component
-@ConditionalOnExpression("'${orchestrator.terminal:kitty}'.equals('kitty')"
-        + " and '${orchestrator.platform:macos}'.equals('linux')")
+@ConditionalOnExpression("'${orchestrator.terminal:kitty}'.equalsIgnoreCase('kitty')"
+        + " and '${orchestrator.platform:macos}'.equalsIgnoreCase('linux')")
 public class LinuxKittyTerminalDriver extends AbstractKittyTerminalDriver {
 
     public LinuxKittyTerminalDriver(ProcessRunner processRunner, OrchestratorProperties properties,

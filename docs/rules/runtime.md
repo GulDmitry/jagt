@@ -74,6 +74,10 @@ macOS needs AppleScript to raise the app (Cocoa) and the Cyrillic `cmd+` keymap 
 Selection is `orchestrator.platform` × `orchestrator.terminal` via `@ConditionalOnExpression`, and
 `LinuxProfileContextTest` boots the linux profile so a condition typo fails in CI, not on someone's desktop.
 
+**Both comparisons ignore case, and must.** A property condition elsewhere matches a value case-insensitively,
+so `platform: Linux` would otherwise pick the Linux notifier and no terminal at all — a value that means one
+thing in one place and nothing in another is a value nobody can be told to fix.
+
 `KittyTerminalDriver` drives kitty via its remote-control CLI (`kitty @ --to unix:<per-session socket>`): one
 dedicated instance (`--single-instance --instance-group --listen-on -o allow_remote_control=yes`), tabs titled
 and closable (unlike Warp). It runs **over tmux** (the tab execs `tmux attach`), so agents persist.

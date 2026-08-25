@@ -29,7 +29,9 @@ your agents will use — your issue tracker and your code host. jagt itself talk
 | git | `apt install git` | worktrees |
 | kitty | `apt install kitty` | the agents terminal |
 | libnotify | `apt install libnotify-bin` | desktop notifications |
+| a notification daemon | your desktop's own, or `apt install dunst` | showing them — GNOME and KDE bring one, a bare window manager does not |
 | an editor CLI | `idea` or `code` on PATH | the `ide` checkpoint |
+| lsof | `apt install lsof` | reaping a worktree's leftover processes on `done`; skipped when absent |
 | Node 18+ | `apt install nodejs` | only for `orchestrator.agent=codex` |
 | ttyd | `apt install ttyd` | only for `orchestrator.web-terminal.enabled=true` |
 
@@ -41,7 +43,14 @@ orchestrator:
   editor-command: [idea] # or [code]
 ```
 
-Everything else is shared with macOS — kitty speaks the same remote-control protocol on both.
+`platform` is not optional and not detected: it defaults to `macos`, and jagt refuses to start when it is not
+the platform the machine reports. `terminal: warp` is macOS-only for the same reason — it is opened through a
+URI scheme.
+
+Everything else is shared with macOS — kitty speaks the same remote-control protocol on both — with one
+difference in what a banner can do: **it does not open the board.** `notify-send` carries a click only by
+staying alive waiting for the daemon to answer, which a notification jagt fires and forgets cannot. The task is
+named in the title instead.
 
 ## Run it
 

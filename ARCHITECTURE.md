@@ -129,7 +129,7 @@ the gate uses the real probe. That is why a stuck SHIPPING card offers SHIP and 
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ per platform), `adapter/macos/WarpTerminalDriver` |
 | `EditorDriver` | `adapter/CliEditorDriver` |
 | `JsonHttp` | `adapter/http/RestClientJsonHttp` |
-| `StartupCheck` | four in `startup/`, and six at the edge — see [Assembly validation](#assembly-validation) |
+| `StartupCheck` | four in `startup/`, and seven at the edge — see [Assembly validation](#assembly-validation) |
 
 ## Where a new thing goes
 
@@ -224,10 +224,10 @@ At startup, **one report of everything wrong** — never first-failure, because 
 then does nothing. `startup/StartupCheck` implementations are collected by `startup/StartupValidation`, which
 throws `Misconfigured` once with every problem.
 
-Ten checks: four in `startup/` (`Config`, `Flow`, `OutsideReads`, `Workspace`) and six at the edge, because a
-driver knows what its own binary needs and can name the key that fixes it — `adapter/ToolchainCheck`,
-`adapter/TtydWebTerminal`, `adapter/CliEditorDriver`, `adapter/AbstractKittyTerminalDriver`,
-`adapter/agent/CodexAgentRuntime`, `adapter/linux/LibNotifyNotifier`.
+Eleven checks: four in `startup/` (`Config`, `Flow`, `OutsideReads`, `Workspace`) and seven at the edge, because
+a driver knows what its own binary needs and can name the key that fixes it — `adapter/ToolchainCheck`,
+`adapter/PlatformCheck`, `adapter/TtydWebTerminal`, `adapter/CliEditorDriver`,
+`adapter/AbstractKittyTerminalDriver`, `adapter/agent/CodexAgentRuntime`, `adapter/linux/LibNotifyNotifier`.
 
 The composition half, and what of it exists:
 
@@ -237,7 +237,7 @@ The composition half, and what of it exists:
 | 2 | every status something can put a task into | built (`startup/FlowCheck`) |
 | 3 | every (status × capability × outcome) decided | planned — needs a capability to declare its outcomes |
 | 4 | a job's declared capability and watched statuses exist | planned — `Job` declares neither yet |
-| 5 | a required port capability present in the selected adapter | weak form only: a configured type resolves to a bean |
+| 5 | a required port capability present in the selected adapter | weak form: a configured type resolves to a bean, and the platform it was picked for is the one jagt runs on (`adapter/PlatformCheck`) |
 | 6 | one owner per id | built for all three registries |
 
 There is deliberately **no** "stuck status" check beside #2: the report door is judged by the status being
@@ -246,7 +246,7 @@ reported rather than the one being left, so no status can trap a task and assert
 #5 checks nothing about thread resolution, tab titles or an attachable session host. #6 refuses to start on a
 duplicate job id, a duplicate command verb or an equal capability priority.
 
-**The refusing half exists; the degrading half does not.** Six edge checks refuse to start and name the key
+**The refusing half exists; the degrading half does not.** Seven edge checks refuse to start and name the key
 that would fix it. A missing kitty refuses rather than falling back to another terminal.
 
 ## The build

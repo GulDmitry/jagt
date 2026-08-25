@@ -47,6 +47,7 @@ Deploys made since are revertible with one command.
 | symptom | fix |
 |---------|-----|
 | jagt refuses to start and prints a numbered list | fix the whole list — each line names the key |
+| It refuses on Linux over `orchestrator.platform` | the default is `macos`, and it is a choice rather than a detection: set it to `linux` |
 | The jar exits at once, saying nothing new | usually a port still held: `lsof -ti tcp:8290 \| xargs kill` |
 | `/status` and `/stats` answer 500 while `/` works | you rebuilt while it ran. Restart from the staged jar |
 

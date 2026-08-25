@@ -25,6 +25,11 @@ single agent's assumptions.
 
 Ports live in `…port`, implementations in `…adapter`.
 
+**A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`): the
+default is macOS, and telling a human is the one thing that may not fail the flow it interrupts — so a notifier
+that reaches nothing logs and returns, and the human learns of no blocked session at all. `warp` is refused off
+macOS for the same reason.
+
 **The tracker and the code host are not seams of jagt's.** They are read by a model through the MCP servers of
 whoever runs it, and jagt holds no credential for either. An orchestrator that reads them itself is an open
 idea, in `TODO.md`.

@@ -100,7 +100,9 @@ Each of these is an interface, not a brand — jagt hardcodes none of them.
 | **Issue tracker** | Jira, Linear, GitHub Issues, a plain URL | read-only, optional |
 | **Code host** | GitLab, GitHub, Bitbucket | reads reviews; the one write is opening a request |
 | **Agent CLI** | Claude Code, Codex, any MCP-capable CLI | one runtime class each |
-| **Terminal** | kitty, Warp — both over tmux | where agents run |
+| **Terminal** | kitty, or Warp on macOS — both over tmux | where agents run |
+| **Free-text reader** | a headless agent CLI | one model call per `⌘K` line or ticket read — the only part that spends |
+| **Embedded terminal** | ttyd | the agent's session inside the board; off until you turn it on |
 
 Plus an editor (IntelliJ IDEA) and a desktop notifier. Adding a vendor means implementing an interface and
 naming it in config — never editing the task flow.

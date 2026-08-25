@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
+import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.task.GitRemote;
 import dev.jagt.orchestrator.service.GitService;
 
@@ -135,25 +136,53 @@ final class E2eWorkspace {
      * behind. Best-effort: the session may never have existed, and cleanup must not fail a green run.
      */
     static void killTmuxSessions(String tmuxCommand) {
-        for (String session : run(tmuxCommand, "list-sessions", "-F", "#{session_name}").lines()
-                .filter(name -> name.startsWith(TMUX_SESSION)).toList()) {
+        String listed = run(tmuxCommand, "list-sessions", "-F", "#{session_name}");
+        for (String session : own(listed == null ? "" : listed)) {
             run(tmuxCommand, "kill-session", "-t", "=" + session);
         }
     }
 
+    /**
+     * Only this run's own sessions: a developer's real ones are none of a case's business, nor a run's to read.
+     * A listing that could not be READ is thrown rather than answered as an empty list — a case asserting which
+     * session an agent landed in must not read an unanswered question as the wrong answer. Reaching here at all
+     * means a task was just launched into tmux, so there IS a server, and anything else is the failure.
+     */
+    static List<String> tmuxSessions(String tmuxCommand) {
+        String listed = run(tmuxCommand, "list-sessions", "-F", "#{session_name}");
+        if (listed == null) {
+            throw new IllegalStateException("tmux sessions could not be read from '" + tmuxCommand
+                    + "' (resolved to " + Executables.resolve(tmuxCommand) + "): not runnable, refused, or the"
+                    + " wait was interrupted. No session can be asserted from that.");
+        }
+        return own(listed);
+    }
+
+    private static List<String> own(String listed) {
+        return listed.lines().filter(name -> name.startsWith(TMUX_SESSION)).toList();
+    }
+
+    /**
+     * Resolved as the application resolves it, install directories included, because a GUI- or IDE-launched JVM
+     * has neither Homebrew prefix on its PATH. {@code git} below stays bare on purpose: PATH is all the
+     * application asks of git. Null is every way the answer is absent rather than empty.
+     */
     private static String run(String command, String... args) {
-        List<String> full = new java.util.ArrayList<>(List.of(command));
+        List<String> full = new java.util.ArrayList<>(List.of(Executables.resolve(command)));
         full.addAll(List.of(args));
         try {
             Process process = new ProcessBuilder(full).redirectErrorStream(true).start();
             String output = new String(process.getInputStream().readAllBytes());
-            process.waitFor(10, TimeUnit.SECONDS);
-            return output;
+            if (!process.waitFor(10, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                return null;
+            }
+            return process.exitValue() == 0 ? output : null;
         } catch (IOException e) {
-            return "";   // tmux absent — then the run had no session to leave behind either.
+            return null;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return "";
+            return null;
         }
     }
 

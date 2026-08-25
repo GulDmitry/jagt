@@ -69,23 +69,27 @@ libraries are in `scripts/linux-test-deps.sh` — the **one** list, not a second
 **Run it after any change to `static/`**, and assert through the **server** (seed `StateService`, stub a
 command), never by evaluating JS in the page.
 
+Geometry is in scope and nothing else can hold it: a card that spills out of a narrow window renders a DOM every
+other assertion here passes. Assert it as the browser's own question — an element inside the viewport at a set
+size — not as a screenshot, whose fonts differ between a laptop and a runner.
+
 ### The e2e matrix
 
 `e2eTest` runs the flow once per `TaskFlowCase` with `orchestrator.agent=stub` (`StubAgentRuntime` — the one
 non-deterministic participant replaced; every GUI driver is a Mockito double) and asserts an exact end state.
 
-Two rules it lives by: widening coverage is adding a **row** to `TaskFlowCase.matrix()`, and a combination that
-is **not** covered is named there with the reason — a silent gap reads as coverage.
+Three rules it lives by: widening coverage is adding a **row** to `TaskFlowCase.matrix()`, a combination that is
+**not** covered is named there with the reason — a silent gap reads as coverage — and a row carries the end
+state its combination alone produces, spelled out. A row whose distinguishing setting changes nothing any
+assertion reads is paid for twice and proves once: `viewMode` is a row because the session the agent's window
+lands in is asserted from tmux itself.
 
 Cleanup kills tmux sessions **by prefix**, because `tab-per-task` creates `<session>-<taskId>` ones the
-configured name alone would leave behind.
+configured name alone would leave behind — and every line of it is best-effort, so a combination that failed
+early cannot hand its leftovers to the next one and make one failure read as four.
 
 It also asserts the **sentence** a flow returns, and `./gradlew test` cannot see it: reword a message and CI is
 the first thing that notices, so run `e2eTest` before pushing one.
-
-> [!WARNING]
-> Row 1 leaves the branch behind when it fails, so rows 2–4 then fail with "branch already exists". Fix the
-> **first** row and re-run before reading the rest as four bugs.
 
 Two matrices, on purpose:
 

@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.surface.console.MasterShell;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -85,11 +86,23 @@ class TaskFlowMatrixTest {
         E2eWorkspace.createRepositoryWithOrigin(workspace.resolve("origin.git"), workspace.resolve("proj"));
     }
 
-    @AfterEach
-    void leaveNothingBehindForTheNextCombination() throws Exception {
-        // `done` keeps the branch by design, so the next combination would hit "branch already exists".
-        E2eWorkspace.git(workspace.resolve("proj"), "branch", "-D", "ABC-1");
+    /** A run killed mid-case leaves its sessions behind, and the next run would read them as its own. */
+    @BeforeEach
+    void startFromNoneOfThisRunsSessions() {
         E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+    }
+
+    /**
+     * A combination that failed early holds none of this, so nothing here may stop on the piece it cannot find:
+     * a cleanup that gives up hands its own leftovers to the next combination, which then fails for a reason the
+     * run never had. The one line that can throw — a file write — is last for the same reason.
+     */
+    @AfterEach
+    void leaveNothingBehindForTheNextCombination() {
+        // `done` keeps the branch by design, so the next combination would hit "branch already exists".
+        E2eWorkspace.forgetTask(workspace.resolve("proj"), workspace.resolve("ABC-1-proj"), "ABC-1");
+        E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
+        stateService.removeTask("ABC-1");
     }
 
     @ParameterizedTest(name = "[{index}] {0}")
@@ -110,6 +123,8 @@ class TaskFlowMatrixTest {
         assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
         assertThat(worktree.resolve(".mcp.json")).doesNotExist();
         assertThat(worktree.resolve(".claude")).doesNotExist();
+        assertThat(E2eWorkspace.tmuxSessions(properties.tmuxCommand()))
+                .containsExactly(flowCase.agentSession());
         assertThat(stateService.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.NEW);
         assertThat(stateService.task("ABC-1").orElseThrow().autoReview()).isEqualTo(flowCase.autoReview());
         assertThat(E2eWorkspace.git(workspace.resolve("proj"), "branch", "--list", "ABC-1")).contains("ABC-1");

@@ -230,3 +230,5 @@ What the agent does with a comment:
 | Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be mapped onto a live one |
 | "Is it me holding these up?" | `stats` | Per task: time on you, on its agent and on the code host, the rounds it has been out, and which of the three is slowest |
 | The same numbers a week later | — | Not available. `done` removes the task, so `stats` describes open work, never throughput |
+| jagt on Linux with the platform left unset | — | Refused at startup. Unset means macOS, whose notifier reaches nothing here, and a failed alert is logged rather than raised — nothing would say a session is blocked |
+| A banner on Linux does not open the board | — | `notify-send` carries a click only while the process waits for the daemon. The task is in the title; the board's filter does the rest |
