@@ -71,8 +71,9 @@ class WatchdogServiceTest {
     }
 
     /** Its own report already put a banner on the screen; the stop that follows it is the same event. */
-    @Test
-    void sendsNoSecondBannerForAnAgentThatHadAlreadyAsked(@TempDir Path root) {
+    @ParameterizedTest
+    @EnumSource(value = SessionProbe.State.class, names = {"WAITING", "IDLE"})
+    void sendsNoSecondBannerForAnAgentThatHadAlreadyAsked(SessionProbe.State reported, @TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
@@ -81,7 +82,7 @@ class WatchdogServiceTest {
         Notifications notifications = mock(Notifications.class);
         SessionProbe probe = mock(SessionProbe.class);
         when(probe.of(anyString(), any(), anyLong(), anyLong()))
-                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, SessionProbe.State.WAITING)));
+                .thenReturn(Optional.of(new SessionProbe.Silence(1_000, reported)));
 
         new WatchdogService(state, notifications, properties, probe).run();
 

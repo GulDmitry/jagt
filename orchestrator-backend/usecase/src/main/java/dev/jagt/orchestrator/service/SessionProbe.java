@@ -26,8 +26,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class SessionProbe {
 
-    /** What a session's harness says about it. */
-    public enum State { WAITING, GONE, WORKING }
+    /**
+     * What a session's harness says about it. {@code WAITING} and {@code GONE} are verdicts on their own —
+     * nothing moves until a human acts. {@code IDLE} is not: a turn ending says only that a turn ended, and a
+     * session re-entered by whatever it left running ends dozens of them without anybody being wanted.
+     */
+    public enum State { WAITING, GONE, IDLE, WORKING }
 
     /** Since when nothing has moved, and what a harness said about it — null where none of them did. */
     public record Silence(long since, State reported) {
@@ -37,7 +41,15 @@ public class SessionProbe {
             if (reported == State.GONE) {
                 return "the session ended";
             }
+            if (reported == State.IDLE) {
+                return "its turn ended and nothing has moved since";
+            }
             return reported == State.WAITING ? "waiting for input" : null;
+        }
+
+        /** Whether a harness put the session AT a prompt, as opposed to reporting it gone or saying nothing. */
+        public boolean atAPrompt() {
+            return reported == State.WAITING || reported == State.IDLE;
         }
     }
 
@@ -105,18 +117,32 @@ public class SessionProbe {
                 movingSince.getOrDefault(taskId, 0L));
         Halt halt = halted.get(taskId);
         if (halt != null && halt.at() >= lastSign) {
-            return Optional.of(new Silence(halt.at(), halt.state()));
-        }
-        if (halt != null) {
+            if (halt.state() != State.IDLE) {
+                return Optional.of(new Silence(halt.at(), halt.state()));
+            }
+            // A turn that ENDED is a sign like any other, not a verdict: a session finishes a turn every time
+            // it answers, and comes straight back when what it left running finishes. Only nothing happening
+            // AFTER it means anything, which is the threshold below — and it keeps its word for that sentence.
+            lastSign = halt.at();
+        } else if (halt != null) {
             // A tie KEEPS it: a turn is appended to the log immediately before the hook that reports it fires,
             // and both are stamped in whichever millisecond they land in. Dropped only by a strictly newer
             // sign, and only if it is still the one just read, or a report landing meanwhile is lost unread.
             halted.remove(taskId, halt);
+            halt = null;
         }
-        lastSign = Math.max(lastSign, windowActivity(taskId, lastSign, staleMs, now));
+        long printed = windowActivity(taskId, lastSign, staleMs, now);
+        if (printed > lastSign) {
+            // Output AFTER the turn ended is a later sign than the report, so the report no longer describes
+            // this wait: it neither dates it nor gets to name it, and it is dropped rather than kept to be
+            // quoted hours later.
+            lastSign = printed;
+            halted.remove(taskId, halt);
+            halt = null;
+        }
         return now - lastSign < staleMs
                 ? Optional.empty()
-                : Optional.of(new Silence(lastSign, null));
+                : Optional.of(new Silence(lastSign, halt == null ? null : halt.state()));
     }
 
     /**

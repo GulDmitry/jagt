@@ -33,6 +33,19 @@ Terminal output survives as the **last** sign rather than the first, and that is
 entry when a tool call is issued and nothing while it runs, so an eight-minute build reads as death without
 it. What a prompt looks like is the harness's to report, never this threshold's to infer.
 
+**A turn ending is a sign, not a verdict** (the owner's rule, 2026-08-25). A hook fires at the end of every
+turn a session takes, and a session comes straight back from whatever it left running — so reporting `waiting`
+there called a working agent stopped seconds after it answered, and cleared itself the moment its next tool
+call landed. `SessionProbe.State.IDLE` is that event: it takes its place among the signs and only the same
+threshold as the rest of them turns it into silence, which is also when it gets to say WHY — and only while it
+is still the latest sign, since output after it dates the wait instead.
+
+The other kind keeps answering at once, because nothing moves there until a human does something. Claude
+reports both through one event, though (`Notification` covers a permission prompt AND a prompt left idle for a
+minute), so a session working through something long can still be called waiting a minute after its turn
+ended. Telling the two apart needs the notification's own wording, which is a vendor sentence jagt would then
+be parsing — not taken.
+
 **A hook reports; it decides nothing.** The stamp stays the watchdog's single verdict, or one surface would
 start calling a session blocked while the other has it working. A session reporting itself **alive** drops what
 was said before rather than outranking it by time: the two hooks of one restart are stamped on arrival and can

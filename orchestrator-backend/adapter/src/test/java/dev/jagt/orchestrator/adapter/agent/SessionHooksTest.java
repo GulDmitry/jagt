@@ -18,6 +18,6 @@ class SessionHooksTest {
      */
     @Test
     void declaresOnlyStatesTheOrchestratorAnswersTo() {
-        assertThat(SessionHooks.of("claude").values()).isSubsetOf("waiting", "gone", "working");
+        assertThat(SessionHooks.of("claude").values()).isSubsetOf("waiting", "gone", "idle", "working");
     }
 }

@@ -89,7 +89,7 @@ public class WatchdogService implements Job {
         }
         // The wait that FOLLOWS an agent's own question was announced when it asked — but a question left
         // unanswered until the session died is a different event, and the one most worth a banner.
-        boolean announcedWhenItAsked = silence.get().reported() == SessionProbe.State.WAITING
+        boolean announcedWhenItAsked = silence.get().atAPrompt()
                 && AgentReport.of(task.message()) == AgentReport.QUESTION;
         // Re-alert at most once per stale window to avoid notification spam.
         if (announcedWhenItAsked || now - lastAlertAt.getOrDefault(taskId, 0L) < staleMs) {

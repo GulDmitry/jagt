@@ -40,6 +40,54 @@ class SessionProbeTest {
                 .map(SessionProbe.Silence::detail).contains("waiting for input");
     }
 
+    /**
+     * The one that used to be wrong: a session ends a turn every time it answers, and comes straight back when
+     * what it left running finishes — so a turn ending is not a human being waited for.
+     */
+    @Test
+    void staysQuietForATurnThatJustEndedBecauseTheSessionMayComeStraightBack() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_000_000L).build();
+        SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class),
+                mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.IDLE, 10_000_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
+    }
+
+    @Test
+    void callsATurnThatEndedSilentOnceNothingHasMovedForTheWholeWindow() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        SessionHost sessions = mock(SessionHost.class);
+        when(sessions.lastWindowActivityMillis(any(), anyString())).thenReturn(0L);
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_000_000L).build();
+        SessionProbe probe = new SessionProbe(config, sessions, mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.IDLE, 9_600_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
+                .map(SessionProbe.Silence::detail).contains("its turn ended and nothing has moved since");
+    }
+
+    @Test
+    void saysNothingAboutTheTurnWhenTheWindowItselfPrintedSomethingAfterIt() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        SessionHost sessions = mock(SessionHost.class);
+        when(sessions.lastWindowActivityMillis(any(), anyString())).thenReturn(9_500_000L);
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(9_000_000L).build();
+        SessionProbe probe = new SessionProbe(config, sessions, mock(AgentRuntime.class));
+
+        probe.report("ABC-1", SessionProbe.State.IDLE, 9_000_000);
+
+        assertThat(probe.of("ABC-1", task, 300_000, 10_000_000))
+                .get().extracting(SessionProbe.Silence::detail).isNull();
+    }
+
     @Test
     void staysQuietWhileTheSessionsOwnLogIsStillGrowing() {
         AgentRuntime runtime = mock(AgentRuntime.class);

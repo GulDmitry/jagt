@@ -197,7 +197,7 @@ class ClaudeAgentRuntimeTest {
         String command = new JsonMapper()
                 .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
                 .path("hooks").path("Stop").path(0).path("hooks").path(0).path("command").asString("");
-        assertThat(command).contains("/api/agent/session/waiting", worktree.toString());
+        assertThat(command).contains("/api/agent/session/idle", worktree.toString());
     }
 
     /** The gate is scoped to the one tool that can push: a hook on every call would sit in front of every step. */
