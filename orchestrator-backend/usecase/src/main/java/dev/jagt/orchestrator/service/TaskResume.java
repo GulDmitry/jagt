@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.GitRemote;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewRequestTitle;
 import dev.jagt.orchestrator.task.TaskName;
@@ -29,28 +30,30 @@ public class TaskResume {
     private final ReviewReader reviewReader;
 
     /** Resumes whatever {@code reviewRequestUrl} names, or answers why it cannot be resumed. */
-    public String resume(String reviewRequestUrl) {
+    public Launched resume(String reviewRequestUrl) {
         var read = reviewReader.readRequest(reviewRequestUrl);
         var request = read.facts();
         // Two different answers, and merging them into one is what let a live request be reported as missing.
         if (request.isEmpty()) {
-            return "error: read failed: " + reviewRequestUrl + " (cause in the log) — nothing is known about it";
+            return Launched.refused("error: read failed: " + reviewRequestUrl + " (cause in the log) —"
+                    + " nothing is known about it");
         }
         if (!request.get().exists()) {
-            return "error: no such review request: " + reviewRequestUrl + " (the host says so)";
+            return Launched.refused("error: no such review request: " + reviewRequestUrl + " (the host says"
+                    + " so)");
         }
         String taskId = request.get().sourceBranch();
         if (taskId == null || taskId.isBlank()) {
-            return "error: the review request names no source branch: " + reviewRequestUrl;
+            return Launched.refused("error: the review request names no source branch: " + reviewRequestUrl);
         }
         String unusable = TaskName.unusableReason(taskId);
         if (unusable != null) {
-            return "error: branch '" + taskId + "' cannot be a task name (" + unusable
-                    + "). Try `do <ticket> from " + taskId + "`.";
+            return Launched.refused("error: branch '" + taskId + "' cannot be a task name (" + unusable
+                    + "). Try `do <ticket> from " + taskId + "`.");
         }
         String result = link(taskId, reviewRequestUrl, request.get().title(), request.get().targetBranch());
         reviewReader.charge(taskId, read.usage());       // the task exists only now
-        return result;
+        return Launched.created(taskId, result);
     }
 
     String link(String taskId, String mrUrl, String title, String targetBranch) {

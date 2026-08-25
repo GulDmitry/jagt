@@ -109,13 +109,18 @@ export function judge() {
   verdict.textContent = `runs as typed — ${parsed.verb.hint}`;
 }
 
+// What a tier-1 line answers with: whether the palette may clear it. A line the backend answered without
+// creating anything is the line that would repeat the attempt, so it stays in the field.
+const HANDLED = {clear: true};
+const KEPT = {clear: false};
+
 // Tier 1: a line that parses is EXECUTED, not interpreted — deterministic, instant and free. Only real free text
 // reaches /api/interpret.
 async function runParsed(parsed) {
   const {verb, argument, task} = parsed;
   if (verb.takesTask) {
     await run(task.id, verb.id);
-    return `${verb.id} ${task.alias || task.id}`;
+    return HANDLED;
   }
   // What was typed after the verb goes with it: a report that narrows to one task must not silently answer for
   // all of them.
@@ -123,24 +128,24 @@ async function runParsed(parsed) {
     const about = argument ? `?about=${encodeURIComponent(argument)}` : '';
     showReport(`${verb.id} ${store.nameOf(argument)}`.trim(),
       await text(`/api/commands/${encodeURIComponent(verb.id)}${about}`));
-    return `${verb.id} ${argument}`.trim();
+    return HANDLED;
   }
   // The two launches are named here because a prose request cannot ask for a form: with no argument the palette
   // hands over to the field, which is where the rest of a launch is decided anyway.
   if (verb.id === 'do') {
-    if (!argument) { forms.focusRef(); return 'do'; }
+    if (!argument) { forms.focusRef(); return HANDLED; }
     const result = await api('/api/tasks', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ref: argument}),
     });
     toast(result.message);
-    return `do ${argument}`;
+    return result.created ? HANDLED : KEPT;
   }
   if (verb.id === 'resume') {
     if (!argument.startsWith('http')) {
       forms.openResume(argument);
-      return 'resume';
+      return HANDLED;
     }
     const result = await api('/api/tasks/resume', {
       method: 'POST',
@@ -148,7 +153,7 @@ async function runParsed(parsed) {
       body: JSON.stringify({reviewRequestUrl: argument}),
     });
     toast(result.message);
-    return `resume ${argument}`;
+    return result.created ? HANDLED : KEPT;
   }
   return null;
 }
@@ -172,9 +177,12 @@ form.onsubmit = async (event) => {
     const button = form.querySelector('button[type=submit]');
     button.disabled = true;
     try {
-      if (await runParsed(parsed)) {
-        ask.value = '';
-        close();
+      const answered = await runParsed(parsed);
+      if (answered) {
+        if (answered.clear) {
+          ask.value = '';
+          close();
+        }
         return;
       }
     } catch (e) {

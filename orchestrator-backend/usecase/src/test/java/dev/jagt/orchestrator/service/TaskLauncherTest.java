@@ -83,7 +83,7 @@ class TaskLauncherTest {
                 Optional.of(new TicketFacts(false, "", "", "", List.of(), "")),
                 TokenUsage.ofCall(38_000, 0, 60, 0.41)));
 
-        String out = launcher.launch(LaunchRequest.of("ABC-42"));
+        String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
 
         assertThat(out).contains("no such item: ABC-42", "no task created");
         verify(provisioning, never()).initializeTask(any());
@@ -94,7 +94,7 @@ class TaskLauncherTest {
         oneProject("group-a");
         when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
 
-        assertThat(launcher.launch(LaunchRequest.of("ABC-42"))).contains("read failed");
+        assertThat(launcher.launch(LaunchRequest.of("ABC-42")).message()).contains("read failed");
     }
 
     @Test
@@ -103,7 +103,7 @@ class TaskLauncherTest {
         when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-99",
                 "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-99")), TokenUsage.NONE));
 
-        String out = launcher.launch(LaunchRequest.of("ABC-42"));
+        String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
 
         assertThat(out).contains("asked for ABC-42 and got ABC-99 back", "no task created");
         verify(provisioning, never()).initializeTask(any());
@@ -114,7 +114,7 @@ class TaskLauncherTest {
         oneProject("group-a");
         when(provisioning.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
 
-        String out = launcher.launch(LaunchRequest.of("ABC-9"));
+        String out = launcher.launch(LaunchRequest.of("ABC-9")).message();
 
         assertThat(out).contains("already exists in group-a", "do ABC-9 recreate", "do ABC-9 resume");
         verifyNoInteractions(tickets);

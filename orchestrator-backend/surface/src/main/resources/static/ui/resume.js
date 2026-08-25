@@ -35,7 +35,9 @@ submits(form, {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({reviewRequestUrl: url.value}),
   }),
-  done: () => {
+  // A refused request comes back as an ordinary answer, and the url is what would repeat the attempt.
+  done: (result) => {
+    if (!result.created) return;
     form.reset();
     close();
   },

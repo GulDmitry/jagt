@@ -41,7 +41,7 @@ public class DoCommand implements GlobalCommand {
 
     @Override
     public String run(String tail) {
-        return launcher.launch(parse(List.of(tail.split("\\s+"))));
+        return launcher.launch(parse(List.of(tail.split("\\s+")))).message();
     }
 
     /**

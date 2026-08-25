@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.board;
 
 import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
@@ -23,6 +24,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class TaskCommandsController {
 
     public record ActionResult(String message) {
+    }
+
+    /**
+     * Whether a task exists now, beside the sentence: most of the ways a launch or a resume declines are
+     * ordinary answers, and a page that read them as success cleared the form that would repeat the attempt.
+     */
+    public record LaunchResult(String message, boolean created) {
     }
 
     public record InterpretRequest(String text) {
@@ -49,11 +57,12 @@ public class TaskCommandsController {
 
     /** Slow on purpose: reading the ticket is a remote call, and the page shows it as pending. */
     @PostMapping("/tasks")
-    public ActionResult launch(@RequestBody LaunchRequest request) {
+    public LaunchResult launch(@RequestBody LaunchRequest request) {
         if (request.ref() == null || request.ref().isBlank()) {
             throw new IllegalArgumentException("A ticket key or a URL is required");
         }
-        return new ActionResult(launcher.launch(request.normalized()));
+        Launched launched = launcher.launch(request.normalized());
+        return new LaunchResult(launched.message(), launched.created());
     }
 
     /**
@@ -61,12 +70,13 @@ public class TaskCommandsController {
      * alike, and guessing would create the wrong thing half the time.
      */
     @PostMapping("/tasks/resume")
-    public ActionResult resume(@RequestBody ResumeRequest request) {
+    public LaunchResult resume(@RequestBody ResumeRequest request) {
         String url = request.reviewRequestUrl() == null ? "" : request.reviewRequestUrl().strip();
         if (!url.startsWith("http")) {
             throw new IllegalArgumentException("A review-request URL is required (http…)");
         }
-        return new ActionResult(launcher.resume(url));
+        Launched launched = launcher.resume(url);
+        return new LaunchResult(launched.message(), launched.created());
     }
 
     /**

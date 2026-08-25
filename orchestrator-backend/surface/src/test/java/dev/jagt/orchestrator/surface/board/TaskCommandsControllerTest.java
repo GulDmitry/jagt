@@ -6,10 +6,12 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.task.Launched;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -67,7 +69,8 @@ class TaskCommandsControllerTest {
      */
     @Test
     void resumesAnExistingReviewRequestLikeTheConsoleDoes() {
-        when(launcher.resume("https://host/mr/42")).thenReturn("Resumed PROJ-1 on its existing branch");
+        when(launcher.resume("https://host/mr/42"))
+                .thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1 on its existing branch"));
 
         assertThat(api.resume(new TaskCommandsController.ResumeRequest("  https://host/mr/42  ")).message())
                 .isEqualTo("Resumed PROJ-1 on its existing branch");
@@ -94,7 +97,7 @@ class TaskCommandsControllerTest {
     void startsATaskThroughTheSameLauncherTheTypedCommandUses() {
         LaunchRequest posted = new LaunchRequest("ABC-42", "demo", "plan", null, "feature/parent",
                 "with tests");
-        when(launcher.launch(posted)).thenReturn("Task ABC-42 initialized");
+        when(launcher.launch(posted)).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
         var result = api.launch(posted);
 
@@ -102,7 +105,19 @@ class TaskCommandsControllerTest {
     }
 
     @Test
+    void saysNoTaskWasCreatedWhenTheLaunchDeclinedInsteadOfFailing() {
+        LaunchRequest posted = new LaunchRequest("ABC-42", null, null, null, null, null);
+        when(launcher.launch(posted)).thenReturn(Launched.refused("error: read failed: ABC-42"));
+
+        var result = api.launch(posted);
+
+        assertThat(result.created()).isFalse();
+    }
+
+    @Test
     void treatsBlankModifiersAsAbsentSoAnEmptyFormFieldIsNotAProjectNamedEmptyString() {
+        when(launcher.launch(any())).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
+
         api.launch(new LaunchRequest("  ABC-42 ", "", "", "", "", ""));
 
         verify(launcher).launch(new LaunchRequest("ABC-42", null, null, null, null, null));

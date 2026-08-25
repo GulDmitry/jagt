@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.MasterAssistant.CommandProposal;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
@@ -135,7 +136,8 @@ class NaturalLanguageDispatchTest {
     void startsANewTaskWhenTheRequestIsADoAndCarriesTheTicketThrough(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
         proposes("do", "", "ABC-42", "a new ticket");
-        when(launcher.launch(LaunchRequest.of("ABC-42"))).thenReturn("Task ABC-42 initialized");
+        when(launcher.launch(LaunchRequest.of("ABC-42")))
+                .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
         String result = dispatchWith(state).interpret("pick up ABC-42");
 
@@ -147,7 +149,7 @@ class NaturalLanguageDispatchTest {
     void resumesAReviewRequestWhenTheRequestIsAUrlToOne(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
         proposes("resume", "", "https://host/mr/42", "an existing merge request");
-        when(launcher.resume("https://host/mr/42")).thenReturn("Resumed PROJ-1");
+        when(launcher.resume("https://host/mr/42")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
         assertThat(dispatchWith(state).interpret("take over this MR https://host/mr/42"))
                 .isEqualTo("understood as `resume https://host/mr/42` — Resumed PROJ-1");

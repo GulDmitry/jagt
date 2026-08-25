@@ -68,7 +68,7 @@ class TaskResumeTest {
     void saysTheReadFailedInsteadOfCallingTheRequestMissing() {
         when(reviewReader.readRequest("https://host/mr/1")).thenReturn(Answer.unavailable());
 
-        assertThat(resume.resume("https://host/mr/1")).contains("read failed");
+        assertThat(resume.resume("https://host/mr/1").message()).contains("read failed");
         verifyNoInteractions(git, provisioning);
     }
 
@@ -77,7 +77,7 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/mr/1")).thenReturn(new Answer<>(
                 Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
 
-        assertThat(resume.resume("https://host/mr/1")).contains("no such review request");
+        assertThat(resume.resume("https://host/mr/1").message()).contains("no such review request");
     }
 
     @Test
@@ -110,7 +110,7 @@ class TaskResumeTest {
                 Optional.of(new MergeRequestFacts(true, branch, "main", "Widget layout is off")),
                 TokenUsage.NONE));
 
-        String result = resume.resume("https://host/mr/426");
+        String result = resume.resume("https://host/mr/426").message();
 
         assertThat(result).contains(branch).contains(reason).contains("do <ticket> from");
         verifyNoInteractions(git, provisioning);
@@ -121,7 +121,7 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/mr/427")).thenReturn(new Answer<>(
                 Optional.of(new MergeRequestFacts(true, " ", "main", "t")), TokenUsage.NONE));
 
-        assertThat(resume.resume("https://host/mr/427")).contains("names no source branch");
+        assertThat(resume.resume("https://host/mr/427").message()).contains("names no source branch");
         verifyNoInteractions(git, provisioning);
     }
 

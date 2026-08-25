@@ -15,7 +15,7 @@ export async function sending(form, {waiting, send, done}) {
   try {
     const result = await send();
     toast(result.message);
-    if (done) done();
+    if (done) done(result);
   } catch (e) {
     toast(refusal(e), true);
   } finally {

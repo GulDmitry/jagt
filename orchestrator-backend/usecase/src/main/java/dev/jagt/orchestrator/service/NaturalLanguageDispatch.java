@@ -120,7 +120,8 @@ public class NaturalLanguageDispatch {
             return "Understood as `do` but no ticket was named (" + reasonOf(mapped)
                     + ") — say it explicitly: `do <ticket|url> [project]`.";
         }
-        return "understood as `do " + ticket + "` — " + launcher.launch(LaunchRequest.of(ticket));
+        return "understood as `do " + ticket + "` — " + launcher.launch(LaunchRequest.of(ticket))
+                .message();
     }
 
     /**
@@ -133,7 +134,7 @@ public class NaturalLanguageDispatch {
             return "Understood as `resume` but no review-request URL was named (" + reasonOf(mapped)
                     + ") — say it explicitly: `resume <request-url>`.";
         }
-        return "understood as `resume " + url + "` — " + launcher.resume(url);
+        return "understood as `resume " + url + "` — " + launcher.resume(url).message();
     }
 
     /** Only a task that EXISTS may be acted on; an id the model invented resolves to nothing and is refused. */

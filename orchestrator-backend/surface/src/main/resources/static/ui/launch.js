@@ -23,7 +23,10 @@ submits(form, {
       notes: document.getElementById('notes').value,
     }),
   }),
-  done: () => {
+  // Most of the ways a launch declines arrive as an ordinary answer, not as an error — and this form is
+  // holding the project, the branch and the instructions the next attempt needs.
+  done: (result) => {
+    if (!result.created) return;
     form.reset();
     projects.forget();
   },

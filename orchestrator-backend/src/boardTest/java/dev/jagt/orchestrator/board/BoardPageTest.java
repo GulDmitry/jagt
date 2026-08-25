@@ -9,6 +9,7 @@ import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
@@ -1063,7 +1064,7 @@ class BoardPageTest {
 
     @Test
     void startingATaskWithoutPickingAProjectLeavesTheChoiceToTheTicketRead() {
-        when(launcher.launch(any())).thenReturn("Started ABC-9.");
+        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
         Page page = open();
         page.locator("#ref").fill("ABC-9");
@@ -1079,7 +1080,7 @@ class BoardPageTest {
      */
     @Test
     void sendsTheExtraInstructionsTypedForTheAgent() {
-        when(launcher.launch(any())).thenReturn("Started ABC-9.");
+        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
 
         Page page = open();
         page.locator("#ref").fill("ABC-9");
@@ -1089,6 +1090,41 @@ class BoardPageTest {
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
         verify(launcher).launch(new LaunchRequest("ABC-9", null, null, null, null,
                 "start with the failing test"));
+    }
+
+    /**
+     * Most of the ways a launch declines come back as an ordinary answer, and the form is holding the project,
+     * the branch and the instructions the next attempt needs.
+     */
+    @Test
+    void keepsEverythingTypedWhenTheLaunchCreatedNoTask() {
+        when(launcher.launch(any()))
+                .thenReturn(Launched.refused("error: read failed: ABC-9 (cause in the log) — no task created"));
+
+        Page page = open();
+        page.locator("#ref").fill("ABC-9");
+        page.locator("#base-branch").fill("feature/parent");
+        page.locator("#notes").fill("start with the failing test");
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#toasts .toast")).containsText("no task created");
+        assertThat(page.locator("#ref")).hasValue("ABC-9");
+        assertThat(page.locator("#base-branch")).hasValue("feature/parent");
+        assertThat(page.locator("#notes")).hasValue("start with the failing test");
+    }
+
+    @Test
+    void keepsTheTypedPaletteLineWhenTheLaunchItRanCreatedNoTask() {
+        when(launcher.launch(any()))
+                .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha (previous run)"));
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("do ABC-9");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#toasts .toast")).containsText("already exists in alpha");
+        assertThat(page.locator("#ask")).hasValue("do ABC-9");
     }
 
     @Test
@@ -1125,7 +1161,7 @@ class BoardPageTest {
 
     @Test
     void startingATaskWithAPickedProjectSendsThatProject() {
-        when(launcher.launch(any())).thenReturn("Started ABC-9 in beta.");
+        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9 in beta."));
 
         Page page = open();
         page.locator("#ref").fill("ABC-9");

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TicketFacts;
 import org.springframework.stereotype.Service;
@@ -38,15 +39,15 @@ public class TaskLauncher {
     }
 
     /**
-     * Spins up a task for {@code ref} — an issue key or a URL to it in any tracker. Returns the message to
-     * show the human; throws {@link IllegalArgumentException} when the request itself is unusable (unknown
-     * project, ambiguous labels).
+     * Spins up a task for {@code ref} — an issue key or a URL to it in any tracker. Answers with the sentence
+     * to show the human and the task it made, if any; throws {@link IllegalArgumentException} when the request
+     * itself is unusable (unknown project, ambiguous labels).
      *
      * <p>NO TASK IS CREATED WITHOUT THE ITEM'S OWN FACTS. A card being worked on whose link is missing is a
      * state nothing downstream can repair — a later read cannot tell an item that has no link from one that was
      * never reached — so an unreadable reference is answered with a sentence instead of half a task.
      */
-    public String launch(LaunchRequest request) {
+    public Launched launch(LaunchRequest request) {
         String ref = request.ref();
         String project = request.project();
         String strategy = request.strategy();
@@ -58,9 +59,9 @@ public class TaskLauncher {
             String existing = provisioning.existingBranchProject(ref,
                     project == null ? List.of() : resolveProjects(project));
             if (existing != null) {
-                return "branch '" + ref + "' already exists in " + existing + " (previous run of this"
-                        + " ticket). Retry with `do " + ref + " recreate` (discard old work, start fresh)"
-                        + " or `do " + ref + " resume` (continue its commits).";
+                return Launched.refused("branch '" + ref + "' already exists in " + existing + " (previous run"
+                        + " of this ticket). Retry with `do " + ref + " recreate` (discard old work, start"
+                        + " fresh) or `do " + ref + " resume` (continue its commits).");
             }
         }
         // An unknown project is settled before the read, not after paying for one.
@@ -72,19 +73,21 @@ public class TaskLauncher {
         // Three different answers, and the launch says which: one names a missing item, the others a read that
         // never got there. Merging them sent the human to the tracker for a reference that was never fetched.
         if (read.facts().isEmpty()) {
-            return "error: read failed: " + ref + " (cause in the log) — no task created";
+            return Launched.refused("error: read failed: " + ref + " (cause in the log) — no task created");
         }
         if (!read.facts().get().exists()) {
-            return "error: no such item: " + ref + " (the tracker says so) — no task created";
+            return Launched.refused("error: no such item: " + ref + " (the tracker says so) — no task"
+                    + " created");
         }
         var facts = read.facts().filter(TicketFacts::usable);
         if (facts.isEmpty()) {
-            return "error: read incomplete: " + ref + " (no key, title or url) — no task created";
+            return Launched.refused("error: read incomplete: " + ref + " (no key, title or url) — no task"
+                    + " created");
         }
         TicketFacts f = facts.get();
         if (bareKey && !ref.equalsIgnoreCase(f.key())) {
-            return "error: asked for " + ref + " and got " + f.key() + " back — no task created. Launch it"
-                    + " under the key the tracker itself reports.";
+            return Launched.refused("error: asked for " + ref + " and got " + f.key() + " back — no task"
+                    + " created. Launch it under the key the tracker itself reports.");
         }
         String taskId = f.key();
         List<String> resolved = chosen != null ? chosen : List.of(resolveByLabels(f));
@@ -95,10 +98,10 @@ public class TaskLauncher {
         // Only NOW does the task exist, so only now can the read that named it be charged to it —
         // charging earlier silently dropped the most expensive call in a task's life.
         tickets.charge(taskId, read.usage());
-        return result;
+        return Launched.created(taskId, result);
     }
 
-    public String resume(String reviewRequestUrl) {
+    public Launched resume(String reviewRequestUrl) {
         return resumes.resume(reviewRequestUrl);
     }
 
