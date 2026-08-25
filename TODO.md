@@ -31,3 +31,14 @@ Thin means per PURPOSE: one or two servers named in the local config — a ticke
 read loads the code host, neither loads the rest. `orchestrator.assistant.mcp-config` already pins a server
 list, but one list for every call; the open part is a list per kind of read (`AssistantCallKind` already names
 the kinds) and what a kind with no list of its own falls back to.
+
+## Split one task's work into review requests a human can actually read (idea)
+
+A large ticket lands as one branch and one request, and a request nobody can read is a request nobody reviews.
+The idea is a splitter: the same work goes out as several requests, cut at a configured size — around 300–400
+changed lines each, counting added plus removed, which is the number a reviewer's attention actually tracks.
+
+The size is configuration, not a constant. What the splitter needs deciding first: where a cut is allowed to
+fall (a commit boundary is the only one that leaves each request buildable), how the requests are chained so
+the second targets the first rather than the base branch, and what happens to a round of comments on a request
+that a later cut has already superseded.
