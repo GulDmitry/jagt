@@ -63,4 +63,17 @@ public interface AgentRuntime {
     default String compactedStart() {
         return "";
     }
+
+    /**
+     * What this CLI puts in a notification that a session cannot go on without a human — a permission it is
+     * being refused, not a prompt merely left idle. One event covers both in at least one CLI, and the word it
+     * chooses is the only thing that tells them apart.
+     *
+     * <p>Blank where a CLI says nothing, and an unrecognised notification stays the quieter of the two: a wait
+     * that turns out to be real is found by the same threshold as every other silence, while one invented over
+     * a session that was working is what teaches a human to stop reading the board.
+     */
+    default String blockingNotification() {
+        return "";
+    }
 }

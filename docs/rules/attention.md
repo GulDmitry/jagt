@@ -41,10 +41,15 @@ threshold as the rest of them turns it into silence, which is also when it gets 
 is still the latest sign, since output after it dates the wait instead.
 
 The other kind keeps answering at once, because nothing moves there until a human does something. Claude
-reports both through one event, though (`Notification` covers a permission prompt AND a prompt left idle for a
-minute), so a session working through something long can still be called waiting a minute after its turn
-ended. Telling the two apart needs the notification's own wording, which is a vendor sentence jagt would then
-be parsing — not taken.
+reports both through **one** event, though — `Notification` covers a permission it is being refused and a
+prompt merely left idle for a minute — and the only thing separating them is the wording it chose. So that
+wording is **declared** (`blocking-notification` in the runtime's own properties, reaching the flow as
+`AgentRuntime.blockingNotification`) rather than matched in code: it is vendor knowledge, and it belongs in
+the file a human opens when the vendor changes.
+
+Unrecognised wording stays the quieter of the two. A block that is real is still found by the same threshold
+as every other silence, one interval later; a block invented over a session that was working is what teaches a
+human to stop reading the board — and that asymmetry is the whole reason the default runs this way.
 
 **A hook reports; it decides nothing.** The stamp stays the watchdog's single verdict, or one surface would
 start calling a session blocked while the other has it working. A session reporting itself **alive** drops what

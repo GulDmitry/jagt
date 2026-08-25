@@ -25,7 +25,9 @@ final class SessionHooks {
     /** Declarations that are not an event-to-state line: one is answered, the other is a vendor's word. */
     private static final String GATE = "gate";
     private static final String COMPACTED_START = "compacted-start";
-    private static final java.util.Set<String> NOT_A_STATE = java.util.Set.of(GATE, COMPACTED_START);
+    private static final String BLOCKING_NOTIFICATION = "blocking-notification";
+    private static final java.util.Set<String> NOT_A_STATE =
+            java.util.Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION);
 
     /** The event this CLI answers with allow or deny, or nothing where it has none. */
     static Optional<String> gate(String runtime) {
@@ -35,6 +37,11 @@ final class SessionHooks {
     /** What this CLI calls a start that follows a compaction, or blank where it says nothing about starts. */
     static String compactedStart(String runtime) {
         return declared(runtime).getProperty(COMPACTED_START, "");
+    }
+
+    /** What this CLI says in a notification a session cannot go on past, or blank where it says nothing. */
+    static String blockingNotification(String runtime) {
+        return declared(runtime).getProperty(BLOCKING_NOTIFICATION, "");
     }
 
     /** Event to state, in a fixed order so the generated file does not churn between provisionings. */

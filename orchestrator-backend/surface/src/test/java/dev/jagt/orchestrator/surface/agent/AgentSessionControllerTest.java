@@ -27,9 +27,11 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports).report("waiting", "/wt/ABC-1-proj",
-                new AgentSessionController.Session("/logs/session.jsonl", "compact"));
+                new AgentSessionController.Session("/logs/session.jsonl", "compact", null));
 
-        verify(reports).record("ABC-1", SessionProbe.State.WAITING, Path.of("/logs/session.jsonl"), "compact");
+        verify(reports).record("ABC-1", SessionProbe.State.WAITING,
+                SessionReports.Report.defaults().withSessionLog(Path.of("/logs/session.jsonl"))
+                        .withStartedBy("compact"));
     }
 
     /** Deriving where a session writes its log is a guess, and a payload that named none must not become one. */
@@ -42,7 +44,8 @@ class AgentSessionControllerTest {
 
         new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj", null);
 
-        verify(reports).record("ABC-1", SessionProbe.State.WORKING, null, null);
+        verify(reports).record("ABC-1", SessionProbe.State.WORKING,
+                SessionReports.Report.defaults());
     }
 
     @Test
@@ -51,13 +54,29 @@ class AgentSessionControllerTest {
         when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
         SessionReports reports = mock(SessionReports.class);
-        when(reports.record("ABC-1", SessionProbe.State.WORKING, null, "compact"))
+        when(reports.record("ABC-1", SessionProbe.State.WORKING,
+                SessionReports.Report.defaults().withStartedBy("compact")))
                 .thenReturn("re-read task_context.md");
 
         String answered = new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj",
-                new AgentSessionController.Session(null, "compact"));
+                new AgentSessionController.Session(null, "compact", null));
 
         assertThat(answered).isEqualTo("re-read task_context.md");
+    }
+
+    /** The one event that covers two waits: what the CLI told the human is what separates them. */
+    @Test
+    void carriesWhatTheCliToldTheHumanSoOneEventCanMeanTwoDifferentWaits() {
+        StateService state = mock(StateService.class);
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
+                TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        SessionReports reports = mock(SessionReports.class);
+
+        new AgentSessionController(state, reports).report("idle", "/wt/ABC-1-proj",
+                new AgentSessionController.Session(null, null, "Claude needs your permission to use Bash"));
+
+        verify(reports).record("ABC-1", SessionProbe.State.IDLE,
+                SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
     }
 
     @Test

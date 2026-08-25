@@ -31,12 +31,14 @@ import java.util.Locale;
 public class AgentSessionController {
 
     /**
-     * Two fields worth taking: the file the session appends to, which jagt otherwise derives, and what STARTED
-     * this session — the only way to tell a compaction from an ordinary start.
+     * The fields worth taking: the file the session appends to, which jagt otherwise derives; what STARTED this
+     * session, the only way to tell a compaction from an ordinary start; and what the CLI told the human, for
+     * the one event that covers two different waits.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Session(@JsonProperty("transcript_path") String transcriptPath,
-                          @JsonProperty("source") String source) {
+                          @JsonProperty("source") String source,
+                          @JsonProperty("message") String message) {
     }
 
     private final StateService stateService;
@@ -54,9 +56,19 @@ public class AgentSessionController {
         String taskId = stateService.findByWorktree(cwd)
                 .orElseThrow(() -> new IllegalArgumentException("No task runs in '" + cwd + "'"))
                 .getKey();
-        Path sessionLog = session == null || session.transcriptPath() == null
-                || session.transcriptPath().isBlank() ? null : Path.of(session.transcriptPath());
-        return reports.record(taskId, reported(state), sessionLog, session == null ? null : session.source());
+        return reports.record(taskId, reported(state), reported(session));
+    }
+
+    /** Deriving where a session writes its log is a guess, so a payload that named none must not become one. */
+    private static SessionReports.Report reported(Session session) {
+        if (session == null) {
+            return SessionReports.Report.defaults();
+        }
+        String log = session.transcriptPath();
+        return SessionReports.Report.defaults()
+                .withSessionLog(log == null || log.isBlank() ? null : Path.of(log))
+                .withStartedBy(session.source())
+                .withSaid(session.message());
     }
 
     private static SessionProbe.State reported(String state) {

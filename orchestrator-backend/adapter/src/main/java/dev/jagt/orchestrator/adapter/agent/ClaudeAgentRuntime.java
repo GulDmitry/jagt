@@ -142,6 +142,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         return SessionHooks.compactedStart("claude");
     }
 
+    @Override
+    public String blockingNotification() {
+        return SessionHooks.blockingNotification("claude");
+    }
+
     /** Which of Claude's events mean what is declared in {@code hooks/claude.properties}, not here. */
     private String hooksJson(Path worktree) {
         String events = Stream.concat(
