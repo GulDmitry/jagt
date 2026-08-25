@@ -46,7 +46,7 @@ was built and removed — do not add one back.
 | the verb | is | executed by |
 |---|---|---|
 | one a task owns | a `flow/TaskAction` row, gated by `Move` | `CommandService` |
-| one no task owns | a `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) — id, hint, usage, whether its answer is a report, whether it is console-only | itself |
+| one no task owns | a `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) — id, hint, usage, whether its answer is a report, whether that report is about one task, whether it is console-only | itself |
 
 `CommandReference` **renders both** — `help`'s text and the palette's verb list — so a hint is written once.
 `GrammarDispatch` **looks a typed word up** in the two instead of switching on it. `GET /api/commands/{id}`
@@ -56,10 +56,12 @@ board *builds* its report buttons from that list).
 This is what parity failed on before (2026-08-19): the per-task verbs always had this shape, while
 `do`/`resume`/`stats`/`activity`/`help` were hand-written in six places each.
 
-Three deliberate limits: that endpoint refuses anything that is not a report (a GET must not be able to start
-a task); a console-only command is filtered out of what the board is told at all; and tier 2 stays narrower on
-purpose — a prose request cannot ask for a dialog, so `NaturalLanguageDispatch` names the two launches itself
-and offers no report.
+Four deliberate limits: that endpoint refuses anything that is not a report (a GET must not be able to start
+a task); a console-only command is filtered out of what the board is told at all; a report **about one task**
+(`aboutOneTask`) gets no button in the bar, because the card that has something to show is where a human
+presses it and a bar button would answer for every task at once — it stays typeable, and the console, which
+has no cards, still lists it; and tier 2 stays narrower on purpose — a prose request cannot ask for a dialog,
+so `NaturalLanguageDispatch` names the two launches itself and offers no report.
 
 ### Two-tier dispatch
 

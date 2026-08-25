@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class CommandReferenceTest {
 
-    private record Declared(String id, String hint, List<String> usage, boolean report, boolean consoleOnly)
-            implements GlobalCommand {
+    private record Declared(String id, String hint, List<String> usage, boolean report, boolean consoleOnly,
+                           boolean aboutOneTask) implements GlobalCommand {
         @Override
         public String run(String tail) {
             return "ran";
@@ -22,9 +22,9 @@ class CommandReferenceTest {
     }
 
     private static final GlobalCommand SPEND = new Declared("spend", "what the calls cost",
-            List.of("spend [since]", "  … today — only this session"), true, false);
+            List.of("spend [since]", "  … today — only this session"), true, false, false);
     private static final GlobalCommand TERMINAL_ONLY = new Declared("redraw", "repaint the screen",
-            List.of("redraw"), false, true);
+            List.of("redraw"), false, true, false);
 
     @Test
     void advertisesOnlyTheCurrentSpellingOfARenamedVerb() {
@@ -69,6 +69,16 @@ class CommandReferenceTest {
         assertThat(CommandReference.verbs(List.of(TERMINAL_ONLY)))
                 .filteredOn(verb -> verb.id().equals("redraw"))
                 .singleElement().extracting(CommandReference.Verb::consoleOnly).isEqualTo(true);
+    }
+
+    /** A report answering for one task belongs on that task, and a bar button would answer for all of them. */
+    @Test
+    void marksAReportAboutOneTaskSoNoSurfaceOffersItWithoutOne() {
+        GlobalCommand drafts = new Declared("drafts", "what one task drafted", List.of("drafts <task>"), true,
+                false, true);
+
+        assertThat(CommandReference.verbs(List.of(drafts))).filteredOn(verb -> verb.id().equals("drafts"))
+                .singleElement().extracting(CommandReference.Verb::aboutOneTask).isEqualTo(true);
     }
 
     @Test

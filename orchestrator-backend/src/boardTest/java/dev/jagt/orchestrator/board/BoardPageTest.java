@@ -900,6 +900,14 @@ class BoardPageTest {
     }
 
     @Test
+    void aReportThatAnswersForOneTaskGetsNoButtonInTheBarOfReports() {
+        Page page = open();
+
+        assertThat(page.locator("#show-stats")).hasCount(1);
+        assertThat(page.locator("#show-replies")).hasCount(0);
+    }
+
+    @Test
     void draftedReviewRepliesAreAnnouncedOnTheCard() throws IOException {
         Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
         Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nagreed, fixed\n");

@@ -65,13 +65,14 @@ function parse(line) {
 }
 
 // The suggestions and the report buttons are the SERVER's verb list, so a command the console accepts can never
-// be missing here, and one more report needs no branch in this page.
+// be missing here, and one more report needs no branch in this page. A report about ONE task is not among them:
+// the card that has something to show is where it is pressed, and a bar button would answer for all of them.
 export function refreshSuggestions() {
   document.getElementById('ask-options').replaceChildren(
     ...store.verbs().map((verb) => Object.assign(document.createElement('option'),
       {value: verb.id, label: verb.hint})));
   document.getElementById('reports').replaceChildren(
-    ...store.verbs().filter((verb) => verb.report).map((verb) => {
+    ...store.verbs().filter((verb) => verb.report && !verb.aboutOneTask).map((verb) => {
       const button = document.createElement('button');
       button.id = `show-${verb.id}`;
       button.textContent = verb.id.charAt(0).toUpperCase() + verb.id.slice(1);

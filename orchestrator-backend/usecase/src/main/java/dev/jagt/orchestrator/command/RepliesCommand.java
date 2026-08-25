@@ -32,6 +32,11 @@ public class RepliesCommand implements GlobalCommand {
     }
 
     @Override
+    public boolean aboutOneTask() {
+        return true;
+    }
+
+    @Override
     public String run(String tail) {
         return replies.render(tail);
     }

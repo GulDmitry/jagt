@@ -96,8 +96,11 @@ announce it, because a human who does not know the convention ships a round and 
 **The announcement is also where it is read** (the owner's rule, 2026-08-21): `replies [task]` is a report
 (`command/ReviewRepliesReport`) that puts every comment, its verdict and the reply that will be posted for it on
 the screen the human already has. The console line names the verb; on the board the drafted-replies line **is**
-the button that opens it. Approving a round by opening an editor in a worktree is a step nobody takes, which is
-how a round gets shipped unread.
+the button that opens it, and the board offers it **nowhere else** (`GlobalCommand.aboutOneTask`) — a bar
+button pressed with no task named answers for all of them at once. Where a card announces nothing, because the
+round was shipped or the status moved on, the verb is typed instead: `replies <task>` in Ask or in the console.
+Approving a round by opening an editor in a worktree is a step nobody takes, which is how a round gets shipped
+unread.
 
 Two things it deliberately does: it reads the **file** rather than the card's badge (that one is announced only
 where it is actionable, so a status that moved on would otherwise read as "nothing drafted"), and it prints

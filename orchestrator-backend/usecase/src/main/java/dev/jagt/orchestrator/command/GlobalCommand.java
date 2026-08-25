@@ -25,6 +25,15 @@ public interface GlobalCommand {
         return false;
     }
 
+    /**
+     * Whether the answer is about ONE task. A surface with cards puts it on the card that has something to show
+     * and offers no bar button beside it: pressed with nothing named, such a report answers for every task at
+     * once, which is a list a human has to read past to reach the one they meant.
+     */
+    default boolean aboutOneTask() {
+        return false;
+    }
+
     /** Whether it only means anything in a terminal, so no other surface is told it exists. */
     default boolean consoleOnly() {
         return false;

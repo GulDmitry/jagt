@@ -15,7 +15,17 @@ import java.util.List;
 public final class CommandReference {
 
     public record Verb(String id, String hint, boolean takesTask, List<String> aliases, boolean report,
-                       boolean consoleOnly) {
+                       boolean consoleOnly, boolean aboutOneTask) {
+
+        /** Built from the declaration rather than by a caller: three adjacent flags transpose in silence. */
+        static Verb of(TaskAction action) {
+            return new Verb(action.id(), action.hint(), true, action.retiredVerbs(), false, false, false);
+        }
+
+        static Verb of(GlobalCommand command) {
+            return new Verb(command.id(), command.hint(), false, List.of(), command.report(),
+                    command.consoleOnly(), command.aboutOneTask());
+        }
     }
 
     private record Declared(Verb verb, List<String> usage) {
@@ -54,12 +64,10 @@ public final class CommandReference {
     private static List<Declared> declared(Collection<GlobalCommand> globals) {
         List<Declared> declared = new ArrayList<>();
         for (TaskAction action : TaskAction.values()) {
-            declared.add(new Declared(new Verb(action.id(), action.hint(), true, action.retiredVerbs(), false,
-                    false), List.of(action.usage())));
+            declared.add(new Declared(Verb.of(action), List.of(action.usage())));
         }
         for (GlobalCommand command : globals) {
-            declared.add(new Declared(new Verb(command.id(), command.hint(), false, List.of(), command.report(),
-                    command.consoleOnly()), command.usage()));
+            declared.add(new Declared(Verb.of(command), command.usage()));
         }
         // Rank, then the id: two commands the order does not name would otherwise come out in whatever
         // order the container handed them over.
