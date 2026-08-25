@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.flow;
 
 /**
- * How loudly a task asks for the human, and in what words. {@link Owner} answers WHO — this answers whether the
- * card is an interruption. One value, because the badge, the header count and the own-move filter are one
- * question asked three times, and a tier that only some of them read is a badge that means nothing.
+ * How loudly a task asks for the human. {@link Owner} answers WHO and {@link Move#ask} WHICH act — this answers
+ * only whether the card is an interruption. One value, because the badge, the header count and the own-move
+ * filter are one question asked three times, and a tier that only some of them read means nothing.
  *
  * <p>{@code NONE} exactly when the owner is not {@link Owner#YOU}.
  */
@@ -25,7 +25,7 @@ public enum Attention {
         this.label = label;
     }
 
-    /** The words both surfaces render; null when there is nothing to say. */
+    /** The tier in words, for a surface with no colour to spend on saying it; null when it says nothing. */
     public String label() {
         return label;
     }

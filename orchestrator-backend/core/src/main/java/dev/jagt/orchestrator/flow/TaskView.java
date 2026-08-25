@@ -31,10 +31,10 @@ public record TaskView(
         String statusLabel,
         Phase phase,
         Owner owner,
-        // How loudly it asks: what the header counts and what the own-move filter keeps. Its words come with it,
-        // exactly as a status's do, so no surface spells a tier of its own; null when it says nothing.
+        // How loudly it asks: what the header counts and what the own-move filter keeps.
         Attention attention,
-        String attentionLabel,
+        // WHICH act is wanted, short enough for a chip; null exactly when the tier above is NONE.
+        String ask,
         String hint,
         List<ActionView> actions,
         String primaryAction,
@@ -86,7 +86,7 @@ public record TaskView(
                 .toList();
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),
                 task.status().label(), move.phase(),
-                move.owner(), move.attention(), move.attention().label(), move.hint(), actions,
+                move.owner(), move.attention(), move.ask(), move.hint(), actions,
                 move.primary() == null ? null : move.primary().id(),
                 DashboardLine.forTask(task, webLink(task.mrUrl())), webLink(task.ticketUrl()),
                 webLink(task.mrUrl()),

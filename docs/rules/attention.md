@@ -65,9 +65,9 @@ alive.
 
 ### `Owner.YOU` means an action of theirs exists
 
-A status alone cannot always say so. The board's badge, its "action required" count and its own-move filter
-all read the tier **below**, which is NONE exactly when the owner is not YOU — so a card that asks for a human
-who has nothing to do teaches them to ignore all three.
+A status alone cannot always say so. Whether a card wears a badge at all, the "need your action" count and the
+own-move filter all read the tier **below**, which is NONE exactly when the owner is not YOU — so a card that
+asks for a human who has nothing to do teaches them to ignore all three.
 
 Two cells are decided by more than the status (`Move.ownerOf`):
 
@@ -112,8 +112,29 @@ says which:
 Pinned over every status in `MoveTest`, because a card counted in "N need your action" while its badge says
 the move can wait is the drift that makes the badge worth nothing.
 
-The words come from the enum (`attentionLabel` on the wire, exactly as a status ships its label), so the
-console prints the same two.
+### The badge names the act, never the tier
+
+The owner's rule, 2026-08-25. "action required" said that something was theirs and nothing about what — the
+same two words over a session waiting on an answer, a red run and a deploy conflict, so the card had to be
+opened before it said anything. `Move.ask` (`ask` on the wire) names the act instead, in the words a chip has
+room for.
+
+It names what the **highlighted verb** does, so a badge can never advertise an act the card has no button for
+— which is what keeps it from becoming a second, drifting copy of `Move.hint`, the same act at sentence
+length that the badge carries as its tooltip.
+
+The tier keeps the loudness and loses the words: it is what the header count, the own-move filter and the
+card's colour read. `MoveTest` pins `ask` non-null over exactly the statuses whose tier is not `NONE` — with a
+request and without, polled and elapsed, since those are the only routes by which a round out for review ever
+becomes the human's.
+
+**The quiet tier says so in grammar, not in colour.** An interruption is an imperative and a move they can make
+whenever is offered — `resolve the conflict` against `you can deploy it` — because a badge that only a shade
+tells apart is one a human on a monochrome terminal, or with the commoner kind of colour blindness, cannot tell
+apart at all.
+
+The console prints the tier word rather than the act: it has no colour to spend on one, and the sentence beside
+it is already the specific answer.
 
 **The ping still reads the owner rather than the tier** — an approval landing is an event worth a banner even
 though it can wait.

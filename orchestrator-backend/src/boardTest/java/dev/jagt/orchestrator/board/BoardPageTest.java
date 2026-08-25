@@ -304,7 +304,7 @@ class BoardPageTest {
 
         assertThat(page.locator("article .alias")).hasText("a1");
         assertThat(page.locator("article .id")).hasText("ABC-1");
-        assertThat(page.locator("article .badge")).hasText("your move");
+        assertThat(page.locator("article .badge")).hasText("you can deploy it");
         assertThat(page.locator("article .title")).hasText("Widget layout is off");
         assertThat(page.locator("article .detail")).hasCount(0);
     }
@@ -478,7 +478,8 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .badge")).hasText(new String[]{"action required", "your move"});
+        assertThat(page.locator("article .badge"))
+                .hasText(new String[]{"relay the failed checks", "you can deploy it"});
         assertThat(page.locator("#waiting")).hasText("1 need your action");
         page.locator("#mine").check();
         assertThat(page.locator("article .alias")).hasText(new String[]{"a1"});

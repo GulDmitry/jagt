@@ -115,14 +115,16 @@ article.you { border-left-color: var(--you); }
 article.you.optional { border-left-color: var(--line); }
 article.agent { border-left-color: var(--agent); }
 article.ci { border-left-color: var(--ci); }
-.card-top { display: flex; gap: 8px; align-items: baseline; }
+/* Wraps, because the badge is a phrase and not a word: squeezed onto one line it would break INSIDE its own
+   pill, which is the one place a line break has nowhere to go. */
+.card-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .alias {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: var(--accent);
 }
 .id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .title { margin: 6px 0; }
 .meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted); }
-.badge { padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.badge { padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
 /* Two tiers, and the quiet one has to LOOK quiet: an interruption filled in the owner's colour, a move that can
    wait wearing the same chip as a status. */
 .badge.required { background: var(--you-bg); color: var(--you); }

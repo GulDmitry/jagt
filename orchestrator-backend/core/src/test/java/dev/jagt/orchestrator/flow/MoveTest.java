@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
 
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 
@@ -224,6 +225,103 @@ class MoveTest {
         Move move = Move.forTask(status, true, RoundState.NONE, false);
 
         assertThat(move.attention() == Attention.NONE).isEqualTo(move.owner() != Owner.YOU);
+    }
+
+    @ParameterizedTest
+    @EnumSource(TaskStatus.class)
+    void namesTheActOnEveryCardWhoseMoveIsTheHumansOwn(TaskStatus status) {
+        Move working = Move.forTask(status, true, RoundState.NONE, false);
+        Move stopped = Move.forTask(status, true, RoundState.NONE, true);
+        Move asked = Move.forTask(status, true, new RoundState(AgentReport.QUESTION, false), false);
+        Move unpolled = Move.forTask(status, true, RoundState.NONE, false, elapsed());
+        Move requestless = Move.forTask(status, false, RoundState.NONE, false);
+
+        assertThat(working.ask() == null).isEqualTo(working.attention() == Attention.NONE);
+        assertThat(stopped.ask() == null).isEqualTo(stopped.attention() == Attention.NONE);
+        assertThat(asked.ask() == null).isEqualTo(asked.attention() == Attention.NONE);
+        assertThat(unpolled.ask() == null).isEqualTo(unpolled.attention() == Attention.NONE);
+        assertThat(requestless.ask() == null).isEqualTo(requestless.attention() == Attention.NONE);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "REVIEW_PENDING, review and ship",
+            "CI_FAILED, relay the failed checks",
+            "DEPLOY_CONFLICT, resolve the conflict"
+    })
+    void namesTheActItWantsRatherThanHowLoudlyItWantsIt(TaskStatus status, String ask) {
+        assertThat(Move.forTask(status, true, RoundState.NONE, false).ask()).isEqualTo(ask);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CI_POLLING, read the review",
+            "REVIEWED, read the review"
+    })
+    void namesTheReadWhenTheRoundIsBackWithTheHumanBecauseNothingPollsIt(TaskStatus status, String ask) {
+        assertThat(Move.forTask(status, true, RoundState.NONE, false, elapsed()).ask()).isEqualTo(ask);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "CI_POLLING, focus the agent",
+            "CI_FAILED, focus the agent",
+            "REVIEWED, close the task"
+    })
+    void namesWhatIsLeftWhenTheStatusClaimsAReviewRequestThatIsNotThere(TaskStatus status, String ask) {
+        assertThat(Move.forTask(status, false, RoundState.NONE, false).ask()).isEqualTo(ask);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "APPROVED, you can deploy it",
+            "REVERTED, you can ship a fix"
+    })
+    void offersRatherThanOrdersTheActWhoseCardCanWait(TaskStatus status, String ask) {
+        assertThat(Move.forTask(status, true, RoundState.NONE, false).ask()).isEqualTo(ask);
+    }
+
+    @Test
+    void asksForAnAnswerWhereverTheSessionStoppedToPutTheQuestion() {
+        Move move = Move.forTask(TaskStatus.DEPLOYED, true, new RoundState(AgentReport.QUESTION, false), false);
+
+        assertThat(move.ask()).isEqualTo("answer the session");
+    }
+
+    @Test
+    void asksForTheSessionToBeCheckedWhenItWentQuietWithoutReporting() {
+        Move move = Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE, true);
+
+        assertThat(move.ask()).isEqualTo("check the stopped session");
+    }
+
+    @ParameterizedTest
+    @EnumSource(TaskStatus.class)
+    void highlightsAButtonForTheActItsBadgeNames(TaskStatus status) {
+        List<Move> badged = Stream.of(
+                        Move.forTask(status, true, RoundState.NONE, false),
+                        Move.forTask(status, false, RoundState.NONE, false),
+                        Move.forTask(status, true, RoundState.NONE, true),
+                        Move.forTask(status, true, RoundState.NONE, false, elapsed()))
+                .filter(move -> move.ask() != null).toList();
+
+        assertThat(badged).allSatisfy(move -> assertThat(move.actions()).contains(move.primary()));
+    }
+
+    @Test
+    void pointsAtTheSessionRatherThanAShipWhenARevertedDeployHasNoRequestToShipOnto() {
+        Move move = Move.forTask(TaskStatus.REVERTED, false, RoundState.NONE, false);
+
+        assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
+        assertThat(move.hint()).isEqualTo("the deploy was reverted and no request is open; focus the agent");
+    }
+
+    @Test
+    void pointsAtTheSessionRatherThanASweepWhenAFailedRunHasNoRequestToReadItFrom() {
+        Move move = Move.forTask(TaskStatus.CI_FAILED, false, RoundState.NONE, false);
+
+        assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
+        assertThat(move.hint()).isEqualTo("no review request to read the failure from; focus the agent");
     }
 
     /** The same invariant for the round that hands a task BACK to the code host: an answered round is no badge. */

@@ -223,8 +223,9 @@ What the agent does with a comment:
 | Ship a round | `ship <task>` | Commits, pushes the task branch, opens or updates the request. Never merges |
 | The project versions a file jagt generates per worktree | `ship <task>` | The commit holds the task's work only; jagt unstages what it wrote for that worktree |
 | Done | `done <task>` | Kills the agent window, reaps its language server, deletes the worktree. The branch survives |
-| A card says "your move" instead of "action required" | — | The quiet tier: a good state whose next move is yours whenever. Not counted in the header, not kept by the filter |
-| A deployed task still reads "action required" | — | It does not. DEPLOYED waits on nobody, like DONE; `done` is the only move left |
+| A badge says what to do, not that something is due | — | The badge is the act (`Move.ask`), named after whatever verb the card highlights. The tier only colours it |
+| A badge reads "you can …" instead of an order | — | The quiet tier: a good state whose next move is yours whenever. Not counted in the header, not kept by the filter |
+| A deployed task wears no badge at all | — | Correct. DEPLOYED waits on nobody, like DONE; `done` is the only move left |
 | Merged task branches pile up | your own git | jagt has no `prune` — cleanup is one task's own business |
 | Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be mapped onto a live one |
 | "Is it me holding these up?" | `stats` | Per task: time on you, on its agent and on the code host, the rounds it has been out, and which of the three is slowest |

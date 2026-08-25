@@ -57,11 +57,10 @@ export function card(task) {
   top.className = 'card-top';
   top.append(span('alias', task.alias || '-'),
     task.ticketUrl ? Object.assign(link(task.ticketUrl, task.id), {className: 'id'}) : span('id', task.id));
-  // Only YOUR move is news; every other owner is the status word again. TWO tiers, because one word for both a
-  // dead session and a deploy waiting on nobody is what teaches a human to stop reading the badge — the words and
-  // the tier are the server's (`attention`), so the badge, the header count and the filter cannot disagree.
-  if (task.attentionLabel) {
-    const badge = span(`badge ${task.attention.toLowerCase()}`, task.attentionLabel);
+  // Only YOUR move is news; every other owner is the status word again. The words name the ACT and the tier only
+  // colours it, both the server's, so the badge, the header count and the own-move filter cannot disagree.
+  if (task.ask) {
+    const badge = span(`badge ${task.attention.toLowerCase()}`, task.ask);
     badge.dataset.tip = task.hint;
     top.append(badge);
   }
