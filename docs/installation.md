@@ -2,8 +2,33 @@
 
 [← README](../README.md)
 
-**Before anything else:** your agent CLI (Claude Code by default) must already have MCP access to the systems
-your agents will use — your issue tracker and your code host. jagt itself talks to no external service.
+## MCP access comes first
+
+jagt talks to no external service. It reads a ticket, and a review round, by spawning a **headless** one-shot of
+your agent CLI and letting that use **your** MCP servers. Two kinds of server cannot answer such a call:
+
+- one that only an **interactive login** authenticates — a headless session authenticates none;
+- one that is **plugin-scoped** — a headless session does not load those at all.
+
+`claude mcp list` reports a plugin server as connected the whole time, so nothing looks wrong: the read simply
+has no tool for the host it was asked about, and fails naming whichever unauthenticated server it could still
+see. Check what a headless call actually has:
+
+```sh
+cd "$TMPDIR" && claude "Name your MCP tools for <your tracker> and <your code host>, or say NONE." -p
+```
+
+`NONE` means jagt cannot read a ticket. Point it at a servers file instead — a plugin's own `.mcp.json` will do,
+and its `${VAR}` placeholders resolve from the environment the backend was started in:
+
+```yaml
+# orchestrator-backend/config/application.yml
+orchestrator:
+  assistant:
+    mcp-config: /path/to/mcp-servers.json
+```
+
+That also cuts what each read loads to the servers it needs, which is most of what one costs.
 
 ## macOS
 
@@ -35,7 +60,8 @@ your agents will use — your issue tracker and your code host. jagt itself talk
 | Node 18+ | `apt install nodejs` | only for `orchestrator.agent=codex` |
 | ttyd | `apt install ttyd` | only for `orchestrator.web-terminal.enabled=true` |
 
-Then in `application.yml`:
+Then in `orchestrator-backend/config/application.yml` — the file that is yours, see
+[Configuration](configuration.md):
 
 ```yaml
 orchestrator:
@@ -68,12 +94,8 @@ each line naming the key that fixes it. Fix them all, start again.
 
 ## Reads cost a model call
 
-Every ticket and review-round read is a headless model call that uses **your** MCP servers — jagt holds no
-credential and talks to no service itself. A tracker or code-host server that only an interactive login can
-reach cannot answer one: declare a token-based server for it with
-`orchestrator.assistant.mcp-config`.
-
-Budget for it before turning auto-review on: 24 h of polling one request costs $3–$7.
+Every ticket and review-round read is one headless model call (see [above](#mcp-access-comes-first)). Budget
+for it before turning auto-review on: 24 h of polling one request costs $3–$7.
 
 ## Notes
 
