@@ -2,14 +2,27 @@
 
 [← README](../README.md)
 
-Two files:
+`config.json` holds your projects and how you work; it is re-read on every access, so nothing restarts. It is
+gitignored — copy it from `config.json.dist` and never commit your own paths.
 
-| file | holds | applied |
-|------|-------|---------|
-| `config.json` | your projects and how you work | re-read on every access — no restart |
-| `orchestrator-backend/src/main/resources/application.yml` | machine and OS settings | on restart |
+Everything else is a Spring setting, and those come from **three** places. Later wins, and only the middle one
+is yours to edit:
 
-`config.json` is gitignored. Copy it from `config.json.dist` and never commit your own paths.
+| | where | holds | committed |
+|---|-------|-------|-----------|
+| 1 | `orchestrator-backend/src/main/resources/application.yml` | the defaults, and the comment on every key | yes — it is built INTO the jar |
+| 2 | `orchestrator-backend/config/application.yml` | **your machine** | no, gitignored |
+| 3 | a flag or a variable on the command line | one run | no |
+
+**A setting of yours goes in (2).** Spring Boot reads `./config/application.yml` from the directory it starts
+in, which is `orchestrator-backend` — and it overrides the packaged file key by key, so you write only what you
+change. It survives every `./gradlew build`, and it never lands in a commit.
+
+(1) is the reference: every key jagt has, with why it is set that way. Editing it puts your machine into the
+repository and needs a rebuild to take effect. (3) is for one run — `--orchestrator.ui=tui`, `LOG_FILE=…` — and
+outranks both.
+
+Applied on restart, all three: the jar reads them once at startup.
 
 ## Projects
 
@@ -145,6 +158,14 @@ one-shot read through the MCP servers of whoever runs jagt.
 | `orchestrator.assistant.permission-mode` | `bypassPermissions` | lets the headless read call MCP at all |
 | `orchestrator.assistant.allowed-tools` | *(empty)* | `mcp__<server>` allow-list; scopes the bypass |
 | `orchestrator.assistant.mcp-config` | *(empty)* | declare the servers instead of inheriting them |
+
+Inheriting is the default and usually right. **Declare instead when the servers that can answer are
+plugin-scoped**: a headless `-p` read loads none of those, so an install whose tracker and code-host servers
+come from a plugin has NO tool for either — and the read fails naming whichever unauthenticated connector it
+could still see, which is not the one at fault. `claude mcp list` shows the plugin server as connected the
+whole time, so nothing looks wrong. Point the key at a servers file (the plugin's own `.mcp.json` will do —
+its `${VAR}` placeholders resolve from the environment the backend was started in) and the read gets exactly
+those and nothing else. Details: [seams](rules/seams.md).
 
 ### Paths and safety
 

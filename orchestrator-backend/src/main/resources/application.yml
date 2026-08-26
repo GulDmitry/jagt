@@ -1,3 +1,7 @@
+# The DEFAULTS, and the comment on every key. This file is built into the jar and committed, so a setting
+# of yours belongs in `orchestrator-backend/config/application.yml` instead — gitignored, read from the
+# directory jagt starts in, overrides this one key by key, and survives every build. See
+# docs/configuration.md.
 server:
   # Change this and mcp_client.js needs MCP_SERVER_URL to match.
   port: 8290

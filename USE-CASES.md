@@ -29,6 +29,9 @@ re-deciding it next session. The rules live in [`AGENTS.md`](AGENTS.md), the map
 What a start deliberately does not check: anything on a remote (a branch would cost a fetch per project on
 every start) and anything over the network.
 
+| "Where does a setting of mine go?" | — | `config.json` for projects and how you work; `orchestrator-backend/config/application.yml` for anything Spring. Never the packaged `src/main/resources/application.yml` — that one is the defaults, it is committed, and it is rebuilt into the jar |
+| A key you set had no effect | — | You edited the packaged file and did not rebuild, or something later outranks it: a command-line flag beats both files |
+
 ## Starting work
 
 | situation | run | what happens |
