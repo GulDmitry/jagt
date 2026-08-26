@@ -2,8 +2,8 @@
 // second button for "how does this work" is a second answer to the same question.
 //
 // Every row shows the page's OWN element beside what it means — a legend that spells a colour out in words is
-// the first thing to go stale when the stylesheet moves. Board-only, the way `quit` is console-only: the console
-// has none of these marks and says every one of the facts in words already.
+// the first thing to go stale when the stylesheet moves, and a mark with no row here is one a human has to
+// guess.
 
 import {span} from '../core/dom.js';
 
@@ -36,6 +36,13 @@ const deployedButton = () => {
   return button;
 };
 
+const draftsButton = () => {
+  const button = document.createElement('button');
+  button.className = 'drafts';
+  button.textContent = 'replies drafted \u2014 click to read';
+  return button;
+};
+
 const rows = () => [
   [[deployedButton()],
     'a verb whose last run is still live — this task’s work is on a shared branch already, so pressing it '
@@ -56,6 +63,9 @@ const rows = () => [
     + 'anything here can read, so hover the request for the word the host actually used'],
   [[span('tick', '\u2713')],
     'only where a task spans repositories, and there is no one label for an approval that is all of them'],
+  [[draftsButton()],
+    'answers are written and waiting in the worktree — read them before you ship, and nothing else on the '
+    + 'card would say they exist'],
   [[span('pulse stalled', 'polling stopped')],
     'nothing will look at this round again on its own — the next move is a person’s'],
   [[span('chip on', 'auto-review on'), span('chip bad', 'jobs: 1 failed')],

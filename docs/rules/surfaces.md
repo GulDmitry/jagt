@@ -39,18 +39,9 @@ A board is read at a glance or it is not read at all, and every mark spends the 
   keeps its own element, because it hands the move back to a human and nothing else on the card says so.
 - **A word every card wears is a word nobody reads.** The project key is rendered only where an install has
   more than one, or a task spans several.
-- **A colour means ONE thing, board-wide.** Green is a step already TAKEN — work already on a shared branch, a
-  deploy that already ran, a request already approved. It says nothing about what is left: an approved task is
-  amber as well, because the deploy is still yours to press, and the two answer different questions. Green is
-  emphatically **not** a passing pipeline: that read as an approval when it was one (2026-08-26). Violet is the
-  reviewers owning the card, red is broken, amber is your move. A second meaning for a colour is not a small
-  cost: it is read wrong before it is looked up.
-- **Colour is the cheapest mark and the easiest to overspend.** It works while few things wear it. **One fact
-  per element**: the request wears its approval, as green and a tick on the same label; the checks answer as
-  their own dot and in no other hover. No dot is a verdict nothing here can READ — nobody has looked yet, or
-  the host answered with a word the parser does not know — and the request's own hover keeps that word.
-- Every mark has one row in the legend, and the legend renders the page's OWN element rather than naming a
-  colour in words — a second copy of a colour is a second thing to keep in step.
+- **A colour means ONE thing, board-wide, and colour is the cheapest mark to overspend.** Which colour means
+  what, what each mark IS, and the legend that has to carry it: [`design.md`](design.md). This file stays the
+  cost of adding one.
 
 ### Parity is an invariant, not an aspiration
 

@@ -25,6 +25,7 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 |----------------|------------|
 | `flow/`, a status, a capability, an outcome | [`docs/rules/flow.md`](docs/rules/flow.md) |
 | the board, a card, a verb, a report | [`docs/rules/surfaces.md`](docs/rules/surfaces.md) |
+| a colour, a mark, the colour palette, the legend | [`docs/rules/design.md`](docs/rules/design.md) |
 | whose move it is, a badge, an owner, a clock | [`docs/rules/attention.md`](docs/rules/attention.md) |
 | git, `ship`, `deploy`, `revert`, worktrees, multi-repo | [`docs/rules/git.md`](docs/rules/git.md) |
 | a review round, drafted replies, auto-review, jobs | [`docs/rules/review.md`](docs/rules/review.md) |
@@ -89,8 +90,10 @@ missing — add a kind, never an exception.
 ## Interfaces
 
 **Nothing is added to a surface without saying what it replaces.** A board is read at a glance or it is not
-read at all, and design is what a human pays for in attention. Full rules and the reasoning:
-[`docs/rules/surfaces.md`](docs/rules/surfaces.md) — read it before you put anything on the board.
+read at all, and design is what a human pays for in attention. What it costs to add a mark:
+[`docs/rules/surfaces.md`](docs/rules/surfaces.md). What the marks ARE — every colour, every shape, and the
+`Help` legend that renders them: [`docs/rules/design.md`](docs/rules/design.md). Read both before you put
+anything on the board.
 
 - **Never two controls for one question.** "How does this work" already has a button; a colour legend is a
   section of it, never a second button beside it. The same goes for a report, a filter and a form.
@@ -99,9 +102,9 @@ read at all, and design is what a human pays for in attention. Full rules and th
 - **A row that already carries four things does not want a fifth**, and **a card must not grow taller** to
   hold one. Height and cognitive load are the same budget spent twice; a fact that earns neither goes in the
   hover.
-- **A colour means one thing, board-wide** — green is a step already taken (work on a shared branch, a deploy
-  that ran, a request approved), violet the reviewers, red broken, amber your move. Colour is the cheapest mark
-  and the easiest to overspend: a second meaning is read wrong before anyone looks it up.
+- **A colour means one thing, board-wide** — the meanings are [`docs/rules/design.md`](docs/rules/design.md)
+  and nowhere else, because two wordings for one colour is how the second meaning gets in. Colour is the
+  cheapest mark and the easiest to overspend: a second meaning is read wrong before anyone looks it up.
 - **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
 - Every mark has one row in the legend, and the legend renders the page's **own** element rather than naming a
   colour in words.

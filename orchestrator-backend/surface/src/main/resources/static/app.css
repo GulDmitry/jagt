@@ -97,6 +97,9 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 .legend-key { display: flex; gap: 10px; align-items: center; }
 /* A sample is only the page's own element if it is the SIZE the page draws it. */
 .legend-key button { font-size: 12px; padding: 3px 8px; }
+/* The drafts line is full-width on a card and cannot be inside a content-sized track, so the sample keeps the
+   rest of its own look rather than taking this row's padding and its own margin as height. */
+.legend-key button.drafts { padding: 3px 7px; margin: 0; }
 .legend-says { color: var(--muted); }
 /* The card's edge is a border, which nothing outside a card can wear: here it is the same colour as a bar. */
 .legend-edge { width: 4px; height: 18px; border-radius: 2px; background: var(--line); }

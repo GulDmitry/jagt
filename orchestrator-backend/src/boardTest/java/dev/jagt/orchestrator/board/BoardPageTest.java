@@ -1375,6 +1375,7 @@ class BoardPageTest {
         assertThat(page.locator("#report")).isVisible();
         assertThat(page.locator("#report-section .legend button.again")).hasText("Deploy");
         assertThat(page.locator("#report-section .legend .checks.red")).hasCount(1);
+        assertThat(page.locator("#report-section .legend button.drafts")).hasCount(1);
     }
 
     private static long now() {
