@@ -88,13 +88,13 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 /* Each row is the page's OWN element beside what it means, so a colour is never named twice. */
 .legend {
   display: grid; grid-template-columns: max-content 1fr; gap: 10px 14px; align-items: center;
-  padding: 4px 14px 14px; font-size: 13px;
+  padding: 12px 14px 14px; border-bottom: 1px solid var(--line); font-size: 13px;
 }
 .legend-head {
-  grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid var(--line);
+  grid-column: 1 / -1;
   font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; color: var(--muted);
 }
-.legend-key { display: flex; gap: 6px; align-items: center; }
+.legend-key { display: flex; gap: 10px; align-items: center; }
 /* A sample is only the page's own element if it is the SIZE the page draws it. */
 .legend-key button { font-size: 12px; padding: 3px 8px; }
 .legend-says { color: var(--muted); }
@@ -168,11 +168,12 @@ article.ci { border-left-color: var(--ci); }
 a.id, a.mr-age {
   color: inherit; text-decoration: underline dotted; text-underline-offset: 2px;
 }
-/* The request wears its own verdicts: the colour is what the checks said, the tick what a human said. Two
-   channels on one element is the ceiling — a third would need a legend to tell them apart. A run in progress
-   moves the UNDERLINE, not the text: fading the label would fade the tick beside it, which is the other
-   channel, and a pulsing word is one you read twice. */
-a.mr-age.green { color: var(--ok); }
+/* The request wears its own verdicts. The reviewers' colour is an APPROVAL, red is a run that failed, and red
+   wins when both are true — the tick is what carries an approval through a broken build. Green is not among
+   them: it is work that is live on a shared branch, and one colour cannot mean two things on one card. A run in
+   progress moves the UNDERLINE, not the text: fading the label would fade the tick beside it, and a pulsing
+   word is one you read twice. */
+a.mr-age.approved { color: var(--ci); }
 a.mr-age.red { color: var(--danger); font-weight: 600; }
 a.mr-age.running { animation: mr-running 1.6s ease-in-out infinite; }
 @keyframes mr-running { 50% { text-decoration-color: transparent; } }
@@ -223,15 +224,14 @@ a { color: var(--accent); }
 .toast.error { border-left-color: var(--danger); }
 
 .checks { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center; }
-.checks.green { background: var(--ok); }
 .checks.red { background: var(--danger); }
 .checks.running { background: var(--muted); animation: checks-pulse 1.6s ease-in-out infinite; }
 @keyframes checks-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .checks.running { animation: none; } }
 
 /* The approval, beside the request it belongs to: filled once someone has approved, an empty ring while the
-   round is still waiting for one. Filled-or-hollow in the reviewer's own colour, never green: the dot next to
-   it is the checks, and two green discs would differ by nothing a human can see. */
+   round is still waiting for one. In the reviewers' own colour, never green — green on this board is work that
+   is live on a shared branch, and the dot beside this one spends red. */
 .approval { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center;
   border: 2px solid var(--ci); }
 .approval.yes { background: var(--ci); }

@@ -119,7 +119,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | Finding one task among many | Type in the filter box (`/`): alias, ticket number or title. `Esc` clears. There is no sort control |
 | "This card said 17h, I restarted the agent, now it says 0m" | The clock beside the status is time in **that** status. A fresh session re-reports itself, and those are real transitions |
 | "How long has this request been hanging?" | The `MR 8h` chip — the request's own creation time. It survives rounds, respawns and restarts |
-| "Did the checks pass? Has anyone approved?" | The same chip: its **colour** is the checks (green, red, fading = running) and a **✓** is an approval. Hover for all of it in words, and for when the next unattended poll is due |
+| "Did the checks pass? Has anyone approved?" | The same chip: approved is the reviewers' violet and a **✓**, failed checks are red, a run still going fades its underline. A run that PASSED wears nothing — it is the state everyone expects, and a colour there reads as an approval. Hover for all of it in words |
 | "When is the next poll?" | In that tooltip. A poll that is coming is not news — one that has **stopped** keeps its own mark, because the move is a person's again |
 | A task spanning repositories | One link per repository, and the verdicts stay as separate dots beside them: the checks are the worst repository's and the approval is all of them, so neither can ride on a link that names one |
 | The project key is missing from a card | The install has one project. A word every card wears is a word nobody reads; it comes back when a task spans repositories |
@@ -133,7 +133,8 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | A task at SHIPPING | The status and the move line are the whole answer; the detail line stays empty unless the watchdog found it silent |
 | Clicking a desktop notification | Opens the board filtered to that task. Needs `terminal-notifier` and a board being served |
 | "Which of these buttons changes something?" | Two rows: what moves the task on above, what only looks or restarts below (`TaskAction.Group`) |
-| "What does this colour / ring / dot mean?" | `Help` — under the commands, every mark beside what it means, shown as the page's own element. There is no second button for it |
+| "What does this colour / ring / dot mean?" | `Help` — **above** the commands, every mark beside what it means, shown as the page's own element. There is no second button for it |
+| What each colour means | One thing each, board-wide: **green** is work that is live on a shared branch, **violet** is the reviewers, **red** is broken, **amber** is your move |
 | "Has this branch been deployed already?" | The **Deploy button is green** while this task's work is live on the branch it writes; `revert` takes the colour off with the work. The console says `· deployed` on the move line |
 
 ## Review requests

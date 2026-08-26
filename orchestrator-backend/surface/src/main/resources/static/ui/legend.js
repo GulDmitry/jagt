@@ -47,15 +47,16 @@ const rows = () => [
   [[statusChip(), liveStatusChip()],
     'the state, and how long it has been in THIS one. Green where no verb on the card is the deploy: the work '
     + 'is on a shared branch already'],
-  [[requestChip('mr-age green', 'MR 5d \u2713'), requestChip('mr-age red', 'MR 2d'),
+  [[requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age red', 'MR 2d'),
     requestChip('mr-age running', 'MR 1h')],
-    'the review request and how long it has been open — its colour is the checks and the tick is an approval. '
-    + 'Hover for all of it in words, and for when the next unattended poll is due'],
+    'the review request and how long it has been open — approved, its checks failed, its checks still running. '
+    + 'A run that passed wears nothing: it is the state everyone expects. Hover for all of it in words, and '
+    + 'for when the next unattended poll is due'],
   [[span('approval', ''), span('approval yes', '')],
     'only where a task spans repositories, and one link cannot carry the verdicts: nobody has approved yet — '
     + 'approved'],
-  [[span('checks green', ''), span('checks red', ''), span('checks running', '')],
-    'the same there, for the checks — passed, failed, still running'],
+  [[span('checks red', ''), span('checks running', '')],
+    'the same there, for the checks — failed, still running'],
   [[span('pulse stalled', 'polling stopped')],
     'nothing will look at this round again on its own — the next move is a person’s'],
   [[span('chip on', 'auto-review on'), span('chip bad', 'jobs: 1 failed')],

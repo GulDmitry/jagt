@@ -1251,6 +1251,24 @@ class BoardPageTest {
         assertThat(page.locator("article").nth(0).locator(".meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("not approved yet"));
         assertThat(page.locator("article").nth(1).locator(".meta a.mr-age")).hasText("MR \u2713");
+        assertThat(page.locator("article").nth(1).locator(".meta a.mr-age.approved")).hasCount(1);
+    }
+
+    /**
+     * A run that passed is the state everyone expects, and it is not an approval — which is what a colour on
+     * the request reads as. Green is spoken for anyway: on this board it is work that is live.
+     */
+    @Test
+    void checksThatPassedPutNoColourOnARequestNobodyHasApprovedYet() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .pipelineStatus("success").approved(false).lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
+        assertThat(page.locator("article .meta a.mr-age"))
+                .hasAttribute("data-tip", Pattern.compile("checks: success"));
     }
 
     /** A round nobody has read carries no verdict, and an unread request is not an unapproved one. */

@@ -36,9 +36,13 @@ A board is read at a glance or it is not read at all, and every mark spends the 
   keeps its own element, because it hands the move back to a human and nothing else on the card says so.
 - **A word every card wears is a word nobody reads.** The project key is rendered only where an install has
   more than one, or a task spans several.
+- **A colour means ONE thing, board-wide.** Green is work that is live on a shared branch — so it cannot also
+  be a passing pipeline, which is what it was until a human read a green request as an approved one
+  (2026-08-26). Violet is the reviewers, red is broken, amber is your move. A second meaning for a colour is
+  not a small cost: it is read wrong before it is looked up.
 - **Colour is the cheapest mark and the easiest to overspend.** It works while few things wear it. Two
-  channels on one element is the ceiling — the request's colour is the machine's verdict and its tick is a
-  human's; a third would need a legend to tell them apart.
+  channels on one element is the ceiling — the request wears its approval as a colour and a tick, the failure
+  of its checks in red; a run that PASSED wears nothing at all, because the expected state is not news.
 - Every mark has one row in the legend, and the legend renders the page's OWN element rather than naming a
   colour in words — a second copy of a colour is a second thing to keep in step.
 

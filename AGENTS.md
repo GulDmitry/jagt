@@ -99,7 +99,9 @@ read at all, and design is what a human pays for in attention. Full rules and th
 - **A row that already carries four things does not want a fifth**, and **a card must not grow taller** to
   hold one. Height and cognitive load are the same budget spent twice; a fact that earns neither goes in the
   hover.
-- **Colour is the cheapest mark and the easiest to overspend.** It works only while few things wear it.
+- **A colour means one thing, board-wide** — green is work that is live, violet the reviewers, red broken,
+  amber your move. Colour is the cheapest mark and the easiest to overspend: a second meaning is read
+  wrong before anyone looks it up.
 - **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
 - Every mark has one row in the legend, and the legend renders the page's **own** element rather than naming a
   colour in words.

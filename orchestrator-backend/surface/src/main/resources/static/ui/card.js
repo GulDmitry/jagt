@@ -36,10 +36,14 @@ const requestChip = (url, label, openedAt, task, verdicts) => {
     ? `review request; opened ${new Date(openedAt).toLocaleString()}`
     : 'review request; nothing has dated it yet — the next sweep will'];
   if (verdicts) {
-    if (checked(task)) {
-      anchor.classList.add(task.pipeline.toLowerCase());
-      lines.push(`checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`);
-    }
+    // The checks spend RED and nothing else: a run that passed is the state everyone expects, and green here
+    // read as an approval — which it is not, and which green already means elsewhere on the card, where it is
+    // work that is live. The approval takes the reviewers' own colour. Red outranks it, and the tick is what
+    // carries an approval through a broken build.
+    if (task.pipeline === 'RED') anchor.classList.add('red');
+    else if (task.approved) anchor.classList.add('approved');
+    if (task.pipeline === 'RUNNING') anchor.classList.add('running');
+    if (checked(task)) lines.push(`checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`);
     if (task.approved) anchor.append(' \u2713');
     if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
     const watch = watchLine(task.autoReview);
@@ -124,7 +128,8 @@ export function card(task, manyProjects) {
       approval.dataset.tip = task.approved ? 'review request approved' : 'review request not approved yet';
       meta.append(approval);
     }
-    if (checked(task)) {
+    // The same there: a passing run is the expected state and says nothing worth a mark of its own.
+    if (task.pipeline === 'RED' || task.pipeline === 'RUNNING') {
       const checks = span(`checks ${task.pipeline.toLowerCase()}`, '');
       checks.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
       meta.append(checks);

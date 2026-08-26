@@ -13,8 +13,9 @@ const reportSection = document.getElementById('report-section');
 const terminalDialog = document.getElementById('terminal');
 const terminalFrame = document.getElementById('terminal-frame');
 
-// `extra` is a rendered section under the text: what a colour or a mark MEANS cannot be said in a monospace
-// column, and a second dialog for it would be a second answer to "how does this work".
+// `extra` is a rendered section ABOVE the text: what a colour or a mark means cannot be said in a monospace
+// column, and what is already on screen is read before what can be typed. A second dialog for it would be a
+// second answer to "how does this work".
 export function showReport(title, body, extra = null) {
   reportTitle.textContent = title;
   reportBody.textContent = body.trimEnd();
