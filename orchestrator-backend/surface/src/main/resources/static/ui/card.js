@@ -22,10 +22,9 @@ const watchLine = (watch) => {
   return {pulse: watch.label, tip: watch.note, stalled: true};
 };
 
-// Everything the request IS, worn by the link that names it: how long it has been open, and the APPROVAL as the
-// reviewers' colour plus a tick. The checks keep a mark of their own beside it: with both verdicts on this one
-// element, "failed but approved" looked like any other failed run, and which of the two it is decides whether
-// the next move is the agent's or yours.
+// The request, as the link that names it: how long it has been open, and green plus a tick once somebody has
+// approved it. Its checks are the dot beside it and nothing else — one fact per element, so neither can outrank
+// the other the way red outranked an approval while both rode this label.
 //
 // `openedAt` is 0 until a host read has said when the request opened. `sole` is false for one link among
 // several: the approval is every repository's, so it cannot ride on a link that names one.
@@ -35,15 +34,15 @@ const requestChip = (url, label, openedAt, task, sole) => {
   const lines = [openedAt > 0
     ? `review request; opened ${new Date(openedAt).toLocaleString()}`
     : 'review request; nothing has dated it yet — the next sweep will'];
+  if (sole && task.approved) {
+    anchor.classList.add('approved');
+    anchor.append(' \u2713');
+  }
+  if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
+  // Only where the checks have no dot to say it themselves — one verdict in two hovers can disagree with
+  // itself. A host that answered with a word this cannot read HAS been read, so its word is what goes in.
+  if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
   if (sole) {
-    if (task.approved) {
-      anchor.classList.add('approved');
-      anchor.append(' \u2713');
-    }
-    if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
-    // Where the checks wear no dot, this link is the only thing that can say what the host said about them —
-    // and "they passed" and "nobody has read them" are not the same answer.
-    if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
     const watch = watchLine(task.autoReview);
     if (watch && !watch.stalled) lines.push(watch.pulse);
   }
@@ -51,17 +50,25 @@ const requestChip = (url, label, openedAt, task, sole) => {
   return anchor;
 };
 
-// A run that PASSED wears no dot: it is the state everyone expects, and a mark every card wears is a mark
-// nobody reads. Absence of the dot is "green", and the link's tooltip says which of the two silences it is.
-const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING';
+// Where several links share one approval there is no label to tick, so it becomes the same glyph on its own.
+const approvalTick = () => {
+  const tick = span('tick', '\u2713');
+  tick.dataset.tip = 'review request approved';
+  return tick;
+};
 
+// A verdict this can read, so a dot can carry it. Equality rather than a negation: a projection missing the
+// field takes a negation's branch and throws inside the render, blanking the whole board over one dot.
+const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING' || task.pipeline === 'GREEN';
+
+// The checks, and nothing else on the card says a word about them. Filled once a verdict is in, hollow while the
+// run is still going — the board spends that shape on "waiting" everywhere else.
 const checksDot = (task) => {
   const dot = span(`checks ${task.pipeline.toLowerCase()}`, '');
   dot.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
   return dot;
 };
 
-// The transitions as a tooltip: the card stays one line, the record is one hover away.
 const timeline = (task) => (task.history || [])
   .map((step) => {
     const asked = step.origin ? `  (${step.origin.toLowerCase().replace('_', '-')})` : '';
@@ -129,11 +136,7 @@ export function card(task, manyProjects) {
     for (const repo of repos.filter((each) => each.reviewRequestUrl)) {
       meta.append(requestChip(repo.reviewRequestUrl, `${repo.project} MR`, 0, task, false));
     }
-    if (task.approved != null) {
-      const approval = span(task.approved ? 'approval yes' : 'approval', '');
-      approval.dataset.tip = task.approved ? 'review request approved' : 'review request not approved yet';
-      meta.append(approval);
-    }
+    if (task.approved) meta.append(approvalTick());
   }
   // Beside the request whether there is one link or several: the verdict is the worst repository's either way.
   if (marked(task)) meta.append(checksDot(task));

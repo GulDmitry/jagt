@@ -123,10 +123,10 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | Finding one task among many | Type in the filter box (`/`): alias, ticket number or title. `Esc` clears. There is no sort control |
 | "This card said 17h, I restarted the agent, now it says 0m" | The clock beside the status is time in **that** status. A fresh session re-reports itself, and those are real transitions |
 | "How long has this request been hanging?" | The `MR 8h` chip — the request's own creation time. It survives rounds, respawns and restarts |
-| "Has anyone approved?" | The same chip: the reviewers' violet and a **✓** once approved, plain while it waits |
-| "Did the checks pass?" | The dot beside that chip: red failed, grey and pulsing still running, and no dot means either they passed or nothing has read them — the expected state is not news, so only the hover separates those two. Two elements, because a red run on an APPROVED request is not the same move as a red run on one nobody has looked at |
+| "Has anyone approved?" | The chip itself: green with a **✓** once approved, plain while it waits. Nothing else on the card says it |
+| "Did the checks pass?" | The dot beside that chip, and nothing else: filled red failed, filled grey passed, a hollow pulsing ring still going, and no dot means no verdict anything here can read — hover the request for the word the host used. Two elements, because a red run on an APPROVED request is not the same move as a red run on one nobody has looked at |
 | "When is the next poll?" | In that tooltip. A poll that is coming is not news — one that has **stopped** keeps its own mark, because the move is a person's again |
-| A task spanning repositories | One link per repository, and the approval becomes a dot of its own beside them: it is every repository's, so it cannot ride on a link that names one. The checks dot is the same one every card wears — the worst repository's verdict |
+| A task spanning repositories | One link per repository, and the approval becomes a bare **✓** beside them: it is every repository's, so there is no one label for it to colour. The checks dot is the same one every card wears — the worst repository's verdict |
 | The project key is missing from a card | The install has one project. A word every card wears is a word nobody reads; it comes back when a task spans repositories |
 | "What does this status mean?" | It says itself: `out for review`, `not shipped`, `not approved`. A status names a state; the highlighted button says what to do |
 | Why only some cards say whose move it is | The badge is for **your** move alone. Every other owner is the status word again |
@@ -193,7 +193,7 @@ What the agent does with a comment:
 | An agent writes an essay in a request, a reply or a comment | It broke the brief's "How you write", which defers to the machine's own writing skill |
 | The round came back clean, nobody approved | REVIEWED, and **nothing** is asked of the human: the owner is the reviewer. `deploy` stays listed for whoever needs no approval |
 | An approval arrives | Lands unattended, and is the one thing the human is tapped for — it is now theirs to deploy |
-| "Is this request approved?" | The dot beside the MR link: filled when it is, an empty ring while it waits, absent until a read has said |
+| "Is this request approved?" | The MR link itself: green with a ✓ when it is, plain while it waits or until a read has said |
 | The pipeline goes red while the request is open | A red dot on the card, and one notification the first time that run goes red |
 | The dot is red while the request itself is mergeable | Read its tip — it prints the host's word verbatim |
 | You type `review <task>` out of habit | It runs the sweep — the old spelling still resolves, and only the new one is advertised |

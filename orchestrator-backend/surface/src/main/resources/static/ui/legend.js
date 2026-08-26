@@ -51,12 +51,11 @@ const rows = () => [
     'the review request and how long it has been open — approved, and plain until somebody has. A request '
     + 'nobody has read yet looks the same as an unapproved one: hover for all of it in words, and for when '
     + 'the next unattended poll is due'],
-  [[span('checks red', ''), span('checks running', '')],
-    'beside it, what its checks did — failed, still running. A run that passed has no dot: it is the state '
-    + 'everyone expects'],
-  [[span('approval', ''), span('approval yes', '')],
-    'only where a task spans repositories, and one link cannot carry an approval that is all of them: nobody '
-    + 'has approved yet — approved'],
+  [[span('checks red', ''), span('checks green', ''), span('checks running', '')],
+    'beside it, what its CHECKS did and nothing else — failed, passed, still going. No dot at all: no verdict '
+    + 'anything here can read, so hover the request for the word the host actually used'],
+  [[span('tick', '\u2713')],
+    'only where a task spans repositories, and there is no one label for an approval that is all of them'],
   [[span('pulse stalled', 'polling stopped')],
     'nothing will look at this round again on its own — the next move is a person’s'],
   [[span('chip on', 'auto-review on'), span('chip bad', 'jobs: 1 failed')],

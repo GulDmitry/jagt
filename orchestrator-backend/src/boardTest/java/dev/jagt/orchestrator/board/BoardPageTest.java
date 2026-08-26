@@ -1218,16 +1218,15 @@ class BoardPageTest {
         assertThat(page.locator("article").nth(0).locator(".meta a.mr-age")).hasText("MR");
         assertThat(page.locator("article").nth(0).locator(".meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("not approved yet"));
-        assertThat(page.locator("article").nth(1).locator(".meta a.mr-age")).hasText("MR \u2713");
-        assertThat(page.locator("article").nth(1).locator(".meta a.mr-age.approved")).hasCount(1);
+        assertThat(page.locator("article").nth(1).locator(".meta a.mr-age.approved")).hasText("MR \u2713");
     }
 
     /**
-     * The failure is the agent's move and the approval is the reviewers' answer, so a card that spent one mark on
-     * both hid whichever of the two it dropped.
+     * A broken build is the agent's move and an approval is the reviewers' answer, so a card that spent one mark
+     * on both hid whichever of the two it dropped.
      */
     @Test
-    void anApprovedRequestKeepsItsTickWhileItsChecksAreRed() {
+    void aRedRunDoesNotSwallowTheApprovalItLandedOn() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .pipelineStatus("failed").approved(true).lastActiveTimestamp(now()).build());
@@ -1238,21 +1237,35 @@ class BoardPageTest {
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
     }
 
-    /**
-     * A run that passed is the state everyone expects, so it spends no mark at all — and the wording is one hover
-     * away, because "they passed" and "nobody has read them" are not the same silence.
-     */
+    /** A run that passed is not an approval, and the request nobody has approved yet must not read as one. */
     @Test
-    void checksThatPassedPutNoMarkOnTheCardAtAll() {
+    void checksThatPassedWearTheirOwnDotAndLeaveTheRequestPlain() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .pipelineStatus("success").approved(false).lastActiveTimestamp(now()).build());
 
         Page page = open();
 
+        assertThat(page.locator("article .meta .checks.green"))
+                .hasAttribute("data-tip", Pattern.compile("checks: success"));
+        assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
+    }
+
+    /**
+     * A word the parser does not know is not a pass and not a silence: the run WAS read, and only the host's own
+     * wording says what it said.
+     */
+    @Test
+    void aVerdictNothingCanReadWearsNoDotAndKeepsTheHostsWordOnTheRequest() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .pipelineStatus("completed").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
         assertThat(page.locator("article .meta .checks")).hasCount(0);
         assertThat(page.locator("article .meta a.mr-age"))
-                .hasAttribute("data-tip", Pattern.compile("checks: success"));
+                .hasAttribute("data-tip", Pattern.compile("checks: completed"));
     }
 
     /**
@@ -1267,31 +1280,31 @@ class BoardPageTest {
 
         Page page = open();
 
+        assertThat(page.locator("article .meta .checks")).hasCount(0);
         assertThat(page.locator("article .meta a.mr-age")).hasText("MR");
-        assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
         assertThat(page.locator("article .meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("checks: nothing has read them yet"));
     }
 
     /**
-     * The approval is the task's, not one repository's, so with several links there is no one link it can ride
-     * on. The checks wear the same dot they wear on every card.
+     * The approval is the task's, not one repository's, so with several links there is no one label it can
+     * colour. The checks wear the same dot they wear on every card.
      */
     @Test
-    void aTaskSpanningRepositoriesKeepsItsApprovalBesideItsLinksInstead() {
+    void aTaskSpanningRepositoriesWearsOneTickForAllOfThem() {
         state.putTask("ABC-1", TaskState.builder(List.of(
                         new TaskRepo("alpha", root.resolve("ABC-1-alpha").toString(), null,
                                 "https://host.example/alpha/mr/7", null),
                         new TaskRepo("beta", root.resolve("ABC-1-beta").toString(), null,
                                 "https://host.example/beta/mr/7", null)),
                         TaskStatus.CI_POLLING).alias("a1").lastActiveTimestamp(now())
-                .pipelineStatus("failed").approved(false).build());
+                .pipelineStatus("failed").approved(true).build());
 
         Page page = open();
 
         assertThat(page.locator("article .meta a.mr-age")).hasCount(2);
+        assertThat(page.locator("article .meta .tick")).hasCount(1);
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
-        assertThat(page.locator("article .meta .approval:not(.yes)")).hasCount(1);
     }
 
     /**

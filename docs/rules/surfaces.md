@@ -31,22 +31,24 @@ A board is read at a glance or it is not read at all, and every mark spends the 
 - **A row that already carries four things does not want a fifth, and a card must not grow taller to hold
   one.** Height and cognitive load are the same budget spent twice. The card's meta row is where this broke
   once (2026-08-26): status, project, request, approval, checks, poll — six marks, four of them facts about
-  the same review request. Two now: the request link, in the reviewers' colour and ticked once approved, and a
-  dot beside it for the checks. Folding the checks onto the link as well cost more than the mark it saved — red
-  outranked the approval there, so a build that broke on an already-approved request read as any other failure,
-  and those two want opposite moves (2026-08-26).
+  the same review request. Two now, one fact each: the request link, green and ticked once approved, and a dot
+  beside it for the checks. Both on the link cost more than the mark it saved — red outranked the approval
+  there, so a build that broke on an already-approved request read as any other failure, and those two want
+  opposite moves (2026-08-26).
 - **What is merely coming is not news.** The poll countdown moved into that tooltip; a poll that has STOPPED
   keeps its own element, because it hands the move back to a human and nothing else on the card says so.
 - **A word every card wears is a word nobody reads.** The project key is rendered only where an install has
   more than one, or a task spans several.
-- **A colour means ONE thing, board-wide.** Green is work that is live on a shared branch — so it cannot also
-  be a passing pipeline, which is what it was until a human read a green request as an approved one
-  (2026-08-26). Violet is the reviewers, red is broken, amber is your move. A second meaning for a colour is
-  not a small cost: it is read wrong before it is looked up.
-- **Colour is the cheapest mark and the easiest to overspend.** It works while few things wear it. **One
-  verdict per element**: the request wears its approval as a colour and a tick, the checks answer as their own
-  dot; a run that PASSED wears no dot at all, because the expected state is not news — and the link's tooltip
-  says whether that silence is a green run or one nobody has read.
+- **A colour means ONE thing, board-wide.** Green is a step already TAKEN — work already on a shared branch, a
+  deploy that already ran, a request already approved. It says nothing about what is left: an approved task is
+  amber as well, because the deploy is still yours to press, and the two answer different questions. Green is
+  emphatically **not** a passing pipeline: that read as an approval when it was one (2026-08-26). Violet is the
+  reviewers owning the card, red is broken, amber is your move. A second meaning for a colour is not a small
+  cost: it is read wrong before it is looked up.
+- **Colour is the cheapest mark and the easiest to overspend.** It works while few things wear it. **One fact
+  per element**: the request wears its approval, as green and a tick on the same label; the checks answer as
+  their own dot and in no other hover. No dot is a verdict nothing here can READ — nobody has looked yet, or
+  the host answered with a word the parser does not know — and the request's own hover keeps that word.
 - Every mark has one row in the legend, and the legend renders the page's OWN element rather than naming a
   colour in words — a second copy of a colour is a second thing to keep in step.
 
