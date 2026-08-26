@@ -222,6 +222,9 @@ What the agent does with a comment:
 | Take a deploy back out | `revert <task>` | Reverts the last recorded merge commit. Refused, with a by-hand recipe, whenever it would have to guess |
 | The task was deployed more than once | `revert <task>` | Only the **last** deploy comes out. For the earlier rounds: `git log --merges --grep ABC-1`, then `git revert -m 1 <sha>` newest first |
 | An agent is restarted on a task at REVERTED | `respawn` | Its reports are recorded but move nothing: the task stays REVERTED until a human ships or closes it |
+| You ask a shipped task for one more change | `do`-style instructions, or the palette | It stays UNCOMMITTED. The ship instruction is spent once its links came back — carrying it out leaves the text standing in `task_context.md` until the next relay replaces it, and re-reading it is not permission |
+| An agent repaired a red build | — | The repair stays uncommitted and comes back at REVIEW_PENDING. Only a new `ship` puts it on the branch — the earlier one is spent |
+| A pushed commit turns out wrong | — | Another commit, never a rewrite. No `--force`, no `--amend`, no `reset --hard` on what is pushed: the human has already read what is there |
 | A task sits at REVERTED | `focus`, then `ship` or `done` | `deploy` is not offered — a revert adds a commit, so re-merging the same branch brings nothing |
 | The confirm second-guesses your deploy | — | It does not any more. It names the writes and gets out of the way |
 

@@ -115,6 +115,30 @@ the links arrive.
 Naming every repository in the instruction is what makes it safe: a repository left out is a half-shipped task,
 and jagt cannot tell which half from the outside.
 
+### A ship approves ONE commit, and the file it is written in never says so
+
+Carrying an instruction out does not clear `task_context.md` — only the **next** relay replaces it
+(`writeTaskContext` truncates, `relayIfChanged` skips an identical brief). Between a `ship` and whatever
+relays next, the file goes on reading "commit ALL current changes, push branch …", and the sub-agent's rule 4
+makes that file the authority for committing at all. An agent asked for a small edit in that window re-read
+it, took it for standing permission, and committed and force-pushed over work the human had already reviewed
+(2026-08-26).
+
+The instruction now carries its own expiry: **one** commit and **one** push per repository it lists, of what
+is in their trees at that moment, and it says out loud that carrying it out leaves the text standing — so
+reading it again is not permission. Rule 4 says the same where the agent reads it first, and rule 5 names the
+one loop that looks like an exception: a repaired build is handed back at REVIEW_PENDING like any other
+change, never pushed on the strength of the ship that came before it.
+
+Nothing was added to `ToolGate` for this. It answers on pushes only and refuses exactly one thing, and a
+second gate there is the enforcement layer that rule exists to prevent — an agent that has to be *stopped*
+from committing is one whose brief is wrong.
+
+**History that has left the machine is never rewritten** (rule 8): no `--force`, no `--force-with-lease`, no
+`commit --amend`, no `reset --hard` onto a pushed commit. A mistake on a pushed branch is corrected by another
+commit — the human has read what is there, and a rewrite takes it out from under them. `GitService.pushBranch`
+has never forced; this closes the half the agent runs itself.
+
 ### All git ops under a per-repository lock
 
 `GitService` holds a `ReentrantLock` per repository: `index.lock` races are per-repo, and a slow fetch in one

@@ -145,6 +145,17 @@ class ShipServiceTest {
     }
 
     @Test
+    void saysTheApprovalIsSpentPerRepositoryOnceTheLinksHaveBeenReportedBack() {
+        String instruction = ShipService.shipInstruction("ABC-42 Widget layout is off", "ABC-42",
+                List.of(new ShipService.Target("demo", "/wt", "dev", false),
+                        new ShipService.Target("web", "/wt-web", "dev", false)), "");
+
+        assertThat(instruction).contains("ONE commit and ONE push PER REPOSITORY listed above")
+                .contains("Carrying it out does not clear this file")
+                .contains("stays UNCOMMITTED");
+    }
+
+    @Test
     void asksForOneLinkBackFromATaskWithASingleRepository() {
         String instruction = ShipService.shipInstruction("ABC-42 Widget layout is off", "ABC-42",
                 List.of(new ShipService.Target("demo", "/wt", "dev", false)), "");

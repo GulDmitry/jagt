@@ -117,7 +117,12 @@ public class ShipService {
                 + " empty, or one line for a decision the diff cannot show — never a report of what you did."
                 + " Where one is already open, do NOT create another or retitle it.\n"
                 + "4. " + repliesStep
-                + "5. Report back with update_agent_status CI_POLLING and " + reportField(targets) + ".";
+                + "5. Report back with update_agent_status CI_POLLING and " + reportField(targets) + ".\n"
+                + "This authorises ONE commit and ONE push PER REPOSITORY listed above, of what is in their"
+                + " trees now — no fewer, and nothing after. Carrying it out does not clear this file: it goes"
+                + " on saying all of the above until something replaces it, and reading it again is not"
+                + " permission. Once the link(s) are reported, everything you change afterwards stays"
+                + " UNCOMMITTED — a build you repaired included — until a new instruction says otherwise.";
     }
 
     private static String listed(List<Target> targets) {
