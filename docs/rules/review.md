@@ -24,7 +24,14 @@ that was only obedient.
 
 `ReviewSweepService.brief` therefore opens with the three routes per comment: fix, change **nothing** and say
 why, or ask via `outcome=question` before guessing. `sub-agent-context.md` carries the same stance for the task
-itself.
+itself, and names the case that kept slipping through: a requirement that **contradicts** an invariant the code
+already enforces is a question, not a call the agent makes for the human and reports afterwards. By the time it
+is in the closing text the work is built around the answer.
+
+What the agent settled on its own and the human still has to know is a separate thing, and it belongs to no
+round: `sub-agent-context.md` ends the session's terminal output with one `OPEN QUESTIONS:` list. It is kept
+out of the status message, out of `review_replies.md` and out of the request — the first truncates, and the
+other two are posted to the reviewer, who is not who those lines are for.
 
 A question **ends** the round (REVIEW_PENDING, `outcome=question`) rather than parking in CI_POLLING, because
 the wait is the human's and the card has to say so. What keeps the agent from being re-briefed on the comments

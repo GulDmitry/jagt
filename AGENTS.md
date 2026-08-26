@@ -146,7 +146,11 @@ read at all, and design is what a human pays for in attention. Full rules and th
 - **A review round is a judgement, not a work order.** Fix the comment, change nothing and say why, or ask —
   never implement a suggestion you think is wrong.
 - A blocked session must reach the dashboard. An agent reports `outcome=question` **before** putting any
-  question to a human.
+  question to a human — and a task that **contradicts** what the code already guarantees is such a question,
+  asked before the code picks a side, never decided quietly and named in the closing report.
+- **What is still open is a list, not a paragraph.** What the agent settled without an answer and the human
+  still has to know goes under one `OPEN QUESTIONS:` line ending the session's terminal output. It never
+  replaces `outcome=question`: if the answer would have changed the code, the agent asks.
 - **No limit on concurrent tasks, and no bulk branch cleanup.** Both were built and removed on the owner's
   instruction. Do not reintroduce a cap, a queue, a slots indicator or a `prune` verb.
 

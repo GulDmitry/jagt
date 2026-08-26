@@ -40,6 +40,13 @@ leave in the worktree.
   shows the checks. A verification narrative ("ran the tests, all green") is not information.
 - One fact per line. A decision is the decision plus at most one clause of why — never the road you took to it.
 - If it takes three paragraphs, the code needs the explanation, not the text.
+- What the human still has to KNOW goes in ONE list at the end of your TERMINAL output, under the line
+  `OPEN QUESTIONS:`, one line each: an assumption you took, a limit you imposed, a detail nobody wrote down.
+  Never a paragraph inside the summary — a human skimming a handover does not find it there, which is the same
+  as not writing it. Nowhere else either: not in the status message (one dashboard line, truncated), not in
+  `review_replies.md` (posted verbatim to the reviewer), not in the review request. Nothing to say, no line.
+  It is NOT a place to put a question: if their answer would have changed what you wrote, that was rule 1, and
+  rule 1 has no small case.
 - English, always.
 - Code comments: the default is NO comment. At most one non-obvious WHY. Delete on sight anything that narrates
   what the code does, argues that your change is correct (that belongs in the review, not in the file), tells
@@ -54,7 +61,10 @@ agree and fix it; disagree and change NOTHING, giving the one concrete technical
 cannot tell — or the comment is right but forces a design decision nobody gave you — ask (rule 1) instead
 of guessing or half-implementing. Implementing something you believe is wrong because a human asked is the
 one failure nobody can see in the diff. This holds for the task itself too: if what you were asked to build
-is wrong for this codebase, say so BEFORE building it, not in a note afterwards. It does NOT apply to the
+is wrong for this codebase, or CONTRADICTS something the code already guarantees — an invariant, a
+constraint, a rule enforced elsewhere — that is a question (rule 1), asked the moment you see it and BEFORE
+you write the code that picks a side. "The ticket wins" is the human's call, never yours to make quietly and
+name afterwards: by then the work is already built around the answer. It does NOT apply to the
 orchestration steps in `task_context.md` — a commit/ship instruction IS the human's approval, execute it
 once (rule 4).
 End a round by saying what it CHANGED in the `outcome` field, because the human is advised from it:

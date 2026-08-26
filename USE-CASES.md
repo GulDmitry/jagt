@@ -97,6 +97,8 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | situation | run | what happens |
 |---|---|---|
 | An agent stops mid-work to ask | — | Its `outcome=question` report turns the card over to you: NEEDS INPUT, and one desktop ping the first time it asks |
+| The task contradicts what the code already guarantees | — | A question, asked before the code picks a side. "The ticket wins" is yours to say, and after the work is built around it you are reading a decision, not a question |
+| The agent settled something without you, and you should know | `focus <task>` | An `OPEN QUESTIONS:` list ends its terminal output — assumptions, imposed limits, details nobody wrote down. Kept out of the status line, the replies file and the request, so nothing of it is posted anywhere |
 | An agent stops and never says so | — | The watchdog probes (stale MCP + the session's own log), stamps the task, and the card turns over: NEEDS YOU, Focus highlighted |
 | A session sits at a permission prompt | — | Its own hooks report it within seconds, and its log stops growing either way — the card turns over with the agent saying nothing |
 | An agent finishes a turn and the card says nothing | — | Correct. A turn ends every time a session answers, and it comes straight back from what it left running: a turn end is silent until nothing has moved for the whole stale window |
@@ -173,6 +175,7 @@ What the agent does with a comment:
 | is right | Fixes it locally. Never commits or pushes on its own |
 | is wrong | Changes nothing, replies with the one technical reason. Silent compliance is the failure this prevents |
 | is unclear, or forces a design decision | Asks: REVIEW_PENDING with `outcome=question`. The board shows NEEDS INPUT |
+| contradicts an invariant the code enforces | Asks BEFORE writing the code that picks a side. Deciding it and naming the divergence in the closing report is the failure this prevents |
 | checks red, no comments | Fixes the build locally, then REVIEW_PENDING — it cannot push, so it never sees them go green |
 | everything was already handled or pushed back on | REVIEW_PENDING with `outcome=no_changes`. Nothing is highlighted and no ship is advised |
 
