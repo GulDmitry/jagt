@@ -212,12 +212,12 @@ a { color: var(--accent); }
 .toast.error { border-left-color: var(--danger); }
 
 /* The checks, beside the request they ran on, and the only thing on the card that speaks for them: a verdict is
-   filled — red failed, grey passed — and a run still going is a hollow pulsing ring, the same shape the board
-   spends on "waiting" elsewhere. So the three read apart with the animation switched off, too. No dot at all is
-   a verdict nothing here can read: nobody has looked yet, or the host answered with a word this does not know. */
+   filled — red failed, green passed, the same green as the connection dot in the header — and a run still going
+   is a hollow pulsing ring, so the three read apart with the animation switched off. No dot at all is a verdict
+   nothing here can read: nobody has looked yet, or the host answered with a word this does not know. */
 .checks { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center; }
 .checks.red { background: var(--danger); }
-.checks.green { background: var(--muted); }
+.checks.green { background: var(--ok); }
 .checks.running { border: 2px solid var(--muted); animation: checks-pulse 1.6s ease-in-out infinite; }
 @keyframes checks-pulse { 50% { opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .checks.running { animation: none; } }

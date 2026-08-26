@@ -25,7 +25,7 @@ not colour.
 | `--you` | `#b45309` | `#fbbf24` | **your move** — nothing here advances without you | card edge, the `ask` badge, header waiting count, a stopped poll, drafted replies |
 | `--agent` | `#1d4ed8` | `#93b4ff` | **an agent is working** | card edge |
 | `--ci` | `#6d28d9` | `#c4b5fd` | **the reviewers own it** — out of your hands and not blocked | card edge |
-| `--ok` | `#15803d` | `#86efac` | **a step already TAKEN** — work on a shared branch, a deploy that ran, a request approved | live status chip, the `again` deploy mark, the approved request, the multi-repo tick, header on-states |
+| `--ok` | `#15803d` | `#86efac` | **nothing wrong here** — a step already taken, or a thing that is up and working | live status chip, the `again` deploy mark, the approved request, the multi-repo tick, the checks dot for a run that passed, the connection dot and the on-chips in the header |
 | `--danger` | `#b42318` | `#fca5a5` | **broken** — a failed run, a refused command, a problem line | checks dot, `PROBLEM:` detail, error toast, failed-jobs chip |
 | `--accent` | `#1d4ed8` | `#93b4ff` | **pressable / pressed** — hover, a primary button, a pressed filter | buttons, links, aliases |
 | `--muted` | `#6b7280` | `#9aa3ad` | **not news** — labels, ages, a verdict with nothing wrong with it | meta row, checks dot for a passing or running run |
@@ -33,10 +33,12 @@ not colour.
 
 Three consequences worth stating, because each was learned the expensive way:
 
-- **`--ok` is not a passing pipeline.** A green request read as an approved one (2026-08-26). Green marks what
-  has been DONE, which a run passing is not — that is the expected state, and the expected state is not news.
-- **`--ok` and `--you` on one card do not disagree.** Green is what already happened, amber is what is left:
-  an APPROVED task wears both, because the approval landed and the deploy is still yours.
+- **A green REQUEST is an approval and nothing else.** That is the 2026-08-26 lesson, and it survives: the
+  checks went green again on 2026-08-26 on the owner's call, but on their own DOT — where the label already
+  carries the approval, a green dot beside it cannot be read as one, and it is the same green the header spends
+  on a connection that is up.
+- **`--ok` and `--you` on one card do not disagree.** Green is what is already fine, amber is what is left: an
+  APPROVED task wears both, because the approval landed and the deploy is still yours.
 - **`--agent` and `--accent` are the same blue.** Deliberate: one is a card edge and the other is only ever a
   control, so the two never sit in one row — but they must not be given different meanings on one element.
 
@@ -53,7 +55,7 @@ Colour is the cheapest channel and the first to be overspent, so shape carries a
 | green status chip | `.status.live` | its work is on a shared branch, said here because no verb on this card is the deploy |
 | green button | `button.again` — a ring on the primary one, a border otherwise | this verb already ran and what it did is still live, so pressing it repeats it |
 | dotted underline | `a.id`, `a.mr-age`, `.drafts` | this text opens something; solid on hover |
-| 9px dot, filled | `.checks.red`, `.checks.green` | a verdict is in — red failed, grey passed |
+| 9px dot, filled | `.checks.red`, `.checks.green` | a verdict is in — red failed, green passed |
 | 9px dot, hollow ring | `.checks.running` | still waiting for a verdict. Hollow is "waiting" everywhere it appears |
 | pulsing ring | `.checks.running`, the one `@keyframes` on the board | a clock is running; what it says must survive `prefers-reduced-motion`, so the RING is what says it and the pulse only draws the eye |
 | `✓` | on the request, or `.tick` beside several | approved |
