@@ -49,6 +49,9 @@ public record TaskView(
         // When the code host says the review request was opened; 0 = no request, or no read has said yet.
         long requestOpenedAt,
         List<StatusChange> history,
+        // Whether its code is on a shared branch RIGHT NOW: a deploy puts it there whatever status follows, and
+        // only a revert takes it back off.
+        boolean deployed,
         // Drafted review replies are waiting in the worktree, and nothing else announces them.
         boolean draftedReplies,
         // What the last round REPORTED, which no status carries: all three of its outcomes end at REVIEW_PENDING,
@@ -96,10 +99,16 @@ public record TaskView(
                         .toList(),
                 task.lastActiveTimestamp(),
                 task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
-                task.history(), draftedReplies, AgentReport.of(task.message()), autoReview,
+                task.history(), deployed(task), draftedReplies, AgentReport.of(task.message()), autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(),
                 task.hasReviewRequest() ? task.approved() : null,
                 task.totalUsage().total());
+    }
+
+    /** The merge commit each repository still holds IS the answer: a revert forgets it as it takes the work out. */
+    private static boolean deployed(TaskState task) {
+        return task.repos().stream()
+                .anyMatch(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank());
     }
 
     /**

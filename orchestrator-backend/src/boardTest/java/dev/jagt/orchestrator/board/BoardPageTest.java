@@ -11,6 +11,7 @@ import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.adapter.TtydWebTerminal;
@@ -1270,6 +1271,34 @@ class BoardPageTest {
 
         assertThat(page.locator("article")).hasCount(1);
         assertThat(page.locator("article .checks")).hasCount(0);
+    }
+
+    /**
+     * A status says a deploy only while the task IS one, so a finished task and one picked back up afterwards
+     * both read exactly like work that was never anywhere near a shared branch.
+     */
+    @Test
+    void aCardSaysItsWorkIsOnASharedBranchAfterTheDeployStatusHasMovedOn() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.DONE).alias("a1").lastActiveTimestamp(now())
+                .deployCommit("abc1234").build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .meta .deployed")).hasText("deployed");
+    }
+
+    @Test
+    void aCardDropsThatMarkOnceTheRevertHasTakenTheWorkBackOut() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.REVERTED).alias("a1").lastActiveTimestamp(now())
+                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null),
+                        new StatusChange(TaskStatus.REVERTED, 2L, null))).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article")).hasCount(1);
+        assertThat(page.locator("article .deployed")).hasCount(0);
     }
 
     private static long now() {

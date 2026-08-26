@@ -129,6 +129,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | A task at SHIPPING | The status and the move line are the whole answer; the detail line stays empty unless the watchdog found it silent |
 | Clicking a desktop notification | Opens the board filtered to that task. Needs `terminal-notifier` and a board being served |
 | "Which of these buttons changes something?" | Two rows: what moves the task on above, what only looks or restarts below (`TaskAction.Group`) |
+| "Is this task's work on a shared branch?" | The `deployed` chip, on the card and in the console's move line. A status says so only while the task IS the deploy; the chip stays through DONE and comes off when `revert` takes the work back out |
 
 ## Review requests
 

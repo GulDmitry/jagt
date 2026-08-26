@@ -82,6 +82,13 @@ export function card(task) {
   const repos = task.repos || [];
   const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
   meta.append(status, span(null, where));
+  // A deploy outlives the status that recorded it: DONE, and a task picked back up afterwards, say nothing
+  // about work that is live. It comes off again when a revert takes that work out.
+  if (task.deployed) {
+    const deployed = span('deployed', 'deployed');
+    deployed.dataset.tip = 'this work is on a shared branch \u2014 `revert` takes it back out';
+    meta.append(deployed);
+  }
   // ONE stamp for several requests — the oldest — so it can be worn only where there is one request to wear
   // it. Several are named by project and ageless: the same number under each would read as each one's own.
   if (task.reviewRequestUrl && repos.length < 2) {

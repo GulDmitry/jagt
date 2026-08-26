@@ -119,4 +119,33 @@ class TaskViewTest {
         assertThat(view.actions()).filteredOn(action -> action.id().equals("sweep"))
                 .singleElement().extracting(TaskView.ActionView::group).isEqualTo("flow");
     }
+
+    @Test
+    void marksATaskWhoseWorkIsOnASharedBranchAfterTheDeployStatusHasMovedOn() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1")
+                .deployCommit("abc1234").build(), false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.deployed()).isTrue();
+    }
+
+    @Test
+    void takesTheMarkOffOnceTheRevertHasTakenTheWorkBackOut() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1")
+                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null),
+                        new StatusChange(TaskStatus.REVERTED, 2L, null))).build(),
+                false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.deployed()).isFalse();
+    }
+
+    @Test
+    void marksAMultiRepoTaskAsSoonAsONERepositoryHasLanded() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
+                new TaskRepo("api", "/api-wt", null, null, "abc1234"),
+                new TaskRepo("web", "/web-wt", null, null, null)),
+                TaskStatus.DEPLOY_CONFLICT).alias("a1").build(), false, AutoReviewWatch.none(),
+                Map.of("api", "dev", "web", "dev"));
+
+        assertThat(view.deployed()).isTrue();
+    }
 }

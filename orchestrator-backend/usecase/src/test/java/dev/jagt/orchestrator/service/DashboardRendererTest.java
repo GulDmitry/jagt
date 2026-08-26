@@ -280,6 +280,17 @@ class DashboardRendererTest {
         assertThat(out).contains("· 1 job(s) failing");
     }
 
+    @Test
+    void marksATaskWhoseWorkIsStillOnASharedBranchAfterTheStatusHasMovedOn(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1")
+                .title("title").deployCommit("abc1234").build());
+
+        String out = rendererFor(state).render();
+
+        assertThat(out).contains("\u00b7 deployed)");
+    }
+
     private static DashboardRenderer rendererFor(StateService state, UsageTracker tracker) {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.flow.Attention;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
@@ -90,7 +91,7 @@ public class DashboardRenderer {
             out.append("                    → ").append(whose(task)).append(" · ")
                     .append(task.hint()).append("  (").append(task.statusLabel()).append(' ')
                     .append(DurationFormat.compact(now - task.statusSince()))
-                    .append(requestOpen(task)).append(")\n");
+                    .append(requestOpen(task)).append(deployed(task)).append(")\n");
         }
         if (tasks.isEmpty()) {
             out.append("(no tasks)\n");
@@ -152,6 +153,14 @@ public class DashboardRenderer {
         return task.requestOpenedAt() <= 0
                 ? ""
                 : " · MR " + DurationFormat.compact(System.currentTimeMillis() - task.requestOpenedAt());
+    }
+
+    /**
+     * That its work is on a shared branch, which outlives the status that put it there. Left to the status column
+     * while that IS the deploy: this line has no colour to tell the two apart, so it would read as a stutter.
+     */
+    private static String deployed(TaskView task) {
+        return task.deployed() && task.status() != TaskStatus.DEPLOYED ? " \u00b7 deployed" : "";
     }
 
     /**

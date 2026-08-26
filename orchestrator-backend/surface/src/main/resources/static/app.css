@@ -203,3 +203,9 @@ a { color: var(--accent); }
 .approval { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center;
   border: 2px solid var(--ci); }
 .approval.yes { background: var(--ci); }
+
+/* A word rather than a third dot beside two: a disc that has to be looked up in a legend is not one a human
+   reads while scanning. Outlined, not filled — it reports where the work is, it asks for nothing. */
+.deployed {
+  font-size: 11px; color: var(--ok); border: 1px solid var(--ok); border-radius: 999px; padding: 0 7px;
+}
