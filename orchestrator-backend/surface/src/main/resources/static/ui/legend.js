@@ -44,34 +44,28 @@ const draftsButton = () => {
 };
 
 const rows = () => [
-  [[deployedButton()],
-    'a verb whose last run is still live — this task’s work is on a shared branch already, so pressing it '
-    + 'deploys what has been added since. `revert` takes it back out and the colour with it'],
   [[edge('you'), edge('agent'), edge('ci'), edge('')],
-    'a card’s left edge — your move, the agent working, out with the reviewers, nothing waiting'],
+    'your move \u00b7 agent working \u00b7 with the reviewers \u00b7 nothing waiting'],
   [[span('badge required', 'ship it'), span('badge optional', 'read the round')],
-    'what to do while it is yours — filled: you are the hold-up; grey: whenever you like'],
+    'you are the hold-up \u00b7 yours whenever you like'],
   [[statusChip(), liveStatusChip()],
-    'the state, and how long it has been in THIS one. Green where no verb on the card is the deploy: the work '
-    + 'is on a shared branch already'],
+    'the state and its age \u00b7 green: already on a shared branch'],
+  [[deployedButton()],
+    'already deployed \u2014 press again for what came after'],
   [[requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age', 'MR 2d')],
-    'the review request and how long it has been open — approved, and plain until somebody has. A request '
-    + 'nobody has read yet looks the same as an unapproved one: hover for all of it in words, and for when '
-    + 'the next unattended poll is due'],
+    'the request and how long it has been open \u00b7 green \u2713: approved'],
   [[span('checks red', ''), span('checks green', ''), span('checks running', '')],
-    'beside it, what its CHECKS did and nothing else — failed, passed, still going. No dot at all: no verdict '
-    + 'anything here can read, so hover the request for the word the host actually used'],
+    'its checks: failed \u00b7 passed \u00b7 still running. No dot: nothing read them yet'],
   [[span('tick', '\u2713')],
-    'only where a task spans repositories, and there is no one label for an approval that is all of them'],
+    'approved, where a task spans repositories'],
   [[draftsButton()],
-    'answers are written and waiting in the worktree — read them before you ship, and nothing else on the '
-    + 'card would say they exist'],
+    'replies are drafted \u2014 read them before you ship'],
   [[span('pulse stalled', 'polling stopped')],
-    'nothing will look at this round again on its own — the next move is a person’s'],
+    'nothing will look at this round again on its own'],
   [[span('chip on', 'auto-review on'), span('chip bad', 'jobs: 1 failed')],
-    'in the header — whether anything polls at all, and what the unattended runs are doing'],
+    'in the header: whether anything polls, and what it did'],
   [[span('dot on', ''), span('dot', '')],
-    'top right — the push connection. Grey: this page is not being told about changes'],
+    'top right: whether this page is being told about changes'],
 ];
 
 export function node() {
