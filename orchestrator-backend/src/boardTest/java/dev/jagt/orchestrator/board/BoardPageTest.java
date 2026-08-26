@@ -900,17 +900,38 @@ class BoardPageTest {
 
     @Test
     void theDraftedRepliesLineOpensEveryCommentAndTheReplyItWillSend() throws IOException {
-        Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
+        Path worktree = Files.createDirectories(root.resolve("ABC-3-alpha"));
         Files.writeString(worktree.resolve("review_replies.md"),
                 "## !12 thread 1\n> the canonical row count is wrong\nFIXED - Measured it and pinned the count.\n");
-        state.putTask("ABC-1", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a1").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-3", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a3").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
         page.locator("article .drafts").click();
 
         assertThat(page.locator("#report-body")).containsText("1 · FIXED · !12 thread 1");
         assertThat(page.locator("#report-body")).containsText("Measured it and pinned the count.");
+    }
+
+    /**
+     * A round names the thread it is answering, and reaching it is why the report was opened at all. Anything
+     * but http(s) stays text: this file is written by an agent and hand-edited, in a page that can POST deploy.
+     */
+    @Test
+    void aReportsOwnLinksAreFollowableAndNothingElseBecomesOne() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-6-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"),
+                "## thread 1\n> see https://host.example/mr/7#note_8708.\nFIXED - javascript:alert(1) stays text.\n");
+        state.putTask("ABC-6", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a6").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article .drafts").click();
+
+        assertThat(page.locator("#report-body a"))
+                .hasAttribute("href", "https://host.example/mr/7#note_8708");
+        assertThat(page.locator("#report-body")).containsText("javascript:alert(1) stays text.");
+        assertThat(page.locator("#report-body a")).hasCount(1);
     }
 
     @Test

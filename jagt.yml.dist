@@ -24,7 +24,7 @@ orchestrator:
   # Not detected: jagt refuses to start when this is not what the machine reports.
   platform: macos          # macos | linux
   # kittyCommand: kitty   # if the binary is not on PATH
-  # kittyFontSize: 13    # blank keeps kitty.conf's own (default 11)
+  # kittyFontSize: 13     # blank keeps kitty.conf's own (default 11)
   tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs
 
   # Any CLI launcher; the worktree path is appended. `open -a` will NOT do — it activates the app without
@@ -51,6 +51,11 @@ orchestrator:
   # codex:
   #   command: codex
 
+  # The first thing every spawned sub-agent is told. The built-in one starts it on task_context.md and holds it
+  # to leaving the work uncommitted; replace it only knowing what that gives up.
+  # agentPrompt: >-
+  #   You are the sub-agent for this worktree. …
+
   watchdog:
     staleAfter: 5m        # silence before an "agent stopped" alert; a hook report needs no wait
 
@@ -67,8 +72,8 @@ orchestrator:
   # in interactively and does not load plugin-scoped MCP servers — see docs/installation.md before trusting it.
   assistant:
     model: haiku                        # blank inherits your own; the reads are mechanical
-    settingSources: user,project,local # NOT `project` alone: the call runs from a temp dir, which has none
-    permissionMode: bypassPermissions  # nothing can answer a permission prompt in a headless call
+    settingSources: user,project,local  # NOT `project` alone: the call runs from a temp dir, which has none
+    permissionMode: bypassPermissions   # nothing can answer a permission prompt in a headless call
     # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # takes precedence over permission-mode
     # mcpConfig: /path/to/mcp-servers.json   # pin the servers instead of inheriting all of them
 
@@ -92,6 +97,12 @@ orchestrator:
   # ── Safety ─────────────────────────────────────────────────────────────────────────────────────────────────
   # Refuse to start when part of the installation is missing, rather than failing at the click that needs it.
   startupChecks: true
+
+# `orchestrator.configFile` is the one key that cannot live here — it says where THIS file is, which is
+# answered before it is read. Pass it as `--orchestrator.config-file=…` or `ORCHESTRATOR_CONFIG_FILE=…`.
+#
+# `root` and `stateFile` DO work here: they move where worktrees are cut and where state.json is kept, and the
+# file being read stays the one the launch found either way.
 
 # The board listens on loopback: it asks for no password and can deploy, close a task and start an agent.
 # Widening this is a line you write yourself, knowing that.

@@ -32,9 +32,12 @@ public class OrchestratorApplication {
      * that reads the developer's own settings passes or fails on an untracked file.
      */
     private static String[] withConfigFile(String[] args) {
-        String[] launched = java.util.Arrays.copyOf(args, args.length + 1);
-        launched[args.length] = "--spring.config.additional-location=optional:file:"
-                + OrchestratorPaths.configFileOutside(args);
+        String resolved = OrchestratorPaths.configFileOutside(args).toString();
+        String[] launched = java.util.Arrays.copyOf(args, args.length + 2);
+        launched[args.length] = "--spring.config.additional-location=optional:file:" + resolved;
+        // Pinned as well as imported: `root` inside that file re-answers where the root is, and without this
+        // the bean would then look for a SECOND jagt.yml under the new root while Spring had bound the first.
+        launched[args.length + 1] = "--orchestrator.config-file=" + resolved;
         return launched;
     }
 
