@@ -22,30 +22,28 @@ const watchLine = (watch) => {
   return {pulse: watch.label, tip: watch.note, stalled: true};
 };
 
-// Everything the request IS, worn by the link that names it: how long it has been open, the checks as its
-// colour, an approval as a tick. Four marks side by side were four things to find and match up — and a poll
-// that is merely COMING is a tooltip line, because it is never a move of yours.
+// Everything the request IS, worn by the link that names it: how long it has been open, and the APPROVAL as the
+// reviewers' colour plus a tick. The checks keep a mark of their own beside it: with both verdicts on this one
+// element, "failed but approved" looked like any other failed run, and which of the two it is decides whether
+// the next move is the agent's or yours.
 //
-// `openedAt` is 0 until a host read has said when the request opened. `verdicts` is false for one link among
-// several: the checks are the worst repository's and the approval is all of them, so neither can ride on a
-// link that names one.
-const requestChip = (url, label, openedAt, task, verdicts) => {
+// `openedAt` is 0 until a host read has said when the request opened. `sole` is false for one link among
+// several: the approval is every repository's, so it cannot ride on a link that names one.
+const requestChip = (url, label, openedAt, task, sole) => {
   const anchor = link(url, openedAt > 0 ? `${label} ${duration(Date.now() - openedAt)}` : label);
   anchor.className = 'mr-age';
   const lines = [openedAt > 0
     ? `review request; opened ${new Date(openedAt).toLocaleString()}`
     : 'review request; nothing has dated it yet — the next sweep will'];
-  if (verdicts) {
-    // The checks spend RED and nothing else: a run that passed is the state everyone expects, and green here
-    // read as an approval — which it is not, and which green already means elsewhere on the card, where it is
-    // work that is live. The approval takes the reviewers' own colour. Red outranks it, and the tick is what
-    // carries an approval through a broken build.
-    if (task.pipeline === 'RED') anchor.classList.add('red');
-    else if (task.approved) anchor.classList.add('approved');
-    if (task.pipeline === 'RUNNING') anchor.classList.add('running');
-    if (checked(task)) lines.push(`checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`);
-    if (task.approved) anchor.append(' \u2713');
+  if (sole) {
+    if (task.approved) {
+      anchor.classList.add('approved');
+      anchor.append(' \u2713');
+    }
     if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
+    // Where the checks wear no dot, this link is the only thing that can say what the host said about them —
+    // and "they passed" and "nobody has read them" are not the same answer.
+    if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
     const watch = watchLine(task.autoReview);
     if (watch && !watch.stalled) lines.push(watch.pulse);
   }
@@ -53,7 +51,15 @@ const requestChip = (url, label, openedAt, task, verdicts) => {
   return anchor;
 };
 
-const checked = (task) => task.pipeline && task.pipeline !== 'NONE';
+// A run that PASSED wears no dot: it is the state everyone expects, and a mark every card wears is a mark
+// nobody reads. Absence of the dot is "green", and the link's tooltip says which of the two silences it is.
+const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING';
+
+const checksDot = (task) => {
+  const dot = span(`checks ${task.pipeline.toLowerCase()}`, '');
+  dot.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
+  return dot;
+};
 
 // The transitions as a tooltip: the card stays one line, the record is one hover away.
 const timeline = (task) => (task.history || [])
@@ -128,13 +134,9 @@ export function card(task, manyProjects) {
       approval.dataset.tip = task.approved ? 'review request approved' : 'review request not approved yet';
       meta.append(approval);
     }
-    // The same there: a passing run is the expected state and says nothing worth a mark of its own.
-    if (task.pipeline === 'RED' || task.pipeline === 'RUNNING') {
-      const checks = span(`checks ${task.pipeline.toLowerCase()}`, '');
-      checks.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
-      meta.append(checks);
-    }
   }
+  // Beside the request whether there is one link or several: the verdict is the worst repository's either way.
+  if (marked(task)) meta.append(checksDot(task));
   // A poll that is merely coming needs no element of its own — the link it is about carries it in the tooltip.
   // One that has STOPPED does: it hands the move back to a human, and nothing else on the card says so. Where
   // there was no one link to fold it into, it stays an element either way.

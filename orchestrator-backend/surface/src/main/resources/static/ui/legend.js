@@ -47,16 +47,16 @@ const rows = () => [
   [[statusChip(), liveStatusChip()],
     'the state, and how long it has been in THIS one. Green where no verb on the card is the deploy: the work '
     + 'is on a shared branch already'],
-  [[requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age red', 'MR 2d'),
-    requestChip('mr-age running', 'MR 1h')],
-    'the review request and how long it has been open — approved, its checks failed, its checks still running. '
-    + 'A run that passed wears nothing: it is the state everyone expects. Hover for all of it in words, and '
-    + 'for when the next unattended poll is due'],
-  [[span('approval', ''), span('approval yes', '')],
-    'only where a task spans repositories, and one link cannot carry the verdicts: nobody has approved yet — '
-    + 'approved'],
+  [[requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age', 'MR 2d')],
+    'the review request and how long it has been open — approved, and plain until somebody has. A request '
+    + 'nobody has read yet looks the same as an unapproved one: hover for all of it in words, and for when '
+    + 'the next unattended poll is due'],
   [[span('checks red', ''), span('checks running', '')],
-    'the same there, for the checks — failed, still running'],
+    'beside it, what its checks did — failed, still running. A run that passed has no dot: it is the state '
+    + 'everyone expects'],
+  [[span('approval', ''), span('approval yes', '')],
+    'only where a task spans repositories, and one link cannot carry an approval that is all of them: nobody '
+    + 'has approved yet — approved'],
   [[span('pulse stalled', 'polling stopped')],
     'nothing will look at this round again on its own — the next move is a person’s'],
   [[span('chip on', 'auto-review on'), span('chip bad', 'jobs: 1 failed')],

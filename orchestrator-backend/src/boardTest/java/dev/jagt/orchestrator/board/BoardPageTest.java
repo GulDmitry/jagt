@@ -1182,9 +1182,22 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .meta a.mr-age.red")).hasCount(1);
-        assertThat(page.locator("article .meta a.mr-age.red"))
+        assertThat(page.locator("article .meta .checks.red")).hasCount(1);
+        assertThat(page.locator("article .meta .checks.red"))
                 .hasAttribute("data-tip", Pattern.compile("checks: failed"));
+    }
+
+    /** The status word cannot say a run is still going: a task sits at CI_POLLING whether it is or already red. */
+    @Test
+    void aRunStillGoingPulsesBesideTheRequestInsteadOfColouringIt() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .pipelineStatus("running").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .meta .checks.running")).hasCount(1);
+        assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
     }
 
     /**
@@ -1210,25 +1223,44 @@ class BoardPageTest {
     }
 
     /**
-     * A run that passed is the state everyone expects, and it is not an approval — which is what a colour on
-     * the request reads as. Green is spoken for anyway: on this board it is work that is live.
+     * The failure is the agent's move and the approval is the reviewers' answer, so a card that spent one mark on
+     * both hid whichever of the two it dropped.
      */
     @Test
-    void checksThatPassedPutNoColourOnARequestNobodyHasApprovedYet() {
+    void anApprovedRequestKeepsItsTickWhileItsChecksAreRed() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .pipelineStatus("failed").approved(true).lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .meta a.mr-age.approved")).hasText("MR \u2713");
+        assertThat(page.locator("article .meta .checks.red")).hasCount(1);
+    }
+
+    /**
+     * A run that passed is the state everyone expects, so it spends no mark at all — and the wording is one hover
+     * away, because "they passed" and "nobody has read them" are not the same silence.
+     */
+    @Test
+    void checksThatPassedPutNoMarkOnTheCardAtAll() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .pipelineStatus("success").approved(false).lastActiveTimestamp(now()).build());
 
         Page page = open();
 
-        assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
+        assertThat(page.locator("article .meta .checks")).hasCount(0);
         assertThat(page.locator("article .meta a.mr-age"))
                 .hasAttribute("data-tip", Pattern.compile("checks: success"));
     }
 
-    /** A round nobody has read carries no verdict, and an unread request is not an unapproved one. */
+    /**
+     * A round nobody has read carries no verdict, and an unread request is neither an unapproved one nor a green
+     * one — so the hover has to say which silence this is.
+     */
     @Test
-    void aRequestNoReadHasSeenYetWearsNoVerdictAtAll() {
+    void aRequestNoReadHasSeenYetWearsNoVerdictAndSaysSoOnHover() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .lastActiveTimestamp(now()).build());
@@ -1237,14 +1269,16 @@ class BoardPageTest {
 
         assertThat(page.locator("article .meta a.mr-age")).hasText("MR");
         assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
+        assertThat(page.locator("article .meta a.mr-age"))
+                .hasAttribute("data-tip", Pattern.compile("checks: nothing has read them yet"));
     }
 
     /**
-     * The verdicts are the task's, not one repository's — the checks are the worst repository's and the approval
-     * is all of them — so with several links there is no one link they can ride on.
+     * The approval is the task's, not one repository's, so with several links there is no one link it can ride
+     * on. The checks wear the same dot they wear on every card.
      */
     @Test
-    void aTaskSpanningRepositoriesKeepsTheVerdictsBesideItsLinksInstead() {
+    void aTaskSpanningRepositoriesKeepsItsApprovalBesideItsLinksInstead() {
         state.putTask("ABC-1", TaskState.builder(List.of(
                         new TaskRepo("alpha", root.resolve("ABC-1-alpha").toString(), null,
                                 "https://host.example/alpha/mr/7", null),

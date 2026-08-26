@@ -158,17 +158,11 @@ article.ci { border-left-color: var(--ci); }
 a.id, a.mr-age {
   color: inherit; text-decoration: underline dotted; text-underline-offset: 2px;
 }
-/* The request wears its own verdicts. The reviewers' colour is an APPROVAL, red is a run that failed, and red
-   wins when both are true — the tick is what carries an approval through a broken build. Green is not among
-   them: it is work that is live on a shared branch, and one colour cannot mean two things on one card. A run in
-   progress moves the UNDERLINE, not the text: fading the label would fade the tick beside it, and a pulsing
-   word is one you read twice. */
+/* The request wears ONE verdict: the reviewers' colour and a tick are an APPROVAL, and the checks answer beside
+   it as their own dot. Green is not among them — it is work that is live on a shared branch, and one colour
+   cannot mean two things on one card. */
 a.mr-age.approved { color: var(--ci); }
-a.mr-age.red { color: var(--danger); font-weight: 600; }
-a.mr-age.running { animation: mr-running 1.6s ease-in-out infinite; }
-@keyframes mr-running { 50% { text-decoration-color: transparent; } }
-@media (prefers-reduced-motion: reduce) { a.mr-age.running { animation: none; } }
-/* After the verdicts, or a link that has one would answer a hover with nothing but a solid underline. */
+/* After the approval, or a link wearing it would answer a hover with nothing but a solid underline. */
 a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid; }
 .detail { font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
 .detail.problem { color: var(--danger); font-weight: 600; }
@@ -213,6 +207,9 @@ a { color: var(--accent); }
 }
 .toast.error { border-left-color: var(--danger); }
 
+/* The checks, beside the request they ran on: red is a run that failed, grey and pulsing one still going, and a
+   run that passed has no dot at all. Its own element rather than a second channel on the link, so an approved
+   request whose build is broken does not read as a plain failure. */
 .checks { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center; }
 .checks.red { background: var(--danger); }
 .checks.running { background: var(--muted); animation: checks-pulse 1.6s ease-in-out infinite; }
