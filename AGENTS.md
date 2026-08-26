@@ -86,6 +86,24 @@ missing — add a kind, never an exception.
 - No positional null-soup: value records get `defaults()` + `withX` withers or a builder.
 - Lombok carries the mechanical boilerplate only.
 
+## Interfaces
+
+**Nothing is added to a surface without saying what it replaces.** A board is read at a glance or it is not
+read at all, and design is what a human pays for in attention. Full rules and the reasoning:
+[`docs/rules/surfaces.md`](docs/rules/surfaces.md) — read it before you put anything on the board.
+
+- **Never two controls for one question.** "How does this work" already has a button; a colour legend is a
+  section of it, never a second button beside it. The same goes for a report, a filter and a form.
+- **A fact goes ON the thing it is about** — the verb's own button, the card's own edge — never as one more
+  mark beside the others for a human to find and match up.
+- **A row that already carries four things does not want a fifth**, and **a card must not grow taller** to
+  hold one. Height and cognitive load are the same budget spent twice; a fact that earns neither goes in the
+  hover.
+- **Colour is the cheapest mark and the easiest to overspend.** It works only while few things wear it.
+- **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
+- Every mark has one row in the legend, and the legend renders the page's **own** element rather than naming a
+  colour in words.
+
 ## Tests
 
 - The gate is `cd orchestrator-backend && ./gradlew test`. `e2eTest`, `boardTest` and `linuxDriverTest` are

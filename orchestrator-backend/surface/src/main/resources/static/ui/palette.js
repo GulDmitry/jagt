@@ -16,8 +16,9 @@ const opener = document.getElementById('open-palette');
 const verdict = document.getElementById('palette-state');
 
 // What the palette hands over to the forms it cannot reach into: a launch it can only focus, and a resume that
-// takes the URL that was typed.
-let forms = {focusRef: () => {}, openResume: () => {}};
+// takes the URL that was typed. `reportSection` answers which report carries a rendered section under its text —
+// asked here, decided at wiring time, so this module still knows no verb by name.
+let forms = {focusRef: () => {}, openResume: () => {}, reportSection: () => null};
 
 export const wire = (wired) => { forms = wired; };
 
@@ -77,7 +78,8 @@ export function refreshSuggestions() {
       button.id = `show-${verb.id}`;
       button.textContent = verb.id.charAt(0).toUpperCase() + verb.id.slice(1);
       button.dataset.tip = verb.hint;
-      button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`);
+      button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`,
+        forms.reportSection(verb.id));
       return button;
     }));
 }

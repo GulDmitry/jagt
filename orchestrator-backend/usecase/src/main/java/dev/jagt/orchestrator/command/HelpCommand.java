@@ -23,7 +23,7 @@ public class HelpCommand implements GlobalCommand {
 
     @Override
     public String hint() {
-        return "this command reference";
+        return "how jagt works";
     }
 
     @Override

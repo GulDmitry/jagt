@@ -11,7 +11,7 @@ import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.adapter.TtydWebTerminal;
@@ -150,7 +150,8 @@ class BoardPageTest {
 
         assertThat(page.locator("#auto-review")).hasText("auto-review on");
         assertThat(page.locator("#auto-review")).hasClass(java.util.regex.Pattern.compile("on"));
-        assertThat(page.locator("article .pulse")).hasText("next poll 10m");
+        assertThat(page.locator("article .meta a.mr-age"))
+                .hasAttribute("data-tip", Pattern.compile("next poll 10m"));
     }
 
     @Test
@@ -162,6 +163,7 @@ class BoardPageTest {
 
         assertThat(page.locator("article")).hasCount(1);
         assertThat(page.locator("article .pulse")).hasCount(0);
+        assertThat(page.locator("article a.mr-age")).hasCount(0);
     }
 
     /** Every phase is counted, zeros included: a line that appears and disappears moves everything beside it. */
@@ -1225,8 +1227,9 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .meta .checks.red")).hasCount(1);
-        assertThat(page.locator("article .meta .checks.red")).hasAttribute("data-tip", "checks: failed");
+        assertThat(page.locator("article .meta a.mr-age.red")).hasCount(1);
+        assertThat(page.locator("article .meta a.mr-age.red"))
+                .hasAttribute("data-tip", Pattern.compile("checks: failed"));
     }
 
     /**
@@ -1234,7 +1237,7 @@ class BoardPageTest {
      * and the status only ever says so once the approval has already landed.
      */
     @Test
-    void aCardShowsTheApprovalBesideTheRequestAsAnEmptyRingUntilSomebodyApproves() {
+    void theRequestWearsATickOnceSomebodyHasApprovedIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .approved(false).lastActiveTimestamp(now()).build());
@@ -1244,61 +1247,114 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article").nth(0).locator(".meta .approval:not(.yes)")).hasCount(1);
-        assertThat(page.locator("article").nth(0).locator(".meta .approval"))
-                .hasAttribute("data-tip", "review request not approved yet");
-        assertThat(page.locator("article").nth(1).locator(".meta .approval.yes")).hasCount(1);
+        assertThat(page.locator("article").nth(0).locator(".meta a.mr-age")).hasText("MR");
+        assertThat(page.locator("article").nth(0).locator(".meta a.mr-age"))
+                .hasAttribute("data-tip", Pattern.compile("not approved yet"));
+        assertThat(page.locator("article").nth(1).locator(".meta a.mr-age")).hasText("MR \u2713");
     }
 
     /** A round nobody has read carries no verdict, and an unread request is not an unapproved one. */
     @Test
-    void aCardShowsNoApprovalDotBeforeAnyReadHasSaidEitherWay() {
+    void aRequestNoReadHasSeenYetWearsNoVerdictAtAll() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .lastActiveTimestamp(now()).build());
 
         Page page = open();
 
-        assertThat(page.locator("article .approval")).hasCount(0);
-    }
-
-    @Test
-    void aCardShowsNoChecksDotWhenNoPipelineHasBeenReadYet() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
-
-        Page page = open();
-
-        assertThat(page.locator("article")).hasCount(1);
-        assertThat(page.locator("article .checks")).hasCount(0);
+        assertThat(page.locator("article .meta a.mr-age")).hasText("MR");
+        assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
     }
 
     /**
-     * A status says a deploy only while the task IS one, so a finished task and one picked back up afterwards
-     * both read exactly like work that was never anywhere near a shared branch.
+     * The verdicts are the task's, not one repository's — the checks are the worst repository's and the approval
+     * is all of them — so with several links there is no one link they can ride on.
      */
     @Test
-    void aCardSaysItsWorkIsOnASharedBranchAfterTheDeployStatusHasMovedOn() {
+    void aTaskSpanningRepositoriesKeepsTheVerdictsBesideItsLinksInstead() {
+        state.putTask("ABC-1", TaskState.builder(List.of(
+                        new TaskRepo("alpha", root.resolve("ABC-1-alpha").toString(), null,
+                                "https://host.example/alpha/mr/7", null),
+                        new TaskRepo("beta", root.resolve("ABC-1-beta").toString(), null,
+                                "https://host.example/beta/mr/7", null)),
+                        TaskStatus.CI_POLLING).alias("a1").lastActiveTimestamp(now())
+                .pipelineStatus("failed").approved(false).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .meta a.mr-age")).hasCount(2);
+        assertThat(page.locator("article .meta .checks.red")).hasCount(1);
+        assertThat(page.locator("article .meta .approval:not(.yes)")).hasCount(1);
+    }
+
+    /**
+     * A status says a deploy only while the task IS one, so a card offering it again cannot otherwise say that
+     * anything of this task is already live on the branch it would write.
+     */
+    @Test
+    void theDeployVerbIsColouredWhileItsLastRunIsStillLive() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.DONE).alias("a1").lastActiveTimestamp(now())
+                        TaskStatus.DEPLOYED).alias("a1").lastActiveTimestamp(now())
+                .mrUrl("https://host.example/mr/7").deployCommit("abc1234").build());
+
+        Page page = open();
+
+        assertThat(page.locator("article button.again")).hasText("Deploy");
+        assertThat(page.locator("article .meta .status.live")).hasCount(0);
+    }
+
+    /** The highlighted move is filled with the accent, so the mark has to be a ring rather than its colour. */
+    @Test
+    void theDeployVerbKeepsItsFillAndTakesTheMarkAsARingWhileItIsTheHighlightedMove() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.APPROVED).alias("a1").lastActiveTimestamp(now())
+                .mrUrl("https://host.example/mr/7").deployCommit("abc1234").build());
+
+        Page page = open();
+
+        assertThat(page.locator("article button.primary.again")).hasText("Deploy");
+    }
+
+    /**
+     * Deploy is not on offer from every status, and a task picked back up after one — or closed after one — is
+     * exactly where a human asks whether anything of it is already out.
+     */
+    @Test
+    void theStateSaysTheWorkIsLiveWhereNoVerbOnTheCardIsTheDeploy() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now())
                 .deployCommit("abc1234").build());
 
         Page page = open();
 
-        assertThat(page.locator("article .meta .deployed")).hasText("deployed");
+        assertThat(page.locator("article button.again")).hasCount(0);
+        assertThat(page.locator("article .meta .status.live")).hasCount(1);
     }
 
     @Test
-    void aCardDropsThatMarkOnceTheRevertHasTakenTheWorkBackOut() {
+    void theDeployVerbIsPlainWhileNothingOfTheTaskIsLive() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                        TaskStatus.REVERTED).alias("a1").lastActiveTimestamp(now())
-                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null),
-                        new StatusChange(TaskStatus.REVERTED, 2L, null))).build());
+                        TaskStatus.APPROVED).alias("a1").lastActiveTimestamp(now())
+                .mrUrl("https://host.example/mr/7").build());
 
         Page page = open();
 
-        assertThat(page.locator("article")).hasCount(1);
-        assertThat(page.locator("article .deployed")).hasCount(0);
+        assertThat(page.locator("article button[data-action=deploy]")).isVisible();
+        assertThat(page.locator("article button.again")).hasCount(0);
+    }
+
+    /**
+     * A colour, a ring and a pulsing dot are the board's own vocabulary, and "how does this work" already has a
+     * button — a second one for the marks would be a second answer to the same question.
+     */
+    @Test
+    void helpAlsoSaysWhatTheBoardsOwnMarksMean() {
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Help").setExact(true)).click();
+
+        assertThat(page.locator("#report")).isVisible();
+        assertThat(page.locator("#report-section .legend button.again")).hasText("Deploy");
+        assertThat(page.locator("#report-section .legend .checks.red")).hasCount(1);
     }
 
     private static long now() {

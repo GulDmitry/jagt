@@ -79,11 +79,30 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 /* Wraps rather than scrolling sideways: a report carries prose a human reads, and a line they have to drag the
    view along is one they read twice. Only a word longer than the dialog is ever broken, so a path stays one
    thing you can copy. */
+#report-scroll { max-height: calc(92vh - 46px); overflow: auto; }
 #report-body {
-  margin: 0; padding: 12px 14px; max-height: calc(92vh - 46px); overflow: auto;
-  white-space: pre-wrap; overflow-wrap: break-word;
+  margin: 0; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: break-word;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45;
 }
+
+/* Each row is the page's OWN element beside what it means, so a colour is never named twice. */
+.legend {
+  display: grid; grid-template-columns: max-content 1fr; gap: 10px 14px; align-items: center;
+  padding: 4px 14px 14px; font-size: 13px;
+}
+.legend-head {
+  grid-column: 1 / -1; padding-top: 10px; border-top: 1px solid var(--line);
+  font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 11px; color: var(--muted);
+}
+.legend-key { display: flex; gap: 6px; align-items: center; }
+/* A sample is only the page's own element if it is the SIZE the page draws it. */
+.legend-key button { font-size: 12px; padding: 3px 8px; }
+.legend-says { color: var(--muted); }
+/* The card's edge is a border, which nothing outside a card can wear: here it is the same colour as a bar. */
+.legend-edge { width: 4px; height: 18px; border-radius: 2px; background: var(--line); }
+.legend-edge.you { background: var(--you); }
+.legend-edge.agent { background: var(--agent); }
+.legend-edge.ci { background: var(--ci); }
 
 /* Nearly the whole viewport: an agent CLI redraws itself into whatever it is given, and a narrow frame turns
    its output into soup. */
@@ -142,10 +161,23 @@ article.ci { border-left-color: var(--ci); }
   background: var(--chip-bg); color: var(--text); font-size: 11px; font-weight: 600;
 }
 .status .age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 400; opacity: .7; }
+/* Where no verb on the card is the deploy, the state says the work is live instead — same colour, so it is
+   one mark a human learns rather than two. */
+.status.live { color: var(--ok); }
 /* Clickable without a link's colour: a whole meta row in accent would compete with the buttons. */
 a.id, a.mr-age {
   color: inherit; text-decoration: underline dotted; text-underline-offset: 2px;
 }
+/* The request wears its own verdicts: the colour is what the checks said, the tick what a human said. Two
+   channels on one element is the ceiling — a third would need a legend to tell them apart. A run in progress
+   moves the UNDERLINE, not the text: fading the label would fade the tick beside it, which is the other
+   channel, and a pulsing word is one you read twice. */
+a.mr-age.green { color: var(--ok); }
+a.mr-age.red { color: var(--danger); font-weight: 600; }
+a.mr-age.running { animation: mr-running 1.6s ease-in-out infinite; }
+@keyframes mr-running { 50% { text-decoration-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { a.mr-age.running { animation: none; } }
+/* After the verdicts, or a link that has one would answer a hover with nothing but a solid underline. */
 a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid; }
 .detail { font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
 .detail.problem { color: var(--danger); font-weight: 600; }
@@ -204,8 +236,9 @@ a { color: var(--accent); }
   border: 2px solid var(--ci); }
 .approval.yes { background: var(--ci); }
 
-/* A word rather than a third dot beside two: a disc that has to be looked up in a legend is not one a human
-   reads while scanning. Outlined, not filled — it reports where the work is, it asks for nothing. */
-.deployed {
-  font-size: 11px; color: var(--ok); border: 1px solid var(--ok); border-radius: 999px; padding: 0 7px;
-}
+/* A verb whose last run is still live wears it itself: the meta row above is the busiest thing on a card, and
+   one more mark there would be read past. Colour only — the button neither moves nor grows. */
+button:not(.primary).again { border-color: var(--ok); color: var(--ok); }
+button:not(.primary).again:hover:not(:disabled) { border-color: var(--ok); color: var(--ok); }
+/* The highlighted move keeps its fill and takes the mark as a ring: green ON accent is legible in neither theme. */
+button.primary.again { box-shadow: 0 0 0 2px var(--ok); }

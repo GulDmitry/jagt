@@ -14,6 +14,7 @@ import {openReport, showReport} from './ui/dialogs.js';
 import * as filters from './ui/filters.js';
 import * as header from './ui/header.js';
 import './ui/keys.js';
+import * as legend from './ui/legend.js';
 import * as launch from './ui/launch.js';
 import * as palette from './ui/palette.js';
 import {refresh, refreshVerbs} from './ui/refresh.js';
@@ -30,7 +31,12 @@ onClick({
 });
 header.onNarrow(render);
 filters.onChange(render);
-palette.wire({focusRef: launch.focusRef, openResume: resume.open});
+palette.wire({
+  focusRef: launch.focusRef,
+  openResume: resume.open,
+  // `help` answers "how does this work", and half of that answer on a board is what its marks mean.
+  reportSection: (id) => (id === 'help' ? legend.node() : null),
+});
 showLog(() => showReport('log — this session', sessionLog()));
 
 // A desktop notification about one task links here with `?task=<id>`, and it lands in the FILTER rather than in

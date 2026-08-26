@@ -119,17 +119,22 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | Finding one task among many | Type in the filter box (`/`): alias, ticket number or title. `Esc` clears. There is no sort control |
 | "This card said 17h, I restarted the agent, now it says 0m" | The clock beside the status is time in **that** status. A fresh session re-reports itself, and those are real transitions |
 | "How long has this request been hanging?" | The `MR 8h` chip — the request's own creation time. It survives rounds, respawns and restarts |
+| "Did the checks pass? Has anyone approved?" | The same chip: its **colour** is the checks (green, red, fading = running) and a **✓** is an approval. Hover for all of it in words, and for when the next unattended poll is due |
+| "When is the next poll?" | In that tooltip. A poll that is coming is not news — one that has **stopped** keeps its own mark, because the move is a person's again |
+| A task spanning repositories | One link per repository, and the verdicts stay as separate dots beside them: the checks are the worst repository's and the approval is all of them, so neither can ride on a link that names one |
+| The project key is missing from a card | The install has one project. A word every card wears is a word nobody reads; it comes back when a task spans repositories |
 | "What does this status mean?" | It says itself: `out for review`, `not shipped`, `not approved`. A status names a state; the highlighted button says what to do |
 | Why only some cards say whose move it is | The badge is for **your** move alone. Every other owner is the status word again |
 | What "active" is for | Liveness for the watchdog — any MCP call bumps it, keep-alives included. A console column and a tooltip line, never a card row |
-| A bare duration on a card | There is none. The status's age lives inside its chip; everything else is labelled (`MR 5d`, `↻ 7m`) |
+| A bare duration on a card | There is none. The status's age lives inside its chip; everything else is labelled (`MR 5d`) |
 | Where the ticket and request links are | On the things that already named them: the task number opens the ticket, the `MR <age>` chip the request |
-| A line under a card repeating the request link | There is none: the card links the request and dots the checks. What is left on that line is news only — NEEDS INPUT, ANSWERED, PROBLEM, NEEDS YOU |
+| A line under a card repeating the request link | There is none: the request link IS the checks. What is left on that line is news only — NEEDS INPUT, ANSWERED, PROBLEM, NEEDS YOU |
 | A request whose stored link is not a web URL | `PROBLEM: review request link unusable: …` — nothing can follow it |
 | A task at SHIPPING | The status and the move line are the whole answer; the detail line stays empty unless the watchdog found it silent |
 | Clicking a desktop notification | Opens the board filtered to that task. Needs `terminal-notifier` and a board being served |
 | "Which of these buttons changes something?" | Two rows: what moves the task on above, what only looks or restarts below (`TaskAction.Group`) |
-| "Is this task's work on a shared branch?" | The `deployed` chip, on the card and in the console's move line. A status says so only while the task IS the deploy; the chip stays through DONE and comes off when `revert` takes the work back out |
+| "What does this colour / ring / dot mean?" | `Help` — under the commands, every mark beside what it means, shown as the page's own element. There is no second button for it |
+| "Has this branch been deployed already?" | The **Deploy button is green** while this task's work is live on the branch it writes; `revert` takes the colour off with the work. The console says `· deployed` on the move line |
 
 ## Review requests
 

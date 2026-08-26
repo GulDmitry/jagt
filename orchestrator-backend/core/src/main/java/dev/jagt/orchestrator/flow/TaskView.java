@@ -67,8 +67,11 @@ public record TaskView(
         long tokens
 ) {
 
+    /**
+     * @param again this verb has already run and what it did is still live, so pressing it repeats it
+     */
     public record ActionView(String id, String label, String hint, boolean primary, String group,
-                            boolean readOnly) {
+                            boolean readOnly, boolean again) {
     }
 
     /**
@@ -83,9 +86,11 @@ public record TaskView(
         Move move = Move.forTask(task.status(), task.hasReviewRequest(),
                 RoundState.of(task.message(), draftedReplies), task.agentIsSilent(),
                 autoReview == null ? AutoReviewWatch.none() : autoReview);
+        boolean deployed = deployed(task);
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
-                        action == move.primary(), action.group().id(), action.readOnly()))
+                        action == move.primary(), action.group().id(), action.readOnly(),
+                        deployed && action == TaskAction.DEPLOY))
                 .toList();
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),
                 task.status().label(), move.phase(),
@@ -99,7 +104,7 @@ public record TaskView(
                         .toList(),
                 task.lastActiveTimestamp(),
                 task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
-                task.history(), deployed(task), draftedReplies, AgentReport.of(task.message()), autoReview,
+                task.history(), deployed, draftedReplies, AgentReport.of(task.message()), autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(),
                 task.hasReviewRequest() ? task.approved() : null,
                 task.totalUsage().total());

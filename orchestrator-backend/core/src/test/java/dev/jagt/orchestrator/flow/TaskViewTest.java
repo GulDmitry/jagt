@@ -129,13 +129,23 @@ class TaskViewTest {
     }
 
     @Test
-    void takesTheMarkOffOnceTheRevertHasTakenTheWorkBackOut() {
-        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1")
-                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, null),
-                        new StatusChange(TaskStatus.REVERTED, 2L, null))).build(),
-                false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+    void takesTheMarkOffOnceTheRevertHasForgottenTheMergeCommit() {
+        TaskState reverted = TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1")
+                .deployCommit("abc1234").build().withDeployCommit("proj", null);
+
+        TaskView view = TaskView.of("ABC-1", reverted, false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 
         assertThat(view.deployed()).isFalse();
+    }
+
+    @Test
+    void marksTheDeployVerbAsARepeatWhileItsLastRunIsStillLive() {
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .mrUrl("https://host/mr/1").deployCommit("abc1234").build(),
+                false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.actions()).filteredOn(action -> action.id().equals("deploy"))
+                .singleElement().extracting(TaskView.ActionView::again).isEqualTo(true);
     }
 
     @Test

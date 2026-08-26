@@ -16,7 +16,10 @@ export function render() {
   const shown = filters.shown(tasks);
   projects.render();
   header.render(tasks, shown.length);
-  board.replaceChildren(...shown.map(card));
+  // Read off the cards themselves: the configured list can be longer than anything on the board, and shorter
+  // than the truth when a project has been taken out of the config under a task that still works in it.
+  const manyProjects = new Set(tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project))).size > 1;
+  board.replaceChildren(...shown.map((task) => card(task, manyProjects)));
 }
 
 // ONE listener for everything a card offers, dispatched by what the button CARRIES: an action to run, or a

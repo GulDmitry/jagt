@@ -22,15 +22,34 @@ const watchLine = (watch) => {
   return {pulse: watch.label, tip: watch.note, stalled: true};
 };
 
-// `openedAt` is 0 until a host read has said when the request opened.
-const requestLink = (url, label, openedAt) => {
+// Everything the request IS, worn by the link that names it: how long it has been open, the checks as its
+// colour, an approval as a tick. Four marks side by side were four things to find and match up — and a poll
+// that is merely COMING is a tooltip line, because it is never a move of yours.
+//
+// `openedAt` is 0 until a host read has said when the request opened. `verdicts` is false for one link among
+// several: the checks are the worst repository's and the approval is all of them, so neither can ride on a
+// link that names one.
+const requestChip = (url, label, openedAt, task, verdicts) => {
   const anchor = link(url, openedAt > 0 ? `${label} ${duration(Date.now() - openedAt)}` : label);
   anchor.className = 'mr-age';
-  anchor.dataset.tip = openedAt > 0
+  const lines = [openedAt > 0
     ? `review request; opened ${new Date(openedAt).toLocaleString()}`
-    : 'review request; nothing has dated it yet — the next sweep will';
+    : 'review request; nothing has dated it yet — the next sweep will'];
+  if (verdicts) {
+    if (checked(task)) {
+      anchor.classList.add(task.pipeline.toLowerCase());
+      lines.push(`checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`);
+    }
+    if (task.approved) anchor.append(' \u2713');
+    if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
+    const watch = watchLine(task.autoReview);
+    if (watch && !watch.stalled) lines.push(watch.pulse);
+  }
+  anchor.dataset.tip = lines.join('\n');
   return anchor;
 };
+
+const checked = (task) => task.pipeline && task.pipeline !== 'NONE';
 
 // The transitions as a tooltip: the card stays one line, the record is one hover away.
 const timeline = (task) => (task.history || [])
@@ -47,7 +66,8 @@ const actionRow = (group) => {
   return row;
 };
 
-export function card(task) {
+// `manyProjects` comes from the wiring: where every card would wear the same key, it is a word nobody reads.
+export function card(task, manyProjects) {
   const owner = task.owner.toLowerCase();
   const article = document.createElement('article');
   // The edge reads the owner; the quiet tier drops its colour, so an alarm-coloured card is one that is stuck.
@@ -78,42 +98,43 @@ export function card(task) {
   const status = span('status', task.statusLabel);
   status.append(' ', span('age', duration(Date.now() - task.statusSince)));
   status.dataset.tip = `${task.status}\n${timeline(task)}`;
+  // The mark rides the verb it is about wherever that verb is on offer; where it is not — a task picked back
+  // up, or closed — the state chip carries it, because nothing else on the card would say the work is live.
+  if (task.deployed && !task.actions.some((action) => action.again)) {
+    status.classList.add('live');
+    status.dataset.tip = `${status.dataset.tip}\n\nits work is on a shared branch`;
+  }
+  meta.append(status);
   // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
   const repos = task.repos || [];
-  const where = repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project;
-  meta.append(status, span(null, where));
-  // A deploy outlives the status that recorded it: DONE, and a task picked back up afterwards, say nothing
-  // about work that is live. It comes off again when a revert takes that work out.
-  if (task.deployed) {
-    const deployed = span('deployed', 'deployed');
-    deployed.dataset.tip = 'this work is on a shared branch \u2014 `revert` takes it back out';
-    meta.append(deployed);
+  if (manyProjects || repos.length > 1) {
+    meta.append(span(null, repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project));
   }
   // ONE stamp for several requests — the oldest — so it can be worn only where there is one request to wear
   // it. Several are named by project and ageless: the same number under each would read as each one's own.
-  if (task.reviewRequestUrl && repos.length < 2) {
-    meta.append(requestLink(task.reviewRequestUrl, 'MR', task.requestOpenedAt));
+  const folded = task.reviewRequestUrl && repos.length < 2;
+  if (folded) {
+    meta.append(requestChip(task.reviewRequestUrl, 'MR', task.requestOpenedAt, task, true));
   } else {
     for (const repo of repos.filter((each) => each.reviewRequestUrl)) {
-      meta.append(requestLink(repo.reviewRequestUrl, `${repo.project} MR`, 0));
+      meta.append(requestChip(repo.reviewRequestUrl, `${repo.project} MR`, 0, task, false));
+    }
+    if (task.approved != null) {
+      const approval = span(task.approved ? 'approval yes' : 'approval', '');
+      approval.dataset.tip = task.approved ? 'review request approved' : 'review request not approved yet';
+      meta.append(approval);
+    }
+    if (checked(task)) {
+      const checks = span(`checks ${task.pipeline.toLowerCase()}`, '');
+      checks.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
+      meta.append(checks);
     }
   }
-  // The approval, as one dot beside the request: whether anyone has approved is what decides if this card is
-  // waiting on a person or on the human reading it, and no status says so until the approval has landed.
-  if (task.approved != null) {
-    const approval = span(task.approved ? 'approval yes' : 'approval', '');
-    approval.dataset.tip = task.approved ? 'review request approved' : 'review request not approved yet';
-    meta.append(approval);
-  }
-  // The checks, as one dot: the sweep already reads the pipeline, and a red run while the card still says
-  // CI_POLLING is the thing a status word cannot show.
-  if (task.pipeline && task.pipeline !== 'NONE') {
-    const checks = span(`checks ${task.pipeline.toLowerCase()}`, '');
-    checks.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
-    meta.append(checks);
-  }
+  // A poll that is merely coming needs no element of its own — the link it is about carries it in the tooltip.
+  // One that has STOPPED does: it hands the move back to a human, and nothing else on the card says so. Where
+  // there was no one link to fold it into, it stays an element either way.
   const watch = watchLine(task.autoReview);
-  if (watch) {
+  if (watch && (watch.stalled || !folded)) {
     const pulse = span(watch.stalled ? 'pulse stalled' : 'pulse', watch.pulse);
     pulse.dataset.tip = watch.tip;
     meta.append(pulse);
@@ -159,6 +180,9 @@ export function card(task) {
     button.dataset.task = task.id;
     button.dataset.action = action.id;
     if (action.primary) button.className = 'primary';
+    // A verb whose last run is still live: the meta row is already the busiest thing on the card, so the fact
+    // is worn by the control it is about rather than added beside the others.
+    if (action.again) button.classList.add('again');
     button.disabled = blocked(task, action);
     row.append(button);
   }

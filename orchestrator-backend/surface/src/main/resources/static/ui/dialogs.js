@@ -8,19 +8,24 @@ import {toast} from './toast.js';
 const report = document.getElementById('report');
 const reportTitle = document.getElementById('report-title');
 const reportBody = document.getElementById('report-body');
+const reportScroll = document.getElementById('report-scroll');
+const reportSection = document.getElementById('report-section');
 const terminalDialog = document.getElementById('terminal');
 const terminalFrame = document.getElementById('terminal-frame');
 
-export function showReport(title, body) {
+// `extra` is a rendered section under the text: what a colour or a mark MEANS cannot be said in a monospace
+// column, and a second dialog for it would be a second answer to "how does this work".
+export function showReport(title, body, extra = null) {
   reportTitle.textContent = title;
   reportBody.textContent = body.trimEnd();
+  reportSection.replaceChildren(...(extra ? [extra] : []));
   if (!report.open) report.showModal();
-  reportBody.scrollTop = 0;
+  reportScroll.scrollTop = 0;
 }
 
-export async function openReport(title, path) {
+export async function openReport(title, path, extra = null) {
   try {
-    showReport(title, await text(path));
+    showReport(title, await text(path), extra);
   } catch (e) {
     toast(e.message, true);
   }

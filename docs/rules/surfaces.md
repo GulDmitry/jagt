@@ -19,6 +19,29 @@ independently of the gate, which is exactly how they drifted apart.
 `TaskViews.snapshot()` reads the configuration **once** per render and hands back the tasks with the policy
 that explains them: the console redraws on every keystroke, and two reads could disagree inside one frame.
 
+### Nothing is added to a surface without saying what it replaces
+
+A board is read at a glance or it is not read at all, and every mark spends the same budget: one glance.
+
+- **No two controls for one question.** "How does this work" has a button already; a colour legend is a
+  *section of it*, not a second button beside it. The same goes for a report, a filter and a form.
+- **A fact goes on the thing it is about.** That a deploy already landed belongs on the Deploy button — it is
+  what the fact changes — not on a row of chips a human has to scan and match up.
+- **A row that already carries four things does not want a fifth, and a card must not grow taller to hold
+  one.** Height and cognitive load are the same budget spent twice. The card's meta row is where this broke
+  once (2026-08-26): status, project, request, approval, checks, poll — six marks, four of them facts about
+  the same review request. They are one element now: the request link, coloured by its checks and ticked once
+  approved.
+- **What is merely coming is not news.** The poll countdown moved into that tooltip; a poll that has STOPPED
+  keeps its own element, because it hands the move back to a human and nothing else on the card says so.
+- **A word every card wears is a word nobody reads.** The project key is rendered only where an install has
+  more than one, or a task spans several.
+- **Colour is the cheapest mark and the easiest to overspend.** It works while few things wear it. Two
+  channels on one element is the ceiling — the request's colour is the machine's verdict and its tick is a
+  human's; a third would need a legend to tell them apart.
+- Every mark has one row in the legend, and the legend renders the page's OWN element rather than naming a
+  colour in words — a second copy of a colour is a second thing to keep in step.
+
 ### Parity is an invariant, not an aspiration
 
 A capability that exists in one surface only is a bug.
@@ -37,7 +60,12 @@ A capability that exists in one surface only is a bug.
   its own button, and the dimmed area around it — the click a human makes first. The backdrop close is guarded
   by where the press **started**, so dragging a selection out of a report does not dismiss what is being read.
 
-One deliberate exception: **`quit` is console-only.** Stopping the backend belongs to whoever owns the process
+Two deliberate exceptions, both of a surface explaining or owning itself. The **legend is board-only** (a section of the
+`help` report, `static/ui/legend.js`): it says what a colour, a ring and a pulsing dot mean, and it says it by rendering the
+page's own elements rather than naming their colours — the console has none of them and spells every one of
+those facts out in words already.
+
+And **`quit` is console-only.** Stopping the backend belongs to whoever owns the process
 (Ctrl-C / kill), not to a browser button, and nothing is lost since agents live in tmux. A shutdown endpoint
 was built and removed — do not add one back.
 
