@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ViewerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
@@ -89,6 +91,25 @@ class AgentSessionsTest {
         assertThatThrownBy(() -> sessions().sessionOf("ABC-9"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ABC-9");
+    }
+
+    /**
+     * A boolean made the caller guess WHY nothing came forward, and the one sentence it guessed was written for
+     * a terminal whose viewer is a tab — so a terminal that simply was not running said the same thing.
+     */
+    @ParameterizedTest
+    @CsvSource({
+            "WINDOW, and raised the agents window",
+            "UNREACHABLE_TAB, no API to select one",
+            "NOT_RUNNING, no agents viewer is open"
+    })
+    void saysWhatTheTerminalCouldActuallyDoAboutTheViewer(TerminalDriver.Revealed revealed, String expected) {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(terminal.reveal("jagt")).thenReturn(revealed);
+
+        assertThat(sessions().focusTask("ABC-1")).contains(expected);
     }
 
     @Test

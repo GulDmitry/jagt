@@ -7,6 +7,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 
 public abstract class AbstractAgentRuntime implements AgentRuntime {
 
@@ -27,8 +28,8 @@ public abstract class AbstractAgentRuntime implements AgentRuntime {
 
     /** Answering nothing degrades to the signs jagt can take itself; a guess would be read as certainty. */
     @Override
-    public long lastSessionActivityMillis(Path worktree) {
-        return 0;
+    public OptionalLong lastSessionActivity(Path worktree) {
+        return OptionalLong.empty();
     }
 
     /** A fresh worktree holds nothing but the checkout; jagt's own plumbing is written as links. */

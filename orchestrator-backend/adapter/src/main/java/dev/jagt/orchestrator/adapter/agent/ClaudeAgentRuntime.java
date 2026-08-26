@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.util.OptionalLong;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,8 +50,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
-    public long lastSessionActivityMillis(Path worktree) {
-        return ClaudeTranscripts.lastEntryMillis(ClaudeTranscripts.projectsDir(), worktree);
+    public OptionalLong lastSessionActivity(Path worktree) {
+        return OptionalLong.of(ClaudeTranscripts.lastEntryMillis(ClaudeTranscripts.projectsDir(), worktree));
     }
 
     @Override

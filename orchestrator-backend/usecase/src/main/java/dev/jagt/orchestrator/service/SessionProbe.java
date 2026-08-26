@@ -155,7 +155,7 @@ public class SessionProbe {
         String worktree = task.worktreePath();
         long derived = worktree == null || worktree.isBlank()
                 ? 0
-                : runtime.lastSessionActivityMillis(Path.of(worktree));
+                : runtime.lastSessionActivity(Path.of(worktree)).orElse(0);
         return Math.max(derived, reported == null ? 0 : modified(reported));
     }
 

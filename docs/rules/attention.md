@@ -26,7 +26,7 @@ forever and no stamp is ever written. Two signs that do carry that half, neither
 - **the CLI's own hooks**, which say so within seconds because the harness fires them rather than the model —
   a session out of tokens still reports, and `WatchdogService.check` runs that one task at once rather than
   letting it wait out the interval. Kept in memory: losing them on a restart costs promptness only.
-- **the log a session keeps of itself** (`AgentRuntime.lastSessionActivityMillis`, or the path a session
+- **the log a session keeps of itself** (`AgentRuntime.lastSessionActivity`, or the path a session
   reported), which grows only when something happened.
 
 Terminal output survives as the **last** sign rather than the first, and that is not a hedge: a log gets its

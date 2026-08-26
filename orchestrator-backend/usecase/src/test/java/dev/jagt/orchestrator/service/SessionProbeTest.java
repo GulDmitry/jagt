@@ -9,6 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.List;
@@ -91,7 +92,7 @@ class SessionProbeTest {
     @Test
     void staysQuietWhileTheSessionsOwnLogIsStillGrowing() {
         AgentRuntime runtime = mock(AgentRuntime.class);
-        when(runtime.lastSessionActivityMillis(any())).thenReturn(9_990_000L);
+        when(runtime.lastSessionActivity(any())).thenReturn(OptionalLong.of(9_990_000L));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_000_000L).build();
 
@@ -110,7 +111,7 @@ class SessionProbeTest {
         SessionHost sessions = mock(SessionHost.class);
         when(sessions.lastWindowActivityMillis(any(), anyString())).thenReturn(9_990_000L);
         AgentRuntime runtime = mock(AgentRuntime.class);
-        when(runtime.lastSessionActivityMillis(any())).thenReturn(9_000_000L);
+        when(runtime.lastSessionActivity(any())).thenReturn(OptionalLong.of(9_000_000L));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_000_000L).build();
 
@@ -150,7 +151,7 @@ class SessionProbeTest {
     @Test
     void dropsAHarnessReportOnceTheSessionsLogHasGrownAgain() {
         AgentRuntime runtime = mock(AgentRuntime.class);
-        when(runtime.lastSessionActivityMillis(any())).thenReturn(10_000_000L);
+        when(runtime.lastSessionActivity(any())).thenReturn(OptionalLong.of(10_000_000L));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class), runtime);
@@ -195,7 +196,7 @@ class SessionProbeTest {
         Path stale = Files.writeString(root.resolve("earlier.jsonl"), "{}");
         Files.setLastModifiedTime(stale, FileTime.fromMillis(9_000_000L));
         AgentRuntime runtime = mock(AgentRuntime.class);
-        when(runtime.lastSessionActivityMillis(any())).thenReturn(9_990_000L);
+        when(runtime.lastSessionActivity(any())).thenReturn(OptionalLong.of(9_990_000L));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class), runtime);
@@ -240,7 +241,7 @@ class SessionProbeTest {
     @Test
     void keepsAReportThatTiedWithTheLogEntryWrittenJustBeforeIt() {
         AgentRuntime runtime = mock(AgentRuntime.class);
-        when(runtime.lastSessionActivityMillis(any())).thenReturn(10_000_000L);
+        when(runtime.lastSessionActivity(any())).thenReturn(OptionalLong.of(10_000_000L));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .lastActiveTimestamp(9_000_000L).build();
         SessionProbe probe = new SessionProbe(mock(ConfigService.class), mock(SessionHost.class), runtime);

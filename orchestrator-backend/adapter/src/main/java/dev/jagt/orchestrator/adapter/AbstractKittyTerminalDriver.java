@@ -88,16 +88,18 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     }
 
     @Override
-    public boolean reveal(String dedicatedTitle) {
+    public Revealed reveal(String dedicatedTitle) {
         // dedicatedTitle is the base tmux session name, which is also our socket key.
         String socket = socket(dedicatedTitle);
         if (!instanceRunning(socket)) {
-            return false;
+            return Revealed.NOT_RUNNING;
         }
         processRunner.run(null, TIMEOUT, List.of(kittyCommand, "@", "--to", socket,
                 "focus-window", "--match", "cmdline:tmux"));
         bringToFront();
-        return true;
+        // The viewer gets its own instance, so it is never a tab of somebody else's window; the socket answering
+        // at all is the window being there.
+        return Revealed.WINDOW;
     }
 
     @Override

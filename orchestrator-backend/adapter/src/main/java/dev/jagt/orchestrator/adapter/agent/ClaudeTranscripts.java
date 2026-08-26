@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +15,7 @@ import java.util.stream.Stream;
  * becomes a dash. A name this does not reconstruct simply answers 0, so being wrong costs the caller a sign
  * and never a false one.
  */
+@Slf4j
 final class ClaudeTranscripts {
 
     private static final String SUFFIX = ".jsonl";
@@ -29,12 +32,23 @@ final class ClaudeTranscripts {
     }
 
     static long lastEntryMillis(Path projectsDir, Path sessionDirectory) {
-        try (Stream<Path> logs = Files.list(projectsDir.resolve(slug(sessionDirectory)))) {
+        Path dir = projectsDir.resolve(slug(sessionDirectory));
+        // A session that has written nothing yet is not a failure, and neither is a name this did not
+        // reconstruct: both are simply no sign. Anything else IS one, and answering 0 for it would put a broken
+        // read and a quiet session under the same number.
+        if (!Files.isDirectory(dir)) {
+            return 0;
+        }
+        try (Stream<Path> logs = Files.list(dir)) {
             return logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
                     .mapToLong(ClaudeTranscripts::modified)
                     .max()
                     .orElse(0);
         } catch (IOException e) {
+            log.atWarn().setMessage("session record unreadable")
+                    .addKeyValue("dir", dir)
+                    .addKeyValue("cause", e.toString())
+                    .log();
             return 0;
         }
     }

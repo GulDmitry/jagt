@@ -25,11 +25,24 @@ public interface TerminalDriver {
     void bringToFront();
 
     /**
+     * What a {@link #reveal(String)} achieved — the driver's own answer, because "nothing came forward" has more
+     * than one reason and only the driver knows which. A caller that has to pick a sentence for a boolean picks
+     * one that is right for a single terminal and a lie in the next.
+     */
+    enum Revealed {
+        /** The agents window is in front. */
+        WINDOW,
+        /** The viewer is a TAB behind another one, and this terminal has no API to select a tab. */
+        UNREACHABLE_TAB,
+        /** No viewer is open at all. */
+        NOT_RUNNING
+    }
+
+    /**
      * Raises the window titled {@code dedicatedTitle} — addressed, never by keystroke — and activates the app.
-     * True if such a window was found. A driver that cannot select a TAB raises the window and returns true.
      * Best-effort; never throws.
      */
-    boolean reveal(String dedicatedTitle);
+    Revealed reveal(String dedicatedTitle);
 
     /**
      * Closes the agents window(s) titled {@code dedicatedTitle}. Individual tabs need not be closed — some

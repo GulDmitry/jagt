@@ -211,7 +211,7 @@ session in a worktree, provision it, name the file it reads its instructions fro
 - **How an agent reaches the MCP server is the adapter's business** — direct HTTP with a working-directory
   header, or a stdio bridge for a CLI that can only spawn a server. Nothing above the port knows which.
 - **What a session is doing is read, never asked.** The log a CLI keeps of a session answers liveness
-  (`lastSessionActivityMillis`) and its own hooks report a stop (`surface/agent`) — no model in either path, so
+  (`lastSessionActivity`) and its own hooks report a stop (`surface/agent`) — no model in either path, so
   a session out of tokens still reaches the board. Which events a CLI reports is a resource
   (`adapter/…/resources/hooks/`), not a table in Java.
 - **The one-shot assistant is a separate port** from the session runtime: an install may run a local model for

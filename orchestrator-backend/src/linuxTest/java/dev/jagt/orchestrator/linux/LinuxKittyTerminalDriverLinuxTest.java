@@ -7,6 +7,8 @@ import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import dev.jagt.orchestrator.port.TerminalDriver;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -60,10 +62,11 @@ class LinuxKittyTerminalDriverLinuxTest {
         assertThat(listed).contains("tmux");
     }
 
-    /** `reveal` must report FALSE when there is no instance: the console tells the human to attach by hand. */
+    /** No instance is NOT_RUNNING, never a tab nobody can select: the console tells the human to attach by hand. */
     @Test
-    void reportsThatNothingWasRevealedWhenNoViewerIsRunning() {
-        assertThat(driver().reveal("jagt-kitty-linux-absent")).isFalse();
+    void reportsThatNoViewerIsRunningRatherThanOneItCannotReach() {
+        assertThat(driver().reveal("jagt-kitty-linux-absent"))
+                .isEqualTo(TerminalDriver.Revealed.NOT_RUNNING);
     }
 
     /**
@@ -82,7 +85,7 @@ class LinuxKittyTerminalDriverLinuxTest {
         driver.openViewer(SESSION, SESSION, Path.of(System.getProperty("java.io.tmpdir")));
         awaitRemoteControl();
 
-        assertThat(driver.reveal(SESSION)).isTrue();
+        assertThat(driver.reveal(SESSION)).isEqualTo(TerminalDriver.Revealed.WINDOW);
 
         driver.closeViewerWindow(SESSION);
         assertThat(awaitInstanceGone()).as("the instance holding the socket is gone").isTrue();

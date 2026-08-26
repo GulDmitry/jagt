@@ -39,7 +39,7 @@ idea, in `TODO.md`.
 The pluggable AI-agent CLI. `launchCommand` **and** worktree provisioning (`provisionWorktree`, a template in
 `AbstractAgentRuntime` plus one per-agent hook) both live here.
 
-Liveness is the runtime's too (`lastSessionActivityMillis`): where a CLI keeps a log of a session, only that
+Liveness is the runtime's too (`lastSessionActivity`): where a CLI keeps a log of a session, only that
 runtime knows where — and the same file is what a session's own hooks name back, so the derivation is a
 fallback rather than the answer.
 
@@ -73,6 +73,25 @@ The bootstrap prompt therefore names **no** file: which one holds the briefing v
 
 A new agent = one `AgentRuntime` implementation. A Linux port = new `UserNotifier` / `TerminalDriver` /
 `EditorDriver` implementations. **Nothing else should need to change.**
+
+### A port answers what it achieved, never a value the caller has to interpret
+
+An adapter knows what it can do; a caller can only guess, and a guess written for one implementation is a lie
+in the next.
+
+- `TerminalDriver.reveal` returns `Revealed` — `WINDOW`, `UNREACHABLE_TAB`, `NOT_RUNNING`. It was a boolean,
+  and `focus` had one sentence for false: "the agents viewer is a TAB, the terminal has no API to switch tabs".
+  True for Warp, whose viewer IS a tab in somebody else's window. A lie for kitty, whose false means its
+  instance is not running at all — the viewer gets its own window there and never is a tab.
+- `AgentRuntime.lastSessionActivity` returns `OptionalLong`. It answered 0 both for "this runtime keeps no
+  record of itself" and for a record holding no entry yet — "there is no such clock" is not a reading of one,
+  and a caller that cannot tell them apart has to treat every runtime as the poorest of them. A read that
+  FAILS is a third thing again, and stays the adapter's own to report: `ClaudeTranscripts` logs it rather than
+  passing a zero up, which is [a read that failed is never an
+  answer](#a-read-that-failed-is-never-an-answer) one layer down.
+
+A capability nothing branches on needs no declaration. When something does branch, the port carries the answer
+— never a boolean plus a comment, and never a magic value.
 
 ## Master assistant
 

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.port;
 
 import dev.jagt.orchestrator.port.AgentWorktree;
 import java.nio.file.Path;
+import java.util.OptionalLong;
 
 /**
  * The pluggable AI-agent runtime — what jagt spawns per task and how it wires that agent to the orchestrator. One
@@ -47,13 +48,16 @@ public interface AgentRuntime {
     void provisionWorktree(AgentWorktree worktree);
 
     /**
-     * Epoch millis of the last entry in the session's own record of itself; 0 where this runtime keeps none.
+     * Epoch millis of the last entry in the session's own record of itself; 0 while that record holds no entry
+     * yet, and EMPTY where this runtime keeps no such record at all. Empty rather than a zero standing in for
+     * it: "there is no such clock" is not a reading of one, and a caller that cannot tell them apart has to
+     * treat every runtime as the poorest of them.
      *
      * <p>Such a record grows only when something actually happened, which is what makes it the one clock that
      * tells a working session from one waiting at a prompt — a measure of terminal output cannot, because a
      * session waiting for an answer keeps repainting.
      */
-    long lastSessionActivityMillis(Path worktree);
+    OptionalLong lastSessionActivity(Path worktree);
 
     /**
      * What this CLI calls a start that follows a COMPACTION — the one start that has lost the brief and needs it

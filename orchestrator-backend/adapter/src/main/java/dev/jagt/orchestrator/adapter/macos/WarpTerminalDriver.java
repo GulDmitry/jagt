@@ -70,10 +70,23 @@ public class WarpTerminalDriver implements TerminalDriver {
     }
 
     @Override
-    public boolean reveal(String dedicatedTitle) {
+    public Revealed reveal(String dedicatedTitle) {
         boolean raised = raiseDedicatedWindow(dedicatedTitle);
+        if (!raised && !isRunning()) {
+            return Revealed.NOT_RUNNING;
+        }
         bringToFront();
-        return raised;
+        // A window is named after whichever tab is in front of it, so a running Warp with no window by that
+        // name is the viewer sitting behind another tab — which the URI scheme cannot select.
+        return raised ? Revealed.WINDOW : Revealed.UNREACHABLE_TAB;
+    }
+
+    /**
+     * Asked rather than inferred from the raise, which fails for both worlds at once. {@code pgrep} rather than
+     * an activate: "nothing is open" must not be answered by opening something.
+     */
+    private boolean isRunning() {
+        return processRunner.run(null, TIMEOUT, List.of("pgrep", "-x", "Warp")).exitCode() == 0;
     }
 
     @Override

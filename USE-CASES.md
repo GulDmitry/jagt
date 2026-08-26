@@ -99,6 +99,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | A worktree created before the hooks existed | recreate the task | Its settings file is written once, at `initialize_task`; the log a session keeps still answers, one threshold later |
 | The agent CLI never came up at all | `focus <task>` | The card says so in those words rather than "no sign of life": at NEW nothing has reported yet, so the launch is what to look at |
 | The agent is asking something | `focus <task>` | Its tmux window is selected — over the board with `web-terminal` on, in the viewer otherwise |
+| `focus` says it could not show you the window | `focus <task>` | The terminal's own answer, not a guess: the viewer is a tab it cannot select, or no viewer is open at all. The tmux window was selected either way |
 | No web terminal configured | Focus | The same selection; the sentence names the window. There is nothing to embed |
 | Panel closed by mistake | — | Nothing stops. The agent lives in tmux; Focus starts another terminal server |
 | ttyd not installed, or its port taken | — | Focus still selects the window; the panel does not open, and the log carries ttyd's exit code |

@@ -115,13 +115,18 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
             }
         }
         sessions.focusTaskWindow(session, dedicatedTitle, taskId);
-        boolean raised = terminalDriver.reveal(dedicatedTitle);
-        return "Focused tmux window '" + taskId + "'"
-                + (raised
-                        ? " and raised the agents window"
-                        : " — but the agents viewer is a TAB, not a window: the terminal has no API to"
-                                + " switch tabs, so click the agents tab yourself (or keep it as its own window)")
+        return "Focused tmux window '" + taskId + "'" + viewer(terminalDriver.reveal(dedicatedTitle))
                 + (respawned ? "; the session was dead, started a fresh " + agentRuntime.displayName() + " session" : "");
+    }
+
+    /** What is left for the human to do about the viewer, which only the terminal can say. */
+    private static String viewer(TerminalDriver.Revealed revealed) {
+        return switch (revealed) {
+            case WINDOW -> " and raised the agents window";
+            case UNREACHABLE_TAB -> " — the agents viewer is a TAB and this terminal has no API to select one,"
+                    + " so click it yourself (or keep it as its own window)";
+            case NOT_RUNNING -> " — no agents viewer is open; the session is there, nothing is showing it";
+        };
     }
 
     public String writeTaskContext(String taskId, String instructions) {

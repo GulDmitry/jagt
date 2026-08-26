@@ -1,25 +1,5 @@
 # jagt — TODO
 
-## A port does not declare what it can do (open)
-
-An interface under `core/port/` cannot say WHICH of its methods the selected adapter actually honours, so a
-caller either assumes it can or reads a return value that means two things. Two live instances:
-
-- **`TerminalDriver.reveal`** promises only the window: *"a driver that cannot select a TAB raises the window and
-  returns true"*. `KittyTerminalDriver` selects the task's own tab; `WarpTerminalDriver` raises the window. Both
-  answer true, so `focus` reports the same success whether the human is now looking at their task or at whatever
-  tab that window was already showing.
-- **`AgentRuntime.lastSessionActivityMillis`** answers 0 for "this runtime keeps no record of itself"
-  (`AbstractAgentRuntime`). Zero is also what a failed read answers, and the two want opposite handling: no
-  record means lean on the other signs and never call it silence, while a failed read means naming what failed.
-  That is [a read that failed is never an answer](docs/rules/seams.md) one layer down, in a magic value instead
-  of a prompt.
-
-The shape of the fix: something on the port to declare with — `supports(…)`, or a capability set — and ONE check
-where a capability is chosen, so a missing one is refused or reworded rather than silently degraded.
-
-Not worth doing before a consequence turns up that costs something.
-
 ## An orchestrator that reads the code host and the tracker itself (concept, someday)
 
 Today every ticket and every review round is read by a model through the MCP servers of whoever runs jagt, and
