@@ -64,7 +64,7 @@ import static org.mockito.Mockito.when;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=",
-                "orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
+                "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false"})
 class BoardPageTest {
 
     @TempDir

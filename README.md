@@ -13,8 +13,7 @@
 
 jagt hands a ticket to an autonomous AI coding agent — [Claude Code](https://claude.com/claude-code) by
 default, Codex or any MCP-capable CLI — running in its own isolated Git worktree, so two agents cannot see or
-break each other's work. You drive all of them from one place: a board in your browser, or a full-screen
-console in your terminal.
+break each other's work. You drive all of them from one place: a board in your browser.
 
 **Nothing leaves your machine without you.** No push, no merge request, no deploy.
 
@@ -37,7 +36,7 @@ not settle it — [how to check, and what to do if not](docs/installation.md#mcp
 cp jagt.yml.dist jagt.yml           # fill in ONE project: path, baseBranch, deployBranch
 cd orchestrator-backend
 ./gradlew build stageJar
-java -jar build/libs/jagt-run.jar   # --orchestrator.ui=tui for the console instead
+java -jar build/libs/jagt-run.jar
 ```
 
 Open **http://localhost:8290**, type a ticket key or URL in the first field, press **Start**.
@@ -95,7 +94,7 @@ Agents live in tmux and the whole state is one JSON file, so restarting the back
 ## Swapping a vendor
 
 Agent CLI, terminal, editor and notifier are each an interface with one implementation per vendor — Claude Code
-or Codex, kitty or Warp, IntelliJ, a desktop notifier. The tracker and the code host are not jagt's at all: they
+or Codex, kitty, IntelliJ, a desktop notifier. The tracker and the code host are not jagt's at all: they
 are whatever **your own** MCP servers reach, and jagt holds no credential for either. Adding one means
 implementing an interface and naming it in config, never editing the task flow.
 → [Configuration](docs/configuration.md)
@@ -105,7 +104,7 @@ implementing an interface and naming it in config, never editing the task flow.
 | | |
 |---|---|
 | [Installation](docs/installation.md) | prerequisites for macOS and Linux, first-run setup |
-| [Usage](docs/usage.md) | the board, the console, every command, the review loop |
+| [Usage](docs/usage.md) | the board, every command, the review loop |
 | [Configuration](docs/configuration.md) | where a setting goes, and every key there is |
 | [Troubleshooting](docs/troubleshooting.md) | symptom → cause → fix |
 | [Development](docs/development.md) | test suites, CI, running the Linux suite from a Mac |

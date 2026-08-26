@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.command.GlobalCommand;
-import dev.jagt.orchestrator.command.StateViews;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -9,7 +8,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ActivityCommand implements GlobalCommand {
 
-    private final StateViews views;
+    private final ActivityReport activity;
 
     @Override
     public String id() {
@@ -28,6 +27,6 @@ public class ActivityCommand implements GlobalCommand {
 
     @Override
     public String run(String tail) {
-        return views.activity();
+        return activity.render();
     }
 }

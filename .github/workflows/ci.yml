@@ -1,6 +1,6 @@
 # Every suite jagt has, on hosted runners. The jobs mirror what a developer runs locally, on purpose:
-# `./gradlew test`, `scripts/linux-suite.sh` (which is this pipeline's Linux job without the container), and the
-# two tmux smoke scripts. Nothing here is a CI-only code path — a green pipeline and a green laptop mean the same.
+# `./gradlew test` and `scripts/linux-suite.sh` (which is this pipeline's Linux job without the container).
+# Nothing here is a CI-only code path — a green pipeline and a green laptop mean the same.
 name: ci
 
 on:
@@ -136,29 +136,11 @@ jobs:
           name: board-test-report
           path: orchestrator-backend/build/reports/tests/boardTest
 
-  smoke:
-    name: TUI layout + push-repaint (real PTY)
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '25'
-          distribution: temurin
-          cache: gradle
-      - name: install tmux (the scripts drive the jar inside it)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends tmux
-      - run: ./gradlew --no-daemon bootJar
-      # Both scripts are real-PTY tests: only tmux can produce the resize/redraw they assert on. They pass
-      # --orchestrator.open-warp-window=false themselves, so a runner is left with nothing behind.
-      - run: scripts/dashboard-layout-smoke.sh build/libs/jagt.jar
-      - run: scripts/tui-push-repaint-smoke.sh build/libs/jagt.jar
-
   # The macOS half of the matrix: the platform jagt is developed on, where the drivers it cannot test on Linux
-  # live (AppleScript raise, the Warp URI scheme). Only the OS-neutral suites run — the GUI drivers stay
-  # untested here too, and that is named rather than papered over.
+  # live (the AppleScript raise). Only the OS-neutral suites run — the GUI drivers stay untested here too, and
+  # that is named rather than papered over.
   macos:
-    name: unit + smoke on macOS
+    name: unit tests on macOS
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -167,6 +149,4 @@ jobs:
           java-version: '25'
           distribution: temurin
           cache: gradle
-      - run: brew list tmux >/dev/null 2>&1 || brew install tmux
       - run: ./gradlew --no-daemon test bootJar
-      - run: scripts/dashboard-layout-smoke.sh build/libs/jagt.jar

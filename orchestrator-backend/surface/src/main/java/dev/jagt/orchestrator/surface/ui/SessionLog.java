@@ -19,8 +19,9 @@ import java.util.stream.Stream;
  * record a human reads back (the {@code activity} report) is this session's and nothing else: yesterday's
  * entries presented as today's work is worse than no history at all, and the archives are mostly noise.
  *
- * <p>Runs in the same gap {@link ConsoleLogging} does — after {@code application.yml} is read, before the
- * appender opens the file — and is registered by hand in {@code main} for the same reason.
+ * <p>Runs in the gap after {@code application.yml} is read and before the appender opens the file, and is
+ * registered by hand in {@code main}: {@code bootJar} hoists {@code META-INF/spring/…imports} to the jar ROOT,
+ * which is NOT on the executable jar's classpath, so a listener declared there is silently never loaded.
  */
 public class SessionLog implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 

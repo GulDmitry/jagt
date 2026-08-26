@@ -6,7 +6,7 @@ plugins {
 
 group = 'dev.jagt'
 version = '0.7.0'
-description = 'Stateful multi-agent dev orchestrator (macOS / Warp / Claude Code)'
+description = 'Stateful multi-agent dev orchestrator (macOS / kitty / Claude Code)'
 
 java {
     toolchain {
@@ -24,7 +24,6 @@ dependencies {
     implementation project(':adapter')
     implementation project(':surface')
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'com.googlecode.lanterna:lanterna:3.1.5'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testCompileOnly 'org.projectlombok:lombok'
@@ -240,16 +239,7 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.add('-parameters')
 }
 
-// Gradle does not forward stdin unless asked, and the terminal library warns without the native grant.
-tasks.named('bootRun') {
-    standardInput = System.in
-    jvmArgs('--enable-native-access=ALL-UNNAMED')
-}
-
 // Version-independent archive name, so the documented run command survives every release.
 tasks.named('bootJar') {
     archiveFileName = 'jagt.jar'
-    manifest {
-        attributes('Enable-Native-Access': 'ALL-UNNAMED')
-    }
 }

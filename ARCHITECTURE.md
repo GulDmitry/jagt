@@ -21,7 +21,7 @@ where `gradlew` lives, **not** the repository root. So `flow/` means
 
 > [!NOTE]
 > Status is part of the map, and several sessions edit this tree at once. Every claim here is written to be
-> checkable, and a row that says *built* means built. Last checked against the tree on 2026-08-19. Found a
+> checkable, and a row that says *built* means built. Last checked against the tree on 2026-08-26. Found a
 > stale row? Change it — do not delete it to make the file tidy.
 
 ## The law
@@ -40,15 +40,14 @@ Anything that runs, tells, decides, or is done to a task is one of the **kinds**
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job` + `Jobs`; the five impls still live in `service/` |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
-| `surface/` | who is asking | built — `console`, `board`, `mcp`, `agent`, `ui` |
+| `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
 
 `service/` is the rest: work more than one kind shares — git, the state file, config, worktrees, agent
 sessions. It is named for what it is rather than pushed into one verb's folder, because a class two kinds use
 belongs to neither.
 
-The console and the plain-text endpoints share `command/StateViews` and `service/DashboardRenderer`; the board
-renders `flow/TaskView` instead.
+The board renders `flow/TaskView`; a report is text, rendered by the `GlobalCommand` that owns it.
 
 ## The rings
 
@@ -124,12 +123,10 @@ the gate uses the real probe. That is why a stuck SHIPPING card offers SHIP and 
 | `Processes` | `adapter/ProcessRunner` |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one seam with a single impl, not selectable by config |
 | `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |
-| `WebTerminal` | `adapter/TtydWebTerminal` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
-| `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ per platform), `adapter/macos/WarpTerminalDriver` |
+| `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |
 | `EditorDriver` | `adapter/CliEditorDriver` |
-| `JsonHttp` | `adapter/http/RestClientJsonHttp` |
-| `StartupCheck` | four in `startup/`, and seven at the edge — see [Assembly validation](#assembly-validation) |
+| `StartupCheck` | three in `startup/`, and six at the edge — see [Assembly validation](#assembly-validation) |
 
 ## Where a new thing goes
 
@@ -161,14 +158,14 @@ Four things those rows do not fit:
 | `flow/Owner` | whose turn |
 | `flow/Attention` | whether the card is an interruption — one value for the badge, the count and the filter |
 | `flow/TaskView` | what the board renders |
-| `service/TaskViews` | builds both |
+| `service/TaskViews` | builds it |
 
-A new verb reaches both surfaces because both are generated from the `flow/TaskAction` declaration: the board
-renders `Move.actions()` (the legal ones only, i.e. `FlowRules.allowed(...)`), while the console offers every
-verb and `FlowEngine` refuses an illegal one with a sentence.
+A new verb reaches the board because the board is generated from the `flow/TaskAction` declaration: it renders
+`Move.actions()` (the legal ones only, i.e. `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one
+with a sentence.
 
-**Neither surface holds a list.** The usual way to break that is to build a button in `static/ui/card.js`
-instead of declaring an action.
+**The surface holds no list.** The usual way to break that is to build a button in `static/ui/card.js` instead
+of declaring an action.
 
 ## The board is two rings too
 
@@ -224,10 +221,10 @@ At startup, **one report of everything wrong** — never first-failure, because 
 then does nothing. `startup/StartupCheck` implementations are collected by `startup/StartupValidation`, which
 throws `Misconfigured` once with every problem.
 
-Eleven checks: four in `startup/` (`Config`, `Flow`, `OutsideReads`, `Workspace`) and seven at the edge, because
-a driver knows what its own binary needs and can name the key that fixes it — `adapter/ToolchainCheck`,
-`adapter/PlatformCheck`, `adapter/TtydWebTerminal`, `adapter/CliEditorDriver`,
-`adapter/AbstractKittyTerminalDriver`, `adapter/agent/CodexAgentRuntime`, `adapter/linux/LibNotifyNotifier`.
+Nine checks: three in `startup/` (`Config`, `Flow`, `Workspace`) and six at the edge, because a driver knows
+what its own binary needs and can name the key that fixes it — `adapter/ToolchainCheck`,
+`adapter/PlatformCheck`, `adapter/CliEditorDriver`, `adapter/AbstractKittyTerminalDriver`,
+`adapter/agent/CodexAgentRuntime`, `adapter/linux/LibNotifyNotifier`.
 
 The composition half, and what of it exists:
 
@@ -246,7 +243,7 @@ reported rather than the one being left, so no status can trap a task and assert
 #5 checks nothing about thread resolution, tab titles or an attachable session host. #6 refuses to start on a
 duplicate job id, a duplicate command verb or an equal capability priority.
 
-**The refusing half exists; the degrading half does not.** Seven edge checks refuse to start and name the key
+**The refusing half exists; the degrading half does not.** Six edge checks refuse to start and name the key
 that would fix it. A missing kitty refuses rather than falling back to another terminal.
 
 ## The build

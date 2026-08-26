@@ -152,9 +152,6 @@ whenever is offered — `resolve the conflict` against `you can deploy it` — b
 tells apart is one a human on a monochrome terminal, or with the commoner kind of colour blindness, cannot tell
 apart at all.
 
-The console prints the tier word rather than the act: it has no colour to spend on one, and the sentence beside
-it is already the specific answer.
-
 **The ping still reads the owner rather than the tier** — an approval landing is an event worth a banner even
 though it can wait.
 
@@ -198,16 +195,15 @@ one exception.
 ### Whether the request is approved is shown, not inferred from the status
 
 `TaskState.approved` is stamped by the same read that stamps the pipeline (`ReviewSweepService.record`, one
-write for both, null until a read has said). Both surfaces show it beside the request the moment it opens —
-the board as a dot next to the MR link (filled when approved, an empty ring while it waits), the console as a
-prefix on the request line.
+write for both, null until a read has said). The board shows it beside the request the moment it opens: a dot
+next to the MR link, filled when approved and an empty ring while it waits.
 
 A status cannot answer this: the wait starts when the request opens, and only one status is ever the approval
 itself. A new round drops it with the pipeline, since neither describes the request state that follows.
 
 ### A status says itself in words, once
 
-`TaskStatus.label()` is the spelling both surfaces render (`out for review`, `not shipped`, `not approved`),
+`TaskStatus.label()` is the spelling the board renders (`out for review`, `not shipped`, `not approved`),
 while the enum name stays the wire value, what `state.json` carries and what the board hangs in the chip's
 tooltip.
 
@@ -215,7 +211,7 @@ It names a **state** and never a next move — the highlighted action already gi
 advised too would be the third copy of one sentence.
 
 The board binds the age **inside** that chip, because `CI_POLLING · 18m · sng` reads as three unrelated items
-with the middle one anybody's guess. The console prints the same pair in the same order.
+with the middle one anybody's guess.
 
 ### Position does not carry state
 
@@ -239,7 +235,7 @@ That is motion from the human's **own** action, which is the only motion this de
 | clock | answers | shown |
 |-------|---------|-------|
 | `statusSince` | time in **this** status — restarts on every real transition, including a respawned agent re-reporting itself out of REVERTED | inside the status chip |
-| `lastActiveTimestamp` | liveness for the watchdog — any MCP call, keep-alives included | a console column and a tooltip line, **never** a card row |
+| `lastActiveTimestamp` | liveness for the watchdog — any MCP call, keep-alives included | a tooltip line, **never** a card row |
 | `TaskState.requestOpenedAt` | the review's own age | the `MR <age>` chip, which is also the link |
 
 `statusSince` cannot answer "how long has this been waiting". `lastActiveTimestamp` on a status the agent does
@@ -262,27 +258,3 @@ On the board the request age is also the **link** to the request, and the task n
 one element per fact, so no row spends a line naming what it points at. Several repositories mean several
 requests against one stamp, so those links are named by project and ageless.
 
-### The embedded terminal is a rendering of `focus`, never a second verb
-
-With `orchestrator.web-terminal.enabled`, a Focus click on the board also opens the task's tmux session in a
-`<dialog>`. `adapter/TtydWebTerminal` serves **one ttyd per tmux session** (not per task — a task is a window
-inside one), and `POST /api/tasks/terminal?task=<id>` hands back its address, `null` meaning none is configured.
-
-It selects no window and executes nothing; the action itself still goes through `CommandService`, so the
-console keeps raising the native viewer and the card grows no button outside `Move.actions()`.
-
-Four things it owes, none optional:
-
-- **The terminal is writable**, because a view you cannot answer the agent in is pointless — and a writable
-  terminal is a **shell**, so `--check-origin` is what makes the served page the only origin that may open a
-  socket. A websocket handshake is exempt from same-origin rules, so without it any page the human visits can
-  drive the agents' session over loopback. **The bind address is not that defence and never was.**
-- `--exit-no-conn` ends the server with the last viewer, so a `done` that kills a tmux session cannot leave a
-  ttyd behind and no port leaks.
-- The port is the first **free** one from `web-terminal.port`, so a server orphaned by a `kill -9` moves the
-  next one along instead of killing the feature.
-- The frame is **unloaded** on close, since tmux sizes every window to its smallest attached client, including
-  one nobody is looking at.
-
-ttyd stays **one class**, not a sixth seam — a second web terminal is an interface extraction, and nothing
-outside it names ttyd.

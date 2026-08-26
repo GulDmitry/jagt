@@ -5,7 +5,6 @@ import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
-import dev.jagt.orchestrator.surface.console.MasterShell;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -20,15 +19,15 @@ import java.nio.file.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * The Linux platform profile must WIRE, and only a booted context can say so: the driver beans are selected by
- * a condition over two properties, so a typo in one of them yields no `TerminalDriver` at all — a failure that
- * would otherwise surface the first time somebody starts jagt on Linux, not here.
+ * The Linux platform profile must WIRE, and only a booted context can say so: the driver beans are selected
+ * by {@code orchestrator.platform}, so a typo in it yields no `TerminalDriver` at all — a failure that would
+ * otherwise surface the first time somebody starts jagt on Linux, not here.
  *
  * <p>Being able to run this from macOS is the point of the seam: which driver Spring picks is a config
  * decision, not an OS one. It says nothing about the drivers' behaviour on a real desktop.
  */
 @SpringBootTest(properties = {"spring.config.import=",
-        "orchestrator.open-warp-window=false", "orchestrator.startup-checks=false",
+        "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false",
         "orchestrator.platform=linux"})
 @ResourceLock("spring-logging")
 class LinuxProfileContextTest {
@@ -36,8 +35,6 @@ class LinuxProfileContextTest {
     @TempDir
     static Path root;
 
-    @MockitoBean
-    private MasterShell masterShell;
     @MockitoBean
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
 

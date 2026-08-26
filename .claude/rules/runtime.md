@@ -6,7 +6,6 @@ paths:
   - "**/adapter/macos/**"
   - "**/adapter/linux/**"
   - "**/adapter/ProcessRunner.java"
-  - "**/surface/console/**"
 ---
 
 No GUI or keystroke automation, ever. A detached launch gets its own session, never an ignored signal.

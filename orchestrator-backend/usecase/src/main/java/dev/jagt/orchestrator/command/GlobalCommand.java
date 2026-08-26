@@ -34,11 +34,6 @@ public interface GlobalCommand {
         return false;
     }
 
-    /** Whether it only means anything in a terminal, so no other surface is told it exists. */
-    default boolean consoleOnly() {
-        return false;
-    }
-
     /** Runs it. {@code tail} is what was typed after the verb, blank when nothing was; each command parses its own. */
     String run(String tail);
 }

@@ -4,8 +4,8 @@
 server:
   # Change this and mcp_client.js needs MCP_SERVER_URL to match.
   port: 8290
-  # Loopback: the board needs no password to deploy, close a task or start an agent, and the embedded terminal
-  # is a shell. Set 0.0.0.0 only if you accept that everyone who can reach the port can do all of it.
+  # Loopback: the board needs no password to deploy, close a task or start an agent. Set 0.0.0.0 only if you
+  # accept that everyone who can reach the port can do all of it.
   address: 127.0.0.1
 
 spring:
@@ -21,7 +21,8 @@ spring:
           no-cache: true
 
 logging:
-  # No console threshold here: `ui/ConsoleLogging` decides it per surface, and this would outrank that.
+  # No console threshold: nothing owns the terminal any more, so Boot's default is what a human wants —
+  # a server saying nothing at all is indistinguishable from one that died.
   file:
     name: ${LOG_FILE:jagt-backend.log}
   pattern:
@@ -40,16 +41,12 @@ logging:
       file: ecs
 
 orchestrator:
-  # web | tui | both.
-  ui: web
   # Blank = auto-detected by walking up from the launch directory.
   root: ${ORCHESTRATOR_ROOT:}
   config-file: ${ORCHESTRATOR_CONFIG_FILE:}
   state-file: ${ORCHESTRATOR_STATE_FILE:}
-  # macos | linux — selects the notifier and the terminal driver.
+  # macos | linux — selects the notifier and the kitty driver.
   platform: macos
-  # kitty | warp. Both run over tmux, so agents persist either way.
-  terminal: kitty
   # kitty-command: kitty   # override the kitty binary if not on PATH
   # kitty-font-size: 13    # viewer font size; blank keeps kitty.conf's own (default 11)
   # Any CLI launcher, resolved on PATH and in the usual install dirs; the worktree path is appended.
@@ -94,18 +91,10 @@ orchestrator:
   #   - jdtls-lsp@claude-plugins-official
   #   - php-lsp@claude-plugins-official
   #   - oh-my-claudecode@omc
-  # The agent's terminal inside the board, served by ttyd (install it first). It is writable, so reaching it is
-  # reaching a shell: the served page is the only origin allowed to open a socket, and this address is who can
-  # ask for that page at all.
-  web-terminal:
-    enabled: false
-    command: ttyd
-    port: 8291
-    bind: 127.0.0.1
   # A bare name is resolved on PATH and then in the known install dirs; an absolute path is not portable.
   tmux-command: tmux
-  # Smoke tests pass false, so a run leaves no window behind.
-  open-warp-window: true
+  # A suite passes false, so a run leaves no kitty window behind.
+  open-terminal-window: true
   # Refuse to start when a part of the installation is missing, instead of failing at the click that needs it.
   # A suite that boots the application passes false: what these check is the machine, and a runner is not one.
   startup-checks: true

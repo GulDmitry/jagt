@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.AbstractKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,8 +21,7 @@ import java.util.List;
  * </ul>
  */
 @Component
-@ConditionalOnExpression("'${orchestrator.terminal:kitty}'.equalsIgnoreCase('kitty')"
-        + " and '${orchestrator.platform:macos}'.equalsIgnoreCase('linux')")
+@ConditionalOnProperty(name = "orchestrator.platform", havingValue = "linux", matchIfMissing = false)
 public class LinuxKittyTerminalDriver extends AbstractKittyTerminalDriver {
 
     public LinuxKittyTerminalDriver(ProcessRunner processRunner, OrchestratorProperties properties,

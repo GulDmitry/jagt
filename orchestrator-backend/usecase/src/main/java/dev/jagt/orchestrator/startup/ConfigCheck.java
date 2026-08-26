@@ -25,6 +25,13 @@ import java.util.Map;
 public class ConfigCheck implements StartupCheck {
 
     private static final List<String> VIEW_MODES = List.of("shared", "tab-per-task");
+    /** What each key a jagt.yml may still carry has become, printed as-is rather than described. */
+    private static final Map<String, String> RETIRED_KEYS = Map.of(
+            "ui", "there is one surface now, the board — a console no longer ships",
+            "terminal", "kitty is the only viewer; the driver comes from `platform`",
+            "webTerminal", "the embedded ttyd terminal is gone; `focus` raises the kitty window",
+            "dashboard", "it sized the console's table, and nothing renders one",
+            "openWarpWindow", "renamed to `openTerminalWindow` — SET IT AGAIN or a window opens on every launch");
     /** tmux addresses a window as {@code session:window.pane}, so a name carrying either is unaddressable. */
     private static final String RESERVED_IN_SESSION_NAME = ":.";
 
@@ -47,7 +54,8 @@ public class ConfigCheck implements StartupCheck {
         } catch (RuntimeException unreadable) {
             return List.of(unreadable.getMessage());
         }
-        List<String> problems = new ArrayList<>(viewerProblems(config));
+        List<String> problems = new ArrayList<>(retiredKeys());
+        problems.addAll(viewerProblems(config));
         Map<String, ProjectConfig> projects = config.projects();
         if (projects.isEmpty()) {
             problems.add(paths.configFile() + " defines no projects — jagt has nothing to cut a worktree"
@@ -76,6 +84,19 @@ public class ConfigCheck implements StartupCheck {
                 + "          path: /absolute/path/to/base/repository\n"
                 + "          baseBranch: origin/main\n"
                 + "          deployBranch: dev");
+    }
+
+    /**
+     * A key nothing binds is dropped in silence by both readers, so a jagt.yml written for an older jagt goes
+     * on saying something true that no longer applies — which is the one thing a startup check exists for.
+     */
+    private List<String> retiredKeys() {
+        return configService.declaredKeys().stream()
+                .filter(RETIRED_KEYS::containsKey)
+                .sorted()
+                .map(key -> "orchestrator." + key + " is no longer read: " + RETIRED_KEYS.get(key)
+                        + ". Remove it from " + paths.configFile() + ".")
+                .toList();
     }
 
     /**

@@ -102,13 +102,10 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | An agent finishes a turn and the card says nothing | — | Correct. A turn ends every time a session answers, and it comes straight back from what it left running: a turn end is silent until nothing has moved for the whole stale window |
 | A worktree created before the hooks existed | recreate the task | Its settings file is written once, at `initialize_task`; the log a session keeps still answers, one threshold later |
 | The agent CLI never came up at all | `focus <task>` | The card says so in those words rather than "no sign of life": at NEW nothing has reported yet, so the launch is what to look at |
-| The agent is asking something | `focus <task>` | Its tmux window is selected — over the board with `web-terminal` on, in the viewer otherwise |
+| The agent is asking something | `focus <task>` | Its tmux window is selected in the kitty viewer, and the viewer raised |
 | `focus` says it could not show you the window | `focus <task>` | The terminal's own answer, not a guess: the viewer is a tab it cannot select, or no viewer is open at all. The tmux window was selected either way |
-| No web terminal configured | Focus | The same selection; the sentence names the window. There is nothing to embed |
-| Panel closed by mistake | — | Nothing stops. The agent lives in tmux; Focus starts another terminal server |
-| ttyd not installed, or its port taken | — | Focus still selects the window; the panel does not open, and the log carries ttyd's exit code |
-| Panel open on one task, Focus pressed on another | Focus | The panel follows: in viewMode `shared` every task is a window of one session |
-| You want the board from a second machine | `--server.address=0.0.0.0` | Refused by default — the board needs no password to deploy or start an agent. `web-terminal.bind` is decided separately |
+| The viewer was closed by mistake | Focus | Nothing stops. The agent lives in tmux; Focus opens another viewer onto the same session |
+| You want the board from a second machine | `--server.address=0.0.0.0` | Refused by default — the board needs no password to deploy or start an agent |
 | The backend restarts while a session is live (HTTP transport) | — | Nothing to do: the next tool call reaches the new process |
 
 > [!IMPORTANT]
@@ -130,7 +127,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | The project key is missing from a card | The install has one project. A word every card wears is a word nobody reads; it comes back when a task spans repositories |
 | "What does this status mean?" | It says itself: `out for review`, `not shipped`, `not approved`. A status names a state; the highlighted button says what to do |
 | Why only some cards say whose move it is | The badge is for **your** move alone. Every other owner is the status word again |
-| What "active" is for | Liveness for the watchdog — any MCP call bumps it, keep-alives included. A console column and a tooltip line, never a card row |
+| What "active" is for | Liveness for the watchdog — any MCP call bumps it, keep-alives included. A tooltip line, never a card row |
 | A bare duration on a card | There is none. The status's age lives inside its chip; everything else is labelled (`MR 5d`) |
 | Where the ticket and request links are | On the things that already named them: the task number opens the ticket, the `MR <age>` chip the request |
 | A line under a card repeating the request link | There is none: the request link IS the checks. What is left on that line is news only — NEEDS INPUT, ANSWERED, PROBLEM, NEEDS YOU |
@@ -140,7 +137,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | "Which of these buttons changes something?" | Two rows: what moves the task on above, what only looks or restarts below (`TaskAction.Group`) |
 | "What does this colour / ring / dot mean?" | `Help` — **above** the commands, every mark beside what it means, shown as the page's own element. There is no second button for it |
 | What each colour means | One thing each, board-wide: **green** is work that is live on a shared branch, **violet** is the reviewers, **red** is broken, **amber** is your move |
-| "Has this branch been deployed already?" | The **Deploy button is green** while this task's work is live on the branch it writes; `revert` takes the colour off with the work. The console says `· deployed` on the move line |
+| "Has this branch been deployed already?" | The **Deploy button is green** while this task's work is live on the branch it writes; `revert` takes the colour off with the work |
 
 ## Review requests
 
@@ -193,7 +190,7 @@ What the agent does with a comment:
 | The round came back clean, nobody approved | REVIEWED, and **nothing** is asked of the human: the owner is the reviewer. `deploy` stays listed for whoever needs no approval |
 | An approval arrives | Lands unattended, and is the one thing the human is tapped for — it is now theirs to deploy |
 | "Is this request approved?" | The dot beside the MR link: filled when it is, an empty ring while it waits, absent until a read has said |
-| The pipeline goes red while the request is open | A red dot on the card, `CHECKS RED · …` on the console, and one notification the first time that run goes red |
+| The pipeline goes red while the request is open | A red dot on the card, and one notification the first time that run goes red |
 | The dot is red while the request itself is mergeable | Read its tip — it prints the host's word verbatim |
 | You type `review <task>` out of habit | It runs the sweep — the old spelling still resolves, and only the new one is advertised |
 

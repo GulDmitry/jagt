@@ -1,6 +1,6 @@
 # The same suites as .github/workflows/ci.yml, because jagt is host-agnostic by design and its pipeline has no
 # business being an exception. Both files call the SAME scripts (scripts/linux-test-deps.sh,
-# scripts/with-linux-desktop.sh, the two smoke scripts), so a step can only exist in one of them by mistake.
+# scripts/with-linux-desktop.sh), so a step can only exist in one of them by mistake.
 #
 # No Docker-in-Docker and no privileged runner: the jobs run IN a Java image and apt-install what they need,
 # which is also what the container harness does for macOS developers.
@@ -63,17 +63,6 @@ board:
     expire_in: 1 week
     paths:
       - orchestrator-backend/build/reports/tests/boardTest
-
-# The layout of a full-screen TUI can only be asserted through a real PTY — hence tmux, not a virtual terminal.
-smoke:
-  stage: test
-  script:
-    # tmux gives the scripts a real PTY, curl waits for the backend to answer. Nothing else: the fixtures are
-    # written with printf, so no language runtime is needed to test a Java program.
-    - apt-get update && apt-get install -y --no-install-recommends tmux curl
-    - ./gradlew --no-daemon bootJar
-    - scripts/dashboard-layout-smoke.sh build/libs/jagt.jar
-    - scripts/tui-push-repaint-smoke.sh build/libs/jagt.jar
 
 # The jar as a downloadable artifact. Attaching one to a RELEASE is GitHub-only by decision (2026-08-18): the
 # owner wants the per-run artifact everywhere and no published release yet, so there is nothing to mirror here.

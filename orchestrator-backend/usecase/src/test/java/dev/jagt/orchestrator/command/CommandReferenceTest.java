@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class CommandReferenceTest {
 
-    private record Declared(String id, String hint, List<String> usage, boolean report, boolean consoleOnly,
+    private record Declared(String id, String hint, List<String> usage, boolean report,
                            boolean aboutOneTask) implements GlobalCommand {
         @Override
         public String run(String tail) {
@@ -22,9 +22,7 @@ class CommandReferenceTest {
     }
 
     private static final GlobalCommand SPEND = new Declared("spend", "what the calls cost",
-            List.of("spend [since]", "  … today — only this session"), true, false, false);
-    private static final GlobalCommand TERMINAL_ONLY = new Declared("redraw", "repaint the screen",
-            List.of("redraw"), false, true, false);
+            List.of("spend [since]", "  … today — only this session"), true, false);
 
     @Test
     void advertisesOnlyTheCurrentSpellingOfARenamedVerb() {
@@ -38,7 +36,7 @@ class CommandReferenceTest {
     }
 
     @Test
-    void handsThePaletteTheRetiredSpellingSoItRunsWhatTheConsoleRuns() {
+    void handsThePaletteTheRetiredSpellingSoMuscleMemoryStillRuns() {
         assertThat(CommandReference.verbs(List.of())).filteredOn(verb -> verb.id().equals("sweep"))
                 .singleElement().extracting(CommandReference.Verb::aliases)
                 .isEqualTo(List.of("review"));
@@ -62,27 +60,13 @@ class CommandReferenceTest {
         assertThat(lines.get(verb + 1)).contains("only this session");
     }
 
-    /** A verb the board cannot run must not be served to it, but the console still has to be told about it. */
-    @Test
-    void marksATerminalOnlyVerbSoOnlyTheConsoleOffersIt() {
-        assertThat(CommandReference.text(List.of(TERMINAL_ONLY))).contains("redraw");
-        assertThat(CommandReference.verbs(List.of(TERMINAL_ONLY)))
-                .filteredOn(verb -> verb.id().equals("redraw"))
-                .singleElement().extracting(CommandReference.Verb::consoleOnly).isEqualTo(true);
-    }
-
     /** A report answering for one task belongs on that task, and a bar button would answer for all of them. */
     @Test
     void marksAReportAboutOneTaskSoNoSurfaceOffersItWithoutOne() {
         GlobalCommand drafts = new Declared("drafts", "what one task drafted", List.of("drafts <task>"), true,
-                false, true);
+                true);
 
         assertThat(CommandReference.verbs(List.of(drafts))).filteredOn(verb -> verb.id().equals("drafts"))
                 .singleElement().extracting(CommandReference.Verb::aboutOneTask).isEqualTo(true);
-    }
-
-    @Test
-    void namesTheOneVerbNoOtherSurfaceGets() {
-        assertThat(CommandReference.text(List.of())).contains("quit");
     }
 }

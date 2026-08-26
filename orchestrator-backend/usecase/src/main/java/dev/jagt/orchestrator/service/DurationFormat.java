@@ -8,8 +8,8 @@ public final class DurationFormat {
 
     /**
      * A countdown a human watches tick, unlike an age in a column: seconds matter while the wait is under a
-     * minute, and "0m" would read as "now". Mirrored by the board's own formatter — the two surfaces sit side by
-     * side under {@code orchestrator.ui=both}.
+     * minute, and "0m" would read as "now". Mirrored by the board's own formatter, which writes the same
+     * countdown into a card.
      */
     public static String countdown(long millis) {
         long seconds = Math.max(0, millis) / 1000;

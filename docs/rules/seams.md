@@ -19,7 +19,7 @@ single agent's assumptions.
 | seam | selected by | today |
 |------|-------------|-------|
 | `UserNotifier` | `orchestrator.platform` | macos (default), linux |
-| `TerminalDriver` | `orchestrator.terminal` | kitty (default), warp |
+| `TerminalDriver` | `orchestrator.platform` | kitty, one driver per platform |
 | `EditorDriver` | `orchestrator.editor-command` | any CLI launcher |
 | `AgentRuntime` | `orchestrator.agent.cli` | claude (default), codex |
 
@@ -27,8 +27,7 @@ Ports live in `…port`, implementations in `…adapter`.
 
 **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`): the
 default is macOS, and telling a human is the one thing that may not fail the flow it interrupts — so a notifier
-that reaches nothing logs and returns, and the human learns of no blocked session at all. `warp` is refused off
-macOS for the same reason.
+that reaches nothing logs and returns, and the human learns of no blocked session at all.
 
 **The tracker and the code host are not seams of jagt's.** They are read by a model through the MCP servers of
 whoever runs it, and jagt holds no credential for either. An orchestrator that reads them itself is an open
@@ -81,8 +80,8 @@ in the next.
 
 - `TerminalDriver.reveal` returns `Revealed` — `WINDOW`, `UNREACHABLE_TAB`, `NOT_RUNNING`. It was a boolean,
   and `focus` had one sentence for false: "the agents viewer is a TAB, the terminal has no API to switch tabs".
-  True for Warp, whose viewer IS a tab in somebody else's window. A lie for kitty, whose false means its
-  instance is not running at all — the viewer gets its own window there and never is a tab.
+  That was true of a terminal whose viewer IS a tab in somebody else's window, and a lie for kitty, whose
+  false means its instance is not running at all — the viewer gets its own window there and never is a tab.
 - `AgentRuntime.lastSessionActivity` returns `OptionalLong`. It answered 0 both for "this runtime keeps no
   record of itself" and for a record holding no entry yet — "there is no such clock" is not a reading of one,
   and a caller that cannot tell them apart has to treat every runtime as the poorest of them. A read that

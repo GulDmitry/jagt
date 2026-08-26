@@ -12,7 +12,6 @@ import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.surface.console.MasterShell;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Tag("e2e")
 @SpringBootTest(properties = {"spring.config.import=",
-        "orchestrator.agent.cli=stub", "orchestrator.open-warp-window=false",
+        "orchestrator.agent.cli=stub", "orchestrator.open-terminal-window=false",
         "orchestrator.startup-checks=false"})
 class TaskFlowMatrixTest {
 
@@ -57,9 +56,7 @@ class TaskFlowMatrixTest {
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 
-    /** Both would act on the DEVELOPER's machine: the shell takes over the terminal, the cleaner rewrites the IDE's state. */
-    @MockitoBean
-    private MasterShell masterShell;
+    /** It would act on the DEVELOPER's machine: the cleaner rewrites the IDE's own state. */
     @MockitoBean
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
     /** The headless doubles the oracle needs: a window, an editor or a notification cannot be asserted. */

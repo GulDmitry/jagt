@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.TaskChoice;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskView;
 import lombok.RequiredArgsConstructor;
@@ -12,10 +11,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Builds the ONE projection every human surface renders, so a phase, an owner and a set of legal actions cannot
- * mean one thing in one surface and another in the next.
+ * Builds the ONE projection a human surface renders, so a phase, an owner and a set of legal actions are
+ * decided in one place.
  *
- * <p>Order is the ALIAS, and it is the projection's job because both surfaces repaint on every state write: an
+ * <p>Order is the ALIAS, and it is the projection's job because the board repaints on every state write: an
  * order that follows activity moves a task on the agent's next keep-alive, which is motion nobody asked for and
  * costs a human the position they had learnt. A task therefore moves only when one is created or closed.
  */
@@ -27,16 +26,9 @@ public class TaskViews {
     private final StateService stateService;
     private final ConfigService configService;
 
-    public List<TaskChoice> choices() {
-        return stateService.tasks().entrySet().stream()
-                .map(e -> new TaskChoice(e.getValue().alias(), e.getKey(), e.getValue().title()))
-                .toList();
-    }
-
     /**
-     * One render's worth of answers, read from the configuration ONCE. Both surfaces show the tasks AND the
-     * polling policy that explains them, and the console redraws on every keystroke — two reads would be two
-     * parses per character, and could disagree with each other mid-render.
+     * One render's worth of answers, read from the configuration ONCE: the board shows the tasks AND the
+     * polling policy that explains them, and two reads could disagree with each other mid-render.
      */
     public record Snapshot(List<TaskView> tasks, AutoReviewCadence cadence, List<String> projects) {
     }

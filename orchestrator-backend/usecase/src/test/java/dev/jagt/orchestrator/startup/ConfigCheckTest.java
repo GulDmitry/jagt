@@ -49,6 +49,36 @@ class ConfigCheckTest {
 
     @ParameterizedTest
     @MethodSource
+    void namesAKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt(String key, String expected,
+                                                                        @TempDir Path root) throws Exception {
+        Files.createDirectories(root.resolve("repo").resolve(".git"));
+        Files.writeString(root.resolve("jagt.yml"), """
+                orchestrator:
+                  %s
+                  projects:
+                    demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
+                """.formatted(key, root.resolve("repo")));
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(root.resolve("jagt.yml").toString())
+                .withStateFile(root.resolve("state.json").toString());
+
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties)),
+                new OrchestratorPaths(properties)).problems())
+                .singleElement(STRING)
+                .contains(expected);
+    }
+
+    static Stream<Arguments> namesAKeyNothingReadsAnyMoreSoAnOldConfigDoesNotGoOnPromisingIt() {
+        return Stream.of(
+                Arguments.of("ui: tui", "orchestrator.ui is no longer read"),
+                Arguments.of("terminal: warp", "orchestrator.terminal is no longer read"),
+                Arguments.of("openWarpWindow: false", "openTerminalWindow"),
+                Arguments.of("webTerminal: { enabled: true }", "orchestrator.webTerminal is no longer read"),
+                Arguments.of("dashboard: { refreshSeconds: 10 }", "orchestrator.dashboard is no longer read"));
+    }
+
+    @ParameterizedTest
+    @MethodSource
     void namesWhatAConfiguredProjectWouldFailOn(String config, String expected, @TempDir Path root)
             throws Exception {
         Files.createDirectories(root.resolve("repo").resolve(".git"));

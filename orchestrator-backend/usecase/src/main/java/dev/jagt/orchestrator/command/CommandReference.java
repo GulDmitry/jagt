@@ -15,16 +15,16 @@ import java.util.List;
 public final class CommandReference {
 
     public record Verb(String id, String hint, boolean takesTask, List<String> aliases, boolean report,
-                       boolean consoleOnly, boolean aboutOneTask) {
+                       boolean aboutOneTask) {
 
-        /** Built from the declaration rather than by a caller: three adjacent flags transpose in silence. */
+        /** Built from the declaration rather than by a caller: adjacent flags transpose in silence. */
         static Verb of(TaskAction action) {
-            return new Verb(action.id(), action.hint(), true, action.retiredVerbs(), false, false, false);
+            return new Verb(action.id(), action.hint(), true, action.retiredVerbs(), false, false);
         }
 
         static Verb of(GlobalCommand command) {
             return new Verb(command.id(), command.hint(), false, List.of(), command.report(),
-                    command.consoleOnly(), command.aboutOneTask());
+                    command.aboutOneTask());
         }
     }
 
@@ -34,14 +34,13 @@ public final class CommandReference {
     /** Most-used first; a verb missing here sorts to the end rather than being dropped. */
     private static final List<String> BY_USE = List.of(
             "sweep", "replies", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
-            "revert", "done", "activity", "jobs", "status", "help");
+            "revert", "done", "activity", "jobs", "help");
 
     private static final int HINT_COLUMN = 29;
 
     private CommandReference() {
     }
 
-    /** Every verb, console and board alike; a caller that is not a terminal filters {@link Verb#consoleOnly}. */
     public static List<Verb> verbs(Collection<GlobalCommand> globals) {
         return declared(globals).stream().map(Declared::verb).toList();
     }
@@ -53,11 +52,9 @@ public final class CommandReference {
             lines.add(row(declared.usage().get(0), declared.verb().hint()));
             declared.usage().stream().skip(1).forEach(modifier -> lines.add("  " + modifier));
         }
-        // Stopping the backend belongs to whoever owns the process, so it is the one verb no other surface has.
-        lines.add(row("quit", "detach: the shell exits, the agents keep running"));
         lines.add("");
-        lines.add("anything else is free text: a model maps it to ONE of the above and jagt runs it through the");
-        lines.add("same gate a button uses (the board's Ask / ⌘K).");
+        lines.add("Ask / ⌘K also takes free text: a model maps it to ONE of the above and jagt runs it through");
+        lines.add("the same gate a button uses.");
         return String.join("\n", lines);
     }
 

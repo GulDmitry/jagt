@@ -267,14 +267,14 @@ class StateServiceTest {
     @Test
     void leavesTheEarlierStepAloneWhenAKeepAliveChangesNothing(@TempDir Path root) {
         StateService state = stateIn(root, root.resolve("state.json"));
-        OriginContext.as(ActionOrigin.CONSOLE,
+        OriginContext.as(ActionOrigin.BOARD,
                 () -> state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build()));
 
         OriginContext.as(ActionOrigin.MCP, () -> state.updateTask("ABC-1", TaskState::touched));
 
         assertThat(state.task("ABC-1").orElseThrow().history())
                 .extracting(StatusChange::origin)
-                .containsExactly(ActionOrigin.CONSOLE);
+                .containsExactly(ActionOrigin.BOARD);
     }
 
     /**

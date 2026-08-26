@@ -66,8 +66,8 @@ class SessionLogTest {
     }
 
     /**
-     * The same gap {@link ConsoleLogging} needs: too early and `logging.file.name` has not been read from
-     * application.yml, too late and the appender already holds the file open.
+     * Too early and `logging.file.name` has not been read from application.yml, too late and the appender
+     * already holds the file open.
      */
     @Test
     void runsAfterTheConfigFilesAreReadAndBeforeLoggingIsInitialised() {

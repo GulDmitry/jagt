@@ -152,7 +152,7 @@ that only **delegates**, because a delegating aggregate is exactly how one grows
 Over it, **group** collaborators into a cohesive component (composition, never inheritance) and let callers
 depend on the part they use.
 
-The ceiling is not advisory: `MasterShell` sat at eight and its test built the whole screen to check a parse,
+The ceiling is not advisory: the console shell sat at eight and its test built the whole screen to check a parse,
 which is how a 31-mock test happens.
 
 **No class is over the ceiling today** (checked 2026-08-14: 70 classes, none above five, 47 at three or fewer).

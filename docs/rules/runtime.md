@@ -4,29 +4,14 @@
 
 ## Terminals, sessions and processes
 
-### Master shell = full-screen TUI (Lanterna), one integrated screen
+### The backend owns no terminal
 
-`MasterShell` runs a Lanterna `Screen`: command-output log on top, the dashboard table beneath it, the `jagt>`
-input line pinned to the bottom row — all in one back-buffer, redrawn from scratch every frame (`render()`),
-refreshed every `dashboard.refreshSeconds`. Resize is handled by `doResizeIfNecessary()` plus the full redraw.
+The Master is the backend process and nothing more: it prints where the board is and stays out of the
+terminal's way, so its own log lines are the only thing on screen.
 
-**Do not reintroduce a JLine `Status` / scroll-region pinned bar, or any absolute-bottom cursor anchoring.**
-That could not survive a terminal resize (DECSTBM resets on resize → an orphaned ghost dashboard and the prompt
-flying to row 1), which cost many sessions.
-
-`dashboard.reservedRows` caps the dashboard height so at least that many rows stay for output and input
-(overflow → a "… +N" line).
-
-**Terminal layout is testable, never "fix it blind"**: `orchestrator-backend/scripts/dashboard-layout-smoke.sh`
-drives the jar in tmux and asserts the invariants (one dashboard header, input pinned to the bottom row,
-dashboard above it) across startup, resize both ways, and task-count changes. **Run it after any change to
-`MasterShell` rendering** — and pass `--orchestrator.ui=tui`, since the board is the default.
-
-`tui-push-repaint-smoke.sh` is its sibling for the event-driven repaint: refresh 60s plus a status pushed
-through `POST /mcp`, so only the listener can explain the redraw. Writing `state.json` directly fires **no**
-listener — a test that mutates the file is testing the timer.
-
-No-TTY (e.g. `gradlew bootRun`) falls back to a plain inline line-REPL.
+**Do not reintroduce a terminal UI.** A full-screen console shipped beside the board until 2026-08-26 and was
+removed: it duplicated every verb and every projection the board already had, and a second surface is a second
+place for a capability to be missing from.
 
 ### A detached launch gets its own session, never an ignored signal
 
@@ -43,11 +28,11 @@ embedded terminal and `kill -QUIT` thread dumps all stopped working for everythi
 
 Both wrappers `exec`, so the returned `Process` is still the app and `destroy()` reaches it. Agents were never
 at risk (the tmux server is already its own session) and kitty daemonizes itself with `--detach`; what **was**
-at risk is everything started through `runDetached` — the editor and ttyd.
+at risk is everything started through `runDetached` — the editor.
 
 A wrapper that always starts also means a missing binary is no longer an `IOException`, so `runDetached`
-**fails** the launch when the wrapper exits non-zero at once — without that, no ttyd installed reads as "no web
-terminal configured".
+**fails** the launch when the wrapper exits non-zero at once — without that, a missing binary reads as a
+launch that worked.
 
 Each launch logs its pid and whether it got a session of its own, and its end logs what ended it and how long
 it lived — `128 + signal` naming the signal. Without those two lines an IDE that died cannot be told from one
@@ -58,9 +43,8 @@ so a TERM beside the shutdown lines is jagt's, and one on its own is not.
 
 System Events keystrokes race with the human typing: they land in whatever is focused.
 
-Agent terminals are windows in a session host (`port/SessionHost`, tmux today); visibility comes from one Warp
-window opened via `open warp://launch/jagt-agents` (a launch config generated into
-`~/.warp/launch_configurations/`) whenever `tmux list-clients` shows nobody attached.
+Agent terminals are windows in a session host (`port/SessionHost`, tmux today); visibility comes from one
+kitty window attached to that session whenever `tmux list-clients` shows nobody attached.
 
 ### kitty is one driver, not one per OS
 
@@ -71,16 +55,14 @@ macOS needs AppleScript to raise the app (Cocoa) and the Cyrillic `cmd+` keymap 
 **neither** (the WM owns stacking, and kitty's own `ascii` shortcut fallback handles a non-Latin layout), so
 `LinuxKittyTerminalDriver` overrides both with nothing and says why.
 
-Selection is `orchestrator.platform` × `orchestrator.terminal` via `@ConditionalOnExpression`, and
-`LinuxProfileContextTest` boots the linux profile so a condition typo fails in CI, not on someone's desktop.
-
-**Both comparisons ignore case, and must.** A property condition elsewhere matches a value case-insensitively,
-so `platform: Linux` would otherwise pick the Linux notifier and no terminal at all — a value that means one
-thing in one place and nothing in another is a value nobody can be told to fix.
+Selection is `orchestrator.platform` alone, and `LinuxProfileContextTest` boots the linux profile so a
+condition typo fails in CI, not on someone's desktop. The comparison ignores case, like every other property
+condition: `platform: Linux` picking the Linux notifier and no terminal at all would be a value that means one
+thing in one place and nothing in another.
 
 `KittyTerminalDriver` drives kitty via its remote-control CLI (`kitty @ --to unix:<per-session socket>`): one
 dedicated instance (`--single-instance --instance-group --listen-on -o allow_remote_control=yes`), tabs titled
-and closable (unlike Warp). It runs **over tmux** (the tab execs `tmux attach`), so agents persist.
+and closable. It runs **over tmux** (the tab execs `tmux attach`), so agents persist.
 `closeViewerWindow` kills the instance by its socket path — macOS keeps the app alive after windows close, and
 `close-os-window` / `--match all` are **not** kitty commands. Tab decoration comes from tmux `set-titles` → the
 active window name (taskId).
@@ -93,23 +75,14 @@ active window name (taskId).
 - After the agent exits, its window shows the tail for 15s and closes itself. **Never leave an interactive
   shell in an agent window** — it lingers forever and reads as a hung process.
 
-### Warp
+### The viewer
 
-Closing the Warp window only **detaches** the viewer — agents keep running (a tmux feature, by design). Killing
-is explicit: `done` / `remove` / `close_task_tab`.
+Closing the viewer only **detaches** it — agents keep running (a tmux feature, by design). Killing is explicit:
+`done` / `remove` / `close_task_tab`.
 
-Facts verified empirically plus a docs sweep (2026-07) — do not re-litigate:
-
-- The URI scheme is the **entire** programmatic surface: no CLI, no IPC, no AppleScript dictionary, no MCP for
-  the UI.
-- Viewer tabs are opened via Tab Configs — TOML generated into `~/.warp/tab_configs/<session>.toml`
-  (`[[panes]]` needs a mandatory `id`), opened with `warp://tab_config/<name>` (active window;
-  `?new_window=true` for a fresh one). The tab runs `tmux attach` itself, no shell hooks.
-- `new_tab` inherits the active tab's group; tab **groups** have zero API.
-- Tabs are **not** closable programmatically (absent from the AX tree, no URI, Warp keeps them after process
-  death). Whole windows **are** closable via addressed AXPress.
-
-Hence viewMode `shared` is the default; `tab-per-task` leaves dead tabs for the human to close.
+A Warp driver shipped beside kitty's until 2026-08-26 and was removed. Do not re-litigate it: Warp's URI scheme
+is its **entire** programmatic surface — no CLI, no IPC, no AppleScript dictionary — and a tab it opens cannot
+be titled, addressed or closed again, which is exactly what a per-task viewer needs.
 
 ### MCP permission gating
 

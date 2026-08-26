@@ -41,8 +41,8 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
     public List<String> problems() {
         return Executables.unresolved(kittyCommand)
                 ? List.of("orchestrator.kitty-command: '" + kittyCommand + "' is not on PATH nor in the usual"
-                        + " install directories — nothing would show the agents' sessions. Install kitty, set"
-                        + " the key to a full path, or pick another orchestrator.terminal.")
+                        + " install directories — nothing would show the agents' sessions. Install kitty"
+                        + " or set the key to a full path.")
                 : List.of();
     }
 
@@ -50,7 +50,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
 
     @Override
     public void openViewer(String tmuxSession, String dedicatedTitle, Path tabCwd) {
-        if (!properties.openWarpWindow()) {
+        if (!properties.openTerminalWindow()) {
             log.atInfo().setMessage("terminal auto-open disabled")
                     .addKeyValue("fix", properties.tmuxCommand() + " attach -t " + tmuxSession)
                     .log();

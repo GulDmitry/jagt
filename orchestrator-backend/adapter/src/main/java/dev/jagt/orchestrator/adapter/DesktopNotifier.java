@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
  * narrowed to that task, so one click leaves them looking at the card with its actions rather than at a list of
  * every task they have. It is the filter the page already has, not a second way to address a card.
  *
- * <p>No link when the board is not being served ({@code orchestrator.ui=tui}) or the notification is about the
- * install rather than a task: a click that opens a dead page is worse than one that does nothing.
+ * <p>No link when the notification is about the install rather than a task: a click that opens a page about
+ * nothing is worse than one that does nothing.
  */
 @Component
 public class DesktopNotifier implements Notifier {
@@ -21,11 +21,9 @@ public class DesktopNotifier implements Notifier {
     private final UserNotifier os;
     private final String boardUrl;
 
-    public DesktopNotifier(UserNotifier os,
-                           @Value("${orchestrator.ui:web}") String ui,
-                           @Value("${server.port:8290}") String port) {
+    public DesktopNotifier(UserNotifier os, @Value("${server.port:8290}") String port) {
         this.os = os;
-        this.boardUrl = ui.contains("tui") && !ui.contains("both") ? null : "http://localhost:" + port + "/";
+        this.boardUrl = "http://localhost:" + port + "/";
     }
 
     @Override
@@ -39,7 +37,7 @@ public class DesktopNotifier implements Notifier {
     }
 
     private String link(String taskId) {
-        return taskId == null || boardUrl == null ? null
+        return taskId == null ? null
                 : boardUrl + "?task=" + java.net.URLEncoder.encode(taskId, java.nio.charset.StandardCharsets.UTF_8);
     }
 

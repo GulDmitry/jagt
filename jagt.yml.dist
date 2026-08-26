@@ -23,7 +23,6 @@ orchestrator:
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   # Not detected: jagt refuses to start when this is not what the machine reports.
   platform: macos          # macos | linux
-  terminal: kitty          # kitty | warp (warp is macOS-only — it is opened through a URI scheme)
   # kittyCommand: kitty   # if the binary is not on PATH
   # kittyFontSize: 13    # blank keeps kitty.conf's own (default 11)
   tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs
@@ -33,25 +32,12 @@ orchestrator:
   editorCommand: ["idea"]
   editorDiffCommand: ["idea", "diff"]     # two paths are appended: <left> <right>
 
-  # ── The surfaces ───────────────────────────────────────────────────────────────────────────────────────────
-  ui: web                  # web | tui | both
-
+  # ── The viewer ─────────────────────────────────────────────────────────────────────────────────────────────
+  openTerminalWindow: true  # false: never open a kitty window; attach to the tmux session yourself
   viewer:
     tmuxSession: jagt     # tmux reserves ':' and '.' — a name carrying either is unaddressable
     viewMode: shared      # shared | tab-per-task
     keepViewer: true      # keep the agents window open after the last task closes
-
-  dashboard:
-    refreshSeconds: 10    # 0 or less: redraw only on input and resize
-    reservedRows: 17      # rows kept free for output and input, so it caps how tall the board may grow
-
-  # The agent's terminal inside the board, served by ttyd (install it first). It is writable, so reaching it is
-  # reaching a shell — which is why the address that may ask for the page is a separate decision.
-  webTerminal:
-    enabled: false
-    command: ttyd
-    port: 8291
-    bind: 127.0.0.1
 
   # ── The agents ─────────────────────────────────────────────────────────────────────────────────────────────
   agent:

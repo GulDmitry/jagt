@@ -5,9 +5,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.surface.mcp.McpController;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.MeteredAssistant;
-import dev.jagt.orchestrator.command.StateViews;
-import dev.jagt.orchestrator.surface.console.MasterShell;
-import dev.jagt.orchestrator.surface.ui.ConsoleLogging;
+import dev.jagt.orchestrator.command.GlobalCommands;
+import dev.jagt.orchestrator.surface.ui.SessionLog;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -27,21 +26,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  * hand, so a new bean, a missing dependency or a cycle breaks startup while the whole suite stays green —
  * the failure then surfaces as a dead jar on the human's terminal.
  *
- * <p>Two beans are mocked, both because a real one would act on the DEVELOPER'S machine rather than on the
- * test: {@link MasterShell} is an {@link org.springframework.boot.ApplicationRunner} that takes over the
- * terminal and blocks, and {@link IdeRecentProjectsCleaner} runs on a 60s schedule that rewrites the real
- * IDE's recent-projects file. Everything they depend on is still wired and asserted here.
+ * <p>One bean is mocked, because a real one would act on the DEVELOPER'S machine rather than on the test:
+ * {@link IdeRecentProjectsCleaner} runs on a 60s schedule that rewrites the real IDE's recent-projects file.
+ * Everything it depends on is still wired and asserted here.
  */
 @SpringBootTest(properties = {"spring.config.import=",
-        "orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
+        "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false"})
 @ResourceLock("spring-logging")
 class OrchestratorApplicationTest {
 
     @TempDir
     static Path root;
 
-    @MockitoBean
-    private MasterShell masterShell;
     @MockitoBean
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
 
@@ -61,7 +57,7 @@ class OrchestratorApplicationTest {
     @Test
     void theApplicationStartsWithEveryBeanWiredSoAStartupBreakFailsHereAndNotOnLaunch() {
         assertThat(context.getBean(McpController.class)).isNotNull();
-        assertThat(context.getBean(StateViews.class)).isNotNull();
+        assertThat(context.getBean(GlobalCommands.class)).isNotNull();
         assertThat(context.getBean(MeteredAssistant.class)).isNotNull();
     }
 
@@ -79,13 +75,13 @@ class OrchestratorApplicationTest {
 
     /**
      * The one thing about the launch that a booted context cannot show: a {@code @SpringBootTest} never runs
-     * {@code main}, so the listener that decides whether logs may be printed to the terminal would go
-     * unregistered without anything failing.
+     * {@code main}, so the listener that clears the previous run's log would go unregistered without anything
+     * failing.
      */
     @Test
-    void launchesWithTheConsoleLoggingListenerRegistered() {
+    void launchesWithTheSessionLogListenerRegistered() {
         assertThat(OrchestratorApplication.application().getListeners())
-                .hasAtLeastOneElementOfType(ConsoleLogging.class);
+                .hasAtLeastOneElementOfType(SessionLog.class);
     }
 
     /**

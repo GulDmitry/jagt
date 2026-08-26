@@ -206,5 +206,5 @@ honest half-state beats a dry run that only makes the same failure rarer at twic
 **forgetting** it as it comes out, so a repeat touches only what is still live — and REVERTED is set only when
 everything that landed is out.
 
-Both half-states are **stamped on the task**, not just thrown: a sentence in a console nobody scrolled back to
+Both half-states are **stamped on the task**, not just thrown: a toast nobody scrolled back to
 is not a record of a shared branch holding half a change.

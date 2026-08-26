@@ -49,7 +49,7 @@ Deploys made since are revertible with one command.
 | jagt refuses to start and prints a numbered list | fix the whole list — each line names the key |
 | It refuses on Linux over `orchestrator.platform` | the default is `macos`, and it is a choice rather than a detection: set it to `linux` |
 | The jar exits at once, saying nothing new | usually a port still held: `lsof -ti tcp:8290 \| xargs kill` |
-| `/status` and `/stats` answer 500 while `/` works | you rebuilt while it ran. Restart from the staged jar |
+| An endpoint answers 500 while `/` works | you rebuilt while it ran. Restart from the staged jar |
 
 > [!IMPORTANT]
 > `./gradlew build` rewrites `jagt.jar` **in place**, so a running JVM keeps reading a file whose content
@@ -60,18 +60,15 @@ Deploys made since are revertible with one command.
 A `NoClassDefFoundError` during a startup failure or on exit is the same cause, not a code bug. The missing
 class varies precisely because no single class is the problem.
 
-## The board and the terminal
+## The board and the log
 
 | symptom | fix |
 |---------|-----|
-| Focus shows no terminal | `grep ttyd jagt-backend.log` — install ttyd, or move `web-terminal.port` |
+| Focus raises no window | `grep kitty jagt-backend.log` — install kitty, or set `orchestrator.kittyCommand` |
 | You cannot find the log | `tail -f jagt-backend.log` next to where you started the jar |
 
-With `ui=tui` or `both`, the console owns the terminal, so log lines only go to the file. Copy it before
-restarting: **every start empties the log and deletes the archives beside it**, so what you read is always the
-running session.
-
-Focus itself still works with no web terminal — the session is in the window the toast named.
+Copy the log before restarting: **every start empties it and deletes the archives beside it**, so what you
+read is always the running session.
 
 ## State on disk
 

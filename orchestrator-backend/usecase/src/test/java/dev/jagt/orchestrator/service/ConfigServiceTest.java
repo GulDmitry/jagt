@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.DashboardConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,7 +24,6 @@ class ConfigServiceTest {
         String json = """
                 {
                   "viewer": { "tmuxSession": "alt", "viewMode": "tab-per-task", "keepViewer": false },
-                  "dashboard": { "refreshSeconds": 30 },
                   "agent": { "outputStyle": "acme:eng" }
                 }
                 """;
@@ -35,7 +33,6 @@ class ConfigServiceTest {
         assertThat(config.viewer().tmuxSession()).isEqualTo("alt");
         assertThat(config.viewer().sharedView()).isFalse();
         assertThat(config.viewer().keepViewerOrDefault()).isFalse();
-        assertThat(config.dashboard().refreshSecondsOrDefault()).isEqualTo(30);
         assertThat(config.agent().outputStyleOrNull()).isEqualTo("acme:eng");
     }
 
@@ -63,38 +60,6 @@ class ConfigServiceTest {
         ConfigService service = new ConfigService(new OrchestratorPaths(properties));
 
         assertThat(service.load().worktree().copyGlobsOrDefault()).containsExactly("**/.env");
-    }
-
-    static Stream<Arguments> intervals() {
-        return Stream.of(
-                Arguments.of(null, 10),
-                Arguments.of(-5, 0),
-                Arguments.of(0, 0),
-                Arguments.of(30, 30));
-    }
-
-    @ParameterizedTest
-    @MethodSource("intervals")
-    void resolvesTheDashboardRefreshInterval(Integer configured, int expected) {
-        DashboardConfig dashboard = DashboardConfig.defaults().withRefreshSeconds(configured);
-
-        assertThat(dashboard.refreshSecondsOrDefault()).isEqualTo(expected);
-    }
-
-    static Stream<Arguments> reservedRows() {
-        return Stream.of(
-                Arguments.of(null, 17),
-                Arguments.of(-3, 0),
-                Arguments.of(0, 0),
-                Arguments.of(25, 25));
-    }
-
-    @ParameterizedTest
-    @MethodSource("reservedRows")
-    void resolvesTheDashboardReservedRows(Integer configured, int expected) {
-        DashboardConfig dashboard = DashboardConfig.defaults().withReservedRows(configured);
-
-        assertThat(dashboard.reservedRowsOrDefault()).isEqualTo(expected);
     }
 
     static Stream<Arguments> probeIntervals() {

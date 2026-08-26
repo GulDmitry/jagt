@@ -27,8 +27,7 @@ class StartupRefusalTest {
 
         assertThatThrownBy(() -> new SpringApplicationBuilder(OrchestratorApplication.class)
                 .run("--server.port=0",
-                        "--orchestrator.ui=web",
-                        "--orchestrator.open-warp-window=false",
+                        "--orchestrator.open-terminal-window=false",
                         "--orchestrator.root=" + root,
                         "--spring.config.import=",
                         "--orchestrator.config-file=" + root.resolve("jagt.yml"),

@@ -13,7 +13,7 @@ class DesktopNotifierTest {
     void namesTheTaskInTheBannerTitleAndClicksThroughToItsCard() {
         UserNotifier os = mock(UserNotifier.class);
 
-        new DesktopNotifier(os, "web", "8290")
+        new DesktopNotifier(os, "8290")
                 .deliver(Notification.watchdog("ABC-42", "agent unresponsive", "silent for 6 min"));
 
         verify(os).notify("jagt · ABC-42 · agent unresponsive", "silent for 6 min",
@@ -24,31 +24,9 @@ class DesktopNotifierTest {
     void namesNoTaskWhenTheNotificationIsAboutTheInstallItself() {
         UserNotifier os = mock(UserNotifier.class);
 
-        new DesktopNotifier(os, "web", "8290")
+        new DesktopNotifier(os, "8290")
                 .deliver(Notification.install("restart needed", "the running jar was rebuilt"));
 
         verify(os).notify("jagt · restart needed", "the running jar was rebuilt", null);
-    }
-
-    /** A click that opens a dead page is worse than one that does nothing. */
-    @Test
-    void offersNoClickThroughWhenNoBoardIsBeingServed() {
-        UserNotifier os = mock(UserNotifier.class);
-
-        new DesktopNotifier(os, "tui", "8290")
-                .deliver(Notification.watchdog("ABC-42", "agent unresponsive", "silent for 6 min"));
-
-        verify(os).notify("jagt · ABC-42 · agent unresponsive", "silent for 6 min", null);
-    }
-
-    @Test
-    void clicksThroughWhenBothSurfacesAreServed() {
-        UserNotifier os = mock(UserNotifier.class);
-
-        new DesktopNotifier(os, "both", "9000")
-                .deliver(Notification.fromAgent("ABC-1", "needs input", "answer the question"));
-
-        verify(os).notify("jagt · ABC-1 · needs input", "answer the question",
-                "http://localhost:9000/?task=ABC-1");
     }
 }

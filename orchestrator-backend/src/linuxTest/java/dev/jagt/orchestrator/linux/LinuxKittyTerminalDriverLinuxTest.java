@@ -34,10 +34,8 @@ class LinuxKittyTerminalDriverLinuxTest {
     private final ProcessRunner runner = new ProcessRunner();
 
     private LinuxKittyTerminalDriver driver() {
-        // openWarpWindow=true is what ENABLES auto-opening a viewer (the flag predates kitty and is a
-        // terminal-neutral "may I open a window"); tmux is resolved by the properties, as in production.
         return new LinuxKittyTerminalDriver(runner, OrchestratorProperties.defaults()
-                .withOpenWarpWindow(true).withTmuxCommand("tmux"), "kitty", "");
+                .withOpenTerminalWindow(true).withTmuxCommand("tmux"), "kitty", "");
     }
 
     private String socket() {

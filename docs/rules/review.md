@@ -69,11 +69,11 @@ During the round the agent posts nothing at all — `review_replies.md` holds **
 
 A sweep already pulls the review round, so it stamps what the host said about the pipeline onto the task
 (`TaskState.pipelineStatus`, the host's **own** wording), and `flow/Pipeline` is the one parser that turns it
-into GREEN / RED / RUNNING / NONE — every host words it differently, and two surfaces matching on words would
-agree by luck.
+into GREEN / RED / RUNNING / NONE — every host words it differently, and matching on the words themselves
+would agree by luck.
 
-The board shows one dot in the card's meta row and the console prefixes the request line (`CHECKS RED · …`),
-because a red run while the task still reads CI_POLLING is exactly what a status word cannot show.
+The board shows one dot in the card's meta row, because a red run while the task still reads CI_POLLING is
+exactly what a status word cannot show.
 
 The human is tapped **once** per run, on the transition **into** red: an unattended poll that notified every
 time would be a loop, and a red run that is already known is not news.
@@ -95,10 +95,10 @@ announce it, because a human who does not know the convention ships a round and 
 
 **The announcement is also where it is read** (the owner's rule, 2026-08-21): `replies [task]` is a report
 (`command/ReviewRepliesReport`) that puts every comment, its verdict and the reply that will be posted for it on
-the screen the human already has. The console line names the verb; on the board the drafted-replies line **is**
-the button that opens it, and the board offers it **nowhere else** (`GlobalCommand.aboutOneTask`) — a bar
-button pressed with no task named answers for all of them at once. Where a card announces nothing, because the
-round was shipped or the status moved on, the verb is typed instead: `replies <task>` in Ask or in the console.
+the screen the human already has. The card's drafted-replies line **is** the button that opens it, and the
+board offers it **nowhere else** (`GlobalCommand.aboutOneTask`) — a bar button pressed with no task named
+answers for all of them at once. Where a card announces nothing, because the round was shipped or the status
+moved on, the verb is typed instead: `replies <task>` in Ask.
 Approving a round by opening an editor in a worktree is a step nobody takes, which is how a round gets shipped
 unread.
 
@@ -107,7 +107,7 @@ where it is actionable, so a status that moved on would otherwise read as "nothi
 what does **not** fit the prescribed shape verbatim instead of dropping it — the file is agent-written, and a
 parser that hid what it did not recognise would hide exactly the round that went wrong.
 
-`GET /api/commands/{id}?about=<task>` is how a report narrows to one task: the same command the console types,
+`GET /api/commands/{id}?about=<task>` is how a report narrows to one task: the same command the palette runs,
 so no second endpoint.
 
 **Presence is not enough: drafts belong to the round they were written in** (the owner's complaint, 2026-08-21
@@ -165,11 +165,10 @@ and `watch(task, now)` answering what a human is owed about one task (`task/Auto
 absolute next-poll stamp, window elapsed, off for this task, or nothing). `AutoReviewScheduler.decide` is a
 translation of that same watch, so a card cannot promise a poll the scheduler will not make.
 
-Both surfaces show it: the console's dashboard header carries `cadence.summary()` and each task a
-`└ auto-review:` line; the board has the chip (`Board.autoReview`) and, per card, a `↻ <countdown>` **pulse** in
-the meta row rather than a line of prose.
+The board shows it twice: the chip above the grid (`Board.autoReview`) carries `cadence.summary()`, and each
+card a `↻ <countdown>` **pulse** in the meta row rather than a line of prose.
 
-Whether polling runs at all is a property of the **install**, so it is stated once per surface and never
+Whether polling runs at all is a property of the **install**, so it is stated once and never
 repeated per card — which is exactly why the words are the tooltip and only the countdown is on the card. A
 watch that has **stopped** — window elapsed, or a task whose own `autoReview` is false while the install polls
 — is that same slot wearing the **state** instead of a countdown, never a paragraph.
@@ -212,6 +211,5 @@ with who asked for them.
 appender opens it, so the report is this session's work and nothing older — the owner's call (2026-08-18), and
 the reason nothing gzipped is read back.
 
-The file stays structured on **every** surface. `ConsoleLogging` used to try blanking
-`logging.structured.format.file` for the console UIs, which would leave `activity` nothing to parse, and that
-dead override is gone.
+The file stays structured whatever else changes: `activity` parses it back, so a run that blanked
+`logging.structured.format.file` would leave that report nothing to read.

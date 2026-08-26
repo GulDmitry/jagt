@@ -46,15 +46,10 @@ public class BoardApiController {
                 jobs.summary(System.currentTimeMillis()));
     }
 
-    /**
-     * Served rather than hardcoded in the page, so a verb cannot exist in the console and be missing from the
-     * suggestions. The console-only ones are filtered out: the board must not be able to offer what only means
-     * something in a terminal.
-     */
+    /** Served rather than hardcoded in the page, so a declared verb cannot be missing from the suggestions. */
     @GetMapping("/commands")
     public List<CommandReference.Verb> commands() {
-        return CommandReference.verbs(globals.all()).stream()
-                .filter(verb -> !verb.consoleOnly()).toList();
+        return CommandReference.verbs(globals.all());
     }
 
     /**
@@ -63,7 +58,7 @@ public class BoardApiController {
      */
     @GetMapping(value = "/commands/{id}", produces = MediaType.TEXT_PLAIN_VALUE)
     public String report(@PathVariable String id, @RequestParam(required = false) String about) {
-        return globals.byId(id).filter(GlobalCommand::report).filter(command -> !command.consoleOnly())
+        return globals.byId(id).filter(GlobalCommand::report)
                 .orElseThrow(() -> new IllegalArgumentException("No report '" + id + "'"))
                 .run(about == null ? "" : about);
     }

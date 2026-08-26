@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.AbstractKittyTerminalDriver;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,8 +14,7 @@ import java.util.List;
  * application but does not bring it in front of other ones.
  */
 @Component
-@ConditionalOnExpression("'${orchestrator.terminal:kitty}'.equalsIgnoreCase('kitty')"
-        + " and '${orchestrator.platform:macos}'.equalsIgnoreCase('macos')")
+@ConditionalOnProperty(name = "orchestrator.platform", havingValue = "macos", matchIfMissing = true)
 public class KittyTerminalDriver extends AbstractKittyTerminalDriver {
 
     /**

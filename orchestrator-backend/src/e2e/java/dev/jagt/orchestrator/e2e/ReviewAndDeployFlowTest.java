@@ -19,7 +19,6 @@ import dev.jagt.orchestrator.service.GitService;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.surface.console.MasterShell;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +67,7 @@ import static org.mockito.Mockito.when;
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=",
-                "orchestrator.agent.cli=stub", "orchestrator.open-warp-window=false",
+                "orchestrator.agent.cli=stub", "orchestrator.open-terminal-window=false",
                 "orchestrator.startup-checks=false"})
 class ReviewAndDeployFlowTest {
 
@@ -95,8 +94,6 @@ class ReviewAndDeployFlowTest {
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 
-    @MockitoBean
-    private MasterShell masterShell;
     @MockitoBean
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
     @MockitoBean

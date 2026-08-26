@@ -6,9 +6,9 @@
 
 ### Leave no trace
 
-Smoke tests pass `--orchestrator.open-warp-window=false` (otherwise every run opens a Warp window that stays
-behind), use a throwaway tmux session plus `ORCHESTRATOR_ROOT`, and kill the session and remove worktrees and
-branches afterwards.
+A suite that boots the app passes `--orchestrator.open-terminal-window=false` (otherwise every run opens a
+kitty window that stays behind), uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, and kills the session
+and removes worktrees and branches afterwards.
 
 ### No absolute macOS paths in defaults
 
@@ -36,8 +36,6 @@ chose.
 | e2e matrix | `./gradlew e2eTest` | git + tmux (source set `src/e2e/java`, **not** in `test`/`check`) |
 | board | `./gradlew boardTest` | Playwright's own Chromium (source set `src/boardTest/java`, not in `check`) |
 | Linux drivers | `./gradlew linuxDriverTest` | Linux + binaries + a display (source set `src/linuxTest/java`, gated on `JAGT_IN_CONTAINER`) |
-| console layout | `scripts/dashboard-layout-smoke.sh` | tmux + a built jar |
-| console repaint | `scripts/tui-push-repaint-smoke.sh` | tmux + a built jar |
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing` rules), verified RED by actually
 reverting the fix and running the test.
@@ -110,7 +108,7 @@ Two matrices, on purpose:
 `linuxDriverTest` is the only place the Linux drivers meet real binaries: the notifier's message is asserted off
 the session bus via `dbus-monitor`, kitty is driven under Xvfb.
 
-Anything a container cannot host — IntelliJ, the AppleScript raise, the Warp URI scheme, the real `claude` —
+Anything a container cannot host — IntelliJ, the AppleScript raise, the real `claude` —
 stays **named as uncovered** rather than faked. Two Linux behaviours are on that list **permanently** (decided
 2026-08-18, not a gap waiting to close): the viewer being raised above other applications, and closing the
 viewer. Both need a window manager with a human in front of it, so the `@Disabled` test in
@@ -120,7 +118,7 @@ viewer. Both need a window manager with a human in front of it, so the `@Disable
 
 `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites by calling the **same scripts**
 (`scripts/linux-test-deps.sh` = the package list, `scripts/with-linux-desktop.sh` = Xvfb + session bus +
-notification daemon, then the smoke scripts).
+notification daemon).
 
 **A step that exists in one pipeline only, or a CI-only code path, is a bug**: green in CI and green on a laptop
 must mean the same thing. Neither pipeline needs Docker — the container image is for macOS developers and

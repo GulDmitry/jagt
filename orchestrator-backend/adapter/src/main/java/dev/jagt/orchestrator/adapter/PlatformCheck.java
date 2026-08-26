@@ -45,10 +45,6 @@ public class PlatformCheck implements StartupCheck {
                     + " alert is logged rather than raised, so nothing would tell you a session is blocked."
                     + " Set it to '" + running + "'.");
         }
-        if ("warp".equalsIgnoreCase(properties.terminal()) && "linux".equals(running)) {
-            problems.add("orchestrator.terminal is 'warp', which is opened through a macOS URI scheme and"
-                    + " reaches nothing on this machine. Set it to 'kitty'.");
-        }
         return problems;
     }
 

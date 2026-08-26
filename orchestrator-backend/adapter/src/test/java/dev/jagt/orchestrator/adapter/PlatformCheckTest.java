@@ -15,7 +15,7 @@ class PlatformCheckTest {
     void refusesToStartWhenTheConfiguredPlatformIsNotTheOneTheMachineReports(String configured, String osName,
                                                                             String expected) {
         OrchestratorProperties properties =
-                OrchestratorProperties.defaults().withPlatform(configured).withTerminal("kitty");
+                OrchestratorProperties.defaults().withPlatform(configured);
 
         assertThat(new PlatformCheck(properties, osName).problems())
                 .singleElement(STRING)
@@ -24,7 +24,7 @@ class PlatformCheckTest {
 
     @Test
     void takesAnUnsetPlatformForMacosBecauseThatIsWhatEveryUnsetOneSelects() {
-        OrchestratorProperties properties = OrchestratorProperties.defaults().withTerminal("kitty");
+        OrchestratorProperties properties = OrchestratorProperties.defaults();
 
         assertThat(new PlatformCheck(properties, "Mac OS X").problems()).isEmpty();
     }
@@ -32,28 +32,10 @@ class PlatformCheckTest {
     @Test
     void saysThereIsNoPlatformToSetOnAnOperatingSystemJagtDoesNotDrive() {
         OrchestratorProperties properties =
-                OrchestratorProperties.defaults().withPlatform("macos").withTerminal("kitty");
+                OrchestratorProperties.defaults().withPlatform("macos");
 
         assertThat(new PlatformCheck(properties, "Windows 11").problems())
                 .singleElement(STRING)
                 .contains("macOS and Linux", "Windows 11");
-    }
-
-    @Test
-    void refusesTheWarpTerminalWhereItsUriSchemeReachesNothing() {
-        OrchestratorProperties properties =
-                OrchestratorProperties.defaults().withPlatform("linux").withTerminal("warp");
-
-        assertThat(new PlatformCheck(properties, "Linux").problems())
-                .singleElement(STRING)
-                .contains("orchestrator.terminal", "'kitty'");
-    }
-
-    @Test
-    void keepsQuietAboutTheTerminalTheMachineCanOpen() {
-        OrchestratorProperties properties =
-                OrchestratorProperties.defaults().withPlatform("macos").withTerminal("warp");
-
-        assertThat(new PlatformCheck(properties, "Mac OS X").problems()).isEmpty();
     }
 }

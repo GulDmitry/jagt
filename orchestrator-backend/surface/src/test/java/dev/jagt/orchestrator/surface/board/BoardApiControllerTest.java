@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 class BoardApiControllerTest {
 
-    private record Declared(String id, String hint, boolean report, boolean consoleOnly) implements GlobalCommand {
+    private record Declared(String id, String hint, boolean report) implements GlobalCommand {
         @Override
         public String run(String tail) {
             return tail.isBlank() ? id + " report" : id + " report about " + tail;
@@ -30,9 +30,8 @@ class BoardApiControllerTest {
     private final UsageTracker usageTracker = mock(UsageTracker.class);
     private final BoardApiController api = new BoardApiController(taskViews, usageTracker,
             mock(TaskEventStream.class), new GlobalCommands(List.of(
-                    new Declared("stats", "what the calls cost", true, false),
-                    new Declared("do", "start a task", false, false),
-                    new Declared("status", "show the dashboard", false, true))),
+                    new Declared("stats", "what the calls cost", true),
+                    new Declared("do", "start a task", false))),
             new dev.jagt.orchestrator.job.Jobs(List.of()));
 
     /**
@@ -52,12 +51,6 @@ class BoardApiControllerTest {
     void saysWhichVerbsAreNothingWithoutATaskToApplyThemTo() {
         assertThat(api.commands().stream().filter(CommandReference.Verb::takesTask)
                 .map(CommandReference.Verb::id)).contains("ship").doesNotContain("do", "stats");
-    }
-
-    /** A verb that only means something in a terminal is not a button the board can grow. */
-    @Test
-    void keepsATerminalOnlyVerbOutOfWhatTheBoardIsToldAbout() {
-        assertThat(api.commands()).extracting(CommandReference.Verb::id).doesNotContain("status");
     }
 
     @Test
@@ -85,11 +78,6 @@ class BoardApiControllerTest {
     void refusesToRunACommandThatIsNotAReport() {
         assertThatThrownBy(() -> api.report("do", null)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("No report 'do'");
-    }
-
-    @Test
-    void refusesAReportOnlyTheConsoleCouldShow() {
-        assertThatThrownBy(() -> api.report("status", null)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

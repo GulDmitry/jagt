@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp;
 
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.command.StateViews;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +18,6 @@ public class McpController {
 
     private final McpProtocolService protocolService;
     private final StateService stateService;
-    private final StateViews views;
     private final ObjectMapper mapper;
 
     @PostMapping(value = "/mcp", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -41,16 +39,5 @@ public class McpController {
     @GetMapping(value = "/state", produces = MediaType.APPLICATION_JSON_VALUE)
     public StateService.StateFile state() {
         return stateService.read();
-    }
-
-    @GetMapping(value = "/status", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String status() {
-        return views.dashboard();
-    }
-
-    /** The spend of jagt's OWN model calls, per task; an agent's own session spends elsewhere. */
-    @GetMapping(value = "/stats", produces = MediaType.TEXT_PLAIN_VALUE)
-    public String stats() {
-        return views.stats();
     }
 }

@@ -28,8 +28,6 @@ demand. Never write a project rule into a vendor-named file.
 | `./gradlew e2eTest` | git + tmux | the task flow over real worktrees, one row per case |
 | `./gradlew boardTest` | a Chromium (downloaded on first run) | the board in a real browser |
 | `./gradlew linuxDriverTest` | Linux + notify-send/kitty + a display | the Linux drivers against real binaries |
-| `scripts/dashboard-layout-smoke.sh` | tmux + a built jar | the console's layout through a real PTY |
-| `scripts/tui-push-repaint-smoke.sh` | tmux + a built jar | the console repainting on a pushed event |
 
 Only `test` is in `check`. The rest are asked for by name, because each needs something a hermetic run must
 not depend on.
@@ -62,7 +60,7 @@ GitHub additionally runs the unit suite and the layout smoke on macOS, the platf
 Neither pipeline needs Docker or a privileged runner — the container image is for developers on a Mac, and
 installs from the same deps script.
 
-**Not covered, and not pretended to be:** IntelliJ, the macOS AppleScript window raise, the Warp URI scheme,
+**Not covered, and not pretended to be:** IntelliJ, the macOS AppleScript window raise,
 the real `claude` CLI, and the MCP servers its reads need.
 
 ## Where things go

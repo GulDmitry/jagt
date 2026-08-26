@@ -18,7 +18,7 @@ Two other places can override it, and neither is one you edit:
 
 - `orchestrator-backend/src/main/resources/application.yml` — the defaults, built into the jar and committed.
   It is what a key falls back to when your file omits it.
-- a flag or an environment variable on the command line — `--orchestrator.ui=tui`, `LOG_FILE=…` — for one run,
+- a flag or an environment variable on the command line — `--server.port=8390`, `LOG_FILE=…` — for one run,
   outranking both files.
 
 > [!NOTE]
@@ -59,13 +59,6 @@ falls back to its default.
 | `viewMode` | `shared` | `shared` = one tab for all tasks; `tab-per-task` = one per task |
 | `keepViewer` | `true` | keep the agents window open after the last task |
 
-### dashboard
-
-| key | default | meaning |
-|-----|---------|---------|
-| `refreshSeconds` | `10` | how often the console dashboard refreshes |
-| `reservedRows` | `17` | rows kept for output and input below the dashboard |
-
 ### codeReview
 
 | key | default | meaning |
@@ -97,11 +90,10 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 
 ## Read once, at startup
 
-### Surfaces and platform
+### The board and the platform
 
 | key | default | meaning |
 |-----|---------|---------|
-| `orchestrator.ui` | `web` | `web`, `tui` or `both` |
 | `orchestrator.platform` | `macos` | `macos` or `linux`; selects the notifier and kitty driver. Refused when it is not what the machine reports |
 | `server.address` | `127.0.0.1` | which interface the board listens on |
 | `server.port` | `8290` | the board's port |
@@ -112,24 +104,12 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 
 | key | default | meaning |
 |-----|---------|---------|
-| `orchestrator.terminal` | `kitty` | `kitty` or `warp`; both run over tmux. `warp` is macOS-only — it is opened through a URI scheme |
 | `orchestrator.kittyCommand` | `kitty` | the kitty binary |
 | `orchestrator.kitty-font-size` | *(blank)* | blank keeps kitty.conf's own |
 | `orchestrator.tmuxCommand` | `tmux` | the tmux binary |
 | `orchestrator.editorCommand` | `[idea]` | editor launcher, e.g. `[code]` |
 | `orchestrator.editor-diff-command` | `[idea, diff]` | difftool for `ide <ticket> diff`, e.g. `[difft]` |
-| `orchestrator.open-warp-window` | `true` | auto-open the agents terminal window |
-
-### Web terminal
-
-Shows the agent's session inside the board when you press Focus. Needs ttyd installed.
-
-| key | default | meaning |
-|-----|---------|---------|
-| `orchestrator.web-terminal.enabled` | `false` | turn it on |
-| `orchestrator.web-terminal.command` | `ttyd` | the ttyd binary |
-| `orchestrator.web-terminal.port` | `8291` | where it starts looking for a free port |
-| `orchestrator.web-terminal.bind` | `127.0.0.1` | which interface it listens on |
+| `orchestrator.open-terminal-window` | `true` | auto-open the agents terminal window |
 
 ### Agent runtime
 
@@ -187,11 +167,6 @@ repo's own `.env`.
 **`server.address`.** The board asks for no password and can deploy, close a task and start an agent, so it
 stays on loopback until you decide otherwise. Client defaults use `127.0.0.1` rather than `localhost`, which
 resolves `::1` first and would cost a refused connection per call.
-
-**`web-terminal.bind`.** The terminal is writable, so reaching it is reaching a shell. Only the page ttyd
-serves may open a socket into the session (`--check-origin`); this key decides who may ask for that page at
-all. Widen it only on a network you trust. The panel always asks for that port on the host you opened the
-board under, so a board opened from a second machine needs a bind that machine can reach.
 
 **`assistant.mcp-config` buys determinism, not money.** Measured cold it cost $0.09 against $0.04 for the
 inherited config, which rides the prompt cache your own sessions keep warm. Server names also lose their

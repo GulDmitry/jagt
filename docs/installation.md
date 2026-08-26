@@ -42,7 +42,6 @@ That also cuts what each read loads to the servers it needs, which is most of wh
 | IntelliJ IDEA | JetBrains Toolbox | the `ide` checkpoint |
 | terminal-notifier | `brew install terminal-notifier` | clickable desktop notifications |
 | Node 18+ | `brew install node` | only for `orchestrator.agent.cli=codex` |
-| ttyd | `brew install ttyd` | only for `orchestrator.web-terminal.enabled=true` |
 
 ## Linux
 
@@ -58,7 +57,6 @@ That also cuts what each read loads to the servers it needs, which is most of wh
 | an editor CLI | `idea` or `code` on PATH | the `ide` checkpoint |
 | lsof | `apt install lsof` | reaping a worktree's leftover processes on `done`; skipped when absent |
 | Node 18+ | `apt install nodejs` | only for `orchestrator.agent.cli=codex` |
-| ttyd | `apt install ttyd` | only for `orchestrator.web-terminal.enabled=true` |
 
 Then in `jagt.yml`:
 
@@ -69,8 +67,7 @@ orchestrator:
 ```
 
 `platform` is not optional and not detected: it defaults to `macos`, and jagt refuses to start when it is not
-the platform the machine reports. `terminal: warp` is macOS-only for the same reason — it is opened through a
-URI scheme.
+the platform the machine reports.
 
 Everything else is shared with macOS — kitty speaks the same remote-control protocol on both — with one
 difference in what a banner can do: **it does not open the board.** `notify-send` carries a click only by

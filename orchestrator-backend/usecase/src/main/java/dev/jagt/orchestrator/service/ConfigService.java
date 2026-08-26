@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Reads {@code jagt.yml} on every access, so edits are picked up without restarting the backend — which is why
@@ -35,7 +37,7 @@ public class ConfigService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
-    public record ConfigFile(Map<String, ProjectConfig> projects, ViewerConfig viewer, DashboardConfig dashboard,
+    public record ConfigFile(Map<String, ProjectConfig> projects, ViewerConfig viewer,
                              CodeReviewConfig codeReview, AgentConfig agent, WorktreeConfig worktree,
                              AutoReviewConfig autoReview) {
 
@@ -53,31 +55,6 @@ public class ConfigService {
 
             public boolean sharedView() {
                 return viewMode == null || "shared".equalsIgnoreCase(viewMode);
-            }
-        }
-
-        @JsonIgnoreProperties(ignoreUnknown = true)
-        @With
-        public record DashboardConfig(Integer refreshSeconds, Integer reservedRows) {
-
-            public static DashboardConfig defaults() {
-                return new DashboardConfig(null, null);
-            }
-
-            /** {@code <= 0} disables the periodic refresh: nothing redraws except on input or resize. */
-            public int refreshSecondsOrDefault() {
-                if (refreshSeconds == null) {
-                    return 10;
-                }
-                return refreshSeconds < 0 ? 0 : refreshSeconds;
-            }
-
-            /** A MINIMUM of rows kept free for output and input, so it CAPS how tall the dashboard may grow. */
-            public int reservedRowsOrDefault() {
-                if (reservedRows == null) {
-                    return 17;
-                }
-                return reservedRows < 0 ? 0 : reservedRows;
             }
         }
 
@@ -215,18 +192,13 @@ public class ConfigService {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null);
         }
 
         // The raw field is still what the withers copy, so an omitted section stays null until set.
         @Override
         public ViewerConfig viewer() {
             return viewer == null ? ViewerConfig.defaults() : viewer;
-        }
-
-        @Override
-        public DashboardConfig dashboard() {
-            return dashboard == null ? DashboardConfig.defaults() : dashboard;
         }
 
         @Override
@@ -258,6 +230,26 @@ public class ConfigService {
     private final OrchestratorPaths paths;
 
     public ConfigFile load() {
+        Object section = section();
+        if (section == null) {
+            return ConfigFile.defaults();
+        }
+        ConfigFile config = mapper.convertValue(section, ConfigFile.class);
+        return config.projects() == null ? config.withProjects(Map.of()) : config;
+    }
+
+    /**
+     * The names the human actually wrote under {@code orchestrator}, INCLUDING the ones nothing binds any more
+     * — a retired key is silently dropped by both readers, so this is the only way anything can say so.
+     */
+    public Set<String> declaredKeys() {
+        Object section = section();
+        return section instanceof Map<?, ?> keys
+                ? keys.keySet().stream().map(String::valueOf).collect(Collectors.toUnmodifiableSet())
+                : Set.of();
+    }
+
+    private Object section() {
         Path file = paths.configFile();
         if (!Files.exists(file)) {
             throw new IllegalStateException("Missing " + file
@@ -266,12 +258,7 @@ public class ConfigService {
         try {
             // SafeConstructor: the file is hand-edited, and a YAML tag naming a class is not a setting.
             Object tree = new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(file));
-            Object section = tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
-            if (section == null) {
-                return ConfigFile.defaults();
-            }
-            ConfigFile config = mapper.convertValue(section, ConfigFile.class);
-            return config.projects() == null ? config.withProjects(Map.of()) : config;
+            return tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read " + file, e);
         } catch (RuntimeException malformed) {

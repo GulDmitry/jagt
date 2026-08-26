@@ -6,9 +6,8 @@
 
 ### `orchestrator-backend/`
 
-The Spring Boot app ("The Brain") **and** the Master console itself: state manager, git lock, MCP HTTP server
-(`POST /mcp`), watchdog, auto-review scheduler, macOS automation. Run the jar in a real terminal — the process
-*is* the Master TUI.
+The Spring Boot app ("The Brain"): state manager, git lock, MCP HTTP server (`POST /mcp`), watchdog,
+auto-review scheduler, macOS automation, and the board it serves on loopback.
 
 **Outside writes are the sub-agent's job**, via its own MCP: push, merge request, review replies. The backend
 makes none of them, ever.
@@ -108,8 +107,8 @@ with.
 The asker (`task/ActionOrigin`) is carried by `service/OriginContext` and stamped in `StateService`, **not
 passed down**: a deploy reaches the same code whether it was clicked, typed, said in words or called over MCP,
 so every signature in between would grow a parameter it has no use for. Set it at an **entry point** only —
-`surface/board/OriginFilter` (both HTTP surfaces at once, so a new endpoint cannot forget), `GrammarDispatch.run`,
-`NaturalLanguageDispatch` and `AutoReviewScheduler`. Nesting is honest: console free text is recorded as the
+`surface/board/OriginFilter` (every HTTP surface at once, so a new endpoint cannot forget),
+`NaturalLanguageDispatch` and `AutoReviewScheduler`. Nesting is honest: free text is recorded as the
 interpretation it became.
 
 **Read "since when in this status" from `TaskState.statusSince()`, never from `lastActiveTimestamp`** — a
@@ -132,11 +131,11 @@ keep-alive bumps that one, so an hour-old status would look fresh.
 
 ## Session roles
 
-**Master** is the backend process itself. `MasterShell` owns the screen; `surface/console/GrammarDispatch`
-parses the fixed grammar and executes it in-process: no LLM, no MCP round-trip, no tokens, no drift.
+**Master** is the backend process itself. It serves the board and executes a verb in-process: no LLM, no MCP
+round-trip, no tokens, no drift.
 
-There is **no Master Claude session** — the deterministic REPL/TUI replaced it, and `master_prompt.md` went
-with it. The only LLM call on the master side is the headless one-shot assistant.
+There is **no Master Claude session** — the deterministic engine replaced it, and `master_prompt.md` went with
+it. The only LLM call on the master side is the headless one-shot assistant.
 
 **Sub-agents** are Claude sessions in worktrees named `<taskId>-<projectKey>`, siblings of the base repo.
 Their generated `CLAUDE.md` carries full system knowledge (orchestrator root, all projects, active tasks) plus
@@ -208,21 +207,21 @@ Worktree directories no task owns can hold uncommitted work **and** copies of se
 (`worktree.copyGlobs`), so it WARNs one line each at startup, plus one desktop ping, and **deletes nothing**.
 
 No surface offers it — the board dialog and `GET /orphans` were removed on the owner's instruction
-(2026-08-18), and the console never had a verb for it: housekeeping is not something a human acts on
-mid-flight, and the board is dense enough. **Do not add either back.**
+(2026-08-18): housekeeping is not something a human acts on mid-flight, and the board is dense enough.
+**Do not add either back.**
 
 It is a job with no interval (once, as soon as the application is up) and it catches nothing itself: a throwing
 run is booked against that job by `Jobs`, because a diagnostic must never stop the backend from starting.
 
 ### What is missing is said at startup, not at the click that needed it
 
-`startup/StartupValidation` asks every `StartupCheck` before the operator surfaces open and refuses the start
+`startup/StartupValidation` asks every `StartupCheck` before the board is announced and refuses the start
 with **all** problems at once (`Misconfigured`, printed by `StartupFailure`) — a human fixes one list instead of
 one item per restart, and each line names the key that fixes it.
 
 A check lives **next to** the part it answers for, so it exists only when that part was selected and nothing
-branches on which terminal, agent or host is configured (`CliEditorDriver`, the kitty driver,
-`TtydWebTerminal`, `LibNotifyNotifier`, `CodexAgentRuntime`). What no implementation can answer for — a `type`
+branches on which platform or agent is configured (`CliEditorDriver`, the kitty driver, `LibNotifyNotifier`,
+`CodexAgentRuntime`). What no implementation can answer for — a `type`
 that selects nothing, the human's `jagt.yml`, jagt's own paths, git and tmux — is a check in `startup`.
 
 Two limits are decisions, not gaps: **nothing reaches the network** (presence, never validity — a wrong token
@@ -230,8 +229,8 @@ is the first read's answer, and a laptop offline must still start), and nothing 
 (that is a fetch per project on every start).
 
 `orchestrator.startup-checks=false` belongs to **test harnesses only** — what the checks ask about is the
-human's machine, and a runner is not one, so every suite and smoke script that boots the app passes it exactly
-as it passes `open-warp-window=false`.
+human's machine, and a runner is not one, so every suite that boots the app passes it exactly as it passes
+`open-terminal-window=false`.
 
 ### Tomcat's "Error setting socket options"
 

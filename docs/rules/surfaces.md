@@ -4,20 +4,21 @@
 
 ## Control surfaces
 
-Two front-ends, **one core**, and the seam is `OperatorUi` (`…surface.ui`, selected by `orchestrator.ui`:
-`web` | `tui` | `both`, default web). `OperatorUiRunner` is the only `ApplicationRunner`; a blocking surface
-(the TUI, which owns the terminal) starts last, so the board is already serving.
+**One** front-end over the core: the board, served from the jar on loopback. A full-screen console shipped
+beside it until 2026-08-26 and was removed — it duplicated every verb and every projection, and a second
+surface is a second place for a capability to go missing from.
 
-**Adding a surface must not add a second answer to any question the others already answer.**
+**Adding a surface would have to add no second answer to any question the board already answers.** That is the
+bar, and it is why there is one.
 
 ### One projection answers "what is this task and what can I do with it"
 
-`flow/Move` + `flow/TaskView`, built by `service/TaskViews`. The TUI, `/status` and `/api/tasks` all render
-that. `Move.shippable` is also what `ShipService.requireShippable` calls — the dashboard used to advise
-independently of the gate, which is exactly how they drifted apart.
+`flow/Move` + `flow/TaskView`, built by `service/TaskViews` and rendered by `/api/tasks`. `Move.shippable` is
+also what `ShipService.requireShippable` calls — the card used to advise independently of the gate, which is
+exactly how they drifted apart.
 
 `TaskViews.snapshot()` reads the configuration **once** per render and hands back the tasks with the policy
-that explains them: the console redraws on every keystroke, and two reads could disagree inside one frame.
+that explains them: two reads could disagree inside one frame.
 
 ### Nothing is added to a surface without saying what it replaces
 
@@ -48,59 +49,55 @@ A board is read at a glance or it is not read at all, and every mark spends the 
 
 ### Parity is an invariant, not an aspiration
 
-A capability that exists in one surface only is a bug.
+A capability the board cannot express is a bug.
 
-- Per-task verbs come from `Move.actions()`, so a new action appears on both at once — **grouped** there too
+- Per-task verbs come from `Move.actions()`, so a new action appears by declaring it — **grouped** there too
   (`TaskAction.Group`: FLOW moves the task on, and closing it counts; TOOL only looks at it or restarts the
   agent). `Move` **sorts** by that group rather than trusting the order somebody appended in, so a new verb
   lands on the right side of the card by declaring its group and nothing else.
 - The board renders one row per group and reads which groups exist **off the wire** — a page that knew the
   names would be a second answer.
-- Shared text lives in `command/CommandReference` (the grammar) and `command/StateViews` (dashboard + stats),
-  so neither surface renders its own version.
+- The grammar's text lives in `command/CommandReference`, so no caller renders its own version of a hint.
 - **A hint is `data-tip`, never `title`**: one node placed on hover (`showTip`), because `title` waits and a
   push rebuilds the element it waited on.
 - Reports open in a `<dialog>` over the board, never a new page. **Every dialog closes three ways**: Escape,
   its own button, and the dimmed area around it — the click a human makes first. The backdrop close is guarded
   by where the press **started**, so dragging a selection out of a report does not dismiss what is being read.
 
-Two deliberate exceptions, both of a surface explaining or owning itself. The **legend is board-only** (a section of the
-`help` report, `static/ui/legend.js`): it says what a colour, a ring and a pulsing dot mean, and it says it by rendering the
-page's own elements rather than naming their colours — the console has none of them and spells every one of
-those facts out in words already.
+The **legend** is a section of the `help` report (`static/ui/legend.js`), never a control beside it: it says
+what a colour, a ring and a pulsing dot mean by rendering the page's own elements rather than naming their
+colours.
 
-And **`quit` is console-only.** Stopping the backend belongs to whoever owns the process
-(Ctrl-C / kill), not to a browser button, and nothing is lost since agents live in tmux. A shutdown endpoint
-was built and removed — do not add one back.
+**Stopping the backend is not a verb.** It belongs to whoever owns the process (Ctrl-C / kill), not to a
+browser button, and nothing is lost since agents live in tmux. A shutdown endpoint was built and removed — do
+not add one back.
 
 ### "What commands exist" has exactly two answers, and both are declarations
 
 | the verb | is | executed by |
 |---|---|---|
 | one a task owns | a `flow/TaskAction` row, gated by `Move` | `CommandService` |
-| one no task owns | a `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) — id, hint, usage, whether its answer is a report, whether that report is about one task, whether it is console-only | itself |
+| one no task owns | a `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) — id, hint, usage, whether its answer is a report, whether that report is about one task | itself |
 
 `CommandReference` **renders both** — `help`'s text and the palette's verb list — so a hint is written once.
-`GrammarDispatch` **looks a typed word up** in the two instead of switching on it. `GET /api/commands/{id}`
-serves any report, so declaring another one needs no endpoint, no console arm and no button in the page (the
-board *builds* its report buttons from that list).
+`GET /api/commands/{id}` serves any report, so declaring another one needs no endpoint and no button in the
+page (the board *builds* its report buttons from that list).
 
 This is what parity failed on before (2026-08-19): the per-task verbs always had this shape, while
 `do`/`resume`/`stats`/`activity`/`help` were hand-written in six places each.
 
-Four deliberate limits: that endpoint refuses anything that is not a report (a GET must not be able to start
-a task); a console-only command is filtered out of what the board is told at all; a report **about one task**
-(`aboutOneTask`) gets no button in the bar, because the card that has something to show is where a human
-presses it and a bar button would answer for every task at once — it stays typeable, and the console, which
-has no cards, still lists it; and tier 2 stays narrower on purpose — a prose request cannot ask for a dialog,
-so `NaturalLanguageDispatch` names the two launches itself and offers no report.
+Three deliberate limits: that endpoint refuses anything that is not a report (a GET must not be able to start
+a task); a report **about one task** (`aboutOneTask`) gets no button in the bar, because the card that has
+something to show is where a human presses it and a bar button would answer for every task at once — it stays
+typeable; and tier 2 stays narrower on purpose — a prose request cannot ask for a dialog, so
+`NaturalLanguageDispatch` names the two launches itself and offers no report.
 
 ### Two-tier dispatch
 
-**Tier 1** is the grammar (a typed command or a board button) and it stays LLM-free.
+**Tier 1** is the grammar (a palette line that parses, or a board button) and it stays LLM-free.
 
-**Tier 2** is `service/NaturalLanguageDispatch`: free text — an unknown console line, or the board's ⌘K
-palette → `POST /api/interpret` — goes to a model that only **proposes** one grammar command. The dispatcher
+**Tier 2** is `service/NaturalLanguageDispatch`: free text from the board's ⌘K palette →
+`POST /api/interpret` — goes to a model that only **proposes** one grammar command. The dispatcher
 validates that the task exists and the verb is real, then executes through `CommandService`, so **tier 2 can
 never do more than a button**.
 
@@ -113,7 +110,7 @@ typo, not a request — it never reaches the model.
 ### A renamed verb keeps its old spelling, and advertises only the new one
 
 `sweep`, typed as `review` since 2026-08-18. **One map owns it** — `TaskAction.RENAMED`, read through
-`byRetiredVerb` — and every surface where a human types has to consult it: the console's grammar, the palette
+`byRetiredVerb` — and everywhere a human types has to consult it: the palette
 (`CommandReference.Verb.aliases`, which the page matches and offers nowhere) and a tier-2 proposal that echoed
 the word.
 
@@ -126,8 +123,8 @@ grammar's verb set is the switch, so `diff …` keeps reaching the model as free
 ### How an action is executed
 
 `service/CommandService` validates against `Move` first, so a stale board tab is refused with a sentence, not
-with a git error three layers down. `service/TaskLauncher` is how a task is started. The console parses a
-command line, the controller parses JSON; **neither owns rules.**
+with a git error three layers down. `service/TaskLauncher` is how a task is started. The controller parses
+JSON and the palette parses a typed line; **neither owns rules.**
 
 The sentence stays the whole answer for a human. A refusal a caller must **act** on also carries a
 `flow/Refusal.Code`, and that enum grows **only** when something branches on the new value — a reason nobody
@@ -157,9 +154,8 @@ Do not reintroduce a cap, a queue, or a "slots" indicator.
 
 ### The board listens on loopback
 
-`server.address: 127.0.0.1`, because it asks for no password and can deploy, close a task, start an agent and
-— with the web terminal on — hand out a writable shell. Widening it is a config line the human writes
-themselves.
+`server.address: 127.0.0.1`, because it asks for no password and can deploy, close a task and start an agent.
+Widening it is a config line the human writes themselves.
 
 ### The board is two rings too
 
@@ -175,14 +171,13 @@ card rebuilt under the pointer cannot act for the task it used to describe.
 
 `ARCHITECTURE.md` has the file-by-file map.
 
-### Neither surface polls
+### The board does not poll
 
-`StateService.onChange` is the one event both use: `TaskEventStream` forwards it as SSE, and `MasterShell` sets
-a dirty **flag** its render loop consumes (Lanterna's screen belongs to the UI thread; the listener runs on
-whichever thread served the agent's MCP call — never paint from there).
+`StateService.onChange` is the one event: `TaskEventStream` forwards it as SSE. The listener runs on whichever
+thread served the agent's MCP call, so it hands over a notification and nothing else.
 
 The SSE event carries **no payload** on purpose: a payload would be a second serialization that could disagree
-with `/api/tasks`. The periodic tick survives in both only for the relative "ACTIVE" clock.
+with `/api/tasks`. The periodic tick survives only for the relative "ACTIVE" clock.
 
 ### A desktop banner clicks through to the task it is about
 
@@ -190,8 +185,8 @@ with `/api/tasks`. The periodic tick survives in both only for the relative "ACT
 find it, which on macOS means finding the browser tab first.
 
 The link is the board narrowed to that task by the filter the page already has — not a second way to address a
-card — and it is omitted when there is no board (`orchestrator.ui=tui`) or no task, since a click onto a dead
-page is worse than one that does nothing.
+card — and it is omitted when the banner names no task, since a click onto a page about nothing is worse than
+one that does nothing.
 
 It exists at all only because macOS banners cannot carry an action without `terminal-notifier` (`-open`),
 which `MacNotifier` already prefers for its own reasons. osascript and `notify-send` both drop the link, and

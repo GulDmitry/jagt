@@ -2,14 +2,10 @@
 
 [← README](../README.md)
 
-jagt has two surfaces over one core, chosen with `orchestrator.ui`:
+jagt has one surface: the **board** at `http://localhost:8290`.
 
-- `web` (default) — the **board** at `http://localhost:8290`
-- `tui` — the full-screen **console** in your terminal
-- `both` — serves the board, then hands the terminal to the console
-
-Whose move it is, and which actions are legal, are computed in one place. The two surfaces can never tell you
-different things — anything one can do and the other cannot is a bug.
+Whose move it is, and which actions are legal, are computed in one place — not in the page, which renders what
+it is handed and decides nothing.
 
 ## The board
 
@@ -33,22 +29,14 @@ title, and tick *needs my action* for what is yours. The page never polls; the b
 
 `deploy` and `done` ask for confirmation — one writes to a shared branch, the other deletes a worktree.
 
-**Focus** selects the agent's tmux window. Install ttyd and set `orchestrator.web-terminal.enabled: true` and
-the board opens that session **over the board itself** — a real terminal you can type into, so answering an
-agent no longer means finding another window. Closing the panel does not stop the agent; it is only a view.
+**Focus** selects the agent's tmux window in kitty and raises it, and the toast names the window it moved to.
 
-> [!NOTE]
-> `quit` is the one console verb the board deliberately lacks. Stopping the backend belongs to whoever started
-> the process. Nothing is lost either way — agents live in tmux and keep working when the backend goes away.
-
-## The console
-
-`--orchestrator.ui=tui` gives the full-screen terminal UI. The dashboard repaints the moment an agent reports
-in, and is always on screen.
-
-- **Shift+←/→** switches between agent windows
+- **Shift+←/→** switches between agent windows inside that viewer
 - every task gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id
-- closing the terminal window only detaches the viewer — agents keep running; kill them with `done`
+- closing the viewer only detaches it — agents live in tmux and keep working; kill them with `done`
+
+Stopping the backend belongs to whoever started the process, so the board offers no verb for it. Nothing is
+lost either way: the agents keep working when the backend goes away.
 
 ## Commands
 
@@ -75,18 +63,16 @@ in, and is always on screen.
 
 | command | what it does |
 |---------|--------------|
-| `status` | the task dashboard |
 | `stats` | what jagt's own model calls cost, per task, plus cycle time |
 | `activity` | what jagt did unattended |
 | `jobs` | every scheduled job, its cadence, last and next run |
 | `help` | command reference and recovery cheatsheet |
 | *anything else* | free text — see below |
 
-Plain text over HTTP any time:
+Every report is plain text over HTTP any time:
 
 ```sh
-curl -s localhost:8290/status
-curl -s localhost:8290/stats
+curl -s localhost:8290/api/commands/stats
 curl -s localhost:8290/api/commands/activity
 ```
 

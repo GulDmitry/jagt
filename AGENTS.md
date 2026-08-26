@@ -24,7 +24,7 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 | about to touch | read first |
 |----------------|------------|
 | `flow/`, a status, a capability, an outcome | [`docs/rules/flow.md`](docs/rules/flow.md) |
-| the board, the console, a card, a verb, a report | [`docs/rules/surfaces.md`](docs/rules/surfaces.md) |
+| the board, a card, a verb, a report | [`docs/rules/surfaces.md`](docs/rules/surfaces.md) |
 | whose move it is, a badge, an owner, a clock | [`docs/rules/attention.md`](docs/rules/attention.md) |
 | git, `ship`, `deploy`, `revert`, worktrees, multi-repo | [`docs/rules/git.md`](docs/rules/git.md) |
 | a review round, drafted replies, auto-review, jobs | [`docs/rules/review.md`](docs/rules/review.md) |
@@ -115,10 +115,9 @@ read at all, and design is what a human pays for in attention. Full rules and th
   asked for by name — each needs a machine a hermetic run must not depend on.
 - **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it.
-- Run `scripts/dashboard-layout-smoke.sh --orchestrator.ui=tui` after any change to `MasterShell` rendering,
-  and `./gradlew boardTest` after any change to `static/`.
-- Smoke tests must leave no trace: `--orchestrator.open-warp-window=false`, a throwaway tmux session, cleanup
-  afterwards.
+- Run `./gradlew boardTest` after any change to `static/`.
+- A suite that opens a window must leave no trace: `--orchestrator.open-terminal-window=false`, a throwaway
+  tmux session, cleanup afterwards.
 - **No absolute paths in defaults.** An external binary is configured by bare name and resolved by
   `adapter/Executables`.
 
@@ -156,17 +155,15 @@ read at all, and design is what a human pays for in attention. Full rules and th
 ```sh
 cd orchestrator-backend
 ./gradlew build stageJar
-java -jar build/libs/jagt-run.jar          # board on 8290; --orchestrator.ui=tui for the console
+java -jar build/libs/jagt-run.jar          # board on 8290
 curl -s localhost:8290/state               # verify
 ```
 
 > [!IMPORTANT]
 > **Run the staged jar.** `./gradlew build` rewrites `jagt.jar` **in place** (same inode), so a JVM running
 > from it corrupts its class loading: the first not-yet-loaded class dies with `NoClassDefFoundError` — which
-> then masks the real error — and a still-running instance answers 500 on `/status` and `/stats`.
+> then masks the real error — and a still-running instance answers 500 on the endpoints it had not served yet.
 > It is not a code bug. Do not "fix" it by preloading classes; restart from the freshly staged jar.
-
-`./gradlew bootRun` works, but Gradle captures stdout, so with no TTY the console degrades to a line REPL.
 
 ## Working on jagt with any agent CLI
 

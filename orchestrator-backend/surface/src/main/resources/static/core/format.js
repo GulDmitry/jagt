@@ -1,5 +1,5 @@
-// The two clocks the page prints, formatted exactly as `DurationFormat` prints them: with `orchestrator.ui=both`
-// the surfaces sit side by side, and 90 minutes reading "1h" here and "2h" there is the drift a shared
+// The two clocks the page prints, formatted exactly as `DurationFormat` prints them: a report and a card show
+// the same elapsed time, and 90 minutes reading "1h" in one and "2h" in the other is the drift a shared
 // projection cannot prevent — sharing the data is not enough if a derived number is formatted twice.
 
 // FLOOR, matching DurationFormat.compact.

@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.surface.ui.ConsoleLogging;
 import dev.jagt.orchestrator.surface.ui.SessionLog;
 import dev.jagt.orchestrator.surface.ui.StartupFailure;
 import org.springframework.boot.SpringApplication;
@@ -40,13 +39,13 @@ public class OrchestratorApplication {
     }
 
     /**
-     * Visible for a test, because the REGISTRATION is what breaks while {@link ConsoleLogging} itself works: a
-     * {@code main} simplified back to a bare {@code SpringApplication.run} would paint Spring's log lines over
-     * the TUI with the whole suite green.
+     * Visible for a test, because the REGISTRATION is what breaks while {@link SessionLog} itself works: a
+     * {@code main} simplified back to a bare {@code SpringApplication.run} would report yesterday's entries as
+     * this session's work with the whole suite green.
      */
     static SpringApplication application() {
         SpringApplication application = new SpringApplication(OrchestratorApplication.class);
-        application.addListeners(new ConsoleLogging(), new SessionLog());
+        application.addListeners(new SessionLog());
         return application;
     }
 }
