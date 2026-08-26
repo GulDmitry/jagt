@@ -14,7 +14,8 @@ node_modules/
 .settings/
 .factorypath
 config.json
-# Per-user Spring overrides (Spring Boot auto-loads ./config/ next to the run cwd)
+jagt.yml
+# Retired, and refused at startup: Spring auto-loads ./config/ at a precedence that outranks jagt.yml.
 orchestrator-backend/config/
 target/
 

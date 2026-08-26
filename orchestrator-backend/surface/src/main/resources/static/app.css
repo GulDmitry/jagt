@@ -104,16 +104,6 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 .legend-edge.agent { background: var(--agent); }
 .legend-edge.ci { background: var(--ci); }
 
-/* Nearly the whole viewport: an agent CLI redraws itself into whatever it is given, and a narrow frame turns
-   its output into soup. */
-#terminal {
-  border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text);
-  padding: 0; width: min(1280px, 94vw); height: 86vh; max-width: none; max-height: none; overflow: hidden;
-  box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
-}
-#terminal::backdrop { background: rgb(0 0 0 / 45%); }
-#terminal-frame { display: block; width: 100%; height: calc(86vh - 46px); border: 0; background: #000; }
-
 #phases {
   display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline;
   padding: 10px 16px 0; font-size: 12px; color: var(--muted);

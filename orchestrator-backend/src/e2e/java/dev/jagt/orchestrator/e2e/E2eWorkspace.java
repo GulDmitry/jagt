@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * The throwaway outside world an e2e run needs: a local origin + a clone to cut worktrees from, the
- * orchestrator root markers, a {@code config.json} written per matrix combination, and the tmux session the
+ * orchestrator root markers, a {@code jagt.yml} written per matrix combination, and the tmux session the
  * run is allowed to kill afterwards. Nothing here reaches beyond the given temp directory — no network, no
  * remote host, no file of the developer's.
  */
@@ -77,20 +77,15 @@ final class E2eWorkspace {
         Files.createDirectories(configFile.getParent());
         String configured = projects.entrySet().stream()
                 .map(project -> """
-                            "%s": {
-                              "path": "%s",
-                              "baseBranch": "origin/main",
-                              "deployBranch": "dev"
-                            }""".formatted(project.getKey(), project.getValue()))
-                .collect(Collectors.joining(",\n"));
+                        %s: { path: "%s", baseBranch: origin/main, deployBranch: dev }\
+                        """.formatted(project.getKey(), project.getValue()))
+                .collect(Collectors.joining("\n    "));
         Files.writeString(configFile, """
-                {
-                  "projects": {
-                %s
-                  },
-                  "viewer": { "tmuxSession": "%s", "viewMode": "%s" },
-                  "autoReview": { "enabled": %s }
-                }
+                orchestrator:
+                  projects:
+                    %s
+                  viewer: { tmuxSession: "%s", viewMode: "%s" }
+                  autoReview: { enabled: %s }
                 """.formatted(configured, TMUX_SESSION, viewMode, autoReview));
     }
 

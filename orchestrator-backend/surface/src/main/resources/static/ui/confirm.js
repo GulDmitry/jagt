@@ -7,13 +7,13 @@
 // clicked past, and a dialog nobody reads takes the rest of itself with it.
 const deployQuestion = (task) => {
   const lands = (task.repos || []).map((repo) =>
-    `${repo.project} → ${repo.deployBranch || 'no deployBranch in config.json'}`);
+    `${repo.project} → ${repo.deployBranch || 'no deployBranch in jagt.yml'}`);
   return `Deploy ${task.id}?\n\nThis merges and pushes:\n${lands.join('\n')}`;
 };
 
 const revertQuestion = (task) => {
   const branches = (task.repos || []).map((repo) =>
-    `${repo.project} → ${repo.deployBranch || 'no deployBranch in config.json'}`);
+    `${repo.project} → ${repo.deployBranch || 'no deployBranch in jagt.yml'}`);
   return `Revert ${task.id}?\n\nThis pushes a revert commit to:\n${branches.join('\n')}\n\n`
     + 'Only the LAST deploy of this task comes out — if it was deployed more than once, the earlier rounds stay'
     + ' live and have to be reverted by hand. The task branch keeps every commit.';

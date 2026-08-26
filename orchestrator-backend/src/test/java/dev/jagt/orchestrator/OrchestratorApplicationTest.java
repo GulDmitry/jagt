@@ -32,7 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * terminal and blocks, and {@link IdeRecentProjectsCleaner} runs on a 60s schedule that rewrites the real
  * IDE's recent-projects file. Everything they depend on is still wired and asserted here.
  */
-@SpringBootTest(properties = {"orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
+@SpringBootTest(properties = {"spring.config.import=",
+        "orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
 @ResourceLock("spring-logging")
 class OrchestratorApplicationTest {
 
@@ -53,7 +54,7 @@ class OrchestratorApplicationTest {
         // The root alone is not enough: both files are ALSO settable on their own (ORCHESTRATOR_CONFIG_FILE
         // / ORCHESTRATOR_STATE_FILE in application.yml), and they win over the root when a developer has
         // either exported — which would point this context straight at their live files.
-        registry.add("orchestrator.config-file", () -> root.resolve("config.json").toString());
+        registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
     }
 

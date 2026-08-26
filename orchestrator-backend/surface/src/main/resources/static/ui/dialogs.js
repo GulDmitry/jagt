@@ -1,8 +1,8 @@
-// Everything that opens OVER the board: a plain-text report, and the agent's own terminal. A native <dialog>
-// dims the board itself and cannot be lost behind the window you were already reading — and it closes three
-// ways, Escape, its button and the dimmed area, which is the click a human makes first.
+// What opens OVER the board: a plain-text report. A native <dialog> dims the board itself and cannot be lost
+// behind the window you were already reading — and it closes three ways, Escape, its button and the dimmed
+// area, which is the click a human makes first.
 
-import {api, refusal, text} from '../core/api.js';
+import {text} from '../core/api.js';
 import {toast} from './toast.js';
 
 const report = document.getElementById('report');
@@ -10,8 +10,6 @@ const reportTitle = document.getElementById('report-title');
 const reportBody = document.getElementById('report-body');
 const reportScroll = document.getElementById('report-scroll');
 const reportSection = document.getElementById('report-section');
-const terminalDialog = document.getElementById('terminal');
-const terminalFrame = document.getElementById('terminal-frame');
 
 // `extra` is a rendered section ABOVE the text: what a colour or a mark means cannot be said in a monospace
 // column, and what is already on screen is read before what can be typed. A second dialog for it would be a
@@ -42,31 +40,5 @@ function closeOnBackdrop(dialog) {
   });
 }
 
-// Focus, rendered rather than announced: the action selects the agent's tmux window whatever surface asked, and
-// when a web terminal serves that session the board shows it right here. With none configured there is nothing
-// to open and the sentence in the toast — which window the session is in — is the whole answer.
-export async function openTerminal(task) {
-  let port;
-  try {
-    ({port} = await api(`/api/tasks/terminal?task=${encodeURIComponent(task.id)}`, {method: 'POST'}));
-  } catch (e) {
-    toast(refusal(e), true);      // no port is silence; a refusal is not, or a gone task reads as "not set up"
-    return;
-  }
-  if (!port) return;
-  // The server answers with a port only: the host is whatever name this page reached jagt under, and the
-  // terminal runs on the same machine — an address chosen there would be jagt's own loopback, not ours.
-  const url = `http://${location.hostname}:${port}`;
-  document.getElementById('terminal-title').textContent = `${task.alias || task.id} · ${task.id}`;
-  // Re-pointing the frame at the same address attaches a second client for nothing.
-  if (terminalFrame.getAttribute('src') !== url) terminalFrame.src = url;
-  if (!terminalDialog.open) terminalDialog.showModal();
-}
-
 document.getElementById('close-report').onclick = () => report.close();
-document.getElementById('close-terminal').onclick = () => terminalDialog.close();
 closeOnBackdrop(report);
-closeOnBackdrop(terminalDialog);
-// A loaded frame stays attached, and tmux sizes every window to its smallest client — including one nobody
-// is looking at.
-terminalDialog.addEventListener('close', () => { terminalFrame.src = 'about:blank'; });

@@ -67,7 +67,8 @@ import static org.mockito.Mockito.when;
  */
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"orchestrator.agent=stub", "orchestrator.open-warp-window=false",
+        properties = {"spring.config.import=",
+                "orchestrator.agent.cli=stub", "orchestrator.open-warp-window=false",
                 "orchestrator.startup-checks=false"})
 class ReviewAndDeployFlowTest {
 
@@ -90,7 +91,7 @@ class ReviewAndDeployFlowTest {
     @DynamicPropertySource
     static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
         registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
-        registry.add("orchestrator.config-file", () -> workspace.resolve("root/config.json").toString());
+        registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 

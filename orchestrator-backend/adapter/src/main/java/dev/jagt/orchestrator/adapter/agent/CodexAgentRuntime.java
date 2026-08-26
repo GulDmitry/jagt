@@ -25,7 +25,7 @@ import java.util.List;
  * post review replies by itself.
  */
 @Component
-@ConditionalOnProperty(name = "orchestrator.agent", havingValue = "codex")
+@ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "codex")
 @RequiredArgsConstructor
 public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCheck {
 
@@ -40,11 +40,11 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
         List<String> problems = new ArrayList<>();
         Path bridge = paths.root().resolve("mcp_client.js");
         if (!Files.isRegularFile(bridge)) {
-            problems.add("orchestrator.agent=codex needs " + bridge + ", which is not there — the agent"
+            problems.add("orchestrator.agent.cli=codex needs " + bridge + ", which is not there — the agent"
                     + " reaches jagt through it.");
         }
         if (!Executables.onPath("node")) {
-            problems.add("orchestrator.agent=codex needs node on PATH — it spawns the bridge itself.");
+            problems.add("orchestrator.agent.cli=codex needs node on PATH — it spawns the bridge itself.");
         }
         return problems;
     }

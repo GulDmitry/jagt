@@ -2,43 +2,41 @@
 
 [← README](../README.md)
 
-`config.json` holds your projects and how you work; it is re-read on every access, so nothing restarts. It is
-gitignored — copy it from `config.json.dist` and never commit your own paths.
+Everything is in **one file**: `jagt.yml`, at the repository root.
 
-Everything else is a Spring setting, and those come from **three** places. Later wins, and only the middle one
-is yours to edit:
+```sh
+cp jagt.yml.dist jagt.yml
+```
 
-| | where | holds | committed |
-|---|-------|-------|-----------|
-| 1 | `orchestrator-backend/src/main/resources/application.yml` | the defaults, and the comment on every key | yes — it is built INTO the jar |
-| 2 | `orchestrator-backend/config/application.yml` | **your machine** | no, gitignored |
-| 3 | a flag or a variable on the command line | one run | no |
+`jagt.yml.dist` carries every key there is with what it means, so the copy is already the reference — delete
+what you do not need, comment freely, keep it as your own notes. It is gitignored.
 
-**A setting of yours goes in (2).** Spring Boot reads `./config/application.yml` from the directory it starts
-in, which is `orchestrator-backend` — and it overrides the packaged file key by key, so you write only what you
-change. It survives every `./gradlew build`, and it never lands in a commit.
+One root, `orchestrator:`, holds all of it. Two things read that file: jagt itself, which re-reads `projects`
+on **every access** so an edit needs no restart, and Spring, which binds the rest **once at startup**.
 
-(1) is the reference: every key jagt has, with why it is set that way. Editing it puts your machine into the
-repository and needs a rebuild to take effect. (3) is for one run — `--orchestrator.ui=tui`, `LOG_FILE=…` — and
-outranks both.
+Two other places can override it, and neither is one you edit:
 
-Applied on restart, all three: the jar reads them once at startup.
+- `orchestrator-backend/src/main/resources/application.yml` — the defaults, built into the jar and committed.
+  It is what a key falls back to when your file omits it.
+- a flag or an environment variable on the command line — `--orchestrator.ui=tui`, `LOG_FILE=…` — for one run,
+  outranking both files.
+
+> [!NOTE]
+> `config.json` is no longer read. If one is still lying around, jagt refuses to start and prints the `jagt.yml`
+> to write in its place.
 
 ## Projects
 
-The only section you must fill in.
+The only section with no default.
 
-```json
-{
-  "projects": {
-    "sng": {
-      "path": "/Users/you/work/widget-service",
-      "baseBranch": "origin/main",
-      "deployBranch": "dev",
-      "labels": ["widget", "backend"]
-    }
-  }
-}
+```yaml
+orchestrator:
+  projects:
+    widgets:
+      path: /Users/you/work/widget-service
+      baseBranch: origin/main
+      deployBranch: dev
+      labels: [widget, backend]
 ```
 
 | key | meaning |
@@ -48,9 +46,10 @@ The only section you must fill in.
 | `deployBranch` | target of `deploy`. Omit to disable deploy for this project |
 | `labels` | hints for mapping a ticket to this project |
 
-## config.json
+## Re-read while jagt runs
 
-Any section may be omitted — each key falls back to its default.
+These are read on every access, so an edit lands without a restart. Any of them may be omitted — each key
+falls back to its default.
 
 ### viewer
 
@@ -96,7 +95,7 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 | `agent.probeSeconds` | `600` | how often every running session is looked at; a session whose hooks report needs no wait |
 | `worktree.copyGlobs` | `["**/.env"]` | gitignored local files copied into each worktree |
 
-## application.yml
+## Read once, at startup
 
 ### Surfaces and platform
 
@@ -114,10 +113,10 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 | key | default | meaning |
 |-----|---------|---------|
 | `orchestrator.terminal` | `kitty` | `kitty` or `warp`; both run over tmux. `warp` is macOS-only — it is opened through a URI scheme |
-| `orchestrator.kitty-command` | `kitty` | the kitty binary |
+| `orchestrator.kittyCommand` | `kitty` | the kitty binary |
 | `orchestrator.kitty-font-size` | *(blank)* | blank keeps kitty.conf's own |
-| `orchestrator.tmux-command` | `tmux` | the tmux binary |
-| `orchestrator.editor-command` | `[idea]` | editor launcher, e.g. `[code]` |
+| `orchestrator.tmuxCommand` | `tmux` | the tmux binary |
+| `orchestrator.editorCommand` | `[idea]` | editor launcher, e.g. `[code]` |
 | `orchestrator.editor-diff-command` | `[idea, diff]` | difftool for `ide <ticket> diff`, e.g. `[difft]` |
 | `orchestrator.open-warp-window` | `true` | auto-open the agents terminal window |
 
@@ -136,15 +135,15 @@ Shows the agent's session inside the board when you press Focus. Needs ttyd inst
 
 | key | default | meaning |
 |-----|---------|---------|
-| `orchestrator.agent` | `claude` | `claude`, `codex` (or `stub` for the e2e matrix) |
+| `orchestrator.agent.cli` | `claude` | `claude`, `codex` (or `stub` for the e2e matrix) |
 | `orchestrator.claude.command` | `claude` | the Claude Code binary |
 | `orchestrator.codex.command` | `codex` | the Codex binary |
-| `orchestrator.agent-prompt` | *(built in)* | bootstrap prompt every sub-agent starts with |
-| `orchestrator.agent-disabled-plugins` | *(empty)* | plugins disabled per agent worktree |
-| `orchestrator.mcp-url` | `http://localhost:<port>/mcp` | where an agent reaches jagt |
-| `orchestrator.hook-url` | `http://127.0.0.1:<port>/api/agent/session` | where an agent CLI's hooks report a stopped session |
-| `orchestrator.gate-url` | `http://127.0.0.1:<port>/api/agent` | where a session asks before it pushes |
-| `orchestrator.stub.script` | — | only for `orchestrator.agent=stub` |
+| `orchestrator.agentPrompt` | *(built in)* | bootstrap prompt every sub-agent starts with |
+| `orchestrator.agentDisabledPlugins` | *(empty)* | plugins disabled per agent worktree |
+| `orchestrator.mcpUrl` | `http://localhost:<port>/mcp` | where an agent reaches jagt |
+| `orchestrator.hookUrl` | `http://127.0.0.1:<port>/api/agent/session` | where an agent CLI's hooks report a stopped session |
+| `orchestrator.gateUrl` | `http://127.0.0.1:<port>/api/agent` | where a session asks before it pushes |
+| `orchestrator.stub.script` | — | only for `orchestrator.agent.cli=stub` |
 
 ### Master assistant
 
@@ -171,10 +170,10 @@ those and nothing else. Details: [seams](rules/seams.md).
 
 | key | default | meaning |
 |-----|---------|---------|
-| `orchestrator.startup-checks` | `true` | refuse to start when the installation is incomplete |
+| `orchestrator.startupChecks` | `true` | refuse to start when the installation is incomplete |
 | `orchestrator.watchdog.stale-after` | `5m` | silence before an "agent stopped" alert; a hook report needs no wait |
-| `orchestrator.config-file` | *(root)* | where `config.json` lives |
-| `orchestrator.state-file` | *(root)* | where `state.json` lives |
+| `orchestrator.configFile` | *(root)* | where `jagt.yml` lives |
+| `orchestrator.stateFile` | *(root)* | where `state.json` lives |
 | `orchestrator.root` / `ORCHESTRATOR_ROOT` | *(auto)* | override the detected orchestrator root |
 
 ## Notes

@@ -39,7 +39,7 @@ cleanup() { tmux kill-session -t "$SESSION" 2>/dev/null; rm -rf "$ROOT"; }
 trap cleanup EXIT
 
 # refreshSeconds 60: far longer than this test runs, so the timer cannot be what repaints the screen.
-echo "{\"dashboard\":{\"refreshSeconds\":60,\"reservedRows\":8},\"viewer\":{\"tmuxSession\":\"$SESSION\"},\"projects\":{}}" > "$ROOT/config.json"
+printf 'orchestrator:\n  dashboard: {refreshSeconds: 60, reservedRows: 8}\n  viewer: {tmuxSession: "%s"}\n  projects: {}\n' "$SESSION" > "$ROOT/jagt.yml"
 : > "$ROOT/mcp_client.js"
 # printf, not a JSON library: the only tools this harness may assume are the ones jagt itself needs.
 printf '{

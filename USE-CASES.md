@@ -29,8 +29,9 @@ re-deciding it next session. The rules live in [`AGENTS.md`](AGENTS.md), the map
 What a start deliberately does not check: anything on a remote (a branch would cost a fetch per project on
 every start) and anything over the network.
 
-| "Where does a setting of mine go?" | — | `config.json` for projects and how you work; `orchestrator-backend/config/application.yml` for anything Spring. Never the packaged `src/main/resources/application.yml` — that one is the defaults, it is committed, and it is rebuilt into the jar |
-| A key you set had no effect | — | You edited the packaged file and did not rebuild, or something later outranks it: a command-line flag beats both files |
+| "Where does a setting of mine go?" | — | `jagt.yml` at the repository root — all of it, one `orchestrator` root, comments allowed. Copy `jagt.yml.dist`, which carries every key with what it means |
+| A key you set had no effect | — | A command-line flag outranks the file. `projects` is re-read live; everything else needs a restart |
+| jagt refuses to start over `config.json` | — | It is no longer read. The refusal prints the `jagt.yml` to write instead |
 
 ## Starting work
 

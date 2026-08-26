@@ -27,7 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Being able to run this from macOS is the point of the seam: which driver Spring picks is a config
  * decision, not an OS one. It says nothing about the drivers' behaviour on a real desktop.
  */
-@SpringBootTest(properties = {"orchestrator.open-warp-window=false", "orchestrator.startup-checks=false",
+@SpringBootTest(properties = {"spring.config.import=",
+        "orchestrator.open-warp-window=false", "orchestrator.startup-checks=false",
         "orchestrator.platform=linux"})
 @ResourceLock("spring-logging")
 class LinuxProfileContextTest {
@@ -48,7 +49,7 @@ class LinuxProfileContextTest {
     @DynamicPropertySource
     static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
         registry.add("orchestrator.root", () -> root.toString());
-        registry.add("orchestrator.config-file", () -> root.resolve("config.json").toString());
+        registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
     }
 

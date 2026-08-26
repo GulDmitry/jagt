@@ -23,17 +23,18 @@ class StartupRefusalTest {
     void anIncompleteInstallationStopsTheStartInsteadOfServingABoardThatCannotWork(@TempDir Path root)
             throws Exception {
         Files.writeString(root.resolve("mcp_client.js"), "// bridge");
-        Files.writeString(root.resolve("config.json"), "{ \"projects\": {} }");
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
 
         assertThatThrownBy(() -> new SpringApplicationBuilder(OrchestratorApplication.class)
                 .run("--server.port=0",
                         "--orchestrator.ui=web",
                         "--orchestrator.open-warp-window=false",
                         "--orchestrator.root=" + root,
-                        "--orchestrator.config-file=" + root.resolve("config.json"),
+                        "--spring.config.import=",
+                        "--orchestrator.config-file=" + root.resolve("jagt.yml"),
                         "--orchestrator.state-file=" + root.resolve("state.json"),
                         "--logging.file.name=" + root.resolve("jagt.log")))
                 .isInstanceOf(Misconfigured.class)
-                .hasMessageContaining("config.json defines no projects");
+                .hasMessageContaining("defines no projects");
     }
 }

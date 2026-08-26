@@ -21,30 +21,30 @@ class ConfigCheckTest {
     @Test
     void acceptsAProjectThatPointsAtARealRepository(@TempDir Path root) throws Exception {
         Files.createDirectories(root.resolve("repo").resolve(".git"));
-        Files.writeString(root.resolve("config.json"), """
-                {
-                  "viewer": { "tmuxSession": "jagt", "viewMode": "tab-per-task" },
-                  "projects": {
-                    "demo": { "path": "%s", "baseBranch": "origin/main", "deployBranch": "dev" }
-                  }
-                }
+        Files.writeString(root.resolve("jagt.yml"), """
+                orchestrator:
+                  viewer: { tmuxSession: jagt, viewMode: tab-per-task }
+                  projects:
+                    demo: { path: "%s", baseBranch: origin/main, deployBranch: dev }
                 """.formatted(root.resolve("repo")));
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
-                .withConfigFile(root.resolve("config.json").toString())
+                .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString());
 
-        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties))).problems()).isEmpty();
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties)),
+                new OrchestratorPaths(properties)).problems()).isEmpty();
     }
 
     @Test
     void saysWhereTheConfigFileShouldBeWhenThereIsNone(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
-                .withConfigFile(root.resolve("config.json").toString())
+                .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString());
 
-        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties))).problems())
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties)),
+                new OrchestratorPaths(properties)).problems())
                 .singleElement(STRING)
-                .contains("config.json.dist");
+                .contains("jagt.yml.dist");
     }
 
     @ParameterizedTest
@@ -53,12 +53,13 @@ class ConfigCheckTest {
             throws Exception {
         Files.createDirectories(root.resolve("repo").resolve(".git"));
         Files.createDirectories(root.resolve("plain-dir"));
-        Files.writeString(root.resolve("config.json"), config.replace("$ROOT", root.toString()));
+        Files.writeString(root.resolve("jagt.yml"), config.replace("$ROOT", root.toString()));
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
-                .withConfigFile(root.resolve("config.json").toString())
+                .withConfigFile(root.resolve("jagt.yml").toString())
                 .withStateFile(root.resolve("state.json").toString());
 
-        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties))).problems())
+        assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties)),
+                new OrchestratorPaths(properties)).problems())
                 .singleElement(STRING)
                 .contains(expected);
     }
@@ -66,31 +67,39 @@ class ConfigCheckTest {
     static Stream<Arguments> namesWhatAConfiguredProjectWouldFailOn() {
         return Stream.of(
                 Arguments.of("""
-                        { "projects": {} }
+                        orchestrator:
+                          projects: {}
                         """, "defines no projects"),
                 Arguments.of("""
-                        { "projects": { "demo": { "path": "", "baseBranch": "origin/main" } } }
+                        orchestrator:
+                          projects: { demo: { path: "", baseBranch: origin/main } }
                         """, "projects.demo.path is empty"),
                 Arguments.of("""
-                        { "projects": { "demo": { "path": "$ROOT/gone", "baseBranch": "origin/main" } } }
+                        orchestrator:
+                          projects: { demo: { path: $ROOT/gone, baseBranch: origin/main } }
                         """, "is not a directory"),
                 Arguments.of("""
-                        { "projects": { "demo": { "path": "$ROOT/plain-dir", "baseBranch": "origin/main" } } }
+                        orchestrator:
+                          projects: { demo: { path: $ROOT/plain-dir, baseBranch: origin/main } }
                         """, "is not a git repository"),
                 Arguments.of("""
-                        { "projects": { "demo": { "path": "$ROOT/repo" } } }
+                        orchestrator:
+                          projects: { demo: { path: $ROOT/repo } }
                         """, "projects.demo.baseBranch is empty"),
                 Arguments.of("""
-                        { "projects": { "demo": { "path": "$ROOT/repo", "baseBranch": "origin/main",
-                          "deployBranch": "main" } } }
+                        orchestrator:
+                          projects:
+                            demo: { path: $ROOT/repo, baseBranch: origin/main, deployBranch: main }
                         """, "equals the base branch 'main'"),
                 Arguments.of("""
-                        { "viewer": { "tmuxSession": "jagt:agents" },
-                          "projects": { "demo": { "path": "$ROOT/repo", "baseBranch": "origin/main" } } }
+                        orchestrator:
+                          viewer: { tmuxSession: "jagt:agents" }
+                          projects: { demo: { path: $ROOT/repo, baseBranch: origin/main } }
                         """, "tmux reserves ':' and '.'"),
                 Arguments.of("""
-                        { "viewer": { "viewMode": "one-per-task" },
-                          "projects": { "demo": { "path": "$ROOT/repo", "baseBranch": "origin/main" } } }
+                        orchestrator:
+                          viewer: { viewMode: one-per-task }
+                          projects: { demo: { path: $ROOT/repo, baseBranch: origin/main } }
                         """, "viewer.viewMode 'one-per-task'"));
     }
 }

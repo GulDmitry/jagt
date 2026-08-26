@@ -30,7 +30,7 @@ public class TaskLifecycleTools implements McpTools {
                   "type": "object",
                   "properties": {
                     "taskId": {"type": "string", "description": "Task id, e.g. ABC-123 — any name git accepts as a branch. It BECOMES the branch name."},
-                    "projectKey": {"type": "string", "description": "Project key from config.json — where the agent's session runs."},
+                    "projectKey": {"type": "string", "description": "Project key from jagt.yml — where the agent's session runs."},
                     "alsoProjects": {"type": "array", "items": {"type": "string"}, "description": "Further project keys the SAME session works in: one worktree each, one branch name, one review round per repository. For a change that spans repositories (a service and its client); omit for ordinary work."},
                     "instructions": {"type": "string", "description": "Optional initial instructions, written to task_context.md in the new worktree."},
                     "title": {"type": "string", "description": "The ticket title (shown in the dashboard while the task is in development). Fetch it when delegating."},

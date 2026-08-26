@@ -5,7 +5,6 @@
 import {api, refusal} from '../core/api.js';
 import * as store from '../core/store.js';
 import {confirmation} from './confirm.js';
-import {openTerminal} from './dialogs.js';
 import {blocked, hold, release, waitingFor} from './inflight.js';
 import {refresh} from './refresh.js';
 import {render} from './render.js';
@@ -37,7 +36,6 @@ export async function run(taskId, actionId) {
   try {
     const result = await api(`/api/tasks/actions/${action.id}?task=${encodeURIComponent(task.id)}`, {method: 'POST'});
     toast(result.message);
-    if (action.id === 'focus') await openTerminal(task);
   } catch (e) {
     toast(refusal(e), true);
   } finally {

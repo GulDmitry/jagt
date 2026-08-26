@@ -14,7 +14,6 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.adapter.TtydWebTerminal;
 import dev.jagt.orchestrator.service.AutoReviewScheduler;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
@@ -38,7 +37,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +63,8 @@ import static org.mockito.Mockito.when;
  * human a desktop alert.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
+        properties = {"spring.config.import=",
+                "orchestrator.open-warp-window=false", "orchestrator.startup-checks=false"})
 class BoardPageTest {
 
     @TempDir
@@ -88,8 +87,6 @@ class BoardPageTest {
     private NaturalLanguageDispatch naturalLanguage;
     @MockitoBean
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
-    @MockitoBean
-    private TtydWebTerminal webTerminal;
     /** Polling is ON in the config so the page can show what it looks like; the poller itself would read a
      *  review request for real and, with no code host, pay a model to do it. */
     @MockitoBean
@@ -100,21 +97,19 @@ class BoardPageTest {
     @DynamicPropertySource
     static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
         registry.add("orchestrator.root", () -> root.toString());
-        registry.add("orchestrator.config-file", () -> root.resolve("config.json").toString());
+        registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
         registry.add("logging.file.name", () -> root.resolve("jagt.log").toString());
     }
 
     @BeforeAll
     static void startTheBrowserAndNameTheProjectsTheBoardOffers() throws IOException {
-        Files.writeString(root.resolve("config.json"), """
-                {
-                  "projects": {
-                    "alpha": {"path": "%s", "baseBranch": "origin/main", "deployBranch": "dev"},
-                    "beta": {"path": "%s", "baseBranch": "origin/main", "deployBranch": "dev"}
-                  },
-                  "autoReview": {"enabled": true}
-                }
+        Files.writeString(root.resolve("jagt.yml"), """
+                orchestrator:
+                  projects:
+                    alpha: {path: "%s", baseBranch: origin/main, deployBranch: dev}
+                    beta: {path: "%s", baseBranch: origin/main, deployBranch: dev}
+                  autoReview: {enabled: true}
                 """.formatted(root.resolve("alpha"), root.resolve("beta")));
         playwright = Playwright.create();
         browser = playwright.chromium().launch();
@@ -644,51 +639,6 @@ class BoardPageTest {
     }
 
     @Test
-    void focusShowsTheAgentsSessionOverTheBoardWhenATerminalServesIt() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
-        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
-        when(webTerminal.serve("jagt")).thenReturn(OptionalInt.of(8291));
-
-        Page page = open();
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
-
-        assertThat(page.locator("#terminal")).isVisible();
-        assertThat(page.locator("#terminal-frame")).hasAttribute("src", "http://localhost:8291");
-        assertThat(page.locator("#terminal-title")).containsText("a1");
-    }
-
-    @Test
-    void focusOpensNoPanelWhenNoTerminalIsConfigured() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
-        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
-
-        Page page = open();
-        page.waitForResponse(response -> response.url().endsWith("/api/tasks"), () ->
-                page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true))
-                        .click());
-
-        verify(webTerminal).serve("jagt");
-        assertThat(page.locator("#terminal")).isHidden();
-    }
-
-    @Test
-    void closingTheTerminalPanelDetachesItFromTheSession() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
-        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
-        when(webTerminal.serve("jagt")).thenReturn(OptionalInt.of(8291));
-
-        Page page = open();
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
-        page.locator("#close-terminal").click();
-
-        assertThat(page.locator("#terminal")).isHidden();
-        assertThat(page.locator("#terminal-frame")).hasAttribute("src", "about:blank");
-    }
-
-    @Test
     void closingATaskAsksBeforeAnythingRuns() throws Exception {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
@@ -1197,22 +1147,6 @@ class BoardPageTest {
         page.mouse().up();
 
         assertThat(page.locator("#report")).isVisible();
-    }
-
-    @Test
-    void theTerminalPanelClosesOnTheDimmedAreaToo() {
-        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
-                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
-        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
-        when(webTerminal.serve("jagt")).thenReturn(OptionalInt.of(8291));
-
-        Page page = open();
-        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
-        assertThat(page.locator("#terminal")).isVisible();
-
-        page.mouse().click(4, 4);
-
-        assertThat(page.locator("#terminal")).isHidden();
     }
 
     /**

@@ -105,6 +105,9 @@ read at all, and design is what a human pays for in attention. Full rules and th
 - **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
 - Every mark has one row in the legend, and the legend renders the page's **own** element rather than naming a
   colour in words.
+- **Getting started must stay one copied file and one command.** Configuration lives in `jagt.yml` and nowhere
+  else — never a second file, a hidden override or an undocumented default. Every option an engineer can set
+  is in `jagt.yml.dist` with what it means; anything not worth explaining there is not worth having.
 
 ## Tests
 

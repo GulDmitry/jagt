@@ -22,7 +22,7 @@ public class DeployTools implements McpTools {
     public void declare(McpToolRegistry tools) {
         tools.tool("deploy_task", """
                 {
-                  "description": "Merge the task's branch into the project's deployBranch (config.json) and push it. On merge conflict nothing is pushed and the human resolves manually. Master-only.",
+                  "description": "Merge the task's branch into the project's deployBranch (jagt.yml) and push it. On merge conflict nothing is pushed and the human resolves manually. Master-only.",
                   "type": "object",
                   "properties": {
                     "taskId": {"type": "string", "description": "Task id or its short alias."}

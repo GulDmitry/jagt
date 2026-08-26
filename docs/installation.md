@@ -22,10 +22,10 @@ cd "$TMPDIR" && claude "Name your MCP tools for <your tracker> and <your code ho
 and its `${VAR}` placeholders resolve from the environment the backend was started in:
 
 ```yaml
-# orchestrator-backend/config/application.yml
+# jagt.yml
 orchestrator:
   assistant:
-    mcp-config: /path/to/mcp-servers.json
+    mcpConfig: /path/to/mcp-servers.json
 ```
 
 That also cuts what each read loads to the servers it needs, which is most of what one costs.
@@ -41,7 +41,7 @@ That also cuts what each read loads to the servers it needs, which is most of wh
 | kitty | `brew install kitty` | the agents terminal |
 | IntelliJ IDEA | JetBrains Toolbox | the `ide` checkpoint |
 | terminal-notifier | `brew install terminal-notifier` | clickable desktop notifications |
-| Node 18+ | `brew install node` | only for `orchestrator.agent=codex` |
+| Node 18+ | `brew install node` | only for `orchestrator.agent.cli=codex` |
 | ttyd | `brew install ttyd` | only for `orchestrator.web-terminal.enabled=true` |
 
 ## Linux
@@ -57,16 +57,15 @@ That also cuts what each read loads to the servers it needs, which is most of wh
 | a notification daemon | your desktop's own, or `apt install dunst` | showing them — GNOME and KDE bring one, a bare window manager does not |
 | an editor CLI | `idea` or `code` on PATH | the `ide` checkpoint |
 | lsof | `apt install lsof` | reaping a worktree's leftover processes on `done`; skipped when absent |
-| Node 18+ | `apt install nodejs` | only for `orchestrator.agent=codex` |
+| Node 18+ | `apt install nodejs` | only for `orchestrator.agent.cli=codex` |
 | ttyd | `apt install ttyd` | only for `orchestrator.web-terminal.enabled=true` |
 
-Then in `orchestrator-backend/config/application.yml` — the file that is yours, see
-[Configuration](configuration.md):
+Then in `jagt.yml`:
 
 ```yaml
 orchestrator:
-  platform: linux        # selects the notifier and the kitty driver
-  editor-command: [idea] # or [code]
+  platform: linux         # selects the notifier and the kitty driver
+  editorCommand: [idea]   # or [code]
 ```
 
 `platform` is not optional and not detected: it defaults to `macos`, and jagt refuses to start when it is not
@@ -81,13 +80,13 @@ named in the title instead.
 ## Run it
 
 ```bash
-cp config.json.dist config.json
+cp jagt.yml.dist jagt.yml
 cd orchestrator-backend
 ./gradlew build stageJar
 java -jar build/libs/jagt-run.jar
 ```
 
-Add at least one project to `config.json` — see [Configuration](configuration.md).
+Add at least one project to `jagt.yml` — see [Configuration](configuration.md).
 
 If something is missing or half-configured, jagt refuses to start and prints the **whole** list of problems,
 each line naming the key that fixes it. Fix them all, start again.

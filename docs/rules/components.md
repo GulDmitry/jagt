@@ -60,9 +60,11 @@ here pre-approves it the way `.claude/settings.json` pre-approves jagt's own too
 
 **A rule that belongs to this repository goes in `AGENTS.md`, never in a vendor-named local file.**
 
-### `config.json`
+### `jagt.yml`
 
-User config, gitignored, created by copying the committed `config.json.dist`. Grouped into sections:
+User config, gitignored, created by copying the committed `jagt.yml.dist`. ONE file and one
+`orchestrator` root: jagt parses it itself for the sections below — re-read on every access — while Spring
+binds the same file once for `orchestrator.*`. Grouped into sections:
 `projects`, `viewer`, `dashboard`, `codeReview`, `agent`, `worktree`.
 
 Each section is a small value record (`ConfigService.ConfigFile.*Config`) with `defaults()` + `withX` withers
@@ -74,7 +76,7 @@ sync.**
 
 ### Orchestrator root
 
-Auto-detected at startup: nearest parent directory containing `config.json.dist` **or** `mcp_client.js`
+Auto-detected at startup: nearest parent directory containing `jagt.yml.dist` **or** `mcp_client.js`
 (`OrchestratorPaths`); overridable via `ORCHESTRATOR_ROOT`.
 
 Two markers on purpose — the bridge is only still here for stdio-only agents, so root detection must not
@@ -221,7 +223,7 @@ one item per restart, and each line names the key that fixes it.
 A check lives **next to** the part it answers for, so it exists only when that part was selected and nothing
 branches on which terminal, agent or host is configured (`CliEditorDriver`, the kitty driver,
 `TtydWebTerminal`, `LibNotifyNotifier`, `CodexAgentRuntime`). What no implementation can answer for — a `type`
-that selects nothing, the human's `config.json`, jagt's own paths, git and tmux — is a check in `startup`.
+that selects nothing, the human's `jagt.yml`, jagt's own paths, git and tmux — is a check in `startup`.
 
 Two limits are decisions, not gaps: **nothing reaches the network** (presence, never validity — a wrong token
 is the first read's answer, and a laptop offline must still start), and nothing asks a remote about a branch

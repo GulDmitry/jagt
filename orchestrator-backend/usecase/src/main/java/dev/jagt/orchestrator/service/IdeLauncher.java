@@ -34,7 +34,7 @@ public class IdeLauncher {
         if (task.status() == TaskStatus.DEPLOY_CONFLICT) {
             // A task spanning repositories conflicts in exactly one of them, and it is not necessarily the one
             // the session runs in — nor the first whose derived path exists, since siblings share it. A project
-            // that has since left config.json is skipped rather than thrown at the human: the worktree below can
+            // that has since left jagt.yml is skipped rather than thrown at the human: the worktree below can
             // still be opened.
             var projects = configService.load().projects();
             for (var repo : task.repos()) {

@@ -50,13 +50,13 @@ class ConfigServiceTest {
 
     @Test
     void loadsAConfigFileThatContainsComments(@TempDir Path root) throws Exception {
-        Path configFile = root.resolve("config.json");
+        Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, """
-                {
-                  // secrets
-                  "worktree": { "copyGlobs": ["**/.env"] },
-                  "projects": {} // none yet
-                }
+                orchestrator:
+                  # secrets
+                  worktree:
+                    copyGlobs: ["**/.env"]
+                  projects: {}   # none yet
                 """);
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());

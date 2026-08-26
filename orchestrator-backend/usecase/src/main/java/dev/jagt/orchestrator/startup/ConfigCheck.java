@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.startup;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -28,9 +29,18 @@ public class ConfigCheck implements StartupCheck {
     private static final String RESERVED_IN_SESSION_NAME = ":.";
 
     private final ConfigService configService;
+    private final OrchestratorPaths paths;
 
     @Override
     public List<String> problems() {
+        List<String> retired = retiredConfig();
+        if (!retired.isEmpty()) {
+            return retired;
+        }
+        List<String> shadowed = shadowingConfigDir();
+        if (!shadowed.isEmpty()) {
+            return shadowed;
+        }
         ConfigService.ConfigFile config;
         try {
             config = configService.load();
@@ -40,12 +50,45 @@ public class ConfigCheck implements StartupCheck {
         List<String> problems = new ArrayList<>(viewerProblems(config));
         Map<String, ProjectConfig> projects = config.projects();
         if (projects.isEmpty()) {
-            problems.add("config.json defines no projects — jagt has nothing to cut a worktree from."
-                    + " Add one under `projects` (see config.json.dist).");
+            problems.add(paths.configFile() + " defines no projects — jagt has nothing to cut a worktree"
+                    + " from. Add one under `orchestrator.projects` (see jagt.yml.dist).");
             return problems;
         }
         projects.forEach((key, project) -> problems.addAll(projectProblems(key, project)));
         return problems;
+    }
+
+    /**
+     * A settings file that is no longer read is worse than a missing one: everything it says is still true, and
+     * none of it applies. So it is named, and the shape that replaces it is printed rather than described.
+     */
+    private List<String> retiredConfig() {
+        Path retired = paths.root().resolve("config.json");
+        if (!Files.exists(retired) || Files.exists(paths.configFile())) {
+            return List.of();
+        }
+        return List.of(retired + " is no longer read — everything lives in " + paths.configFile()
+                + " now, under one `orchestrator` root, and it takes comments. Copy jagt.yml.dist next to it"
+                + " and move your projects across:\n"
+                + "    orchestrator:\n"
+                + "      projects:\n"
+                + "        my-project:\n"
+                + "          path: /absolute/path/to/base/repository\n"
+                + "          baseBranch: origin/main\n"
+                + "          deployBranch: dev");
+    }
+
+    /**
+     * Spring reads {@code ./config/application.yml} at a HIGHER precedence than anything a launch hands it, so
+     * one left behind quietly wins over jagt.yml for every key it names — and nothing on screen would say so.
+     */
+    private static List<String> shadowingConfigDir() {
+        Path shadowing = Path.of(System.getProperty("user.dir")).resolve("config").resolve("application.yml");
+        if (!Files.exists(shadowing)) {
+            return List.of();
+        }
+        return List.of(shadowing + " outranks jagt.yml for every key it names, and nothing would tell you."
+                + " Move what it holds into jagt.yml and delete it.");
     }
 
     private static List<String> viewerProblems(ConfigService.ConfigFile config) {

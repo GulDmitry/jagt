@@ -16,7 +16,7 @@ import java.nio.file.Path;
  * assertion — a Claude-shaped file in a stub worktree means something outside the runtime put it there.
  */
 @Component
-@ConditionalOnProperty(name = "orchestrator.agent", havingValue = "stub")
+@ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "stub")
 @RequiredArgsConstructor
 public class StubAgentRuntime extends AbstractAgentRuntime {
 

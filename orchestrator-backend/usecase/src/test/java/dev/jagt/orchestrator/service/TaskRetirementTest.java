@@ -65,7 +65,7 @@ class TaskRetirementTest {
 
         String result = retirement(state).retire("a1");
 
-        assertThat(result).contains("worktree left on disk: project missing from config.json");
+        assertThat(result).contains("worktree left on disk: project missing from jagt.yml");
         verify(git, never()).removeWorktree(any(), any(), any());
         assertThat(state.task("ABC-1")).isEmpty();
     }

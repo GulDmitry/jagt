@@ -21,7 +21,7 @@ single agent's assumptions.
 | `UserNotifier` | `orchestrator.platform` | macos (default), linux |
 | `TerminalDriver` | `orchestrator.terminal` | kitty (default), warp |
 | `EditorDriver` | `orchestrator.editor-command` | any CLI launcher |
-| `AgentRuntime` | `orchestrator.agent` | claude (default), codex |
+| `AgentRuntime` | `orchestrator.agent.cli` | claude (default), codex |
 
 Ports live in `…port`, implementations in `…adapter`.
 

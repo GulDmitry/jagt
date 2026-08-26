@@ -16,7 +16,7 @@ import java.nio.file.Path;
 public class OrchestratorPaths {
 
     private static final java.util.List<String> ROOT_MARKERS =
-            java.util.List.of("config.json.dist", "mcp_client.js");
+            java.util.List.of("jagt.yml.dist", "mcp_client.js");
 
     private final Path root;
     private final Path configFile;
@@ -26,7 +26,7 @@ public class OrchestratorPaths {
         this.root = properties.root() != null && !properties.root().isBlank()
                 ? Path.of(properties.root()).toAbsolutePath().normalize()
                 : findRoot();
-        this.configFile = resolve(properties.configFile(), "config.json");
+        this.configFile = resolve(properties.configFile(), "jagt.yml");
         this.stateFile = resolve(properties.stateFile(), "state.json");
     }
 
@@ -46,6 +46,34 @@ public class OrchestratorPaths {
         return override != null && !override.isBlank()
                 ? Path.of(override).toAbsolutePath().normalize()
                 : root.resolve(defaultName);
+    }
+
+    /**
+     * Where the human's own file is, answered WITHOUT a Spring context — a launch has to hand Spring that file
+     * before there is one, and two answers to "which jagt.yml" is the split this whole file exists to end.
+     */
+    public static Path configFileOutside(String[] args) {
+        String named = named(args, "--orchestrator.config-file=");
+        String env = System.getenv("ORCHESTRATOR_CONFIG_FILE");
+        String override = named != null ? named : env;
+        if (override != null && !override.isBlank()) {
+            return Path.of(override).toAbsolutePath().normalize();
+        }
+        String rootOverride = named(args, "--orchestrator.root=");
+        String rootEnv = System.getenv("ORCHESTRATOR_ROOT");
+        String root = rootOverride != null ? rootOverride : rootEnv;
+        return (root != null && !root.isBlank()
+                ? Path.of(root).toAbsolutePath().normalize()
+                : findRoot()).resolve("jagt.yml");
+    }
+
+    private static String named(String[] args, String flag) {
+        for (String arg : args) {
+            if (arg.startsWith(flag)) {
+                return arg.substring(flag.length());
+            }
+        }
+        return null;
     }
 
     private static Path findRoot() {

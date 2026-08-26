@@ -42,7 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * replaced by a double.
  */
 @Tag("e2e")
-@SpringBootTest(properties = {"orchestrator.agent=stub", "orchestrator.open-warp-window=false",
+@SpringBootTest(properties = {"spring.config.import=",
+        "orchestrator.agent.cli=stub", "orchestrator.open-warp-window=false",
         "orchestrator.startup-checks=false"})
 class TaskFlowMatrixTest {
 
@@ -52,7 +53,7 @@ class TaskFlowMatrixTest {
     @DynamicPropertySource
     static void orchestratorLivesInTheTempWorkspace(DynamicPropertyRegistry registry) {
         registry.add("orchestrator.root", () -> workspace.resolve("root").toString());
-        registry.add("orchestrator.config-file", () -> workspace.resolve("root/config.json").toString());
+        registry.add("orchestrator.config-file", () -> workspace.resolve("root/jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 

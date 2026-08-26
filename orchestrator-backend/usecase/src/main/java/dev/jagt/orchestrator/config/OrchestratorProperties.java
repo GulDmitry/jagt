@@ -24,12 +24,11 @@ public record OrchestratorProperties(
         String configFile,
         String stateFile,
         String platform,
-        String terminal,
         List<String> editorCommand,
         List<String> editorDiffCommand,
         String agentPrompt,
         String tmuxCommand,
-        boolean openWarpWindow,
+        boolean openTerminalWindow,
         Watchdog watchdog
 ) {
 
@@ -38,17 +37,17 @@ public record OrchestratorProperties(
 
     /**
      * Everything unset, except the two things a caller cannot sensibly be missing: the watchdog threshold, which
-     * is dereferenced on every scan, and {@code openWarpWindow=false}, since opening a terminal window is a
+     * is dereferenced on every scan, and {@code openTerminalWindow=false}, since opening a terminal window is a
      * visible side effect nobody should get by accident.
      */
     public static OrchestratorProperties defaults() {
-        return new OrchestratorProperties(null, null, null, null, null, null, null, null, null,
+        return new OrchestratorProperties(null, null, null, null, null, null, null, null,
                 false, new Watchdog(Duration.ofMinutes(5)));
     }
 
     public OrchestratorProperties withStaleAfter(Duration value) {
-        return new OrchestratorProperties(root, configFile, stateFile, platform, terminal, editorCommand,
-                editorDiffCommand, agentPrompt, tmuxCommand, openWarpWindow,
+        return new OrchestratorProperties(root, configFile, stateFile, platform, editorCommand,
+                editorDiffCommand, agentPrompt, tmuxCommand, openTerminalWindow,
                 new Watchdog(value));
     }
 }

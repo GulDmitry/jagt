@@ -34,7 +34,7 @@ code host must be reachable through **token-based** MCP servers. `claude mcp lis
 not settle it — [how to check, and what to do if not](docs/installation.md#mcp-access-comes-first).
 
 ```bash
-cp config.json.dist config.json     # fill in ONE project: path, baseBranch, deployBranch
+cp jagt.yml.dist jagt.yml           # fill in ONE project: path, baseBranch, deployBranch
 cd orchestrator-backend
 ./gradlew build stageJar
 java -jar build/libs/jagt-run.jar   # --orchestrator.ui=tui for the console instead

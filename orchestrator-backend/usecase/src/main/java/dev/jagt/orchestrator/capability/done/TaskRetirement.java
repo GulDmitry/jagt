@@ -38,7 +38,7 @@ public class TaskRetirement {
         boolean anyProjectMissing = false;
         var projects = configService.load().projects();
         for (TaskRepo repo : task.repos()) {
-            // Needs no project config, and a project deleted from config.json is exactly when a stale editor
+            // Needs no project config, and a project deleted from jagt.yml is exactly when a stale editor
             // registration would otherwise be left behind.
             editorDriver.forgetProject(Path.of(repo.worktreePath()));
             ProjectConfig project = projects.get(repo.project());
@@ -47,7 +47,7 @@ public class TaskRetirement {
                 log.atWarn().setMessage("worktree removal skipped")
                         .addKeyValue("task", taskId)
                         .addKeyValue("project", repo.project())
-                        .addKeyValue("cause", "not in config.json")
+                        .addKeyValue("cause", "not in jagt.yml")
                         .log();
                 continue;
             }
@@ -61,7 +61,7 @@ public class TaskRetirement {
         boolean closedViewer = sessions.closeViewerIfNoTasksLeft();
         return "Task " + taskId + " removed: worktree deleted, state entry dropped. Branch '" + taskId
                 + "' was kept"
-                + (anyProjectMissing ? " (worktree left on disk: project missing from config.json)" : "")
+                + (anyProjectMissing ? " (worktree left on disk: project missing from jagt.yml)" : "")
                 + (closedViewer ? ". Last task gone — the agents window was closed." : "");
     }
 }

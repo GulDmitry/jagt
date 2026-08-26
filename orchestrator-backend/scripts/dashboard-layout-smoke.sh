@@ -90,7 +90,7 @@ assert_layout() { # $1 = scenario label
   echo "ok   [$label]: dashboard@$drow input@$irow (bottom, paneh=$paneh) headers=$headers"
 }
 
-echo "{\"dashboardRefreshSeconds\":2,\"dashboardReservedRows\":8,\"tmuxSession\":\"$SESSION\",\"viewMode\":\"shared\",\"projects\":{}}" > "$ROOT/config.json"
+printf 'orchestrator:\n  dashboard: {refreshSeconds: 2, reservedRows: 8}\n  viewer: {tmuxSession: "%s", viewMode: shared}\n  projects: {}\n' "$SESSION" > "$ROOT/jagt.yml"
 : > "$ROOT/mcp_client.js"
 gen_state 2
 

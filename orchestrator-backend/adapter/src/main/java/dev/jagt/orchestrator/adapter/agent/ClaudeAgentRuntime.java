@@ -24,7 +24,7 @@ import java.util.stream.Stream;
  * instead: it is loaded just the same, and it is the one name a project never versions.
  */
 @Component
-@ConditionalOnProperty(name = "orchestrator.agent", havingValue = "claude", matchIfMissing = true)
+@ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "claude", matchIfMissing = true)
 @RequiredArgsConstructor
 public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 

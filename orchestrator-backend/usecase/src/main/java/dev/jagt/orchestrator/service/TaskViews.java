@@ -76,7 +76,7 @@ public class TaskViews {
 
     /**
      * The configuration, or its defaults when the file cannot be read. The console REDRAWS THROUGH HERE on every
-     * keystroke, and {@code config.json} is hand-edited while jagt runs — a half-saved file would otherwise throw
+     * keystroke, and {@code jagt.yml} is hand-edited while jagt runs — a half-saved file would otherwise throw
      * out of the render loop and take the orchestrator down with it. The failure is logged, not swallowed
      * silently, and the surfaces then show what defaults mean (nothing polling, no deploy branches).
      */

@@ -1,7 +1,6 @@
-# The DEFAULTS, and the comment on every key. This file is built into the jar and committed, so a setting
-# of yours belongs in `orchestrator-backend/config/application.yml` instead — gitignored, read from the
-# directory jagt starts in, overrides this one key by key, and survives every build. See
-# docs/configuration.md.
+# DEFAULTS ONLY — built into the jar, committed, and not the file you edit. Yours is `jagt.yml` at the
+# repository root: copy `jagt.yml.dist`, which carries every key below with what it means, and write only what
+# you change. It overrides this file key by key and survives every build.
 server:
   # Change this and mcp_client.js needs MCP_SERVER_URL to match.
   port: 8290
@@ -59,9 +58,11 @@ orchestrator:
   # editor-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"]   # no `idea` launcher installed
   # Two paths are appended: <left> <right>. Any difftool takes them — ["difft"], ["code", "--diff"].
   editor-diff-command: ["idea", "diff"]
-  # claude | codex. A Codex worktree runs against its own CODEX_HOME, so your ~/.codex servers are not there.
-  # agent: claude
-  # codex:
+  # `agent.cli` selects the runtime; the rest of `agent` is read live. One key cannot be a word to Spring and a
+  # section to jagt in the same file, which is why the choice sits INSIDE the section it is about.
+  # agent:
+  #   cli: codex     # claude | codex. A Codex worktree runs against its own CODEX_HOME, so your ~/.codex
+  # codex:           # servers are not there.
   #   command: codex
   # Also used by the headless reads, which stay Claude whichever agent runs the tasks.
   claude:

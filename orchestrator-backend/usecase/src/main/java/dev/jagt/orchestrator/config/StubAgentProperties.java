@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Settings of the scripted test runtime ({@code orchestrator.agent=stub}).
+ * Settings of the scripted test runtime ({@code orchestrator.agent.cli=stub}).
  *
  * @param script optional executable the stub runs in place of an agent — it receives the worktree path and,
  *               in plan mode, {@code plan}, and may drive the orchestrator over {@code POST /mcp} (the

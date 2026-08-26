@@ -27,7 +27,7 @@ export function render() {
   const chosenBefore = select.value;
   select.replaceChildren(...(configured.length
     ? configured.map((project) => new Option(project, project))
-    : [Object.assign(new Option('no projects in config.json', ''), {disabled: true})]));
+    : [Object.assign(new Option('no projects in jagt.yml', ''), {disabled: true})]));
   if (configured.includes(chosenBefore)) {
     select.value = chosenBefore;
   } else {

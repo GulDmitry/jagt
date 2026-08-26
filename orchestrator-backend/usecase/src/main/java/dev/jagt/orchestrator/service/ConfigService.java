@@ -6,17 +6,25 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
+
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Reads config.json on every access, so edits are picked up without restarting the backend.
+ * Reads {@code jagt.yml} on every access, so edits are picked up without restarting the backend — which is why
+ * this parses the file itself instead of taking Spring's binding of it: that one happens once, at startup.
+ *
+ * <p>Spring reads the SAME file for its own {@code orchestrator.*} keys, so a human has one file and one root
+ * to write under.
  *
  * <p>A whole section may be omitted — {@link ConfigFile}'s accessors coalesce a missing section to its
  * all-default instance, so callers never null-check.
@@ -243,21 +251,31 @@ public class ConfigService {
 
     }
 
-    // Hand-edited, so it may carry comments.
-    private final JsonMapper mapper = JsonMapper.builder()
-            .enable(JsonReadFeature.ALLOW_JAVA_COMMENTS).build();
+    /** The one root everything a human writes lives under, Spring's keys and jagt's own alike. */
+    private static final String ROOT = "orchestrator";
+
+    private final JsonMapper mapper = new JsonMapper();
     private final OrchestratorPaths paths;
 
     public ConfigFile load() {
-        if (!Files.exists(paths.configFile())) {
-            throw new IllegalStateException("Missing " + paths.configFile()
-                    + " — copy config.json.dist to config.json and fill in your projects.");
+        Path file = paths.configFile();
+        if (!Files.exists(file)) {
+            throw new IllegalStateException("Missing " + file
+                    + " — copy jagt.yml.dist to jagt.yml and fill in your projects.");
         }
         try {
-            ConfigFile config = mapper.readValue(Files.readString(paths.configFile()), ConfigFile.class);
+            // SafeConstructor: the file is hand-edited, and a YAML tag naming a class is not a setting.
+            Object tree = new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(file));
+            Object section = tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
+            if (section == null) {
+                return ConfigFile.defaults();
+            }
+            ConfigFile config = mapper.convertValue(section, ConfigFile.class);
             return config.projects() == null ? config.withProjects(Map.of()) : config;
         } catch (IOException e) {
-            throw new UncheckedIOException("Cannot read config file " + paths.configFile(), e);
+            throw new UncheckedIOException("Cannot read " + file, e);
+        } catch (RuntimeException malformed) {
+            throw new IllegalStateException("Cannot read " + file + ": " + malformed.getMessage(), malformed);
         }
     }
 

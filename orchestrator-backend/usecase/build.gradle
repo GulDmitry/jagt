@@ -5,6 +5,9 @@ plugins {
 dependencies {
     api project(':core')
     implementation 'org.springframework.boot:spring-boot-starter'
+    // Already on the runtime classpath through Boot; named here because THIS module parses jagt.yml
+    // itself — the config is re-read on every access, which Spring's own one-shot binding cannot do.
+    implementation 'org.yaml:snakeyaml'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

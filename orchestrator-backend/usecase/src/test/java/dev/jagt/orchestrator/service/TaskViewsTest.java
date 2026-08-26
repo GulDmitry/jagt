@@ -42,14 +42,14 @@ class TaskViewsTest {
     }
 
     /**
-     * The console redraws through here on every keystroke, and config.json is hand-edited while jagt runs — a
+     * The console redraws through here on every keystroke, and jagt.yml is hand-edited while jagt runs — a
      * half-saved file must not throw out of the render loop.
      */
     @Test
     void keepsRenderingWhenTheConfigurationCannotBeRead() {
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",
                 TaskState.builder("proj", "/nowhere/ABC-1-proj", TaskStatus.CI_POLLING).build()));
-        when(configService.load()).thenThrow(new IllegalStateException("config.json is not valid JSON"));
+        when(configService.load()).thenThrow(new IllegalStateException("jagt.yml is not valid YAML"));
 
         var snapshot = new TaskViews(stateService, configService).snapshot();
 

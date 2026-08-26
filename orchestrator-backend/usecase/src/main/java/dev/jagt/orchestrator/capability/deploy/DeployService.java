@@ -306,7 +306,7 @@ public class DeployService {
         ProjectConfig project = target.config();
         if (project.deployBranch() == null || project.deployBranch().isBlank()) {
             throw new IllegalArgumentException("Project '" + target.project()
-                    + "' has no deployBranch in config.json — set it to enable deploy");
+                    + "' has no deployBranch in jagt.yml — set it to enable deploy");
         }
         if (project.deploysIntoTheBaseBranch()) {
             throw new IllegalArgumentException("REFUSED: deployBranch equals the base branch '"

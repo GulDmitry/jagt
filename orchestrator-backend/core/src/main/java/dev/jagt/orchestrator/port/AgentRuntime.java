@@ -6,7 +6,7 @@ import java.util.OptionalLong;
 
 /**
  * The pluggable AI-agent runtime — what jagt spawns per task and how it wires that agent to the orchestrator. One
- * implementation per agent CLI, selected by {@code orchestrator.agent}. Everything agent-specific — the launch
+ * implementation per agent CLI, selected by {@code orchestrator.agent.cli}. Everything agent-specific — the launch
  * command, the agent's own MCP config file, the settings that let it run unattended — lives behind this seam so
  * the task flow (create worktree → provision → launch → talk over MCP) stays agent-agnostic.
  *

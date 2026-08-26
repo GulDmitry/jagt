@@ -24,18 +24,18 @@ class StartupFailureTest {
     @Test
     void handsBackTheWholeListWhenTheInstallationIsIncompleteRatherThanPointingAtALog() {
         IllegalStateException wrapped = new IllegalStateException("startup failed",
-                new Misconfigured(List.of("git is not on PATH", "config.json defines no projects")));
+                new Misconfigured(List.of("git is not on PATH", "jagt.yml defines no projects")));
 
         assertThat(StartupFailure.describe(wrapped))
                 .contains("1. git is not on PATH")
-                .contains("2. config.json defines no projects")
+                .contains("2. jagt.yml defines no projects")
                 .doesNotContain("log file");
     }
 
     @Test
     void pointsAtTheLogFileForAnyOtherFailure() {
-        assertThat(StartupFailure.describe(new IllegalStateException("config.json is unreadable")))
-                .contains("config.json is unreadable")
+        assertThat(StartupFailure.describe(new IllegalStateException("jagt.yml is unreadable")))
+                .contains("jagt.yml is unreadable")
                 .contains("log file");
     }
 }

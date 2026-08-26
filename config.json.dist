@@ -1,9 +1,0 @@
-{
-  "projects": {
-    "my-project": {
-      "path": "/absolute/path/to/base/repository",
-      "baseBranch": "origin/main",
-      "deployBranch": "dev"
-    }
-  }
-}

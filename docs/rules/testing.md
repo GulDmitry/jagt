@@ -75,7 +75,7 @@ size — not as a screenshot, whose fonts differ between a laptop and a runner.
 
 ### The e2e matrix
 
-`e2eTest` runs the flow once per `TaskFlowCase` with `orchestrator.agent=stub` (`StubAgentRuntime` — the one
+`e2eTest` runs the flow once per `TaskFlowCase` with `orchestrator.agent.cli=stub` (`StubAgentRuntime` — the one
 non-deterministic participant replaced; every GUI driver is a Mockito double) and asserts an exact end state.
 
 Three rules it lives by: widening coverage is adding a **row** to `TaskFlowCase.matrix()`, a combination that is
