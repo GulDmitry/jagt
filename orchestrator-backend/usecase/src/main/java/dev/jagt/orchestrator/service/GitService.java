@@ -660,12 +660,19 @@ public class GitService {
         }
     }
 
-    /** A throwaway detached checkout at the base branch, reused per task and left on disk. */
+    /** Both throwaway checkouts a diff leaves in the temp directory, so retiring a task can find them again. */
+    public static List<Path> diffWorktreePaths(String taskId) {
+        Path temp = Path.of(System.getProperty("java.io.tmpdir"));
+        return List.of(temp.resolve("jagt-diff-" + TaskName.slug(taskId)),
+                temp.resolve("jagt-diff-new-" + TaskName.slug(taskId)));
+    }
+
+    /** A throwaway detached checkout at the base branch, reused per task until the task is retired. */
     public Path checkoutBaseForDiff(Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jagt-diff-" + TaskName.slug(taskId));
+            Path temp = diffWorktreePaths(taskId).getFirst();
             clearWorktreePath(projectPath, temp);
             processRunner.run(projectPath, GIT_TIMEOUT,
                             List.of("git", "worktree", "add", "--detach", temp.toString(), baseBranch))
@@ -677,11 +684,11 @@ public class GitService {
     /**
      * The task's CURRENT tracked state, committed or not, snapshotted through a throwaway index so
      * {@code .gitignore} and {@code .git/info/exclude} are honored — a raw folder compare of the live worktree
-     * dumps hundreds of untracked files instead. Reused per task and left on disk.
+     * dumps hundreds of untracked files instead. Reused per task until the task is retired.
      */
     public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
-            Path temp = Path.of(System.getProperty("java.io.tmpdir"), "jagt-diff-new-" + TaskName.slug(taskId));
+            Path temp = diffWorktreePaths(taskId).getLast();
             clearWorktreePath(projectPath, temp);
             Path index;
             try {
@@ -715,6 +722,17 @@ public class GitService {
                 }
             }
         });
+    }
+
+    /**
+     * The temp directory is nobody's inbox: a diff checkout outlives the viewer that opened it, and only the
+     * task's own retirement knows it is over. Asked of every repository of the task and never conditioned on the
+     * directory: the paths carry no repository, so the checkout one sibling deletes leaves the admin entry in
+     * whichever repository actually cut it.
+     */
+    public void removeDiffWorktrees(Path projectPath, String taskId) {
+        withRepoLock(projectPath,
+                () -> diffWorktreePaths(taskId).forEach(temp -> clearWorktreePath(projectPath, temp)));
     }
 
     /**

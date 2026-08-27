@@ -97,4 +97,28 @@ class TaskRetirementTest {
         verify(git).removeWorktree(Path.of("/web-repo"), Path.of("/web-wt"), null);
         assertThat(state.task("ABC-1")).isEmpty();
     }
+
+    @Test
+    void deletesTheThrowawayDiffCheckoutsOfTheRetiredTask(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+
+        retirement(state).retire("ABC-1");
+
+        verify(git).removeDiffWorktrees(Path.of("/repo"), "ABC-1");
+    }
+
+    @Test
+    void hasTheAgentRuntimeUndoWhatItWroteOutsideTheRetiredWorktree(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
+                Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+
+        retirement(state).retire("ABC-1");
+
+        verify(sessions).forgetWorktree(Path.of("/wt"));
+    }
 }

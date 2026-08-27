@@ -33,6 +33,11 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         return openTab(taskId, alias, worktreePath, configService.load(), planMode);
     }
 
+    /** What provisioning wrote outside the worktree is the runtime's to undo, and only it knows what that was. */
+    public void forgetWorktree(Path worktreePath) {
+        agentRuntime.retireWorktree(worktreePath);
+    }
+
     public int killWindows(String taskId) {
         return sessions.killTaskWindows(agentSession(configService.load(), taskId), taskId);
     }

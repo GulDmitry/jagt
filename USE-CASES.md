@@ -239,12 +239,13 @@ What the agent does with a comment:
 |---|---|---|
 | Ship a round | `ship <task>` | Commits, pushes the task branch, opens or updates the request. Never merges |
 | The project versions a file jagt generates per worktree | `ship <task>` | The commit holds the task's work only; jagt unstages what it wrote for that worktree |
-| Done | `done <task>` | Kills the agent window, reaps its language server, deletes the worktree. The branch survives |
+| Done | `done <task>` | Kills the agent window, reaps its language server, deletes the worktree and every throwaway checkout the task cut. The branch survives |
 | A badge says what to do, not that something is due | — | The badge is the act (`Move.ask`), named after whatever verb the card highlights. The tier only colours it |
 | A badge reads "you can …" instead of an order | — | The quiet tier: a good state whose next move is yours whenever. Not counted in the header, not kept by the filter |
 | A deployed task wears no badge at all | — | Correct. DEPLOYED waits on nobody, like DONE; `done` is the only move left |
 | Merged task branches pile up | your own git | jagt has no `prune` — cleanup is one task's own business |
 | An agent stops at a permission prompt nobody answers | — | A directory Claude has never run in is untrusted, and it discards that worktree's whole allow-list. jagt records the acceptance when it wires the worktree |
+| `git worktree list` shows `jagt-diff-*` in the temp directory | `done <task>` | A diff opened from the board cuts them and reuses them; retiring the task is what ends them |
 | Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be mapped onto a live one |
 | "Is it me holding these up?" | `stats` | Per task: time on you, on its agent and on the code host, the rounds it has been out, and which of the three is slowest |
 | The same numbers a week later | — | Not available. `done` removes the task, so `stats` describes open work, never throughput |

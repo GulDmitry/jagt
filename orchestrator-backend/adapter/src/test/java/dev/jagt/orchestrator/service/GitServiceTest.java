@@ -751,9 +751,60 @@ class GitServiceTest {
 
         Path clean = git.checkoutWorktreeCleanForDiff(wt, repo, "origin/main", "ABC-1");
 
-        assertThat(clean.resolve("mcp_client.js")).doesNotExist();
-        assertThat(clean.resolve("f.txt")).hasContent("task change");
-        assertThat(clean.resolve("new.js")).hasContent("new source");
+        boolean plumbing = Files.exists(clean.resolve("mcp_client.js"));
+        String changed = Files.readString(clean.resolve("f.txt"));
+        String added = Files.readString(clean.resolve("new.js"));
+        git.removeDiffWorktrees(repo, "ABC-1");
+
+        assertThat(plumbing).isFalse();
+        assertThat(changed).isEqualTo("task change");
+        assertThat(added).isEqualTo("new source");
+    }
+
+    @Test
+    void prunesTheAdminEntryOfADiffCheckoutSomethingElseAlreadyDeleted(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        Path base = git.checkoutBaseForDiff(repo, "origin/main", "ABC-8");
+        runner.run(dir, timeout, List.of("rm", "-rf", base.toString()));
+
+        git.removeDiffWorktrees(repo, "ABC-8");
+
+        assertThat(runner.run(repo, timeout, List.of("git", "worktree", "list")).stdout())
+                .doesNotContain(base.getFileName().toString());
+    }
+
+    @Test
+    void deletesBothThrowawayDiffCheckoutsWhenTheTaskIsRetired(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        Path wt = dir.resolve("wt");
+        git.createWorktree(repo, wt, "ABC-9", "origin/main", GitService.BranchStrategy.FRESH);
+        Path base = git.checkoutBaseForDiff(repo, "origin/main", "ABC-9");
+        Path clean = git.checkoutWorktreeCleanForDiff(wt, repo, "origin/main", "ABC-9");
+
+        git.removeDiffWorktrees(repo, "ABC-9");
+
+        assertThat(base).doesNotExist();
+        assertThat(clean).doesNotExist();
     }
 
     @Test

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.function.BinaryOperator;
 
 /**
  * A directory Claude has never run in is untrusted, and it discards that directory's whole permission file
@@ -28,6 +29,7 @@ final class ClaudeTrust {
     private static final String PROJECTS = "projects";
     private static final String TRUSTED = "hasTrustDialogAccepted";
     private static final String UNTRUSTED = "worktree left untrusted";
+    private static final String STALE = "retired worktree left in the agent config";
 
     private ClaudeTrust() {
     }
@@ -41,38 +43,20 @@ final class ClaudeTrust {
     }
 
     static void accept(Path configFile, Path worktree) {
-        Path staged = null;
-        try {
-            String current = Files.exists(configFile) ? Files.readString(configFile) : "{}";
-            String updated = accepted(current, resolved(worktree));
-            if (updated == null) {
-                return;
-            }
-            staged = Files.createTempFile(configFile.getParent(), ".claude", ".json");
-            Files.writeString(staged, updated);
-            Files.move(staged, configFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException | JacksonException e) {
-            log.atWarn().setMessage(UNTRUSTED)
-                    .addKeyValue("file", configFile)
-                    .addKeyValue("worktree", worktree)
-                    .addKeyValue("cause", e.toString())
-                    .log();
-        } finally {
-            discard(staged);
-        }
+        rewrite(configFile, worktree, ClaudeTrust::accepted, UNTRUSTED);
+    }
+
+    /** Called while the worktree still exists, so the key matches the one Claude wrote. */
+    static void forget(Path configFile, Path worktree) {
+        rewrite(configFile, worktree, ClaudeTrust::forgotten, STALE);
     }
 
     /** Null rather than the unchanged text, so a file nothing was added to is never rewritten. */
     static String accepted(String config, String worktree) {
-        JsonNode parsed = JSON.readTree(config.isBlank() ? "{}" : config);
-        if (!parsed.isObject()) {
-            log.atWarn().setMessage(UNTRUSTED)
-                    .addKeyValue("worktree", worktree)
-                    .addKeyValue("cause", "config holds " + parsed.getNodeType())
-                    .log();
+        ObjectNode root = object(config, worktree, UNTRUSTED);
+        if (root == null) {
             return null;
         }
-        ObjectNode root = (ObjectNode) parsed;
         ObjectNode projects = root.path(PROJECTS).isObject()
                 ? (ObjectNode) root.get(PROJECTS)
                 : root.putObject(PROJECTS);
@@ -86,12 +70,70 @@ final class ClaudeTrust {
         return JSON.writeValueAsString(root);
     }
 
-    /** Claude keys the entry by the working directory it resolves, which no symlink survives. */
+    /** The whole entry: a retired worktree is a path nothing will ever run in again. */
+    static String forgotten(String config, String worktree) {
+        ObjectNode root = object(config, worktree, STALE);
+        if (root == null || !root.path(PROJECTS).isObject()) {
+            return null;
+        }
+        ObjectNode projects = (ObjectNode) root.get(PROJECTS);
+        if (projects.remove(worktree) == null) {
+            return null;
+        }
+        return JSON.writeValueAsString(root);
+    }
+
+    private static ObjectNode object(String config, String worktree, String failure) {
+        JsonNode parsed = JSON.readTree(config.isBlank() ? "{}" : config);
+        if (!parsed.isObject()) {
+            log.atWarn().setMessage(failure)
+                    .addKeyValue("worktree", worktree)
+                    .addKeyValue("cause", "config holds " + parsed.getNodeType())
+                    .log();
+            return null;
+        }
+        return (ObjectNode) parsed;
+    }
+
+    private static void rewrite(Path configFile, Path worktree, BinaryOperator<String> edit, String failure) {
+        Path staged = null;
+        try {
+            String current = Files.exists(configFile) ? Files.readString(configFile) : "{}";
+            String updated = edit.apply(current, resolved(worktree));
+            if (updated == null) {
+                return;
+            }
+            staged = Files.createTempFile(configFile.getParent(), ".claude", ".json");
+            Files.writeString(staged, updated);
+            Files.move(staged, configFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException | JacksonException e) {
+            log.atWarn().setMessage(failure)
+                    .addKeyValue("file", configFile)
+                    .addKeyValue("worktree", worktree)
+                    .addKeyValue("cause", e.toString())
+                    .log();
+        } finally {
+            discard(staged);
+        }
+    }
+
+    /**
+     * Claude keys the entry by the working directory it resolves, which no symlink survives — and a worktree
+     * already deleted still has to answer the same key, so the surviving parent resolves it.
+     */
     private static String resolved(Path worktree) {
         try {
             return worktree.toRealPath().toString();
-        } catch (IOException e) {
-            return worktree.toString();
+        } catch (IOException gone) {
+            Path parent = worktree.getParent();
+            if (parent == null) {
+                return worktree.toString();
+            }
+            try {
+                return parent.toRealPath().resolve(worktree.getFileName()).toString();
+            } catch (IOException e) {
+                return worktree.toString();
+            }
         }
     }
 

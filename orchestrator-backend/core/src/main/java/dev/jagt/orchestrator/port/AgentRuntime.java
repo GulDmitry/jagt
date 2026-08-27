@@ -48,6 +48,14 @@ public interface AgentRuntime {
     void provisionWorktree(AgentWorktree worktree);
 
     /**
+     * Undoes what {@link #provisionWorktree} wrote OUTSIDE the worktree — the worktree itself is deleted by the
+     * caller, and everything written inside it goes with it. A runtime that wrote nothing outside answers by
+     * doing nothing.
+     */
+    default void retireWorktree(Path worktree) {
+    }
+
+    /**
      * Epoch millis of the last entry in the session's own record of itself; 0 while that record holds no entry
      * yet, and EMPTY where this runtime keeps no such record at all. Empty rather than a zero standing in for
      * it: "there is no such clock" is not a reading of one, and a caller that cannot tell them apart has to

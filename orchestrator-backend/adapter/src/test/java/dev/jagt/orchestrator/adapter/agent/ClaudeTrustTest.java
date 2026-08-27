@@ -59,4 +59,21 @@ class ClaudeTrustTest {
 
         assertThat(Files.readString(config)).isEqualTo("[]");
     }
+
+    @Test
+    void dropsTheEntryOfARetiredWorktree() {
+        String updated = ClaudeTrust.forgotten(
+                "{\"projects\": {\"/wt/ABC-42\": {\"hasTrustDialogAccepted\": true}}}", "/wt/ABC-42");
+
+        boolean present = new JsonMapper().readTree(updated).path("projects").has("/wt/ABC-42");
+
+        assertThat(present).isFalse();
+    }
+
+    @Test
+    void writesNothingWhenTheRetiredWorktreeHasNoEntry() {
+        String updated = ClaudeTrust.forgotten("{\"projects\": {\"/other\": {}}}", "/wt/ABC-42");
+
+        assertThat(updated).isNull();
+    }
 }

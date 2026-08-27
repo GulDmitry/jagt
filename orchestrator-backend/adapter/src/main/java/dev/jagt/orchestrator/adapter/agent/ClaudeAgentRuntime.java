@@ -140,6 +140,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public void retireWorktree(Path worktree) {
+        ClaudeTrust.forget(ClaudeTrust.configFile(), worktree);
+    }
+
+    @Override
     public String compactedStart() {
         return SessionHooks.compactedStart("claude");
     }
