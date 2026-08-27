@@ -244,6 +244,7 @@ What the agent does with a comment:
 | A badge reads "you can …" instead of an order | — | The quiet tier: a good state whose next move is yours whenever. Not counted in the header, not kept by the filter |
 | A deployed task wears no badge at all | — | Correct. DEPLOYED waits on nobody, like DONE; `done` is the only move left |
 | Merged task branches pile up | your own git | jagt has no `prune` — cleanup is one task's own business |
+| An agent stops at a permission prompt nobody answers | — | A directory Claude has never run in is untrusted, and it discards that worktree's whole allow-list. jagt records the acceptance when it wires the worktree |
 | Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be mapped onto a live one |
 | "Is it me holding these up?" | `stats` | Per task: time on you, on its agent and on the code host, the rounds it has been out, and which of the three is slowest |
 | The same numbers a week later | — | Not available. `done` removes the task, so `stats` describes open work, never throughput |

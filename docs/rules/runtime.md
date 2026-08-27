@@ -97,6 +97,12 @@ Every sub-agent worktree (generated `.claude/settings.local.json`) needs `enable
 entry → `ship`/`feedback` stall on an invisible prompt; miss the git entry → the agent freezes on `git commit`
 or `git push`.
 
+That allow-list is dead text until the worktree is **trusted**: Claude discards a directory's whole permission
+file until a human has accepted the trust dialog in it, and every worktree is a directory it has never seen. So
+`wireAgent` records the acceptance itself — `projects["<worktree>"].hasTrustDialogAccepted` in `~/.claude.json`
+(`$CLAUDE_CONFIG_DIR/.claude.json` where that is set). Claude writes that file under a lock jagt cannot take, so
+the edit is a read-and-replace of the one flag, and a file that does not parse is left alone.
+
 Safety on shared branches is **not** this allow-list — it is the detached upstream
 (`GitService.detachUpstream`) plus prompt rules. The worktree is the agent's sandbox.
 

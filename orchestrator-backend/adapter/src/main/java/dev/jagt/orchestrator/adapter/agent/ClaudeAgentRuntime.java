@@ -77,6 +77,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         }
         write(worktree.path().resolve(".claude").resolve("settings.local.json"),
                 settingsJson(worktree.outputStyle(), worktree.disabledPlugins(), hooksJson(worktree.path())));
+        ClaudeTrust.accept(ClaudeTrust.configFile(), worktree.path());
     }
 
     /**
