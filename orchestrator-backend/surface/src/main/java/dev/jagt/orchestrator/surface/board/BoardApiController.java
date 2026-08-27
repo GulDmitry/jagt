@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.command.CommandReference;
 import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.job.Jobs;
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.UsageTracker;
 import org.springframework.http.MediaType;
@@ -24,7 +25,8 @@ import java.util.List;
 public class BoardApiController {
 
     public record Board(List<TaskView> tasks, Spend spend, List<String> projects, String autoReview,
-                        boolean autoReviewEnabled, Jobs.Summary jobs) {
+                        boolean autoReviewEnabled, Jobs.Summary jobs,
+                        List<BranchStrategy.Choice> branchStrategies) {
     }
 
     /** What jagt's OWN model calls have cost this session; an agent's own session spends elsewhere. */
@@ -43,7 +45,7 @@ public class BoardApiController {
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), new Spend(session.calls(), session.total()), snapshot.projects(),
                 snapshot.cadence().summary(), snapshot.cadence().enabled(),
-                jobs.summary(System.currentTimeMillis()));
+                jobs.summary(System.currentTimeMillis()), BranchStrategy.choices());
     }
 
     /** Served rather than hardcoded in the page, so a declared verb cannot be missing from the suggestions. */

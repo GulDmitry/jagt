@@ -43,11 +43,11 @@ every start) and anything over the network.
 | A new ticket whose work lives on an older task's branch | `do ABC-1 from <that-branch>` | A new task and branch of its own; the old request stays with the old branch |
 | The base repository still has the branch checked out | nothing | Freed automatically — detached in place, so its files do not change, and a WARN names the branch |
 | That checkout has uncommitted **tracked** changes, or another worktree holds the branch | commit/stash, or free that worktree | Refused, naming the directory. Untracked files block nothing; nothing is registered, so the retry is clean |
-| `do <ticket>` on a branch that already exists | pick `recreate` or `resume` | The refusal comes first — nothing is freed or moved until you decide |
+| `do <ticket>` on a branch that already exists | pick `recreate` or `resume` — typed, or in the launch row | The refusal comes first — nothing is freed or moved until you decide |
 | The app needs a gitignored `.env`, key or cert to start | nothing — `worktree.copyGlobs` | Copied to the same relative path, root-level files included. A path the checkout already produced is left alone |
 | The repository ships its own `CLAUDE.md` or `AGENTS.md` | `do <ticket>` | Kept untouched; the briefing goes to `CLAUDE.local.md`. Other agents refuse rather than start unbriefed |
 | The project ships its own `.codex/config.toml` | `do <ticket>` with `agent=codex` | Left alone: `CODEX_HOME` points at `.jagt/codex/` in the worktree, so no tracked file changes |
-| On the board | the launch row, always open | Ticket, project, base branch, notes, Start. A project is sent only if you pick one |
+| On the board | the launch row, always open | Ticket, project, base branch, notes, the branch strategy, Start. A project and a strategy are sent only if you pick one |
 
 ## Multi-repo tasks
 

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.config.ClaudeProperties;
 
 import dev.jagt.orchestrator.port.SessionHost;
@@ -101,7 +102,7 @@ class TaskProvisioningTest {
         provisioning().initializeTask(NewTask.builder("feature/PAN-42", "proj").build());
 
         verify(git).createWorktree(projectPath.toAbsolutePath().normalize(), root.resolve("feature-PAN-42-proj"),
-                "feature/PAN-42", "origin/main", GitService.BranchStrategy.FRESH);
+                "feature/PAN-42", "origin/main", BranchStrategy.FRESH);
     }
 
     /**
@@ -155,9 +156,9 @@ class TaskProvisioningTest {
 
         assertThat(answer).contains("agent running on ABC-7", "also in web");
         verify(git).createWorktree(root.resolve("api-repo"), root.resolve("ABC-7-api"), "ABC-7",
-                "origin/main", GitService.BranchStrategy.FRESH);
+                "origin/main", BranchStrategy.FRESH);
         verify(git).createWorktree(root.resolve("web-repo"), root.resolve("ABC-7-web"), "ABC-7",
-                "origin/release", GitService.BranchStrategy.FRESH);
+                "origin/release", BranchStrategy.FRESH);
         assertThat(state.task("ABC-7").orElseThrow().projects()).containsExactly("api", "web");
         assertThat(state.task("ABC-7").orElseThrow().worktreePath())
                 .isEqualTo(root.resolve("ABC-7-api").toString());
@@ -217,7 +218,7 @@ class TaskProvisioningTest {
         provisioning().initializeTask(NewTask.builder("ABC-3", "proj").baseBranch("origin/feature/parent").build());
 
         verify(git).createWorktree(projectPath.toAbsolutePath().normalize(), root.resolve("ABC-3-proj"),
-                "ABC-3", "feature/parent", GitService.BranchStrategy.FRESH);
+                "ABC-3", "feature/parent", BranchStrategy.FRESH);
         assertThat(state.task("ABC-3").orElseThrow().baseBranch()).isEqualTo("feature/parent");
     }
 

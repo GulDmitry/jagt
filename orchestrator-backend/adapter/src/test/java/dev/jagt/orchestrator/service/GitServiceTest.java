@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
+import dev.jagt.orchestrator.task.BranchStrategy;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
@@ -38,7 +39,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
-                GitService.BranchStrategy.FRESH))
+                BranchStrategy.FRESH))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("recreate")
                 .hasMessageContaining("resume");
@@ -92,7 +93,7 @@ class GitServiceTest {
         runner.run(other, timeout, List.of("git", "push", "-q", "origin", "main"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", GitService.BranchStrategy.FRESH);
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", BranchStrategy.FRESH);
 
         assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("moved on");
     }
@@ -392,7 +393,7 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
         Path wt = dir.resolve("wt");
-        git.createWorktree(repo, wt, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
+        git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
         Process rooted = new ProcessBuilder("sleep", "300").directory(wt.toFile()).start();
         try {
             git.removeWorktree(repo, wt, "ABC-1");
@@ -424,7 +425,7 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RESUME);
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
         assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("task work");
     }
@@ -439,7 +440,7 @@ class GitServiceTest {
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RESUME);
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
         assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "worktree", "list")).stdout())
                 .contains("(detached HEAD)")
@@ -454,7 +455,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
-                GitService.BranchStrategy.RESUME))
+                BranchStrategy.RESUME))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("uncommitted changes");
         assertThat(dir.resolve("wt")).doesNotExist();
@@ -469,7 +470,7 @@ class GitServiceTest {
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RECREATE);
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
 
         assertThat(dir.resolve("wt")).isDirectory();
         assertThat(runner.run(repo, Duration.ofSeconds(30),
@@ -484,7 +485,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
-                GitService.BranchStrategy.FRESH))
+                BranchStrategy.FRESH))
                 .isInstanceOf(IllegalArgumentException.class);
         assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "branch", "--show-current"))
                 .stdout().strip()).isEqualTo("ABC-1");
@@ -497,7 +498,7 @@ class GitServiceTest {
         Files.writeString(repo.resolve("scratch.txt"), "never added to git");
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RESUME);
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
         assertThat(dir.resolve("wt")).isDirectory();
         assertThat(repo.resolve("scratch.txt")).exists();
@@ -510,7 +511,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/deleted-base",
-                GitService.BranchStrategy.RESUME);
+                BranchStrategy.RESUME);
 
         assertThat(dir.resolve("wt")).isDirectory();
         assertThat(runner.run(dir.resolve("wt"), Duration.ofSeconds(30),
@@ -529,7 +530,7 @@ class GitServiceTest {
         Path notADirectory = Files.writeString(dir.resolve("in-the-way"), "");
 
         assertThatThrownBy(() -> git.createWorktree(repo, notADirectory.resolve("wt"), "ABC-1", "origin/main",
-                GitService.BranchStrategy.RESUME))
+                BranchStrategy.RESUME))
                 .isInstanceOf(RuntimeException.class);
 
         assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "branch", "--show-current"))
@@ -546,7 +547,7 @@ class GitServiceTest {
                 "commit", "-qm", "on the branch only"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RESUME);
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
         assertThat(repo.resolve("f.txt")).content().isEqualTo("the branch's own content");
     }
@@ -573,7 +574,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
         assertThatThrownBy(() -> git.createWorktree(repo, notADirectory.resolve("wt"), "ABC-1", "origin/main",
-                GitService.BranchStrategy.RECREATE))
+                BranchStrategy.RECREATE))
                 .isInstanceOf(RuntimeException.class);
 
         assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "symbolic-ref", "-q", "HEAD"))
@@ -590,7 +591,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
-                GitService.BranchStrategy.RESUME))
+                BranchStrategy.RESUME))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("elsewhere");
         assertThat(dir.resolve("wt")).doesNotExist();
@@ -629,7 +630,7 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", GitService.BranchStrategy.RECREATE);
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
 
         assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("base");
     }
@@ -681,7 +682,7 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "release"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/release", GitService.BranchStrategy.FRESH);
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/release", BranchStrategy.FRESH);
 
         var upstream = runner.run(dir.resolve("wt"), timeout,
                 List.of("git", "rev-parse", "--abbrev-ref", "ABC-1@{upstream}"));
@@ -743,7 +744,7 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
         Path wt = dir.resolve("wt");
-        git.createWorktree(repo, wt, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
+        git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
         Files.writeString(wt.resolve("f.txt"), "task change");
         Files.writeString(wt.resolve("new.js"), "new source");
         Files.writeString(wt.resolve("mcp_client.js"), "plumbing");
@@ -797,7 +798,7 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
         Path wt = dir.resolve("wt");
-        git.createWorktree(repo, wt, "ABC-9", "origin/main", GitService.BranchStrategy.FRESH);
+        git.createWorktree(repo, wt, "ABC-9", "origin/main", BranchStrategy.FRESH);
         Path base = git.checkoutBaseForDiff(repo, "origin/main", "ABC-9");
         Path clean = git.checkoutWorktreeCleanForDiff(wt, repo, "origin/main", "ABC-9");
 
@@ -846,7 +847,7 @@ class GitServiceTest {
         Files.writeString(wt.resolve("leftover.txt"), "stale");
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
 
-        git.createWorktree(repo, wt, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
+        git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
 
         assertThat(wt.resolve("f.txt")).hasContent("base");
     }
@@ -1061,7 +1062,7 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
         Path worktree = dir.resolve("wt");
-        git.createWorktree(repo, worktree, "ABC-1", "origin/main", GitService.BranchStrategy.FRESH);
+        git.createWorktree(repo, worktree, "ABC-1", "origin/main", BranchStrategy.FRESH);
 
         git.removeWorktree(repo, worktree, "ABC-1");
 

@@ -12,6 +12,7 @@ export async function refresh() {
     store.set({
       tasks: data.tasks,
       projects: data.projects || [],
+      branchStrategies: data.branchStrategies || [],
       autoReview: {summary: data.autoReview, enabled: data.autoReviewEnabled},
       jobs: data.jobs,
     });

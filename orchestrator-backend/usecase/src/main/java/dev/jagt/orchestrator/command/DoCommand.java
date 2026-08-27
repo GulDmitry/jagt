@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.command.GlobalCommand;
@@ -16,7 +17,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DoCommand implements GlobalCommand {
 
-    private static final Set<String> BRANCH_STRATEGIES = Set.of("recreate", "resume", "fresh");
+    private static final Set<String> BRANCH_STRATEGIES = Set.copyOf(BranchStrategy.ids());
     private static final String USAGE = "do <ticket|url> [project[,project…]] [plan] [from <branch>] [notes…]";
 
     private final TaskLauncher launcher;

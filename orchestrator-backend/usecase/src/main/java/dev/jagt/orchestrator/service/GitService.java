@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.TaskName;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -35,8 +36,6 @@ public class GitService {
     private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();
     private final Processes processRunner;
     private final WorktreeProcesses worktreeProcesses;
-
-    public enum BranchStrategy { FRESH, RECREATE, RESUME }
 
     public void createWorktree(Path projectPath, Path worktreePath, String branch, String baseBranch,
                                BranchStrategy strategy) {

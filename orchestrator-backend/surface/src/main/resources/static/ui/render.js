@@ -5,6 +5,7 @@ import * as store from '../core/store.js';
 import {card} from './card.js';
 import * as filters from './filters.js';
 import * as header from './header.js';
+import * as launch from './launch.js';
 import * as projects from './projects.js';
 import {hideTip} from './tips.js';
 
@@ -15,6 +16,7 @@ export function render() {
   const tasks = store.tasks();
   const shown = filters.shown(tasks);
   projects.render();
+  launch.render();
   header.render(tasks, shown.length);
   // Read off the cards themselves: the configured list can be longer than anything on the board, and shorter
   // than the truth when a project has been taken out of the config under a task that still works in it.

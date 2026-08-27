@@ -35,6 +35,11 @@ A board is read at a glance or it is not read at all, and every mark spends the 
   beside it for the checks. Both on the link cost more than the mark it saved — red outranked the approval
   there, so a build that broke on an already-approved request read as any other failure, and those two want
   opposite moves (2026-08-26).
+- **A control the board lacks is not a preference, it is the bug.** The launch row asks for the branch
+  strategy (2026-08-27) because the refusal it used to print could only tell a human to retype the launch as a
+  command elsewhere — the words in that sentence, in the picker and in the MCP schema now all come from
+  `task/BranchStrategy`. An untouched picker sends nothing: naming any strategy says the collision is intended,
+  and the launch then stops warning about one.
 - **What is merely coming is not news.** The poll countdown moved into that tooltip; a poll that has STOPPED
   keeps its own element, because it hands the move back to a human and nothing else on the card says so.
 - **A word every card wears is a word nobody reads.** The project key is rendered only where an install has

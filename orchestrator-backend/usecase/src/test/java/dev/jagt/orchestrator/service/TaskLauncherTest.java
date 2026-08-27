@@ -116,8 +116,19 @@ class TaskLauncherTest {
 
         String out = launcher.launch(LaunchRequest.of("ABC-9")).message();
 
-        assertThat(out).contains("already exists in group-a", "do ABC-9 recreate", "do ABC-9 resume");
+        assertThat(out).contains("already exists in group-a", "recreate", "resume");
         verifyNoInteractions(tickets);
+        verify(provisioning, never()).initializeTask(any());
+    }
+
+    @Test
+    void warnsAboutALeftoverBranchWhenTheHumanAskedForAFreshOne() {
+        oneProject("group-a");
+        when(provisioning.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
+
+        String out = launcher.launch(new LaunchRequest("ABC-9", null, null, "fresh", null, null)).message();
+
+        assertThat(out).contains("already exists in group-a");
         verify(provisioning, never()).initializeTask(any());
     }
 

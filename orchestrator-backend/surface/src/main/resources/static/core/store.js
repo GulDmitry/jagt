@@ -1,10 +1,12 @@
 // Everything the page knows, in ONE place: the header, a card and the palette all answer from here, and only
 // `set` writes it. A module that mutated what another one renders is a second answer to "what is on the board".
 
-let data = {tasks: [], projects: [], autoReview: {summary: '', enabled: false}, jobs: null, verbs: []};
+let data = {tasks: [], projects: [], autoReview: {summary: '', enabled: false}, jobs: null, verbs: [],
+  branchStrategies: []};
 
 export const tasks = () => data.tasks;
 export const projects = () => data.projects;
+export const branchStrategies = () => data.branchStrategies;
 export const autoReview = () => data.autoReview;
 export const jobs = () => data.jobs;
 export const verbs = () => data.verbs;

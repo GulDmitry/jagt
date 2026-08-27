@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
@@ -49,7 +50,7 @@ public class TaskProvisioning {
         String taskId = request.taskId();
         TaskName.require(taskId, "taskId");
         boolean plan = AgentSessions.planMode(request.mode());
-        GitService.BranchStrategy strategy = parseBranchStrategy(request.branchStrategy());
+        BranchStrategy strategy = BranchStrategy.of(request.branchStrategy());
         if (stateService.task(taskId).isPresent()) {
             throw new IllegalArgumentException("Task " + taskId + " is already registered in state.json. "
                     + "Use open_task_tab to respawn its agent or remove_task to retire it first.");
@@ -88,14 +89,14 @@ public class TaskProvisioning {
         }
 
         return taskId + " is " + alias + " — agent running on " + taskId
-                + (strategy == GitService.BranchStrategy.RESUME ? " (resumed)" : " from " + session.baseBranch())
+                + (strategy == BranchStrategy.RESUME ? " (resumed)" : " from " + session.baseBranch())
                 + alsoIn(repos) + "."
                 + (plan ? " Plan mode: approve its plan in the agent window (focus " + alias + ")." : "");
     }
 
     /** Every repository the task will work in, validated to the last field before anything is created. */
     private List<NewRepo> resolveRepos(NewTask request, ConfigService.ConfigFile config,
-                                       GitService.BranchStrategy strategy) {
+                                       BranchStrategy strategy) {
         List<NewRepo> repos = new ArrayList<>();
         for (String projectKey : request.projectKeys()) {
             requireSafeProjectKey(projectKey);
@@ -126,7 +127,7 @@ public class TaskProvisioning {
      * hits "branch already exists". With several repositories the same is true of the ones already cut, so a
      * failure anywhere unwinds all of them.
      */
-    private void cutWorktrees(NewTask request, List<NewRepo> repos, GitService.BranchStrategy strategy) {
+    private void cutWorktrees(NewTask request, List<NewRepo> repos, BranchStrategy strategy) {
         List<NewRepo> cut = new ArrayList<>();
         try {
             for (NewRepo repo : repos) {
@@ -138,7 +139,7 @@ public class TaskProvisioning {
         } catch (RuntimeException e) {
             // The branch goes with the worktree only where THIS call created it. A resumed task's branch was
             // already there with the human's commits, and force-deleting it would take work nothing can restore.
-            String branchToDelete = strategy == GitService.BranchStrategy.RESUME ? null : request.taskId();
+            String branchToDelete = strategy == BranchStrategy.RESUME ? null : request.taskId();
             cut.forEach(repo -> gitService.removeWorktree(repo.projectPath(), repo.worktreePath(),
                     branchToDelete));
             // A resumed branch survives, so a repository jagt detached to free it can go back — and it must:
@@ -166,10 +167,10 @@ public class TaskProvisioning {
      * a typo would otherwise surface as a raw git failure after the branch and directory already exist.
      */
     private void requireOnOrigin(String branch, String projectKey, Path projectPath,
-                                 GitService.BranchStrategy strategy) {
+                                 BranchStrategy strategy) {
         // A RESUMED task is not cut from anything — the branch is only remembered as its review target, and
         // refusing the resume over it would strand a task whose request is open on this very branch.
-        if (strategy != GitService.BranchStrategy.RESUME && !gitService.remoteBranchExists(projectPath, branch)) {
+        if (strategy != BranchStrategy.RESUME && !gitService.remoteBranchExists(projectPath, branch)) {
             throw new IllegalArgumentException("Base branch '" + branch + "' does not exist on "
                     + projectKey + "'s origin — the worktree is cut from origin/" + branch + ", so check the"
                     + " name (or push it there first).");
@@ -187,18 +188,6 @@ public class TaskProvisioning {
             if (!used.contains(candidate)) {
                 return candidate;
             }
-        }
-    }
-
-    private static GitService.BranchStrategy parseBranchStrategy(String value) {
-        if (value == null || value.isBlank()) {
-            return GitService.BranchStrategy.FRESH;
-        }
-        try {
-            return GitService.BranchStrategy.valueOf(value.trim().toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException(
-                    "Unknown branchStrategy '" + value + "'. Allowed: fresh, recreate, resume");
         }
     }
 

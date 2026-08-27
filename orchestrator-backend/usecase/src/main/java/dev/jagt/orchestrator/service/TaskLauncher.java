@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
@@ -53,15 +54,15 @@ public class TaskLauncher {
         String strategy = request.strategy();
         boolean bareKey = KEY_REF.matcher(ref).matches();
 
-        // Warn before spending a ticket read on a task that would only collide later; a chosen strategy
-        // means the collision is intended, so let it through.
-        if (bareKey && strategy == null) {
+        // Warn before spending a ticket read on a task that would only collide later. Only recreate and resume
+        // say the collision is intended; fresh is the answer that has none, chosen or defaulted.
+        if (bareKey && BranchStrategy.of(strategy) == BranchStrategy.FRESH) {
             String existing = provisioning.existingBranchProject(ref,
                     project == null ? List.of() : resolveProjects(project));
             if (existing != null) {
                 return Launched.refused("branch '" + ref + "' already exists in " + existing + " (previous run"
-                        + " of this ticket). Retry with `do " + ref + " recreate` (discard old work, start"
-                        + " fresh) or `do " + ref + " resume` (continue its commits).");
+                        + " of this ticket). Say which: " + choice(BranchStrategy.RECREATE) + ", or "
+                        + choice(BranchStrategy.RESUME) + ".");
             }
         }
         // An unknown project is settled before the read, not after paying for one.
@@ -172,5 +173,9 @@ public class TaskLauncher {
         return notes == null || notes.isBlank()
                 ? instructions
                 : instructions + "\n\nAdditional instructions from the human:\n" + notes;
+    }
+
+    private static String choice(BranchStrategy strategy) {
+        return strategy.id() + " (" + strategy.hint() + ")";
     }
 }

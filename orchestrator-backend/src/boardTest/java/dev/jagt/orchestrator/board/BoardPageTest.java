@@ -1045,7 +1045,7 @@ class BoardPageTest {
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, null, null, null));
+        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, "fresh", null, null));
     }
 
     /**
@@ -1062,7 +1062,7 @@ class BoardPageTest {
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, null, null,
+        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, "fresh", null,
                 "start with the failing test"));
     }
 
@@ -1143,7 +1143,20 @@ class BoardPageTest {
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
-        verify(launcher).launch(new LaunchRequest("ABC-9", "beta", null, null, null, null));
+        verify(launcher).launch(new LaunchRequest("ABC-9", "beta", null, "fresh", null, null));
+    }
+
+    @Test
+    void startingATaskWithAChosenBranchStrategySendsIt() {
+        when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+
+        Page page = open();
+        page.locator("#ref").fill("ABC-9");
+        page.locator("#strategy").selectOption("recreate");
+        page.locator("#launch button[type=submit]").click();
+
+        assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
+        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, "recreate", null, null));
     }
 
     @Test
