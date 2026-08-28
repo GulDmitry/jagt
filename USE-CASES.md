@@ -47,6 +47,8 @@ every start) and anything over the network.
 | The app needs a gitignored `.env`, key or cert to start | nothing — `worktree.copyGlobs` | Copied to the same relative path, root-level files included. A path the checkout already produced is left alone |
 | The repository ships its own `CLAUDE.md` or `AGENTS.md` | `do <ticket>` | Kept untouched; the briefing goes to `CLAUDE.local.md`. Other agents refuse rather than start unbriefed |
 | The project ships its own `.codex/config.toml` | `do <ticket>` with `agent=codex` | Left alone: `CODEX_HOME` points at `.jagt/codex/` in the worktree, so no tracked file changes |
+| The project has git hooks of its own (husky included) | `do <ticket>` | Untouched, and they still run in the session: jagt's `pre-push` lives in the worktree and delegates to them |
+| The agent pushes a branch that is not the task's | nothing | Refused by git itself, before anything leaves the machine — and by the CLI gate before that, where the CLI has one |
 | On the board | the launch row, always open | Ticket, project, base branch, notes, the branch strategy, Start. A project and a strategy are sent only if you pick one |
 
 ## Multi-repo tasks

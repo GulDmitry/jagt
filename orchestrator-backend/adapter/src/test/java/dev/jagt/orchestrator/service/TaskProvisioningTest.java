@@ -98,6 +98,7 @@ class TaskProvisioningTest {
         Path projectPath = withProject("proj");
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        when(git.hooksDir(any())).thenReturn(root.resolve("gitdir/hooks"));
 
         provisioning().initializeTask(NewTask.builder("feature/PAN-42", "proj").build());
 
@@ -115,6 +116,7 @@ class TaskProvisioningTest {
         withProject("proj");
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        when(git.hooksDir(any())).thenReturn(root.resolve("gitdir/hooks"));
         provisioning().initializeTask(NewTask.builder("feature/PAN-42", "proj").build());
 
         assertThatThrownBy(() -> provisioning().initializeTask(
@@ -150,6 +152,7 @@ class TaskProvisioningTest {
         withProjects();
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        when(git.hooksDir(any())).thenReturn(root.resolve("gitdir/hooks"));
 
         String answer = provisioning().initializeTask(
                 NewTask.builder("ABC-7", "api").alsoIn(List.of("web")).build());
@@ -169,6 +172,7 @@ class TaskProvisioningTest {
         withProjects();
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        when(git.hooksDir(any())).thenReturn(root.resolve("gitdir/hooks"));
         WorktreeSetup setup = mock(WorktreeSetup.class);
         doNothing().doThrow(new IllegalStateException("second repo failed"))
                 .when(setup).fill(any(), any(), any());
@@ -201,6 +205,7 @@ class TaskProvisioningTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        when(git.hooksDir(any())).thenReturn(root.resolve("gitdir/hooks"));
 
         provisioning().initializeTask(NewTask.builder("ABC-2", "proj").build());
 
@@ -214,6 +219,7 @@ class TaskProvisioningTest {
         when(git.remoteBranchExists(any(), eq("feature/parent"))).thenReturn(true);
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        when(git.hooksDir(any())).thenReturn(root.resolve("gitdir/hooks"));
 
         provisioning().initializeTask(NewTask.builder("ABC-3", "proj").baseBranch("origin/feature/parent").build());
 
@@ -228,6 +234,7 @@ class TaskProvisioningTest {
         withProject("proj");
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        when(git.hooksDir(any())).thenReturn(root.resolve("gitdir/hooks"));
 
         provisioning().initializeTask(NewTask.builder("ABC-4", "proj").build());
 
@@ -268,6 +275,7 @@ class TaskProvisioningTest {
         withProject("proj");
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
+        when(git.hooksDir(any())).thenReturn(root.resolve("gitdir/hooks"));
         WorktreeSetup setup = mock(WorktreeSetup.class);
         doThrow(new IllegalStateException("provisioning failed")).when(setup).fill(any(), any(), any());
 

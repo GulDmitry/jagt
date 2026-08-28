@@ -9,7 +9,7 @@ import java.nio.file.Path;
  * @param primary whether the agent's session runs here; the others it edits in place from there
  */
 public record NewRepo(String project, ProjectConfig config, Path projectPath, Path worktreePath,
-                      Path gitCommonDir, String baseBranch, String remoteUrl, boolean primary) {
+                      Path gitCommonDir, Path hooksDir, String baseBranch, String remoteUrl, boolean primary) {
 
     /** The same repository as {@code state.json} keeps it: no request and no deploy yet. */
     public TaskRepo registered() {

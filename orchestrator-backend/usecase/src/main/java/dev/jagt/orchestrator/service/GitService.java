@@ -777,6 +777,17 @@ public class GitService {
                         .trim());
     }
 
+    /** Where the repository's own hooks live, which is its git directory only until it configures another. */
+    public Path hooksDir(Path projectPath) {
+        return withRepoLock(projectPath, () -> {
+            String dir = processRunner.run(projectPath, GIT_TIMEOUT,
+                            List.of("git", "rev-parse", "--path-format=absolute", "--git-path", "hooks"))
+                    .expectSuccess("git rev-parse --git-path hooks")
+                    .stdout();
+            return Path.of(dir.trim());
+        });
+    }
+
     public Path gitCommonDir(Path projectPath) {
         return withRepoLock(projectPath, () -> {
             String dir = processRunner.run(projectPath, GIT_TIMEOUT,

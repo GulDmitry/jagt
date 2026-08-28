@@ -112,7 +112,7 @@ public class TaskProvisioning {
             }
             repos.add(new NewRepo(projectKey, project, projectPath,
                     projectPath.getParent().resolve(TaskName.slug(request.taskId()) + "-" + projectKey),
-                    gitService.gitCommonDir(projectPath),
+                    gitService.gitCommonDir(projectPath), gitService.hooksDir(projectPath),
                     override != null ? override : project.baseBranch(),
                     gitService.remoteUrl(projectPath), repos.isEmpty()));
         }

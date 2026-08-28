@@ -144,18 +144,51 @@ has never forced; this closes the half the agent runs itself.
 `GitService` holds a `ReentrantLock` per repository: `index.lock` races are per-repo, and a slow fetch in one
 project must not block another.
 
-### No git hooks, ever
+### No git hook in a repository — jagt's own live in the worktree
 
-Never propose, add, or rely on any git hook anywhere. Enforce invariants in code and prompts.
+**Nothing is ever installed into a project's `.git`.** No hook is added to a repository, asked of a human, or
+depended on; the invariant is enforced where jagt runs.
 
-The one exception is not a git hook: a session's CLI asks jagt before it runs a tool, and jagt REFUSES a push
-whose destination is not the task's own branch (`ToolGate`, answered at `POST /api/agent/tool`). It closes the
-hole the detached upstream leaves — that one removes the default target, and an explicit
+Two layers answer the same one refusal — a push whose destination is not the task's own branch:
+
+| layer | where it lives | what it reads |
+|-------|----------------|---------------|
+| `ToolGate` | `POST /api/agent/tool`, asked by a CLI before it runs a tool | the command LINE |
+| `WorktreeHooks` | `<worktree>/.jagt/hooks/pre-push`, written when the worktree is cut | the refs git is about to write |
+
+Both close the hole the detached upstream leaves — that one removes the default target, and an explicit
 `git push origin dev` was still the agent's to run.
 
-Three things keep it from growing into an enforcement layer: it answers on **pushes only**, everything else is
-allowed without a word, and jagt being down or slow allows the call (`curl -sf` prints nothing to refuse with).
-A shared branch is still written by `deploy` alone, and that is still a human's move.
+The hook exists because the CLI gate cannot cover the cases that matter most. It is wired for **one** CLI
+(`hooks/claude.properties`), so a Codex or Qwen session had no gate at all; it reads a string, so a push
+assembled at runtime — a variable, an alias, a script the agent wrote — goes straight past it; and it needs
+jagt to be up. What git hands `pre-push` is the resolved destination, with nothing to parse and nobody to ask.
+
+**The mechanism is what keeps it out of the project.** `core.hooksPath` is set by `GIT_CONFIG_*` on the agent's
+launch command (`WorktreeHooks.gitEnv`, applied in `TmuxSessionHost`) — the session's process and its children,
+and nothing else. No repository config is written, so jagt's own git, the human's shell in that same checkout,
+every other worktree and every other clone resolve hooks exactly as before. `deploy` and `revert` run outside
+that session and are not gated by it, which is the point: what jagt refuses an agent it must not refuse itself.
+
+Pointing git at another directory REPLACES the repository's hooks rather than adding to them, so every hook the
+project has is re-exposed in `.jagt/hooks` as a stub that runs the original — a project on husky keeps its
+`pre-commit` inside the agent's session. The guard runs first and the project's `pre-push` after it: a push
+jagt refuses is one the project never had to see.
+
+Pointing git elsewhere replaces the repository's hooks rather than adding to them, so every hook name **any**
+repository of the task has gets a stub in that one directory — one session, one `core.hooksPath`, several
+repositories. The stubs and the guard resolve the real hooks directory again at run time, with the override
+off, so a hook that runs git does not come back round to jagt.
+
+What keeps neither from growing into an enforcement layer: **pushes only**, everything else allowed without a
+word, and a shared branch still written by `deploy` alone, which is still a human's move. Three limits are
+honest ones and stay named rather than papered over:
+
+- **A guardrail, not a boundary.** `--no-verify` skips this hook as it skips any hook, and so does turning the
+  override off. It catches the push nobody meant to make, not one an agent is set on making.
+- **A worktree cut before this existed has no `.jagt/hooks`**, and `WorktreeHooks.gitEnv` then adds nothing at
+  all — an override pointing at a missing directory would run NO hook, taking the project's own away with it.
+- **A human's own shell is not gated**, in that worktree or anywhere else.
 
 ## One session, many repositories
 

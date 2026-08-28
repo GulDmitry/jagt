@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.service.WorktreeHooks;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,8 @@ public class TmuxSessionHost implements SessionHost {
             killTaskWindows(session, taskId);
             // After the agent exits the window shows the tail briefly, then closes itself: an interactive
             // shell here would linger forever and read as a hung process.
-            String command = agentRuntime.launchCommand(worktreePath, planMode)
+            String command = WorktreeHooks.gitEnv(worktreePath)
+                    + agentRuntime.launchCommand(worktreePath, planMode)
                     + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
             // -P -F prints the window id (@N): the only target immune to name collisions when the same task
             // is respawned.

@@ -48,9 +48,12 @@ missing — add a kind, never an exception.
   request; it never merges. `revert` adds a commit — no history rewrite, no force-push.
 - A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`.** Several sessions share this tree — stage the explicit paths you touched.
-- **No git hooks, ever.** Never propose, add or rely on one; enforce invariants in code and prompts. An
-  agent CLI's own hooks are a different thing: they report a session's state, and they refuse exactly one thing
-  — a push to anything but the task's own branch. Nothing else is ever gated there.
+- **No git hook in a repository, ever.** Never add one to a project, never ask a human to install one, never
+  make an invariant depend on one being there.
+- **jagt's own hooks are not that**: written into the worktree jagt cut, under `.jagt/`, reached by the session
+  it launched and by nothing else. They refuse exactly one thing — a push to anything but the task's own branch
+  — and the project's hooks go on running underneath. An agent CLI's hooks report a session's state and answer
+  the same one refusal. Nothing else is ever gated in either.
 - Never add a warning, a badge or a gate to the deploy confirm. It names the writes and gets out of the way.
 
 ## Committing

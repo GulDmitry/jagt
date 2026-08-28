@@ -34,6 +34,7 @@ public class WorktreeSetup {
         // are indistinguishable from a file the repository ships.
         Path systemKnowledge = agentRuntime.systemKnowledgeFile(worktreePath);
         WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir());
+        WorktreeHooks.install(worktreePath, repos.stream().map(NewRepo::hooksDir).toList(), request.taskId());
         // Which files exist and what is in them belongs to the runtime: nothing here may learn what a given
         // agent's MCP config is called.
         agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
