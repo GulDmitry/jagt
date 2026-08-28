@@ -16,6 +16,20 @@ replies.
 
 **Do not erode this: the human-in-the-loop gate lives in the outcome, not in who triggered the sweep.**
 
+### Detection is deterministic, and the tier is what the model may do
+
+What decides to look is plain code: a cadence, a status, an open request (`AutoReviewCadence` →
+`AutoReviewScheduler`). No model is in that path, so a sweep cannot be talked into happening.
+
+What the model may do once it is asked is set by the **outcome**, not by who asked: read the round, fix in the
+worktree, draft a reply. jagt's highest tier is handing the task back at REVIEW_PENDING, and there is no tier
+above it — a shared branch is written by a human's `deploy`
+([git.md](git.md)).
+
+That split is the shape every unattended loop here takes, and the one an autonomous lifecycle gets wrong by
+putting a model in the trigger. Adding a trigger means adding a deterministic one; a trigger that could ship is
+not a tier jagt has.
+
 ### A review round is a judgement, not a work order
 
 Relay a bare list of comments and the agent implements all of them — including the ones wrong about the

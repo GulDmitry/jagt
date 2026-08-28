@@ -35,6 +35,24 @@ fall (a commit boundary is the only one that leaves each request buildable), how
 the second targets the first rather than the base branch, and what happens to a round of comments on a request
 that a later cut has already superseded.
 
+## Start a task from an accepted plan, and keep its artifacts after `done` (idea)
+
+Two halves of one question, both about the front and the back of
+[the artifact chain](ARCHITECTURE.md#the-artifact-chain).
+
+**The front.** `do` reads a ticket, which is somebody else's prose and costs a model call. A task that starts
+from an already-accepted plan needs no read and no interpretation: the plan IS the brief. `NewTask.instructions`
+already carries free text into `task_context.md`, so the missing part is not a field — it is what makes a plan
+an *accepted* artifact rather than one more paragraph, and whether the same task may hold both.
+
+**The back.** Every task would then leave the same artifacts whatever it started from — the intent, the brief,
+the drafted replies, the round — readable per task on the board rather than only in a worktree. `done` deletes
+the worktree and everything jagt wrote into it, which today is the whole record: what the human decided survives
+in the review request, what the agent was told does not.
+
+What to decide first: whether an artifact that outlives the worktree lives in git (whose, and on which branch —
+the base branch is read-only) or beside `state.json`, and what the board shows for a task that is gone.
+
 ## A card that keeps a red run visible through a sweep that could not read it (open)
 
 A task carries ONE checks word, so a round whose pipeline listing failed writes `unknown` over a `failed` that

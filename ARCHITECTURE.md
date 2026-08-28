@@ -7,6 +7,7 @@ The rules live in [`AGENTS.md`](AGENTS.md), the situations in [`USE-CASES.md`](U
 - [The kinds](#the-kinds)
 - [The rings](#the-rings)
 - [The flow machine](#the-flow-machine)
+- [The artifact chain](#the-artifact-chain)
 - [Ports and who answers them](#ports-and-who-answers-them)
 - [Where a new thing goes](#where-a-new-thing-goes)
 - [How parity is kept](#how-parity-is-kept)
@@ -108,6 +109,35 @@ Three things the sketch does not show:
 
 Why `Facts` passes liveness as a supplier: a card uses `Facts.projected` (assume not live, costs nothing) while
 the gate uses the real probe. That is why a stuck SHIPPING card offers SHIP and the gate can still refuse it.
+
+## The artifact chain
+
+A lifecycle is read as artifacts rather than phases: every step ends by writing something the next one reads,
+and the chain of them is the audit trail — who asked for what, what the agent produced, who approved it. That
+framing is [the AI-native SDLC playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s, and jagt is
+the part of that loop between an accepted plan and a deployed branch.
+
+| step | what it leaves behind | where |
+|------|----------------------|-------|
+| `do` | the ticket as the agent read it, and the rules it works under | `AGENTS.md` in the worktree (`service/SubAgentBriefing`) |
+| a relay | the one instruction standing right now, and no older one | `task_context.md` |
+| the agent works | the diff | the task branch |
+| `ship` | commits, a pushed branch, one review request per repository | the branch, and `reviewRequests` on the task |
+| a round | what the agent means to answer, before anything is posted | `review_replies.md` |
+| any report | the sentence, its stamp, whose move it is | `state.json` |
+| `deploy` | the merge commit `revert` walks back | the deploy branch, and `deployCommit` on the task |
+| `done` | nothing: the worktree goes, and everything jagt wrote into it with it | — |
+
+Two properties of that table are the design, not an accident:
+
+- **Only the middle of it is in git.** The branch, the commits and the request outlive the task; the briefing,
+  the standing instruction and the drafted replies live in a worktree `done` removes. What a human decided is
+  recoverable from the request; what the agent was told is not.
+- **The chain is readable while the task lives** — `ide <alias>` opens the worktree holding all of it at once,
+  which is what makes a review round two files to inspect rather than a session to re-read.
+
+What is missing at the front of the chain is the accepted intent: jagt starts at a ticket somebody else wrote.
+`TODO.md` holds that question.
 
 ## Ports and who answers them
 
@@ -211,6 +241,10 @@ session in a worktree, provision it, name the file it reads its instructions fro
   (`lastSessionActivity`) and its own hooks report a stop (`surface/agent`) — no model in either path, so
   a session out of tokens still reaches the board. Which events a CLI reports is a resource
   (`adapter/…/resources/hooks/`), not a table in Java.
+- **What a session may push is refused below the CLI as well.** `service/WorktreeHooks` writes a `pre-push`
+  into the worktree's own `.jagt/hooks`, and the launch command points that session's git at it — so a CLI with
+  no hooks of its own, and a push assembled at runtime, meet the same refusal. Nothing is written to the
+  repository: [`docs/rules/git.md`](docs/rules/git.md).
 - **The one-shot assistant is a separate port** from the session runtime: an install may run a local model for
   text-to-command and a vendor CLI for the sessions. It is also the only place jagt spends money, so it is
   metered.

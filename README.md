@@ -17,6 +17,11 @@ break each other's work. You drive all of them from one place: a board in your b
 
 **Nothing leaves your machine without you.** No push, no merge request, no deploy.
 
+Once agents write the code, the bottleneck moves to the steps on either side of it — the review, the checks,
+the release — and those still run at human speed ([the AI-native SDLC
+playbook](https://claude.com/blog/the-ai-native-sdlc-playbook) is the long version). jagt is the console for
+exactly those: [three human gates](#your-three-checkpoints), for as many agents as you can keep reviewed.
+
 ```mermaid
 flowchart LR
     DO["do ABC-42"] --> IDE["ide"] --> SHIP["ship"] --> SWEEP["sweep"] --> DEPLOY["deploy"] --> DONE["done"]
@@ -87,7 +92,9 @@ jagt stops and waits for you at exactly three points. Nothing between them reach
   are a ticket read, a review round, and a `⌘K` line.
 - The board listens on `127.0.0.1`. It asks for no password and can deploy, so it stays on loopback until you
   decide otherwise.
-- No git hooks. Ever.
+- **Nothing is installed into your repository** — no git hook, no config write, nothing to uninstall. jagt's
+  own `pre-push` guard lives in the worktree it cut and is reached by that agent's session alone; your
+  project's hooks go on running inside it.
 
 Agents live in tmux and the whole state is one JSON file, so restarting the backend loses nothing.
 
