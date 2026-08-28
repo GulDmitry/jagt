@@ -211,6 +211,8 @@ What the agent does with a comment:
 | The expected poll has stopped | The card **does** ask for you — otherwise the task reads as waited-on while nothing looks at it |
 | An install with `autoReview.enabled=false` | Not that case: it polls nothing by configuration, says so once per surface, and its cards stay as they were |
 | A round answered every comment and changed no code | The card does not ask for you — `nothing to ship; the open threads are the reviewer's move`. It flips once polling stops |
+| No checks dot while the host shows a failed run | The read lists the host's OWN pipelines now, and the request object's fields are not an answer. `none` is the host listing none; `unknown` is nobody having read one |
+| A sweep that could not read the checks | `unknown`, and the round replaces whatever stood before it — the dot goes and the hover says why. What the round DID read, the comments and the approval, is relayed as usual |
 | The MR link shows no age | Only a request written into `state.json` before any of this and never read since |
 | "Is anything else running behind my back?" | The header carries the soonest run of any unattended job — and, outranking it, that a run threw. `jobs` is the detail |
 | The jobs chip reads `due` and stays there | Right: a job run writes no state, and the ticker runs every 60s. Open the Jobs report for the real schedule |

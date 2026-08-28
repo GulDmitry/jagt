@@ -59,14 +59,14 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     /**
      * {@code pipelineStatus} is an ENUM rather than a string because {@link dev.jagt.orchestrator.flow.Pipeline}
      * reads it by keyword: a sentence like {@code mergeable (CodeRabbit check failed)} carries "fail" and turns
-     * a mergeable request red. The four words are the whole vocabulary that parser recognises.
+     * a mergeable request red. The five words are the whole vocabulary that parser recognises.
      */
     private static final String REVIEW_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
             "failure":{"type":"string"},\
             "approved":{"type":"boolean"},\
-            "pipelineStatus":{"type":"string","enum":["success","failed","running","none"]},\
+            "pipelineStatus":{"type":"string","enum":["success","failed","running","none","unknown"]},\
             "openedAt":{"type":"string"},\
             "comments":{"type":"array","items":{"type":"string"}}},\
             "required":["exists","failure","approved","pipelineStatus","openedAt","comments"]}""";
@@ -143,14 +143,20 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             return Answer.unavailable();
         }
         String prompt = "Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
-                + " MCP tools. Return exists, approved (true only if the request is actually APPROVED by a human"
-                + " reviewer — not merely mergeable), pipelineStatus — the CI PIPELINE's own latest result and"
-                + " nothing else: exactly one of success | failed | running | none, never the merge status"
-                + " (mergeable, can_be_merged) and never a review bot's verdict, and none when the request has"
-                + " no pipeline at all — openedAt, the request's OWN creation timestamp as the host reports it"
-                + " (ISO-8601; empty string if it does not say), and comments — every UNRESOLVED discussion note"
-                + " (bots like CodeRabbit + humans), each as one string \"author (file:line): body\". Empty array"
-                + " if none." + FAILURE_RULE;
+                + " MCP tools. Return exists; approved (true only if the request is actually APPROVED by a human"
+                + " reviewer — not merely mergeable); pipelineStatus, the CI PIPELINE's own latest result: LIST"
+                + " this request's pipelines (or its head commit's check runs) with the host's own tool and read"
+                + " the newest one, because the request object itself often carries no pipeline field and its"
+                + " absence there answers nothing. Exactly one of success | failed | running | none | unknown,"
+                + " never the merge status (mergeable, can_be_merged) and never a review bot's verdict; none ONLY"
+                + " when that listing came back EMPTY, and unknown where you could not list them at all."
+                + " Return openedAt, the request's OWN creation timestamp"
+                + " as the host reports it (ISO-8601; empty string if it does not say), and comments — every"
+                + " UNRESOLVED discussion note (bots like CodeRabbit + humans), each as one string"
+                + " \"author (file:line): body\". Empty array if none." + FAILURE_RULE
+                + " The pipelines are the ONE exception to the failure rule above, and they change nothing"
+                + " about exists: a listing you could not get is pipelineStatus=unknown with failure=\"\","
+                + " because the comments and the approval you DID read are worth relaying without it.";
         return readable(ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT), mrUrl).map(n -> {
             List<String> comments = new ArrayList<>();
             n.path("comments").forEach(c -> comments.add(c.asString("")));

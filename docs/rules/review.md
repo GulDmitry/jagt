@@ -76,8 +76,10 @@ During the round the agent posts nothing at all — `review_replies.md` holds **
 
 A sweep already pulls the review round, so it stamps what the host said about the pipeline onto the task
 (`TaskState.pipelineStatus`, the host's **own** wording), and `flow/Pipeline` is the one parser that turns it
-into GREEN / RED / RUNNING / NONE — every host words it differently, and matching on the words themselves
-would agree by luck.
+into GREEN / RED / RUNNING / NONE / UNKNOWN — every host words it differently, and matching on the words
+themselves would agree by luck. NONE is the host answering that this request has no pipeline; UNKNOWN is
+nobody having read one. Keeping them apart is what stops a run the read never reached from looking like a
+request with no CI.
 
 The board shows one dot in the card's meta row, because a red run while the task still reads CI_POLLING is
 exactly what a status word cannot show.

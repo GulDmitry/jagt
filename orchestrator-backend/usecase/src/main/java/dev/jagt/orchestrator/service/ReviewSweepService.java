@@ -102,34 +102,31 @@ public class ReviewSweepService {
             rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
         }
         ReviewFacts r = merged(rounds);
-        record(taskId, r);
-        Pipeline checks = Pipeline.of(r.pipelineStatus());
-        boolean pipelineFailed = checks == Pipeline.RED;
-        if (r.comments().isEmpty() && !pipelineFailed) {
+        String said = record(taskId, r);
+        Pipeline checks = Pipeline.of(said);
+        if (r.comments().isEmpty() && checks != Pipeline.RED) {
             if (r.approved()) {
                 statusReports.markApproved(taskId);
                 return new SweepResult(SweepResult.Kind.APPROVED,
-                        "sweep " + taskId + ": approved, checks " + r.pipelineStatus()
-                                + " — `deploy` or `done`");
+                        "sweep " + taskId + ": approved, checks " + said + " — `deploy` or `done`");
             }
             if (checks == Pipeline.GREEN) {
                 statusReports.markReviewed(taskId);
                 return new SweepResult(SweepResult.Kind.REVIEWED,
-                        "sweep " + taskId + ": checks " + r.pipelineStatus()
+                        "sweep " + taskId + ": checks " + said
                                 + ", nothing unresolved — waiting for an approval; `deploy` without one");
             }
             return new SweepResult(SweepResult.Kind.PENDING,
-                    "sweep " + taskId + ": checks " + r.pipelineStatus()
+                    "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved yet, not approved — waiting");
         }
-        if (!sessions.relayIfChanged(taskId, brief(mrUrl, r, pipelineFailed))) {
+        if (!sessions.relayIfChanged(taskId, brief(mrUrl, r, said))) {
             return new SweepResult(SweepResult.Kind.UNCHANGED, "sweep " + taskId + ": "
-                    + r.comments().size() + " comment(s), checks " + r.pipelineStatus()
+                    + r.comments().size() + " comment(s), checks " + said
                     + " — unchanged since the last relay, so the agent was left alone");
         }
         return new SweepResult(SweepResult.Kind.RELAYED,
-                "sweep " + taskId + ": " + r.comments().size() + " comment(s) relayed, checks "
-                        + r.pipelineStatus());
+                "sweep " + taskId + ": " + r.comments().size() + " comment(s) relayed, checks " + said);
     }
 
     /**
@@ -138,25 +135,35 @@ public class ReviewSweepService {
      * says nothing, or an unattended sweep would rewrite the state file and notify on a loop. ONE write for all
      * three, since all three come off one read. The approval is STAMPED rather than left to the status, because
      * every surface shows it beside the request from CI_POLLING on, long before any status could carry it.
+     *
+     * @return the checks word the task now carries — what this round decides on, so the sweep and the card
+     *         cannot disagree about one request
      */
-    private void record(String taskId, ReviewFacts facts) {
+    private String record(String taskId, ReviewFacts facts) {
         Optional<TaskState> before = stateService.task(taskId);
         String said = before.map(TaskState::pipelineStatus).orElse(null);
-        boolean newChecks = !java.util.Objects.equals(said, facts.pipelineStatus());
+        String checks = orUnknown(facts.pipelineStatus());
+        boolean newChecks = !java.util.Objects.equals(said, checks);
         boolean newApproval = !java.util.Objects.equals(before.map(TaskState::approved).orElse(null),
                 facts.approved());
         boolean newOpened = facts.openedAt() > 0
                 && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.openedAt();
         if (!newChecks && !newApproval && !newOpened) {
-            return;
+            return checks;
         }
-        stateService.updateTask(taskId, task -> task.withPipelineStatus(facts.pipelineStatus())
+        stateService.updateTask(taskId, task -> task.withPipelineStatus(checks)
                 .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
         Pipeline was = Pipeline.of(said);
-        Pipeline now = Pipeline.of(facts.pipelineStatus());
+        Pipeline now = Pipeline.of(checks);
         if (newChecks && now.worthATap() && now != was) {
-            notifications.send(Notification.checksFailed(taskId, facts.pipelineStatus()));
+            notifications.send(Notification.checksFailed(taskId, checks));
         }
+        return checks;
+    }
+
+    /** A round that answered nothing still has to say so in a word, or every line quoting it renders a hole. */
+    private static String orUnknown(String read) {
+        return read == null || read.isBlank() ? "unknown" : read;
     }
 
     private static ReviewFacts named(String project, ReviewFacts round) {
@@ -188,15 +195,15 @@ public class ReviewSweepService {
 
     /**
      * The worst repository's own wording. Ordered by VERDICT rather than by the words themselves, so the sweep's
-     * decision and what a surface shows cannot disagree about one read; a host with no checks answers "none", so
-     * the merged line stays something a human can read.
+     * decision and what a surface shows cannot disagree about one read; a round that said nothing at all reads as
+     * "unknown", so the merged line stays something a human can read without claiming the host answered.
      */
     private static String worstPipeline(List<ReviewFacts> rounds) {
         return rounds.stream()
                 .map(round -> round.pipelineStatus() == null || round.pipelineStatus().isBlank()
-                        ? "none" : round.pipelineStatus())
+                        ? "unknown" : round.pipelineStatus())
                 .min(java.util.Comparator.comparingInt(said -> Pipeline.of(said).severity()))
-                .orElse("none");
+                .orElse("unknown");
     }
 
     /**
@@ -206,10 +213,10 @@ public class ReviewSweepService {
      * spends its opening on the three routes a comment can take, and the reply file is what carries the
      * disagreements and the questions back.
      */
-    private static String brief(String mrUrl, ReviewFacts r, boolean pipelineFailed) {
+    private static String brief(String mrUrl, ReviewFacts r, String said) {
         StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
-        if (pipelineFailed) {
-            brief.append("Checks: ").append(r.pipelineStatus()).append(" — fix the failing build.\n");
+        if (Pipeline.of(said) == Pipeline.RED) {
+            brief.append("Checks: ").append(said).append(" — fix the failing build.\n");
         }
         if (!r.comments().isEmpty()) {
             brief.append("""

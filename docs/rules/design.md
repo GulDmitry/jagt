@@ -63,7 +63,7 @@ Colour is the cheapest channel and the first to be overspent, so shape carries a
 | filled amber button | `.drafts` | answers are drafted and waiting; the line that announces them is what opens them |
 | header chip | `.chip.on`, `.chip.bad` | whether anything polls at all, and what the unattended runs did |
 | 8px dot | `.dot`, `.dot.on` | top right only: whether this page is being told about changes |
-| absence | no dot, no tick, no badge | the expected state, or nothing read yet — and the hover says which |
+| absence | no dot, no tick, no badge | the expected state, no pipeline at all, or nothing read yet — and the hover says which |
 
 **Absence is a mark and it is the cheapest one.** A fact that earns neither height nor a colour goes in
 `data-tip`, which is one node placed on hover — never `title`.

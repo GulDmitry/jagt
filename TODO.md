@@ -34,3 +34,14 @@ The size is configuration, not a constant. What the splitter needs deciding firs
 fall (a commit boundary is the only one that leaves each request buildable), how the requests are chained so
 the second targets the first rather than the base branch, and what happens to a round of comments on a request
 that a later cut has already superseded.
+
+## A card that keeps a red run visible through a sweep that could not read it (open)
+
+A task carries ONE checks word, so a round whose pipeline listing failed writes `unknown` over a `failed` that
+is still true: the dot leaves the card, and the read after it taps the human a second time for one unchanged
+failure. Carrying the old word instead is worse — it advances a task on a green nobody looked at, and on a
+multi-repo task it keeps a red alive for the repository that has since gone green.
+
+Both are the same missing fact: what was last READ, and whether the LATEST round could read it, are two facts in
+one field. The open part is whether the second one is worth a field on `TaskState` — and what the card does with
+it, given that a stale verdict and a current one must not wear the same mark.

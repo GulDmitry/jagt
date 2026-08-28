@@ -13,11 +13,15 @@ public enum Pipeline {
     /** Still going, or queued: the answer is not in yet. */
     RUNNING(1),
     /**
-     * No checks, or a word this does not recognise. Deliberately NOT green: a verdict nobody can read must never
-     * be what advances a task, and the words hosts invent are not a list anyone can finish.
+     * Nobody has read them: nothing looked yet, the read could not reach the host's pipelines, or the host said a
+     * word this does not recognise — and the words hosts invent are not a list anyone can finish. Separate from
+     * {@link #NONE} because "this request has no checks" is a fact the HOST stated, and answering ignorance with
+     * it is how a red run leaves no mark on the board.
      */
-    NONE(2),
-    GREEN(3);
+    UNKNOWN(2),
+    /** The host listed no pipeline for this request. Deliberately NOT green: nothing here says the code works. */
+    NONE(3),
+    GREEN(4);
 
     /** Worst first, for merging several repositories' rounds into one. */
     private final int severity;
@@ -32,7 +36,7 @@ public enum Pipeline {
 
     public static Pipeline of(String hostStatus) {
         if (hostStatus == null || hostStatus.isBlank()) {
-            return NONE;
+            return UNKNOWN;
         }
         String said = hostStatus.toLowerCase(Locale.ROOT);
         if (said.contains("fail") || said.contains("error") || said.contains("cancel")
@@ -49,7 +53,12 @@ public enum Pipeline {
                 || said.contains("progress") || said.contains("created") || said.contains("waiting")) {
             return RUNNING;
         }
-        return NONE;
+        // No host words it: an empty pipeline list is what "no checks" looks like on the wire, and the read that
+        // saw that list is the only caller that can say so.
+        if (said.contains("none")) {
+            return NONE;
+        }
+        return UNKNOWN;
     }
 
     /** Whether a human should be told without being asked. */

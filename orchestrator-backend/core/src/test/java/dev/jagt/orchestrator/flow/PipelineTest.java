@@ -28,14 +28,15 @@ class PipelineTest {
      */
     @Test
     void refusesToReadAFinishedRunAsAPassedOne() {
-        assertThat(Pipeline.of("COMPLETED")).isEqualTo(Pipeline.NONE);
+        assertThat(Pipeline.of("COMPLETED")).isEqualTo(Pipeline.UNKNOWN);
     }
 
     /** Merging several repositories' rounds shows the worst, so the order has to be the one a human would pick. */
     @Test
     void ranksARedRunAsWorseNewsThanNoAnswerYetAndThatWorseThanGreen() {
         assertThat(Pipeline.RED.severity()).isLessThan(Pipeline.RUNNING.severity());
-        assertThat(Pipeline.RUNNING.severity()).isLessThan(Pipeline.NONE.severity());
+        assertThat(Pipeline.RUNNING.severity()).isLessThan(Pipeline.UNKNOWN.severity());
+        assertThat(Pipeline.UNKNOWN.severity()).isLessThan(Pipeline.NONE.severity());
         assertThat(Pipeline.NONE.severity()).isLessThan(Pipeline.GREEN.severity());
     }
 
@@ -47,14 +48,19 @@ class PipelineTest {
 
     @ParameterizedTest
     @CsvSource(nullValues = "UNREAD", value = {"UNREAD", "''", "'   '"})
-    void reportsNoChecksWhenNothingHasBeenReadYet(String hostStatus) {
-        assertThat(Pipeline.of(hostStatus)).isEqualTo(Pipeline.NONE);
+    void reportsTheChecksUnreadWhenNothingHasBeenReadYet(String hostStatus) {
+        assertThat(Pipeline.of(hostStatus)).isEqualTo(Pipeline.UNKNOWN);
     }
 
     @ParameterizedTest
     @CsvSource({"wobbly", "sideways", "moonwalk"})
-    void reportsNoChecksRatherThanGuessingAtAWordNoHostUses(String hostStatus) {
-        assertThat(Pipeline.of(hostStatus)).isEqualTo(Pipeline.NONE);
+    void reportsTheChecksUnreadRatherThanGuessingAtAWordNoHostUses(String hostStatus) {
+        assertThat(Pipeline.of(hostStatus)).isEqualTo(Pipeline.UNKNOWN);
+    }
+
+    @Test
+    void reportsNoChecksOnlyWhereTheHostItselfListedNoPipeline() {
+        assertThat(Pipeline.of("none")).isEqualTo(Pipeline.NONE);
     }
 
     @Test

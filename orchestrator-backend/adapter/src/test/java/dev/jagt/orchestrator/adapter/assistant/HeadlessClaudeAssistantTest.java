@@ -149,7 +149,7 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
-    void constrainsThePipelineToFourWordsSoAMergeableRequestCannotComeBackFailed() {
+    void constrainsThePipelineToFiveWordsSoAMergeableRequestCannotComeBackFailed() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
@@ -161,7 +161,24 @@ class HeadlessClaudeAssistantTest {
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
         assertThat(command.getValue()).anyMatch(argument -> argument.contains(
-                "\"pipelineStatus\":{\"type\":\"string\",\"enum\":[\"success\",\"failed\",\"running\",\"none\"]}"));
+                "\"pipelineStatus\":{\"type\":\"string\",\"enum\":"
+                        + "[\"success\",\"failed\",\"running\",\"none\",\"unknown\"]}"));
+    }
+
+    @Test
+    void asksForTheHostsPipelineListSoAFailedRunCannotComeBackAsNoPipeline() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        assistant.readReview("https://host/mr/9");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).anyMatch(argument -> argument.contains("LIST this request's pipelines")
+                && argument.contains("none ONLY when that listing came back EMPTY"));
     }
 
     @Test

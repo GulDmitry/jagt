@@ -55,7 +55,7 @@ const rows = () => [
   [[requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age', 'MR 2d')],
     'the request and how long it has been open \u00b7 green \u2713: approved'],
   [[span('checks red', ''), span('checks green', ''), span('checks running', '')],
-    'its checks: failed \u00b7 passed \u00b7 still running. No dot: nothing read them yet'],
+    'its checks: failed \u00b7 passed \u00b7 still running. No dot: no pipeline, or nothing read it'],
   [[span('tick', '\u2713')],
     'approved, where a task spans repositories'],
   [[draftsButton()],
