@@ -154,7 +154,7 @@ public class NaturalLanguageDispatch {
      * Built from the SAME projection the surfaces render, so the mapper cannot be offered a command or a task
      * that the board does not show.
      */
-    private String context() {
+    public String context() {
         String commandList = java.util.Arrays.stream(TaskAction.values())
                 .map(action -> "- " + action.id() + ": " + action.hint())
                 .collect(Collectors.joining("\n"));

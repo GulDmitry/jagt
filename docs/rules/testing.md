@@ -36,6 +36,7 @@ chose.
 | e2e matrix | `./gradlew e2eTest` | git + tmux (source set `src/e2e/java`, **not** in `test`/`check`) |
 | board | `./gradlew boardTest` | Playwright's own Chromium (source set `src/boardTest/java`, not in `check`) |
 | Linux drivers | `./gradlew linuxDriverTest` | Linux + binaries + a display (source set `src/linuxTest/java`, gated on `JAGT_IN_CONTAINER`) |
+| prompt eval | `./gradlew promptEval` | the assistant's own CLI, and tokens (source set `src/promptEval/java`, not in `check`) |
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing` rules), verified RED by actually
 reverting the fix and running the test.
@@ -99,6 +100,20 @@ Two matrices, on purpose:
   `MasterAssistant`: the round and the request a resume adopts are stubbed on it, and the agent's own half of a
   ship — commit, push, request — is driven by the test, because that is what jagt asks of an agent rather than
   doing itself.
+
+### The prompt that steers a model is regression-tested too
+
+`promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant and asserts
+the command and the task it comes back with. What it guards is not code: the mapping prompt, the hint each
+`TaskAction` carries and the shape of the task list are text, edited like prose, and nothing else notices when
+a reword stops a request from landing.
+
+Read it as a **rate**, not as a gate — the same request can map twice and miss once, so a single red row is
+information rather than a broken build, and what matters is a rate that does not fall after an edit. Run it
+when you change any of those three, and when the model behind the assistant changes.
+
+A row is a way a human actually asks. A request containing the command word proves only that the model can copy
+a word.
 
 ### Linux is testable from a Mac
 

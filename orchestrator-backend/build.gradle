@@ -140,6 +140,15 @@ sourceSets {
     }
 }
 
+// Spends tokens through the assistant's own CLI, so it is asked for by name. NOT in `check`.
+sourceSets {
+    promptEval {
+        java.srcDirs = ['src/promptEval/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
 // Needs Linux binaries and a display, which `scripts/linux-suite.sh` provides in a container. NOT in `check`.
 sourceSets {
     linuxTest {
@@ -225,9 +234,28 @@ tasks.register('e2eTest', Test) {
     shouldRunAfter tasks.named('test')
 }
 
-// What these three prove is the MACHINE, and no machine state is in a cache key: a restored result would come
-// back green without anything having run.
-['e2eTest', 'boardTest', 'linuxDriverTest'].each { name ->
+tasks.register('promptEval', Test) {
+    description = 'Maps operator phrasings onto the grammar through the real assistant (spends tokens).'
+    group = 'verification'
+    testClassesDirs = sourceSets.promptEval.output.classesDirs
+    classpath = sourceSets.promptEval.runtimeClasspath
+    useJUnitPlatform()
+    // Gated on the binary that answers, and it names what is missing rather than failing every row on it.
+    onlyIf {
+        boolean present = (System.getenv('PATH') ?: '').split(File.pathSeparator)
+                .any { dir -> dir && new File(dir, 'claude').canExecute() }
+        if (!present) {
+            logger.lifecycle('Skipping promptEval — no `claude` on PATH; the rows are answered by the'
+                    + ' assistant configured in jagt.yml, through its own CLI.')
+        }
+        present
+    }
+    shouldRunAfter tasks.named('test')
+}
+
+// What these prove is the MACHINE — or a model — and no such state is in a cache key: a restored result would
+// come back green without anything having run.
+['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval'].each { name ->
     tasks.named(name) {
         outputs.cacheIf { false }
         outputs.upToDateWhen { false }
