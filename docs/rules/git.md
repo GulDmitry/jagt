@@ -170,15 +170,16 @@ and nothing else. No repository config is written, so jagt's own git, the human'
 every other worktree and every other clone resolve hooks exactly as before. `deploy` and `revert` run outside
 that session and are not gated by it, which is the point: what jagt refuses an agent it must not refuse itself.
 
-Pointing git at another directory REPLACES the repository's hooks rather than adding to them, so every hook the
-project has is re-exposed in `.jagt/hooks` as a stub that runs the original — a project on husky keeps its
-`pre-commit` inside the agent's session. The guard runs first and the project's `pre-push` after it: a push
-jagt refuses is one the project never had to see.
+Pointing git at another directory REPLACES the repository's hooks rather than adding to them, so **every name
+git knows** gets a stub there that runs the repository's own — a project on husky keeps its `pre-commit` inside
+the agent's session. The whole list rather than what a repository held when its worktree was cut: a fresh clone
+carries only samples, and a session that runs `npm install` an hour in would otherwise have quietly lost the
+hooks it had just installed.
 
-Pointing git elsewhere replaces the repository's hooks rather than adding to them, so every hook name **any**
-repository of the task has gets a stub in that one directory — one session, one `core.hooksPath`, several
-repositories. The stubs and the guard resolve the real hooks directory again at run time, with the override
-off, so a hook that runs git does not come back round to jagt.
+The stubs and the guard resolve the real hooks directory again **at run time**, with the override off. That is
+what makes one directory serve a whole session — a task has one `core.hooksPath` and as many repositories as it
+has worktrees — and what stops a project hook that runs git from coming back round to jagt. The guard runs
+first and the project's `pre-push` after it: a push jagt refuses is one the project never had to see.
 
 What keeps neither from growing into an enforcement layer: **pushes only**, everything else allowed without a
 word, and a shared branch still written by `deploy` alone, which is still a human's move. Three limits are

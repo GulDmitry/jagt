@@ -31,8 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * and the shape of the task list. Those are edited like prose and read like code, and nothing else notices when
  * a reworded hint stops a request from landing.
  *
- * <p>A row that fails is not automatically a broken build. Read it as the pass rate it is: the same request may
- * map twice and miss once, and what matters is a rate that does not fall after an edit.
+ * <p>Every row asserts, so one miss is a red build — but read the count rather than the colour. The same
+ * request can map twice and miss once, and what matters is how many of them land after an edit, not that all
+ * of them did.
  */
 @Tag("promptEval")
 @SpringBootTest(properties = {"spring.config.import=", "orchestrator.startup-checks=false",

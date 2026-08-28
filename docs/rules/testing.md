@@ -108,9 +108,9 @@ the command and the task it comes back with. What it guards is not code: the map
 `TaskAction` carries and the shape of the task list are text, edited like prose, and nothing else notices when
 a reword stops a request from landing.
 
-Read it as a **rate**, not as a gate — the same request can map twice and miss once, so a single red row is
-information rather than a broken build, and what matters is a rate that does not fall after an edit. Run it
-when you change any of those three, and when the model behind the assistant changes.
+Every row asserts, so one miss is red — read the **count**, not the colour. The same request can map twice and
+miss once, and what matters is how many land after an edit. Run it when you change any of those three, and when
+the model behind the assistant changes.
 
 A row is a way a human actually asks. A request containing the command word proves only that the model can copy
 a word.

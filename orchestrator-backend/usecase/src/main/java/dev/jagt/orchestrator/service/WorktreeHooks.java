@@ -24,7 +24,9 @@ import java.nio.file.attribute.PosixFilePermission;
  * about to write.
  *
  * <p>Pointing git at another directory REPLACES the repository's hooks rather than adding to them, so every
- * hook the task's repositories have is re-exposed here as a stub that runs the original.
+ * name git knows is re-exposed here as a stub that runs the repository's own. The whole list, rather than what
+ * a repository happened to hold when its worktree was cut: a fresh clone carries only samples, and a session
+ * that installs husky an hour in would otherwise have silently lost the hooks it just set up.
  *
  * <p>A guardrail, not a boundary: {@code --no-verify} skips it, as it skips any hook, and so does turning the
  * override off. What it catches is the push nobody meant to make; what stops a determined one is that a shared
@@ -42,25 +44,25 @@ public final class WorktreeHooks {
      */
     private static final String PROJECT_HOOKS =
             "$(GIT_CONFIG_COUNT=0 git rev-parse --path-format=absolute --git-path hooks 2>/dev/null)";
-    private static final String SAMPLE_SUFFIX = ".sample";
     private static final Set<PosixFilePermission> EXECUTABLE = Set.of(
             PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE);
+    /** Every name git will look for, from {@code githooks(5)} — a stub for one nobody has costs a file. */
+    private static final List<String> GIT_HOOKS = List.of("applypatch-msg", "pre-applypatch", "post-applypatch",
+            "pre-commit", "pre-merge-commit", "prepare-commit-msg", "commit-msg", "post-commit", "pre-rebase",
+            "post-checkout", "post-merge", "pre-receive", "update", "proc-receive", "post-receive",
+            "post-update", "reference-transaction", "push-to-checkout", "pre-auto-gc", "post-rewrite",
+            "sendemail-validate", "fsmonitor-watchman", "p4-changelist", "p4-prepare-changelist",
+            "p4-post-changelist", "p4-pre-submit", "post-index-change");
 
     private WorktreeHooks() {
     }
 
-    /**
-     * @param projectHooks where the task's repositories keep their own hooks, read for the NAMES they hold —
-     *                     which of them have to stay reachable. One directory of scripts serves a whole session,
-     *                     so a name any repository of the task has needs a stub here; each script finds the
-     *                     directory of the repository it is running in again for itself.
-     */
-    public static void install(Path worktree, List<Path> projectHooks, String taskBranch) {
+    public static void install(Path worktree, String taskBranch) {
         Path directory = worktree.resolve(DIRECTORY);
         try {
             Files.createDirectories(directory);
             write(directory.resolve(PUSH_HOOK), pushGuard(taskBranch));
-            for (String name : projectHookNames(projectHooks)) {
+            for (String name : GIT_HOOKS) {
                 write(directory.resolve(name), passThrough(name));
             }
         } catch (IOException e) {
@@ -140,29 +142,6 @@ public final class WorktreeHooks {
                 export GIT_CONFIG_COUNT
                 exec "$hook" "$@"
                 """.formatted(PROJECT_HOOKS, name);
-    }
-
-    private static Set<String> projectHookNames(List<Path> projectHooks) {
-        return projectHooks.stream().filter(Files::isDirectory)
-                .flatMap(WorktreeHooks::executableNamesIn)
-                .filter(name -> !name.endsWith(SAMPLE_SUFFIX))
-                .filter(name -> !name.equals(PUSH_HOOK))
-                .collect(java.util.stream.Collectors.toSet());
-    }
-
-    private static Stream<String> executableNamesIn(Path directory) {
-        try (Stream<Path> entries = Files.list(directory)) {
-            return entries.filter(Files::isRegularFile)
-                    .filter(Files::isExecutable)
-                    .map(hook -> hook.getFileName().toString())
-                    .toList().stream();
-        } catch (IOException e) {
-            log.atWarn().setMessage("project hooks unreadable")
-                    .addKeyValue("path", directory)
-                    .addKeyValue("cause", e.getMessage())
-                    .log();
-            return Stream.empty();
-        }
     }
 
     private static void write(Path script, String content) throws IOException {
