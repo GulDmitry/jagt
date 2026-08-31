@@ -104,6 +104,19 @@ class IdeLauncherTest {
         verify(editor).openDiff(Path.of("/tmp/base"), Path.of("/tmp/clean"));
     }
 
+    @Test
+    void diffsAgainstWhatTheRequestTargetsRatherThanWhereDeployLands(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release/stage", "dev", null));
+        when(git.checkoutBaseForDiff(any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
+
+        launcher(state).open("a1", "diff");
+
+        verify(git).checkoutBaseForDiff(Path.of("/repo"), "origin/release/stage", "ABC-1");
+    }
+
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = "project")

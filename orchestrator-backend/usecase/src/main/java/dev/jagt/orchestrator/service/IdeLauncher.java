@@ -57,12 +57,14 @@ public class IdeLauncher {
     private String openDiff(String taskId, TaskState task, Path worktree) {
         ProjectConfig project = configService.project(task.project());
         Path projectPath = Path.of(project.path());
-        // Against what the task MERGES INTO, not what it was cut from, so a conflict-merged deploy does not
-        // read as this task's change. A task with its own base diffs against THAT: nothing else contains it.
-        String diffBase = task.baseBranch() != null && !task.baseBranch().isBlank()
-                ? "origin/" + task.baseBranch()
-                : (project.deployBranch() != null && !project.deployBranch().isBlank()
-                        ? "origin/" + project.deployBranch() : project.baseBranch());
+        // The effective base, read exactly as the request's target is: everything already sitting on the
+        // branch the task lands on otherwise reads as this task's own change.
+        String configured = task.baseBranchOr(project.baseBranch());
+        if (configured == null || configured.isBlank()) {
+            throw new IllegalStateException("Project " + task.project() + " has no baseBranch in jagt.yml,"
+                    + " so a diff of " + taskId + " has nothing to read against");
+        }
+        String diffBase = "origin/" + configured.replaceFirst("^origin/", "");
         Path base = gitService.checkoutBaseForDiff(projectPath, diffBase, taskId);
         Path clean = gitService.checkoutWorktreeCleanForDiff(worktree, projectPath, diffBase, taskId);
         editorDriver.openDiff(base, clean);

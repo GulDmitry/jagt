@@ -249,6 +249,7 @@ What the agent does with a comment:
 | A deployed task wears no badge at all | — | Correct. DEPLOYED waits on nobody, like DONE; `done` is the only move left |
 | Merged task branches pile up | your own git | jagt has no `prune` — cleanup is one task's own business |
 | An agent stops at a permission prompt nobody answers | — | A directory Claude has never run in is untrusted, and it discards that worktree's whole allow-list. jagt records the acceptance when it wires the worktree |
+| A diff carries files nobody on the task touched | `ide <task> diff` | It is read against what the request targets (`TaskState.baseBranchOr(project.baseBranch())`), never `deployBranch` — whose own traffic would read as the task's change |
 | `git worktree list` shows `jagt-diff-*` in the temp directory | `done <task>` | A diff opened from the board cuts them and reuses them; retiring the task is what ends them |
 | Someone types `prune all` anyway | — | Answered by name, before any model call: a retired verb must never be mapped onto a live one |
 | "Is it me holding these up?" | `stats` | Per task: time on you, on its agent and on the code host, the rounds it has been out, and which of the three is slowest |
