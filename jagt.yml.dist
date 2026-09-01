@@ -1,34 +1,28 @@
-# jagt — your whole configuration.
-#
-#   cp jagt.yml.dist jagt.yml
-#
-# and fill in ONE project. Everything else already has the value shown, so a key you do not care about can stay
-# commented out — and a key you do care about is here, with what it means. Nothing is configured anywhere else.
-#
+# jagt — your whole configuration, and the only file there is: `cp jagt.yml.dist jagt.yml`, then fill in ONE
+# project. Every other key already has the value shown and can stay commented out.
 # `projects` is re-read on every access; the rest is read once, at startup.
 
 orchestrator:
 
   # ── Your repositories ──────────────────────────────────────────────────────────────────────────────────────
-  # The only section with no default. A task is cut from `baseBranch` and `deploy` merges it into
-  # `deployBranch` — those two must differ, or jagt refuses to start.
+  # The only section with no default. `deploy` merges a task into `deployBranch`, which must differ from
+  # `baseBranch`, or jagt refuses to start.
   projects:
     my-project:
       path: /absolute/path/to/base/repository
-      baseBranch: origin/main
-      deployBranch: dev
-      # Ticket labels that pick this project when `do` names no project. Omit and you name it yourself.
-      # labels: [proj, my-project]
+      baseBranch: origin/main       # tasks are cut from here; jagt never pushes to it
+      deployBranch: dev             # omit to disable deploy for this project
+      # labels: [proj, my-project]  # ticket labels that pick this project when `do` names none
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
-  # Not detected: jagt refuses to start when this is not what the machine reports.
-  platform: macos          # macos | linux
+  platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
   # kittyCommand: kitty   # if the binary is not on PATH
-  # kittyFontSize: 13     # blank keeps kitty.conf's own (default 11)
+  # kittyFontSize: 13     # blank keeps kitty.conf's own
   tmuxCommand: tmux       # a bare name is resolved on PATH and in the usual install dirs
+  # terminalNotifierCommand: terminal-notifier   # macOS: clickable banners; falls back to osascript
+  # notifySendCommand: notify-send               # Linux: the libnotify sender
 
-  # Any CLI launcher; the worktree path is appended. `open -a` will NOT do — it activates the app without
-  # opening what you passed it.
+  # Any CLI launcher; the worktree path is appended. NOT `open -a`, which activates the app but opens nothing.
   editorCommand: ["idea"]
   editorDiffCommand: ["idea", "diff"]     # two paths are appended: <left> <right>
 
@@ -41,40 +35,37 @@ orchestrator:
 
   # ── The agents ─────────────────────────────────────────────────────────────────────────────────────────────
   agent:
-    # cli: codex          # claude | codex. A Codex worktree runs against its own CODEX_HOME, so your
-    #                     # ~/.codex servers are not there. Read at startup; the two below are read live.
+    # cli: codex          # claude | codex; read at startup, unlike the two below. A Codex worktree runs
+    #                     # against its own CODEX_HOME, so your ~/.codex servers are not there.
     outputStyle: ""       # a Claude output style to start every sub-agent with
-    probeSeconds: 600     # how long a session may be quiet before its liveness is probed the expensive way
+    probeSeconds: 600     # how often every running session's liveness is probed
 
   claude:
     command: claude       # also used by the headless reads, which stay Claude whichever agent runs the tasks
   # codex:
   #   command: codex
 
-  # The first thing every spawned sub-agent is told. The built-in one starts it on task_context.md and holds it
-  # to leaving the work uncommitted; replace it only knowing what that gives up.
+  # The built-in prompt starts every sub-agent on task_context.md and holds it to leaving work uncommitted.
   # agentPrompt: >-
   #   You are the sub-agent for this worktree. …
 
   watchdog:
     staleAfter: 5m        # silence before an "agent stopped" alert; a hook report needs no wait
 
-  # Opt-in for RAM-constrained setups: dropping an LSP plugin buys memory and costs the agent its code
-  # intelligence.
-  # agentDisabledPlugins:
+  # agentDisabledPlugins:   # dropping an LSP plugin buys memory and costs the agent its code intelligence
   #   - jdtls-lsp@claude-plugins-official
 
   worktree:
-    copyGlobs: ["**/.env"]   # files carried from the base repository into every fresh worktree
+    copyGlobs: ["**/.env"]   # gitignored files carried from the base repository into every fresh worktree
 
-  # ── Reading tickets and review rounds ──────────────────────────────────────────────────────────────────────
-  # The only place jagt spends model money. Each read is a HEADLESS one-shot of your agent CLI, which cannot log
-  # in interactively and does not load plugin-scoped MCP servers — see docs/installation.md before trusting it.
+  # ── Reading tickets, merge requests and review rounds ──────────────────────────────────────────────────────
+  # The only place jagt spends model money. Each read is a HEADLESS one-shot of your agent CLI: no interactive
+  # login, no plugin-scoped MCP server. Read docs/installation.md before trusting it.
   assistant:
     model: haiku                        # blank inherits your own; the reads are mechanical
     settingSources: user,project,local  # NOT `project` alone: the call runs from a temp dir, which has none
     permissionMode: bypassPermissions   # nothing can answer a permission prompt in a headless call
-    # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # takes precedence over permission-mode
+    # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # takes precedence over permissionMode
     # mcpConfig: /path/to/mcp-servers.json   # pin the servers instead of inheriting all of them
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
@@ -86,8 +77,8 @@ orchestrator:
       removeSourceBranch: true
       squash: true
 
-  # Unattended polling of open review requests. It only READS and DRAFTS — it never ships, deploys or posts.
-  # It costs a model call per poll: 24h on one request is $3–$7.
+  # Unattended polling of open review requests: it only READS and DRAFTS, never ships, deploys or posts.
+  # One model call per poll — 24h on one request is $3–$7.
   autoReview:
     enabled: false
     windowHours: 24         # stop polling a round this old
@@ -95,17 +86,14 @@ orchestrator:
     maxIntervalMinutes: 60
 
   # ── Safety ─────────────────────────────────────────────────────────────────────────────────────────────────
-  # Refuse to start when part of the installation is missing, rather than failing at the click that needs it.
-  startupChecks: true
+  startupChecks: true     # refuse to start when part of the installation is missing
 
-# `orchestrator.configFile` is the one key that cannot live here — it says where THIS file is, which is
-# answered before it is read. Pass it as `--orchestrator.config-file=…` or `ORCHESTRATOR_CONFIG_FILE=…`.
-#
-# `root` and `stateFile` DO work here: they move where worktrees are cut and where state.json is kept, and the
-# file being read stays the one the launch found either way.
+# Six more keys work here, left out because almost nobody sets them: `mcpUrl`, `hookUrl` and `gateUrl` are
+# derived from `server.port`, `stub.script` is for the e2e matrix, and `root` and `stateFile` move where
+# worktrees are cut and where state.json is kept. `configFile` alone cannot live here — it says where THIS file
+# is: pass `--orchestrator.config-file=…` or `ORCHESTRATOR_CONFIG_FILE=…`.
 
 # The board listens on loopback: it asks for no password and can deploy, close a task and start an agent.
-# Widening this is a line you write yourself, knowing that.
 server:
   address: 127.0.0.1
   port: 8290

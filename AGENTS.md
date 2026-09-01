@@ -1,10 +1,10 @@
 # jagt — rules
 
 Local orchestration of AI coding-agent CLI sessions across isolated Git worktrees. Java 25 / Spring Boot 4.x,
-macOS-first, with every OS- and agent-specific piece behind a strategy interface.
-
-**This file is `AGENTS.md`**; `CLAUDE.md` is a symlink to it. No file here is named after one vendor — a rule
-written into a vendor-named file binds one session in three.
+macOS-first, every OS- and agent-specific piece behind a strategy interface. **This file is `AGENTS.md`**,
+`CLAUDE.md` a symlink to it, and nothing here is named after one vendor. Every CLI reads it and reaches the same
+MCP server; no root session carries a worktree header, so every one is Master. Which file each CLI reads it
+through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-jagt-reads-the-same-file-and-reaches-the-same-server).
 
 ## Where things are written down
 
@@ -12,10 +12,11 @@ written into a vendor-named file binds one session in three.
 |------|-------|
 | `AGENTS.md` (this) | the rules you must not break, and where to read the rest |
 | `docs/rules/*.md` | each rule in full, with why. **Read the one that covers what you are about to change.** |
+| `.claude/rules/` | the same table as path-scoped pointers, and no rule of its own |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | the map: what kinds of thing jagt has, and where a new one goes |
 | [`USE-CASES.md`](USE-CASES.md) | one line per situation, already decided |
 | [`README.md`](README.md) + `docs/` | what a human installing jagt needs |
-| `TODO.md` | only what is still open. Holding nothing is its normal state |
+| [`TODO.md`](TODO.md) | only what is still open. Holding nothing is its normal state |
 
 A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/`, the road to it in git history.
 
@@ -34,41 +35,21 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 | `state.json`, task creation, MCP scoping, startup checks | [`docs/rules/components.md`](docs/rules/components.md) |
 | a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
 | a comment, a doc, a prompt, the shape of a class | [`docs/rules/style.md`](docs/rules/style.md) |
+| a **kind** of thing no rule covers | [`ARCHITECTURE.md`](ARCHITECTURE.md) — if it fits no kind, add a kind |
 
-`.claude/rules/` carries the same table as path-scoped pointers, so a Claude session is reminded when it opens
-one of those files. They hold no rule of their own — this table is the answer every CLI gets.
-
-Adding a **kind** of thing no rule covers: read `ARCHITECTURE.md` first. If it fits no kind, the kind is
-missing — add a kind, never an exception.
-
-## Git
+## Git and committing
 
 - **The base branch is read-only.** Nothing pushes or merges to it, ever.
-- **The only writes to a shared branch are `deploy` and its undo `revert`.** `ship` opens or updates a review
-  request; it never merges. `revert` adds a commit — no history rewrite, no force-push.
+- **Only `deploy` and its undo `revert` write a shared branch**: `ship` only opens or updates a request; `revert` adds a commit — no force-push.
 - A sub-agent pushes **its own task branch** and nothing else.
-- **Never `git add -A`.** Several sessions share this tree — stage the explicit paths you touched.
-- **No git hook in a repository, ever.** Never add one to a project, never ask a human to install one, never
-  make an invariant depend on one being there.
-- **jagt's own hooks are not that**: written into the worktree jagt cut, under `.jagt/`, reached by the session
-  it launched and by nothing else. They refuse exactly one thing — a push to anything but the task's own branch
-  — and the project's hooks go on running underneath. An agent CLI's hooks report a session's state and answer
-  the same one refusal. Nothing else is ever gated in either.
+- **Never `git add -A`** — several sessions share this tree; stage the explicit paths you touched.
+- **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
+- **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, reached by that session alone,
+  refusing exactly one thing — a push to anything but the task's own branch — with the project's hooks still
+  running underneath; an agent CLI's hooks answer that refusal and report session state, and nothing else is gated.
 - Never add a warning, a badge or a gate to the deploy confirm. It names the writes and gets out of the way.
-
-## Committing
-
-- **Commit every finished piece of work in the same turn it went green.** Permission to commit is standing;
-  permission to push is not.
-- **Code review is mandatory before every commit**, and scoped to what *this* session touched — never the
-  working diff, never the branch:
-
-  | when | run |
-  |------|-----|
-  | before committing | `/code-review medium <the paths you changed>` |
-  | after committing | `/code-review medium <sha>^..<sha>` |
-
-  Stay at `medium` unless the change is genuinely subtle. Fix every real finding or say why it is not one.
+- **Commit every finished piece of work in the turn it went green**; permission to commit is standing, to push is not.
+- **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)).
 - Where the review skill cannot run, read the diff yourself, say so in one line, and commit anyway.
 - **Work left sitting in the tree is not delivered.**
 
@@ -76,89 +57,65 @@ missing — add a kind, never an exception.
 
 - Gradle, **Groovy DSL only**. Never Maven, never Kotlin — including `.kts`.
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
-- **Three collaborators per class is the target, five is the hard ceiling** — including a class that only
-  delegates. Over it, group them into a component; never add one more field.
+- **Three collaborators per class is the target, five the ceiling**, delegates included: group them into a component, never add a field.
 - **A test needing more than ~3 mocks means the class does too much.** Fix the class, never the fixture.
-- **Nothing below `flow/` names a status.** `withStatus` appears in `flow/` and in the record that implements
-  it, nowhere else.
+- **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it.
 - **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring and no Lombok.
-- **The board has no build step, no CDN and no external asset of any kind** — it must work offline, inside the
-  one jar.
-- **A capability that exists in one surface only is a bug.** Per-task verbs come from `Move.actions()`; global
-  verbs are `GlobalCommand` beans. Neither surface holds a list.
+- **The board has no build step, no CDN and no external asset** ([`docs/rules/design.md`](docs/rules/design.md)).
+- **A capability the board cannot express is a bug**: per-task verbs from `Move.actions()`, global from `GlobalCommand` beans; no surface has a list.
 - **No GUI or keystroke automation, ever.** Keystrokes land in whatever is focused.
 - No positional null-soup: value records get `defaults()` + `withX` withers or a builder.
 - Lombok carries the mechanical boilerplate only.
 
 ## Interfaces
 
-**Nothing is added to a surface without saying what it replaces.** A board is read at a glance or it is not
-read at all, and design is what a human pays for in attention. What it costs to add a mark:
-[`docs/rules/surfaces.md`](docs/rules/surfaces.md). What the marks ARE — every colour, every shape, and the
-`Help` legend that renders them: [`docs/rules/design.md`](docs/rules/design.md). Read both before you put
-anything on the board.
-
-- **Never two controls for one question.** "How does this work" already has a button; a colour legend is a
-  section of it, never a second button beside it. The same goes for a report, a filter and a form.
-- **A fact goes ON the thing it is about** — the verb's own button, the card's own edge — never as one more
-  mark beside the others for a human to find and match up.
-- **A row that already carries four things does not want a fifth**, and **a card must not grow taller** to
-  hold one. Height and cognitive load are the same budget spent twice; a fact that earns neither goes in the
-  hover.
-- **A colour means one thing, board-wide** — the meanings are [`docs/rules/design.md`](docs/rules/design.md)
-  and nowhere else, because two wordings for one colour is how the second meaning gets in. Colour is the
-  cheapest mark and the easiest to overspend: a second meaning is read wrong before anyone looks it up.
+- **Nothing is added to a surface without saying what it replaces** — what a mark costs,
+  [`docs/rules/surfaces.md`](docs/rules/surfaces.md); every mark and the `Help` legend rendering them, [`docs/rules/design.md`](docs/rules/design.md).
+- **Never two controls for one question** — a report, a filter and a form included.
+- **A fact goes ON the thing it is about**: the verb's own button, the card's own edge.
+- **A row carrying four things does not want a fifth**, and **a card must not grow taller** — a fact earning neither goes in the hover.
+- **A colour means one thing, board-wide** — the meanings live in `docs/rules/design.md` and nowhere else.
 - **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
-- Every mark has one row in the legend, and the legend renders the page's **own** element rather than naming a
-  colour in words.
-- **Getting started must stay one copied file and one command.** Configuration lives in `jagt.yml` and nowhere
-  else — never a second file, a hidden override or an undocumented default. Every option an engineer can set
-  is in `jagt.yml.dist` with what it means; anything not worth explaining there is not worth having.
+- **Every mark has one row in the legend**, rendered as the page's own element rather than named in words.
+- **Getting started stays one copied file and one command.** Every option lives in `jagt.yml` and nowhere else, described in `jagt.yml.dist`.
 
 ## Tests
 
-- The gate is `cd orchestrator-backend && ./gradlew test`. `e2eTest`, `boardTest` and `linuxDriverTest` are
-  asked for by name — each needs a machine a hermetic run must not depend on.
+- The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest` and `promptEval` are asked for by name.
 - **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it.
 - Run `./gradlew boardTest` after any change to `static/`.
-- A suite that opens a window must leave no trace: `--orchestrator.open-terminal-window=false`, a throwaway
-  tmux session, cleanup afterwards.
-- **No absolute paths in defaults.** An external binary is configured by bare name and resolved by
-  `adapter/Executables`.
+- A suite that opens a window leaves no trace: `--orchestrator.open-terminal-window=false`, a throwaway tmux session, cleanup.
+- **No absolute paths in defaults**: an external binary is configured by bare name and resolved by `adapter/Executables`.
 
 ## Writing
 
-- **Load `sob-ai:commenting` before writing or editing any comment.** The default is **no** comment; one
-  non-obvious WHY at most. A file may only speak its own layer.
-- **Every log line is structured, never interpolated**: `log.atWarn().setMessage("read failed")
-  .addKeyValue("url", url).addKeyValue("cause", why).log()` — constant event, values as fields, `cause` on
-  every failure. Never `{}` in a message, never `+` into one. Grammar and keys:
-  [`docs/rules/style.md`](docs/rules/style.md).
-- **Every text jagt writes is read by an engineer in a hurry**: one fact per line, a decision plus at most one
-  clause of why — never the road to it. This binds command sentences, docs, prompts and commit messages alike.
-- **English only, everywhere.** The NL palette *accepts* any language; jagt *writes* nothing but English. The
-  one exception is functional: kitty's ЙЦУКЕН keymap, where the symbols are the key events.
-- **Never a real ticket key, project name or issue title** — anywhere, including tests and fixtures. Invent
-  `ABC-42`.
-- Markdown ~120 characters per line, hard max 150.
-- When a case turns out to be non-obvious, append a row to `USE-CASES.md` instead of only fixing the code.
+- **Write less than feels complete.** Delete every sentence that explains, argues, reassures or names the
+  option you rejected. Load `sob-ai:commenting` before writing a comment.
+- **One fact per line**: a decision plus one clause of why, never the road to it nor what it used to be — in
+  comments, docs, prompts, output and commit messages alike.
+- **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
+- **Never cite a line number or a line count** in a doc or a comment — it is wrong at the next edit; name the file, the symbol or the rule.
+- **Budgets, asserted by `TextBudgetTest`**: a `docs/rules/` file ≤ 700 words, a guide ≤ 1200, no line over 220
+  characters, comments ≤ 15% of main sources. Counted in WORDS — a paragraph folded into a table cell is the
+  same paragraph. Over budget means cut text; raising a number is the owner's call.
+- **Every log line is structured**: constant event message, values as fields, `cause` on every failure. Never
+  `{}` in a message, never `+` into one. Keys: [`docs/rules/style.md`](docs/rules/style.md).
+- **English only.** The one exception is kitty's ЙЦУКЕН keymap, where the symbols are the key events.
+- **Never a real ticket key, project name or issue title**, tests and fixtures included. Invent `ABC-42`.
+- Markdown ~120 columns, hard max 150. A non-obvious case earns a one-line `USE-CASES.md` row, not a paragraph.
 
 ## The human in the loop
 
 - jagt never commits to a shared branch, opens a review request, deploys, or posts a reply **on its own**.
-- **The auto-review loop only reads and drafts.** It never ships, deploys, pushes or posts. Do not erode this:
-  the gate lives in the outcome, not in who triggered the sweep.
-- **A review round is a judgement, not a work order.** Fix the comment, change nothing and say why, or ask —
-  never implement a suggestion you think is wrong.
-- A blocked session must reach the dashboard. An agent reports `outcome=question` **before** putting any
-  question to a human — and a task that **contradicts** what the code already guarantees is such a question,
-  asked before the code picks a side, never decided quietly and named in the closing report.
-- **What is still open is a list, not a paragraph.** What the agent settled without an answer and the human
-  still has to know goes under one `OPEN QUESTIONS:` line ending the session's terminal output. It never
-  replaces `outcome=question`: if the answer would have changed the code, the agent asks.
-- **No limit on concurrent tasks, and no bulk branch cleanup.** Both were built and removed on the owner's
-  instruction. Do not reintroduce a cap, a queue, a slots indicator or a `prune` verb.
+- **The auto-review loop only reads and drafts** — never ships, deploys, pushes or posts; the gate is in the outcome, not the trigger.
+- **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
+- A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human, and a
+  task contradicting what the code guarantees is such a question, asked before the code picks a side — never
+  decided quietly and named in the closing report.
+- **What is still open is a list, not a paragraph**: one `OPEN QUESTIONS:` line ends the session's terminal
+  output with what the agent settled unasked. If the answer would have changed the code, it asks instead.
+- **No limit on concurrent tasks, and no bulk branch cleanup** — never a cap, a queue, a slots indicator or a `prune` verb.
 
 ## Build & run
 
@@ -170,17 +127,5 @@ curl -s localhost:8290/state               # verify
 ```
 
 > [!IMPORTANT]
-> **Run the staged jar.** `./gradlew build` rewrites `jagt.jar` **in place** (same inode), so a JVM running
-> from it corrupts its class loading: the first not-yet-loaded class dies with `NoClassDefFoundError` — which
-> then masks the real error — and a still-running instance answers 500 on the endpoints it had not served yet.
-> It is not a code bug. Do not "fix" it by preloading classes; restart from the freshly staged jar.
-
-## Working on jagt with any agent CLI
-
-| CLI | reads | reaches jagt's MCP through |
-|-----|-------|----------------------------|
-| Claude | `AGENTS.md` via the `CLAUDE.md` symlink | `.mcp.json` (HTTP) |
-| Codex | `AGENTS.md` natively | `.codex/config.toml` (stdio bridge; start it at the repository root) |
-| Qwen | `AGENTS.md` via `.qwen/settings.json` | `.qwen/settings.json` (HTTP) |
-
-None carries a worktree header, so every root session is Master.
+> **Run the staged jar.** `./gradlew build` rewrites `jagt.jar` in place, and a JVM reading it dies with a
+> `NoClassDefFoundError` that masks the real error — [why](docs/troubleshooting.md#startup-and-the-jar).

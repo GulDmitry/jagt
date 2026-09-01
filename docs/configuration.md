@@ -2,24 +2,13 @@
 
 [← README](../README.md)
 
-Everything is in **one file**: `jagt.yml`, at the repository root.
+Everything is in **one file**: `jagt.yml` at the repository root — `cp jagt.yml.dist jagt.yml`. The dist file
+carries every key with what it means; your copy is gitignored, so comment it freely.
 
-```sh
-cp jagt.yml.dist jagt.yml
-```
-
-`jagt.yml.dist` carries every key there is with what it means, so the copy is already the reference — delete
-what you do not need, comment freely, keep it as your own notes. It is gitignored.
-
-One root, `orchestrator:`, holds all of it. Two things read that file: jagt itself, which re-reads `projects`
-on **every access** so an edit needs no restart, and Spring, which binds the rest **once at startup**.
-
-Two other places can override it, and neither is one you edit:
-
-- `orchestrator-backend/src/main/resources/application.yml` — the defaults, built into the jar and committed.
-  It is what a key falls back to when your file omits it.
-- a flag or an environment variable on the command line — `--server.port=8390`, `LOG_FILE=…` — for one run,
-  outranking both files.
+One root, `orchestrator:`, holds all of it. jagt re-reads `projects` on **every access**; Spring binds the rest
+**once at startup**. An omitted key falls back to the defaults built into
+`orchestrator-backend/src/main/resources/application.yml`. A flag or environment variable
+(`--server.port=8390`, `LOG_FILE=…`) outranks both files, for one run.
 
 > [!NOTE]
 > `config.json` is no longer read. If one is still lying around, jagt refuses to start and prints the `jagt.yml`
@@ -42,68 +31,45 @@ orchestrator:
 | key | meaning |
 |-----|---------|
 | `path` | absolute path to the base repository |
-| `baseBranch` | where task branches are cut from. **Read-only** — jagt never pushes here |
-| `deployBranch` | target of `deploy`. Omit to disable deploy for this project |
+| `baseBranch` | where task branches are cut from. **Read-only**: jagt never pushes here |
+| `deployBranch` | target of `deploy`; omit to disable deploy here |
 | `labels` | hints for mapping a ticket to this project |
 
 ## Re-read while jagt runs
 
-These are read on every access, so an edit lands without a restart. Any of them may be omitted — each key
-falls back to its default.
-
-### viewer
+Read on every access, so an edit lands without a restart. Any key may be omitted.
 
 | key | default | meaning |
 |-----|---------|---------|
-| `tmuxSession` | `jagt` | name of the agents' tmux session |
-| `viewMode` | `shared` | `shared` = one tab for all tasks; `tab-per-task` = one per task |
-| `keepViewer` | `true` | keep the agents window open after the last task |
-
-### codeReview
-
-| key | default | meaning |
-|-----|---------|---------|
-| `mrTitlePattern` | `{ticket} {title}` | request and commit title template |
-| `postReviewReplies` | `true` | on `ship`, post the agent's drafted replies to the threads |
-| `reviewReplyAuthors` | `[]` | post replies only to threads by these authors; empty = all |
-| `mergeRequestDefaults` | both `true` | `removeSourceBranch` and `squash` on created requests |
-
-### autoReview
-
-Off by default. When on, jagt polls every task that has an open review request — approval advances the task,
-comments are drafted for you. **It never posts, pushes or deploys.**
-
-| key | default | meaning |
-|-----|---------|---------|
-| `enabled` | `false` | poll open review requests |
-| `windowHours` | `24` | how long polling runs per round, then it pings you to `sweep` |
-| `minIntervalMinutes` | `10` | interval at the start of the window |
-| `maxIntervalMinutes` | `60` | interval at the end; it ramps linearly between the two |
-
-### agent, worktree
-
-| key | default | meaning |
-|-----|---------|---------|
+| `viewer.tmuxSession` | `jagt` | name of the agents' tmux session |
+| `viewer.viewMode` | `shared` | one tab for all tasks, or `tab-per-task` |
+| `viewer.keepViewer` | `true` | keep the agents window open after the last task |
+| `codeReview.mrTitlePattern` | `{ticket} {title}` | request and commit title template |
+| `codeReview.postReviewReplies` | `true` | on `ship`, post the drafted replies to the threads |
+| `codeReview.reviewReplyAuthors` | `[]` | reply only to threads by these authors; empty = all |
+| `codeReview.mergeRequestDefaults` | both `true` | `removeSourceBranch` and `squash` on created requests |
+| `autoReview.enabled` | `false` | poll open review requests |
+| `autoReview.windowHours` | `24` | polling per round, then it pings you to `sweep` |
+| `autoReview.minIntervalMinutes` | `10` | interval at the start of the window |
+| `autoReview.maxIntervalMinutes` | `60` | interval at the end; it ramps linearly |
 | `agent.outputStyle` | `""` | output style for the agent CLI; empty = the agent's own |
-| `agent.probeSeconds` | `600` | how often every running session is looked at; a session whose hooks report needs no wait |
+| `agent.probeSeconds` | `600` | how often a session is probed; one whose hooks report needs no wait |
 | `worktree.copyGlobs` | `["**/.env"]` | gitignored local files copied into each worktree |
+
+Auto-review polls every task with an open review request: approval advances it, comments are drafted for you.
+**It never posts, pushes or deploys.**
 
 ## Read once, at startup
 
-### The board and the platform
+### Board, platform, terminal and editor
 
 | key | default | meaning |
 |-----|---------|---------|
-| `orchestrator.platform` | `macos` | `macos` or `linux`; selects the notifier and kitty driver. Refused when it is not what the machine reports |
+| `orchestrator.platform` | `macos` | `macos` or `linux`; picks the notifier and kitty driver. Refused when the machine reports otherwise |
 | `server.address` | `127.0.0.1` | which interface the board listens on |
 | `server.port` | `8290` | the board's port |
 | `orchestrator.notify-send-command` | `notify-send` | Linux only |
 | `orchestrator.terminal-notifier-command` | `terminal-notifier` | macOS only; a build that refuses the banner falls back to osascript |
-
-### Terminal and editor
-
-| key | default | meaning |
-|-----|---------|---------|
 | `orchestrator.kittyCommand` | `kitty` | the kitty binary |
 | `orchestrator.kitty-font-size` | *(blank)* | blank keeps kitty.conf's own |
 | `orchestrator.tmuxCommand` | `tmux` | the tmux binary |
@@ -120,31 +86,27 @@ comments are drafted for you. **It never posts, pushes or deploys.**
 | `orchestrator.codex.command` | `codex` | the Codex binary |
 | `orchestrator.agentPrompt` | *(built in)* | bootstrap prompt every sub-agent starts with |
 | `orchestrator.agentDisabledPlugins` | *(empty)* | plugins disabled per agent worktree |
-| `orchestrator.mcpUrl` | `http://localhost:<port>/mcp` | where an agent reaches jagt |
-| `orchestrator.hookUrl` | `http://127.0.0.1:<port>/api/agent/session` | where an agent CLI's hooks report a stopped session |
+| `orchestrator.mcpUrl` | `http://127.0.0.1:<port>/mcp` | where an agent reaches jagt |
+| `orchestrator.hookUrl` | `http://127.0.0.1:<port>/api/agent/session` | where a CLI's hooks report a stopped session |
 | `orchestrator.gateUrl` | `http://127.0.0.1:<port>/api/agent` | where a session asks before it pushes |
 | `orchestrator.stub.script` | — | only for `orchestrator.agent.cli=stub` |
 
 ### Master assistant
 
-The one place jagt spends model money, and the only way it reads a ticket or a review round: a headless
-one-shot read through the MCP servers of whoever runs jagt.
+The one place jagt spends model money, and the only way it reads a ticket, a merge request or a review round:
+a headless one-shot read through the MCP servers of whoever runs jagt.
 
 | key | default | meaning |
 |-----|---------|---------|
-| `orchestrator.assistant.model` | `haiku` | ≈$0.06 a call vs ≈$0.41 on the inherited default; blank = yours |
+| `orchestrator.assistant.model` | `haiku` | blank inherits your own; costs in [seams](rules/seams.md) |
 | `orchestrator.assistant.setting-sources` | `user,project,local` | which MCP and settings the read inherits |
 | `orchestrator.assistant.permission-mode` | `bypassPermissions` | lets the headless read call MCP at all |
 | `orchestrator.assistant.allowed-tools` | *(empty)* | `mcp__<server>` allow-list; scopes the bypass |
 | `orchestrator.assistant.mcp-config` | *(empty)* | declare the servers instead of inheriting them |
 
-Inheriting is the default and usually right. **Declare instead when the servers that can answer are
-plugin-scoped**: a headless `-p` read loads none of those, so an install whose tracker and code-host servers
-come from a plugin has NO tool for either — and the read fails naming whichever unauthenticated connector it
-could still see, which is not the one at fault. `claude mcp list` shows the plugin server as connected the
-whole time, so nothing looks wrong. Point the key at a servers file (the plugin's own `.mcp.json` will do —
-its `${VAR}` placeholders resolve from the environment the backend was started in) and the read gets exactly
-those and nothing else. Details: [seams](rules/seams.md).
+Inheriting is the default. **Declare instead when the servers that can answer are plugin-scoped or need an
+interactive login** — a headless read has neither, and the command that shows it is in
+[Installation](installation.md#mcp-access-comes-first).
 
 ### Paths and safety
 
@@ -152,35 +114,31 @@ those and nothing else. Details: [seams](rules/seams.md).
 |-----|---------|---------|
 | `orchestrator.startupChecks` | `true` | refuse to start when the installation is incomplete |
 | `orchestrator.watchdog.stale-after` | `5m` | silence before an "agent stopped" alert; a hook report needs no wait |
-| `orchestrator.configFile` | *(root)* | where `jagt.yml` lives |
+| `orchestrator.configFile` | *(root)* | where `jagt.yml` lives — flag or env only, being read before it |
 | `orchestrator.stateFile` | *(root)* | where `state.json` lives |
 | `orchestrator.root` / `ORCHESTRATOR_ROOT` | *(auto)* | override the detected orchestrator root |
 
 ## Notes
 
-**`worktree.copyGlobs`.** Run configs reference module `.env` files, keys and certificates that are gitignored
-and therefore missing from a fresh worktree, so the app would not start. Every copy is another copy of a
-credential in a sibling directory — widen this yourself, per project, to what your run configs actually need.
-A `**/` prefix also matches at the repository root, so `**/.env` covers both `app/.env` and a single-module
-repo's own `.env`.
+**`worktree.copyGlobs`** is one top-level list for every project. Widen it to what your run configs need,
+knowing each copy is another copy of a credential in a sibling directory. `**/` also matches at the repository
+root, so `**/.env` covers both `app/.env` and a single-module repo's own `.env`.
 
-**`server.address`.** The board asks for no password and can deploy, close a task and start an agent, so it
-stays on loopback until you decide otherwise. Client defaults use `127.0.0.1` rather than `localhost`, which
-resolves `::1` first and would cost a refused connection per call.
+**`server.address`** stays on loopback until you decide otherwise. Clients default to `127.0.0.1` rather than
+`localhost`, which resolves `::1` first and would cost a refused connection per call.
 
-**`assistant.mcp-config` buys determinism, not money.** Measured cold it cost $0.09 against $0.04 for the
-inherited config, which rides the prompt cache your own sessions keep warm. Server names also lose their
-plugin scope here (`mcp__gitlab__…`, not `mcp__plugin_<x>_gitlab__…`), so an `allowed-tools` list written for
-the inherited names silently stops matching.
+**`assistant.mcp-config` buys determinism, not money** — figures in [seams](rules/seams.md). Server names lose
+their plugin scope here (`mcp__gitlab__…`, not `mcp__plugin_<x>_gitlab__…`), so an `allowed-tools` list written
+for the inherited names stops matching.
 
-**`CLAUDE_CONFIG_DIR` is read from jagt's own environment**, not from the session's. Exporting it in one shell
-and starting jagt from another loses the derived path to a session's log; a session that reports the file it
-appends to is unaffected either way.
+**`CLAUDE_CONFIG_DIR` is read from jagt's own environment**, not the session's: exporting it in one shell and
+starting jagt from another loses the derived path to a session's log.
 
-**Binaries are resolved by bare name** — PATH first, then the usual install directories (Homebrew included, a
-GUI-launched process has neither on PATH), then inside application bundles. Give an absolute path to pin one.
-For `editor-command` only the launcher is resolved; the arguments stay yours.
+**Binaries are resolved by bare name** — PATH, then the usual install directories (a GUI-launched process has
+no Homebrew on PATH), then inside application bundles. Give an absolute path to pin one; for `editorCommand`
+only the launcher is resolved, and the arguments stay yours.
 
-**`startup-checks`.** Every problem is reported at once, each line naming the key that fixes it. Nothing
-reaches the network, so a token that is present but wrong surfaces at the first read instead. Test suites and
-smoke scripts pass `false`: what is checked is your machine, and a CI runner is not one.
+**`startupChecks`.** What is missing is [said at startup, all of it at
+once](rules/components.md#what-is-missing-is-said-at-startup-not-at-the-click-that-needed-it). Nothing reaches
+the network, so a token that is present but wrong surfaces at the first read instead. Test suites and smoke
+scripts pass `false`: what is checked is your machine, and a CI runner is not one.

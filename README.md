@@ -12,33 +12,33 @@
 </p>
 
 jagt hands a ticket to an autonomous AI coding agent — [Claude Code](https://claude.com/claude-code) by
-default, Codex or any MCP-capable CLI — running in its own isolated Git worktree, so two agents cannot see or
-break each other's work. You drive all of them from one place: a board in your browser.
+default, or Codex — running in its own isolated Git worktree, so two agents cannot see or break each other's
+work. You drive all of them from one place: a board in your browser.
 
 **Nothing leaves your machine without you.** No push, no merge request, no deploy.
 
-Once agents write the code, the bottleneck moves to the steps on either side of it — the review, the checks,
-the release — and those still run at human speed ([the AI-native SDLC
-playbook](https://claude.com/blog/the-ai-native-sdlc-playbook) is the long version). jagt is the console for
-exactly those: [three human gates](#your-three-checkpoints), for as many agents as you can keep reviewed.
+Agents write code faster than humans can review, check and release it. jagt is the console for those three
+[human gates](#your-three-checkpoints), for as many agents as you can keep reviewed.
 
 ```mermaid
 flowchart LR
     DO["do ABC-42"] --> IDE["ide"] --> SHIP["ship"] --> SWEEP["sweep"] --> DEPLOY["deploy"] --> DONE["done"]
-    SWEEP -.->|"another round"| SHIP
+    SWEEP -.->|"another round"| IDE
     classDef c font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
     class DO,IDE,SHIP,SWEEP,DEPLOY,DONE c;
 ```
 
 ## Start
 
-**Check this before installing anything.** jagt reads a ticket by spawning a *headless* one-shot of your agent
-CLI, and a headless session cannot log in interactively or load a plugin-scoped MCP server. So your tracker and
-code host must be reachable through **token-based** MCP servers. `claude mcp list` calling one "connected" does
-not settle it — [how to check, and what to do if not](docs/installation.md#mcp-access-comes-first).
+**Check this first.** jagt reads tickets through *your* MCP servers, in a background session that cannot log
+in. Servers needing a browser login, or coming from a plugin, will not answer it — and `claude mcp list` still
+says "connected". [One command to check](docs/installation.md#mcp-access-comes-first).
+
+You also need Java 25, tmux, git, kitty and an agent CLI → [Installation](docs/installation.md).
 
 ```bash
-cp jagt.yml.dist jagt.yml           # fill in ONE project: path, baseBranch, deployBranch
+git clone https://github.com/GulDmitry/jagt.git && cd jagt
+cp jagt.yml.dist jagt.yml           # fill in ONE project: path, baseBranch (+ deployBranch to enable deploy)
 cd orchestrator-backend
 ./gradlew build stageJar
 java -jar build/libs/jagt-run.jar
@@ -46,14 +46,12 @@ java -jar build/libs/jagt-run.jar
 
 Open **http://localhost:8290**, type a ticket key or URL in the first field, press **Start**.
 
-That is the whole setup — every other key has a default. If anything is missing, jagt refuses to start and
-prints the **whole** list of problems at once, each line naming the key that fixes it.
-
-You also need Java 25, tmux, git, kitty and an agent CLI → [Installation](docs/installation.md).
+That is the whole of `jagt.yml`; every other key has a default. If anything is missing, jagt refuses to start
+and prints the **whole** list at once, each line naming the key that fixes it.
 
 > [!IMPORTANT]
-> Run the **staged** jar (`jagt-run.jar`), never `jagt.jar`. `./gradlew build` rewrites `jagt.jar` in place, so
-> a running instance starts failing with `NoClassDefFoundError`. Staging writes a fresh file each time.
+> Run the **staged** jar (`jagt-run.jar`), never `jagt.jar` —
+> [why](docs/troubleshooting.md#startup-and-the-jar).
 
 ## Commands
 
@@ -68,13 +66,15 @@ You also need Java 25, tmux, git, kitty and an agent CLI → [Installation](docs
 | `deploy ABC-42` | merge the task branch into the deploy branch |
 | `done ABC-42` | close the task and clean everything up |
 
-Every one is also a button on the board, and `Help` there explains what its colours and marks mean. Free text
-works too (`⌘K`) — a model maps it onto exactly one of these commands, which then runs through the same gate
-the button uses. → [Full usage guide](docs/usage.md)
+Those eight come first; `revert`, `respawn`, `resume`, `diff`, `stats`, `activity`, `jobs` and `help` are in
+the [full usage guide](docs/usage.md).
+
+Every one is also a button on the board, and `Help` there explains its colours and marks. Free text works too
+(`⌘K`) — a model maps it onto exactly one of these commands, which runs through the same gate the button uses.
 
 ## Your three checkpoints
 
-jagt stops and waits for you at exactly three points. Nothing between them reaches the outside world.
+jagt waits for you at three points, two of them hard. Nothing between them reaches the outside world.
 
 | checkpoint | when | you run |
 |------------|------|---------|
@@ -88,23 +88,25 @@ jagt stops and waits for you at exactly three points. Nothing between them reach
 - The only writes to a shared branch are `deploy` and its undo `revert` — both yours to trigger, never
   automatic, and `revert` adds a commit rather than rewriting history.
 - An agent acts on **its own task only**, enforced by the server rather than by a prompt.
-- Commands are parsed and run in plain Java. **No model call, no tokens, no drift** — the only calls that spend
-  are a ticket read, a review round, and a `⌘K` line.
-- The board listens on `127.0.0.1`. It asks for no password and can deploy, so it stays on loopback until you
+- Commands are parsed and run in plain Java, so a button or a typed line spends nothing. **Four things cost a
+  model call**: reading a ticket, reading a merge request to `resume` it, reading a review round, and a `⌘K`
+  sentence.
+- The board listens on `127.0.0.1`: it asks for no password and can deploy, so it stays on loopback until you
   decide otherwise.
-- **Nothing is installed into your repository** — no git hook, no config write, nothing to uninstall. jagt's
-  own `pre-push` guard lives in the worktree it cut and is reached by that agent's session alone; your
-  project's hooks go on running inside it.
+- **Nothing is written into your project's tracked files** — no git hook, no config write, nothing to
+  uninstall. jagt's own `pre-push` guard lives in the worktree it cut and is reached by that agent's session
+  alone; your project's hooks go on running inside it.
+- Agents live in tmux and the whole state is one JSON file, so restarting the backend loses nothing.
 
-Agents live in tmux and the whole state is one JSON file, so restarting the backend loses nothing.
+What it does **not** do: review the code for you, run your CI, hold a tracker or code-host credential, or run
+on Windows.
 
 ## Swapping a vendor
 
 Agent CLI, terminal, editor and notifier are each an interface with one implementation per vendor — Claude Code
-or Codex, kitty, IntelliJ, a desktop notifier. The tracker and the code host are not jagt's at all: they
-are whatever **your own** MCP servers reach, and jagt holds no credential for either. Adding one means
-implementing an interface and naming it in config, never editing the task flow.
-→ [Configuration](docs/configuration.md)
+or Codex, kitty, IntelliJ, a desktop notifier. The tracker and the code host are not jagt's at all: they are
+whatever **your own** MCP servers reach. Adding one means implementing an interface and naming it in config,
+never editing the task flow. → [Configuration](docs/configuration.md)
 
 ## Documentation
 
@@ -115,7 +117,7 @@ implementing an interface and naming it in config, never editing the task flow.
 | [Configuration](docs/configuration.md) | where a setting goes, and every key there is |
 | [Troubleshooting](docs/troubleshooting.md) | symptom → cause → fix |
 | [Development](docs/development.md) | test suites, CI, running the Linux suite from a Mac |
-| [Architecture](ARCHITECTURE.md) | the code map — what kinds of thing jagt has, and where a new one goes |
+| [Architecture](ARCHITECTURE.md) | the code map: what kinds of thing jagt has, and where a new one goes |
 | [Use cases](USE-CASES.md) | one-line answers to specific situations |
 
 ## License

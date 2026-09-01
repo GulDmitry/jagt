@@ -2,149 +2,65 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-## Testing etiquette
+`./gradlew test` is the hermetic gate. `e2eTest` needs git + tmux (`src/e2e/java`),
+`boardTest` Playwright's own Chromium (`src/boardTest/java`), `linuxDriverTest` Linux + binaries + a display
+(`src/linuxTest/java`, gated on `JAGT_IN_CONTAINER`), `promptEval` the assistant's CLI and tokens
+(`src/promptEval/java`) — none of the four in `check`.
 
-### Leave no trace
+**Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix, and
+**every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite booting the app
+passes `--orchestrator.open-terminal-window=false`, uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`,
+then removes the worktrees and branches.
 
-A suite that boots the app passes `--orchestrator.open-terminal-window=false` (otherwise every run opens a
-kitty window that stays behind), uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`, and kills the session
-and removes worktrees and branches afterwards.
+### No absolute macOS paths, and a unit suite that runs concurrently
 
-### No absolute macOS paths in defaults
-
-An external binary is configured by **bare name** and resolved by `adapter/Executables`: PATH, then the known
-install directories (Homebrew included, because a GUI-launched process has neither prefix on PATH), then the
-per-user script directories, then **inside application bundles**.
-
-`tmux-command` used to default to `/opt/homebrew/bin/tmux`, which made every task on Linux fail at "Failed to
-start command". The agent CLI is deliberately **not** resolved: it runs inside the agent's tmux window under the
-human's own PATH, and the string is what they read on screen.
-
-`editor-command` / `editor-diff-command` are **lists**, so only the launcher is resolved and the arguments stay
-the human's. A launcher nowhere to be found fails with the config **key** to set, not with the binary they never
-chose.
-
-**The bundle step is what makes the rule applicable to a desktop app at all**: an IDE's launcher lives in
-`/Applications/<App>.app/Contents/MacOS/<name>` and lands in no bin directory, so defaulting `editor-command` to
-`idea` without it broke `ide` on the owner's machine within the hour. **Do not weaken the resolver.**
-
-### The suites
-
-| suite | command | needs |
-|-------|---------|-------|
-| unit | `./gradlew test` | nothing — the fast hermetic gate |
-| e2e matrix | `./gradlew e2eTest` | git + tmux (source set `src/e2e/java`, **not** in `test`/`check`) |
-| board | `./gradlew boardTest` | Playwright's own Chromium (source set `src/boardTest/java`, not in `check`) |
-| Linux drivers | `./gradlew linuxDriverTest` | Linux + binaries + a display (source set `src/linuxTest/java`, gated on `JAGT_IN_CONTAINER`) |
-| prompt eval | `./gradlew promptEval` | the assistant's own CLI, and tokens (source set `src/promptEval/java`, not in `check`) |
-
-**Every fixed bug gets a regression unit test** (`sob-ai:unit-testing` rules), verified RED by actually
-reverting the fix and running the test.
-
-### The unit suite runs concurrently
-
-JUnit parallel, methods **and** classes, which the self-contained style already allowed: no `@BeforeAll`, no
-mutable statics, every file under a `@TempDir`.
-
-A new test must keep that, and anything competing for a **machine-wide** resource declares it — the two that
-pick a loopback port carry `@ResourceLock("loopback-ports")` + `@Execution(SAME_THREAD)`, because a port freed
-to be probed is a port another thread can take first.
-
-Only this suite: `e2eTest` shares branches and tmux sessions between rows, and `boardTest` seeds one
-application's state.
+- An external binary is configured by **bare name**; `adapter/Executables` resolves it against PATH, install
+  directories (Homebrew included), per-user script dirs, then **inside application bundles**. An absolute
+  `tmux-command` default fails every task on Linux, and `editor-command` defaults to bare `idea`.
+- **Do not weaken the resolver**: the bundle step is what an IDE needs
+  (`/Applications/<App>.app/Contents/MacOS/<name>`). The agent CLI is deliberately **not** resolved: it runs in
+  the agent's tmux window under the human's PATH.
+- `editor-command` / `editor-diff-command` are **lists**: only the launcher is resolved, the arguments stay the
+  human's, and one nowhere to be found fails with the config **key** to set.
+- JUnit parallel, methods **and** classes: no `@BeforeAll`, no mutable statics, every file under a `@TempDir`;
+  anything competing for a **machine-wide** resource declares it (`@ResourceLock("loopback-ports")` +
+  `@Execution(SAME_THREAD)`). Only this suite is parallel.
 
 ### The board is tested in a browser
 
-`boardTest` boots the app on a random port and drives the real page in Playwright's own headless Chromium. The
-page's logic — the grid's order, the filter, which buttons a card offers, what a click POSTs, the SSE repaint,
-the ⌘K palette's client-side verdict — runs nowhere else and was hand-checked until 2026-08-17.
+- `boardTest` boots the app on a random port and drives the real page in Playwright's own headless Chromium —
+  the only place the grid's order, a card's buttons, the SSE repaint and the palette's verdict are proved.
+- **Run it after any change to `static/`**, asserting through the **server** (seed `StateService`, stub a
+  command), never by evaluating page JS. Three write paths are `@MockitoBean`s: `CommandService`,
+  `TaskLauncher`, `NaturalLanguageDispatch`.
+- Shared browser libraries are one list (`scripts/linux-test-deps.sh`). Geometry is in scope: assert an element
+  inside the viewport at a set size, not a screenshot.
 
-Three write paths are `@MockitoBean`s because a real one would act on the developer's machine:
-`CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`.
+### The e2e matrix and the prompt eval
 
-The browser is Playwright's, never the machine's, so a Mac and a runner drive the same build; its shared
-libraries are in `scripts/linux-test-deps.sh` — the **one** list, not a second one.
+- `e2eTest` runs the flow per `TaskFlowCase` under `orchestrator.agent.cli=stub` (`StubAgentRuntime`, GUI
+  drivers doubled), asserting an exact end state. Widening coverage is a **row** in `TaskFlowCase.matrix()`;
+  an uncovered combination is named there with the reason.
+- It asserts the **sentence** a flow returns: run it before pushing a reword.
+- Two matrices: `TaskFlowCase` × `TaskFlowMatrixTest` is CREATE → TEARDOWN across the viewer combinations;
+  `ReviewRoundCase` × `ReviewAndDeployFlowTest` is everything between (ship, a round, deploy, revert, resume)
+  on **one** combination, its verbs through the board's HTTP endpoints and the agent reporting over
+  `POST /mcp`, so origins (`board` vs `mcp`) are asserted end to end.
+- `promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant. It guards
+  the mapping prompt, the hint each `TaskAction` carries and the shape of the task list — run it on a change to
+  any of those, and when the model changes.
 
-**Run it after any change to `static/`**, and assert through the **server** (seed `StateService`, stub a
-command), never by evaluating JS in the page.
+### Linux from a Mac, and one set of steps for every host
 
-Geometry is in scope and nothing else can hold it: a card that spills out of a narrow window renders a DOM every
-other assertion here passes. Assert it as the browser's own question — an element inside the viewport at a set
-size — not as a screenshot, whose fonts differ between a laptop and a runner.
-
-### The e2e matrix
-
-`e2eTest` runs the flow once per `TaskFlowCase` with `orchestrator.agent.cli=stub` (`StubAgentRuntime` — the one
-non-deterministic participant replaced; every GUI driver is a Mockito double) and asserts an exact end state.
-
-Three rules it lives by: widening coverage is adding a **row** to `TaskFlowCase.matrix()`, a combination that is
-**not** covered is named there with the reason — a silent gap reads as coverage — and a row carries the end
-state its combination alone produces, spelled out. A row whose distinguishing setting changes nothing any
-assertion reads is paid for twice and proves once: `viewMode` is a row because the session the agent's window
-lands in is asserted from tmux itself.
-
-Cleanup kills tmux sessions **by prefix**, because `tab-per-task` creates `<session>-<taskId>` ones the
-configured name alone would leave behind — and every line of it is best-effort, so a combination that failed
-early cannot hand its leftovers to the next one and make one failure read as four.
-
-It also asserts the **sentence** a flow returns, and `./gradlew test` cannot see it: reword a message and CI is
-the first thing that notices, so run `e2eTest` before pushing one.
-
-Two matrices, on purpose:
-
-- `TaskFlowCase` × `TaskFlowMatrixTest` — CREATE → TEARDOWN across the viewer combinations.
-- `ReviewRoundCase` × `ReviewAndDeployFlowTest` — everything between (ship, a round, deploy, revert, resume) on
-  **one** combination, because a review round does not vary with how terminals are arranged. There the verbs go
-  through the board's own HTTP endpoints and the agent reports over `POST /mcp` with its worktree header, so
-  origins (`board` vs `mcp`) are asserted end to end and a surface cannot drift from the core. Its one double is
-  `MasterAssistant`: the round and the request a resume adopts are stubbed on it, and the agent's own half of a
-  ship — commit, push, request — is driven by the test, because that is what jagt asks of an agent rather than
-  doing itself.
-
-### The prompt that steers a model is regression-tested too
-
-`promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant and asserts
-the command and the task it comes back with. What it guards is not code: the mapping prompt, the hint each
-`TaskAction` carries and the shape of the task list are text, edited like prose, and nothing else notices when
-a reword stops a request from landing.
-
-Every row asserts, so one miss is red — read the **count**, not the colour. The same request can map twice and
-miss once, and what matters is how many land after an edit. Run it when you change any of those three, and when
-the model behind the assistant changes.
-
-A row is a way a human actually asks. A request containing the command word proves only that the model can copy
-a word.
-
-### Linux is testable from a Mac
-
-`scripts/linux-suite.sh` runs `test` + `e2eTest` + `linuxDriverTest` inside a container
-(`docker/linux-suite.Dockerfile`).
-
-`linuxDriverTest` is the only place the Linux drivers meet real binaries: the notifier's message is asserted off
-the session bus via `dbus-monitor`, kitty is driven under Xvfb.
-
-Anything a container cannot host — IntelliJ, the AppleScript raise, the real `claude` —
-stays **named as uncovered** rather than faked. Two Linux behaviours are on that list **permanently** (decided
-2026-08-18, not a gap waiting to close): the viewer being raised above other applications, and closing the
-viewer. Both need a window manager with a human in front of it, so the `@Disabled` test in
-`LinuxKittyTerminalDriverLinuxTest` documents the lead and no pipeline pretends to cover them.
-
-### One set of steps for every host
-
-`.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites by calling the **same scripts**
-(`scripts/linux-test-deps.sh` = the package list, `scripts/with-linux-desktop.sh` = Xvfb + session bus +
-notification daemon).
-
-**A step that exists in one pipeline only, or a CI-only code path, is a bug**: green in CI and green on a laptop
-must mean the same thing. Neither pipeline needs Docker — the container image is for macOS developers and
-installs from that same deps script. `linuxDriverTest` is gated on **capability** (Linux + the binaries + a
-DISPLAY), never on "which harness am I in".
-
-**The build cache is for the hermetic suite only.** What `e2eTest` / `boardTest` / `linuxDriverTest` prove is
-the **machine**, and no machine state is in a cache key, so all three opt out (`cacheIf` / `upToDateWhen`
-false) — a restored result comes back green with nothing having run, on a fresh worktree and in a pipeline that
-caches `~/.gradle` alike.
-
-### Every new install requirement
-
-Must be documented in `docs/installation.md` — **never install things silently.**
+- `scripts/linux-suite.sh` runs `test` + `e2eTest` + `linuxDriverTest` in a container
+  (`docker/linux-suite.Dockerfile`). `linuxDriverTest` is the only place the Linux drivers meet real binaries:
+  the notifier asserted off the session bus with `dbus-monitor`, kitty under Xvfb.
+- Anything a container cannot host — IntelliJ, the AppleScript raise, the real `claude` — stays **named as
+  uncovered**, never faked; raising the viewer and closing it stay `@Disabled`
+  (`LinuxKittyTerminalDriverLinuxTest`).
+- `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts**
+  (`scripts/linux-test-deps.sh` the package list, `scripts/with-linux-desktop.sh` Xvfb + session bus +
+  notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.** `linuxDriverTest` is
+  gated on **capability**, never on the harness.
+- **The build cache is for the hermetic suite only**: `e2eTest` / `boardTest` / `linuxDriverTest` prove the
+  **machine** and `promptEval` a model, so all four opt out (`cacheIf` / `upToDateWhen` false).

@@ -4,39 +4,28 @@
 
 jagt has one surface: the **board** at `http://localhost:8290`.
 
-Whose move it is, and which actions are legal, are computed in one place — not in the page, which renders what
-it is handed and decides nothing.
-
 ## The board
 
 Every task is one card, ordered by alias. **A card never moves because its status changed** — only when a task
-is created or closed. Where a task is in the pipeline is one line of counts above the grid
-(build → review → check → ready → deploy → done), so nothing jumps around while you read it.
+is created or closed. One line of counts above the grid holds the pipeline
+(build → review → check → ready → deploy → done).
 
-Each card shows:
+A card shows whose move it is, the status and how long it has been in it, what jagt has spent, links to the
+ticket and the review request, and a line to click when the agent has left **drafted review replies**. It
+carries exactly the actions legal right now, the obvious one highlighted, in two rows: what moves the task
+along (ship … done), then what only looks at it (focus, ide, diff, restart agent). `deploy` and `done` ask for
+confirmation — one writes to a shared branch, the other deletes a worktree.
 
-- whose move it is, the status, and how long it has been in it
-- what jagt has spent on it
-- links to the ticket and the review request
-- a line when the agent has left **drafted review replies** — click it to read them
+**Filtering, not sorting.** There is no sort control. Type in the filter box (`/` focuses it, `Esc` clears) to
+match an alias, ticket number or title, and tick *needs my action* for what is yours. The page never polls; the
+backend pushes changes.
 
-Every card carries exactly the actions that are legal right now, the obvious one highlighted, in two rows:
-what moves the task along (ship … done), then what only looks at it (focus, ide, diff, restart agent).
+**Focus** selects the agent's tmux window in kitty and raises it; the toast names the window it moved to.
+**Shift+←/→** switches between agent windows there, and closing the viewer only detaches it — agents live in
+tmux and keep working; kill them with `done`. Every task also gets a short alias (`p1`, `s2`) usable anywhere
+instead of the ticket id.
 
-**Filtering, not sorting.** There is no sort control — a position you have learnt is worth more than any order
-a click can produce. Type in the filter box (`/` focuses it, `Esc` clears) to match an alias, ticket number or
-title, and tick *needs my action* for what is yours. The page never polls; the backend pushes changes.
-
-`deploy` and `done` ask for confirmation — one writes to a shared branch, the other deletes a worktree.
-
-**Focus** selects the agent's tmux window in kitty and raises it, and the toast names the window it moved to.
-
-- **Shift+←/→** switches between agent windows inside that viewer
-- every task gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id
-- closing the viewer only detaches it — agents live in tmux and keep working; kill them with `done`
-
-Stopping the backend belongs to whoever started the process, so the board offers no verb for it. Nothing is
-lost either way: the agents keep working when the backend goes away.
+There is no verb for stopping the backend — that belongs to whoever started the process.
 
 ## Commands
 
@@ -47,9 +36,10 @@ lost either way: the agents keep working when the backend goes away.
 | `do <ticket> [plan] [notes]` | read the ticket, cut a worktree, launch an agent. `plan` = plan mode |
 | `do <ticket> from <branch>` | cut from `<branch>` and target it in the request — for stacking on a feature branch |
 | `do <ticket> <projA>,<projB>` | one task, one agent, a worktree per repository |
+| `do <ticket> recreate` / `resume` | the branch already exists: cut it fresh, or take over its commits |
 | `focus <ticket>` | jump to the agent's session and talk to it directly |
 | `ide <ticket>` | open the worktree as a project — Git → Local Changes is the live diff |
-| `ide <ticket> diff` | a static snapshot against the deploy branch |
+| `ide <ticket> diff` | a static snapshot against the branch the request targets |
 | `ship <ticket>` | commit, push, open or update the review request |
 | `sweep <ticket>` | pull checks + comments; the agent fixes locally and drafts replies |
 | `replies [ticket]` | every comment of the round with its verdict and the reply drafted for it |
@@ -79,12 +69,10 @@ curl -s localhost:8290/api/commands/activity
 ### Free text
 
 Type a sentence instead of a command (the board's **Ask** button, or `⌘K`) and a model maps it onto **exactly
-one** of the commands above. jagt then runs it through the same gate a button uses, and tells you what it
-understood first: *understood as `ship a1` — …*
-
-The palette completes the grammar as you type and says whether the line will run (green) or why it will not
-(`no task "a9"`, `ship needs a task`). **A line that parses is executed as typed, with no model call** — only
-real prose costs anything, and a single mistyped word is treated as a typo, not a request.
+one** of the commands above, runs it through the same gate a button uses, and says what it understood:
+*understood as `ship a1` — …* The palette completes the grammar as you type and says whether the line will run
+(green) or why it will not (`no task "a9"`, `ship needs a task`). **A line that parses is executed as typed,
+with no model call**; a single mistyped word is treated as a typo, not as prose.
 
 ## The review loop
 
@@ -115,38 +103,35 @@ flowchart TD
     class DO,FOCUS,IDE1,SHIP,REVIEW,IDE2,DEPLOY,DONE cmd;
 ```
 
-`ship → sweep → ide → ship` repeats once per review round until CI is green and every thread is resolved.
-Then `deploy`, then `done`.
-
-jagt refuses a move that makes no sense for a task's current status, with a sentence rather than a git error.
+`ship → sweep → ide → ship` repeats once per review round until CI is green and every thread is resolved, then
+`deploy`, then `done`. jagt refuses a move that makes no sense for the task's status, with a sentence rather
+than a git error.
 
 ## Notes on the tricky ones
 
-**`ship`.** The agent does the work with its own code-host tools: commit (title from `mrTitlePattern`), push
-the task branch, and open or update one request **per repository** — jagt hands over the instruction and waits
-in SHIPPING until the agent reports the links back. Posting the drafted replies is part of the same
-instruction.
+**`ship`** is the agent's own work, with its own code-host tools: commit (title from `mrTitlePattern`), push
+the task branch, open or update one request **per repository**, post the drafted replies. jagt waits in
+SHIPPING for the links.
 
-**`sweep` and drafted replies.** A sweep only **reads and drafts**. The agent fixes locally and writes its
-intended answers to `review_replies.md`; nothing is pushed or posted until you `ship`. Read them with
-`replies` first — `ship` is what sends them. The old spelling `review` still works.
+**`sweep`** only **reads and drafts**: the agent fixes locally and writes its intended answers to
+`review_replies.md`; nothing is pushed or posted until you `ship`. Read them with `replies` first. The old
+spelling `review` still works.
 
 **A review round is a judgement, not a work order.** The agent may fix a comment, change nothing and say why,
-or ask you. It does not implement a reviewer's suggestion it thinks is wrong.
+or ask you; it does not implement a suggestion it thinks is wrong.
 
-**`resume`.** Takes over a review request that already exists — reopened, or someone else's work. Its branch
-comes back with the commits on it and the request is linked, not reopened. Its target branch is remembered,
-so the next `ship` updates that request instead of opening a second one.
+**`resume`** takes over a review request that already exists — reopened, or someone else's work. Its branch
+comes back with the commits on it, the request is linked rather than reopened, and its target branch is
+remembered, so the next `ship` updates it rather than opening a second.
 
-**`deploy` on conflict.** Nothing is pushed. The task goes `DEPLOY_CONFLICT` and `ide <ticket>` opens the
-**deploy** worktree — resolve, `git add`, then `deploy` again. Your task branch and request are untouched.
-Deploy is a dev step, not the end: ship again and deploy again as often as you like.
+**`deploy` on conflict** pushes nothing: the task goes `DEPLOY_CONFLICT` and `ide <ticket>` opens the **deploy**
+worktree — resolve, `git add`, `deploy` again. Your task branch and request are untouched, and you may ship and
+deploy again as often as you like.
 
-**`revert`.** Reverts the merge commit that `deploy` created and pushes it. It only *adds* a commit — no
-history rewrite, no force-push — and your branch survives, so the normal follow-up is fix and `ship` again.
-It refuses, writing nothing, when the commit is already reverted, is not on the branch, or the revert
-conflicts.
+**`revert`** reverts the merge commit `deploy` created and pushes it. It only *adds* a commit — no history
+rewrite, no force-push — and your branch survives, so the normal follow-up is fix and `ship` again. It refuses,
+writing nothing, when the commit is already reverted, is not on the branch, or the revert conflicts.
 
-**Multi-repo tasks.** One task, one agent session, a worktree per repository (the session runs in the first
-one named). `ship` opens a request per repository; `sweep` reports them as one round, as far along as the
-least finished one.
+**Multi-repo tasks.** One task, one agent session, a worktree per repository (the session runs in the first one
+named). `ship` opens a request per repository; `sweep` reports them as one round, as far along as the least
+finished one.

@@ -2,237 +2,65 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-## Review rounds
+## Code review is never fully automated
 
-### Code review is never fully automated
+The auto-review poll (`AutoReviewScheduler` → `ReviewSweepService`) only **reads and drafts**: comments are
+relayed, the agent fixes locally into `review_replies.md`, and nothing is posted without an explicit human
+`ship`. Each round leaves the diff and the drafts for `ide <alias>`.
 
-The auto-review poll (`AutoReviewScheduler` → `ReviewSweepService`) only **reads and drafts**. An approval may
-advance status, but comments are merely **relayed** to the agent, which fixes locally and writes its intended
-answers to `review_replies.md`.
+- Detection is deterministic — a cadence, a status, an open request (`AutoReviewCadence` →
+  `AutoReviewScheduler`); a new trigger must be too.
+- `ReviewSweepService.brief` opens with three routes per comment: fix, change **nothing** and say why, or ask
+  via `outcome=question`.
+- A question **ends** the round (REVIEW_PENDING, `outcome=question`), never parks in CI_POLLING.
+- `AgentSessions.relayIfChanged`: no re-brief on comments a session was told to hold.
 
-Nothing is pushed or posted without an explicit human `ship`. The loop never ships, deploys, pushes or posts on
-its own. Every round hands the human two artifacts to inspect via `ide <alias>`: the local diff and the drafted
-replies.
+## A round reports its outcome as a field, not as a turn of phrase
 
-**Do not erode this: the human-in-the-loop gate lives in the outcome, not in who triggered the sweep.**
+- `update_agent_status` takes `outcome` (`question` \| `no_changes` \| `progress`) and `reviewRequestUrl`, all
+  three ending at REVIEW_PENDING. `flow/AgentReport`, the one parser of that vocabulary, reads a marker jagt
+  wrote (`AgentStatusReports.stated`).
+- **`no_changes` is checked, not believed**: over uncommitted work it becomes a round **with** a diff
+  (`WorktreeChanges`, one `git status` per report). NO_CHANGES highlights nothing.
+- **A reply does not resolve a thread**: every unresolved one is relayed again (`resolvable && !resolved`).
+- The agent resolves at **ship** time over its own MCP (`ShipService.repliesStep`), and only threads whose
+  code it changed; during the round it posts nothing.
+- Checks are read where the comments are: `TaskState.pipelineStatus` keeps the host's **own** wording and
+  `flow/Pipeline` is its one parser → GREEN / RED / RUNNING / NONE / UNKNOWN, NONE no pipeline and UNKNOWN
+  nobody having read one.
 
-### Detection is deterministic, and the tier is what the model may do
+## The reply file is a review artifact, so its shape is prescribed in one place
 
-What decides to look is plain code: a cadence, a status, an open request (`AutoReviewCadence` →
-`AutoReviewScheduler`). No model is in that path, so a sweep cannot be talked into happening.
-
-What the model may do once it is asked is set by the **outcome**, not by who asked: read the round, fix in the
-worktree, draft a reply. jagt's highest tier is handing the task back at REVIEW_PENDING, and there is no tier
-above it — a shared branch is written by a human's `deploy`
-([git.md](git.md)).
-
-That split is the shape every unattended loop here takes, and the one an autonomous lifecycle gets wrong by
-putting a model in the trigger. Adding a trigger means adding a deterministic one; a trigger that could ship is
-not a tier jagt has.
-
-### A review round is a judgement, not a work order
-
-Relay a bare list of comments and the agent implements all of them — including the ones wrong about the
-architecture, which the reviewer could not see from the diff — and the human then reads agreement into code
-that was only obedient.
-
-`ReviewSweepService.brief` therefore opens with the three routes per comment: fix, change **nothing** and say
-why, or ask via `outcome=question` before guessing. `sub-agent-context.md` carries the same stance for the task
-itself, and names the case that kept slipping through: a requirement that **contradicts** an invariant the code
-already enforces is a question, not a call the agent makes for the human and reports afterwards. By the time it
-is in the closing text the work is built around the answer.
-
-What the agent settled on its own and the human still has to know is a separate thing, and it belongs to no
-round: `sub-agent-context.md` ends the session's terminal output with one `OPEN QUESTIONS:` list. It is kept
-out of the status message, out of `review_replies.md` and out of the request — the first truncates, and the
-other two are posted to the reviewer, who is not who those lines are for.
-
-A question **ends** the round (REVIEW_PENDING, `outcome=question`) rather than parking in CI_POLLING, because
-the wait is the human's and the card has to say so. What keeps the agent from being re-briefed on the comments
-it was told to hold is `AgentSessions.relayIfChanged`, not the status it left: a relay **nudges** the session,
-so a brief the file already holds is an interruption to re-decide answered comments.
-
-Deliberately **not** extended to jagt's orchestration steps: a commit or ship instruction **is** the human's
-approval and is executed as given.
-
-### A round reports its outcome as a field, not as a turn of phrase
-
-All three outcomes end at REVIEW_PENDING and the human is advised from it, so `update_agent_status` takes
-`outcome` (`question` | `no_changes` | `progress`) and `reviewRequestUrl`. The two structural facts stop being
-scraped out of prose: the marker `flow/AgentReport` parses is written by **jagt**
-(`AgentStatusReports.stated`), and the message is the human's sentence.
-
-The prefix an agent typed itself is still read, as the **fallback**: a worktree keeps the brief it was created
-with. `AgentReport` stays the one parser of the vocabulary (`Move` and `DashboardLine` both read it, so they
-cannot disagree), and `Move` is total over (status × report).
-
-**One of the three is checked rather than believed**: `no_changes` over a worktree holding uncommitted work is
-recorded as a round **with** a diff (`WorktreeChanges` — one `git status` per report, never per render). That
-claim is the one that suppresses the ship advice, and a hidden diff is what a human would then never read. A
-question is not checkable, and no schema makes it so.
-
-Advising SHIP for a no-change round is a **loop**: the ship commits nothing and starts another round on the
-same unresolved threads. So NO_CHANGES highlights nothing and says the open threads are the reviewer's move.
-
-### A reply does not resolve a thread
-
-The sweep relays every **unresolved** one (`resolvable && !resolved`), so a comment the agent pushed back on
-comes back every round forever.
-
-The agent therefore resolves — at **ship** time, with its own MCP
-(`ShipService.repliesStep`) — **only** the threads whose code it actually changed. A thread it disagreed with
-or asked about stays unresolved: that disagreement is the reviewer's to settle, and resolving it would read as
-agreement.
-
-During the round the agent posts nothing at all — `review_replies.md` holds **drafts** until the human ships.
-
-### The checks are read where the comments are, and shown without being asked for
-
-A sweep already pulls the review round, so it stamps what the host said about the pipeline onto the task
-(`TaskState.pipelineStatus`, the host's **own** wording), and `flow/Pipeline` is the one parser that turns it
-into GREEN / RED / RUNNING / NONE / UNKNOWN — every host words it differently, and matching on the words
-themselves would agree by luck. NONE is the host answering that this request has no pipeline; UNKNOWN is
-nobody having read one. Keeping them apart is what stops a run the read never reached from looking like a
-request with no CI.
-
-The board shows one dot in the card's meta row, because a red run while the task still reads CI_POLLING is
-exactly what a status word cannot show.
-
-The human is tapped **once** per run, on the transition **into** red: an unattended poll that notified every
-time would be a loop, and a red run that is already known is not news.
-
-### The reply file is a review artifact, so its shape is prescribed in one place
-
-The round brief (`ReviewSweepService.brief`), which is relayed **every** round and therefore reaches sessions
-whose worktree was briefed before the wording changed: one block per comment (thread, the quoted line,
-`FIXED | NO CHANGE | QUESTION`, and the reply), with necessary-and-sufficient as the test on every line.
-
-The human reads the whole file in one pass to approve a round, so a per-comment essay is work handed to them,
-not thoroughness. The sub-agent brief keeps the **style** and points at the shape rather than restating it.
-
-### Drafted replies are a file, not state
-
-`TaskViews` stats `review_replies.md` in the worktree and puts a boolean on the projection — presence, not a
-count, since a number is the host's claim about the round and not one a file read can make. Both surfaces
-announce it, because a human who does not know the convention ships a round and posts replies they never read.
-
-**The announcement is also where it is read** (the owner's rule, 2026-08-21): `replies [task]` is a report
-(`command/ReviewRepliesReport`) that puts every comment, its verdict and the reply that will be posted for it on
-the screen the human already has. The card's drafted-replies line **is** the button that opens it, and the
-board offers it **nowhere else** (`GlobalCommand.aboutOneTask`) — a bar button pressed with no task named
-answers for all of them at once. Where a card announces nothing, because the round was shipped or the status
-moved on, the verb is typed instead: `replies <task>` in Ask.
-Approving a round by opening an editor in a worktree is a step nobody takes, which is how a round gets shipped
-unread.
-
-Two things it deliberately does: it reads the **file** rather than the card's badge (that one is announced only
-where it is actionable, so a status that moved on would otherwise read as "nothing drafted"), and it prints
-what does **not** fit the prescribed shape verbatim instead of dropping it — the file is agent-written, and a
-parser that hid what it did not recognise would hide exactly the round that went wrong.
-
-`GET /api/commands/{id}?about=<task>` is how a report narrows to one task: the same command the palette runs,
-so no second endpoint.
-
-**Presence is not enough: drafts belong to the round they were written in** (the owner's complaint, 2026-08-21
-— a leftover file kept a task reading "action required" for a day). `ReviewDrafts.pending` is the one answer:
-the file is there **and** newer than `mrCreatedAt`, because the ship that opened the round now open is the ship
-that posted it.
-
-**Who posts them decides that** (`CodeReviewConfig.shipPostsEveryDraft`): with `postReviewReplies=false`, or a
-`reviewReplyAuthors` filter under which the agent posts some replies and deliberately keeps the rest, nothing
-is ever spent — the answers are the human's to send, so the announcement stands until **they** end it.
-`replies` still prints a spent file, since it is the only record of what was answered, but says it was already
-sent rather than promising a ship will send it.
-
-**jagt does not delete the file**, and that was decided against with a mechanism already written (2026-08-21).
-A round stamp says a ship happened, never that the replies went out: posting is relayed to the agent and
-deliberately off the critical path, so a dead session leaves "posted, not cleaned up" and "never posted" as the
-same bytes on disk. Every deleting version also had to run *before* the ship it belongs to — the drafts of the
-round being shipped are what that ship posts — which put it outside `ShipService`'s in-flight guard and in
-front of every refusal, so a second click or a ship that then refused took the answers with it.
-
-Not announcing a file is recoverable; unlinking it is not. The agent is still asked to delete what it posted
-(the ship brief), and that stays a courtesy rather than the mechanism.
-
-### One review sweep per task at a time
-
-Whatever triggered it. The guard lives in `ReviewSweepService`, because the manual `sweep`, the auto-poll and
-any future UI button all pass through it — two sweeps means the headless read paid twice and two briefs relayed
-for one review round.
-
-The other problem — ticks **queuing** behind a sweep that runs minutes — belongs to `Jobs`, which never runs a
-job concurrently with itself, so `AutoReviewScheduler` keeps no guard of its own.
+- The shape is in the round brief (`ReviewSweepService.brief`), relayed **every** round: one block per
+  comment — thread, quoted line, `FIXED | NO CHANGE | QUESTION`, reply.
+- **Drafted replies are a file, not state**: `TaskViews` stats `review_replies.md` for presence, never a
+  count.
+- `replies [task]` (`command/ReviewRepliesReport`) prints every comment, its verdict and the reply to be
+  posted — off the **file**, never the badge, unrecognised shape included. The card's drafted-replies line is
+  its only button (`GlobalCommand.aboutOneTask`).
+- **Drafts belong to their round**: `ReviewDrafts.pending` is the file present **and** newer than
+  `mrCreatedAt`.
+- Who posts them decides when they are spent (`CodeReviewConfig.shipPostsEveryDraft`): under
+  `postReviewReplies=false` or a partial `reviewReplyAuthors` filter nothing is spent, and the announcement
+  stands until the human ends it.
+- **jagt does not delete the file**: the agent is asked to, a courtesy and never the mechanism.
+- **One review sweep per task at a time**: the guard is `ReviewSweepService`'s, ticks queueing in `Jobs`.
 
 ## Unattended work
 
-### An open request is what the poller watches, never a status
-
-The owner's rule, 2026-08-20. A reviewer writes on a request whatever the task is doing meanwhile, so
-`AutoReviewCadence.polls` asks exactly two things: is there a request, and is the task still alive (DONE is the
-one status that ends it — no worktree left to relay a round into).
-
-Gating on CI_POLLING/REVIEWED meant a round the agent handed back stopped being read at all, and every comment
-written after that — which is most of a bot's review — reached nobody until a human typed `sweep`.
-
-The window is unchanged and stays the whole bound on polling: per round from `mrCreatedAt`, falling back to
-`requestOpenedAt` so a request adopted by `resume` is polled instead of reading as untimeable.
-
-Two consequences that are not optional: the relay is guarded (`relayIfChanged` — the same round read twice must
-not interrupt the agent twice), and the poll may now find a task mid-work, which is fine because a sweep only
-reads and drafts.
-
-### Work that runs unattended must be visible while it waits
-
-Not only after it acts. `AutoReviewCadence` is the **whole** auto-review policy — enabled, the interval ramp,
-and `watch(task, now)` answering what a human is owed about one task (`task/AutoReviewWatch`: watching plus the
-absolute next-poll stamp, window elapsed, off for this task, or nothing). `AutoReviewScheduler.decide` is a
-translation of that same watch, so a card cannot promise a poll the scheduler will not make.
-
-The board shows it twice: the chip above the grid (`Board.autoReview`) carries `cadence.summary()`, and each
-card a `↻ <countdown>` **pulse** in the meta row rather than a line of prose.
-
-Whether polling runs at all is a property of the **install**, so it is stated once and never
-repeated per card — which is exactly why the words are the tooltip and only the countdown is on the card. A
-watch that has **stopped** — window elapsed, or a task whose own `autoReview` is false while the install polls
-— is that same slot wearing the **state** instead of a countdown, never a paragraph.
-
-The countdown is an **absolute stamp** on the wire and formatted per surface (`DurationFormat.countdown` / the
-page's own mirror), exactly as the two clocks on a card already are — a remaining-duration would be stale the
-moment it was fetched. It is a **floor**, not a promise: the scan runs every 60s, so a poll shown as due
-happens within the next tick.
-
-### Unattended work is a declared kind, never a schedule a class keeps to itself
-
-`job/Job` (id, one line of what the human gets, an interval or `null` for once at startup, `run()`) and
-`job/Jobs`, the **one** ticker: each run on its own thread, never overlapping itself, a run that throws booked
-against that job and nothing else — so no job needs a guard or a catch-all of its own.
-
-A hidden `@Scheduled` cannot be listed, reported on or validated, which is the point. The `jobs` report (a
-`GlobalCommand`, so both surfaces show it) names each job, its cadence, when it last ran and when it runs next:
-**work nobody watches is visible before it acts, not only after.**
-
-A report only answers whoever **opens** it, so `Jobs.summary` puts the two facts a human is owed unasked into
-both headers: the soonest run of anything, and — outranking it, since the next run is not news while the last
-one is broken — that a run threw. It is derived from the statuses already kept, never a second count.
-
-An adapter's own workaround is a job **that adapter** contributes (the IDEA recent-projects cleanup), never a
-permanent timer for everybody.
-
-### What jagt did unattended is read back from its own log
-
-`command/ActivityReport` tails `logging.file.name` (structured ECS JSON), keeps the entries that carry a `task`
-key-value and renders them newest first for the `activity` verb and the board's Activity dialog.
-
-The convention it depends on is the one already in force — **INFO for work nobody watched, nothing for a button
-a human pressed** — so an in-memory ring buffer or a jagt-owned log file would be a second answer to "what
-happened" **and** would not survive the restart after which a human looks.
-
-It deliberately shows only work that named a task: `state.json` history already carries the status transitions
-with who asked for them.
-
-**One run, one log:** `surface/ui/SessionLog` empties the file and deletes the archives beside it before the
-appender opens it, so the report is this session's work and nothing older — the owner's call (2026-08-18), and
-the reason nothing gzipped is read back.
-
-The file stays structured whatever else changes: `activity` parses it back, so a run that blanked
-`logging.structured.format.file` would leave that report nothing to read.
+- **An open request is what the poller watches, never a status**: `AutoReviewCadence.polls` asks whether a
+  request exists and whether the task is alive (DONE alone ends it).
+- The window bounds polling: per round from `mrCreatedAt`, restamped on every **entry** into CI_POLLING and
+  kept by a repeat, `requestOpenedAt` the fallback.
+- `AutoReviewCadence` is the **whole** policy: enabled, the interval ramp, `watch(task, now)` →
+  `task/AutoReviewWatch` (watching plus the absolute next-poll stamp, window elapsed, off for this task, or
+  nothing). `AutoReviewScheduler.decide` translates the same watch.
+- Whether polling runs at all is the **install's** property, said once above the grid (`Board.autoReview` →
+  `cadence.summary()`), never per card. A card's countdown is an absolute stamp (`core/format.js`).
+- **Unattended work is a declared kind**: `job/Job` (id, one line for the human, an interval or `null` for
+  once at startup, `run()`) and `job/Jobs`, the **one** ticker — one thread per run, never overlapping itself,
+  a throwing run booked against that job alone.
+- `command/ActivityReport` tails `logging.file.name` (ECS JSON) for entries carrying a `task` key, newest
+  first — jagt's unattended work, read back from its own log.
+- **One run, one log**: `surface/ui/LogFileReset` empties the file and deletes the archives beside it before
+  the appender opens; nothing gzipped is read back.
