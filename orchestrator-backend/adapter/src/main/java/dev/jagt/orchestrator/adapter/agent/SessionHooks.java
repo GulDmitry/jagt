@@ -11,11 +11,8 @@ import java.util.Optional;
 import java.util.TreeSet;
 
 /**
- * Which of one CLI's own events mean what to jagt, as a resource per runtime rather than a table inside Java:
- * this is the vendor knowledge a human comes looking for, and it changes when the CLI does rather than when
- * jagt does.
- *
- * <p>A runtime with no resource of its own maps nothing, which is how a CLI without hooks stays supported.
+ * Which of one CLI's own events mean what to jagt, as a resource per runtime: this is vendor knowledge, and it
+ * changes when the CLI does. A runtime with no resource of its own maps nothing.
  */
 final class SessionHooks {
 

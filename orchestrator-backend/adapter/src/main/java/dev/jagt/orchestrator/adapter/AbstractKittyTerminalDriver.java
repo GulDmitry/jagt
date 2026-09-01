@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.adapter;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import lombok.extern.slf4j.Slf4j;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.StartupCheck;
 
 import java.nio.file.Path;
@@ -12,10 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * kitty as the agents viewer. Its tabs are addressable, so they can be titled, focused and closed; the tab
- * execs {@code tmux attach}, so agents persist whatever happens to the viewer.
- */
+/** kitty's tabs are addressable, so they can be titled, focused and closed; the tab execs {@code tmux attach},
+ *  so agents persist whatever happens to the viewer. */
 @Slf4j
 public abstract class AbstractKittyTerminalDriver implements TerminalDriver, StartupCheck {
 
@@ -89,7 +86,6 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
 
     @Override
     public Revealed reveal(String dedicatedTitle) {
-        // dedicatedTitle is the base tmux session name, which is also our socket key.
         String socket = socket(dedicatedTitle);
         if (!instanceRunning(socket)) {
             return Revealed.NOT_RUNNING;
@@ -97,23 +93,18 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
         processRunner.run(null, TIMEOUT, List.of(kittyCommand, "@", "--to", socket,
                 "focus-window", "--match", "cmdline:tmux"));
         bringToFront();
-        // The viewer gets its own instance, so it is never a tab of somebody else's window; the socket answering
-        // at all is the window being there.
+        // The viewer gets its own instance, so the socket answering at all is the window being there.
         return Revealed.WINDOW;
     }
 
     @Override
     public void closeViewerWindow(String dedicatedTitle) {
-        // A window-close leaves a headless instance holding the socket on macOS (the app outlives its
-        // windows), so kill the dedicated instance by its unique per-session socket path instead — no other
-        // process carries it. Agents keep running in tmux; this only detaches the viewer.
+        // On macOS a window-close leaves a headless instance holding the socket, so the dedicated instance is
+        // killed by its unique per-session socket path; no other process carries it.
         processRunner.run(null, TIMEOUT, List.of("pkill", "-f", socketPath(dedicatedTitle)));
     }
 
-    /**
-     * {@code --detach} forks kitty into the background and returns immediately; without it the GUI process runs
-     * in the foreground and the command blocks until it times out.
-     */
+    /** {@code --detach} forks kitty into the background; without it the command blocks until it times out. */
     static List<String> firstOpenCommand(String kittyCommand, String fontSize, String socket, String title,
                                          String directory, String tmux, String tmuxSession,
                                          List<String> platformOptions) {

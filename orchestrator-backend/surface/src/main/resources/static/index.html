@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>jagt</title>
-  <!-- favicon.svg is the source; the .ico/.png fallbacks are generated from it (see its comment). -->
+  <!-- favicon.svg is the source; the .ico/.png fallbacks are generated from it. -->
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="icon" href="favicon.ico" sizes="48x48 32x32 16x16">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -14,11 +14,11 @@
 <header>
   <h1>jagt</h1>
   <span id="waiting" class="waiting" hidden></span>
-  <span id="auto-review" class="chip" data-tip="unattended review polling: on or off"></span>
+  <span id="auto-review" class="chip" data-tip="unattended review polling"></span>
   <span id="jobs-pulse" class="chip" hidden></span>
   <span class="grow"></span>
-  <input id="filter" class="control" placeholder="filter: alias, ticket or title  (/)" autocomplete="off"
-         data-tip="substring of the alias, the ticket number or the title">
+  <input id="filter" class="control" placeholder="filter: alias, ticket or title (/)" autocomplete="off"
+         data-tip="substring match">
   <label class="control checkbox" data-tip="show only tasks that need your action"><input type="checkbox" id="mine"> needs my action</label>
   <button id="resume-task">Resume</button>
   <button id="open-palette" data-tip="⌘K / Ctrl-K: a command, or plain words">Ask</button>
@@ -33,7 +33,6 @@
   <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">
   <label class="checkbox" data-tip="agent writes a plan and waits for approval before changing code"><input type="checkbox" id="plan"> plan first</label>
   <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
-  <!-- Asked here because the refusal that used to name it could only tell a human to type it somewhere else. -->
   <select id="strategy" name="strategy" size="1"
           data-tip="what to do when a branch of this name already exists"></select>
   <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button>
@@ -61,7 +60,6 @@
     <button id="close-report" autofocus>Close</button>
   </header>
   <div id="report-scroll">
-    <!-- Above the text: what is on screen is read before what can be typed. -->
     <div id="report-section"></div>
     <pre id="report-body"></pre>
   </div>
@@ -69,10 +67,10 @@
 
 <div id="phases"></div>
 <main id="board"></main>
-<p id="empty" class="empty" hidden>No tasks. The row above starts one — the same thing
-  <code>do ABC-42</code> does in the console.</p>
+<p id="empty" class="empty" hidden>No tasks. The row above starts one, as does
+  <code>do ABC-42</code> in Ask.</p>
 <p id="filtered" class="empty" hidden></p>
-<button id="show-log" class="log" hidden data-tip="click for every message this session"></button>
+<button id="show-log" class="log" hidden data-tip="every message this session"></button>
 <div id="toasts"></div>
 <script type="module" src="app.js"></script>
 </body>

@@ -22,16 +22,11 @@ class PipelineTest {
         assertThat(Pipeline.of(hostStatus)).isEqualTo(verdict);
     }
 
-    /**
-     * On some hosts `completed` says only that a run FINISHED, with the verdict reported separately — reading it
-     * as green is what would advance a task on a failed build.
-     */
     @Test
     void refusesToReadAFinishedRunAsAPassedOne() {
         assertThat(Pipeline.of("COMPLETED")).isEqualTo(Pipeline.UNKNOWN);
     }
 
-    /** Merging several repositories' rounds shows the worst, so the order has to be the one a human would pick. */
     @Test
     void ranksARedRunAsWorseNewsThanNoAnswerYetAndThatWorseThanGreen() {
         assertThat(Pipeline.RED.severity()).isLessThan(Pipeline.RUNNING.severity());

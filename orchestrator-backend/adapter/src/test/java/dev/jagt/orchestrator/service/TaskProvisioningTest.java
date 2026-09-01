@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.BranchStrategy;
-import dev.jagt.orchestrator.config.ClaudeProperties;
+import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 
 import dev.jagt.orchestrator.port.SessionHost;
 
@@ -41,10 +41,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * Worktree creation + provisioning, extracted from the OrchestratorTools facade. Everything it needs is
- * git, state, config and the agent runtime — no editor, notifier or MCP surface.
- */
 class TaskProvisioningTest {
 
     @TempDir
@@ -82,7 +78,6 @@ class TaskProvisioningTest {
         return new TaskProvisioning(config, state, git, sessions, setup);
     }
 
-    /** A task id becomes a branch name, so it is validated first — against what git itself accepts. */
     @ParameterizedTest
     @ValueSource(strings = {"../escape", "a b", "-lead", "feature/", "feature//x", "x.lock"})
     void rejectsTaskIdBeforeTouchingGitWhenGitWouldRefuseItAsABranch(String unsafeTaskId) {
@@ -94,33 +89,29 @@ class TaskProvisioningTest {
 
     @Test
     void cutsOneFlatWorktreeForASlashedBranchTakenOverFromSomeoneElse() throws Exception {
-        Files.createDirectories(root.resolve("feature-PAN-42-proj"));
+        Files.createDirectories(root.resolve("feature-ABC-42-proj"));
         Path projectPath = withProject("proj");
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
 
-        provisioning().initializeTask(NewTask.builder("feature/PAN-42", "proj").build());
+        provisioning().initializeTask(NewTask.builder("feature/ABC-42", "proj").build());
 
-        verify(git).createWorktree(projectPath.toAbsolutePath().normalize(), root.resolve("feature-PAN-42-proj"),
-                "feature/PAN-42", "origin/main", BranchStrategy.FRESH);
+        verify(git).createWorktree(projectPath.toAbsolutePath().normalize(), root.resolve("feature-ABC-42-proj"),
+                "feature/ABC-42", "origin/main", BranchStrategy.FRESH);
     }
 
-    /**
-     * Two branches flatten to one directory, and cutting the second clears the first as a stale worktree —
-     * uncommitted work included.
-     */
     @Test
     void refusesASecondTaskWhoseBranchBecomesTheDirectoryOfALiveOne() throws Exception {
-        Files.createDirectories(root.resolve("feature-PAN-42-proj"));
+        Files.createDirectories(root.resolve("feature-ABC-42-proj"));
         withProject("proj");
         when(git.remoteUrl(any())).thenReturn("git@host:g/p.git");
         when(git.gitCommonDir(any())).thenReturn(root.resolve("gitdir"));
-        provisioning().initializeTask(NewTask.builder("feature/PAN-42", "proj").build());
+        provisioning().initializeTask(NewTask.builder("feature/ABC-42", "proj").build());
 
         assertThatThrownBy(() -> provisioning().initializeTask(
-                NewTask.builder("feature-PAN-42", "proj").build()))
+                NewTask.builder("feature-ABC-42", "proj").build()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("both become the directory feature-PAN-42");
+                .hasMessageContaining("both become the directory feature-ABC-42");
     }
 
     @Test

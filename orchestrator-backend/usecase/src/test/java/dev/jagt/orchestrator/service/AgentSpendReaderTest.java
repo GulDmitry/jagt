@@ -47,10 +47,6 @@ class AgentSpendReaderTest {
         assertThat(booked.markFor(name(log))).isEqualTo(500);
     }
 
-    /**
-     * Two hook reports land at once — one counts the window, the other has already booked it. Adding both would
-     * charge the same turns twice, so the loser drops what it counted.
-     */
     @Test
     void dropsAWindowAnotherReportHasAlreadyBooked(@TempDir Path dir) throws IOException {
         Path log = dir.resolve("session.jsonl");
@@ -67,7 +63,6 @@ class AgentSpendReaderTest {
         assertThat(applied(bookedMeanwhile).usageOrNone()).isEqualTo(new TokenUsage(1, 7, 0, 20, 0));
     }
 
-    /** A log rewritten under jagt cannot say what of it was counted; its total stands and the mark follows. */
     @Test
     void countsNothingFromALogThatShrankAndKeepsWhatItAlreadyCost(@TempDir Path dir) throws IOException {
         Path log = dir.resolve("session.jsonl");
@@ -84,10 +79,6 @@ class AgentSpendReaderTest {
         verifyNoInteractions(sessionLog);
     }
 
-    /**
-     * A task can have two logs alive at once — a second session opened on one whose first is hung. One shared
-     * mark had them re-read each other from nothing on every report.
-     */
     @Test
     void keepsAMarkPerLogSoTwoLiveSessionsDoNotRecountEachOther(@TempDir Path dir) throws IOException {
         Path second = dir.resolve("second.jsonl");

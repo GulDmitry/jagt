@@ -6,13 +6,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * What creating a task needs, as one value.
- *
- * <p>{@code baseBranch} is the per-task OVERRIDE of the project's configured base: the branch the worktree is cut
- * from AND the branch its review request targets. Null (the normal case) means the project's own.
- *
- * @param projectKeys every repository the one session works in, the agent's own FIRST — it runs there and edits
- *                    the others in place
+ * What creating a task needs, as one value. {@code baseBranch} is the per-task OVERRIDE of the project's configured
+ * base — the branch the worktree is cut from AND the branch its review request targets; null means the project's
+ * own. {@code projectKeys} holds every repository the one session works in, the agent's own FIRST.
  */
 public record NewTask(String taskId, List<String> projectKeys, String instructions, String mode,
                       String branchStrategy, String baseBranch, String title, String ticketUrl) {
@@ -83,8 +79,7 @@ public record NewTask(String taskId, List<String> projectKeys, String instructio
         }
 
         public NewTask build() {
-            // Dropping a blank one silently would promote the next repository to be the session's own — a
-            // different task than the caller asked for, and nothing downstream could tell.
+            // Dropping a blank one silently would promote the next repository to be the session's own.
             if (projectKeys.get(0) == null || projectKeys.get(0).isBlank()) {
                 throw new IllegalArgumentException("A task needs the project its session runs in");
             }

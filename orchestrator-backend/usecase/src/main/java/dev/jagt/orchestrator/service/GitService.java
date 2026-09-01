@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.WorktreeProcesses;
 import dev.jagt.orchestrator.task.BranchStrategy;
@@ -20,10 +21,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Serialized per repository: index.lock races are per-repository, and a slow fetch in one project must not
- * block work in another.
- */
+/** Serialized per repository: index.lock races are per-repository, and a slow fetch must not block another. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,6 +34,7 @@ public class GitService {
     private final ConcurrentHashMap<String, ReentrantLock> repoLocks = new ConcurrentHashMap<>();
     private final Processes processRunner;
     private final WorktreeProcesses worktreeProcesses;
+    private final AgentRuntime agentRuntime;
 
     public void createWorktree(Path projectPath, Path worktreePath, String branch, String baseBranch,
                                BranchStrategy strategy) {
@@ -45,11 +44,11 @@ public class GitService {
         withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            // A worktree can end up unregistered with its directory still on disk, which makes
-            // `git worktree add` fail "already exists".
+            // An unregistered worktree whose directory is still on disk makes `git worktree add` fail.
             if (Files.exists(worktreePath)) {
                 log.atWarn().setMessage("stale worktree directory cleared")
                         .addKeyValue("path", worktreePath)
+                        .addKeyValue("cause", "directory present")
                         .log();
                 clearWorktreePath(projectPath, worktreePath);
             }
@@ -57,17 +56,15 @@ public class GitService {
                     List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0;
             if (branchExists) {
                 switch (strategy) {
-                    // A reopened ticket after a squash merge looks "unmerged" to git, an
-                    // aborted task may hold unpushed work — deleting silently is never safe. Nothing is freed
-                    // on this path: a refusal must leave the human's repository where it was.
+                    // A reopened ticket after a squash merge looks "unmerged" to git, and an aborted task may
+                    // hold unpushed work, so deleting silently is never safe.
                     case FRESH -> throw new IllegalArgumentException("Branch '" + branch
                             + "' already exists (previous run of this ticket). Decide what to do and retry with"
                             + " branchStrategy: 'recreate' (old work merged/obsolete -> delete branch, start fresh"
                             + " from " + base + ") or 'resume' (continue the existing branch and its commits).");
                     case RECREATE -> {
-                        // The restore guards everything that follows, not just the delete: a `worktree add`
-                        // that fails afterwards would otherwise leave the repository detached with the branch
-                        // it was on already gone.
+                        // The restore guards everything that follows: a `worktree add` failing afterwards
+                        // would leave the repository detached with the branch it was on already gone.
                         Runnable restore = freeCheckout(projectPath, branch);
                         run(restore, () -> {
                             processRunner.run(projectPath, GIT_TIMEOUT,
@@ -94,18 +91,14 @@ public class GitService {
     }
 
     /**
-     * Frees {@code branch} for a worktree by detaching the project's OWN repository where it stands, and answers
-     * how to put that repository back if what follows fails. Nobody works in the base repository, so a task
-     * blocked on a checkout nobody remembers making is worse than a warning — but another worktree belongs to
-     * another task, and a switch would carry TRACKED changes with it, so both of those refuse instead.
-     *
-     * <p>Detached IN PLACE, never moved to another ref: the files stay exactly as the human left them, so an
-     * editor open on that directory sees no change, and a per-task base with no local branch is no obstacle.
+     * Frees {@code branch} by detaching the project's OWN repository where it stands, and answers how to put it back
+     * if what follows fails. Another task's worktree refuses instead, a switch carrying TRACKED changes with it.
+     * Detached IN PLACE, never moved to another ref, so the files stay as the human left them.
      */
     private Runnable freeCheckout(Path projectPath, String branch) {
         Optional<Path> checkout = checkoutOf(projectPath, branch);
-        // A registration whose directory somebody deleted by hand holds nothing. Pruning is scoped to that
-        // discovery: an unconditional prune would also unregister a worktree whose mount happens to be away.
+        // A registration whose directory was deleted by hand holds nothing. Pruning is scoped to that
+        // discovery: an unconditional prune would unregister a worktree whose mount is merely away.
         if (checkout.filter(Files::isDirectory).isEmpty()) {
             if (checkout.isPresent()) {
                 processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
@@ -128,19 +121,18 @@ public class GitService {
             throw new IllegalStateException("Branch '" + branch + "' is checked out at " + held
                     + " and freeing it failed: " + switched.stderr().strip());
         }
-        log.atWarn().setMessage("repository detached").addKeyValue("task", branch)
+        log.atWarn().setMessage("repository detached")
                 .addKeyValue("repo", held)
                 .addKeyValue("branch", branch)
-                .addKeyValue("effect", "files untouched, the branch moves to the task worktree")
+                .addKeyValue("effect", "branch moved to the task worktree")
                 .log();
         return () -> reattach(held, branch);
     }
 
     /**
      * Puts a repository jagt detached back on {@code branch}, and answers what stopped it (null when it worked or
-     * when there was nothing to undo). Only a repository standing DETACHED AT THAT BRANCH'S TIP is touched: that
-     * is the state {@code freeCheckout} leaves, and anything else — a branch of its own, a bisect, a checkout the
-     * human moved since — is not jagt's to move.
+     * there was nothing to undo). Only a repository standing DETACHED AT THAT BRANCH'S TIP is touched; anything
+     * else is not jagt's to move.
      */
     public String reattach(Path repository, String branch) {
         return withRepoLock(repository, () -> {
@@ -217,22 +209,21 @@ public class GitService {
     }
 
     /**
-     * Whether the agent's work is sitting in this worktree uncommitted — what a round that says it changed
-     * nothing can be CHECKED against, rather than believed. jagt's own generated files are excluded exactly as
-     * they are from a commit, so a freshly provisioned worktree does not read as work.
+     * Whether the agent's work is sitting in this worktree uncommitted. jagt's own generated files are excluded
+     * exactly as they are from a commit, so a freshly provisioned worktree does not read as work.
      */
     public boolean hasUncommittedChanges(Path projectPath, Path worktree) {
+        List<String> generated = WorktreeFiles.generated(agentRuntime);
         return withRepoLock(projectPath, () -> branchNames(processRunner.run(worktree, GIT_TIMEOUT,
                                 List.of("git", "status", "--porcelain"))
                         .expectSuccess("git status in " + worktree).stdout()).stream()
                 .map(GitService::changedPath)
-                .anyMatch(path -> !WorktreeFiles.GENERATED.contains(path)));
+                .anyMatch(path -> !generated.contains(path)));
     }
 
     /**
-     * The path out of one {@code git status --porcelain} line — {@code XY path}, or {@code XY old -> new} for a
-     * rename. Split at the FIRST space of the already-stripped line rather than at a fixed offset: the status
-     * field is one or two letters wide, and a path may hold spaces of its own.
+     * The path out of one {@code git status --porcelain} line. Split at the FIRST space of the stripped line rather
+     * than a fixed offset: the status field is one or two letters wide, and a path may hold spaces of its own.
      */
     private static String changedPath(String porcelainLine) {
         int afterStatus = porcelainLine.indexOf(' ');
@@ -246,18 +237,15 @@ public class GitService {
                 List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0);
     }
 
-    /**
-     * Does {@code origin} carry this branch? Asked over the network, not of {@code refs/remotes}: a branch
-     * pushed a minute ago is absent locally until the next fetch.
-     */
+    /** Asked over the network, not of {@code refs/remotes}: a just-pushed branch is absent until the next fetch. */
     public boolean remoteBranchExists(Path projectPath, String branch) {
         return withRepoLock(projectPath, () -> processRunner.run(projectPath, GIT_TIMEOUT,
                 List.of("git", "ls-remote", "--exit-code", "--heads", "origin", branch)).exitCode() == 0);
     }
 
     /**
-     * CRITICAL SAFETY: a new branch inherits the base as upstream, so a bare {@code git push} from an agent
-     * would target the release branch. Without an upstream it errors instead.
+     * A new branch inherits the base as upstream, so a bare {@code git push} from an agent would target the release
+     * branch. Without an upstream it errors instead.
      */
     private void detachUpstream(Path projectPath, String branch) {
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "branch", "--unset-upstream", branch));
@@ -270,8 +258,7 @@ public class GitService {
             var removed = processRunner.run(projectPath, GIT_TIMEOUT,
                     List.of("git", "worktree", "remove", "--force", worktreePath.toString()));
             if (removed.exitCode() != 0) {
-                // git often unregisters the worktree and still fails to delete the directory (a file held
-                // open), so stopping here leaks it on disk.
+                // git often unregisters the worktree and still fails to delete the directory, leaking it.
                 log.atWarn().setMessage("git worktree remove failed")
                         .addKeyValue("path", worktreePath)
                         .addKeyValue("exit", removed.exitCode())
@@ -295,11 +282,9 @@ public class GitService {
     }
 
     /**
-     * Merges the task branch into the deploy branch and pushes, in a dedicated worktree cut from
-     * {@code origin/<target>} — so the task branch is NEVER modified by a deploy.
-     *
-     * <p>A conflict LEAVES that worktree on disk with its markers instead of aborting: the next call detects
-     * the resolved worktree and finishes the push.
+     * Merges the task branch into the deploy branch and pushes, in a worktree cut from {@code origin/<target>} so
+     * the task branch is NEVER modified. A conflict LEAVES that worktree with its markers instead of aborting; the
+     * next call detects the resolved worktree and finishes the push.
      */
     public String mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
         return withRepoLock(projectPath, () -> {
@@ -324,22 +309,20 @@ public class GitService {
                 throw new NothingToDeployException(sourceBranch, targetBranch);
             }
             // A registration outlives a directory deleted by hand, and the add then refuses the branch as
-            // still checked out — which is every later deploy of this task, not just the next one.
+            // still checked out.
             clearWorktreePath(projectPath, deployWorktree);
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "add",
                             "-B", deployBranch, deployWorktree.toString(), "origin/" + targetBranch))
                     .expectSuccess("git worktree add (deploy) " + targetBranch);
             // The message is explicit because git's default would name the throwaway branch, not the target.
-            // --no-ff ALWAYS: that one merge commit is what `revert` undoes — a fast-forward would leave the
-            // commits loose, and "the deploy" would become a range.
+            // --no-ff ALWAYS: that one merge commit is what `revert` undoes; a fast-forward leaves them loose.
             var merge = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "merge", "--no-ff",
                     "--no-edit", "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch,
                     sourceBranch));
             if (merge.exitCode() != 0) {
                 String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
-                // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer
-                // identity or a refusing hook, and calling those a conflict leaves a worktree behind that the
-                // next deploy treats as "resolved" and pushes.
+                // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer identity
+                // or a refusing hook, and calling those a conflict leaves a worktree the next deploy pushes.
                 if (unmergedPaths(deployWorktree).isBlank()) {
                     removeDeployWorktree(projectPath, deployWorktree, deployBranch);
                     throw new IllegalStateException("Could not merge " + sourceBranch + " into " + targetBranch
@@ -391,9 +374,8 @@ public class GitService {
     }
 
     /**
-     * Whether the worktree holds nothing the target lacks — landed by hand, or never merged at all because the
-     * resolution was aborted. Repeating the push cannot get past a rejection either way, and the merge is NOT
-     * claimed as this task's: the commit reached here may be the target tip the worktree was cut from.
+     * Whether the worktree holds nothing the target lacks. The merge is NOT claimed as this task's: the commit
+     * reached here may be the target tip the worktree was cut from.
      */
     private boolean nothingLeftToPush(Path deployWorktree, String targetBranch) {
         boolean fetched = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "fetch", "origin",
@@ -416,15 +398,10 @@ public class GitService {
     }
 
     /**
-     * Undoes ONE deploy: reverts {@code mergeCommit} on {@code targetBranch} and pushes. Only ever ADDS a
-     * commit — no rewrite, no force-push — and leaves the task branch's commits alone, which is what makes
-     * "fix and ship again" possible.
-     *
-     * <p>Refuses rather than guess when the commit is not on the branch, is not a merge, was already reverted,
-     * or the revert conflicts with later work. That last one is aborted and cleaned up: unlike a deploy
-     * conflict, there is nothing useful for a human to finish there.
-     *
-     * @return the revert commit pushed to {@code targetBranch}
+     * Undoes ONE deploy: reverts {@code mergeCommit} on {@code targetBranch} and pushes, returning the revert
+     * commit. Only ever ADDS a commit — no rewrite, no force-push — and leaves the task branch alone. Refuses
+     * rather than guess when the commit is not on the branch, is not a merge, or was already reverted; a revert
+     * that conflicts is aborted and cleaned up, there being nothing useful for a human to finish there.
      */
     public String revertMergeAndPush(Path projectPath, String sourceBranch, String targetBranch,
                                      String mergeCommit) {
@@ -471,10 +448,7 @@ public class GitService {
         });
     }
 
-    /**
-     * Only a merge can be reverted as ONE unit, and every deploy makes one ({@code --no-ff}). A non-merge here
-     * means reverting would undo one commit of a task instead of the deploy.
-     */
+    /** Only a merge reverts as ONE unit; a non-merge would undo one commit of a task instead of the deploy. */
     private void requireMergeCommit(Path revertWorktree, String mergeCommit, String targetBranch) {
         String parents = processRunner.run(revertWorktree, GIT_TIMEOUT,
                         List.of("git", "rev-list", "--parents", "-n", "1", mergeCommit))
@@ -514,9 +488,8 @@ public class GitService {
 
     /**
      * Whether a deploy worktree for this task is waiting in THIS repository. The path is derived from the
-     * repository's PARENT directory, so the sibling repositories of one task all derive the SAME one — the
-     * directory alone cannot say whose conflict is sitting in it, and finishing one repository's merge from
-     * another's checkout would push its content to the wrong remote.
+     * repository's PARENT, so siblings derive the SAME one and finishing another's merge here would push to the
+     * wrong remote.
      */
     public boolean hasDeployWorktree(Path projectPath, String sourceBranch) {
         return worktreeOwner(deployWorktreePath(projectPath, sourceBranch))
@@ -525,10 +498,9 @@ public class GitService {
     }
 
     /**
-     * A path that is no checkout at all cannot be another repository's conflict, and calling it one refuses every
-     * later deploy for good. It is jagt's own leftover: git removed the worktree, and the editor jagt had opened
-     * on it wrote its project files back into the empty directory. That is deleted and the deploy goes on;
-     * anything else found there is left untouched and named, since only a human knows what put it there.
+     * A path that is no checkout cannot be another repository's conflict: it is jagt's own leftover, an editor
+     * having written its project files back into a directory git had emptied. That is deleted and the deploy goes
+     * on; anything else found there is left untouched and named.
      */
     private void clearEditorResidue(Path path) {
         List<String> kept;
@@ -591,12 +563,9 @@ public class GitService {
     }
 
     /**
-     * The deploy worktree path this repository derives is occupied by a checkout it did not cut — a sibling's
-     * stalled merge, or a directory whose git metadata is gone. Finishing it here would push that work to this
-     * repository's remote, so nothing is attempted; typed so a caller landing SEVERAL repositories can come back
-     * to this one once the path is free.
+     * The deploy worktree path this repository derives is occupied by a checkout it did not cut, so nothing was
+     * attempted. Typed so a caller landing SEVERAL repositories can come back to this one once the path is free.
      */
-    /** The path a deploy needs is occupied by something jagt did not put there, so nothing was touched. */
     public static class StaleDeployPathException extends IllegalStateException {
 
         public StaleDeployPathException(Path deployWorktree, List<String> kept) {
@@ -616,10 +585,7 @@ public class GitService {
         }
     }
 
-    /**
-     * The branch holds nothing the target does not already have. Typed so a caller landing SEVERAL repositories
-     * can tell "there was nothing to do here" apart from a failure.
-     */
+    /** The branch holds nothing the target does not already have; typed so a caller can tell it from a failure. */
     public static class NothingToDeployException extends IllegalStateException {
 
         public NothingToDeployException(String sourceBranch, String targetBranch) {
@@ -633,12 +599,10 @@ public class GitService {
     }
 
     /**
-     * A deploy merge hit conflicts. The checkout is LEFT at {@link #deployWorktree} for the human to resolve
-     * and deploy again; the task branch is never touched, so its request keeps only the task's own change.
-     * {@link #details} is git's raw conflict output.
+     * A deploy merge hit conflicts. The checkout is LEFT at {@link #deployWorktree} for the human to resolve and
+     * deploy again.
      */
     public static class MergeConflictException extends IllegalStateException {
-        private final transient String details;
         private final transient Path deployWorktree;
 
         public MergeConflictException(String sourceBranch, String targetBranch, String details, Path deployWorktree) {
@@ -646,12 +610,7 @@ public class GitService {
                     + " Resolve it in the deploy worktree " + deployWorktree + " (this is the " + targetBranch
                     + " side; the " + sourceBranch + " branch and its review request are untouched): fix"
                     + " the conflicts, `git add` them, then deploy again to finish. Details: " + details);
-            this.details = details;
             this.deployWorktree = deployWorktree;
-        }
-
-        public String details() {
-            return details;
         }
 
         public Path deployWorktree() {
@@ -682,8 +641,7 @@ public class GitService {
 
     /**
      * The task's CURRENT tracked state, committed or not, snapshotted through a throwaway index so
-     * {@code .gitignore} and {@code .git/info/exclude} are honored — a raw folder compare of the live worktree
-     * dumps hundreds of untracked files instead. Reused per task until the task is retired.
+     * {@code .gitignore} and {@code .git/info/exclude} are honored. Reused per task until the task is retired.
      */
     public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
         return withRepoLock(projectPath, () -> {
@@ -716,7 +674,7 @@ public class GitService {
                 } catch (IOException e) {
                     log.atWarn().setMessage("temp diff index delete failed")
                             .addKeyValue("path", index)
-                            .addKeyValue("cause", e.getMessage())
+                            .addKeyValue("cause", e.toString())
                             .log();
                 }
             }
@@ -724,30 +682,23 @@ public class GitService {
     }
 
     /**
-     * The temp directory is nobody's inbox: a diff checkout outlives the viewer that opened it, and only the
-     * task's own retirement knows it is over. Asked of every repository of the task and never conditioned on the
-     * directory: the paths carry no repository, so the checkout one sibling deletes leaves the admin entry in
-     * whichever repository actually cut it.
+     * A diff checkout outlives the viewer that opened it, and only the task's own retirement knows it is over.
+     * Asked of every repository of the task: the paths carry no repository, so the checkout one sibling deletes
+     * leaves the admin entry in whichever repository actually cut it.
      */
     public void removeDiffWorktrees(Path projectPath, String taskId) {
         withRepoLock(projectPath,
                 () -> diffWorktreePaths(taskId).forEach(temp -> clearWorktreePath(projectPath, temp)));
     }
 
-    /**
-     * A path a prior run left behind — possibly another repository's, since the name is derived from the task —
-     * makes `git worktree add` fail, so registration, stale admin entries and the directory all go.
-     */
+    /** A path a prior run left behind makes `git worktree add` fail, so registration and the directory both go. */
     private void clearWorktreePath(Path projectPath, Path temp) {
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "remove", "--force", temp.toString()));
         processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "worktree", "prune"));
         forceDeleteDir(temp);
     }
 
-    /**
-     * A process rooted in the directory can keep recreating files under it, so every pass kills whatever runs
-     * there before deleting.
-     */
+    /** A process rooted in the directory can keep recreating files, so every pass kills it before deleting. */
     private void forceDeleteDir(Path dir) {
         for (int attempt = 0; attempt < 4 && Files.exists(dir); attempt++) {
             worktreeProcesses.reap(dir);
@@ -757,7 +708,7 @@ public class GitService {
                 log.atWarn().setMessage("directory delete failed")
                         .addKeyValue("path", dir)
                         .addKeyValue("attempt", attempt + 1)
-                        .addKeyValue("cause", e.getMessage())
+                        .addKeyValue("cause", e.toString())
                         .log();
             }
         }

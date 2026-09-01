@@ -30,16 +30,14 @@ public class TaskRetirement {
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
         TaskState task = stateService.task(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
-        // First: removing a worktree under a live process's cwd leaves a zombie agent grinding in a deleted
-        // directory.
+        // First: removing a worktree under a live process's cwd leaves an agent grinding in a deleted directory.
         sessions.killWindows(taskId);
-        // EVERY repository, not just the session's: the others hold a checkout of their own — and copies of the
-        // local files worktree.copyGlobs brought in — which nothing else would ever delete.
+        // EVERY repository, not just the session's: the others hold a checkout nothing else would ever delete.
         boolean anyProjectMissing = false;
         var projects = configService.load().projects();
         for (TaskRepo repo : task.repos()) {
-            // Needs no project config, and a project deleted from jagt.yml is exactly when a stale editor
-            // registration would otherwise be left behind.
+            // Before the project lookup: a project deleted from jagt.yml is exactly when a stale registration
+            // would be left behind.
             editorDriver.forgetProject(Path.of(repo.worktreePath()));
             ProjectConfig project = projects.get(repo.project());
             if (project == null) {
@@ -52,8 +50,7 @@ public class TaskRetirement {
                 continue;
             }
             Path projectPath = Path.of(project.path());
-            // A worktree that stays on disk keeps the agent's own record of it, or the next session there stops
-            // at the prompt that record exists to answer.
+            // The agent's record of the worktree goes too, or the next session there stops at the prompt it answers.
             sessions.forgetWorktree(Path.of(repo.worktreePath()));
             gitService.removeWorktree(projectPath, Path.of(repo.worktreePath()), null);
             // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.

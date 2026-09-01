@@ -25,18 +25,14 @@ public class WorktreeSetup {
     @Value("${orchestrator.agent-disabled-plugins:}")
     private List<String> agentDisabledPlugins;
 
-    /**
-     * @param repos every repository of the task, so the briefing can name the ones this agent may also edit
-     */
+    /** {@code repos} is every repository of the task, so the briefing can name the ones this agent may edit. */
     public void fill(NewTask request, NewRepo repo, List<NewRepo> repos) {
         Path worktreePath = repo.worktreePath();
-        // Asked while the worktree still holds nothing but the checkout: after provisioning, jagt's own links
-        // are indistinguishable from a file the repository ships.
+        // Asked while the worktree holds nothing but the checkout: jagt's own links look the same afterwards.
         Path systemKnowledge = agentRuntime.systemKnowledgeFile(worktreePath);
-        WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir());
+        WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir(), agentRuntime);
         WorktreeHooks.install(worktreePath, request.taskId());
-        // Which files exist and what is in them belongs to the runtime: nothing here may learn what a given
-        // agent's MCP config is called.
+        // Which files exist and what is in them belongs to the runtime.
         agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
                 configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
         WorktreeFiles.copyIdeProjectFiles(repo.projectPath(), worktreePath);

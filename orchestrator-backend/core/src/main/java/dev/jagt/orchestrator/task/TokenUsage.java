@@ -4,11 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Tokens a model was handed and answered with, whoever the call belonged to: jagt's own metered reads carry a
- * cost with them, a session's own log prices nothing and carries zero.
- *
- * <p>{@code inputTokens} counts fresh context, cache writes included — both bill at input rates;
- * {@code cachedInputTokens} counts cache reads, an order of magnitude cheaper.
+ * Tokens a model was handed and answered with. {@code inputTokens} counts fresh context, cache writes included —
+ * both bill at input rates; {@code cachedInputTokens} counts cache reads, an order of magnitude cheaper.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record TokenUsage(int calls, long inputTokens, long cachedInputTokens, long outputTokens,
@@ -37,7 +34,7 @@ public record TokenUsage(int calls, long inputTokens, long cachedInputTokens, lo
         return inputTokens + cachedInputTokens + outputTokens;
     }
 
-    /** {@code @JsonIgnore} keeps Jackson from persisting this derived accessor as a {@code "none"} field. */
+    /** {@code @JsonIgnore} so this derived accessor is not persisted as a {@code "none"} field. */
     @JsonIgnore
     public boolean isNone() {
         return calls == 0;

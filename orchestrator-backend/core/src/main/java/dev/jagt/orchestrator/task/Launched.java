@@ -1,12 +1,8 @@
 package dev.jagt.orchestrator.task;
 
 /**
- * What a launch or a resume answers: the task it now has, null when it made none, and the sentence to show
- * a human.
- *
- * <p>The two are separate because most of the ways either declines are ordinary answers rather than failures —
- * an unreadable reference, a branch already there — and a surface that read them as success cleared the very
- * form holding the project, the branch and the instructions needed to try again.
+ * What a launch or a resume answers: the task it now has, null when it made none, and the sentence to show a human.
+ * Declining is an ordinary answer rather than a failure, so a surface must not read a null task as success.
  */
 public record Launched(String taskId, String message) {
 

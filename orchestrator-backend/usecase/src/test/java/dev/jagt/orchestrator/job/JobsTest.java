@@ -86,7 +86,6 @@ class JobsTest {
                 .hasMessageContaining("Two jobs declare the id 'poll-reviews'");
     }
 
-    /** A test doubles out a job by mocking it, and a mock names nothing — an unnamed job is inert, not fatal. */
     @Test
     void leavesAJobThatNamesItselfNothingUnregisteredInsteadOfRefusingToStart() {
         Job nameless = mock(Job.class);

@@ -7,10 +7,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
-/**
- * Every refusal a human can cause is a 400 with the sentence, not a stack trace. A caller that must ACT on the
- * reason gets a {@link Refusal.Code} beside it.
- */
 @RestControllerAdvice
 public class RefusedRequests {
 

@@ -22,7 +22,6 @@ class UsageTrackerTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
     }
 
-    /** The session total stays the SUM of the split, never a second counter that can drift from it. */
     @Test
     void splitsTheSessionSpendByWhatEachCallWasFor(@TempDir Path root) {
         UsageTracker tracker = new UsageTracker(stateIn(root));

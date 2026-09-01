@@ -18,14 +18,9 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * One run, one log: what a human reads back must be this session's work, so the previous one leaves nothing —
- * neither the file nor the archives beside it, and nothing at all when the file belongs to a jagt that is
- * still running.
- */
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock("loopback-ports")
-class SessionLogTest {
+class LogFileResetTest {
 
     @Test
     void clearsTheFileAndItsArchivesBeforeTheAppenderOpensIt(@TempDir Path root) throws IOException {
@@ -34,7 +29,7 @@ class SessionLogTest {
         Files.writeString(root.resolve("jagt.log.2026-08-17.0.gz"), "older still");
         Files.writeString(root.resolve("keep-me.log"), "another program's");
 
-        new SessionLog().apply(new MockEnvironment()
+        new LogFileReset().apply(new MockEnvironment()
                 .withProperty("logging.file.name", log.toString())
                 .withProperty("server.port", String.valueOf(freePort())));
 
@@ -50,7 +45,7 @@ class SessionLogTest {
 
         try (ServerSocket occupied = new ServerSocket()) {
             occupied.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
-            boolean cleared = new SessionLog().apply(new MockEnvironment()
+            boolean cleared = new LogFileReset().apply(new MockEnvironment()
                     .withProperty("logging.file.name", log.toString())
                     .withProperty("server.port", String.valueOf(occupied.getLocalPort())));
 
@@ -62,7 +57,7 @@ class SessionLogTest {
 
     @Test
     void clearsNothingWhenNoLogFileIsConfigured() {
-        assertThat(new SessionLog().apply(new MockEnvironment())).isFalse();
+        assertThat(new LogFileReset().apply(new MockEnvironment())).isFalse();
     }
 
     /**
@@ -71,7 +66,7 @@ class SessionLogTest {
      */
     @Test
     void runsAfterTheConfigFilesAreReadAndBeforeLoggingIsInitialised() {
-        assertThat(new SessionLog().getOrder())
+        assertThat(new LogFileReset().getOrder())
                 .isGreaterThan(new EnvironmentPostProcessorApplicationListener().getOrder())
                 .isLessThan(new LoggingApplicationListener().getOrder());
     }

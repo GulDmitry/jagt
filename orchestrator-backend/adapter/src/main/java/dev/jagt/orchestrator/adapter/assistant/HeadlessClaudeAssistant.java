@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.config.ClaudeProperties;
+import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 
 import dev.jagt.orchestrator.port.Processes;
 
@@ -25,12 +25,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Portable by design: it hardcodes NO MCP server or path — {@code --setting-sources} makes the child inherit
- * the human's own MCP config, so whatever tracker / code-host server they already have, this call gets. Runs
- * from the temp dir so only their user-level servers load (no jagt project MCP), keeping the context — and the
- * tokens — small.
- * <p>An install may declare the servers itself instead. Declared ones lose their plugin scope in tool names, so
- * an allow-list written for the inherited spelling silently stops matching.
+ * Hardcodes no MCP server or path: {@code --setting-sources} makes the child inherit the human's own MCP
+ * config, and running from the temp dir loads only their user-level servers. Servers declared here instead lose
+ * their plugin scope in tool names, so an allow-list written for the inherited spelling stops matching.
  */
 @Component
 @RequiredArgsConstructor
@@ -56,11 +53,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "targetBranch":{"type":"string"},\
             "title":{"type":"string"}},\
             "required":["exists","failure","sourceBranch","targetBranch","title"]}""";
-    /**
-     * {@code pipelineStatus} is an ENUM rather than a string because {@link dev.jagt.orchestrator.flow.Pipeline}
-     * reads it by keyword: a sentence like {@code mergeable (CodeRabbit check failed)} carries "fail" and turns
-     * a mergeable request red. The five words are the whole vocabulary that parser recognises.
-     */
+    /** {@code pipelineStatus} is an enum, not free text: it is read by keyword, so a sentence carrying "fail" is one. */
     private static final String REVIEW_SCHEMA = """
             {"type":"object","properties":{\
             "exists":{"type":"boolean"},\
@@ -77,21 +70,16 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "ticket":{"type":"string"},\
             "reason":{"type":"string"}},\
             "required":["command","task","ticket","reason"]}""";
-    /**
-     * Appended to every read. A model has no other way to distinguish "the host says there is no such thing"
-     * from "I never got to look" — and jagt reporting the second as the first is how a live merge request came
-     * back as missing, with nothing anywhere saying a tool had been unavailable.
-     */
+    /** A model cannot otherwise tell "no such item" from "I never got to look"; the second must not read as the first. */
     private static final String FAILURE_RULE = " Answer failure=\"\" ONLY when the host itself answered you:"
             + " with an answer, or with a no such item — that one is exists=false and empty fields. If ANYTHING"
             + " stopped you from reading it instead — no MCP tool for that host, a tool that errored, an"
             + " authentication or network failure, a denied permission — then failure=<one line naming exactly"
             + " what stopped you, and which tool or server it was>, and NEVER report that as not existing.";
-    /** The review sweep makes several code-host calls; give it much longer than a single lookup. */
+    /** The sweep makes several code-host calls, not one lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
-    /** A log value, not a transcript: the whole stderr belongs in the CLI's own output, not in one field. */
     private static final int MAX_CAUSE = 400;
-    /** Mapping text to a command reads nothing and must feel like typing — a slow answer is worse than none. */
+    /** Mapping text to a command reads nothing and must feel like typing. */
     private static final Duration MAP_TIMEOUT = Duration.ofSeconds(90);
 
     private final ProcessRunner processRunner;
@@ -105,15 +93,18 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (ticketRef == null || ticketRef.isBlank()) {
             return Answer.unavailable();
         }
-        String prompt = "Read the work item identified by \"" + ticketRef + "\" — this is EITHER an issue"
+        String prompt = "<role>You read one work item from whichever tracker holds it.</role>\n"
+                + "<task>Read the work item identified by \"" + ticketRef + "\" — this is EITHER an issue"
                 + " key (e.g. ABC-123) OR a URL to it in some tracker (Jira, GitHub, GitLab, …). Open it"
                 + " with the matching MCP tool: if it is a URL, follow the URL — do NOT try to parse a key"
-                + " out of it. Return exists=true with its canonical issue key as key, its summary as"
+                + " out of it.</task>\n"
+                + "<rules>Return exists=true with its canonical issue key as key, its summary as"
                 + " title, its project key as trackerProject, its labels, and its canonical web URL as url"
                 + " — the link the item itself reports, never one you assemble. Where the item carries no"
                 + " summary of its own, WRITE the title yourself: at most eight words naming what the item"
                 + " asks for, from its description. Never answer exists=true with an empty title or an"
-                + " empty url." + FAILURE_RULE;
+                + " empty url." + FAILURE_RULE + "</rules>\n"
+                + "Respond directly, no preamble.";
         return readable(ask(prompt, TICKET_SCHEMA, ticketRef), ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
@@ -128,10 +119,13 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (mrUrl == null || !mrUrl.startsWith("http")) {
             return Answer.unavailable();
         }
-        String prompt = "Fetch the merge/pull request at " + mrUrl + " via the matching code-host MCP tools"
-                + " (GitLab MR, GitHub PR, Bitbucket PR — whichever the URL points to). Return exists=true"
+        String prompt = "<role>You read one merge/pull request from whichever code host holds it.</role>\n"
+                + "<task>Fetch the merge/pull request at " + mrUrl + " via the matching code-host MCP tools"
+                + " (GitLab MR, GitHub PR, Bitbucket PR — whichever the URL points to).</task>\n"
+                + "<rules>Return exists=true"
                 + " with its source branch as sourceBranch, the branch it merges INTO as targetBranch, and its"
-                + " title." + FAILURE_RULE;
+                + " title." + FAILURE_RULE + "</rules>\n"
+                + "Respond directly, no preamble.";
         return readable(ask(prompt, MR_SCHEMA, mrUrl), mrUrl).map(n -> new MergeRequestFacts(
                 n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
                 n.path("targetBranch").asString(""), n.path("title").asString("")));
@@ -142,21 +136,23 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (mrUrl == null || !mrUrl.startsWith("http")) {
             return Answer.unavailable();
         }
-        String prompt = "Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
-                + " MCP tools. Return exists; approved (true only if the request is actually APPROVED by a human"
+        String prompt = "<role>You sweep one merge/pull request for its review state.</role>\n"
+                + "<task>Review sweep of the merge/pull request at " + mrUrl + " via the matching code-host"
+                + " MCP tools.</task>\n"
+                + "<rules>Return exists; approved (true only if the request is actually APPROVED by a human"
                 + " reviewer — not merely mergeable); pipelineStatus, the CI PIPELINE's own latest result: LIST"
                 + " this request's pipelines (or its head commit's check runs) with the host's own tool and read"
-                + " the newest one, because the request object itself often carries no pipeline field and its"
-                + " absence there answers nothing. Exactly one of success | failed | running | none | unknown,"
+                + " the newest one. Exactly one of success | failed | running | none | unknown,"
                 + " never the merge status (mergeable, can_be_merged) and never a review bot's verdict; none ONLY"
                 + " when that listing came back EMPTY, and unknown where you could not list them at all."
                 + " Return openedAt, the request's OWN creation timestamp"
                 + " as the host reports it (ISO-8601; empty string if it does not say), and comments — every"
-                + " UNRESOLVED discussion note (bots like CodeRabbit + humans), each as one string"
+                + " UNRESOLVED discussion note (bots and humans alike), each as one string"
                 + " \"author (file:line): body\". Empty array if none." + FAILURE_RULE
                 + " The pipelines are the ONE exception to the failure rule above, and they change nothing"
-                + " about exists: a listing you could not get is pipelineStatus=unknown with failure=\"\","
-                + " because the comments and the approval you DID read are worth relaying without it.";
+                + " about exists: a listing you could not get is pipelineStatus=unknown with failure=\"\"."
+                + "</rules>\n"
+                + "Respond directly, no preamble.";
         return readable(ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT), mrUrl).map(n -> {
             List<String> comments = new ArrayList<>();
             n.path("comments").forEach(c -> comments.add(c.asString("")));
@@ -166,10 +162,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         });
     }
 
-    /**
-     * A read that says what stopped it knows NOTHING about the request, so it comes back unreadable rather than
-     * as an answer: empty facts are what every caller already treats as "could not read".
-     */
+    /** A read that reports what stopped it comes back unreadable, never as an answer with empty facts. */
     private Answer<JsonNode> readable(Answer<JsonNode> answer, String label) {
         String failure = answer.facts().map(n -> n.path("failure").asString("")).orElse("").trim();
         if (failure.isEmpty()) {
@@ -199,8 +192,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " apply. If the request does not clearly match one command and one task, answer"
                 + " command=\"none\" and put the ambiguity in reason. Do NOT guess between two tasks:"
                 + " ambiguity is a `none`. Respond directly.";
-        // No MCP at all: this is text -> command, so a tool call could only be a mistake (and every server
-        // loaded would be paid for in context on a call that is meant to be the cheapest one jagt makes).
+        // Text -> command reads nothing, so a tool call could only be a mistake, and each loaded server costs context.
         return ask(prompt, COMMAND_SCHEMA, "command mapping", MAP_TIMEOUT, false)
                 .map(n -> new CommandProposal(n.path("command").asString(""), n.path("task").asString(""),
                         n.path("ticket").asString(""), n.path("reason").asString("")));
@@ -217,8 +209,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private Answer<JsonNode> ask(String prompt, String schema, String label, Duration timeout, boolean withMcp) {
         List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
                 "--json-schema", schema,
-                // The envelope wraps the answer together with the call's token usage and cost, so the spend is
-                // measurable at all.
+                // The envelope carries the call's token usage and cost alongside the answer.
                 "--output-format", "json"));
         if (!withMcp) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
@@ -232,9 +223,8 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             cmd.add("--model");
             cmd.add(assistant.model());
         }
-        // Headless `-p` can't answer the permission classifier, which then silently blocks the MCP
-        // calls the read needs; an allow-list or a permission mode lifts that gate. A call with no MCP has
-        // nothing to gate, so it stays off that path entirely.
+        // Headless `-p` cannot answer the permission classifier, which then silently blocks the MCP calls a
+        // read needs; an allow-list or a permission mode lifts that gate. No MCP means nothing to gate.
         if (!withMcp) {
             log.atDebug().setMessage("assistant call without mcp")
                     .addKeyValue("ref", label)
@@ -250,23 +240,22 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         try {
             result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
         } catch (RuntimeException e) {
-            // A timeout kills the CLI, so there is no envelope and no number: the tokens it already burned
-            // are unknowable, not zero.
+            // A timeout kills the CLI: no envelope, so the tokens already burned are unknowable, not zero.
             log.atError().setMessage("assistant call did not return")
                     .addKeyValue("ref", label)
-                    .addKeyValue("cause", e.getMessage())
-                    .addKeyValue("after", timeout)
+                    .addKeyValue("cause", e.toString())
+                    .addKeyValue("limit", timeout)
                     .addKeyValue("effect", "token cost unmeasured")
                     .log();
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         }
         JsonNode envelope = parseEnvelope(result.stdout(), label);
-        // The cost is reported whatever the outcome: a call that errored or came back unusable was still
-        // paid for, and dropping it would make the setup that fails most look like the cheapest.
+        // Reported whatever the outcome: a call that errored or came back unusable was still paid for.
         TokenUsage usage = usageOf(envelope);
         if (usage.isNone()) {
             log.atWarn().setMessage("assistant call reported no usage")
                     .addKeyValue("ref", label)
+                    .addKeyValue("cause", "no usage block")
                     .addKeyValue("effect", "token cost unaccounted")
                     .log();
         }
@@ -274,8 +263,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (denials != null && denials.isArray() && !denials.isEmpty()) {
             log.atError().setMessage("assistant tool calls denied")
                     .addKeyValue("ref", label)
-                    .addKeyValue("denied", denials.size())
-                    .addKeyValue("calls", oneLine(denials.toString()))
+                    .addKeyValue("cause", oneLine(denials.toString()))
                     .log();
         }
         if (result.exitCode() != 0 || envelope == null) {
@@ -317,10 +305,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
     }
 
-    /**
-     * The schema-validated answer: {@code structured_output} when the CLI already parsed it, else the
-     * {@code result} string, which then holds the same JSON verbatim.
-     */
+    /** {@code structured_output} when the CLI already parsed it, else {@code result}, holding the same JSON. */
     private Optional<JsonNode> answerOf(JsonNode envelope, String label) {
         JsonNode structured = envelope.path("structured_output");
         if (structured.isObject()) {
@@ -330,6 +315,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (raw.isBlank()) {
             log.atError().setMessage("assistant answer empty")
                     .addKeyValue("ref", label)
+                    .addKeyValue("cause", "result blank")
                     .log();
             return Optional.empty();
         }
@@ -337,11 +323,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         return Optional.ofNullable(answer);
     }
 
-    /**
-     * Fresh input = prompt + cache WRITES (both billed at input rates); cache reads are counted apart because
-     * they are far cheaper. A missing usage block yields {@link TokenUsage#NONE} rather than a fabricated
-     * number.
-     */
+    /** Fresh input = prompt + cache WRITES, both billed at input rates; cache reads count apart, being cheaper. */
     static TokenUsage usageOf(JsonNode envelope) {
         if (envelope == null) {
             return TokenUsage.NONE;

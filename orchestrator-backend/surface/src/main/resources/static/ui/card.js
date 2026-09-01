@@ -1,18 +1,12 @@
-// One task, as one card. Pure: it reads the server's projection and builds nodes, and a button carries the two
-// names a click needs (`data-task`, `data-action`) rather than a closure — the board delegates, so a card that
-// was rebuilt under a pointer cannot answer for the task it used to describe.
+// One task, as one card: it reads the server's projection and builds the nodes.
 
 import {link, span} from '../core/dom.js';
 import {duration, countdown} from '../core/format.js';
 import {blocked} from './inflight.js';
 
-// What the unattended poller is about to do with this task, or nothing when it is not its business. The WORDS are
-// the server's (watch.note), so the console and this cannot drift; only the countdown is formatted here, from the
-// absolute stamp, so the slow repaint keeps it honest without another fetch.
-//
-// Whether the poller runs at all is a property of the install, stated once per surface, so neither shape repeats
-// it: a poll that is COMING is its countdown, one that has STOPPED says what stopped. What to do instead is the
-// tooltip, since the card already highlights that button.
+export const DRAFTS_LABEL = 'replies drafted \u2014 click to read';
+
+// The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
 const watchLine = (watch) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
@@ -22,30 +16,22 @@ const watchLine = (watch) => {
   return {pulse: watch.label, tip: watch.note, stalled: true};
 };
 
-// The request, as the link that names it: how long it has been open, and green plus a tick once somebody has
-// approved it. Its checks are the dot beside it and nothing else — one fact per element, so neither can outrank
-// the other the way red outranked an approval while both rode this label.
-//
-// `openedAt` is 0 until a host read has said when the request opened. `sole` is false for one link among
-// several: the approval is every repository's, so it cannot ride on a link that names one.
+// `sole` is false for one link among several: the approval is every repository's, not one link's.
 const requestChip = (url, label, openedAt, task, sole) => {
   const anchor = link(url, openedAt > 0 ? `${label} ${duration(Date.now() - openedAt)}` : label);
   anchor.className = 'mr-age';
   const lines = [openedAt > 0
     ? `review request; opened ${new Date(openedAt).toLocaleString()}`
-    : 'review request; nothing has dated it yet — the next sweep will'];
+    : 'review request; the next sweep will date it'];
   if (sole && task.approved) {
     anchor.classList.add('approved');
     anchor.append(' \u2713');
   }
   if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
-  // Only where the checks have no dot to say it themselves — one verdict in two hovers can disagree with
-  // itself. A host that answered with a word this cannot read HAS been read, so its word is what goes in.
+  // Only where the checks have no dot to say it themselves: one verdict in two hovers can disagree with itself.
   if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
-  if (sole) {
-    const watch = watchLine(task.autoReview);
-    if (watch && !watch.stalled) lines.push(watch.pulse);
-  }
+  const watch = watchLine(task.autoReview);
+  if (watch && !watch.stalled) lines.push(watch.pulse);
   anchor.dataset.tip = lines.join('\n');
   return anchor;
 };
@@ -57,12 +43,9 @@ const approvalTick = () => {
   return tick;
 };
 
-// A verdict this can read, so a dot can carry it. Equality rather than a negation: a projection missing the
-// field takes a negation's branch and throws inside the render, blanking the whole board over one dot.
+// Equality rather than a negation: a projection missing the field would throw inside the render and blank the board.
 const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING' || task.pipeline === 'GREEN';
 
-// The checks, and nothing else on the card says a word about them. Filled once a verdict is in, hollow while the
-// run is still going — the board spends that shape on "waiting" everywhere else.
 const checksDot = (task) => {
   const dot = span(`checks ${task.pipeline.toLowerCase()}`, '');
   dot.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
@@ -87,15 +70,13 @@ const actionRow = (group) => {
 export function card(task, manyProjects) {
   const owner = task.owner.toLowerCase();
   const article = document.createElement('article');
-  // The edge reads the owner; the quiet tier drops its colour, so an alarm-coloured card is one that is stuck.
   article.className = task.attention === 'OPTIONAL' ? `${owner} optional` : owner;
 
   const top = document.createElement('div');
   top.className = 'card-top';
   top.append(span('alias', task.alias || '-'),
     task.ticketUrl ? Object.assign(link(task.ticketUrl, task.id), {className: 'id'}) : span('id', task.id));
-  // Only YOUR move is news; every other owner is the status word again. The words name the ACT and the tier only
-  // colours it, both the server's, so the badge, the header count and the own-move filter cannot disagree.
+  // The words name the ACT and the tier only colours it, both the server's, so badge, count and filter agree.
   if (task.ask) {
     const badge = span(`badge ${task.attention.toLowerCase()}`, task.ask);
     badge.dataset.tip = task.hint;
@@ -108,15 +89,11 @@ export function card(task, manyProjects) {
 
   const meta = document.createElement('div');
   meta.className = 'meta';
-  // Two clocks, because the status one restarts on every round and on a respawned agent re-reporting itself
-  // while the review keeps waiting. The activity age is not a third: on a status the agent does not own, it
-  // says only that nothing has happened.
   // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
   const status = span('status', task.statusLabel);
   status.append(' ', span('age', duration(Date.now() - task.statusSince)));
   status.dataset.tip = `${task.status}\n${timeline(task)}`;
-  // The mark rides the verb it is about wherever that verb is on offer; where it is not — a task picked back
-  // up, or closed — the state chip carries it, because nothing else on the card would say the work is live.
+  // Where no verb on this card is the deploy, nothing else on it would say the work is live.
   if (task.deployed && !task.actions.some((action) => action.again)) {
     status.classList.add('live');
     status.dataset.tip = `${status.dataset.tip}\n\nits work is on a shared branch`;
@@ -127,8 +104,7 @@ export function card(task, manyProjects) {
   if (manyProjects || repos.length > 1) {
     meta.append(span(null, repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project));
   }
-  // ONE stamp for several requests — the oldest — so it can be worn only where there is one request to wear
-  // it. Several are named by project and ageless: the same number under each would read as each one's own.
+  // ONE stamp for several requests: the same number under each would read as each one's own.
   const folded = task.reviewRequestUrl && repos.length < 2;
   if (folded) {
     meta.append(requestChip(task.reviewRequestUrl, 'MR', task.requestOpenedAt, task, true));
@@ -140,12 +116,10 @@ export function card(task, manyProjects) {
   }
   // Beside the request whether there is one link or several: the verdict is the worst repository's either way.
   if (marked(task)) meta.append(checksDot(task));
-  // A poll that is merely coming needs no element of its own — the link it is about carries it in the tooltip.
-  // One that has STOPPED does: it hands the move back to a human, and nothing else on the card says so. Where
-  // there was no one link to fold it into, it stays an element either way.
+  // Only a poll that has STOPPED earns an element: it hands the move back, and nothing else on the card says so.
   const watch = watchLine(task.autoReview);
-  if (watch && (watch.stalled || !folded)) {
-    const pulse = span(watch.stalled ? 'pulse stalled' : 'pulse', watch.pulse);
+  if (watch && watch.stalled) {
+    const pulse = span('pulse stalled', watch.pulse);
     pulse.dataset.tip = watch.tip;
     meta.append(pulse);
   }
@@ -154,30 +128,25 @@ export function card(task, manyProjects) {
 
   if (task.detail) {
     const detail = document.createElement('div');
-    // A problem is loud whatever the tier says — a broken link is broken on a card whose move can wait. What a
-    // task NEEDS follows the tier: a question a poll is still reading is the human's whenever, and a line that
-    // shouts on every round they have not answered yet is one they stop reading.
-    const loud = /^PROBLEM/.test(task.detail)
-      || (/^NEEDS/.test(task.detail) && task.attention !== 'OPTIONAL');
-    detail.className = loud ? 'detail problem' : 'detail';
+    // A problem is broken whatever the tier says; a move of theirs drops its colour with the tier.
+    const yours = /^NEEDS/.test(task.detail) && task.attention !== 'OPTIONAL';
+    detail.className = /^PROBLEM/.test(task.detail) ? 'detail problem' : (yours ? 'detail you' : 'detail');
     detail.textContent = task.detail;
     parts.push(detail);
   }
 
-  // Nothing else on the page would say the drafted answers exist. The line that announces them is also what
-  // OPENS them, so it says so: a human approving a round reads it here, not in an editor.
+  // Nothing else on the page would say the drafted answers exist.
   if (task.draftedReplies) {
     const drafts = document.createElement('button');
     drafts.className = 'drafts';
-    drafts.textContent = 'replies drafted \u2014 click to read';
+    drafts.textContent = DRAFTS_LABEL;
     drafts.dataset.tip = 'every comment and the reply that will be sent for it';
     drafts.dataset.report = 'replies';
     drafts.dataset.about = task.alias || task.id;
     parts.push(drafts);
   }
 
-  // A row per group, broken wherever the order the server sent changes it: which groups exist, and which
-  // comes first, stays the projection's answer.
+  // Which groups exist, and which comes first, stays the projection's answer.
   let row = null;
   for (const action of task.actions) {
     if (!row || row.dataset.group !== action.group) {
@@ -190,8 +159,6 @@ export function card(task, manyProjects) {
     button.dataset.task = task.id;
     button.dataset.action = action.id;
     if (action.primary) button.className = 'primary';
-    // A verb whose last run is still live: the meta row is already the busiest thing on the card, so the fact
-    // is worn by the control it is about rather than added beside the others.
     if (action.again) button.classList.add('again');
     button.disabled = blocked(task, action);
     row.append(button);

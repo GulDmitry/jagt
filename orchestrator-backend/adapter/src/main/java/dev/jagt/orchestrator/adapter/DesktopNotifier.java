@@ -7,14 +7,7 @@ import dev.jagt.orchestrator.port.UserNotifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * The banner, and WHERE IT PUTS THE HUMAN when they click it: a notification about a task links to the board
- * narrowed to that task, so one click leaves them looking at the card with its actions rather than at a list of
- * every task they have. It is the filter the page already has, not a second way to address a card.
- *
- * <p>No link when the notification is about the install rather than a task: a click that opens a page about
- * nothing is worse than one that does nothing.
- */
+/** A task notification links to the board narrowed to that task, through the filter the page already has. */
 @Component
 public class DesktopNotifier implements Notifier {
 

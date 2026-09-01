@@ -1,11 +1,7 @@
-// What the board's colours and marks mean, as a section of the help report rather than a control of its own: a
-// second button for "how does this work" is a second answer to the same question.
-//
-// Every row shows the page's OWN element beside what it means — a legend that spells a colour out in words is
-// the first thing to go stale when the stylesheet moves, and a mark with no row here is one a human has to
-// guess.
+// What the board's marks mean, as a section of the help report: every row renders the page's OWN element.
 
 import {span} from '../core/dom.js';
+import {DRAFTS_LABEL} from './card.js';
 
 const edge = (owner) => span(`legend-edge ${owner}`, '');
 
@@ -39,13 +35,21 @@ const deployedButton = () => {
 const draftsButton = () => {
   const button = document.createElement('button');
   button.className = 'drafts';
-  button.textContent = 'replies drafted \u2014 click to read';
+  button.textContent = DRAFTS_LABEL;
   return button;
+};
+
+const detailLine = (className, text) => {
+  const line = document.createElement('div');
+  line.className = className;
+  line.textContent = text;
+  return line;
 };
 
 const rows = () => [
   [[edge('you'), edge('agent'), edge('ci'), edge('')],
-    'your move \u00b7 agent working \u00b7 with the reviewers \u00b7 nothing waiting'],
+    'your move \u00b7 agent working \u00b7 with the reviewers '
+    + '\u00b7 nothing waiting, or a move of yours that can wait'],
   [[span('badge required', 'ship it'), span('badge optional', 'read the round')],
     'you are the hold-up \u00b7 yours whenever you like'],
   [[statusChip(), liveStatusChip()],
@@ -62,7 +66,11 @@ const rows = () => [
     'replies are drafted \u2014 read them before you ship'],
   [[span('pulse stalled', 'polling stopped')],
     'nothing will look at this round again on its own'],
-  [[span('chip on', 'auto-review on'), span('chip bad', 'jobs: 1 failed')],
+  [[detailLine('detail problem', 'PROBLEM: no branch to ship'), detailLine('detail you', 'NEEDS YOU: a red run')],
+    'the card\u2019s own line: broken \u00b7 your move'],
+  [[span('waiting', '2 need your action')],
+    'in the header: how many cards are an interruption'],
+  [[span('chip on', 'auto-review on'), span('chip', 'auto-review off'), span('chip bad', 'jobs: 1 failed')],
     'in the header: whether anything polls, and what it did'],
   [[span('dot on', ''), span('dot', '')],
     'top right: whether this page is being told about changes'],
@@ -75,8 +83,7 @@ export function node() {
     ...rows().flatMap(([samples, meaning]) => {
       const key = document.createElement('div');
       key.className = 'legend-key';
-      // Illustrations: a sample button is a real one, and one that answers a click with nothing is worse than
-      // none — including for whoever reaches it by tabbing past Close.
+      // A sample button is a real one, and one that answers a click with nothing is worse than none.
       key.inert = true;
       key.append(...samples);
       return [key, span('legend-says', meaning)];

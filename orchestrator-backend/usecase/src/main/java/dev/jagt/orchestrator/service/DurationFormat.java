@@ -6,11 +6,7 @@ public final class DurationFormat {
     private DurationFormat() {
     }
 
-    /**
-     * A countdown a human watches tick, unlike an age in a column: seconds matter while the wait is under a
-     * minute, and "0m" would read as "now". Mirrored by the board's own formatter, which writes the same
-     * countdown into a card.
-     */
+    /** Seconds matter while the wait is under a minute, where "0m" would read as "now". */
     public static String countdown(long millis) {
         long seconds = Math.max(0, millis) / 1000;
         if (seconds < 60) {

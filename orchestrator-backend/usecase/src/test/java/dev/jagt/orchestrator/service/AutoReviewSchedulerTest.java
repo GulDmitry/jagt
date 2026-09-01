@@ -106,7 +106,6 @@ class AutoReviewSchedulerTest {
         verifyNoInteractions(sweep);
     }
 
-    /** A round shipped in-process never leaves CI_POLLING, so a per-task marker would silence it forever. */
     @Test
     void pingsAgainForTheNewWindowAShippedRoundOpens(@TempDir Path root) {
         StateService state = stateWith(root, polling()
@@ -126,12 +125,6 @@ class AutoReviewSchedulerTest {
                         && sent.body().contains("past its 24h window")));
     }
 
-    /**
-     * A task retired with `done` while still CI_POLLING never LEAVES that status, so the per-window marker had
-     * nothing to clear it: the set grew by one string per such task for the life of the process. Asserted the
-     * only way it is observable from outside — a task that comes back under the same id and window gets its
-     * reminder again instead of being silently treated as already-notified.
-     */
     @Test
     void forgetsTheRemindersOfATaskThatWasRetiredWhileStillPolling(@TempDir Path root) {
         long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
@@ -151,10 +144,6 @@ class AutoReviewSchedulerTest {
                         && sent.body().contains("past its 24h window")));
     }
 
-    /**
-     * An approval lands after the round already came back clean, and REVIEWED is where that round sits — a poll
-     * that stopped there would never see one, which is the one thing the human is told about without asking.
-     */
     @Test
     void keepsPollingARoundThatCameBackCleanUntilSomebodyApprovesIt(@TempDir Path root) {
         StateService state = stateWith(root, polling().status(TaskStatus.REVIEWED)
@@ -180,7 +169,6 @@ class AutoReviewSchedulerTest {
 
         verifyNoInteractions(sweep, notifications);
     }
-
 
     private static StateService stateWith(Path root, TaskState task) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()

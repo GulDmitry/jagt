@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.config.ClaudeProperties;
+import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 

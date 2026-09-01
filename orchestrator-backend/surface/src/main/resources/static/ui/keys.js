@@ -1,6 +1,4 @@
-// Every binding in one place. Escape used to be answered in three, and each new panel added a fourth — so it is
-// answered ONCE here, doing what the two listeners together used to do: clear the filter if that is where the
-// caret is, and close whatever is open.
+// Every binding in one place, so a new panel adds no second answer to Escape.
 
 import * as filters from './filters.js';
 import * as palette from './palette.js';

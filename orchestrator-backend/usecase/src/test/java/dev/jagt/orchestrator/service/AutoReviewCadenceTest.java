@@ -45,7 +45,6 @@ class AutoReviewCadenceTest {
         assertThat(off.watch(task, 2L).state()).isEqualTo(AutoReviewWatch.State.NONE);
     }
 
-    /** A task created while polling was off keeps its own answer, so it must say so rather than look idle. */
     @Test
     void namesATaskThatOptedOutWhileTheRestAreWatched() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -54,7 +53,6 @@ class AutoReviewCadenceTest {
         assertThat(cadence.watch(task, 2L).state()).isEqualTo(AutoReviewWatch.State.OFF_FOR_TASK);
     }
 
-    /** A request jagt cannot time is not the same as no request, and silence would read as the second. */
     @Test
     void saysSoAboutARequestWhoseRoundWasNeverStamped() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -63,7 +61,6 @@ class AutoReviewCadenceTest {
         assertThat(cadence.watch(task, 2L).state()).isEqualTo(AutoReviewWatch.State.NO_ROUND);
     }
 
-    /** Every other multi-repo answer comes from ANY repository's request; this one must not be the exception. */
     @Test
     void watchesAMultiRepoTaskWhoseRequestIsOpenOnASiblingRatherThanTheSessionRepository() {
         long shipped = 1_000_000_000_000L;
@@ -91,10 +88,6 @@ class AutoReviewCadenceTest {
         assertThat(cadence.watch(task, 2L).state()).isEqualTo(AutoReviewWatch.State.NONE);
     }
 
-    /**
-     * An open request is reviewed whatever the task is doing meanwhile, so no status may drop out of polling —
-     * every one of them is a row here, which is what stops the next status added from being forgotten.
-     */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = "DONE", mode = EnumSource.Mode.EXCLUDE)
     void pollsAnOpenRequestWhateverTheTaskIsDoingMeanwhile(TaskStatus status) {
@@ -106,7 +99,6 @@ class AutoReviewCadenceTest {
                 .isEqualTo(AutoReviewWatch.State.WATCHING);
     }
 
-    /** A closed task has no worktree left, so a round read there could be relayed to nobody. */
     @Test
     void stopsPollingATaskThatIsClosed() {
         long opened = 1_000_000_000_000L;
@@ -116,7 +108,6 @@ class AutoReviewCadenceTest {
         assertThat(cadence.watch(task, opened + 1000).state()).isEqualTo(AutoReviewWatch.State.NONE);
     }
 
-    /** A request adopted rather than shipped starts no round, and used to be a request nothing would ever read. */
     @Test
     void timesTheWindowFromWhenTheRequestOpenedWhenNoRoundWasEverStamped() {
         long opened = 1_000_000_000_000L;

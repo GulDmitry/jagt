@@ -18,12 +18,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Finds the sessions that have stopped rather than the ones that are merely busy, and says so where a human
- * looks.
- *
- * <p>What it finds is STAMPED on the task, not only sent as a desktop ping: a notification is gone the moment
- * it is dismissed, and a blocked session has to be readable off the board for as long as it is blocked. This
- * is the only place that stamp is written, so no sign can be recorded without this verdict having agreed.
+ * Finds the sessions that have stopped rather than the ones that are merely busy. What it finds is STAMPED on the
+ * task, not only sent as a desktop ping, and this is the only place that stamp is written.
  */
 @Service
 @RequiredArgsConstructor
@@ -52,13 +48,8 @@ public class WatchdogService implements Job {
     }
 
     /**
-     * The statuses where the agent is EXPECTED to be doing something, so silence means death — NEW included,
-     * for an agent that died before its first status update at all (spawn failure, auth prompt).
-     *
-     * <p>Every other status idles BY DESIGN and must stay unwatched, or the alert becomes noise. REVIEW_PENDING
-     * and CI_FAILED are the arguable ones: right after a relayed brief the agent IS working, but telling
-     * "relayed, unanswered" apart from "waiting for you" needs state jagt does not keep, and guessing would
-     * fire alerts at a human who is simply taking their time.
+     * The statuses where the agent is EXPECTED to be doing something, so silence means death — NEW included, for an
+     * agent that died before its first status update. Every other status idles BY DESIGN and stays unwatched.
      */
     static boolean watches(TaskStatus status) {
         return status == TaskStatus.NEW || status == TaskStatus.IN_PROGRESS || status == TaskStatus.SHIPPING;
@@ -87,8 +78,7 @@ public class WatchdogService implements Job {
             lastAlertAt.remove(taskId);
             return;
         }
-        // The wait that FOLLOWS an agent's own question was announced when it asked — but a question left
-        // unanswered until the session died is a different event, and the one most worth a banner.
+        // The wait FOLLOWING an agent's own question was announced when it asked.
         boolean announcedWhenItAsked = silence.get().atAPrompt()
                 && AgentReport.of(task.message()) == AgentReport.QUESTION;
         // Re-alert at most once per stale window to avoid notification spam.
@@ -100,7 +90,8 @@ public class WatchdogService implements Job {
         log.atWarn().setMessage("task stopped")
                 .addKeyValue("task", taskId)
                 .addKeyValue("said", said)
-                .addKeyValue("silent", (now - silence.get().since()) / 60_000 + " min")
+                .addKeyValue("cause", silence.get().reported())
+                .addKeyValue("silent", (now - silence.get().since()) / 60_000)
                 .log();
         notifications.send(Notification.watchdog(taskId, "agent stopped", said));
     }
@@ -111,9 +102,8 @@ public class WatchdogService implements Job {
     }
 
     /**
-     * Written only when the verdict CHANGES — in or out of silence, or into a different reason for it: every
-     * surface repaints on a state write, and this runs against every task there is. Keeping the first
-     * detection's timestamp is also what makes the duration grow instead of resetting.
+     * Written only when the verdict CHANGES: every surface repaints on a state write. Keeping the first detection's
+     * timestamp is what makes the duration grow instead of resetting.
      */
     void stamp(String taskId, TaskState task, SessionProbe.Silence silence) {
         String because = silence == null ? null : silence.detail();
@@ -121,8 +111,7 @@ public class WatchdogService implements Job {
             return;
         }
         long since = silence == null ? 0 : silence.since();
-        // Only over the state this verdict was reached from: a report can land on its own thread in between,
-        // and the pass that decided before it arrived must not be the one that erases it.
+        // Only over the state this verdict was reached from: a report can land on its own thread in between.
         stateService.updateTask(taskId, current -> unchanged(current, task)
                 ? current.withSilentSince(since, because)
                 : current);

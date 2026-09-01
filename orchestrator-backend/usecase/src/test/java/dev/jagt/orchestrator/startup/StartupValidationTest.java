@@ -23,7 +23,7 @@ class StartupValidationTest {
 
         assertThatThrownBy(validation::refuseToRunWithoutWhatItNeeds)
                 .isInstanceOf(Misconfigured.class)
-                .hasMessageContaining("3 things it needs are missing")
+                .hasMessageContaining("3 problems:")
                 .hasMessageContaining("1. tmux is not on PATH")
                 .hasMessageContaining("2. config.json defines no projects")
                 .hasMessageContaining("3. kitty is not on PATH");

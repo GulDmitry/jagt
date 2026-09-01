@@ -14,11 +14,7 @@ public enum TaskStatus {
     REVERTED("reverted"),
     DONE("done");
 
-    /**
-     * The enum name is the wire value and what {@code state.json} carries; this is the same status in words that
-     * need no glossary. Written ONCE so a status cannot be spelled two ways, and it names a STATE rather than a
-     * next move — the highlighted action already gives that.
-     */
+    /** The enum name is the wire value; this is the same status in words, naming a STATE rather than a next move. */
     private final String label;
 
     TaskStatus(String label) {
@@ -30,9 +26,8 @@ public enum TaskStatus {
     }
 
     /**
-     * A round is out with the reviewers, so only the code host moves it on. REVIEWED is one of them: "nothing
-     * unresolved, checks green" is still waiting for an approval. NOT what the unattended poll watches — that is
-     * an open request whatever the status ({@code AutoReviewCadence.polls}).
+     * A round is out with the reviewers, so only the code host moves it on. NOT what the unattended poll watches,
+     * which is an open request whatever the status.
      */
     public boolean outForReview() {
         return this == CI_POLLING || this == REVIEWED;

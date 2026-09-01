@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-/** What is macOS-specific about the kitty viewer; the OS-neutral argv is covered by the base-class test. */
 class KittyTerminalDriverTest {
 
     @Test

@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
-import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -60,10 +59,7 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         processRunner.runDetached(null, command);
     }
 
-    /**
-     * A launcher nobody has is the human's to fix, so the sentence names the key to set — not the binary they
-     * never chose, which is all a failed spawn could report.
-     */
+    /** The sentence names the key to set, not the binary the human never chose. */
     private static List<String> launcher(List<String> configured, String configKey) {
         if (configured == null || configured.isEmpty() || configured.getFirst().isBlank()) {
             throw new IllegalStateException(configKey + " is empty — set it to the launcher of the editor you"
@@ -79,12 +75,8 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         return command;
     }
 
-    /**
-     * Best-effort and IMMEDIATE only: while the IDE is live it holds the recent-projects list in memory and
-     * flushes it back on its next save/exit, which resurrects the entry — even across a restart (it is
-     * re-written on the way down). {@link #forgetDeadWorktrees} is what makes the removal stick once that IDE
-     * is next closed.
-     */
+    /** Best-effort and IMMEDIATE only: a live IDE holds this list in memory and flushes it back on its next save
+     *  or exit, resurrecting the entry. */
     @Override
     public void forgetProject(Path worktreePath) {
         String userHome = System.getProperty("user.home");
@@ -109,10 +101,7 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         }
     }
 
-    /**
-     * Both locations are probed rather than switched on an OS flag — only one of them exists on a given
-     * machine, and probing keeps this free of an `if macos`.
-     */
+    /** Both locations are probed rather than switched on an OS flag: only one exists on a given machine. */
     static List<Path> jetBrainsConfigDirs(String userHome) {
         return List.of(Path.of(userHome, "Library", "Application Support", "JetBrains"),
                 Path.of(userHome, ".config", "JetBrains"));
@@ -139,13 +128,13 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
                 } catch (IOException e) {
                     log.atDebug().setMessage("jetbrains prune failed")
                             .addKeyValue("file", recent)
-                            .addKeyValue("cause", e.getMessage())
+                            .addKeyValue("cause", e.toString())
                             .log();
                 }
             }
         } catch (IOException e) {
             log.atDebug().setMessage("jetbrains config scan failed")
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
         }
     }

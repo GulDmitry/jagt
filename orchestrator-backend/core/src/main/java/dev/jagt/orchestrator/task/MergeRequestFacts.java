@@ -1,11 +1,8 @@
 package dev.jagt.orchestrator.task;
 
 /**
- * The facts needed to adopt a review request that is already open.
-
- *
- * @param exists false = the HOST says there is no such request. A read that failed carries no facts at all
- *               (empty {@code Optional}) — the two are different answers and no caller may merge them
+ * The facts needed to adopt a review request that is already open. {@code exists=false} means the HOST says there
+ * is no such request; a read that failed carries no facts at all, and no caller may merge the two.
  */
 public record MergeRequestFacts(boolean exists, String sourceBranch, String targetBranch, String title) {
 }

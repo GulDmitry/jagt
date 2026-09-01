@@ -11,12 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * What a sub-agent's own session cost, booked to its task — the work that spends most, and the only spend
- * nothing was metering.
- *
- * <p>Reading is bounded and repeatable: at most one window per report, from the mark that log carries, and the
- * mark is checked again inside the write. Two reports arriving together therefore book the window once — the
- * second sees the mark already moved and drops what it counted rather than adding it twice.
+ * What a sub-agent's own session cost, booked to its task. Reading is bounded and repeatable: at most one window per
+ * report, from the mark that log carries, and the mark is checked again inside the write, so two reports arriving
+ * together book the window once.
  */
 @Service
 @RequiredArgsConstructor
@@ -39,8 +36,8 @@ public class AgentSpendReader {
             return;
         }
         long from = stateService.task(taskId).map(task -> task.agentSpendOrNone().markFor(name)).orElse(0L);
-        // A log SHORTER than its own mark was rewritten under jagt, and what of it was already counted cannot be
-        // told. Its total stands and the mark follows the file: an under-count beats counting turns twice.
+        // A log SHORTER than its own mark was rewritten under jagt, and what was counted cannot be told. Its
+        // total stands and the mark follows the file.
         if (size < from) {
             stateService.updateTask(taskId, task -> task.withAgentSpend(
                     task.agentSpendOrNone().plus(dev.jagt.orchestrator.task.TokenUsage.NONE, name, size)));

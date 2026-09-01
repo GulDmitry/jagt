@@ -13,25 +13,13 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * The throwaway outside world an e2e run needs: a local origin + a clone to cut worktrees from, the
- * orchestrator root markers, a {@code jagt.yml} written per matrix combination, and the tmux session the
- * run is allowed to kill afterwards. Nothing here reaches beyond the given temp directory — no network, no
- * remote host, no file of the developer's.
- */
 final class E2eWorkspace {
 
-    /** Never a name a human would use for real work, because the run kills this session on the way out. */
     static final String TMUX_SESSION = "jagt-e2e";
 
     private E2eWorkspace() {
     }
 
-    /**
-     * A bare origin plus a clone with one commit on {@code main}, pushed — the shape {@code createWorktree}
-     * expects (it cuts task branches from {@code origin/<baseBranch>}). The deploy branch exists on the origin
-     * ONLY: nothing checks it out in a real setup either, and a deploy resolves it through {@code origin/}.
-     */
     static void createRepositoryWithOrigin(Path origin, Path repo) throws Exception {
         Files.createDirectories(origin);
         Files.createDirectories(repo);
@@ -47,17 +35,14 @@ final class E2eWorkspace {
         git(repo, "push", "origin", "main:refs/heads/dev");
     }
 
-    /** A URL rather than the bare path it wraps: only a URL carries a project that can be matched. */
     static String remoteUrl(Path origin) {
         return "file://" + origin;
     }
 
-    /** A request URL carrying the repository's own project, which is how a resumed request finds it. */
     static String requestUrl(Path origin) {
         return "https://code.example/" + GitRemote.projectPath(remoteUrl(origin)) + "/-/merge_requests/1";
     }
 
-    /** The orchestrator root is detected by this marker, and every worktree links it. */
     static void createRootMarker(Path root) throws IOException {
         Files.createDirectories(root);
         Files.writeString(root.resolve("mcp_client.js"), "// e2e placeholder proxy\n");
@@ -89,12 +74,10 @@ final class E2eWorkspace {
                 """.formatted(configured, TMUX_SESSION, viewMode, autoReview));
     }
 
-    /** The deploy branch back where {@link #createRepositoryWithOrigin} left it: a copy of main, nothing merged. */
     static void resetDeployBranch(Path repo) {
         gitQuietly(repo, "push", "--force", "origin", "origin/main:refs/heads/dev");
     }
 
-    /** A commit on the shared branch that no task made, so the next deploy of that file has to conflict. */
     static void commitOnDeployBranch(Path repo, String file, String content) throws Exception {
         git(repo, "fetch", "origin");
         git(repo, "checkout", "-B", "e2e-deploy-side", "origin/dev");
@@ -105,13 +88,6 @@ final class E2eWorkspace {
         git(repo, "checkout", "main");
     }
 
-    /**
-     * Unregisters a task's branches everywhere a run could have left them — including the origin, since the
-     * next case pushes the same name and an unrelated history is refused, not forced. A deploy that conflicted
-     * KEEPS its worktree on purpose, and a case that failed mid-deploy would hand that half-state to the next
-     * one, so those go too. Best-effort: a case that failed early may hold nothing, and a cleanup failure must
-     * not mask the real one. The deploy branch is a separate call ({@link #resetDeployBranch}).
-     */
     static void forgetTask(Path repo, Path worktree, String branch) {
         gitQuietly(repo, "worktree", "remove", "--force", worktree.toString());
         gitQuietly(repo, "worktree", "remove", "--force",
@@ -125,11 +101,6 @@ final class E2eWorkspace {
         gitQuietly(repo, "push", "origin", "--delete", branch);
     }
 
-    /**
-     * Kills every session the run could have created — by PREFIX, because {@code tab-per-task} puts each task
-     * in a session of its own ({@code <session>-<taskId>}) and killing only the configured name leaves those
-     * behind. Best-effort: the session may never have existed, and cleanup must not fail a green run.
-     */
     static void killTmuxSessions(String tmuxCommand) {
         String listed = run(tmuxCommand, "list-sessions", "-F", "#{session_name}");
         for (String session : own(listed == null ? "" : listed)) {
@@ -137,12 +108,6 @@ final class E2eWorkspace {
         }
     }
 
-    /**
-     * Only this run's own sessions: a developer's real ones are none of a case's business, nor a run's to read.
-     * A listing that could not be READ is thrown rather than answered as an empty list — a case asserting which
-     * session an agent landed in must not read an unanswered question as the wrong answer. Reaching here at all
-     * means a task was just launched into tmux, so there IS a server, and anything else is the failure.
-     */
     static List<String> tmuxSessions(String tmuxCommand) {
         String listed = run(tmuxCommand, "list-sessions", "-F", "#{session_name}");
         if (listed == null) {
@@ -157,11 +122,6 @@ final class E2eWorkspace {
         return listed.lines().filter(name -> name.startsWith(TMUX_SESSION)).toList();
     }
 
-    /**
-     * Resolved as the application resolves it, install directories included, because a GUI- or IDE-launched JVM
-     * has neither Homebrew prefix on its PATH. {@code git} below stays bare on purpose: PATH is all the
-     * application asks of git. Null is every way the answer is absent rather than empty.
-     */
     private static String run(String command, String... args) {
         List<String> full = new java.util.ArrayList<>(List.of(Executables.resolve(command)));
         full.addAll(List.of(args));

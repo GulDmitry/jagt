@@ -22,19 +22,6 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * The one prompt jagt puts in front of an operator, evaluated against the model that will answer it: free text
- * onto exactly one command of the grammar. It spends tokens and needs the assistant's CLI, so it is asked for
- * by name — {@code ./gradlew promptEval} — and is no part of {@code check}.
- *
- * <p>What it guards is the configuration that steers the model: the mapping prompt, the command hints it lists
- * and the shape of the task list. Those are edited like prose and read like code, and nothing else notices when
- * a reworded hint stops a request from landing.
- *
- * <p>Every row asserts, so one miss is a red build — but read the count rather than the colour. The same
- * request can map twice and miss once, and what matters is how many of them land after an edit, not that all
- * of them did.
- */
 @Tag("promptEval")
 @SpringBootTest(properties = {"spring.config.import=", "orchestrator.startup-checks=false",
         "orchestrator.open-terminal-window=false"})
@@ -58,10 +45,6 @@ class CommandMappingEvalTest {
     @Autowired
     private MeteredAssistant assistant;
 
-    /**
-     * The tasks list carries each task's LEGAL actions, so a verb no seeded task can take is correctly answered
-     * `none` — every row's verb has a task it applies to, or the row measures the guard instead of the mapping.
-     */
     @BeforeEach
     void threeTasksBetweenThemOfferingEveryVerbTheRowsAskFor() {
         stateService.putTask("ABC-42", TaskState.builder("shop", workspace.resolve("ABC-42").toString(),

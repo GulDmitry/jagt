@@ -83,7 +83,6 @@ class InterceptedCapabilityTest {
         assertThat(log).containsExactly("before 1", "before 2", "shipped", "after 2", "after 1");
     }
 
-    /** A step that refuses is a gate, so neither the work nor the transition may happen behind it. */
     @Test
     void stopsTheWorkAndTheTransitionWhenAStepAroundItRefuses() {
         FlowEngine engine = engineWith(List.of(new Refuses()));

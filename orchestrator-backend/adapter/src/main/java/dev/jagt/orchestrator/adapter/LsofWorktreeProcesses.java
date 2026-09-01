@@ -21,36 +21,28 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
 
     private final Processes processRunner;
 
-    /**
-     * Kills processes still rooted (cwd) in a worktree about to be removed — chiefly language servers
-     * (jdtls, ~1-2GB): an LSP plugin typically starts its server DETACHED (own process group, to be
-     * reused across editor restarts), so it orphans and survives the agent session's death rather than
-     * dying with it.
-     */
+    /** An LSP plugin typically starts its server DETACHED, so it orphans and outlives the session that spawned it. */
     @Override
     public void reap(Path worktree) {
         try {
             reapOrThrow(worktree);
         } catch (RuntimeException e) {
-            // Hygiene, not state: a machine without `lsof` (most minimal Linux images) or a kill that is
-            // refused must never stop a worktree from being removed.
+            // Hygiene, not state: a missing `lsof` or a refused kill must never stop the removal.
             log.atWarn().setMessage("worktree process reap failed")
                     .addKeyValue("path", worktree)
-                    .addKeyValue("cause", e.getMessage())
-                    .addKeyValue("effect", "removed anyway, a language server may survive and hold memory")
+                    .addKeyValue("cause", e.toString())
+                    .addKeyValue("effect", "removed anyway")
                     .log();
         }
     }
 
     private void reapOrThrow(Path worktree) {
-        // EVERY process whose cwd is under the worktree, not just the language server: a plugin daemon left
-        // alive repopulates the directory right after it is deleted. cwd-under-worktree is the precise
-        // selector — only the task's own processes — so nothing has to be assumed about which they are.
+        // cwd-under-worktree is the precise selector: a daemon left alive repopulates the directory after
+        // it is deleted.
         var lsof = processRunner.run(null, TIMEOUT,
                 List.of("lsof", "-d", "cwd", "-Fpcn"));
-        // lsof reports the REAL path (symlinks resolved, e.g. macOS /var -> /private/var), so canonicalize
-        // the worktree path too or the cwd comparison silently misses. Falls back to the plain absolute
-        // path once the dir is already gone (a later delete pass) — nothing to reap there anyway.
+        // lsof reports the REAL path (macOS /var -> /private/var), so canonicalize or the comparison silently
+        // misses. A dir already gone has nothing to reap, so the plain absolute path will do.
         String target;
         try {
             target = worktree.toRealPath().toString();
@@ -62,7 +54,7 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
             log.atInfo().setMessage("worktree process reaped")
                     .addKeyValue("pid", r.pid())
                     .addKeyValue("cmd", r.command())
-                    .addKeyValue("cwd", r.cwd())
+                    .addKeyValue("path", r.cwd())
                     .log();
         }
     }
@@ -73,13 +65,9 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
     record Reapable(String pid, String command, String cwd) {}
 
     /**
-     * {@code lsof -d cwd -Fpcn} emits {@code p<pid>}, {@code c<command>}, then {@code n<cwd>} per process, so
-     * the command is known by the time the cwd arrives.
-     *
-     * <p>tmux is spared because every terminal driver's viewer window runs {@code tmux attach} as its
-     * foreground program, so that process's cwd sits under a worktree (kitty is even launched with
-     * {@code --directory <worktree>}), and the ONE shared tmux server hosts every agent. A {@code kill -9}
-     * on either closes the whole viewer window / kills all agents at once.
+     * {@code lsof -d cwd -Fpcn} emits {@code p<pid>}, {@code c<command>}, then {@code n<cwd>}, so the command is
+     * known by the time the cwd arrives. tmux is spared: a viewer runs {@code tmux attach} with its cwd under a
+     * worktree, and the ONE shared server hosts every agent, so a {@code kill -9} takes them all down.
      */
     static List<Reapable> reapable(String lsofOutput, String target) {
         List<Reapable> reapable = new java.util.ArrayList<>();

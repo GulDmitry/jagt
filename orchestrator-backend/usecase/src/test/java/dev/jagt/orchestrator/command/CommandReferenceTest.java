@@ -6,11 +6,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * The grammar as a human is told it. Two things it has to get right: a verb kept working for muscle memory must
- * not also be advertised, or both spellings end up in circulation; and a command declared ONCE has to reach
- * every surface, which is the whole reason the reference is rendered instead of written.
- */
 class CommandReferenceTest {
 
     private record Declared(String id, String hint, List<String> usage, boolean report,
@@ -60,7 +55,6 @@ class CommandReferenceTest {
         assertThat(lines.get(verb + 1)).contains("only this session");
     }
 
-    /** A report answering for one task belongs on that task, and a bar button would answer for all of them. */
     @Test
     void marksAReportAboutOneTaskSoNoSurfaceOffersItWithoutOne() {
         GlobalCommand drafts = new Declared("drafts", "what one task drafted", List.of("drafts <task>"), true,

@@ -1,8 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
+import dev.jagt.orchestrator.task.TaskState;
 
 import java.util.function.BiFunction;
 
@@ -24,10 +23,8 @@ public class FlowReports {
     }
 
     /**
-     * The same, plus whatever else the report established — a request link, the start of a polling window. Applied
-     * in the SAME write, because a status that refuses to exist without its link must not be able to land first.
-     * What it is given is the status the task was in BEFORE the report, so a repeat can be told from an entry
-     * without reading the task a moment earlier.
+     * The same, plus whatever else the report established. Applied in the SAME write, because a status that refuses
+     * to exist without its link must not be able to land first; {@code alsoRecord} is handed the status BEFORE it.
      */
     public boolean report(String taskId, TaskStatus status, String message,
                           BiFunction<TaskStatus, TaskState, TaskState> alsoRecord) {

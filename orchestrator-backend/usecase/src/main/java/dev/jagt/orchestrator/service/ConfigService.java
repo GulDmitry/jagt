@@ -22,14 +22,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Reads {@code jagt.yml} on every access, so edits are picked up without restarting the backend — which is why
- * this parses the file itself instead of taking Spring's binding of it: that one happens once, at startup.
- *
- * <p>Spring reads the SAME file for its own {@code orchestrator.*} keys, so a human has one file and one root
- * to write under.
- *
- * <p>A whole section may be omitted — {@link ConfigFile}'s accessors coalesce a missing section to its
- * all-default instance, so callers never null-check.
+ * Reads {@code jagt.yml} on every access, so edits are picked up without restarting — which is why this parses the
+ * file itself instead of taking Spring's binding of it, that one happening once at startup. A whole section may be
+ * omitted: {@link ConfigFile}'s accessors coalesce a missing one to its all-default instance.
  */
 @Service
 @RequiredArgsConstructor
@@ -64,10 +59,7 @@ public class ConfigService {
                                        List<String> reviewReplyAuthors,
                                        MergeRequestDefaults mergeRequestDefaults) {
 
-            /**
-             * Defaulted true: a task branch is disposable once merged, and its intermediate commits are review
-             * noise, not history.
-             */
+            /** Defaulted true: a task branch's intermediate commits are review noise, not history. */
             @JsonIgnoreProperties(ignoreUnknown = true)
             @With
             public record MergeRequestDefaults(Boolean removeSourceBranch, Boolean squash) {
@@ -97,10 +89,7 @@ public class ConfigService {
                 return mrTitlePattern == null || mrTitlePattern.isBlank() ? "{ticket} {title}" : mrTitlePattern;
             }
 
-            /**
-             * Whether a ship posts EVERY drafted reply, so the file it left behind is spent. False also for an
-             * author filter: there the agent posts some and leaves the rest, and those are the human's to send.
-             */
+            /** Whether a ship posts EVERY drafted reply. False under an author filter, which leaves the rest. */
             public boolean shipPostsEveryDraft() {
                 return postReviewRepliesOrDefault() && reviewReplyAuthorsOrEmpty().isEmpty();
             }
@@ -111,9 +100,8 @@ public class ConfigService {
             }
 
             /**
-             * Optional whitelist: when non-empty, drafted review replies are posted ONLY to threads whose
-             * author matches one of these (case-insensitive substring, e.g. "coderabbit"). Empty = post to
-             * every thread (the default). Only meaningful when {@link #postReviewRepliesOrDefault()} is true.
+             * When non-empty, replies are posted ONLY to threads whose author matches one of these
+             * (case-insensitive substring). Empty = every thread.
              */
             public List<String> reviewReplyAuthorsOrEmpty() {
                 return reviewReplyAuthors == null ? List.of() : reviewReplyAuthors;
@@ -128,19 +116,12 @@ public class ConfigService {
                 return new AgentConfig(null, null);
             }
 
-            /**
-             * A fresh worktree is an untrusted project where the human's own resolved style may not apply, so it
-             * can be forced here. Null: nothing is written and the agent resolves its own.
-             */
+            /** Null: nothing is written and the agent resolves its own style. */
             public String outputStyleOrNull() {
                 return outputStyle == null || outputStyle.isBlank() ? null : outputStyle.strip();
             }
 
-            /**
-             * How often every running session is looked at. It is the cadence for a session whose harness
-             * reports NOTHING — one that does says so in seconds either way, which is what makes ten minutes
-             * a sane default rather than a gamble.
-             */
+            /** How often every running session is looked at; the cadence for one whose harness reports NOTHING. */
             public int probeSecondsOrDefault() {
                 return probeSeconds == null || probeSeconds <= 0 ? 600 : probeSeconds;
             }
@@ -238,10 +219,7 @@ public class ConfigService {
         return config.projects() == null ? config.withProjects(Map.of()) : config;
     }
 
-    /**
-     * The names the human actually wrote under {@code orchestrator}, INCLUDING the ones nothing binds any more
-     * — a retired key is silently dropped by both readers, so this is the only way anything can say so.
-     */
+    /** The names the human wrote under {@code orchestrator}, INCLUDING ones nothing binds — both readers drop those. */
     public Set<String> declaredKeys() {
         Object section = section();
         return section instanceof Map<?, ?> keys

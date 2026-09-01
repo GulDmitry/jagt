@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +22,9 @@ public class SubAgentBriefing {
     private final OrchestratorPaths paths;
     private final ConfigService configService;
     private final StateService stateService;
+
+    @Value("${server.port:8290}")
+    private String boardPort = "8290";
 
     public String of(NewTask request, NewRepo repo, List<NewRepo> repos) {
         String taskId = request.taskId();
@@ -40,16 +44,14 @@ public class SubAgentBriefing {
                 taskId,
                 taskId, repo.baseBranch(),
                 paths.root(),
+                boardPort,
                 paths.stateFile(),
                 paths.configFile(),
                 projectsTable.isBlank() ? "| (none) | | |" : projectsTable,
                 activeTasks.isBlank() ? "- (none)" : activeTasks);
     }
 
-    /**
-     * The task's OTHER worktrees, which this agent may edit as well — one line each, or a sentence saying there
-     * are none. Without it the agent reads the one-worktree rule and refuses the very work it was given.
-     */
+    /** The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are none. */
     private static String alsoYours(NewRepo mine, List<NewRepo> repos) {
         String siblings = repos.stream()
                 .filter(repo -> !repo.project().equals(mine.project()))

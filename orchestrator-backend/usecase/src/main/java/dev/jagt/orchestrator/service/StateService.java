@@ -27,13 +27,9 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 /**
- * SSOT for all active tasks. Every mutation rewrites the file atomically, so a crash never leaves a torn file.
- *
- * <p>Atomicity protects against a TORN file, not against a bad one: a hand edit, a botched migration or a
- * serialization bug can leave valid-but-wrong or unparseable JSON, and this one file is the only record of
- * what jagt is doing. So every write keeps the previous version next to it as {@code state.json.bak}, and a
- * read that cannot parse the primary recovers from that backup instead of losing every task. It NEVER starts
- * empty over an existing file — that would destroy the human's data on the very next write.
+ * SSOT for all active tasks. Every mutation rewrites the file atomically, which protects against a TORN file and
+ * not against a bad one, so every write keeps the previous version as {@code state.json.bak} and a read that cannot
+ * parse the primary recovers from it. It NEVER starts empty over an existing file.
  */
 @Service
 @Slf4j
@@ -54,9 +50,8 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     private final Object lock = new Object();
     private final List<Consumer<StateFile>> changeListeners = new CopyOnWriteArrayList<>();
     /**
-     * The last parse, keyed by the file version it came from. Reading is the hot path — a single dashboard
-     * render asks a dozen times — and re-parsing per accessor also means one decision can straddle two
-     * versions of the file. Handed out as a COPY, always: callers mutate the task map in place.
+     * The last parse, keyed by the file version it came from: re-parsing per accessor lets one decision straddle
+     * two versions of the file. Handed out as a COPY, always — callers mutate the task map in place.
      */
     private StateFile cached;
     private FileVersion cachedVersion;
@@ -80,13 +75,9 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     /**
-     * Registers a listener for "state changed", called with the state as it was just written.
-     *
-     * <p>Guarantees, because both consumers depend on them: it fires AFTER the file is on disk (so a listener
-     * that re-reads sees the same thing), it fires OUTSIDE the write lock (a slow listener must not block the
-     * agents' MCP calls), it does NOT fire when a mutation changed nothing, and one listener throwing neither
-     * fails the mutation nor stops the others. Coalescing rapid changes is the LISTENER's business — this
-     * publisher reports every change it makes.
+     * Registers a listener for "state changed", called with the state as it was just written. It fires AFTER the
+     * file is on disk and OUTSIDE the write lock, not at all when a mutation changed nothing, and one listener
+     * throwing neither fails the mutation nor stops the others. Coalescing is the LISTENER's business.
      */
     public void onChange(Consumer<StateFile> listener) {
         changeListeners.add(listener);
@@ -153,11 +144,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         return found.get();
     }
 
-    /**
-     * The task a caller's working directory belongs to. ANY of the task's repositories answers, not just the
-     * first: one piece of work can span several, and a session started in any of them belongs to the same task —
-     * so a multi-repo task is ONE caller, not several.
-     */
+    /** The task a caller's working directory belongs to. ANY of its repositories answers, not just the first. */
     public Optional<Map.Entry<String, TaskState>> findByWorktree(String cwd) {
         if (cwd == null || cwd.isBlank()) {
             return Optional.empty();
@@ -193,9 +180,8 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     /**
-     * Names the asker on a step that was just taken. Every persisted change funnels through here, which is the
-     * only layer that sees both the step and {@link OriginContext} — the code that builds a transition is too
-     * far from the entry point to know who triggered it.
+     * Names the asker on a step that was just taken. The only layer that sees both the step and
+     * {@link OriginContext}.
      */
     private static TaskState stamped(TaskState before, TaskState after) {
         ActionOrigin origin = OriginContext.current();
@@ -210,9 +196,8 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             return true;
         }
         if (before.history().isEmpty()) {
-            // A task written before history existed has its current status reconstructed on the next write.
-            // That entry is a reconstruction of something that happened long ago, not a step anyone just took,
-            // so a keep-alive must not sign it — least of all with a status a human reached days earlier.
+            // A task written before history existed has its status reconstructed on the next write. That is not
+            // a step anyone just took, so a keep-alive must not sign it.
             return after.history().size() > 1;
         }
         return !before.history().getLast().equals(after.history().getLast());
@@ -242,7 +227,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             } catch (RuntimeException e) {
                 log.atWarn().setMessage("state listener failed")
                         .addKeyValue("cause", e.toString())
-                        .addKeyValue("effect", "the write itself is done")
+                        .addKeyValue("effect", "write completed")
                         .log();
             }
         }
@@ -269,9 +254,8 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     /**
-     * A recovery has just moved the unreadable primary aside, so there is no state file at all — and the very
-     * next read would answer "no tasks" over a backup that still holds them, which is the one outcome this
-     * class exists to prevent. Best effort: a recovery that cannot be persisted is still worth returning.
+     * A recovery has just moved the unreadable primary aside, so the next read would answer "no tasks" over a
+     * backup that still holds them. Best effort: a recovery that cannot be persisted is still worth returning.
      */
     private StateFile putBack(StateFile recovered) {
         if (Files.exists(stateFile)) {
@@ -284,7 +268,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             log.atError().setMessage("state writeback failed")
                     .addKeyValue("file", stateFile)
                     .addKeyValue("tasks", recovered.tasks().size())
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
         }
         return recovered;
@@ -310,9 +294,8 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     /**
-     * The primary is unreadable. Fall back to the backup and keep the bad file for inspection — but only when
-     * the backup actually parses: with nothing to fall back to, FAILING is the safe outcome. Starting empty
-     * would look like "no tasks" and the next write would overwrite whatever the human might still salvage.
+     * The primary is unreadable: fall back to the backup and keep the bad file for inspection, but only when the
+     * backup actually parses. With nothing to fall back to, FAILING is the safe outcome.
      */
     private StateFile recoverFromBackup(Exception primaryFailure) {
         if (Files.exists(backupFile)) {
@@ -320,7 +303,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
                 StateFile recovered = parse(backupFile);
                 log.atError().setMessage("state file unreadable")
                         .addKeyValue("file", stateFile)
-                        .addKeyValue("cause", primaryFailure.getMessage())
+                        .addKeyValue("cause", primaryFailure.toString())
                         .addKeyValue("tasks", recovered.tasks().size())
                         .addKeyValue("from", backupFile)
                         .addKeyValue("kept", corruptFile)
@@ -330,7 +313,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             } catch (RuntimeException | IOException backupFailure) {
                 log.atError().setMessage("state backup unreadable")
                         .addKeyValue("file", backupFile)
-                        .addKeyValue("cause", backupFailure.getMessage())
+                        .addKeyValue("cause", backupFailure.toString())
                         .log();
             }
         }
@@ -346,7 +329,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             log.atWarn().setMessage("state file move aside failed")
                     .addKeyValue("from", stateFile)
                     .addKeyValue("to", corruptFile)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
         }
     }
@@ -365,8 +348,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             cache(null, null);
             throw new UncheckedIOException("Cannot write state file " + stateFile, e);
         }
-        // Own writes never rely on the version key: two of them within one filesystem timestamp tick are
-        // indistinguishable by it, and this is the only writer that can rewrite the file that fast.
+        // Own writes never rely on the version key: two within one filesystem timestamp tick are the same by it.
         cache(state, versionOnDisk());
     }
 
@@ -381,7 +363,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             log.atWarn().setMessage("state backup failed")
                     .addKeyValue("from", stateFile)
                     .addKeyValue("to", backupFile)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
         }
     }

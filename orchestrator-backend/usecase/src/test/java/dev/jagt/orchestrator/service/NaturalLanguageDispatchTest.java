@@ -29,11 +29,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * Tier 2 must never be able to do more than tier 1. Every test here is about that boundary: the model
- * PROPOSES and this class validates, so a hallucinated task, an unknown verb or a plain misunderstanding
- * ends as a sentence instead of an action.
- */
 class NaturalLanguageDispatchTest {
 
     private final MeteredAssistant assistant = mock(MeteredAssistant.class);
@@ -71,7 +66,6 @@ class NaturalLanguageDispatchTest {
         assertThat(result).isEqualTo("understood as `sweep ABC-1` — sweep ABC-1: checks success");
     }
 
-    /** The interpretation is stated BEFORE the outcome: a wrong mapping has to be visible to be correctable. */
     @Test
     void runsTheMappedActionThroughTheSameGateAButtonUsesAndSaysWhatItUnderstood(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
@@ -83,7 +77,6 @@ class NaturalLanguageDispatchTest {
         assertThat(result).isEqualTo("understood as `ship ABC-1` — ship ABC-1: pushed");
     }
 
-    /** A refusal stays a refusal — answered as text it would reach the palette as a success. */
     @Test
     void keepsTheInterpretationVisibleWhenTheGateRefusesWhatWasUnderstood(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
@@ -144,7 +137,6 @@ class NaturalLanguageDispatchTest {
         assertThat(result).isEqualTo("understood as `do ABC-42` — Task ABC-42 initialized");
     }
 
-    /** Taking over a review request is a third way in, and the palette had no way to express it. */
     @Test
     void resumesAReviewRequestWhenTheRequestIsAUrlToOne(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
@@ -191,7 +183,6 @@ class NaturalLanguageDispatchTest {
         verifyNoInteractions(assistant, commands, launcher);
     }
 
-    /** A mistyped command is the common case for reaching tier 2, and paying a model call for it is silly. */
     @Test
     void treatsASingleUnknownWordAsATypoWithoutSpendingACall(@TempDir Path root) {
         assertThat(dispatchWith(stateWithOneTask(root)).interpret("shipp"))
@@ -208,10 +199,6 @@ class NaturalLanguageDispatchTest {
         verifyNoInteractions(assistant, commands, launcher);
     }
 
-    /**
-     * The model is told the tasks AND what is legal for each, so it does not propose a refused action. That
-     * context comes from the same projection the board renders — nothing else may invent a command list.
-     */
     @Test
     void tellsTheModelOnlyAboutRealTasksAndTheirLegalActions(@TempDir Path root) {
         StateService state = stateWithOneTask(root);

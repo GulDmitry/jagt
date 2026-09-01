@@ -5,15 +5,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
  * One repository a task works in: the worktree cut for it, and the per-repo facts that follow from having its own
- * git remote.
- *
- * <p>A task has a LIST of these because one piece of work can legitimately span repositories and ONE agent
- * session should be able to change all of them together. What multiplies is worktrees, not sessions — the agent
- * runs in the first repo and edits the others in place, and every jagt tool it calls resolves to this same task
- * from any of those directories.
- *
- * @param mrUrl        the review request for THIS repo; each repository gets its own
- * @param deployCommit the merge commit {@code deploy} created in THIS repo, which is what {@code revert} undoes
+ * git remote. What multiplies per repository is worktrees, not sessions. {@code mrUrl} is the review request for
+ * THIS repo; {@code deployCommit} the merge commit {@code deploy} created in it, which {@code revert} undoes.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

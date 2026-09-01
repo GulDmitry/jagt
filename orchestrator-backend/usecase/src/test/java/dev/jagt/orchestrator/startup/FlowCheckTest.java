@@ -16,11 +16,6 @@ class FlowCheckTest {
         assertThat(new FlowCheck().problems()).isEmpty();
     }
 
-    /**
-     * Asserted against the shipped table as well as through the check, so a status added later fails the build
-     * rather than someone's boot. NEW is where a task is born and DONE is where retiring removes it, so neither
-     * needs a way in.
-     */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"NEW", "DONE"})
     void everyStatusCanBeReachedEitherByAnActionOrByTheTaskReportingIt(TaskStatus status) {
@@ -28,7 +23,6 @@ class FlowCheckTest {
                 .as("%s has a way in", status).isTrue();
     }
 
-    /** A verb the table never mentions is offered by nobody and refused forever, and it looks exactly like a no. */
     @ParameterizedTest
     @EnumSource(TaskAction.class)
     void everyVerbIsMentionedByTheTable(TaskAction action) {

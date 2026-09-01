@@ -14,10 +14,8 @@ import java.nio.file.Path;
 
 /**
  * A rebuild replaces {@code jagt.jar} at the same inode, so already-loaded classes keep working and the next
- * first-time load dies with {@code NoClassDefFoundError} — which surfaces as a board that renders while some
- * endpoints answer 500, and reads exactly like a bug in those endpoints.
- *
- * <p>It only REPORTS: the fix is a restart, and whether to restart while agents are working is the human's call.
+ * first-time load dies with {@code NoClassDefFoundError}, which reads like a bug in the endpoints answering 500.
+ * It only REPORTS; the fix is a restart.
  */
 @Service
 @Slf4j
@@ -41,16 +39,15 @@ public class RunningJarWatch implements Job {
     private boolean warnedAboutTheBuildsOwnJar;
 
     /**
-     * Said at the start rather than after the first mysterious 500: a build in this tree will rewrite THIS file,
-     * and the process then dies on whatever class it had not loaded yet — most visibly on the way out, where the
-     * first exception-carrying log line of its life needs a logback class it never needed before.
+     * A build in this tree will rewrite THIS file, and the process then dies on whatever class it had not loaded
+     * yet — most visibly on the way out, the first exception-carrying log line needing a logback class.
      */
     private void warnOnceAboutTheBuildsOwnJar() {
         if (warnedAboutTheBuildsOwnJar || !runningTheBuildsOwnJar()) {
             return;
         }
         warnedAboutTheBuildsOwnJar = true;
-        log.atWarn().setMessage("running from the jar the build rewrites")
+        log.atWarn().setMessage("running jar unstaged")
                 .addKeyValue("jar", jar)
                 .addKeyValue("effect", "next ./gradlew build corrupts this process")
                 .addKeyValue("fix", "./gradlew stageJar && java -jar build/libs/jagt-run.jar")
@@ -62,13 +59,12 @@ public class RunningJarWatch implements Job {
     }
 
     private final Notifications notifications;
-    /** Null when this JVM is not running from a jar at all (an IDE, a test, `bootRun`) — then there is nothing to watch. */
+    /** Null when this JVM is not running from a jar at all, and there is nothing to watch. */
     private final Path jar;
     private final Stamp atStartup;
     private boolean reported;
 
-    // @Autowired disambiguates: the second constructor exists so a test can point the watch at a file it
-    // controls, and with two of them Spring otherwise refuses to choose.
+    // @Autowired disambiguates: with two constructors Spring otherwise refuses to choose.
     @org.springframework.beans.factory.annotation.Autowired
     public RunningJarWatch(Notifications notifications) {
         this(notifications, ownJar());
@@ -99,20 +95,16 @@ public class RunningJarWatch implements Job {
             return;
         }
         reported = true;                       // once: the condition does not go away until a restart
-        log.atError().setMessage("jar rewritten under the running process")
+        log.atError().setMessage("running jar rewritten")
                 .addKeyValue("jar", jar)
-                .addKeyValue("effect", "NoClassDefFoundError on not-yet-loaded classes, /status and /stats go 500")
+                .addKeyValue("effect", "class loading corrupt")
                 .addKeyValue("fix", "./gradlew stageJar && java -jar build/libs/jagt-run.jar")
-                .addKeyValue("agents", "keep running in tmux")
                 .log();
         notifications.send(Notification.install("restart needed",
                 "the running jar was rebuilt — parts of the board will fail until you restart"));
     }
 
-    /**
-     * A rewrite, not a read: either fact changing is enough, and a file that VANISHED (a {@code clean}) counts
-     * too.
-     */
+    /** A rewrite, not a read: either fact changing is enough, and a file that VANISHED counts too. */
     static boolean rewritten(Stamp atStartup, Stamp now) {
         if (atStartup == null) {
             return false;
@@ -136,10 +128,9 @@ public class RunningJarWatch implements Job {
     }
 
     /**
-     * {@code java -jar x.jar} puts EXACTLY that jar on the classpath, which is the one place the path is
-     * unambiguous: inside a fat jar {@code getProtectionDomain().getCodeSource()} answers a
-     * {@code jar:nested:…} URL that {@code Path.of} refuses. Anything else on the classpath means several
-     * entries or a directory, and then there is no single jar to watch.
+     * {@code java -jar x.jar} puts EXACTLY that jar on the classpath, the one place the path is unambiguous: inside
+     * a fat jar {@code getProtectionDomain().getCodeSource()} answers a {@code jar:nested:…} URL that
+     * {@code Path.of} refuses. Anything else means several entries or a directory, and no single jar to watch.
      */
     static Path jarFromClassPath(String classPath, java.util.function.Predicate<Path> isFile) {
         if (classPath == null || classPath.isBlank() || classPath.contains(java.io.File.pathSeparator)) {

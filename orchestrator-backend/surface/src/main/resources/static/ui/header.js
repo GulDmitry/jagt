@@ -10,11 +10,6 @@ import {countdown} from '../core/format.js';
 import * as store from '../core/store.js';
 import * as filters from './filters.js';
 
-const PHASES = [
-  ['BUILD', 'build'], ['REVIEW', 'review'], ['CHECK', 'check'],
-  ['READY', 'ready'], ['DEPLOY', 'deploy'], ['DONE', 'done'],
-];
-
 const phaseBar = document.getElementById('phases');
 const waitingLabel = document.getElementById('waiting');
 const autoReviewChip = document.getElementById('auto-review');
@@ -63,7 +58,7 @@ export function render(tasks, showing) {
   const perPhase = filters.narrowed(tasks);
   // The separator is CONTENT, not a gap: a line whose words only come apart when a stylesheet loads is one
   // stylesheet away from reading `build 0review 1`.
-  phaseBar.replaceChildren(...PHASES.flatMap(([phase, label], index) => {
+  phaseBar.replaceChildren(...store.phases().flatMap(({id: phase, label}, index) => {
     const held = perPhase.filter((task) => task.phase === phase).length;
     const segment = document.createElement('button');
     segment.className = held ? 'phase' : 'phase empty';

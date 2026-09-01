@@ -11,10 +11,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-/**
- * Records which caller a request came from, once for both HTTP surfaces rather than in each handler — an
- * endpoint added later is covered by the path it is served on, so it cannot forget.
- */
 @Component
 public class OriginFilter extends OncePerRequestFilter {
 

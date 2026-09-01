@@ -11,7 +11,6 @@ class DurationFormatTest {
         assertThat(DurationFormat.countdown(45_000)).isEqualTo("45s");
     }
 
-    /** A wait of ten minutes reading "9m" for its whole first minute is the bug this rounding exists for. */
     @Test
     void roundsAWaitUpSoItNeverReadsShorterThanItIs() {
         assertThat(DurationFormat.countdown(599_999)).isEqualTo("10m");

@@ -15,12 +15,9 @@ import java.util.function.BinaryOperator;
 
 /**
  * A directory Claude has never run in is untrusted, and it discards that directory's whole permission file
- * until a human accepts the trust dialog in it — so an unattended session stops at prompts nobody in the tmux
- * window answers. Every worktree is such a directory. Recording the acceptance is the non-interactive way
- * Claude itself names.
- *
- * <p>Claude writes this file too, under a lock this cannot take, so the read and the replace are kept adjacent
- * and anything unexpected in it costs the flag rather than the file.
+ * until a human accepts the trust dialog — so an unattended session stops at prompts nobody answers, and every
+ * worktree is such a directory. Claude writes this file too, under a lock this cannot take, so the read and the
+ * replace stay adjacent and anything unexpected in it costs the flag rather than the file.
  */
 @Slf4j
 final class ClaudeTrust {
@@ -29,7 +26,7 @@ final class ClaudeTrust {
     private static final String PROJECTS = "projects";
     private static final String TRUSTED = "hasTrustDialogAccepted";
     private static final String UNTRUSTED = "worktree left untrusted";
-    private static final String STALE = "retired worktree left in the agent config";
+    private static final String STALE = "trust entry orphaned";
 
     private ClaudeTrust() {
     }
@@ -83,19 +80,20 @@ final class ClaudeTrust {
         return JSON.writeValueAsString(root);
     }
 
-    private static ObjectNode object(String config, String worktree, String failure) {
+    private static ObjectNode object(String config, String worktree, String effect) {
         JsonNode parsed = JSON.readTree(config.isBlank() ? "{}" : config);
         if (!parsed.isObject()) {
-            log.atWarn().setMessage(failure)
+            log.atWarn().setMessage("trust config unusable")
                     .addKeyValue("worktree", worktree)
-                    .addKeyValue("cause", "config holds " + parsed.getNodeType())
+                    .addKeyValue("cause", parsed.getNodeType())
+                    .addKeyValue("effect", effect)
                     .log();
             return null;
         }
         return (ObjectNode) parsed;
     }
 
-    private static void rewrite(Path configFile, Path worktree, BinaryOperator<String> edit, String failure) {
+    private static void rewrite(Path configFile, Path worktree, BinaryOperator<String> edit, String effect) {
         Path staged = null;
         try {
             String current = Files.exists(configFile) ? Files.readString(configFile) : "{}";
@@ -107,20 +105,19 @@ final class ClaudeTrust {
             Files.writeString(staged, updated);
             Files.move(staged, configFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException | JacksonException e) {
-            log.atWarn().setMessage(failure)
+            log.atWarn().setMessage("trust config write failed")
                     .addKeyValue("file", configFile)
                     .addKeyValue("worktree", worktree)
                     .addKeyValue("cause", e.toString())
+                    .addKeyValue("effect", effect)
                     .log();
         } finally {
             discard(staged);
         }
     }
 
-    /**
-     * Claude keys the entry by the working directory it resolves, which no symlink survives — and a worktree
-     * already deleted still has to answer the same key, so the surviving parent resolves it.
-     */
+    /** Claude keys the entry by the resolved working directory, which no symlink survives; a worktree already
+     *  deleted must still answer the same key, so its surviving parent resolves it. */
     private static String resolved(Path worktree) {
         try {
             return worktree.toRealPath().toString();

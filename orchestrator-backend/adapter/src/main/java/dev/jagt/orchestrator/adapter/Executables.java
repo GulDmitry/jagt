@@ -9,13 +9,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
- * Finds the external binaries jagt shells out to, portably. Two lookups a plain {@code PATH} search does not
- * cover: a GUI-launched process inherits a PATH with neither Homebrew prefix in it, and an application bundle's
- * launcher lands in no bin directory at all — without the latter a desktop application cannot be configured by
- * name.
- *
- * <p>A value with a separator, and a name nothing matched, come back untouched, so the failure names what the
- * human asked for rather than a guess.
+ * Two lookups a plain {@code PATH} search does not cover: a GUI-launched process inherits a PATH with neither
+ * Homebrew prefix in it, and an application bundle's launcher lands in no bin directory at all. A value with a
+ * separator, and a name nothing matched, come back untouched, so a failure names what the human asked for.
  */
 public final class Executables {
 
@@ -39,7 +35,7 @@ public final class Executables {
         return resolve(configured, System.getenv("PATH"), Executables::isExecutableFile);
     }
 
-    /** True when {@link #resolve} found nothing and handed the bare name back, so a caller can say so itself. */
+    /** True when {@link #resolve} found nothing and handed the bare name back. */
     public static boolean unresolved(String resolved) {
         return resolved == null || resolved.isBlank() || !resolved.contains("/");
     }
@@ -58,7 +54,6 @@ public final class Executables {
                 Executables::bundlesIn);
     }
 
-    /** A pure function, so every branch is testable without a machine that has the binary. */
     static String resolve(String configured, String pathEnv, String userHome, Predicate<Path> isExecutable,
                           Function<Path, List<Path>> bundles) {
         String name = configured == null ? "" : configured.strip();
@@ -84,10 +79,7 @@ public final class Executables {
         return bundled != null ? bundled : name;
     }
 
-    /**
-     * Not an {@code if macos}: on a system without bundles the directories hold none, and the search costs one
-     * listing.
-     */
+    /** Not an {@code if macos}: a system without bundles holds none, and the search costs one listing. */
     private static String inBundles(String name, String userHome, Predicate<Path> isExecutable,
                                     Function<Path, List<Path>> bundles) {
         List<Path> appDirs = new ArrayList<>();

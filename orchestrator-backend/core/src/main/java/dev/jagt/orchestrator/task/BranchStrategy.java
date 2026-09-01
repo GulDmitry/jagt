@@ -33,7 +33,7 @@ public enum BranchStrategy {
         return Arrays.stream(values()).map(BranchStrategy::id).toList();
     }
 
-    /** What a surface offering the choice renders: the words come from here, never from the surface. */
+    /** What a surface offering the choice renders. */
     public static List<Choice> choices() {
         return Arrays.stream(values()).map(s -> new Choice(s.id(), s.hint)).toList();
     }

@@ -27,7 +27,6 @@ class MacNotifierTest {
                 "the running jar was rebuilt", null)).doesNotContain("-open");
     }
 
-    /** Both come from ticket and comment text, and terminal-notifier reads a missing value as the next flag. */
     @Test
     void sendsATitleAndBodyEvenWhenTheCallerHadNeither() {
         assertThat(MacNotifier.command("terminal-notifier", null, null, null))

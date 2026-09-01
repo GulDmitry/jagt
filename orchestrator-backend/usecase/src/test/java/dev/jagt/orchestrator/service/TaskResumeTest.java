@@ -96,10 +96,6 @@ class TaskResumeTest {
         assertThat(created.getValue().taskId()).isEqualTo("feature/widget-layout");
     }
 
-    /**
-     * The host answers with whatever it holds, and a name git itself would refuse cannot become a task — so
-     * say which part of it is refused, not which set of characters is allowed.
-     */
     @ParameterizedTest
     @CsvSource(quoteCharacter = '"', value = {
             "-widget-layout, \"it starts with '-'\"",
@@ -125,10 +121,6 @@ class TaskResumeTest {
         verifyNoInteractions(git, provisioning);
     }
 
-    /**
-     * The id is validated BEFORE the MR url is matched against every project's git remote — otherwise an
-     * unusable id costs a remote lookup per configured project just to be rejected.
-     */
     @Test
     void refusesAnUnusableTicketIdBeforeResolvingTheProjectFromTheMrUrl() {
         assertThatThrownBy(() -> resume.link("a b", "https://host/mr/1", null, null))

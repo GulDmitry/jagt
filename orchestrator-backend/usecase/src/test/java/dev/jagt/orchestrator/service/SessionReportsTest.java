@@ -39,10 +39,6 @@ class SessionReportsTest {
         verify(agentSpend, timeout(2_000)).charge("ABC-1", Path.of("/logs/session.jsonl"));
     }
 
-    /**
-     * One event covers a permission a session is being refused and a prompt merely left quiet, and only the
-     * CLI's own wording separates them.
-     */
     @Test
     void callsASessionBlockedWhenItsNotificationNamesWhatThisCliSaysWhileBlocked() {
         when(runtime.blockingNotification()).thenReturn("needs your permission");

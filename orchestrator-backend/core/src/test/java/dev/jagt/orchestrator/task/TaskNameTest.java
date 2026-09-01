@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TaskNameTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"ABC-42", "feature/PAN-2489-facet-options", "hotfix/but/whatever", "_under",
+    @ValueSource(strings = {"ABC-42", "feature/ABC-42-facet-options", "hotfix/but/whatever", "_under",
             "release/2.1", "wip/ä-ünicode", "x"})
     void acceptsEveryNameGitAcceptsAsABranch(String name) {
         assertThat(TaskName.unusableReason(name)).isNull();

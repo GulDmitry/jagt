@@ -15,12 +15,11 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Where each task's clock has gone, added up from the status history.
+ * Where each task's clock has gone, added up from the status history. A retired task takes its history with it, so
+ * this is a picture of the OPEN work, never a throughput figure over time.
  *
- * <p>Every interval is attributed to whoever owned the status it was spent in ({@link Move#ownerOf}), so this
- * view cannot disagree with the "whose turn" the board and the dashboard show. A task retired with
- * {@code done} leaves state.json and takes its history with it, so this is a picture of the OPEN work, never a
- * throughput figure over time.
+ * <p>An interval is attributed to whoever owned the status it was spent in, so this cannot disagree with
+ * the whose-turn the board shows.
  */
 @Component
 public class CycleTimeRenderer {

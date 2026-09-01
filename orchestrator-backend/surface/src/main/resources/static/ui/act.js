@@ -1,6 +1,4 @@
-// One action on one task, whether a button was pressed or a line was typed: the same gate, the same lock, the
-// same refusal. The page decides nothing about WHETHER an action is legal — the server has the fresh state and
-// refuses with a sentence, which is what the toast shows.
+// One action on one task, pressed or typed: the page decides nothing about whether it is legal.
 
 import {api, refusal} from '../core/api.js';
 import * as store from '../core/store.js';
@@ -10,9 +8,8 @@ import {refresh} from './refresh.js';
 import {render} from './render.js';
 import {toast} from './toast.js';
 
-// A verb the card does not offer is still SENT: this page may be describing a task that has moved on, and the
-// server's refusal says so in words. It counts as a write, the safe side — every read-only action is offered
-// from every status, so the fallback is reached by writes alone.
+// A verb the card does not offer is still SENT: this page may be describing a task that has moved on, and it
+// counts as a write, the safe side.
 const actionOf = (task, actionId) => (task.actions || []).find((each) => each.id === actionId)
   || {id: actionId, label: actionId, hint: '', readOnly: false};
 
@@ -24,7 +21,7 @@ export async function run(taskId, actionId) {
   }
   const action = actionOf(task, actionId);
   if (blocked(task, action)) {
-    toast(`${task.id} is already running ${waitingFor(task, action)} — wait for that to finish`, true);
+    toast(`${task.id} is already running ${waitingFor(task, action)}`, true);
     return;
   }
   const question = confirmation(task, action);

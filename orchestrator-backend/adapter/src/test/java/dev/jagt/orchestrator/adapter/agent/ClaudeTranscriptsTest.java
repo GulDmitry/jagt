@@ -24,7 +24,6 @@ class ClaudeTranscriptsTest {
         assertThat(at).isEqualTo(1_700_000_600_000L);
     }
 
-    /** Being wrong about the derived name must cost the caller a sign, never hand it a false one. */
     @Test
     void answersNothingWhereNoLogsForThatDirectoryExist(@TempDir Path root) {
         long at = ClaudeTranscripts.lastEntryMillis(root, Path.of("/wt/ABC-1-proj"));
@@ -32,7 +31,6 @@ class ClaudeTranscriptsTest {
         assertThat(at).isZero();
     }
 
-    /** Claude names that directory after the physical path, so a worktree under a symlink must resolve to it. */
     @Test
     void findsTheLogsOfASessionDirectoryReachedThroughASymlink(@TempDir Path root) throws Exception {
         Path real = Files.createDirectories(root.resolve("real").resolve("ABC-1-proj"));

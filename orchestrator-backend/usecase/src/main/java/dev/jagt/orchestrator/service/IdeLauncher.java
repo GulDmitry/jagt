@@ -29,13 +29,10 @@ public class IdeLauncher {
         if (mode != null && !mode.isBlank() && !"project".equalsIgnoreCase(mode)) {
             throw new IllegalArgumentException("Unknown ide mode '" + mode + "'. Allowed: project, diff");
         }
-        // A DEPLOY_CONFLICT lives on the DEPLOY side: the task's own worktree is clean and has nothing to
-        // resolve.
+        // A DEPLOY_CONFLICT lives on the DEPLOY side; the task's own worktree is clean.
         if (task.status() == TaskStatus.DEPLOY_CONFLICT) {
-            // A task spanning repositories conflicts in exactly one of them, and it is not necessarily the one
-            // the session runs in — nor the first whose derived path exists, since siblings share it. A project
-            // that has since left jagt.yml is skipped rather than thrown at the human: the worktree below can
-            // still be opened.
+            // A task spanning repositories conflicts in exactly one of them, not necessarily the one the session
+            // runs in, nor the first whose derived path exists, since siblings share it.
             var projects = configService.load().projects();
             for (var repo : task.repos()) {
                 ProjectConfig conflicted = projects.get(repo.project());
@@ -57,8 +54,7 @@ public class IdeLauncher {
     private String openDiff(String taskId, TaskState task, Path worktree) {
         ProjectConfig project = configService.project(task.project());
         Path projectPath = Path.of(project.path());
-        // The effective base, read exactly as the request's target is: everything already sitting on the
-        // branch the task lands on otherwise reads as this task's own change.
+        // The effective base, read exactly as the request's target is.
         String configured = task.baseBranchOr(project.baseBranch());
         if (configured == null || configured.isBlank()) {
             throw new IllegalStateException("Project " + task.project() + " has no baseBranch in jagt.yml,"

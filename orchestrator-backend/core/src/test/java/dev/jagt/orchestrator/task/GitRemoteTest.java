@@ -19,20 +19,8 @@ class GitRemoteTest {
         assertThat(GitRemote.projectPath(remote)).isEqualTo(expected);
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "git@example.com:group-a/backend.git, example.com",
-        "ssh://git@example.com:2222/group-a/backend.git, example.com",
-        "https://example.com/group-a/backend.git, example.com",
-        "https://user@example.com:8443/group-a/backend, example.com"
-    })
-    void derivesTheBareHostWithoutUserOrPort(String remote, String expected) {
-        assertThat(GitRemote.host(remote)).isEqualTo(expected);
-    }
-
     @Test
     void readsNothingOutOfABlankRemote() {
         assertThat(GitRemote.projectPath(" ")).isNull();
-        assertThat(GitRemote.host(" ")).isNull();
     }
 }

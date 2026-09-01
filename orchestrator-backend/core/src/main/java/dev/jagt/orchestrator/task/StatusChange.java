@@ -5,11 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 /**
- * One step a task actually took, in the order it happened.
- *
- * @param status what it moved TO
- * @param at     when the move happened (epoch millis)
- * @param origin who asked for it; null for a step recorded before origins existed
+ * One step a task actually took, in the order it happened. {@code at} is epoch millis; {@code origin} is null for a
+ * step recorded before origins existed.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

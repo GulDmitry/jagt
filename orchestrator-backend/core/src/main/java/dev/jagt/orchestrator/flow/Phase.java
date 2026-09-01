@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.flow;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
- * The human-readable step of a task's life: {@link TaskStatus} is the persisted SSOT, but several of its values
- * all read as the one word "review" to a person. A phase is a PROJECTION for humans — never a second state
- * machine, never persisted.
+ * The human-readable step of a task's life: several {@link TaskStatus} values read as one word to a person. A
+ * PROJECTION — never a second state machine, never persisted.
  */
 public enum Phase {
 
@@ -27,5 +29,12 @@ public enum Phase {
 
     public String label() {
         return label;
+    }
+
+    public static List<Choice> choices() {
+        return Arrays.stream(values()).map(phase -> new Choice(phase.name(), phase.label)).toList();
+    }
+
+    public record Choice(String id, String label) {
     }
 }

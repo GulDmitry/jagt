@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.flow;
 
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskStatus;
-
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
@@ -13,10 +10,8 @@ import java.util.function.BiPredicate;
 
 /**
  * THE life of a task, in one file: which statuses allow which action, and what each outcome of that action leads
- * to. Nothing else may answer either question — a projection asks it to decide what to offer and the engine asks
- * it before acting, so a card cannot advertise a move the gate then refuses.
- *
- * <p>Java rather than configuration on purpose: every status and every action here is compiler-checked.
+ * to. Nothing else may answer either question, so a card cannot advertise a move the gate then refuses. Java
+ * rather than configuration, so every status and action here is compiler-checked.
  */
 public final class FlowRules {
 
@@ -36,8 +31,7 @@ public final class FlowRules {
 
     static {
         // `ship` IS the human's approval, so a task an agent has not reported on passes too; a SHIPPING task
-        // whose agent has DIED passes as recovery, while a live one means the push is already in flight. Once a
-        // request exists, another round may be shipped onto it from wherever the task got to.
+        // whose agent has DIED passes as recovery, while a live one means the push is already in flight.
         rule(TaskAction.SHIP)
                 .from(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING,
                         TaskStatus.CI_POLLING, TaskStatus.CI_FAILED, TaskStatus.REVIEWED, TaskStatus.DEPLOYED,
@@ -51,17 +45,14 @@ public final class FlowRules {
                 .on(Outcome.Kind.RELAYED, TaskStatus.SHIPPING)
                 .add();
 
-        // Reading a review round decides nothing by itself: what it found is REPORTED, and that door has its own
-        // rules below.
+        // Reading a review round decides nothing by itself: what it found is REPORTED.
         rule(TaskAction.SWEEP)
                 .fromAny()
                 .when((status, facts) -> facts.hasReviewRequest())
                 .add();
 
         // What a reviewer SAID is not a gate: deploy merges the task BRANCH, and git's only precondition is
-        // commits on it. Excluded are the statuses where it could only race or refuse — nothing on the branch
-        // yet, a push in flight, an agent committing into the branch this would merge, or a revert that leaves
-        // the deploy branch already holding everything.
+        // commits on it. Excluded are the statuses where it could only race or refuse.
         rule(TaskAction.DEPLOY)
                 .from(TaskStatus.REVIEW_PENDING, TaskStatus.CI_POLLING, TaskStatus.CI_FAILED,
                         TaskStatus.REVIEWED, TaskStatus.APPROVED, TaskStatus.DEPLOYED,
@@ -137,15 +128,9 @@ public final class FlowRules {
     }
 
     /**
-     * Why a task in {@code from} may not report {@code to}, or empty when it may — one owner for the answer AND
-     * the reason, because the reason is what an agent has to act on.
-     *
-     * <p>Two reports are not source-agnostic. Saying CI_POLLING is saying "a request is open and waiting", which
-     * for a task the review has already passed drags it backwards and re-arms the unattended poll on work that
-     * is done. And a task at REVERTED is one whose deploy was taken back out — that record is not an agent's to
-     * erase by starting up and announcing itself, which is exactly what a `respawn` used to do (through
-     * IN_PROGRESS and straight on to CI_POLLING, laundering the guard above). Everything else an agent may say
-     * about itself holds wherever it got to.
+     * Why a task in {@code from} may not report {@code to}, or empty when it may. Two reports are not
+     * source-agnostic: CI_POLLING says "a request is open and waiting", which for a task the review has already
+     * passed drags it backwards and re-arms the unattended poll; REVERTED is a record no agent may erase.
      */
     public static Optional<String> refusedReport(TaskStatus from, TaskStatus to) {
         if (!reportable(to)) {
@@ -159,12 +144,9 @@ public final class FlowRules {
     }
 
     /**
-     * The status a report actually lands on. A task at REVERTED KEEPS it: what came back out of a shared branch
-     * is a human's to move on from (`ship` for another round, `done` to close it), and a restarted agent
-     * announcing itself used to erase that record — then reach CI_POLLING through the IN_PROGRESS it had just
-     * claimed, laundering the guard above and re-arming the unattended poll on reverted work. The report is
-     * ACCEPTED rather than refused, because the agent's own protocol is to keep saying what it is doing and to
-     * ask questions without moving its task: a status it cannot report is a session whose every call errors.
+     * The status a report actually lands on. A task at REVERTED KEEPS it: what came back out of a shared branch is
+     * a human's to move on from. The report is ACCEPTED rather than refused — an agent's protocol is to keep
+     * saying what it is doing, and a status it cannot report is a session whose every call errors.
      */
     public static TaskStatus reported(TaskStatus from, TaskStatus to) {
         return STANDS_UNTIL_MOVED_BY_A_HUMAN.contains(from) ? from : to;

@@ -5,12 +5,8 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import java.util.function.Supplier;
 
 /**
- * Carries "who asked" from an entry point down to the write, because nothing in between can be asked: a deploy
- * reaches the same code whether a human clicked it, typed it, or an agent called the tool, and threading a
- * parameter through would put that question into every signature it passes.
- *
- * <p>Nesting is honest — the innermost caller wins and the outer one is restored, so free text typed into the
- * console is recorded as the interpretation it became rather than as the surface it arrived on.
+ * Carries "who asked" from an entry point down to the write, threading a parameter through putting that question
+ * into every signature it passes. Nesting is honest: the innermost caller wins and the outer one is restored.
  */
 public final class OriginContext {
 

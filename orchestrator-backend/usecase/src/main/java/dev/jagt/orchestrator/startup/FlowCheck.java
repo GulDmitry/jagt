@@ -10,21 +10,11 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * The machine itself, checked before anything can drive it: a status nothing can put a task into is a state no task
- * will ever be in, and reading the table will not tell you which one that is.
- *
- * <p>There is deliberately no "stuck status" check to go with it. A task leaves a status through either door, and
- * the report door is judged by the status being reported rather than by the one being left — so no status can trap
- * a task, and asserting that would assert nothing.
- */
+/** The machine itself, checked before anything can drive it: a status nothing can reach is one no task will hold. */
 @Component
 public class FlowCheck implements StartupCheck {
 
-    /**
-     * NEW is where a task is born, so nothing needs to lead there. DONE is where one is retired, and retiring
-     * REMOVES it — no live task ever holds that status, which is why nothing leads there either.
-     */
+    /** No live task holds either, so nothing needs to lead there. */
     private static final Set<TaskStatus> WITHOUT_A_WAY_IN = EnumSet.of(TaskStatus.NEW, TaskStatus.DONE);
 
     @Override
@@ -40,11 +30,7 @@ public class FlowCheck implements StartupCheck {
                         + " — no action leads there and no agent may report it");
     }
 
-    /**
-     * The mirror image, and the one a new verb trips over: an action the table never mentions is legal from no
-     * status, so no surface offers it and the engine refuses it forever — silently, because a missing rule looks
-     * exactly like a rule that says no.
-     */
+    /** A missing rule looks exactly like a rule that says no. */
     private static java.util.stream.Stream<String> verbsNoRuleMentions() {
         return java.util.Arrays.stream(TaskAction.values())
                 .filter(action -> !FlowRules.mentions(action))

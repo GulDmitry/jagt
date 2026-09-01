@@ -27,12 +27,8 @@ import java.util.TreeSet;
 import java.util.stream.Stream;
 
 /**
- * WARNS about worktree directories no task owns and deletes nothing: an orphan can hold uncommitted work AND
- * copies of gitignored secrets, so what becomes of it is the human's call. No surface offers it either —
- * housekeeping is not something a human acts on mid-flight.
- *
- * <p>Each orphan is reported with how many of those copied files it still holds, because a copy goes only when
- * its directory does, and removing a directory is best-effort.
+ * WARNS about worktree directories no task owns and deletes nothing: an orphan can hold uncommitted work AND copies
+ * of gitignored secrets. Each is reported with how many of those copies it still holds.
  */
 @Service
 @RequiredArgsConstructor
@@ -65,10 +61,7 @@ public class WorktreeOrphanScanner implements Job {
     private final StateService stateService;
     private final Notifications notifications;
 
-    /**
-     * One WARN per leftover directory, plus a single desktop ping: the log carries the detail, and the ping is
-     * for whoever never opens it — the Master TUI takes over the screen the moment it starts.
-     */
+    /** One WARN per leftover directory, plus a single desktop ping for whoever never opens the log. */
     @Override
     public void run() {
         List<Orphan> orphans = scan();
@@ -110,11 +103,7 @@ public class WorktreeOrphanScanner implements Job {
         return List.copyOf(found.values());
     }
 
-    /**
-     * A {@code -deploy} or {@code -revert} suffix is a round nobody finished, and a leftover just the same.
-     * Naming a DEPLOY directory after a live task protects a real checkout only: what is left once git removed
-     * the worktree is nobody's, whatever that task is doing.
-     */
+    /** A {@code -deploy} or {@code -revert} suffix is a round nobody finished, and a leftover just the same. */
     static Set<String> orphanNames(List<String> directoryNames, String projectKey, Set<String> ownedNames,
                                    java.util.function.Predicate<String> holdsCheckout) {
         return directoryNames.stream()
@@ -126,9 +115,8 @@ public class WorktreeOrphanScanner implements Job {
     }
 
     /**
-     * A linked worktree's {@code .git} is a POINTER, and it outlives the registration it names: a removal that
-     * unregistered the worktree and then failed to delete the directory leaves one behind, checkout and copied
-     * secrets and all — which is the leftover worth reporting, not the one to keep quiet about.
+     * A linked worktree's {@code .git} is a POINTER and outlives the registration it names, so a removal that
+     * unregistered and then failed to delete leaves one behind, checkout and copied secrets and all.
      */
     private static boolean holdsCheckout(Path directory) {
         Path marker = directory.resolve(".git");
@@ -145,9 +133,8 @@ public class WorktreeOrphanScanner implements Job {
     }
 
     /**
-     * Directory names a live task owns: EVERY repository's worktree — a task spanning two projects has two, and
-     * naming only the first would report the other as rotting while its agent is editing it — plus the deploy
-     * worktree a conflict may have left.
+     * Directory names a live task owns: EVERY repository's worktree, plus the deploy worktree a conflict may have
+     * left.
      */
     private Set<String> ownedDirectoryNames() {
         Set<String> owned = new java.util.HashSet<>();
@@ -171,7 +158,7 @@ public class WorktreeOrphanScanner implements Job {
         } catch (IOException e) {
             log.atWarn().setMessage("worktree scan failed")
                     .addKeyValue("path", parent)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
             return List.of();
         }
@@ -202,7 +189,7 @@ public class WorktreeOrphanScanner implements Job {
         } catch (IOException e) {
             log.atWarn().setMessage("secret scan failed")
                     .addKeyValue("path", worktree)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
         }
         return hits[0];

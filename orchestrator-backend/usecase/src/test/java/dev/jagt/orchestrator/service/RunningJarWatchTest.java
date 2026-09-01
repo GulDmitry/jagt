@@ -22,11 +22,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-/**
- * The symptom this exists for: `./gradlew build` rewrites the jar in place, so a running jagt keeps reading a
- * file that changed, and every class loaded afterwards fails — /status and /stats answer 500 while
- * the board still renders. Twice that looked like a bug in those endpoints.
- */
 class RunningJarWatchTest {
 
     private final Notifications notifications = mock(Notifications.class);
@@ -56,7 +51,6 @@ class RunningJarWatchTest {
         verifyNoInteractions(notifications);
     }
 
-    /** A `clean` removes the file: that is a rewrite as far as class loading is concerned. */
     @Test
     void treatsAVanishedJarAsARewrite(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
@@ -69,7 +63,6 @@ class RunningJarWatchTest {
                 && sent.title().contains("restart")));
     }
 
-    /** Run from an IDE, a test or `bootRun` there is no jar — the watch must be inert, not noisy. */
     @Test
     void watchesNothingWhenTheProcessDidNotStartFromAJar() {
         RunningJarWatch watch = new RunningJarWatch(notifications, null);
@@ -79,10 +72,6 @@ class RunningJarWatchTest {
         verifyNoInteractions(notifications);
     }
 
-    /**
-     * The first implementation asked the protection domain and got a {@code jar:nested:} URL it could not turn
-     * into a path, so the watch shipped inert. `java -jar x.jar` puts exactly that jar on the classpath.
-     */
     @Test
     void findsTheJarTheProcessWasStartedFrom(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
@@ -90,7 +79,6 @@ class RunningJarWatchTest {
         assertThat(RunningJarWatch.jarFromClassPath(jar.toString(), Files::isRegularFile)).isEqualTo(jar);
     }
 
-    /** Several entries is an exploded IDE/bootRun classpath, which has no single jar anything could watch. */
     @Test
     void findsNoJarWhenSomethingElseIsOnTheClassPathToo(@TempDir Path dir) throws Exception {
         Path jar = Files.writeString(dir.resolve("jagt.jar"), "build");
@@ -120,10 +108,6 @@ class RunningJarWatchTest {
         assertThat(RunningJarWatch.rewritten(new RunningJarWatch.Stamp(1_000, 42), null)).isTrue();
     }
 
-    /**
-     * The jar `bootJar` writes is the one a build overwrites in place, so a process running it is one build away
-     * from dying on whatever class it had not loaded yet — the human is owed that at startup, not afterwards.
-     */
     @Test
     void knowsItIsRunningTheJarTheBuildRewrites(@TempDir Path dir) throws IOException {
         Path built = Files.writeString(dir.resolve("jagt.jar"), "x");

@@ -45,7 +45,6 @@ class AgentToolGateControllerTest {
         assertThat(answered.getBody()).isNull();
     }
 
-    /** The branch a caller may push is unknown there, so refusing would be a guess about someone else's shell. */
     @Test
     void refusesNothingFromADirectoryNoTaskOwns() {
         when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());

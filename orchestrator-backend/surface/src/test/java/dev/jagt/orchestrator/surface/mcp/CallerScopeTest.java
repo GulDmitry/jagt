@@ -11,10 +11,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * The scoping rule an agent cannot argue with: it acts on its own task or on nothing. The classic failure is
- * an id mix-up, which without this lands a status update — or a teardown — on a sibling's task.
- */
 class CallerScopeTest {
 
     private final StateService stateService = mock(StateService.class);

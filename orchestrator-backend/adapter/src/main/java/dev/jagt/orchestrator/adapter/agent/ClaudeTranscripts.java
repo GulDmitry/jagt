@@ -8,12 +8,9 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 /**
- * Claude Code's own log of a session: one file per session, in a directory named after the directory the
- * session runs in. The newest of them is the session still going.
- *
- * <p>That directory name is DERIVED rather than read anywhere — every character outside {@code [A-Za-z0-9-]}
- * becomes a dash. A name this does not reconstruct simply answers 0, so being wrong costs the caller a sign
- * and never a false one.
+ * One file per session, in a directory named after the directory the session runs in; the newest is the session
+ * still going. That name is DERIVED, not read anywhere — every character outside {@code [A-Za-z0-9-]} becomes a
+ * dash — and a name this does not reconstruct answers 0.
  */
 @Slf4j
 final class ClaudeTranscripts {
@@ -33,9 +30,7 @@ final class ClaudeTranscripts {
 
     static long lastEntryMillis(Path projectsDir, Path sessionDirectory) {
         Path dir = projectsDir.resolve(slug(sessionDirectory));
-        // A session that has written nothing yet is not a failure, and neither is a name this did not
-        // reconstruct: both are simply no sign. Anything else IS one, and answering 0 for it would put a broken
-        // read and a quiet session under the same number.
+        // A session that wrote nothing yet, and a name this did not reconstruct, are both simply no sign.
         if (!Files.isDirectory(dir)) {
             return 0;
         }

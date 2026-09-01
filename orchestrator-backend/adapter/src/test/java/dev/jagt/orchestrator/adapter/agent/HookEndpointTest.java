@@ -17,7 +17,6 @@ class HookEndpointTest {
                 "'http://127.0.0.1:8290/api/agent/session/waiting'");
     }
 
-    /** A failure reported here would put jagt's own plumbing in front of the human working in that session. */
     @Test
     void reportsNothingBackToTheSessionWhenTheBackendIsNotListening() {
         String command = new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent")

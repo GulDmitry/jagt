@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.config.ClaudeProperties;
 
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -17,11 +16,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * {@code CLAUDE.md} is a symlink to the shared system-knowledge file rather than a second copy of it: Claude
- * reads its own filename, jagt keeps writing one file.
- *
- * <p>Where the repository ships either of those two names, the briefing moves to {@code CLAUDE.local.md}
- * instead: it is loaded just the same, and it is the one name a project never versions.
+ * {@code CLAUDE.md} symlinks the shared system-knowledge file, read by Claude under its own name; where the
+ * repository ships either name, the briefing goes to the never-versioned {@code CLAUDE.local.md}.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "claude", matchIfMissing = true)
@@ -67,6 +63,17 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         return local;
     }
 
+    /** The memory-file names are absent on purpose: jagt only ever takes one the checkout left free. */
+    @Override
+    public List<String> generatedFiles() {
+        return List.of(".mcp.json", ".claude/settings.local.json");
+    }
+
+    @Override
+    public List<String> statusExclusions() {
+        return List.of(".mcp.json", ".claude/", CLAUDE_MEMORY_FILE, LOCAL_MEMORY_FILE);
+    }
+
     @Override
     protected void wireAgent(AgentWorktree worktree) {
         write(worktree.path().resolve(".mcp.json"), mcpJson(mcp.url(),
@@ -80,20 +87,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         ClaudeTrust.accept(ClaudeTrust.configFile(), worktree.path());
     }
 
-    /**
-     * Both names, because the pair is one layout: the alias is worthless when the file it points at cannot be
-     * written, and writing that file is pointless when no name Claude reads can point at it.
-     */
+    /** The pair is one layout: neither the alias nor the file it points at is any use without the other. */
     private static boolean rootNamesFree(Path worktree) {
         return !broughtByCheckout(worktree.resolve(SYSTEM_KNOWLEDGE_FILE))
                 && !broughtByCheckout(worktree.resolve(CLAUDE_MEMORY_FILE));
     }
 
-    /**
-     * Claude Code talks to the backend over HTTP and carries the caller header itself, so no proxy process sits
-     * between them. Written per worktree rather than symlinked from the root, because the header value IS the
-     * worktree path.
-     */
+    /** Written per worktree rather than symlinked from the root, because the header value IS the worktree path. */
     static String mcpJson(String url, String worktreePath) {
         return """
                 {
@@ -109,12 +109,10 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     /**
-     * Without {@code enableAllProjectMcpServers} every spawned session stops at a "New MCP server found"
-     * prompt; without the allow-list Claude's auto-mode classifier still gates individual calls, freezing the
-     * agent on invisible prompts nobody in the tmux window answers — MCP calls (even notify_user) and the
-     * agent's own git commit/push on ship. The output style is pinned here because a worktree is an untrusted
-     * project where the human's global style may not apply; disabled plugins keep a ~1-2GB language server per
-     * worktree from spawning when the human opted into that.
+     * Without {@code enableAllProjectMcpServers} a spawned session stops at a "New MCP server found" prompt, and
+     * without the allow-list the permission classifier gates individual calls — prompts nobody answers. A
+     * worktree is an untrusted project, where the human's global output style may not apply; disabling plugins
+     * keeps a ~1-2GB language server from spawning per worktree.
      */
     static String settingsJson(String outputStyle, List<String> disabledPlugins, String hooksLine) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
@@ -162,8 +160,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                                         %s: [{"hooks": [{"type": "command", "command": %s, "timeout": 5}]}]"""
                                         .formatted(quoted(event.getKey()),
                                                 quoted(hooks.command(worktree, event.getValue())))),
-                        // Scoped to the one tool that can push: every other call is not jagt's to see, and a
-                        // hook on all of them would sit in front of every step the agent takes.
+                        // Scoped to the one tool that can push: a hook on all of them would sit in front of
+                        // every step the agent takes.
                         SessionHooks.gate("claude").stream()
                                 .map(event -> """
                                         %s: [{"matcher": "Bash", "hooks": [{"type": "command", "command": %s,\
@@ -173,11 +171,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         return events.isBlank() ? "" : "\n  \"hooks\": {\n    " + events + "\n  },";
     }
 
-    /**
-     * Serialized rather than quoted by hand: a control character anywhere in a path or a configured style would
-     * otherwise make the whole file unreadable, and Claude discards it whole — taking the MCP declaration and
-     * the unattended-run permissions with it.
-     */
+    /** Serialized rather than hand-quoted: a control character in a path would make the whole file unreadable,
+     *  and it is then discarded whole. */
     private static String quoted(String value) {
         return JSON.writeValueAsString(value);
     }

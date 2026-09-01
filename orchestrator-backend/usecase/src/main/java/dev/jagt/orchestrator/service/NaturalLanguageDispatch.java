@@ -15,16 +15,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Tier 2 of the two-tier dispatch: what happens when the grammar does NOT match. A model maps the free text
- * onto one grammar command, and then deterministic code — the same {@link CommandService} a button and a typed
- * command go through — validates and executes it. The model only ever PROPOSES: it holds no git, no state, no
- * gate, so a wrong guess costs a sentence, not a push (the asymmetric-failure rule).
- *
- * <p>The call is deliberately the cheapest jagt makes: no MCP servers, no tools, one list of commands and one
- * of tasks.
- *
- * <p>It reports what it understood BEFORE the outcome ("understood as `ship a2` — …"): an invisible
- * interpretation cannot be corrected.
+ * What happens when the grammar does NOT match: a model maps free text onto one grammar command, and deterministic
+ * code validates and executes it. The model only ever PROPOSES — it holds no git, no state and no gate, and the
+ * call carries no MCP servers and no tools. What it understood is reported BEFORE the outcome, so it can be
+ * corrected.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,8 +29,7 @@ public class NaturalLanguageDispatch {
     /** Also not a TaskAction: `resume` takes over an EXISTING review request instead of starting anything. */
     private static final String RESUME = "resume";
 
-    /** A retired verb keeps being typed, and mapping one onto a live command is the one guess that could be
-     *  destructive — `prune all` has no near neighbour but `done <task>`. Answered by name instead. */
+    /** Mapping a retired verb onto a live command is the one guess that could be destructive. */
     private static final Map<String, String> RETIRED = Map.of(
             "prune", "jagt has no `prune`: cleaning up a merged branch is that one task's business, and yours"
                     + " to do with git.");
@@ -48,9 +41,8 @@ public class NaturalLanguageDispatch {
     private final TaskLauncher launcher;
 
     /**
-     * Interprets free text and runs what it means. Never throws for a request it cannot place — an operator
-     * typing prose gets an explanation and the grammar, not a stack trace. A refusal from the gate below
-     * (wrong status, unknown project) does propagate: that is a real answer about a real task.
+     * Interprets free text and runs what it means. Never throws for a request it cannot place; a refusal from the
+     * gate below does propagate, that being a real answer about a real task.
      */
     public String interpret(String text) {
         return OriginContext.as(ActionOrigin.PALETTE, () -> interpretHere(text));
@@ -64,9 +56,7 @@ public class NaturalLanguageDispatch {
         if (retired != null) {
             return retired;
         }
-        // A single word reached tier 2 because it is not a command — overwhelmingly a typo (`shipp`), and a
-        // typo must not cost a model call. It also cannot name both an action and a task, so there is nothing
-        // for the mapper to do with it.
+        // A single word that is not a command is a typo, and it cannot name both an action and a task anyway.
         if (text.strip().split("\\s+").length == 1) {
             return "Unknown command '" + text.strip() + "' — type `help` for the grammar, or say what you"
                     + " want in a few words.";
@@ -92,8 +82,7 @@ public class NaturalLanguageDispatch {
             return "Mapped \"" + text.strip() + "\" to an unknown command '" + command + "' — refused."
                     + " Type `help` for the grammar.";
         }
-        // The verb is echoed as the action's OWN id: the model may have proposed a spelling the grammar was
-        // renamed from, and repeating it here would teach the word `help` deliberately hides.
+        // Echoed as the action's OWN id: the model may have proposed a spelling the grammar was renamed from.
         String verb = action.get().id();
         String task = resolveTask(mapped.task());
         if (task == null) {
@@ -104,12 +93,10 @@ public class NaturalLanguageDispatch {
         try {
             return understood + commands.execute(task, action.get());
         } catch (Refusal e) {
-            // Rethrown rather than returned: a refusal answered as text reads as a success to every caller —
-            // 200 to the palette, which then clears the input and closes on a neutral toast.
+            // Rethrown rather than returned: a refusal answered as text reads as a success to every caller.
             throw new Refusal(e.code(), understood + "refused: " + e.getMessage());
         } catch (IllegalArgumentException | IllegalStateException e) {
-            // The gates below CommandService refuse with these, and a refusal naming a task the operator
-            // never typed explains nothing without the interpretation.
+            // A refusal naming a task the operator never typed explains nothing without the interpretation.
             throw new IllegalStateException(understood + "refused: " + e.getMessage(), e);
         }
     }
@@ -124,10 +111,7 @@ public class NaturalLanguageDispatch {
                 .message();
     }
 
-    /**
-     * Taking over an existing review request. The URL is carried in the same field a ticket would be, and it
-     * must BE a URL: there is nothing to resume from a key, and inventing one is not on the table.
-     */
+    /** The URL is carried in the same field a ticket would be, and it must BE a URL. */
     private String runResume(CommandProposal mapped) {
         String url = mapped.ticket() == null ? "" : mapped.ticket().strip();
         if (!url.startsWith("http")) {
@@ -150,10 +134,7 @@ public class NaturalLanguageDispatch {
         return mapped.reason() == null || mapped.reason().isBlank() ? "no reason given" : mapped.reason().strip();
     }
 
-    /**
-     * Built from the SAME projection the surfaces render, so the mapper cannot be offered a command or a task
-     * that the board does not show.
-     */
+    /** Built from the SAME projection the surfaces render, so nothing off the board can be proposed. */
     public String context() {
         String commandList = java.util.Arrays.stream(TaskAction.values())
                 .map(action -> "- " + action.id() + ": " + action.hint())

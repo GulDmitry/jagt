@@ -16,9 +16,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * The one place a task is started, so every surface creates tasks identically. It owns the decisions launching
- * needs and nothing about how the request arrived: parsing a command line stays in the console, parsing JSON
- * stays in the controller.
+ * The one place a task is started. It owns the decisions launching needs and nothing about how the request arrived.
  */
 @Service
 public class TaskLauncher {
@@ -40,22 +38,21 @@ public class TaskLauncher {
     }
 
     /**
-     * Spins up a task for {@code ref} — an issue key or a URL to it in any tracker. Answers with the sentence
-     * to show the human and the task it made, if any; throws {@link IllegalArgumentException} when the request
-     * itself is unusable (unknown project, ambiguous labels).
-     *
-     * <p>NO TASK IS CREATED WITHOUT THE ITEM'S OWN FACTS. A card being worked on whose link is missing is a
-     * state nothing downstream can repair — a later read cannot tell an item that has no link from one that was
-     * never reached — so an unreadable reference is answered with a sentence instead of half a task.
+     * Spins up a task for {@code ref}, an issue key or a URL to it in any tracker, and throws
+     * {@link IllegalArgumentException} when the request itself is unusable. NO TASK IS CREATED WITHOUT THE ITEM'S
+     * OWN FACTS: a later read cannot tell an item that has no link from one that was never reached.
      */
+    public Launched launchLine(String line) {
+        return launch(LaunchRequest.ofLine(line, configService.load().projects().keySet()));
+    }
+
     public Launched launch(LaunchRequest request) {
         String ref = request.ref();
         String project = request.project();
         String strategy = request.strategy();
         boolean bareKey = KEY_REF.matcher(ref).matches();
 
-        // Warn before spending a ticket read on a task that would only collide later. Only recreate and resume
-        // say the collision is intended; fresh is the answer that has none, chosen or defaulted.
+        // Warn before spending a ticket read on a task that would only collide later.
         if (bareKey && BranchStrategy.of(strategy) == BranchStrategy.FRESH) {
             String existing = provisioning.existingBranchProject(ref,
                     project == null ? List.of() : resolveProjects(project));
@@ -68,11 +65,9 @@ public class TaskLauncher {
         // An unknown project is settled before the read, not after paying for one.
         List<String> chosen = project != null ? resolveProjects(project) : null;
 
-        // The read takes a key or a URL to any tracker and answers with the canonical key, which is what names
-        // the branch and the worktree.
+        // The read answers with the canonical key, which is what names the branch and the worktree.
         var read = tickets.read(ref);
-        // Three different answers, and the launch says which: one names a missing item, the others a read that
-        // never got there. Merging them sent the human to the tracker for a reference that was never fetched.
+        // Three different answers: one names a missing item, the others a read that never got there.
         if (read.facts().isEmpty()) {
             return Launched.refused("error: read failed: " + ref + " (cause in the log) — no task created");
         }
@@ -96,8 +91,7 @@ public class TaskLauncher {
                 + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
         String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
                 .title(f.title()).ticketUrl(f.url()).build());
-        // Only NOW does the task exist, so only now can the read that named it be charged to it —
-        // charging earlier silently dropped the most expensive call in a task's life.
+        // Only NOW does the task exist, so only now can the read that named it be charged to it.
         tickets.charge(taskId, read.usage());
         return Launched.created(taskId, result);
     }
@@ -131,14 +125,7 @@ public class TaskLauncher {
                 .toList();
     }
 
-    public String resolveProject(String project) {
-        return resolveProjects(project).get(0);
-    }
-
-    /**
-     * Comma-separated and in the order given — the FIRST is where the agent's session runs — or the only project
-     * configured.
-     */
+    /** In the order given, the FIRST being where the agent's session runs; or the only project configured. */
     public List<String> resolveProjects(String project) {
         Set<String> keys = configService.load().projects().keySet();
         if (project != null && !project.isBlank()) {

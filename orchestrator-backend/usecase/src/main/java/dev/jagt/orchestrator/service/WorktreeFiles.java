@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 
+import dev.jagt.orchestrator.port.AgentRuntime;
 import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -26,25 +27,28 @@ public final class WorktreeFiles {
     private static final Set<String> COPY_SCAN_SKIP =
             Set.of(".git", "node_modules", "build", "target", "out", "dist", ".gradle", ".idea");
 
+    private static final List<String> GENERATED = List.of(".jagt", "task_context.md", REVIEW_REPLIES);
+
     private WorktreeFiles() {
     }
 
     /**
-     * What jagt writes into a worktree whatever the checkout already holds — the copy is that worktree's, not
-     * the project's (the caller header in `.mcp.json` IS its path), so a commit must not carry it back. The
-     * names jagt refuses to take when the checkout ships them are deliberately absent: a change to one of
-     * those is the agent's own work.
+     * What jagt writes into a worktree whatever the checkout already holds, the active runtime's own files
+     * included. The copy is that worktree's, not the project's, so a commit must not carry it back.
      */
-    public static final List<String> GENERATED = List.of(".mcp.json", ".claude/settings.local.json",
-            ".jagt", "task_context.md", REVIEW_REPLIES);
+    public static List<String> generated(AgentRuntime runtime) {
+        return Stream.concat(GENERATED.stream(), runtime.generatedFiles().stream()).distinct().toList();
+    }
 
     /**
      * Keeps orchestrator plumbing out of `git status` in every worktree of the project. info/exclude only
      * affects untracked files, so a project's own tracked AGENTS.md/CLAUDE.md is unaffected.
      */
-    public static void excludeOrchestratorPlumbing(Path gitCommonDir) {
-        List<String> entries = List.of("mcp_client.js", ".mcp.json", "AGENTS.md", "CLAUDE.md",
-                "CLAUDE.local.md", "task_context.md", REVIEW_REPLIES, ".claude/", ".jagt/", ".run/");
+    public static void excludeOrchestratorPlumbing(Path gitCommonDir, AgentRuntime runtime) {
+        List<String> entries = Stream.concat(
+                Stream.of("mcp_client.js", AgentRuntime.SYSTEM_KNOWLEDGE_FILE, "task_context.md",
+                        REVIEW_REPLIES, ".jagt/", ".run/"),
+                runtime.statusExclusions().stream()).distinct().toList();
         try {
             Path exclude = gitCommonDir.resolve("info").resolve("exclude");
             Files.createDirectories(exclude.getParent());
@@ -77,10 +81,7 @@ public final class WorktreeFiles {
         }
     }
 
-    /**
-     * Gitignored local files — module {@code .env}, key files, SSL certs — that the run configs reference but git
-     * omits, so the app can start in the worktree. Best-effort; heavy directories skipped.
-     */
+    /** Gitignored local files the run configs reference but git omits. Best-effort; heavy directories skipped. */
     public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
         var matchers = localFileMatchers(globs);
         if (matchers.isEmpty()) {
@@ -98,10 +99,8 @@ public final class WorktreeFiles {
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     Path relative = projectPath.relativize(file);
                     Path target = worktreePath.resolve(relative);
-                    // Anything already in a fresh worktree came out of the checkout, i.e. git TRACKS it — and
-                    // then this is not the file the app is missing. Overwriting it would start every worktree
-                    // with an uncommitted change the agent could commit (a repo whose root `.env` is tracked
-                    // and whose `.env.local` is the ignored one is the common shape).
+                    // Anything already in a fresh worktree came out of the checkout, so git TRACKS it and this
+                    // is not the file the app is missing; overwriting starts the worktree dirty.
                     if (!Files.exists(target) && matchers.stream().anyMatch(m -> m.matches(relative))) {
                         copyFile(file, target);
                     }
@@ -117,9 +116,8 @@ public final class WorktreeFiles {
     }
 
     /**
-     * The patterns as matchers against a repository-relative path. A {@code **}{@code /} prefix ALSO matches at
-     * the root: Java's glob wants a directory component there, so "any .env" would skip the one a single-module
-     * repository has.
+     * The patterns as matchers against a repository-relative path. A {@code **}{@code /} prefix ALSO matches at the
+     * root: Java's glob wants a directory component there, so "any .env" would skip a single-module repository's.
      */
     public static List<PathMatcher> localFileMatchers(List<String> globs) {
         return (globs == null ? List.<String>of() : globs).stream()

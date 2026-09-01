@@ -14,10 +14,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * It adds no rules of its own: everything here goes through the same gate the typed commands do, so a button
- * cannot do something the console cannot.
- */
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -26,28 +22,24 @@ public class TaskCommandsController {
     public record ActionResult(String message) {
     }
 
-    /**
-     * Whether a task exists now, beside the sentence: most of the ways a launch or a resume declines are
-     * ordinary answers, and a page that read them as success cleared the form that would repeat the attempt.
-     */
+    /** {@code created} is false for an ordinary decline, not only for a failure. */
     public record LaunchResult(String message, boolean created) {
     }
 
     public record InterpretRequest(String text) {
     }
 
-    /** The URL is the only input: the request names its own source branch (= the task) and target (= the base). */
+    /** The URL names both branches, so it is the only input. */
     public record ResumeRequest(String reviewRequestUrl) {
+    }
+
+    public record LineRequest(String line) {
     }
 
     private final CommandService commands;
     private final TaskLauncher launcher;
     private final NaturalLanguageDispatch naturalLanguage;
-    /**
-     * An unknown action id is refused rather than mapped to something near it — including a verb the grammar was
-     * renamed FROM, which is accepted where a human types and nowhere else. A page still offering the old id is
-     * a stale page, and it reloads.
-     */
+    /** No aliases: a renamed verb is accepted only where a human types, and a page offering the old id is stale. */
     @PostMapping("/tasks/actions/{actionId}")
     public ActionResult act(@RequestParam("task") String taskId, @PathVariable String actionId) {
         TaskAction action = TaskAction.byId(actionId).orElseThrow(() ->
@@ -55,7 +47,7 @@ public class TaskCommandsController {
         return new ActionResult(commands.execute(taskId, action));
     }
 
-    /** Slow on purpose: reading the ticket is a remote call, and the page shows it as pending. */
+    /** Slow on purpose: reading the ticket is a remote call. */
     @PostMapping("/tasks")
     public LaunchResult launch(@RequestBody LaunchRequest request) {
         if (request.ref() == null || request.ref().isBlank()) {
@@ -65,10 +57,14 @@ public class TaskCommandsController {
         return new LaunchResult(launched.message(), launched.created());
     }
 
-    /**
-     * Its own endpoint rather than a smarter {@code /api/tasks}: a ticket URL and a review-request URL look
-     * alike, and guessing would create the wrong thing half the time.
-     */
+    /** A typed line, parsed by the same grammar `do` uses — never by the page. */
+    @PostMapping("/tasks/line")
+    public LaunchResult launchLine(@RequestBody LineRequest request) {
+        Launched launched = launcher.launchLine(request.line());
+        return new LaunchResult(launched.message(), launched.created());
+    }
+
+    /** A ticket URL and a review-request URL are indistinguishable, so the caller picks the endpoint. */
     @PostMapping("/tasks/resume")
     public LaunchResult resume(@RequestBody ResumeRequest request) {
         String url = request.reviewRequestUrl() == null ? "" : request.reviewRequestUrl().strip();
@@ -79,10 +75,7 @@ public class TaskCommandsController {
         return new LaunchResult(launched.message(), launched.created());
     }
 
-    /**
-     * Free text in, one executed grammar command out. The model that reads the text cannot execute anything: its
-     * proposal is validated against the same gate the buttons use, so this can never do more than a button.
-     */
+    /** The model only proposes; the proposal passes the same gate as a button. */
     @PostMapping("/interpret")
     public ActionResult interpret(@RequestBody InterpretRequest request) {
         return new ActionResult(naturalLanguage.interpret(request.text()));

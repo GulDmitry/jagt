@@ -1,11 +1,8 @@
-package dev.jagt.orchestrator.config;
+package dev.jagt.orchestrator.adapter.agent;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/**
- * One agent's own settings, under its own key. The generic install config carries no vendor name: which binary
- * Claude is launched by is Claude's business, exactly as {@link CodexProperties} is Codex's.
- */
+/** One agent's own settings, under its own key: the generic install config carries no vendor name. */
 @ConfigurationProperties(prefix = "orchestrator.claude")
 public record ClaudeProperties(String command) {
 

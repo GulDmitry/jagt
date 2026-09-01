@@ -10,28 +10,25 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * One question to a model, asked before any worktree exists and so before there is any sub-agent to ask. An
- * implementation spends money, so it is metered. Empty result = unavailable or failed, and every caller falls back
- * to explicit input rather than guessing.
+ * One question to a model, asked before any worktree exists. An implementation spends money, so it is metered.
+ * Empty result = unavailable or failed.
  */
 public interface MasterAssistant {
 
     /**
-     * Free text mapped onto ONE command of the console grammar — a PROPOSAL, never an execution: the caller
-     * validates it against the same gates a typed command hits and runs it itself. {@code command} empty (or
-     * "none") means nothing matched, and {@code reason} then says why in one line for the human.
+     * Free text mapped onto ONE command of the console grammar — a PROPOSAL, never an execution. {@code command}
+     * empty (or "none") means nothing matched, and {@code reason} then says why in one line.
      */
     record CommandProposal(String command, String task, String ticket, String reason) {
     }
 
     /**
-     * One answer plus what it cost. The usage is reported even when {@code facts} is empty — a call that failed or
-     * came back unusable was paid for all the same. The cost rides in the RETURN so no implementation can forget
-     * to meter, and the caller decides what the spend is attributed to.
+     * One answer plus what it cost. The usage is reported even when {@code facts} is empty — a call that failed was
+     * paid for all the same. The cost rides in the RETURN so no implementation can forget to meter.
      */
     record Answer<T>(Optional<T> facts, TokenUsage usage) {
 
-        /** Never happened, so it cost nothing (a blank ref, a non-http url — no process was spawned). */
+        /** Never happened, so it cost nothing. */
         public static <T> Answer<T> unavailable() {
             return new Answer<>(Optional.empty(), TokenUsage.NONE);
         }
@@ -42,36 +39,24 @@ public interface MasterAssistant {
         }
     }
 
-    /**
-     * Reads a work item given an issue KEY or a URL to it in any tracker at all — following the URL is what
-     * this read is for, and what no configured API can do.
-     */
+    /** Reads a work item given an issue KEY or a URL to it in any tracker at all. */
     Answer<TicketFacts> readTicket(String ticketRef);
 
-    /**
-     * Reads a review request by URL. The FALLBACK read: it follows a URL no configured host claims, which is what
-     * keeps it here.
-     */
+    /** Reads a review request by URL. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
 
-    /** The sweep: checks state + unresolved comments of a review request (a slow, multi-call read). */
+    /** Checks state plus unresolved comments of a review request; a slow, multi-call read. */
     Answer<ReviewFacts> readReview(String mrUrl);
 
     /**
-     * The MCP servers this assistant cannot use right now, each as {@code name (status)} — costs no tokens, and
-     * is the only way to tell "there is no such request" from "the read had nothing to read it with": a model
-     * that found no tool answers the same "no" as a host whose request is gone.
-     *
-     * <p>Empty {@code Optional} = it could NOT be established (the probe itself failed, or the servers are
-     * declared rather than resolved). An empty LIST is the different, stronger answer: nothing is down.
+     * The MCP servers this assistant cannot use right now, each as {@code name (status)}. Empty {@code Optional} =
+     * could not be established; an empty LIST means nothing is down.
      */
     Optional<List<String>> brokenMcpServers();
 
     /**
-     * Maps a free-text request ("push the login one for review") onto one grammar command. {@code context} is the
-     * prompt-ready list of commands and current tasks the caller wants considered — the port knows nothing
-     * about the grammar, so adding a command never touches this interface. Reads NOTHING from the outside, so an
-     * implementation should run with no tools at all: cheaper, and it cannot call one by accident.
+     * Maps a free-text request onto one grammar command. {@code context} is the prompt-ready list of commands and
+     * current tasks to consider. Reads NOTHING from the outside, so an implementation runs with no tools at all.
      */
     Answer<CommandProposal> mapCommand(String text, String context);
 }

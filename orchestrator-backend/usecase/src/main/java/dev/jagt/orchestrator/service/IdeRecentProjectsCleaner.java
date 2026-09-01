@@ -13,12 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Keeps the editor's recent-projects list free of {@code done} tasks. The per-{@code done}
- * {@link EditorDriver#forgetProject} prune runs while the IDE is live and gets clobbered when the IDE next
- * flushes its in-memory list, so the dead entry survives even a restart. This re-runs the removal on a
- * schedule: the first tick during which the IDE is closed makes it stick (the IDE won't re-add a project it
- * isn't opening). The scope — one {@link WorktreeLocation} per configured project — bounds the GC to jagt's
- * own worktrees so a human's real projects are never pruned.
+ * Keeps the editor's recent-projects list free of closed tasks. {@link EditorDriver#forgetProject} runs while the
+ * IDE is live and is clobbered when it next flushes its in-memory list, so the removal is re-run on a schedule and
+ * sticks on the first tick the IDE is closed. Scoped per configured project, so real projects are never pruned.
  */
 @Service
 @RequiredArgsConstructor

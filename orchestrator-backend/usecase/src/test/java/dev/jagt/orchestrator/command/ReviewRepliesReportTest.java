@@ -52,7 +52,6 @@ class ReviewRepliesReportTest {
                 "  2 · FIXED · src/Grid.java:56");
     }
 
-    /** The only record of what was answered, so it is printed — but a ship will not send it a second time. */
     @Test
     void saysSoWhenTheRoundThoseRepliesWereWrittenForIsAlreadyShipped(@TempDir Path root) throws IOException {
         Path worktree = Files.createDirectories(root.resolve("wt"));

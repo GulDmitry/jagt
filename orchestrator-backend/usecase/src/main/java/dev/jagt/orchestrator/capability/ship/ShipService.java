@@ -15,11 +15,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * {@code ship} — the human's approval, executed.
- *
- * <p>The work itself is the agent's: it commits, pushes and opens or updates the review request with its own
- * code-host tools, in every repository the task holds. jagt hands over and waits — the status only leaves
- * SHIPPING when the agent reports the requests back.
+ * {@code ship} — the human's approval, executed. The work is the agent's, in every repository the task holds; the
+ * status only leaves SHIPPING when the agent reports the requests back.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,18 +48,13 @@ public class ShipService {
                 task.title());
 
         sessions.writeTaskContext(taskId, shipInstruction(title, taskId, targets(task), repliesStep(config)));
-        // Handed over, not done: the status only reaches CI_POLLING when the agent reports the links back.
         return Outcome.relayed("ship " + taskId + ": relayed to the agent; SHIPPING until it reports the"
                 + " request" + (task.repos().size() > 1 ? "s" : "")
                 + (config.codeReview().postReviewRepliesOrDefault()
                         ? "" : "; review_replies.md is yours to post (postReviewReplies=false)"), "shipping");
     }
 
-    /**
-     * What one repository needs named: its key, where it sits, what it merges into, and whether its request is
-     * already open — which is asked of THAT repository, since one of them can be a round behind after a ship
-     * the agent did not finish.
-     */
+    /** {@code hasRequest} is asked of THAT repository: one of them can be a round behind after an unfinished ship. */
     public record Target(String project, String worktreePath, String targetBranch, boolean hasRequest) {
     }
 
@@ -73,11 +65,7 @@ public class ShipService {
                 .toList();
     }
 
-    /**
-     * What this repository's request merges into: the task's own base when the human named one at {@code do}
-     * time — a task cut from a parent feature branch must merge back into it, not into the release branch —
-     * otherwise that repository's own configured base, which is not the same branch in every repository.
-     */
+    /** A task cut from a parent feature branch merges back into it, not into that repository's configured base. */
     private String targetOf(TaskState task, TaskRepo repo) {
         String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
         return base == null ? "" : base.replaceFirst("^origin/", "");
@@ -98,15 +86,15 @@ public class ShipService {
                 + THREADS;
     }
 
-    /** A reply does not resolve a thread, and the next round relays every unresolved one. */
-    private static final String THREADS = " Resolve a thread ONLY where you changed the code it asked for."
-            + " Leave every thread you pushed back on or asked about UNRESOLVED — that disagreement is the"
-            + " reviewer's to settle, and resolving it would read as agreement.\n";
+    private static final String THREADS = " Resolve threads exactly as your `<review_replies>` rules say.\n";
 
     static String shipInstruction(String title, String taskId, List<Target> targets, String repliesStep) {
         return "This IS the human approval to ship. Do NOT re-verify, do NOT ask — do it now.\n"
-                + "The task spans these repositories, and what each one still needs:\n" + listed(targets)
-                + "Do every step in EVERY one of them; a repository left behind is a half-shipped task.\n"
+                + (targets.size() > 1
+                        ? "The task spans these repositories, and what each one still needs:\n" + listed(targets)
+                                + "Do every step in EVERY one of them; a repository left behind is a"
+                                + " half-shipped task.\n"
+                        : "The task's repository, and what it still needs:\n" + listed(targets))
                 + "1. Commit ALL current changes. Where the request is still to be opened the message is EXACTLY"
                 + " \"" + title + "\"; where it is already open, a CONCISE one-line message that STARTS with \""
                 + taskId + "\" followed by a short imperative summary (max ~10 words) of ONLY the changes you"
@@ -119,10 +107,8 @@ public class ShipService {
                 + "4. " + repliesStep
                 + "5. Report back with update_agent_status CI_POLLING and " + reportField(targets) + ".\n"
                 + "This authorises ONE commit and ONE push PER REPOSITORY listed above, of what is in their"
-                + " trees now — no fewer, and nothing after. Carrying it out does not clear this file: it goes"
-                + " on saying all of the above until something replaces it, and reading it again is not"
-                + " permission. Once the link(s) are reported, everything you change afterwards stays"
-                + " UNCOMMITTED — a build you repaired included — until a new instruction says otherwise.";
+                + " trees now — no fewer, and nothing after. It is single-use and does not clear this file"
+                + " (rule 4).";
     }
 
     private static String listed(List<Target> targets) {

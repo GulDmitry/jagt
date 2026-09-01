@@ -15,7 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ReviewDraftsTest {
 
-    /** The ship that opened the round now open is the ship that posted them. */
     @Test
     void announcesNothingForRepliesDraftedBeforeTheOpenRound(@TempDir Path worktree) throws IOException {
         Files.setLastModifiedTime(Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),
@@ -38,7 +37,6 @@ class ReviewDraftsTest {
         assertThat(pending).isTrue();
     }
 
-    /** Nobody but the human can send them, so nothing but the human ends the announcement. */
     @Test
     void keepsAnnouncingRepliesNoShipWillEverPost(@TempDir Path worktree) throws IOException {
         Files.setLastModifiedTime(Files.writeString(worktree.resolve("review_replies.md"), "> rename\n\nDone.\n"),

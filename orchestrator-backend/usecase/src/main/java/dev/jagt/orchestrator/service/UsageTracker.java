@@ -11,14 +11,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Books what jagt's own model calls cost, so the spend is visible instead of invisible.
- *
- * <p>Booking is TWO steps because a call can happen before the task it belongs to exists: {@link #record} takes
- * the session total the moment a call returns, {@link #chargeTask} attributes the same measurement once there is
- * a task. Charging twice is the one way a caller can get this wrong.
- *
- * <p>The two totals are NOT summable: a task's lives as long as the task, the session's counts every call since
- * startup — including retired tasks and reads that never became one.
+ * Books what jagt's own model calls cost. Booking is TWO steps because a call can happen before the task it belongs
+ * to exists: {@link #record} takes the session total, {@link #chargeTask} attributes the same measurement once
+ * there is a task. The two totals are NOT summable — the session's counts retired tasks too.
  */
 @Component
 @RequiredArgsConstructor
@@ -38,9 +33,8 @@ public class UsageTracker {
     }
 
     /**
-     * Attributes an already-recorded measurement to a task, by id or alias. A task that is gone (retired
-     * mid-sweep) only loses its per-task detail — the session total already has the number — but that is still
-     * worth a line in the log, because the same silence would otherwise hide a wrong id.
+     * Attributes an already-recorded measurement to a task, by id or alias. A task that is gone loses only its
+     * per-task detail, but is still logged, the same silence otherwise hiding a wrong id.
      */
     public void chargeTask(String taskId, TokenUsage usage) {
         if (usage == null || usage.isNone() || taskId == null || taskId.isBlank()) {

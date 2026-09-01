@@ -6,12 +6,9 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 
 /**
- * Where an agent CLI's own hooks report what a session is doing, and the line that reports it. A hook is run
- * by the harness rather than by the model, so what arrives here costs no tokens and still arrives from a
- * session that has run out of them.
- *
- * <p>Which session it is and what happened to it come from what jagt itself wrote into the line, so a vendor
- * changing the shape of what it hands a hook cannot quietly stop the reports.
+ * A hook is run by the harness rather than by the model, so what arrives here costs no tokens and still arrives
+ * from a session that has run out of them. Which session it is comes from what jagt wrote into the line, not
+ * from what the vendor hands the hook.
  */
 @Component
 public class HookEndpoint {
@@ -28,24 +25,17 @@ public class HookEndpoint {
         this.gateUrl = gateUrl;
     }
 
-    /**
-     * The gate's own line: same shape, another address, and the answer is a verdict the CLI reads rather than a
-     * brief. Refusing it when jagt is unreachable would make a stopped backend look like a rule.
-     */
+    /** Same shape, another address; the answer is a verdict, and refusing it when jagt is unreachable would make
+     *  a stopped backend look like a rule. */
     public String gateCommand(Path worktree) {
         return command(worktree, "tool", gateUrl);
     }
 
     /**
-     * Capped and always successful: a hook that reported a failure would put jagt's own plumbing in front of
-     * the human working in that session, and one that hung would hold up the session itself.
-     *
-     * <p>What jagt ANSWERS is printed, because a harness adds a hook's stdout to the session's context — which
-     * is the only way to hand a compacted session its brief back. {@code -f} is what keeps an error page out of
-     * that context: on any failure curl prints nothing at all.
-     *
-     * <p>Whatever the harness hands the hook rides along on stdin, unparsed by the shell — so the line stays
-     * the same for every event and every vendor, and the reading happens where it can be tested.
+     * Capped and always successful: a hook reporting a failure would put jagt's plumbing in front of the human,
+     * and one that hung would hold up the session. A harness adds a hook's stdout to the session's context, so
+     * the answer is printed; {@code -f} keeps an error page out of that context by printing nothing on failure.
+     * Whatever the harness hands the hook rides along on stdin, unparsed by the shell.
      */
     public String command(Path worktree, String state) {
         return command(worktree, state, url);

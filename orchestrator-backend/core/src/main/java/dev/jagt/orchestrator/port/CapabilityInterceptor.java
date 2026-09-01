@@ -6,11 +6,8 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import java.util.function.Supplier;
 
 /**
- * Something to do around one verb without touching it — a check before a deploy, a note after a ship. Declared per
- * action, so an install adds its own step by adding a class, and the verb it wraps never learns of it.
- *
- * <p>It may refuse: throwing from {@link #around} means the work does not run and the task does not move, which is
- * the point of a gate. Returning the supplier's own answer is the neutral thing to do.
+ * Something to do around one verb without touching it. Throwing from {@link #around} means the work does not run
+ * and the task does not move; returning the supplier's own answer is the neutral thing to do.
  */
 public interface CapabilityInterceptor {
 

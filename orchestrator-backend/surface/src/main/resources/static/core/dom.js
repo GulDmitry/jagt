@@ -1,5 +1,4 @@
-// Every piece of a card is BUILT, never interpolated into markup: ids, aliases and project keys come out of a
-// state file the human is invited to edit by hand, and an assumption about their shape is invisible from here.
+// Built, never interpolated into markup: ids, aliases and project keys come out of a file a human edits by hand.
 
 export const span = (className, text) => {
   const node = document.createElement('span');

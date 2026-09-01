@@ -15,12 +15,9 @@ import java.net.SocketException;
 import java.util.Arrays;
 
 /**
- * Drops one ERROR: the peer tore the connection down between {@code accept()} and Tomcat's
- * {@code setSoLinger}, so the setsockopt fails for a connection that carried no request. Tomcat offers no knob
- * — it sets {@code connectionLinger} in its constructor.
- *
- * <p>Matched by the {@code setSoLinger} frame rather than the message, which keeps it independent of the C
- * library's locale. A failure to configure any OTHER socket option still reaches the log.
+ * Drops the ERROR from a peer tearing the connection down between {@code accept()} and Tomcat's
+ * {@code setSoLinger}, for which Tomcat offers no knob. Matched by the frame, not the message: the message is
+ * locale-dependent.
  */
 @Component
 public class AbortedConnectionFilter extends TurboFilter {
@@ -28,10 +25,7 @@ public class AbortedConnectionFilter extends TurboFilter {
     private static final String TOMCAT_NET_LOGGER = "org.apache.tomcat.util.net.";
     private static final String LINGER_CALL = "setSoLinger";
 
-    /**
-     * Installed while beans are created, which is before the connector binds its port — the first abandoned
-     * connection cannot arrive earlier than that.
-     */
+    /** Bean creation is before the connector binds its port, so no abandoned connection can arrive earlier. */
     @PostConstruct
     void install() {
         if (LoggerFactory.getILoggerFactory() instanceof LoggerContext context) {
@@ -40,10 +34,7 @@ public class AbortedConnectionFilter extends TurboFilter {
         }
     }
 
-    /**
-     * The logger context is the JVM's, not this application context's: a test run boots several backends in one
-     * JVM, and a filter left behind by a closed one would be asked about every log call made by the next.
-     */
+    /** The logger context is the JVM's, so a filter left installed outlives this application context. */
     @PreDestroy
     void uninstall() {
         if (LoggerFactory.getILoggerFactory() instanceof LoggerContext context) {

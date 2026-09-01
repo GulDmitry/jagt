@@ -36,10 +36,6 @@ class MoveTest {
         assertThat(actions).endsWith(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF, TaskAction.RESPAWN);
     }
 
-    /**
-     * Shipping it commits nothing and returns the task to CI_POLLING, where the auto-poll relays the very threads
-     * that round answered. It stays legal for a human with their own reason, just not the advice.
-     */
     @Test
     void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true,
@@ -51,10 +47,6 @@ class MoveTest {
         assertThat(move.actions()).contains(TaskAction.SHIP);
     }
 
-    /**
-     * The threads this round is waiting on are read by the poller, so a round it has stopped polling waits on
-     * NOBODY — the card said "the reviewer's move" and nothing would ever look at that request again.
-     */
     @Test
     void handsAReviewRoundBackToTheHumanOncePollingHasStoppedForIt() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true,
@@ -66,7 +58,6 @@ class MoveTest {
                 .isEqualTo("nothing is polling this round; sweep reads the comments and checks now");
     }
 
-    /** An agent at work is not waiting on a poller, so a window that has elapsed says nothing about its card. */
     @Test
     void leavesATaskWithItsAgentWhenThePollingWindowElapsedWhileItWorks() {
         Move move = Move.forTask(TaskStatus.IN_PROGRESS, true, RoundState.NONE, false, elapsed());
@@ -75,7 +66,6 @@ class MoveTest {
         assertThat(move.hint()).isEqualTo("agent is working; no action required");
     }
 
-    /** `ship` is the only thing that posts review_replies.md, so "nothing to ship" would strand the answers. */
     @Test
     void stillAdvisesAShipWhenTheRoundLeftRepliesToPostEvenThoughItChangedNoCode() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true, new RoundState(AgentReport.NO_CHANGES, true), false);
@@ -85,7 +75,6 @@ class MoveTest {
                 .isEqualTo("no code changed; ship posts the drafted replies and nothing else");
     }
 
-    /** Nothing is out for review yet, so there is no reviewer to wait for — the ship opens the request. */
     @Test
     void asksTheHumanToShipARoundThatChangedNothingBeforeAnyRequestExists() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, false, new RoundState(AgentReport.NO_CHANGES, false),
@@ -104,7 +93,6 @@ class MoveTest {
         assertThat(move.owner()).isEqualTo(Owner.YOU);
     }
 
-    /** Waiting on the host is only true while something is still reading the round for you. */
     @Test
     void asksTheHumanToSweepARoundThePollHasGivenUpOn() {
         Move move = Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE, false, elapsed());
@@ -120,7 +108,6 @@ class MoveTest {
         assertThat(move.owner()).isEqualTo(Owner.CI);
     }
 
-    /** A host that has never seen the task cannot be what it is waiting for, and `sweep` is refused without one. */
     @Test
     void asksTheHumanAboutATaskWaitingOnChecksWithNoRequestToRead() {
         Move move = Move.forTask(TaskStatus.CI_POLLING, false, RoundState.NONE, false, watching());
@@ -183,10 +170,6 @@ class MoveTest {
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     }
 
-    /**
-     * The watchdog probed and found nothing alive; the status still says the agent is working. A card that keeps
-     * reading "agent" is dropped by the board's own-move filter and count, so the block stays invisible.
-     */
     @ParameterizedTest
     @CsvSource({"NEW", "IN_PROGRESS", "SHIPPING"})
     void handsAnAgentThatWentQuietBackToTheHumanInsteadOfSayingItIsStillWorking(TaskStatus status) {
@@ -197,7 +180,6 @@ class MoveTest {
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     }
 
-    /** The question it managed to report is the more useful of the two, and the silence adds nothing to it. */
     @Test
     void quotesTheQuestionRatherThanTheSilenceWhenAnAgentAskedBeforeItStopped() {
         Move move = Move.forTask(TaskStatus.IN_PROGRESS, false,
@@ -207,7 +189,6 @@ class MoveTest {
         assertThat(move.hint()).contains("answer the question");
     }
 
-    /** A status whose wait is the human's or the host's says nothing new when an agent stamp lingers on it. */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_POLLING", "DEPLOYED", "DONE"})
     void keepsTheOwnerOfAStatusThatWasNeverTheAgentsEvenIfSilenceWasStamped(TaskStatus status) {
@@ -215,11 +196,6 @@ class MoveTest {
                 .isEqualTo(Move.forTask(status, true, RoundState.NONE, false));
     }
 
-    /**
-     * Read off every status there is rather than a sample, so a status added later cannot go unowned. An open
-     * request for all of them, because the question is which STATUS waits for a human — the cells that need more
-     * than a status are asserted one by one above.
-     */
     @Test
     void namesTheHumanAsTheOwnerOfExactlyTheStatusesThatWaitForOne() {
         var waitingOnYou = Arrays.stream(TaskStatus.values())
@@ -229,10 +205,6 @@ class MoveTest {
                 TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.REVERTED);
     }
 
-    /**
-     * The change is live and closing the task is housekeeping: an install that badged this taught the human that
-     * the badge means nothing, which costs the stalled session and the deploy conflict their only signal.
-     */
     @Test
     void asksForNothingOnceTheChangeIsLiveWhileStillOfferingTheClose() {
         Move move = Move.forTask(TaskStatus.DEPLOYED, true, RoundState.NONE, false);
@@ -241,7 +213,6 @@ class MoveTest {
         assertThat(move.primary()).isEqualTo(TaskAction.DONE);
     }
 
-    /** A session that stopped to ask is the human's whatever its task has already landed. */
     @Test
     void stillAsksForTheHumanWhenAnAgentQuestionOutlivesTheDeploy() {
         Move move = Move.forTask(TaskStatus.DEPLOYED, true, new RoundState(AgentReport.QUESTION, false), false);
@@ -250,10 +221,6 @@ class MoveTest {
         assertThat(move.hint()).contains("answer the question");
     }
 
-    /**
-     * The badge, the header count and the own-move filter read the tier, so a card counted as needing the human
-     * while its badge says otherwise is the drift this pins shut.
-     */
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void saysNothingAboutAttentionUnlessTheMoveIsTheHumansOwn(TaskStatus status) {
@@ -359,7 +326,6 @@ class MoveTest {
         assertThat(move.hint()).isEqualTo("no review request to read the failure from; focus the agent");
     }
 
-    /** The same invariant for the round that hands a task BACK to the code host: an answered round is no badge. */
     @Test
     void saysNothingAboutARoundWhoseOpenThreadsAreTheReviewersToClose() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true,
@@ -369,11 +335,6 @@ class MoveTest {
         assertThat(move.attention()).isEqualTo(Attention.NONE);
     }
 
-    /**
-     * An approval that landed and a revert the human made themselves: nothing is stuck, so the next move is
-     * theirs whenever they want it. Shouting at somebody about the click they just made is what teaches them to
-     * stop reading the badge.
-     */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"APPROVED", "REVERTED"})
     void offersTheNextMoveWithoutInterruptingWhenNothingIsStuck(TaskStatus status) {
@@ -383,7 +344,6 @@ class MoveTest {
         assertThat(move.attention()).isEqualTo(Attention.OPTIONAL);
     }
 
-    /** The tier jagt exists for: a session that cannot go on, and a round that only a human will read. */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_FAILED", "DEPLOY_CONFLICT"})
     void interruptsForATaskThatMovesNoFurtherWithoutTheHuman(TaskStatus status) {
@@ -391,7 +351,6 @@ class MoveTest {
                 .isEqualTo(Attention.REQUIRED);
     }
 
-    /** A stopped session is an interruption whatever the status it stopped in was worth. */
     @Test
     void interruptsWhenAnAgentAsksFromAStatusThatWouldOtherwiseWait() {
         Move move = Move.forTask(TaskStatus.APPROVED, true, new RoundState(AgentReport.QUESTION, false), false);
@@ -399,7 +358,6 @@ class MoveTest {
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
     }
 
-    /** The watchdog found the session gone; nothing but a human moves it, whatever it last reported. */
     @Test
     void interruptsForAnAgentThatWentQuietWithoutReportingAnything() {
         Move move = Move.forTask(TaskStatus.IN_PROGRESS, false, RoundState.NONE, true);
@@ -407,10 +365,6 @@ class MoveTest {
         assertThat(move.attention()).isEqualTo(Attention.REQUIRED);
     }
 
-    /**
-     * A round that came back clean is not approved — that is the status after it — so the wait is a reviewer's,
-     * and the deploy stays offered without being advised for whoever needs no approval.
-     */
     @Test
     void waitsOnTheReviewerAfterACleanRoundThatNobodyHasApprovedYet() {
         Move move = Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE, false, watching());
@@ -421,10 +375,6 @@ class MoveTest {
         assertThat(move.hint()).contains("waiting for an approval");
     }
 
-    /**
-     * An install with auto-review off polls nothing at all, so the approval is fetched only when a human asks:
-     * a card with no highlighted move would leave them looking at a state nothing was ever going to change.
-     */
     @Test
     void highlightsTheReadWhenNothingIsPollingForTheApprovalAtAll() {
         Move move = Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE, false);
@@ -434,10 +384,6 @@ class MoveTest {
         assertThat(move.hint()).contains("nothing is polling for the approval");
     }
 
-    /**
-     * The answer is what unblocks the session, and the status alone would highlight a verb that ACTS: a ship on a
-     * round the agent said it cannot finish, a deploy on the thing being asked about.
-     */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "CI_FAILED", "REVIEWED", "APPROVED",
             "REVERTED", "DEPLOYED"})
@@ -447,7 +393,6 @@ class MoveTest {
         assertThat(move.primary()).isEqualTo(TaskAction.FOCUS);
     }
 
-    /** Nothing else will notice the approval, so reading it becomes the human's move. */
     @Test
     void handsACleanRoundBackToTheHumanOnceNothingPollsItForTheApproval() {
         Move move = Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE, false, elapsed());
@@ -457,10 +402,6 @@ class MoveTest {
         assertThat(move.hint()).contains("nothing is polling for the approval");
     }
 
-    /**
-     * Asking is stopping, and the statuses an agent is not EXPECTED to ask from are exactly the ones nothing else
-     * flips: without this the question reaches no badge, no count and no notification.
-     */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED"})
     void handsTheTaskOverForAQuestionAskedFromAStatusThatWaitsOnTheCodeHost(TaskStatus status) {
@@ -470,7 +411,6 @@ class MoveTest {
         assertThat(move.hint()).contains("answer the question");
     }
 
-    /** A closed task's leftover message is not a question anybody still owes an answer to. */
     @Test
     void leavesAClosedTaskAloneWhateverItsLastMessageSaid() {
         Move move = Move.forTask(TaskStatus.DONE, true, new RoundState(AgentReport.QUESTION, false), false);
@@ -486,7 +426,6 @@ class MoveTest {
         assertThat(Move.forTask(status, hasRequest, RoundState.NONE, false).phase()).isEqualTo(phase);
     }
 
-    /** A primary the action list does not contain leaves the board with nothing highlighted at all. */
     @Test
     void neverMakesDeployThePrimaryMoveOfATaskThatHasNoRequestToLand() {
         Move move = Move.forTask(TaskStatus.REVIEWED, false, RoundState.NONE, false);
@@ -502,17 +441,12 @@ class MoveTest {
         assertThat(Move.forTask(status, hasRequest, RoundState.NONE, false).primary()).isEqualTo(primary);
     }
 
-    /**
-     * The projection answers "not live" rather than paying a process spawn per task per render, so a stuck task
-     * still shows SHIP and the gate is what refuses when its agent turns out to be alive.
-     */
     @Test
     void offersShipForATaskStuckAtShippingBecauseTheDeadAgentIsWhatMakesItStuck() {
         assertThat(Move.forTask(TaskStatus.SHIPPING, false, RoundState.NONE, false).actions())
                 .contains(TaskAction.SHIP);
     }
 
-    /** The change came back out, so the next move is a fix onto the same request — not the DONE a deploy gets. */
     @Test
     void advisesAFixOntoTheSameRequestForATaskWhoseDeployWasTakenBackOut() {
         Move move = Move.forTask(TaskStatus.REVERTED, true, RoundState.NONE, false);

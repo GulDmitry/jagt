@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.adapter.agent;
 
-import dev.jagt.orchestrator.config.ClaudeProperties;
 
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.AgentRuntime;
@@ -50,11 +49,6 @@ class ClaudeAgentRuntimeTest {
                 .isEqualTo("claude 'it'\\''s fine'");
     }
 
-    /**
-     * Claude Code speaks MCP over HTTP, so the worktree gets an endpoint and a header — not a proxy process.
-     * The header value IS the worktree path: that is how the backend answers "which task is calling?", and it
-     * is exactly what the old Node bridge computed at runtime as {@code process.cwd()}.
-     */
     @Test
     void declaresTheJagtMcpServerOverHttpWithThisWorktreeAsTheCaller(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
@@ -73,7 +67,6 @@ class ClaudeAgentRuntimeTest {
                 .isEqualTo(worktree.toAbsolutePath().normalize().toString());
     }
 
-    /** No bridge, no Node: an agent that can reach the endpoint itself must not get a proxy in its worktree. */
     @Test
     void leavesNoStdioProxyInTheWorktree(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
@@ -180,10 +173,6 @@ class ClaudeAgentRuntimeTest {
         assertThat(enabled).isFalse();
     }
 
-    /**
-     * A hook fires from the harness rather than from the model, so a session stopped at a prompt, out of
-     * tokens or gone still says so. Which events those are is declared in {@code hooks/claude.properties}.
-     */
     @Test
     void writesADeclaredEventAsAHookThatReportsTheStateItMeans(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
@@ -200,7 +189,6 @@ class ClaudeAgentRuntimeTest {
         assertThat(command).contains("/api/agent/session/idle", worktree.toString());
     }
 
-    /** The gate is scoped to the one tool that can push: a hook on every call would sit in front of every step. */
     @Test
     void writesTheGateAsAHookOnTheShellToolAlone(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");

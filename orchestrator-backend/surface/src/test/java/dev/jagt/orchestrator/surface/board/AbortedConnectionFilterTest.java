@@ -20,11 +20,6 @@ class AbortedConnectionFilterTest {
 
     private final AbortedConnectionFilter filter = new AbortedConnectionFilter();
 
-    /**
-     * A browser pre-connect, the losing half of a Node client's IPv6/IPv4 race, a probe of {@code /state}: the
-     * peer is gone before Tomcat sets {@code SO_LINGER} on the socket it just accepted, macOS answers EINVAL,
-     * and the board's log gets an ERROR for a connection that carried no request.
-     */
     @Test
     void dropsTomcatsErrorForAConnectionTheClientAbortedBeforeItCouldBeConfigured() {
         SocketException aborted = new SocketException("Invalid argument");
@@ -38,11 +33,6 @@ class AbortedConnectionFilterTest {
         assertThat(reply).isEqualTo(FilterReply.DENY);
     }
 
-    /**
-     * The logger context belongs to the JVM, not to the backend that installs the filter into it — so a run
-     * that closes one application context and opens another (every test run does) must not leave its filter
-     * behind to be consulted on someone else's log calls.
-     */
     @Test
     void registersItselfWithTheLoggerContextAndTakesItselfBackOutWhenTheBackendCloses() {
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -55,10 +45,6 @@ class AbortedConnectionFilterTest {
         assertThat(context.getTurboFilterList()).doesNotContain(filter);
     }
 
-    /**
-     * The trap this filter must not become: one that also swallows the socket errors worth waking up for. A
-     * connector that cannot be configured for a REAL reason still has to say so.
-     */
     @ParameterizedTest
     @MethodSource("eventsThatMustStillBeLogged")
     void keepsEverySocketErrorThatIsNotThatOne(Logger logger, Throwable error) {

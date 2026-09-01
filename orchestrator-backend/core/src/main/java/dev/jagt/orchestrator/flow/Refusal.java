@@ -1,9 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
-/**
- * A refusal a caller may need to ACT on, not merely show. The sentence stays the whole answer for a human; the
- * code exists only where something branches on it, so a reason nobody handles differently keeps throwing plain.
- */
+/** A refusal a caller may need to ACT on, not merely show. */
 public class Refusal extends IllegalArgumentException {
 
     public enum Code {

@@ -19,7 +19,7 @@ public final class ToolArgs {
         return value.isMissingNode() || value.isNull() || value.asText().isBlank() ? null : value.asText();
     }
 
-    /** An absent array and an empty one are the same answer, so no caller has to tell them apart. */
+    /** An absent array and an empty one are the same answer. */
     public static List<String> texts(JsonNode args, String field) {
         JsonNode value = args.path(field);
         if (!value.isArray()) {
@@ -34,7 +34,6 @@ public final class ToolArgs {
         return List.copyOf(items);
     }
 
-    /** Insertion order is kept: the first entry is the one a reader is shown first. */
     public static Map<String, String> pairs(JsonNode args, String field) {
         JsonNode value = args.path(field);
         if (!value.isObject()) {

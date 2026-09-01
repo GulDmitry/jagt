@@ -1,12 +1,4 @@
-// The board: plain DOM on purpose — no build step, no CDN, works with the machine offline.
-//
-// It holds NO rules of its own: every card renders the server's projection (phase, owner, hint, legal actions),
-// and a button posts the action id back. If the server did not list an action, there is no button — and if the
-// page is stale, the POST is refused with a sentence, which is what the toast shows.
-//
-// Two rings: `core/` answers a question without owning a node on the page, `ui/` owns the nodes it renders.
-// THIS file only WIRES them together — which is why no module has to know that another one exists, and why
-// nothing below it reaches for a node it did not create.
+// The wiring, and nothing else: no module below here has to know that another one exists.
 
 import * as store from './core/store.js';
 import {run} from './ui/act.js';
@@ -34,15 +26,13 @@ filters.onChange(render);
 palette.wire({
   focusRef: launch.focusRef,
   openResume: resume.open,
-  // `help` answers "how does this work", and half of that answer on a board is what its marks mean.
+  // Half of "how does this work" on a board is what its marks mean.
   reportSection: (id) => (id === 'help' ? legend.node() : null),
 });
 showLog(() => showReport('log — this session', sessionLog()));
 
-// A desktop notification about one task links here with `?task=<id>`, and it lands in the FILTER rather than in
-// a selection of its own: the card then stands alone with its actions, the control that did it is visible, and
-// clearing it is the button already on the page. An id nothing matches shows the "no task matches" line, which
-// is the truth — the task was closed while the banner sat there.
+// A linked task lands in the FILTER rather than a selection of its own: the control that did it is visible, and
+// clearing it is a button already on the page.
 const deepLink = new URLSearchParams(window.location.search).get('task');
 if (deepLink) {
   filters.box.value = deepLink;
@@ -51,13 +41,10 @@ if (deepLink) {
 async function loadVerbs() {
   await refreshVerbs();
   palette.refreshSuggestions();
-  // `resume` is a form here and a verb there, and the hint is the server's either way.
+  // The hint is the server's, whether resume is reached as a form or as a verb.
   resume.describe(palette.hintFor('resume'));
 }
 
-// Push, not poll: the backend tells us when state changed. The slow interval only refreshes the relative
-// clocks ("4m ago"), which no event can announce.
-// A reconnect is not a resync: the events missed while the backend was down are gone.
 const events = new EventSource('/api/events');
 events.addEventListener('open', () => {
   live.classList.add('on');
@@ -66,6 +53,7 @@ events.addEventListener('open', () => {
 });
 events.addEventListener('changed', refresh);
 events.onerror = () => live.classList.remove('on');
+// The slow repaint is for the relative clocks ("4m ago") only, which no event can announce.
 setInterval(render, 15000);
 loadVerbs();
 refresh();

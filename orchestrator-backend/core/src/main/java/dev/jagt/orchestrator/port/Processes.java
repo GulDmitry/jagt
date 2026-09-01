@@ -7,8 +7,7 @@ import java.util.Map;
 
 /**
  * Running a command on this machine. Declared here because the shape of "run it and wait" is the same everywhere
- * while the way a process is DETACHED from jagt is not — a POSIX session, a Windows process group — and nothing
- * above this line should have to know which.
+ * while the way a process is DETACHED — a POSIX session, a Windows process group — is not.
  */
 public interface Processes {
 
@@ -29,8 +28,8 @@ public interface Processes {
     Result run(Path workingDir, Duration timeout, Map<String, String> env, List<String> command);
 
     /**
-     * Starts a command that OUTLIVES jagt and does not share its signals: stopping jagt must not stop the editor
-     * or the terminal it opened. The returned handle is the command itself, so {@code destroy()} still reaches it.
+     * Starts a command that OUTLIVES jagt and does not share its signals. The returned handle is the command
+     * itself, so {@code destroy()} still reaches it.
      */
     Process runDetached(Path workingDir, List<String> command);
 }

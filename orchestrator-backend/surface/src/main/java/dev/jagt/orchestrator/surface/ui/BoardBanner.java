@@ -7,10 +7,6 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-/**
- * Where to look, on STDOUT: a server whose terminal says nothing at all is indistinguishable from one that
- * died.
- */
 @Component
 @Order(Integer.MAX_VALUE)
 @Slf4j

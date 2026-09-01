@@ -40,7 +40,6 @@ class TaskRetirementTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
     }
 
-    /** The other order leaves a zombie agent grinding in a deleted directory. */
     @Test
     void killsTheSessionBeforeDeletingTheDirectoryItIsRunningIn(@TempDir Path root) {
         StateService state = stateIn(root);

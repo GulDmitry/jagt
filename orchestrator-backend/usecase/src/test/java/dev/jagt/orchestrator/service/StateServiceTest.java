@@ -33,7 +33,6 @@ class StateServiceTest {
                 .withRoot(root.toString()).withStateFile(stateFile.toString())));
     }
 
-    /** SSE and the TUI repaint both re-read on notification, so the event has to fire AFTER the write. */
     @Test
     void tellsListenersAboutAChangeOnlyAfterItIsOnDisk(@TempDir Path root) {
         Path stateFile = root.resolve("state.json");
@@ -115,7 +114,6 @@ class StateServiceTest {
         assertThat(secondListener).hasValue(1);
     }
 
-    /** The backup is the version BEFORE the last write, which is what makes it a recovery point. */
     @Test
     void keepsThePreviousVersionBesideTheStateFileOnEveryWrite(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
@@ -143,10 +141,6 @@ class StateServiceTest {
         assertThat(Files.readString(root.resolve("state.json.corrupt"))).contains("truncated");
     }
 
-    /**
-     * Recovery moves the unreadable file aside, leaving NO state file: without writing the recovered tasks back,
-     * the very next read answers "no tasks" and the write after it buries the backup.
-     */
     @Test
     void putsTheRecoveredTasksBackSoTheNextReaderStillFindsThem(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
@@ -160,7 +154,6 @@ class StateServiceTest {
         assertThat(stateIn(root, stateFile).tasks()).containsOnlyKeys("ABC-1");
     }
 
-    /** Starting empty is the one unacceptable outcome: the next write buries a file a human could salvage. */
     @Test
     void refusesToStartWithAnEmptyTaskListOverAnUnreadableStateFile(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
@@ -205,7 +198,6 @@ class StateServiceTest {
         assertThat(state.tasks()).containsOnlyKeys("ABC-1");
     }
 
-    /** A derived accessor must not become a persisted field: Jackson once wrote isNone() as "none":false. */
     @Test
     void writesOnlyRealStateForATaskThatHasSpentTokens(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
@@ -219,10 +211,6 @@ class StateServiceTest {
         assertThat(written).doesNotContain("none");
     }
 
-    /**
-     * The new primitive longs are simply absent from such a file. Failing the load instead of defaulting them
-     * stranded every task and left /state and the dashboard empty.
-     */
     @Test
     void loadsAStateFileWrittenBeforeTheAutoReviewFieldsExisted(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
@@ -277,10 +265,6 @@ class StateServiceTest {
                 .containsExactly(ActionOrigin.BOARD);
     }
 
-    /**
-     * A task written before history existed has its status reconstructed on the next write. Signing that
-     * reconstruction would credit whoever happened to write next with a status a human reached days ago.
-     */
     @Test
     void doesNotSignTheStatusItReconstructsForATaskThatPredatesHistory(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");

@@ -25,10 +25,7 @@ public class WorktreeChanges {
         return task.repos().stream().anyMatch(this::uncommitted);
     }
 
-    /**
-     * A worktree git cannot answer for is reported as CLEAN: this only ever qualifies what an agent said, and a
-     * probe that fails must not turn its report into the opposite claim.
-     */
+    /** A worktree git cannot answer for is reported as CLEAN: a failed probe must not invert an agent's report. */
     private boolean uncommitted(TaskRepo repo) {
         try {
             return gitService.hasUncommittedChanges(

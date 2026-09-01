@@ -5,10 +5,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
-/**
- * What the machine needs of wherever tasks are kept: find one, and change one. Declared here so the rules and the
- * engine can be exercised without a filesystem, and so nothing in them knows how a task is stored.
- */
+/** What the machine needs of wherever tasks are kept: find one, and change one. */
 public interface TaskStore {
 
     /** The task, or empty when nothing by that id is registered. */

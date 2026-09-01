@@ -1,32 +1,20 @@
 package dev.jagt.orchestrator.task;
 
 /**
- * Whether anything is polling this task's review request, and when it will next look — a poll happens with nobody
- * watching, so silence must not be the only answer a surface has.
- *
- * @param nextPollAt epoch millis of the next poll; 0 unless {@link State#WATCHING}. Absolute rather than a
- *                   remaining duration, because a page repaints its own clocks long after it fetched them
- * @param note       what a human is told, written ONCE here so the surfaces cannot drift apart in wording; null
- *                   when there is nothing to say. It names no topic: whoever shows it is already the poller's
- *                   own element or line, and a heading inside the sentence would be the second one in three
- *                   words. The countdown is not in it either — that is formatted per surface
- * @param label      the same state in the two or three words a chip holds; null while a countdown says it
- *                   better. It says what stopped, not which internal condition stopped it
+ * Whether anything is polling this task's review request, and when it will next look. {@code nextPollAt} is epoch
+ * millis, absolute rather than a remaining duration because a page repaints its own clocks long after it fetched
+ * them; 0 unless {@link State#WATCHING}. {@code note} is the wording written once for every surface and carries no
+ * countdown; {@code label} is the same state in the two or three words a chip holds. Both null when nothing to say.
  */
 public record AutoReviewWatch(State state, long nextPollAt, String note, String label) {
 
     /**
-     * {@link #NONE} covers every "there is nothing to poll here" case at once, including polling switched off for
-     * the whole install — which a surface states once rather than per task. {@link #OFF_FOR_TASK} is the one
-     * exception worth repeating on the task itself: it stays still while its neighbours are watched.
+     * {@link #NONE} covers every "nothing to poll here" case, including polling switched off install-wide.
+     * {@link #OFF_FOR_TASK} is the one worth repeating per task: it stays still while its neighbours are watched.
      */
     public enum State { NONE, WATCHING, WINDOW_ELAPSED, OFF_FOR_TASK, NO_ROUND }
 
-    /**
-     * Whether polling was expected here and has stopped, as opposed to an install that polls nothing at all —
-     * {@link State#NONE} says the topic does not apply to this task, and the surfaces state the install-wide
-     * answer once instead of on every card.
-     */
+    /** Whether polling was expected here and has stopped, as opposed to an install that polls nothing at all. */
     public boolean stopped() {
         return switch (state) {
             case WINDOW_ELAPSED, OFF_FOR_TASK, NO_ROUND -> true;

@@ -25,7 +25,6 @@ class UsageStatsRendererTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
     }
 
-    /** "42 calls, 1.8M tokens" does not say where to optimise; the biggest kind first is the answer. */
     @Test
     void showsWhichKindOfCallTheSpendWentOnBiggestFirst(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -84,7 +83,6 @@ class UsageStatsRendererTest {
         assertThat(out).doesNotContain("average per call");
     }
 
-    /** A label longer than its column shifts every number on that row, which is the table's whole job. */
     @ParameterizedTest
     @EnumSource(AssistantCallKind.class)
     void keepsEveryCallKindLabelInsideItsColumn(AssistantCallKind kind) {

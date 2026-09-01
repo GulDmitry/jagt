@@ -14,9 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Claude's own session log: one JSON object per line, an assistant turn carrying {@code message.usage}. Cache
- * WRITES bill at input rates and cache reads do not, which is the split {@link TokenUsage} keeps. The log
- * prices nothing, so a call read from it carries no cost.
+ * One JSON object per line, an assistant turn carrying {@code message.usage}. Cache WRITES bill at input rates
+ * and cache reads do not; the log prices nothing, so a call read from it carries no cost.
  */
 @Component
 @Slf4j
@@ -30,16 +29,13 @@ public class ClaudeSessionLog implements SessionLog {
             return counted(log, from, limit);
         } catch (IOException | RuntimeException e) {
             ClaudeSessionLog.log.atDebug().setMessage("session log unread").addKeyValue("file", log)
-                    .addKeyValue("cause", e.getMessage()).log();
+                    .addKeyValue("cause", e.toString()).log();
             return Spent.nothing(from);
         }
     }
 
-    /**
-     * A session is appending WHILE this reads, so the last line in the window is usually half-written: counting
-     * it would lose that turn, since the next read starts past it. The window therefore ends at the last
-     * newline, and so does the mark.
-     */
+    /** A session appends WHILE this reads, so the last line is usually half-written: the window ends at the last
+     *  newline, and so does the mark. */
     private Spent counted(Path log, long from, long limit) throws IOException {
         byte[] window;
         try (InputStream in = Files.newInputStream(log)) {
@@ -48,8 +44,8 @@ public class ClaudeSessionLog implements SessionLog {
         }
         int lastLine = lastNewlineIn(window);
         if (lastLine < 0) {
-            // A record longer than the window: stepping over it loses one turn, where waiting for a newline that
-            // is not coming would freeze this log's spend for good. A SHORT window is the tail being written.
+            // A record longer than the window: waiting for a newline that is not coming would freeze the spend
+            // for good. A SHORT window is the tail being written.
             return window.length < limit ? Spent.nothing(from)
                     : new Spent(TokenUsage.NONE, from + window.length);
         }
@@ -69,10 +65,7 @@ public class ClaudeSessionLog implements SessionLog {
         return -1;
     }
 
-    /**
-     * One unreadable line is one turn, never the whole log: throwing here used to stop the mark from advancing,
-     * so a single interleaved write froze a task's spend for good.
-     */
+    /** One unreadable line costs one turn, never the whole log: throwing would stop the mark advancing. */
     private TokenUsage usageIn(String line) {
         if (!line.contains("\"usage\"")) {
             return TokenUsage.NONE;

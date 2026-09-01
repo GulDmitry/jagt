@@ -34,10 +34,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * What an agent reports about itself. The rules here are about NOT lying to the human: a linkless CI_POLLING,
- * an essay where a dashboard line goes, or a second ping for a status they already saw.
- */
 class AgentStatusReportsTest {
 
     private final Notifications notifications = mock(Notifications.class);
@@ -60,12 +56,11 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        reports(state).report("CI_POLLING", "MR: https://gitlab/x/-/merge_requests/9", "ABC-1");
+        reports(state).report(TaskStatus.CI_POLLING, "MR: https://gitlab/x/-/merge_requests/9", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
 
-    /** The url is a fact the caller has; finding it in prose is a guess about where the agent put it. */
     @Test
     void takesTheRequestLinkFromTheArgumentRatherThanFromTheProse(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -124,7 +119,6 @@ class AgentStatusReportsTest {
         assertThat(reported.lastPolledAt()).isZero();
     }
 
-    /** The marker is jagt's vocabulary, so the agent picks the outcome and jagt writes the word. */
     @Test
     void readsTheOutcomeFromTheArgumentWhenTheMessageCarriesNoMarker(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -136,10 +130,6 @@ class AgentStatusReportsTest {
                 .isEqualTo(AgentReport.QUESTION);
     }
 
-    /**
-     * "I changed nothing" is the one claim jagt can measure, and a NO_CHANGES round is advised as nothing to
-     * ship — over an edited worktree that advice would hide a diff the human has not read.
-     */
     @Test
     void recordsARoundWithADiffWhenTheWorktreeContradictsANoChangesClaim(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -170,7 +160,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .mrUrl("https://host/mr/1").build());
 
-        reports(state).report("REVIEW_PENDING", "outcome=no_changes: withdrawn thread relayed again", "ABC-1");
+        reports(state).report(TaskStatus.REVIEW_PENDING, "outcome=no_changes: withdrawn thread relayed again", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().message())
                 .isEqualTo("no changes: withdrawn thread relayed again");
@@ -181,7 +171,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
-        reports(state).report("REVIEW_PENDING", "done", "ABC-1");
+        reports(state).report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
         verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())));
     }
@@ -191,7 +181,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
-        reports(state).report("IN_PROGRESS", "step 2", "ABC-1");
+        reports(state).report(TaskStatus.IN_PROGRESS, "step 2", "ABC-1");
 
         verifyNoInteractions(notifications);
     }
@@ -202,7 +192,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("step 2").build());
 
-        reports(state).report("IN_PROGRESS", "awaiting: which uniqueness rule", "ABC-1");
+        reports(state).report(TaskStatus.IN_PROGRESS, "awaiting: which uniqueness rule", "ABC-1");
 
         verify(notifications).send(argThat(sent -> "needs input".equals(sent.title())));
     }
@@ -213,7 +203,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("awaiting: which uniqueness rule").build());
 
-        reports(state).report("IN_PROGRESS", "awaiting: which uniqueness rule", "ABC-1");
+        reports(state).report(TaskStatus.IN_PROGRESS, "awaiting: which uniqueness rule", "ABC-1");
 
         verifyNoInteractions(notifications);
     }
@@ -224,7 +214,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        assertThatThrownBy(() -> reports(state).report("CI_POLLING", message, "ABC-1"))
+        assertThatThrownBy(() -> reports(state).report(TaskStatus.CI_POLLING, message, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("request link");
     }
@@ -234,19 +224,18 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        reports(state).report("CI_POLLING", "MR: https://gitlab.example/g/p/-/merge_requests/1", "ABC-1");
+        reports(state).report(TaskStatus.CI_POLLING, "MR: https://gitlab.example/g/p/-/merge_requests/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_POLLING);
     }
 
-    /** A request already stored on the task is no substitute: the LINK has to be in the message. */
     @Test
     void refusesTheStatusEvenForATaskThatAlreadyCarriesARequestLink(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1")
                 .mrUrl("https://gitlab.example/g/p/-/merge_requests/1").build());
 
-        assertThatThrownBy(() -> reports(state).report("CI_POLLING", "waiting for the pipeline", "ABC-1"))
+        assertThatThrownBy(() -> reports(state).report(TaskStatus.CI_POLLING, "waiting for the pipeline", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("request link");
     }
@@ -256,7 +245,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
-        reports(state).report("IN_PROGRESS", "root cause\nanalysis ".repeat(20), "ABC-1");
+        reports(state).report(TaskStatus.IN_PROGRESS, "root cause\nanalysis ".repeat(20), "ABC-1");
 
         String stored = state.task("ABC-1").orElseThrow().message();
         assertThat(stored).hasSizeLessThanOrEqualTo(100).doesNotContain("\n").endsWith("...");
@@ -268,7 +257,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         String link = "https://gitlab.example/group/subgroup/team/project/-/merge_requests/1234567";
 
-        reports(state).report("CI_POLLING", "pipeline queued after the push — MR: " + link, "ABC-1");
+        reports(state).report(TaskStatus.CI_POLLING, "pipeline queued after the push — MR: " + link, "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo(link);
     }
@@ -286,11 +275,6 @@ class AgentStatusReportsTest {
                 && sent.body().contains("approved")));
     }
 
-    /**
-     * The round is in, the checks are green and nobody has approved it: there is nothing for the human to do but
-     * wait for a reviewer, and a notification that asks for nothing is what teaches them to dismiss the ones that
-     * do. The status is still advanced — the next move stops being another round.
-     */
     @Test
     void saysNothingWhenARoundCameBackCleanButUnapproved(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -314,11 +298,6 @@ class AgentStatusReportsTest {
         verify(notifications, never()).send(any());
     }
 
-    /**
-     * A round that waits for an approval is polled every interval and reads the same outcome each time. Reporting
-     * it again would rewrite the message an agent left there — a question among it — and stamp activity for a
-     * session that never spoke.
-     */
     @Test
     void writesNothingWhenAPollReadsTheOutcomeTheTaskAlreadyHolds(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -339,7 +318,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
-        reports(state).report("CI_POLLING", "MR: http://mr/1", "ABC-1");
+        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isPositive();
     }
@@ -351,7 +330,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(lastRound).lastPolledAt(lastRound).build());
 
-        reports(state).report("CI_POLLING", "MR: http://mr/1", "ABC-1");
+        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isGreaterThan(lastRound);
     }
@@ -363,7 +342,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(lastRound).build());
 
-        reports(state).report("CI_POLLING", "MR: http://mr/2", "ABC-1");
+        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isGreaterThan(lastRound);
     }
@@ -374,7 +353,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(12345L).pipelineStatus("failed").build());
 
-        reports(state).report("CI_POLLING", "MR: http://mr/1", "ABC-1");
+        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().pipelineStatus()).isNull();
     }
@@ -385,7 +364,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(12345L).build());
 
-        reports(state).report("CI_POLLING", "MR: http://mr/1", "ABC-1");
+        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isEqualTo(12345L);
     }
@@ -398,7 +377,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").build());
 
-        reports(state).report("REVIEW_PENDING", "widget fixed", "ABC-1");
+        reports(state).report(TaskStatus.REVIEW_PENDING, "widget fixed", "ABC-1");
 
         verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
                 && sent.body().contains("review_replies.md")));
@@ -413,17 +392,13 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").mrUrl("https://host/mr/1").build());
 
-        reports(state).report("REVIEW_PENDING", "no changes: every comment already handled", "ABC-1");
+        reports(state).report(TaskStatus.REVIEW_PENDING, "no changes: every comment already handled", "ABC-1");
 
         ArgumentCaptor<Notification> ping = ArgumentCaptor.forClass(Notification.class);
         verify(notifications).send(ping.capture());
         assertThat(ping.getValue().body()).containsOnlyOnce("drafted replies");
     }
 
-    /**
-     * The guard the door owes: an agent whose message happens to carry a request link must not be able to say
-     * CI_POLLING about a task the review has already passed — that takes it backwards and re-arms the poll.
-     */
     @Test
     void refusesToPullATaskTheReviewHasPassedBackIntoWaitingOnChecks(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -431,7 +406,7 @@ class AgentStatusReportsTest {
                 .alias("a1").mrUrl("https://host/mr/1").build());
         AgentStatusReports reports = reports(state);
 
-        assertThatThrownBy(() -> reports.report("CI_POLLING", "review request: https://host/mr/1", "ABC-1"))
+        assertThatThrownBy(() -> reports.report(TaskStatus.CI_POLLING, "review request: https://host/mr/1", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("already APPROVED");
         assertThat(state.task("ABC-1")).get().extracting(TaskState::status).isEqualTo(TaskStatus.APPROVED);

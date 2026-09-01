@@ -6,10 +6,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class LsofWorktreeProcessesTest {
 
-    /**
-     * The viewer window runs {@code tmux attach} as its foreground program, so its cwd is the worktree being
-     * removed — reaping it kill-9s the viewer and closes the window every OTHER agent is watched in.
-     */
     @Test
     void reapSparesTheTmuxViewerButTakesAgentDaemonsUnderTheWorktree() {
         String lsof = String.join("\n",

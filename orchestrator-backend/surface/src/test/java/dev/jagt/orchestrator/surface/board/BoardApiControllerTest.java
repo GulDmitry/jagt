@@ -5,8 +5,6 @@ import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.TaskViews;
-import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -27,17 +25,12 @@ class BoardApiControllerTest {
     }
 
     private final TaskViews taskViews = mock(TaskViews.class);
-    private final UsageTracker usageTracker = mock(UsageTracker.class);
-    private final BoardApiController api = new BoardApiController(taskViews, usageTracker,
+    private final BoardApiController api = new BoardApiController(taskViews,
             mock(TaskEventStream.class), new GlobalCommands(List.of(
                     new Declared("stats", "what the calls cost", true),
                     new Declared("do", "start a task", false))),
             new dev.jagt.orchestrator.job.Jobs(List.of()));
 
-    /**
-     * The palette completes and validates against THIS list, so a verb the console accepts and this omits is a
-     * capability the board cannot express — the parity bug in miniature.
-     */
     @Test
     void servesEveryVerbThePaletteMustBeAbleToCompleteAndValidate() {
         var ids = api.commands().stream().map(CommandReference.Verb::id).toList();
@@ -46,7 +39,6 @@ class BoardApiControllerTest {
                 "do", "stats");
     }
 
-    /** Whether a verb needs a task is what decides if "ship" alone is a mistake or a command. */
     @Test
     void saysWhichVerbsAreNothingWithoutATaskToApplyThemTo() {
         assertThat(api.commands().stream().filter(CommandReference.Verb::takesTask)
@@ -62,7 +54,6 @@ class BoardApiControllerTest {
         assertThat(ids.indexOf("deploy")).isLessThan(ids.indexOf("done"));
     }
 
-    /** One address for every report, so declaring another one needs no endpoint. */
     @Test
     void servesAReportUnderTheIdOfTheCommandThatProducesIt() {
         assertThat(api.report("stats", null)).isEqualTo("stats report");
@@ -73,7 +64,6 @@ class BoardApiControllerTest {
         assertThat(api.report("stats", "a1")).isEqualTo("stats report about a1");
     }
 
-    /** A GET must not be able to start a task, whatever id is put in the URL. */
     @Test
     void refusesToRunACommandThatIsNotAReport() {
         assertThatThrownBy(() -> api.report("do", null)).isInstanceOf(IllegalArgumentException.class)
@@ -81,23 +71,18 @@ class BoardApiControllerTest {
     }
 
     @Test
-    void reportsTheSessionSpendAndTheProjectsAlongsideTheTasks() {
-        when(usageTracker.session()).thenReturn(TokenUsage.ofCall(1000, 0, 50, 0.1));
+    void reportsTheProjectsAlongsideTheTasks() {
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
                 new AutoReviewCadence(false, Duration.ofHours(24), 10, 60),
                 List.of("demo")));
 
         var board = api.tasks();
 
-        assertThat(board.spend().calls()).isEqualTo(1);
-        assertThat(board.spend().tokens()).isEqualTo(1050);
         assertThat(board.projects()).containsExactly("demo");
     }
 
-    /** A board with nothing out for review still has to say whether anything would be polled. */
     @Test
     void saysWhetherTheUnattendedPollRunsAtAllEvenWithNoTasks() {
-        when(usageTracker.session()).thenReturn(TokenUsage.NONE);
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
                 new AutoReviewCadence(true, Duration.ofHours(24), 10, 60),
                 List.of()));

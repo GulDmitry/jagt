@@ -1,5 +1,4 @@
-// The form that adopts an existing review request. Hidden until asked for: it is the rarer of the two ways a
-// task starts, and a row of fields nobody uses is a row of fields in the way.
+// The form that adopts an existing review request, hidden until asked for: fields nobody uses are in the way.
 
 import {api} from '../core/api.js';
 import {submits} from './submit.js';
@@ -29,13 +28,13 @@ export const describe = (hint) => {
 opener.onclick = () => (form.hidden ? open() : close());
 
 submits(form, {
-  waiting: 'reading the review request…',        // a model call unless a CodeHost is configured
+  waiting: 'reading the review request…',
   send: () => api('/api/tasks/resume', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({reviewRequestUrl: url.value}),
   }),
-  // A refused request comes back as an ordinary answer, and the url is what would repeat the attempt.
+  // A refusal comes back as an ordinary answer, and the url is what would repeat the attempt.
   done: (result) => {
     if (!result.created) return;
     form.reset();

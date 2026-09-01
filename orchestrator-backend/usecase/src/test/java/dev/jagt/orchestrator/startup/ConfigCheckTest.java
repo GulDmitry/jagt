@@ -125,7 +125,7 @@ class ConfigCheckTest {
                         orchestrator:
                           viewer: { tmuxSession: "jagt:agents" }
                           projects: { demo: { path: $ROOT/repo, baseBranch: origin/main } }
-                        """, "tmux reserves ':' and '.'"),
+                        """, "contains ':' or '.', which tmux reserves"),
                 Arguments.of("""
                         orchestrator:
                           viewer: { viewMode: one-per-task }

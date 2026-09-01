@@ -45,13 +45,11 @@ public class TmuxSessionHost implements SessionHost {
             ensureSession(session);
             // One task = one window: respawns must never accumulate duplicates.
             killTaskWindows(session, taskId);
-            // After the agent exits the window shows the tail briefly, then closes itself: an interactive
-            // shell here would linger forever and read as a hung process.
+            // An interactive shell here would linger forever and read as a hung process.
             String command = WorktreeHooks.gitEnv(worktreePath)
                     + agentRuntime.launchCommand(worktreePath, planMode)
                     + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
-            // -P -F prints the window id (@N): the only target immune to name collisions when the same task
-            // is respawned.
+            // -P -F prints the window id: the only target immune to name collisions on a respawn.
             String windowId = processRunner.run(null, TIMEOUT, List.of(tmux(), "new-window",
                             "-P", "-F", "#{window_id}",
                             "-t", "=" + session + ":", "-n", taskId, "-c", worktreePath.toString(), command))
@@ -65,8 +63,7 @@ public class TmuxSessionHost implements SessionHost {
                         .addKeyValue("cause", rename.stderr())
                         .log();
             }
-            // Window NAME stays the taskId (findWindowId/killTaskWindows match on it); the alias
-            // rides in a window user-option so the terminal title can show "taskId (alias)".
+            // The window name must stay the taskId; the alias rides in a window user-option.
             if (alias != null && !alias.isBlank()) {
                 processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
                         "-w", "-t", windowId, "@jagt_alias", alias));
@@ -89,11 +86,7 @@ public class TmuxSessionHost implements SessionHost {
         }
     }
 
-    /**
-     * Detection is by CHILD PROCESSES: while the agent runs, the pane's shell has it as a child, and a window
-     * that outlives its agent is childless. {@code pane_current_command} is useless here — without job control
-     * it always reports the shell itself.
-     */
+    /** {@code pane_current_command} reports the shell without job control, so detection is by child processes. */
     @Override
     public WindowState taskWindowState(String session, String taskId) {
         synchronized (lock) {
@@ -158,10 +151,7 @@ public class TmuxSessionHost implements SessionHost {
         }
     }
 
-    /**
-     * Epoch-millis of the window's last terminal output — an agent at work keeps printing even when it makes no
-     * MCP call. 0 when the window is gone or unreadable.
-     */
+    /** Epoch-millis of the window's last terminal output; 0 when the window is gone or unreadable. */
     @Override
     public long lastWindowActivityMillis(String session, String taskId) {
         synchronized (lock) {
@@ -201,23 +191,18 @@ public class TmuxSessionHost implements SessionHost {
                             "-d", "-s", session, "-c", paths.root().toString()))
                     .expectSuccess("tmux new-session " + session);
         }
-        // escape-time 0 removes the ESC delay that makes TUIs feel sluggish. mouse ON so a click on a window
-        // name in the status bar switches tasks (the residual lag is the Warp->tmux double render, not the
-        // mouse); Shift+Left/Right also switch, and Warp doesn't grab those, unlike Ctrl+b.
-        // Re-applied each time; server-global and cheap.
+        // escape-time 0 removes the ESC delay that makes TUIs feel sluggish. Warp does not grab
+        // Shift+Left/Right, unlike Ctrl+b. Re-applied each time; server-global and cheap.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-sg", "escape-time", "0"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "focus-events", "on"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-t", session, "mouse", "on"));
-        // Drive the terminal (tab) title to the active window name = taskId, so a title-aware
-        // terminal like kitty decorates the tab with the current task. Harmless on Warp.
+        // A title-aware terminal decorates its tab with the active window name.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles", "on"));
         // "taskId (alias)" when the window carries an alias, else just the window name.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string",
                 "#{?#{@jagt_alias},#W (#{@jagt_alias}),#W}"));
-        // The status-bar window list (what you scan while attached) shows only #I:#W#F by default — add the
-        // alias, so "ABC-42 (p1)" is visible in the bar, not just in the terminal tab title. Keep the
-        // trailing #F: it renders the window flags (`*` current, `-` last, `Z` zoomed), and dropping it loses
-        // the marker on the active window.
+        // The default is #I:#W#F. Keep the trailing #F: it renders the window flags (`*` current, `-` last,
+        // `Z` zoomed), and dropping it loses the marker on the active window.
         String windowFormat = "#I:#W#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-format", windowFormat));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-current-format", windowFormat));
@@ -225,9 +210,8 @@ public class TmuxSessionHost implements SessionHost {
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
     }
 
-    /** The viewer must NOT open inside a worktree: `done`/`remove` reap every process whose cwd is under
-     *  the removed worktree, which would kill-9 the viewer that first opened there — closing all agents'
-     *  tabs. A stable home dir is never a reap target. */
+    /** The viewer must NOT open inside a worktree: removing one reaps every process whose cwd is under it, and
+     *  a stable home dir is never a reap target. */
     private static final Path VIEWER_CWD = Path.of(System.getProperty("user.home"));
 
     private void ensureViewer(String session, String dedicatedTitle) {

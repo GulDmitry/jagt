@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.config.ClaudeProperties;
+import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 
 import dev.jagt.orchestrator.port.Processes;
 
@@ -202,10 +202,6 @@ class HeadlessClaudeAssistantTest {
         assertThat(facts.get().labels()).containsExactly("backend");
     }
 
-    /**
-     * `resume` adopts requests that are weeks old, and linking one dates it by the clock as a floor — so a read
-     * that cannot say when it was opened leaves the card reading brand new.
-     */
     @Test
     void datesTheRequestFromTheHostsOwnTimestampRatherThanLeavingItBrandNew() {
         ProcessRunner runner = mock(ProcessRunner.class);

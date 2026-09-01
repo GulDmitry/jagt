@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
+import dev.jagt.orchestrator.adapter.agent.StubAgentProperties;
+import dev.jagt.orchestrator.adapter.agent.StubAgentRuntime;
 import dev.jagt.orchestrator.task.BranchStrategy;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
@@ -36,7 +38,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         runner.run(repo, timeout, List.of("git", "branch", "ABC-1"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
                 BranchStrategy.FRESH))
@@ -45,10 +48,6 @@ class GitServiceTest {
                 .hasMessageContaining("resume");
     }
 
-    /**
-     * What a round claiming it changed nothing is checked against. jagt writes its own files into every
-     * worktree, so counting those as work would call every task dirty the moment it was created.
-     */
     @Test
     void readsTheWorkAWorktreeHoldsUncommittedAndIgnoresJagtsOwnFiles(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
@@ -60,7 +59,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qm", "init"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         Files.writeString(repo.resolve("task_context.md"), "the round brief");
         assertThat(git.hasUncommittedChanges(repo, repo)).isFalse();
@@ -69,10 +69,6 @@ class GitServiceTest {
         assertThat(git.hasUncommittedChanges(repo, repo)).isTrue();
     }
 
-    /**
-     * A fetch refreshes {@code origin/main} but never fast-forwards a checkout-less local branch, so cutting
-     * from the local spelling would inherit whatever the clone last saw instead of what the teammate pushed.
-     */
     @Test
     void cutsTheWorktreeFromFreshlyFetchedUpstreamEvenWhenBaseBranchIsSpelledLocally(@TempDir Path dir)
             throws Exception {
@@ -91,7 +87,8 @@ class GitServiceTest {
         Files.writeString(other.resolve("f.txt"), "moved on");
         runner.run(other, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "ahead"));
         runner.run(other, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "main", BranchStrategy.FRESH);
 
@@ -117,7 +114,8 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
 
-        new GitService(runner, new LsofWorktreeProcesses(runner)).mergeIntoAndPush(repo, "ABC-1", "dev");
+        new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults())).mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
@@ -145,7 +143,8 @@ class GitServiceTest {
         Files.createDirectories(dir.resolve("ABC-1-deploy").resolve(".idea"));
         Files.writeString(dir.resolve("ABC-1-deploy").resolve(".idea").resolve("misc.xml"), "<project/>");
 
-        new GitService(runner, new LsofWorktreeProcesses(runner)).mergeIntoAndPush(repo, "ABC-1", "dev");
+        new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults())).mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
@@ -172,7 +171,8 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         Files.createDirectories(dir.resolve("ABC-1-deploy"));
         Files.writeString(dir.resolve("ABC-1-deploy").resolve("notes.txt"), "mine");
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.StaleDeployPathException.class)
@@ -203,7 +203,8 @@ class GitServiceTest {
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
@@ -232,7 +233,8 @@ class GitServiceTest {
                 "--allow-empty", "-m", "base"));
         runner.run(web, t, List.of("git", "worktree", "add", "-q", "-b", "jagt-deploy-ABC-1",
                 GitService.deployWorktreePath(web, "ABC-1").toString()));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(api, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)
@@ -252,7 +254,8 @@ class GitServiceTest {
                 "--allow-empty", "-m", "base"));
         runner.run(web, t, List.of("git", "worktree", "add", "-q", "-b", "jagt-deploy-ABC-1",
                 GitService.deployWorktreePath(web, "ABC-1").toString()));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThat(git.hasDeployWorktree(web, "ABC-1")).isTrue();
         assertThat(git.hasDeployWorktree(api, "ABC-1")).isFalse();
@@ -280,7 +283,8 @@ class GitServiceTest {
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
         Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -317,7 +321,8 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
         Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -363,7 +368,8 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "worktree", "add", "-q", "-B", "jagt-deploy-ABC-1",
                 deployWorktree.toString(), "origin/dev"));
         runner.run(dir, t, List.of("rm", "-rf", deployWorktree.toString()));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
@@ -391,7 +397,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         Path wt = dir.resolve("wt");
         git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
         Process rooted = new ProcessBuilder("sleep", "300").directory(wt.toFile()).start();
@@ -405,7 +412,6 @@ class GitServiceTest {
             rooted.destroyForcibly();
         }
     }
-
 
     @Test
     void keepsExistingCommitsWhenReopenedTicketResumesItsBranch(@TempDir Path dir) throws Exception {
@@ -423,22 +429,20 @@ class GitServiceTest {
         Files.writeString(repo.resolve("f.txt"), "task work");
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "work"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
         assertThat(dir.resolve("wt").resolve("f.txt")).hasContent("task work");
     }
 
-    /**
-     * The reported case: the base repository itself sat on the ticket's branch, and git allows one checkout per
-     * branch. Nobody works in that repository, so it is put back on the base branch instead of stopping a task.
-     */
     @Test
     void freesTheBaseRepositoryWhenItStillHoldsTheBranchThisTaskNeeds(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -452,7 +456,8 @@ class GitServiceTest {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         Files.writeString(repo.resolve("f.txt"), "work nobody committed");
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
                 BranchStrategy.RESUME))
@@ -463,12 +468,12 @@ class GitServiceTest {
                 .stdout().strip()).isEqualTo("ABC-1");
     }
 
-    /** `git branch -D` cannot delete a checked-out branch, so this is the strategy freeing exists for. */
     @Test
     void freesTheBaseRepositoryBeforeDeletingTheBranchItStillHolds(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
 
@@ -477,12 +482,12 @@ class GitServiceTest {
                 List.of("git", "log", "-1", "--format=%s", "ABC-1")).stdout()).contains("init");
     }
 
-    /** A refusal must leave the human's own repository exactly where it was. */
     @Test
     void leavesTheCheckoutAloneWhenItRefusesAnExistingBranch(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
                 BranchStrategy.FRESH))
@@ -496,7 +501,8 @@ class GitServiceTest {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         Files.writeString(repo.resolve("scratch.txt"), "never added to git");
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
@@ -508,7 +514,8 @@ class GitServiceTest {
     void resumesTheBranchWhenTheRequestTargetsABaseThatNoLongerExists(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/deleted-base",
                 BranchStrategy.RESUME);
@@ -518,12 +525,12 @@ class GitServiceTest {
                 List.of("git", "branch", "--show-current")).stdout().strip()).isEqualTo("ABC-1");
     }
 
-    /** The switch is jagt's, so undoing it is too: a creation that fails afterwards owes the checkout back. */
     @Test
     void putsTheCheckoutBackWhenTheWorktreeItWasFreedForCannotBeCut(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         // A FILE where the worktree's parent directory would go: git cannot create anything under it, and
         // unlike a read-only directory that holds for root too — the container harness runs as one.
@@ -545,20 +552,21 @@ class GitServiceTest {
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "add", "."));
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
                 "commit", "-qm", "on the branch only"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
 
         assertThat(repo.resolve("f.txt")).content().isEqualTo("the branch's own content");
     }
 
-    /** Only what jagt detached is jagt's to move back: anything else is a checkout the human is standing in. */
     @Test
     void leavesARepositoryOnItsOwnBranchAloneWhenAskedToReattach(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.reattach(repo, "ABC-1");
 
@@ -571,7 +579,8 @@ class GitServiceTest {
         Processes runner = new ProcessRunner();
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         Path notADirectory = Files.writeString(dir.resolve("in-the-way"), "");
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.createWorktree(repo, notADirectory.resolve("wt"), "ABC-1", "origin/main",
                 BranchStrategy.RECREATE))
@@ -588,7 +597,8 @@ class GitServiceTest {
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
         runner.run(repo, Duration.ofSeconds(30),
                 List.of("git", "worktree", "add", "-q", dir.resolve("elsewhere").toString(), "ABC-1"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
                 BranchStrategy.RESUME))
@@ -628,7 +638,8 @@ class GitServiceTest {
         Files.writeString(repo.resolve("f.txt"), "stale merged work");
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "old"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
 
@@ -658,7 +669,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
@@ -680,7 +692,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "release"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/release", BranchStrategy.FRESH);
 
@@ -715,7 +728,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         String taskTip = runner.run(repo, timeout, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class)
@@ -742,7 +756,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         Path wt = dir.resolve("wt");
         git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
         Files.writeString(wt.resolve("f.txt"), "task change");
@@ -774,7 +789,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         Path base = git.checkoutBaseForDiff(repo, "origin/main", "ABC-8");
         runner.run(dir, timeout, List.of("rm", "-rf", base.toString()));
 
@@ -796,7 +812,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         Path wt = dir.resolve("wt");
         git.createWorktree(repo, wt, "ABC-9", "origin/main", BranchStrategy.FRESH);
         Path base = git.checkoutBaseForDiff(repo, "origin/main", "ABC-9");
@@ -823,7 +840,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "branch", "dev"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "dev"));
         runner.run(repo, timeout, List.of("git", "branch", "ABC-1", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)
@@ -845,7 +863,8 @@ class GitServiceTest {
         Path wt = dir.resolve("wt");
         Files.createDirectories(wt);
         Files.writeString(wt.resolve("leftover.txt"), "stale");
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.createWorktree(repo, wt, "ABC-1", "origin/main", BranchStrategy.FRESH);
 
@@ -866,14 +885,14 @@ class GitServiceTest {
         Path leftover = dir.resolve("leftover");
         Files.createDirectories(leftover);
         Files.writeString(leftover.resolve("junk.txt"), "x");
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.removeWorktree(repo, leftover, null);
 
         assertThat(leftover).doesNotExist();
     }
 
-    /** A deploy is one MERGE commit even where git could have fast-forwarded: that is what `revert` undoes. */
     @Test
     void publishesTaskCommitsWhenDeployMergesCleanly(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
@@ -894,7 +913,8 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
         String taskTip = runner.run(repo, timeout, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
@@ -906,11 +926,6 @@ class GitServiceTest {
         assertThat(parents.split("\\s+")).hasSize(3).contains(taskTip);
     }
 
-    /**
-     * A cloned repo with origin/main + origin/dev and one committed task branch — the exact shape a deploy
-     * needs. Extracted because every revert case starts from it, and ten lines of `git` per test is how a
-     * suite stops being read.
-     */
     private record Repo(Processes runner, Path dir, Path path) {
 
         private static final Duration T = Duration.ofSeconds(30);
@@ -939,7 +954,6 @@ class GitServiceTest {
                     "commit", "-qm", message));
         }
 
-        /** Commits a change straight onto the shared dev branch — what "the branch moved on" means here. */
         void commitOnDev(String file, String content) throws Exception {
             runner.run(path, T, List.of("git", "fetch", "-q"));
             runner.run(path, T, List.of("git", "checkout", "-q", "-B", "_dev", "origin/dev"));
@@ -963,7 +977,8 @@ class GitServiceTest {
     @Test
     void revertTakesTheDeployedChangeBackOutOfDevAndLeavesTheTaskBranchIntact(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()));
+        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
         String taskTip = repo.sha("ABC-1");
 
@@ -978,7 +993,8 @@ class GitServiceTest {
     @Test
     void refusesToRevertACommitThatIsNotOnTheDeployBranch(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()));
+        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         String neverDeployed = repo.sha("ABC-1");
 
         assertThatThrownBy(() -> git.revertMergeAndPush(repo.path(), "ABC-1", "dev", neverDeployed))
@@ -988,11 +1004,11 @@ class GitServiceTest {
         assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
     }
 
-    /** Idempotence on a shared branch: a second revert would silently RE-APPLY the change. */
     @Test
     void refusesASecondRevertOfTheSameDeploy(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()));
+        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
         String firstRevert = git.revertMergeAndPush(repo.path(), "ABC-1", "dev", merge);
 
@@ -1003,11 +1019,11 @@ class GitServiceTest {
         assertThat(repo.sha("origin/dev")).isEqualTo(firstRevert);
     }
 
-    /** Every jagt deploy is a merge (--no-ff); a plain commit means reverting would undo part of a task. */
     @Test
     void refusesToRevertACommitThatIsNotAMerge(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()));
+        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         repo.commitOnDev("unrelated.txt", "someone else's commit");
         String plainCommit = repo.sha("origin/dev");
 
@@ -1021,7 +1037,8 @@ class GitServiceTest {
     @Test
     void abortsAndPushesNothingWhenTheRevertConflictsWithLaterWorkOnDev(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()));
+        GitService git = new GitService(repo.runner(), new LsofWorktreeProcesses(repo.runner()),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
         repo.commitOnDev("feature.txt", "someone edited the deployed feature");
         String devTip = repo.sha("origin/dev");
@@ -1034,12 +1051,6 @@ class GitServiceTest {
         assertThat(dir.resolve("ABC-1-revert")).doesNotExist();
     }
 
-    /**
-     * `lsof` missing must not take `done` down with it. The reap is hygiene — it frees a language server's
-     * memory — while REMOVING the worktree is the actual job, and a machine without lsof (a slim Linux image,
-     * a locked-down host) used to fail the whole call: ProcessRunner throws when a binary cannot be started,
-     * and the "best-effort, never thrown" promise in the reap's own javadoc was not kept.
-     */
     @Test
     void removesTheWorktreeEvenWhenTheProcessReaperIsNotInstalled(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner() {
@@ -1060,7 +1071,8 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "add", "."));
         runner.run(repo, t, List.of("git", "commit", "-qm", "init"));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
         Path worktree = dir.resolve("wt");
         git.createWorktree(repo, worktree, "ABC-1", "origin/main", BranchStrategy.FRESH);
 
@@ -1069,13 +1081,6 @@ class GitServiceTest {
         assertThat(worktree).doesNotExist();
     }
 
-    /**
-     * The failure a CI runner found: `git merge` exits non-zero for plenty of reasons that are NOT a conflict
-     * (no committer identity there, a refusing hook, a broken object), and calling all of them a conflict sent
-     * the human to resolve conflicts that did not exist — while LEAVING the deploy worktree behind, so the next
-     * `deploy` took the "the human resolved it" path and pushed whatever was in there. The scaffolding must
-     * therefore be gone too.
-     */
     @Test
     void reportsAFailedMergeAsAnErrorAndNotAsAConflictWhenNothingIsUnmerged(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner() {
@@ -1101,7 +1106,8 @@ class GitServiceTest {
         Files.writeString(repo.resolve("g.txt"), "task");
         runner.run(repo, t, List.of("git", "add", "."));
         runner.run(repo, t, List.of("git", "commit", "-qm", "task"));
-        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)

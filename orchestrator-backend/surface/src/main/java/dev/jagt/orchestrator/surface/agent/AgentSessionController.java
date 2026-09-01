@@ -17,24 +17,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.nio.file.Path;
 import java.util.Locale;
 
-/**
- * What a session says about itself without a model in the path: its harness reports it, so a session that has
- * run out of tokens, stopped at a prompt or died still gets a word out.
- *
- * <p>The state comes from the address, which is what jagt itself wrote into the hook. The payload is read only
- * for what jagt can use and never required, so a vendor changing its shape costs a detail rather than the
- * report.
- */
+/** The state comes from the address; the payload is read only for what jagt can use, and never required. */
 @RestController
 @RequestMapping("/api/agent/session")
 @RequiredArgsConstructor
 public class AgentSessionController {
 
-    /**
-     * The fields worth taking: the file the session appends to, which jagt otherwise derives; what STARTED this
-     * session, the only way to tell a compaction from an ordinary start; and what the CLI told the human, for
-     * the one event that covers two different waits.
-     */
+    /** {@code source} is what STARTED this session — the only way to tell a compaction from an ordinary start. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Session(@JsonProperty("transcript_path") String transcriptPath,
                           @JsonProperty("source") String source,
@@ -44,11 +33,7 @@ public class AgentSessionController {
     private final StateService stateService;
     private final SessionReports reports;
 
-    /**
-     * The answer is for the MODEL, not the human: a harness adds a hook's stdout to the session's context, and
-     * a session that has just been compacted is the one case where jagt has something to say into it. Every
-     * other report answers nothing.
-     */
+    /** The harness feeds this answer back into the session's context, so it is written for the model. */
     @PostMapping(value = "/{state}", produces = MediaType.TEXT_PLAIN_VALUE)
     public String report(@PathVariable String state,
                          @RequestHeader(value = "X-Working-Directory", required = false) String cwd,

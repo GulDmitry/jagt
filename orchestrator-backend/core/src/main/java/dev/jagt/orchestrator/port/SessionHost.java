@@ -3,14 +3,12 @@ package dev.jagt.orchestrator.port;
 import java.nio.file.Path;
 
 /**
- * Where an agent's session LIVES: something that keeps a process running after whoever started it walks away, and
- * lets a human attach to it later. This is not the same thing as a {@link TerminalDriver} — that one only shows a
- * session to a human, and the two are swapped independently (a browser terminal shows the very same session a
- * native window does).
+ * Where an agent's session LIVES: something keeping a process running after whoever started it walks away, and
+ * letting a human attach later. Not a {@link TerminalDriver}, which only shows a session to a human; the two are
+ * swapped independently.
  *
- * <p>The model is two levels, because every host that survives a detach has them: one SESSION holds a WINDOW per
- * task. A host without that shape maps a window onto whatever it does have — a detached process, a container exec
- * — as long as the window can be found again by the task's id, which is the only handle anything above here uses.
+ * <p>The model is two levels: one SESSION holds a WINDOW per task. A host without that shape maps a window onto
+ * whatever it has, as long as the window can be found again by the task's id.
  */
 public interface SessionHost {
 
@@ -27,10 +25,7 @@ public interface SessionHost {
     /** The session name to use, given whatever the human configured (blank included). */
     String sessionName(String configured);
 
-    /**
-     * Starts a task's agent in its own window, replacing any window of the same name — one task is one window, so a
-     * respawn must not accumulate duplicates.
-     */
+    /** Starts a task's agent in its own window, replacing any window of the same name. */
     void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias, Path worktreePath,
                         boolean planMode);
 

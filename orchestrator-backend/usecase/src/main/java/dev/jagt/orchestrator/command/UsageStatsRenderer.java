@@ -12,12 +12,8 @@ import java.util.Comparator;
 import java.util.Map;
 
 /**
- * The {@code stats} view: what a task has consumed, per task and in total, in TOKENS — the unit that is actually
- * comparable across models and over time. Two sources, kept apart because only one of them is jagt's to make
- * fewer of: its own metered reads, and what each task's agent sessions burned.
- *
- * <p>Deliberately two bottom lines, because they are NOT the same number: the tasks still open, against every
- * call since the backend started.
+ * What a task has consumed, in TOKENS. Two sources kept apart — jagt's own metered reads and what each task's
+ * agent sessions burned — and two bottom lines: the tasks still open, against every call since the backend started.
  */
 @Component
 @RequiredArgsConstructor

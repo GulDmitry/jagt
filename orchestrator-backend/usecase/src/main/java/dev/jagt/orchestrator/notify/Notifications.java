@@ -13,11 +13,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-/**
- * The one place a notification is handed over, and the only thing any caller depends on. Delivery happens off the
- * caller's thread with a bounded backlog: telling a human is never worth delaying a git push, and a channel that
- * hangs must cost a dropped banner rather than a stalled task.
- */
+/** Delivery happens off the caller's thread with a bounded backlog: a hung channel costs a banner, not a task. */
 @Component
 @Slf4j
 public class Notifications {
@@ -48,7 +44,7 @@ public class Notifications {
             } catch (RejectedExecutionException e) {
                 log.atWarn().setMessage("notification dropped")
                         .addKeyValue("channel", channel.id())
-                        .addKeyValue("title", notification.title())
+                        .addKeyValue("said", notification.title())
                         .addKeyValue("cause", "channel backed up")
                         .log();
             }
@@ -61,7 +57,7 @@ public class Notifications {
         } catch (Throwable t) {
             log.atWarn().setMessage("notification delivery failed")
                     .addKeyValue("channel", channel.id())
-                    .addKeyValue("title", notification.title())
+                    .addKeyValue("said", notification.title())
                     .addKeyValue("cause", t.toString())
                     .log();
         }

@@ -23,10 +23,6 @@ import static org.mockito.Mockito.when;
 
 class SessionProbeTest {
 
-    /**
-     * The one that used to be missed: a session waiting at a prompt keeps repainting, so terminal output reads
-     * warm forever and no threshold will ever flag it.
-     */
     @Test
     void raisesAHarnessReportEvenWhileTheTerminalIsStillPrinting() {
         SessionHost sessions = mock(SessionHost.class);
@@ -41,10 +37,6 @@ class SessionProbeTest {
                 .map(SessionProbe.Silence::detail).contains("waiting for input");
     }
 
-    /**
-     * The one that used to be wrong: a session ends a turn every time it answers, and comes straight back when
-     * what it left running finishes — so a turn ending is not a human being waited for.
-     */
     @Test
     void staysQuietForATurnThatJustEndedBecauseTheSessionMayComeStraightBack() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -103,7 +95,6 @@ class SessionProbeTest {
         assertThat(silence).isEmpty();
     }
 
-    /** A log gets its entry when a tool call is issued and nothing while it runs, so a long build looks dead. */
     @Test
     void takesTerminalOutputAsTheLastSignWhenEverythingCheaperReadsStale() {
         ConfigService config = mock(ConfigService.class);
@@ -121,7 +112,6 @@ class SessionProbeTest {
         assertThat(silence).isEmpty();
     }
 
-    /** A report is what happened rather than an absence of it, so no threshold applies. */
     @Test
     void raisesAHarnessReportAtOnceRatherThanWaitingOutTheThreshold() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -161,7 +151,6 @@ class SessionProbeTest {
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
 
-    /** A session that names the file it appends to is believed over the one jagt would have derived. */
     @Test
     void readsTheLogFileASessionNamedForItself(@TempDir Path root) throws Exception {
         Path log = Files.writeString(root.resolve("session.jsonl"), "{}");
@@ -176,7 +165,6 @@ class SessionProbeTest {
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
 
-    /** Both hooks of one clear are stamped on arrival, so the pair can share a millisecond or invert. */
     @Test
     void believesTheSessionOverTheEndThatWasReportedInTheSameMillisecond() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -190,7 +178,6 @@ class SessionProbeTest {
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
 
-    /** A cleared session keeps writing to a NEW file, and the one it named stops moving without going away. */
     @Test
     void doesNotLetTheFileASessionOnceNamedOutrankAFresherOne(@TempDir Path root) throws Exception {
         Path stale = Files.writeString(root.resolve("earlier.jsonl"), "{}");
@@ -206,7 +193,6 @@ class SessionProbeTest {
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
 
-    /** Ticket keys get reused, so a fresh task must not inherit what was known about the one before it. */
     @Test
     void forgetsWhatItKnewAboutATaskThatIsNoLongerThere() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
@@ -220,10 +206,6 @@ class SessionProbeTest {
         assertThat(probe.of("ABC-1", task, 300_000, 10_000_000)).isEmpty();
     }
 
-    /**
-     * Asked on the scheduler's own thread and outside its guard, so a throw here strands the job rather than
-     * skipping one run — and a hand-edited file is unreadable for exactly as long as it takes to save.
-     */
     @Test
     void keepsAnIntervalWhenTheConfigCannotBeReadAtAll() {
         ConfigService config = mock(ConfigService.class);
@@ -234,10 +216,6 @@ class SessionProbeTest {
         assertThat(every).isEqualTo(Duration.ofSeconds(600));
     }
 
-    /**
-     * A finished turn is appended to the log immediately before the hook that reports it fires, and both are
-     * stamped in whichever millisecond they land in — so a tie must keep the report, not drop it.
-     */
     @Test
     void keepsAReportThatTiedWithTheLogEntryWrittenJustBeforeIt() {
         AgentRuntime runtime = mock(AgentRuntime.class);
@@ -252,7 +230,6 @@ class SessionProbeTest {
                 .map(SessionProbe.Silence::detail).contains("waiting for input");
     }
 
-    /** Thrown here it would cost the whole pass its stamps, and a hook the answer it cannot see anyway. */
     @Test
     void stillReachesAVerdictWhileTheConfigFileCannotBeRead() {
         ConfigService config = mock(ConfigService.class);

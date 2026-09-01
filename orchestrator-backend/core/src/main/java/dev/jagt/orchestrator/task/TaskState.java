@@ -32,8 +32,7 @@ public record TaskState(
         String baseBranch,
         // mrCreatedAt is when jagt stamped the round, not the host's own creation time. Zero = unset.
         long mrCreatedAt,
-        // When the HOST says the request was opened — how long the review has been hanging, which no status
-        // clock answers. Written by whatever read last saw it; 0 until one did (a model read cannot say).
+        // When the HOST says the request was opened; 0 until a read said so (a model read cannot).
         long requestOpenedAt,
         long lastPolledAt,
         // When the watchdog last saw a sign of life from an agent it found silent; 0 = not silent.
@@ -61,10 +60,7 @@ public record TaskState(
         history = history == null ? List.of() : List.copyOf(history);
     }
 
-    /**
-     * Reads BOTH shapes: the current one with {@code repos}, and older files that carried one repository's
-     * fields at the top level.
-     */
+    /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
     @JsonCreator
     static TaskState fromJson(
             @JsonProperty("repos") List<TaskRepo> repos,
@@ -83,8 +79,8 @@ public record TaskState(
             @JsonProperty("mrCreatedAt") long mrCreatedAt,
             @JsonProperty("requestOpenedAt") Long requestOpenedAt,
             @JsonProperty("lastPolledAt") long lastPolledAt,
-            // Boxed: a state.json written before this field existed omits it, and Jackson 3 refuses to map an
-            // absent value onto a primitive — the file would be quarantined as corrupt on the first read.
+            // Boxed: a file written before this field existed omits it, and Jackson refuses an absent value
+            // onto a primitive.
             @JsonProperty("silentSince") Long silentSince,
             @JsonProperty("silentBecause") String silentBecause,
             @JsonProperty("autoReview") Boolean autoReview,
@@ -156,19 +152,14 @@ public record TaskState(
         return repos.stream().anyMatch(TaskRepo::hasReviewRequest);
     }
 
-    public TaskState withTicket(String title, String ticketUrl) {
-        return toBuilder().title(title).ticketUrl(ticketUrl).build();
-    }
-
     /** A status move — the ONE place history grows. */
     public TaskState withStatus(TaskStatus status, String message) {
         return withStatus(status, message, false);
     }
 
     /**
-     * @param event record even when the status is unchanged — true for something DONE to the task (a second round
-     *              shipped onto the same request is a real event), false for a task repeating itself, whose
-     *              keep-alives would otherwise drown the real transitions
+     * {@code event} records a step even when the status is unchanged: true for something DONE to the task, false for
+     * a task repeating itself, whose keep-alives would otherwise drown the real transitions.
      */
     public TaskState withStatus(TaskStatus status, String message, boolean event) {
         long now = System.currentTimeMillis();
@@ -184,8 +175,7 @@ public record TaskState(
     public TaskState withReviewRound(String project, String reviewRequestUrl) {
         long now = System.currentTimeMillis();
         return relinked(project, reviewRequestUrl).lastActiveTimestamp(now)
-                // A new round has new checks and no verdict on it yet: the last one's answers describe a
-                // request state that no longer exists.
+                // A new round has new checks and no verdict yet; the last one's answers describe a dead state.
                 .pipelineStatus(null).approved(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
                 .mrCreatedAt(now).lastPolledAt(0)
@@ -199,8 +189,7 @@ public record TaskState(
 
     /**
      * One ship, however many repositories it landed in: every URL goes on its own repo, and the round is recorded
-     * ONCE — a history entry per repository would read as several rounds. The recorded round carries the session
-     * repo's link, the one a human follows first.
+     * ONCE, carrying the session repo's link.
      */
     public TaskState withReviewRound(Map<String, String> urlByProject) {
         if (urlByProject.isEmpty()) {
@@ -221,9 +210,8 @@ public record TaskState(
     }
 
     /**
-     * A task written before history existed is seeded with its current status at the last activity stamp:
-     * otherwise {@link #statusSince()} falls back to a stamp every keep-alive bumps, and an hour-old status
-     * reads as brand new.
+     * A task written before history existed is seeded with its current status at the last activity stamp, or
+     * {@link #statusSince()} falls back to a stamp every keep-alive bumps.
      */
     private List<StatusChange> seededHistory() {
         if (!history.isEmpty()) {
@@ -234,9 +222,8 @@ public record TaskState(
     }
 
     /**
-     * What the watchdog found, so a surface can say a session is blocked without probing per row. Its own wither
-     * because silence is not activity: stamping it must not bump {@code lastActiveTimestamp} the way a report
-     * does. The other direction needs no caller — any report clears it, since an agent that speaks is alive.
+     * What the watchdog found. Its own wither because silence is not activity: stamping it must not bump
+     * {@code lastActiveTimestamp}. Any report clears it, since an agent that speaks is alive.
      */
     public TaskState withSilentSince(long silentSince, String because) {
         return toBuilder().silentSince(silentSince).silentBecause(silentSince > 0 ? because : null).build();
@@ -261,8 +248,8 @@ public record TaskState(
     }
 
     /**
-     * Stamps who caused the step this task just took — separate from taking it, because the transition is built
-     * where the work happens and the asker is known only at the entry point.
+     * Stamps who caused the step just taken — separate from taking it, because the transition is built where the
+     * work happens and the asker is known only at the entry point.
      */
     public TaskState withLastChangeOrigin(ActionOrigin origin) {
         if (history.isEmpty()) {
@@ -288,8 +275,8 @@ public record TaskState(
     }
 
     /**
-     * Since when the task has been in its CURRENT status — which is NOT {@code lastActiveTimestamp}: a keep-alive
-     * bumps that stamp, so an agent that has been working for an hour looks like it just moved.
+     * Since when the task has been in its CURRENT status. NOT {@code lastActiveTimestamp}, which a keep-alive
+     * bumps.
      */
     public long statusSince() {
         return history.isEmpty() ? lastActiveTimestamp : history.get(history.size() - 1).at();
@@ -313,11 +300,9 @@ public record TaskState(
     }
 
     /**
-     * Points one repository at a request, DROPS every answer a read gave about the OLD one when that changes what
-     * is linked — its checks and its approval describe the request a read saw — and stamps the new one as opened
-     * NOW: a request reaches this method only as jagt or its agent has just opened it, so the clock is right to
-     * within seconds, and a host read replaces it with the host's own {@code created_at}. A {@code resume} that
-     * adopts somebody's week-old request is linked through the builder instead, and keeps its unknown age.
+     * Points one repository at a request, dropping every answer a read gave about the old one and stamping the new
+     * one as opened NOW — a request reaches here only as it is being opened. A {@code resume} adopting somebody
+     * else's request is linked through the builder instead, and keeps its unknown age.
      */
     private Builder relinked(String project, String mrUrl) {
         List<TaskRepo> repos = mapRepo(project, repo -> repo.withMrUrl(mrUrl));
@@ -408,10 +393,7 @@ public record TaskState(
                 .usage(usage).agentSpend(agentSpend).history(history);
     }
 
-    /**
-     * Missing fields stay unset (null / 0); the repositories and the status are required. The single-repo setters
-     * ({@code remoteUrl}, {@code mrUrl}, {@code deployCommit}) write the FIRST repo.
-     */
+    /** Missing fields stay unset; the single-repo setters write the FIRST repo. */
     public static final class Builder {
         private List<TaskRepo> repos;
         private TaskStatus status;
@@ -553,10 +535,7 @@ public record TaskState(
             return this;
         }
 
-        /**
-         * A task built from scratch starts its history AT its initial status, so "how long has it sat in NEW" is
-         * answerable; a task rebuilt from an existing one carries its own history through.
-         */
+        /** A task built from scratch starts its history AT its initial status; a rebuilt one carries its own. */
         public TaskState build() {
             List<StatusChange> log = history != null ? history : List.of(new StatusChange(status,
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));

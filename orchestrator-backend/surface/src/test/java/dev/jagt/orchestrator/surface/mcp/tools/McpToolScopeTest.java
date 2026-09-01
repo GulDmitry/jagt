@@ -25,11 +25,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * The wiring between a tool and the scope rule, which is what an agent actually reaches. Testing
- * {@code CallerScope} alone leaves a tool free to skip it, and these are the tools that write outside a
- * worktree.
- */
 class McpToolScopeTest {
 
     private final StateService stateService = mock(StateService.class);
@@ -103,7 +98,6 @@ class McpToolScopeTest {
         verifyNoInteractions(provisioning);
     }
 
-    /** A sibling's task_context.md is the instructions its agent acts on, so writing it is a hijack. */
     @ParameterizedTest
     @ValueSource(strings = {"write_task_context", "open_task_tab", "focus_task"})
     void refusesASubAgentReachingIntoASiblingsSession(String tool) {

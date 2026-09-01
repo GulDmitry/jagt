@@ -12,12 +12,9 @@ import java.time.Duration;
 import java.util.List;
 
 /**
- * There is no fallback chain: {@code notify-send} either reaches the session bus or it does not, and no second
- * mechanism would work where it fails.
- *
- * <p>{@code --app-name jagt} so the banners are attributable (and mutable) as jagt's own, and NORMAL urgency
- * on purpose: every notification jagt sends means "your move", which should persist until seen but must not
- * be a critical alert that ignores do-not-disturb.
+ * There is no fallback chain: {@code notify-send} either reaches the session bus or it does not. The banners
+ * are attributable as jagt's own, and NORMAL urgency persists until seen without becoming a critical alert
+ * that ignores do-not-disturb.
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "linux")
@@ -45,10 +42,8 @@ public class LibNotifyNotifier implements UserNotifier, StartupCheck {
                 : List.of();
     }
 
-    /**
-     * The link is dropped: {@code notify-send}'s only click mechanism is {@code --action}, which needs the
-     * process to stay alive waiting for the daemon to answer, and jagt's notifications are fire-and-forget.
-     */
+    /** The link is dropped: {@code --action} is the only click mechanism, and it needs the process to stay alive
+     *  waiting for the daemon to answer. */
     @Override
     public void notify(String title, String message, String link) {
         try {
@@ -57,15 +52,12 @@ public class LibNotifyNotifier implements UserNotifier, StartupCheck {
         } catch (RuntimeException e) {
             // A broken notification must never fail the flow that raised it.
             log.atWarn().setMessage("notification failed")
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
         }
     }
 
-    /**
-     * {@code --} before the title: a title or message beginning with a dash would otherwise be parsed as an
-     * option by notify-send, and both come from ticket text.
-     */
+    /** {@code --} before the title: a leading dash would otherwise be parsed as an option. */
     static List<String> command(String notifySend, String title, String message) {
         return List.of(notifySend, "--app-name", "jagt", "--urgency", "normal", "--",
                 title == null ? "jagt" : title, message == null ? "" : message);

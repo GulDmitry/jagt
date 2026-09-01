@@ -15,15 +15,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * One run, one log. The file is emptied and every archive beside it deleted before logging starts, so the
- * record a human reads back (the {@code activity} report) is this session's and nothing else: yesterday's
- * entries presented as today's work is worse than no history at all, and the archives are mostly noise.
- *
- * <p>Runs in the gap after {@code application.yml} is read and before the appender opens the file, and is
- * registered by hand in {@code main}: {@code bootJar} hoists {@code META-INF/spring/…imports} to the jar ROOT,
- * which is NOT on the executable jar's classpath, so a listener declared there is silently never loaded.
+ * One run, one log: runs in the gap after {@code application.yml} is read and before the appender opens the
+ * file. Registered by hand rather than declared — {@code bootJar} hoists {@code META-INF/spring/…imports} to
+ * the jar root, which is not on the executable jar's classpath.
  */
-public class SessionLog implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
+public class LogFileReset implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
 
     @Override
     public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
@@ -36,10 +32,8 @@ public class SessionLog implements ApplicationListener<ApplicationEnvironmentPre
         if (configured.isBlank()) {
             return false;
         }
-        // A jagt is already listening, so THIS launch is about to die on the port — and the file belongs to the
-        // one still running. Clearing it there would unlink the log a live instance keeps writing to: its
-        // appender holds the descriptor, so nothing recreates the path and both the report and `tail -f` go
-        // blind for the rest of that process's life.
+        // Another jagt already holds the file open: unlinking it leaves that appender writing to a path
+        // nothing recreates.
         if (portTaken(environment.getProperty("server.port", "8290"))) {
             return false;
         }

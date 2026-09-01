@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.AgentRuntime;
-import dev.jagt.orchestrator.config.CodexProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import org.junit.jupiter.api.Test;
@@ -82,10 +81,6 @@ class CodexAgentRuntimeTest {
                 .contains("args = [\"" + worktree.resolve("mcp_client.js") + "\"]");
     }
 
-    /**
-     * Codex spawns its MCP servers rather than reaching a remote one, so the bridge its config names has to BE
-     * there — the one reason Node is still a requirement for this runtime.
-     */
     @Test
     void linksTheBridgeItsConfigNamesIntoTheWorktree(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");

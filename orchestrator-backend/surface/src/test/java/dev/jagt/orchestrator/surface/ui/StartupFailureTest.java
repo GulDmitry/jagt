@@ -10,14 +10,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class StartupFailureTest {
 
-    /** The common case by far: the human started a second jagt while the first still held the port. */
     @Test
     void namesThePortAndTheOtherWayToStartWhenTheAddressIsTaken() {
         IllegalStateException wrapped = new IllegalStateException("context failed",
                 new PortInUseException(8290));
 
         assertThat(StartupFailure.describe(wrapped))
-                .contains("port 8290 is already in use")
+                .contains("port 8290 is in use")
                 .contains("--server.port=<port>");
     }
 
@@ -29,13 +28,13 @@ class StartupFailureTest {
         assertThat(StartupFailure.describe(wrapped))
                 .contains("1. git is not on PATH")
                 .contains("2. jagt.yml defines no projects")
-                .doesNotContain("log file");
+                .doesNotContain("logging.file.name");
     }
 
     @Test
     void pointsAtTheLogFileForAnyOtherFailure() {
         assertThat(StartupFailure.describe(new IllegalStateException("jagt.yml is unreadable")))
                 .contains("jagt.yml is unreadable")
-                .contains("log file");
+                .contains("logging.file.name");
     }
 }

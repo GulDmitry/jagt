@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 class McpProtocolServiceTest {
 
-    /** Only the two groups these tests address; the protocol treats every group the same. */
     private static List<McpTools> groups() {
         CallerScope scope = new CallerScope(mock(StateService.class));
         return List.of(new StatusTools(mock(AgentStatusReports.class), scope),

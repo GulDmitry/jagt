@@ -18,14 +18,6 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * The Linux platform profile must WIRE, and only a booted context can say so: the driver beans are selected
- * by {@code orchestrator.platform}, so a typo in it yields no `TerminalDriver` at all — a failure that would
- * otherwise surface the first time somebody starts jagt on Linux, not here.
- *
- * <p>Being able to run this from macOS is the point of the seam: which driver Spring picks is a config
- * decision, not an OS one. It says nothing about the drivers' behaviour on a real desktop.
- */
 @SpringBootTest(properties = {"spring.config.import=",
         "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false",
         "orchestrator.platform=linux"})

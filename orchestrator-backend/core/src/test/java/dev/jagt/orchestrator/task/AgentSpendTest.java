@@ -17,13 +17,21 @@ class AgentSpendTest {
         assertThat(spend.markFor("/logs/other.jsonl")).isZero();
     }
 
-    /** A task that runs long opens many sessions, and every mark of them was kept and rewritten for good. */
     @Test
     void keepsTheMarksOfTheLastTenLogsAndDropsTheOldest() {
-        AgentSpend spend = AgentSpend.NONE;
-        for (int session = 1; session <= 12; session++) {
-            spend = spend.plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/" + session + ".jsonl", session);
-        }
+        AgentSpend spend = AgentSpend.NONE
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/1.jsonl", 1)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/2.jsonl", 2)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/3.jsonl", 3)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/4.jsonl", 4)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/5.jsonl", 5)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/6.jsonl", 6)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/7.jsonl", 7)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/8.jsonl", 8)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/9.jsonl", 9)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/10.jsonl", 10)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/11.jsonl", 11)
+                .plus(TokenUsage.ofCall(1, 0, 1, 0), "/logs/12.jsonl", 12);
 
         assertThat(spend.marks()).hasSize(10);
         assertThat(spend.markFor("/logs/1.jsonl")).isZero();

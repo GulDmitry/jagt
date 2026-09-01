@@ -4,10 +4,8 @@ import java.util.regex.Pattern;
 
 /**
  * A task IS its branch, so anything git accepts as a branch name is a task name — the rules of
- * {@code git check-ref-format --branch}, in one pattern.
- *
- * <p>What such a name may NOT be is a file or a tmux session: `/` nests a directory and a quote reaches a
- * shell. {@link #slug(String)} is the one flat form every such derivation uses.
+ * {@code git check-ref-format --branch} in one pattern. Such a name may still not be a file or a tmux session:
+ * `/` nests a directory and a quote reaches a shell, so {@link #slug(String)} is the flat form.
  */
 public final class TaskName {
 
@@ -26,7 +24,7 @@ public final class TaskName {
     private TaskName() {
     }
 
-    public static boolean isValid(String name) {
+    private static boolean isValid(String name) {
         return name != null && VALID.matcher(name).matches();
     }
 
@@ -46,10 +44,7 @@ public final class TaskName {
         }
     }
 
-    /**
-     * Names the one thing that makes {@code name} unusable, or null when it is usable — the allowed set alone
-     * never tells a reader which part of theirs broke it.
-     */
+    /** Names the ONE thing that makes {@code name} unusable, or null when it is usable. */
     public static String unusableReason(String name) {
         if (isValid(name)) {
             return null;

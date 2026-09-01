@@ -14,24 +14,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Every {@link Job} there is, on one ticker. A job runs on its own thread, so one that takes minutes cannot hold
- * up the rest — and never concurrently with itself, so no job needs a guard of its own. A run that throws is
- * booked against that job and nothing else: unattended work must not be able to take the process down.
+ * Every {@link Job} there is, on one ticker. A job runs on its own thread, never concurrently with itself, and a
+ * run that throws is booked against that job alone.
  */
 @Component
 @Slf4j
 public class Jobs {
 
-    /** What a human is owed about one job, whether or not it has ever run. */
     public record Status(String id, String describe, Duration every, Long lastStartedAt, String lastError,
                          Long nextRunAt, boolean running) {
     }
 
-    /**
-     * Small enough to sit in a header, so unattended work is visible without being asked for.
-     *
-     * @param nextRunAt the soonest run of any job, or null when nothing is scheduled
-     */
+    /** {@code nextRunAt} is the soonest run of any job, or null when nothing is scheduled. */
     public record Summary(int count, Long nextRunAt, int failing) {
     }
 
@@ -55,7 +49,6 @@ public class Jobs {
     Jobs(List<Job> declared, Executor workers) {
         this.workers = workers;
         for (Job job : declared) {
-            // A job that cannot name itself cannot be keyed, listed or reported on, so it does not run.
             if (job.id() == null || job.id().isBlank()) {
                 log.atWarn().setMessage("job not registered")
                         .addKeyValue("class", job.getClass().getSimpleName())
@@ -70,19 +63,18 @@ public class Jobs {
         }
     }
 
-    /** {@code now} is passed in, as it is to {@link #tick}, so a report reads the clock once and only outside. */
+    /** {@code now} is passed in so a report reads the clock once, outside. */
     public List<Status> statuses(long now) {
         return jobs.values().stream().map(job -> {
             Run run = runs.get(job.id());
-            // Never behind the present: a job that has not run yet carries no schedule of its own, and its
-            // honest next run is the tick about to happen.
+            // Never behind the present: a job that has not run yet is due at the tick about to happen.
             Long next = run.nextAt == Long.MAX_VALUE ? null : Math.max(run.nextAt, now);
             return new Status(job.id(), job.describe(), every(job, run), run.startedAt, run.lastError, next,
                     run.running.get());
         }).toList();
     }
 
-    /** The last interval a job managed to name stands in for one it cannot: a report answers for all of them. */
+    /** The last interval a job named stands in for one it cannot: a report answers for all of them. */
     private static Duration every(Job job, Run run) {
         try {
             return job.every();
@@ -112,10 +104,9 @@ public class Jobs {
             run.startedAt = now;
             workers.execute(() -> {
                 try {
-                    // Asked in here rather than before the dispatch, so an interval that cannot be answered
-                    // is booked like any other failed run and leaves the job due instead of stuck. Stamped
-                    // from the tick and not from the finish: a job that takes longer than its interval is due
-                    // again the moment it ends, which is what a rate rather than a delay means.
+                    // Asked in here so an interval that cannot be answered is booked as a failed run rather
+                    // than leaving the job stuck. Stamped from the tick, not the finish: a job that outlasts
+                    // its interval is due again the moment it ends.
                     run.every = job.every();
                     run.nextAt = run.every == null ? Long.MAX_VALUE : now + run.every.toMillis();
                     job.run();

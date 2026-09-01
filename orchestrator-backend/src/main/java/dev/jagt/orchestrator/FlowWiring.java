@@ -13,10 +13,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-/**
- * Assembled here rather than annotated, so nothing in it depends on the framework that runs it: what is wired
- * below compiles against records and ports alone, and its tests need no container.
- */
 @Configuration
 @Slf4j
 public class FlowWiring {

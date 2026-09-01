@@ -46,7 +46,6 @@ class MeteredAssistantTest {
         verify(usageTracker).record(AssistantCallKind.MR_READ, spent);
     }
 
-    /** A failed read was paid for too, and this is the kind that repeats hourly for a day. */
     @Test
     void booksAReviewSweepUnderItsOwnKindEvenWhenTheReadCameBackEmpty() {
         TokenUsage spent = TokenUsage.ofCall(31_000, 0, 40, 0.06);

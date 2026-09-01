@@ -12,25 +12,15 @@ import java.util.stream.Stream;
 import java.nio.file.attribute.PosixFilePermission;
 
 /**
- * The push guard as git itself answers it: a hook jagt writes into the worktree it cut, reached only by the
- * session it launches.
+ * The push guard as git itself answers it: a hook jagt writes into the worktree it cut, reached only by the session
+ * it launches. Nothing is written to the repository — the scripts live under the worktree's own {@code .jagt/} and
+ * the session's git is pointed at them by {@link #gitEnv} on the launch command alone.
  *
- * <p>Nothing is written to the repository. The scripts live under the worktree's own {@code .jagt/}, and the
- * session's git is pointed at them by {@link #gitEnv} on the launch command alone — so jagt's own git, the
- * human's shell and every other checkout of that repository resolve hooks exactly as they did before.
+ * <p>Pointing git at another directory REPLACES the repository's hooks rather than adding to them, so every name
+ * git knows is re-exposed here as a stub that runs the repository's own. The whole list, not what a repository held
+ * when its worktree was cut: a session that installs husky an hour in must not lose it.
  *
- * <p>It answers where reading a command line cannot: a push assembled at runtime, an alias, a script the agent
- * wrote, and a CLI whose own hooks jagt has nothing wired into. The destination it reads is the one git is
- * about to write.
- *
- * <p>Pointing git at another directory REPLACES the repository's hooks rather than adding to them, so every
- * name git knows is re-exposed here as a stub that runs the repository's own. The whole list, rather than what
- * a repository happened to hold when its worktree was cut: a fresh clone carries only samples, and a session
- * that installs husky an hour in would otherwise have silently lost the hooks it just set up.
- *
- * <p>A guardrail, not a boundary: {@code --no-verify} skips it, as it skips any hook, and so does turning the
- * override off. What it catches is the push nobody meant to make; what stops a determined one is that a shared
- * branch is written by a human.
+ * <p>A guardrail, not a boundary: {@code --no-verify} skips it as it skips any hook.
  */
 @Slf4j
 public final class WorktreeHooks {
@@ -38,10 +28,7 @@ public final class WorktreeHooks {
     /** Under a name a commit already refuses to carry and {@code git status} already hides. */
     private static final Path DIRECTORY = Path.of(".jagt", "hooks");
     private static final String PUSH_HOOK = "pre-push";
-    /**
-     * Where the repository being pushed keeps its own hooks, asked with the override off — a session works in
-     * one directory of scripts and in as many repositories as the task has.
-     */
+    /** Where the repository being pushed keeps its own hooks, asked with the override off. */
     private static final String PROJECT_HOOKS =
             "$(GIT_CONFIG_COUNT=0 git rev-parse --path-format=absolute --git-path hooks 2>/dev/null)";
     private static final Set<PosixFilePermission> EXECUTABLE = Set.of(
@@ -71,12 +58,9 @@ public final class WorktreeHooks {
     }
 
     /**
-     * The assignment that puts a session's git on those hooks, as one shell prefix. Scoped to the launched
-     * process rather than written anywhere: what jagt refuses an agent it must not also refuse the human at
-     * the same checkout, nor itself.
-     *
-     * <p>Empty where the worktree holds no such directory — an override pointing nowhere runs NO hook, and
-     * silently taking the project's own away is worse than a session with no guard.
+     * The assignment that puts a session's git on those hooks, as one shell prefix. Scoped to the launched process
+     * rather than written anywhere. Empty where the worktree holds no such directory — an override pointing nowhere
+     * runs NO hook at all.
      */
     public static String gitEnv(Path worktree) {
         Path directory = worktree.resolve(DIRECTORY);
@@ -88,9 +72,8 @@ public final class WorktreeHooks {
     }
 
     /**
-     * Reads the refs git is about to write, one per line, and refuses every destination that is not the task's
-     * own branch. The repository's own hook runs after the guard, on the same input: a push this refuses is
-     * one it never had to see.
+     * Reads the refs git is about to write, one per line, and refuses every destination that is not the task's own
+     * branch. The repository's own hook runs after the guard, on the same input.
      */
     private static String pushGuard(String taskBranch) {
         return """
@@ -129,10 +112,7 @@ public final class WorktreeHooks {
                 """.formatted(quoted(taskBranch), PROJECT_HOOKS);
     }
 
-    /**
-     * The override goes off for what it runs: a project hook that itself runs git would otherwise come straight
-     * back here, and a hook that commits would do so forever.
-     */
+    /** The override goes off for what it runs, or a project hook running git would come straight back here. */
     private static String passThrough(String name) {
         return """
                 #!/bin/sh

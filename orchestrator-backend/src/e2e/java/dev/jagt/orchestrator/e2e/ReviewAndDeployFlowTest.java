@@ -49,21 +49,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.when;
 
-/**
- * What happens to a task AFTER an agent is done with it: ship, the review rounds it comes back for, deploy and
- * the undo — over real git, with the reads stubbed and no model anywhere. The verbs are driven the way the board
- * drives them, so what is asserted is what a human is actually told; the agent reports the way a real one does,
- * over {@code POST /mcp} with its worktree in the header, which is what makes its status carry an origin of its
- * own — and it commits, pushes and opens its request itself, which is what {@code ship} asks of it.
- *
- * <p>Not part of {@code ./gradlew test}. It complements the lifecycle matrix in {@code TaskFlowMatrixTest}:
- * that one covers creation and teardown across the viewer combinations, this one everything in between on a
- * single combination — a review round does not vary with how terminals are arranged.
- *
- * <p>The conflicted deploy is covered here too — the half-state sentence and the finish-after-resolve push —
- * because only a real merge produces them. Which git exit code means a conflict AT ALL stays in
- * {@code GitServiceTest}, which needs no task, no worktree and no host to assert it.
- */
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=",
@@ -73,7 +58,6 @@ class ReviewAndDeployFlowTest {
 
     private static final String TASK = "ABC-1";
     private static final String TITLE = "Widget layout is off";
-    /** What the agent opens and reports back; jagt only ever reads it. */
     private static String request() {
         return E2eWorkspace.requestUrl(workspace.resolve("origin.git"));
     }
@@ -102,7 +86,6 @@ class ReviewAndDeployFlowTest {
     private EditorDriver editorDriver;
     @MockitoBean
     private UserNotifier userNotifier;
-    /** Every outside read is this one: the round, and the request a resume adopts. */
     @MockitoBean
     private MasterAssistant assistant;
     @Autowired
@@ -133,8 +116,6 @@ class ReviewAndDeployFlowTest {
         stateService.removeTask(TASK);
         E2eWorkspace.forgetTask(repo(), worktree(), TASK);
         E2eWorkspace.forgetTask(webRepo(), webWorktree(), TASK);
-        // The deploy branch too: a flow that landed (or conflicted on) a change leaves it there, and the next
-        // flow's own deploy would then be merging into someone else's history.
         E2eWorkspace.resetDeployBranch(repo());
         E2eWorkspace.resetDeployBranch(webRepo());
         E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
@@ -211,11 +192,6 @@ class ReviewAndDeployFlowTest {
         assertThat(E2eWorkspace.git(repo(), "branch", "--list", TASK)).contains(TASK);
     }
 
-    /**
-     * The half-state, which only a real merge can produce: the first repository is pushed to the shared branch
-     * and the second conflicts, so the sentence has to name BOTH sides and a second `deploy` must finish the one
-     * that is waiting without touching the one already live.
-     */
     @Test
     void stopsAtTheRepositoryThatConflictsAndFinishesItOnTheNextDeploy() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), new LinkedHashMap<>(Map.of(
@@ -327,7 +303,6 @@ class ReviewAndDeployFlowTest {
         return shipped;
     }
 
-    /** What `ship` asks of the agent, and nothing jagt does for it. */
     private void agentCommitsAndPushes(Path worktree, String message) throws Exception {
         E2eWorkspace.git(worktree, "add", "-A");
         E2eWorkspace.git(worktree, "commit", "-m", message);

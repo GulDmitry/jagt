@@ -109,9 +109,8 @@ class ShipServiceTest {
                 posting.codeReview().withPostReviewReplies(false));
 
         assertThat(ShipService.repliesStep(posting))
-                .contains("Resolve a thread ONLY where you changed the code it asked for")
-                .contains("pushed back on or asked about UNRESOLVED");
-        assertThat(ShipService.repliesStep(notPosting)).doesNotContain("Resolve a thread");
+                .contains("Resolve threads exactly as your `<review_replies>` rules say");
+        assertThat(ShipService.repliesStep(notPosting)).doesNotContain("Resolve threads");
     }
 
     @Test
@@ -151,8 +150,7 @@ class ShipServiceTest {
                         new ShipService.Target("web", "/wt-web", "dev", false)), "");
 
         assertThat(instruction).contains("ONE commit and ONE push PER REPOSITORY listed above")
-                .contains("Carrying it out does not clear this file")
-                .contains("stays UNCOMMITTED");
+                .contains("single-use and does not clear this file");
     }
 
     @Test

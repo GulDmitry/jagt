@@ -7,11 +7,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * The command grammar, rendered from the declarations themselves — {@link TaskAction} for what a task owns and
- * {@link GlobalCommand} for what it does not. Every surface renders THIS, so a verb cannot exist in one and be
- * missing from the next, and no hint is written twice.
- */
+/** The command grammar, rendered from the declarations themselves; every surface renders THIS one. */
 public final class CommandReference {
 
     public record Verb(String id, String hint, boolean takesTask, List<String> aliases, boolean report,
@@ -53,8 +49,7 @@ public final class CommandReference {
             declared.usage().stream().skip(1).forEach(modifier -> lines.add("  " + modifier));
         }
         lines.add("");
-        lines.add("Ask / ⌘K also takes free text: a model maps it to ONE of the above and jagt runs it through");
-        lines.add("the same gate a button uses.");
+        lines.add("Ask / ⌘K takes free text: a model maps it to one verb above, gated like a button.");
         return String.join("\n", lines);
     }
 
@@ -66,8 +61,7 @@ public final class CommandReference {
         for (GlobalCommand command : globals) {
             declared.add(new Declared(Verb.of(command), command.usage()));
         }
-        // Rank, then the id: two commands the order does not name would otherwise come out in whatever
-        // order the container handed them over.
+        // Rank, then the id: two commands the order does not name would come out in container order.
         declared.sort(Comparator.<Declared>comparingInt(entry -> rankOf(entry.verb().id()))
                 .thenComparing(entry -> entry.verb().id()));
         return List.copyOf(declared);

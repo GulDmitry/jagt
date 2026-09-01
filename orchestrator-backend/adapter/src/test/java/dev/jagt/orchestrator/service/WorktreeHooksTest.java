@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.nio.file.attribute.PosixFilePermission;
@@ -21,6 +22,29 @@ class WorktreeHooksTest {
     @Test
     void leavesASessionUngatedRatherThanTakingAwayTheProjectsOwnHooks(@TempDir Path dir) {
         assertThat(WorktreeHooks.gitEnv(dir.resolve("a worktree from before this existed"))).isEmpty();
+    }
+
+    @Test
+    void leavesTheRepositorysOwnHooksExactlyAsTheyWere(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        Path worktree = dir.resolve("wt");
+        Files.createDirectories(repo);
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "worktree", "add", "-q", worktree.toString(), "-b", "ABC-42"));
+        Path hooks = repo.resolve(".git").resolve("hooks");
+        Files.writeString(hooks.resolve("pre-push"), "#!/bin/sh\nexit 0\n");
+        List<String> untouched = List.of(Objects.requireNonNull(hooks.toFile().list(), hooks.toString()));
+
+        WorktreeHooks.install(worktree, "ABC-42");
+
+        assertThat(hooks.resolve("pre-push")).hasContent("#!/bin/sh\nexit 0\n");
+        assertThat(hooks.toFile().list()).containsExactlyInAnyOrderElementsOf(untouched);
     }
 
     @Test

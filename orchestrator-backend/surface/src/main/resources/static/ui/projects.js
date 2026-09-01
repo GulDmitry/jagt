@@ -3,8 +3,7 @@
 import * as store from '../core/store.js';
 
 const select = document.getElementById('project');
-// An untouched default is not a decision, and naming a project SKIPS the ticket read — the escape hatch a
-// typed `do ABC-1 <project>` deliberately takes. So the list opens on a real project, and only a pick is sent.
+// An untouched default is not a decision, and naming a project SKIPS the ticket read, so only a pick is sent.
 let picked = false;
 let rendered = null;
 select.onchange = () => { picked = true; };

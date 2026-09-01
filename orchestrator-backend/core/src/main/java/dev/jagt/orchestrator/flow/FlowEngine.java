@@ -4,9 +4,7 @@ import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.CapabilityInterceptor;
 import dev.jagt.orchestrator.port.TaskCapability;
 import dev.jagt.orchestrator.port.TaskStore;
-import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -45,10 +43,7 @@ public class FlowEngine {
     }
 
 
-    /**
-     * The work, inside whatever an install declared around this verb. Innermost is the capability itself, so an
-     * interceptor that refuses stops the work AND the transition — nothing has happened to report.
-     */
+    /** The work, inside whatever an install declared around this verb; the capability itself is innermost. */
     private Outcome wrapped(String taskId, TaskAction action, TaskCapability capability) {
         Supplier<Outcome> work = () -> capability.run(taskId);
         for (CapabilityInterceptor interceptor : capabilities.around(action).reversed()) {
@@ -62,8 +57,7 @@ public class FlowEngine {
         Optional<TaskStatus> next = FlowRules.next(action, outcome.kind());
         if (next.isPresent() || outcome.stamp() != null) {
             TaskStatus moved = next.orElse(was);
-            // Recorded even when the status is unchanged: a second round onto the same request and a deploy that
-            // stopped part way both happened. An outcome with nothing to say keeps the line the task carries.
+            // Recorded even when the status is unchanged: a second round onto the same request happened.
             tasks.updateTask(taskId, task -> task.withStatus(moved,
                     outcome.stamp() == null ? task.message() : outcome.stamp(), true));
         }

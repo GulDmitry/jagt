@@ -26,7 +26,6 @@ class LibNotifyNotifierTest {
                 .contains("orchestrator.notify-send-command", "no-such-notify-send");
     }
 
-    /** Both title and message carry ticket text, and {@code --your move} would otherwise be read as an option. */
     @Test
     void passesTicketTextAfterTheOptionTerminatorSoALeadingDashIsNotReadAsAnOption() {
         List<String> command = LibNotifyNotifier.command("notify-send", "-jagt · ABC-1", "--your move");
@@ -35,10 +34,6 @@ class LibNotifyNotifierTest {
                 "-jagt · ABC-1", "--your move");
     }
 
-    /**
-     * The contract for every notifier: a failed notification must not break the flow that sent it — the
-     * watchdog, an MCP tool, an agent handing control back.
-     */
     @Test
     void neverThrowsWhenThereIsNoNotificationDaemon() {
         ProcessRunner runner = mock(ProcessRunner.class);

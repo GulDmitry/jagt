@@ -1,12 +1,9 @@
 package dev.jagt.orchestrator.flow;
 
 /**
- * What a capability reports back. It never names a status: which status this leads to is the table's answer, not
- * the doer's, so the same work can be reached from several statuses without every caller learning the machine.
- *
- * @param message the sentence a human reads
- * @param stamp   the short line the task carries afterwards, or null to leave what it says alone
- * @param cause   what went wrong, for an outcome that refuses — kept so a log still has the original
+ * What a capability reports back. It never DECIDES a status — which one this leads to is the table's answer —
+ * though its sentence may tell a human which one was reached.
+ * {@code stamp} is the short line the task carries afterwards, or null to leave what it says alone.
  */
 public record Outcome(Kind kind, String message, String stamp, Throwable cause) {
 

@@ -10,10 +10,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * The platform is what the human WROTE, and every OS-specific piece is picked from it — so the wrong value
- * starts perfectly and fails where nobody is looking: an alert that cannot be raised is logged, never thrown,
- * because telling a human must not break the flow that wanted to. The machine is the only thing that can
- * contradict the value, so it is asked here.
+ * Every OS-specific piece is picked from the configured platform, so a wrong value starts perfectly and fails
+ * where nobody is looking. The machine is the only thing that can contradict it, so it is asked here.
  */
 @Component
 public class PlatformCheck implements StartupCheck {
@@ -41,18 +39,13 @@ public class PlatformCheck implements StartupCheck {
                     + osName + "' — there is no platform to set it to.");
         } else if (!running.equals(configured)) {
             problems.add("orchestrator.platform is '" + configured + "' on a machine reporting '" + osName
-                    + "': every notification would be handed to a binary this OS does not have, and a failed"
-                    + " alert is logged rather than raised, so nothing would tell you a session is blocked."
+                    + "': its notifier binary does not exist here, so no alert would reach you."
                     + " Set it to '" + running + "'.");
         }
         return problems;
     }
 
-    /**
-     * Unset reads as macOS, the same default the beans this key selects carry. A value that names no platform at
-     * all is not answered here and cannot be: nothing is then selected to be asked, and the start is already
-     * over before a check could speak.
-     */
+    /** Unset reads as macOS, the same default the beans this key selects carry. */
     private String configured() {
         String platform = properties.platform();
         return platform == null || platform.isBlank() ? "macos" : platform.toLowerCase(Locale.ROOT);

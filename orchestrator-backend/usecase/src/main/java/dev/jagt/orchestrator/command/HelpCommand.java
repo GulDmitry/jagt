@@ -1,8 +1,5 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.command.CommandReference;
-import dev.jagt.orchestrator.command.GlobalCommand;
-import dev.jagt.orchestrator.command.GlobalCommands;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 

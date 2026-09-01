@@ -89,7 +89,6 @@ class WorktreeOrphanScannerTest {
         verifyNoInteractions(notifications);
     }
 
-    /** Another project's worktree and unrelated directories are none of this project's business. */
     @Test
     void recognisesBothATaskWorktreeAndAnAbandonedDeployWorktree() {
         List<String> onDisk = List.of("ABC-40-demo", "ABC-41-demo", "ABC-41-deploy", "demo-repo",

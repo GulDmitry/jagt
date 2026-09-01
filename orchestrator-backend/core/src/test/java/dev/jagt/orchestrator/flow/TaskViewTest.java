@@ -12,12 +12,6 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-/**
- * The projection is what a surface renders, so anything it hands over as a LINK has to be one. Neither URL is
- * jagt's own — the ticket link comes back from a model reading a tracker, the request link from an agent's
- * status message, and `state.json` is hand-editable — while the board turns both into anchors in a page that
- * can POST `deploy` to the local API.
- */
 class TaskViewTest {
 
     private static TaskView viewOf(String ticketUrl, String reviewRequestUrl) {
@@ -40,10 +34,6 @@ class TaskViewTest {
                 org.junit.jupiter.params.provider.Arguments.of(AutoReviewWatch.noRound(), Owner.YOU));
     }
 
-    /**
-     * The card asks for a human when the poll expected here has stopped — and NOT when the install polls nothing
-     * at all, which is stated once per surface rather than on every card.
-     */
     @ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("watches")
     void asksForAHumanOnlyWhereAnExpectedPollHasStopped(AutoReviewWatch watch, Owner expected) {
@@ -74,7 +64,6 @@ class TaskViewTest {
         assertThat(view.reviewRequestUrl()).isEqualTo("http://host.example.com/x/-/merge_requests/9");
     }
 
-    /** A task with no links is the normal case for a fresh one; the projection must not invent empty strings. */
     @Test
     void leavesBothLinksUnsetWhenTheTaskHasNone() {
         TaskView view = viewOf(null, null);
@@ -83,10 +72,6 @@ class TaskViewTest {
         assertThat(view.reviewRequestUrl()).isNull();
     }
 
-    /**
-     * A dropped link must not silently turn the card into a blank one: nothing can be followed, so the task has a
-     * request nobody can reach, and that is the one thing worth a line of its own.
-     */
     @Test
     void stillSaysSomethingWhenTheStoredRequestLinkWasUnusable() {
         assertThat(viewOf(null, "javascript:alert(1)").detail())

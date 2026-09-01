@@ -4,18 +4,11 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
- * The reserved openings a status message may carry. {@link TaskStatus} says WHERE a task is; this says what the
- * agent is reporting about it — and for a review round that is what decides whose move it is, since all three
- * outcomes (fixed code, a question, nothing to change) end the round at the same status.
- *
- * <p>One vocabulary in one place: the message is parsed here and nowhere else, so two readers cannot disagree
- * about what {@code awaiting: …} means.
- *
- * <p>An agent that names its outcome in the message instead of in the field it belongs to is understood anyway:
- * a report meant as a question but read as prose reaches no badge, no count and no notification. Which words may
- * open a message on their own is decided by how ordinary they are as prose — {@code awaiting} and
- * {@code no_changes} are nobody's sentence, {@code question} and {@code progress} are, so those two count only
- * where the word {@code outcome} names them.
+ * The reserved openings a status message may carry: what the agent is reporting, which for a review round decides
+ * whose move it is, since all three outcomes end the round at the same status. The message is parsed here and
+ * nowhere else. Which words may open a message on their own follows how ordinary they are as prose — {@code
+ * awaiting} and {@code no_changes} are nobody's sentence, {@code question} and {@code progress} are, so those two
+ * count only where the word {@code outcome} names them.
  */
 public enum AgentReport {
 

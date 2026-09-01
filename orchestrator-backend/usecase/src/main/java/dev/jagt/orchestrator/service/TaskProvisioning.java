@@ -123,9 +123,8 @@ public class TaskProvisioning {
     }
 
     /**
-     * A half-created task burns its id — the branch and directory exist while nothing is registered, so a retry
-     * hits "branch already exists". With several repositories the same is true of the ones already cut, so a
-     * failure anywhere unwinds all of them.
+     * A half-created task burns its id: the branch and directory exist while nothing is registered, so a retry hits
+     * "branch already exists". A failure anywhere therefore unwinds every repository already cut.
      */
     private void cutWorktrees(NewTask request, List<NewRepo> repos, BranchStrategy strategy) {
         List<NewRepo> cut = new ArrayList<>();
@@ -137,13 +136,12 @@ public class TaskProvisioning {
                 worktreeSetup.fill(request, repo, repos);
             }
         } catch (RuntimeException e) {
-            // The branch goes with the worktree only where THIS call created it. A resumed task's branch was
-            // already there with the human's commits, and force-deleting it would take work nothing can restore.
+            // The branch goes with the worktree only where THIS call created it: a resumed task's branch was
+            // already there with the human's commits.
             String branchToDelete = strategy == BranchStrategy.RESUME ? null : request.taskId();
             cut.forEach(repo -> gitService.removeWorktree(repo.projectPath(), repo.worktreePath(),
                     branchToDelete));
-            // A resumed branch survives, so a repository jagt detached to free it can go back — and it must:
-            // the task does not exist afterwards, and nothing else would ever return that checkout.
+            // A resumed branch survives, so the repository jagt detached to free it must go back.
             if (branchToDelete == null) {
                 repos.forEach(repo -> gitService.reattach(repo.projectPath(), request.taskId()));
             }
@@ -163,13 +161,12 @@ public class TaskProvisioning {
     }
 
     /**
-     * Checked against the REMOTE before anything is created: the worktree is cut from {@code origin/<base>}, so
-     * a typo would otherwise surface as a raw git failure after the branch and directory already exist.
+     * Checked against the REMOTE before anything is created: the worktree is cut from {@code origin/<base>}, so a
+     * typo would otherwise surface as a raw git failure after the branch and directory exist.
      */
     private void requireOnOrigin(String branch, String projectKey, Path projectPath,
                                  BranchStrategy strategy) {
-        // A RESUMED task is not cut from anything — the branch is only remembered as its review target, and
-        // refusing the resume over it would strand a task whose request is open on this very branch.
+        // A RESUMED task is not cut from anything: the branch is only remembered as its review target.
         if (strategy != BranchStrategy.RESUME && !gitService.remoteBranchExists(projectPath, branch)) {
             throw new IllegalArgumentException("Base branch '" + branch + "' does not exist on "
                     + projectKey + "'s origin — the worktree is cut from origin/" + branch + ", so check the"

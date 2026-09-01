@@ -11,12 +11,8 @@ import java.nio.file.Path;
 
 /**
  * Whether a task is carrying answers a human still has to see. Presence alone cannot say: the file outlives the
- * round it was written in, so answers a ship already posted keep reading as answers nobody sent.
- *
- * <p>What it will NOT do is remove the file. A round stamp says a ship happened, never that the replies went out
- * — posting is relayed to the agent and off the critical path, so "posted, file not cleaned up" and "never
- * posted" are the same bytes on disk, and only one of them is safe to delete. Announcing nothing is recoverable
- * ({@code replies} prints the file whatever the card says); unlinking it is not.
+ * round it was written in. It will NOT remove the file — "posted, file not cleaned up" and "never posted" are the
+ * same bytes on disk, and announcing nothing is recoverable where unlinking is not.
  */
 @Service
 @RequiredArgsConstructor
@@ -25,11 +21,8 @@ public class ReviewDrafts {
     private final ConfigService configService;
 
     /**
-     * Announced only where it is actionable, and only while a ship would still send it. Static for a caller that
-     * already holds the configuration — the surfaces read it once per render, and a second load could disagree
-     * with the first inside one frame.
-     *
-     * @param status the status the task is being MOVED to, which is not always the one it still carries
+     * Announced only where it is actionable, and only while a ship would still send it. {@code status} is the one
+     * the task is being MOVED to, which is not always the one it still carries.
      */
     public static boolean pending(TaskState task, TaskStatus status, boolean shipPostsEveryDraft) {
         if (status != TaskStatus.REVIEW_PENDING && status != TaskStatus.CI_FAILED) {
@@ -45,9 +38,8 @@ public class ReviewDrafts {
     }
 
     /**
-     * Answered by a ship that has already happened: the drafts are older than the round now open, and that round
-     * was opened by the ship that posted them. Never true where the answers are not jagt's to spend — posting
-     * turned off, or an author filter under which the agent posts some and leaves the rest for the human.
+     * Answered by a ship that has already happened: the drafts are older than the round now open. Never true where
+     * the answers are not jagt's to spend.
      */
     public boolean spent(TaskState task) {
         Path file = draftsIn(task.worktreePath());

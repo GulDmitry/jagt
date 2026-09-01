@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-/** Every {@link GlobalCommand} there is, collected by the container so no class holds a list to keep in step. */
+/** Every {@link GlobalCommand} there is, collected by the container. */
 @Component
 public class GlobalCommands {
 

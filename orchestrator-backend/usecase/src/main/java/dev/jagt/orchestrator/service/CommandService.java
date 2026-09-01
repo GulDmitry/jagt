@@ -6,9 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * What every surface calls to act on one task: a typed command in the console, a button on the board, an HTTP
- * POST, a Master-only MCP tool. It adds no rules of its own — the gate, the doer and the transition all live in
- * {@link FlowEngine} — so "what does ship do" has one answer however it was asked for.
+ * What every surface calls to act on one task. It adds no rules of its own: the gate, the doer and the transition
+ * all live in {@link FlowEngine}.
  */
 @Service
 @RequiredArgsConstructor

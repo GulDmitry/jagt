@@ -19,21 +19,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * What jagt did with nobody watching, read back from the log it already writes. There is no second store on
- * purpose: a log line and a copy of it in memory are two answers to one question.
- *
- * <p>Only entries that name a task are kept. A line without one is jagt talking about itself (a port, a
- * scheduler tick), and the value of this view is the work that changed NO status — which {@code state.json}
- * history, carrying the transitions, cannot show.
- */
+/** What jagt did with nobody watching, read from the log it already writes. Only entries naming a task are kept. */
 @Service
 public class ActivityReport {
 
-    /** ECS's own envelope (`logging.structured.format.file: ecs`), not what jagt did. */
+    /** ECS's own envelope, not what jagt did. */
     private static final Set<String> ENVELOPE = Set.of("@timestamp", "message", "log", "process", "service",
             "ecs", "tags", "task", "alias", "error");
-    /** How much of the tail to read: enough for a working day of entries, small enough to be free. */
     private static final int TAIL_BYTES = 256 * 1024;
     private static final int MAX_ENTRIES = 40;
     private static final int MAX_MESSAGE = 110;
@@ -62,8 +54,7 @@ public class ActivityReport {
         } catch (IOException e) {
             return "could not read " + path + ": " + e.getMessage() + "\n";
         }
-        // The NEWEST line decides whether this file can be read at all: a format switched mid-file would
-        // otherwise let yesterday's JSON be presented as today's work.
+        // A format switched mid-file must not let yesterday's JSON pass as today's, so the newest line decides.
         if (newestLine(lines) != null && parse(newestLine(lines)) == null) {
             return "log file " + path + " is not structured JSON (logging.structured.format.file), so jagt"
                     + " cannot read its own entries back.\n";
@@ -88,7 +79,7 @@ public class ActivityReport {
                 + String.join("\n", entries) + "\n" + (rolled.isEmpty() ? "" : rolled.strip() + "\n");
     }
 
-    /** Rolled-over files are NOT read: an hour before midnight is in a `.gz` this cannot open, so it says so. */
+    /** Rolled-over files are not read — they are gzipped — so their existence is reported instead. */
     private static String rolledOver(Path path) {
         Path directory = path.toAbsolutePath().getParent();
         String name = path.getFileName().toString();
@@ -114,7 +105,6 @@ public class ActivityReport {
         return null;
     }
 
-    /** The event names what happened; everything that happened TO is in the fields, so both are rendered. */
     private String entry(JsonNode event, String task) {
         String alias = text(event, "alias");
         String message = text(event, "message");
@@ -157,7 +147,7 @@ public class ActivityReport {
         }
     }
 
-    /** Null rather than "null": a field the writer left empty must not print as one. */
+    /** Null rather than "null": an empty field must not print as one. */
     private static String text(JsonNode event, String field) {
         JsonNode value = event.get(field);
         if (value == null || value.isNull()) {
@@ -167,18 +157,13 @@ public class ActivityReport {
         return asText.isBlank() ? null : asText;
     }
 
-    /**
-     * The last {@link #TAIL_BYTES} of the file as whole lines. The first line read is dropped unless the window
-     * happens to start at the beginning: it is almost always the tail of an entry, and half a JSON object
-     * parses as nothing.
-     */
+    /** The last {@link #TAIL_BYTES} as whole lines; the first is dropped unless the window starts at byte 0. */
     private static List<String> tail(Path path) throws IOException {
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.READ)) {
             long size = channel.size();
             long from = Math.max(0, size - TAIL_BYTES);
             java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate((int) Math.min(size, TAIL_BYTES));
-            // Until full or EOF: one read may be short, and a window cut at the end drops the newest entries —
-            // the ones this view is named after.
+            // One read may be short, and a window cut short at the end drops the newest entries.
             while (buffer.hasRemaining() && channel.read(buffer, from + buffer.position()) > 0) {
                 // keep reading
             }

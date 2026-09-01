@@ -15,7 +15,6 @@ import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 @RequiredArgsConstructor
 public class StatusTools implements McpTools {
 
-    /** The allowed values come from the enum itself, so a new status cannot be missing from the schema. */
     private static final String STATUS_ENUM = java.util.Arrays.stream(TaskStatus.values())
             .map(status -> "\"" + status + "\"")
             .collect(java.util.stream.Collectors.joining(", "));

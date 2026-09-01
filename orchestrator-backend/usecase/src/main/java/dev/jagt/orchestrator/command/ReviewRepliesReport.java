@@ -16,21 +16,12 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * The round a human approves, on the screen they are already looking at. The drafts stay a file the agent owns —
- * this only reads it — but a file is not where a review round is read: knowing the convention, finding the
- * worktree and opening an editor stand between the human and the answers jagt is about to post in their name.
- *
- * <p>Every line of the file reaches the screen. The shape the round brief prescribes is used to SEPARATE the
- * blocks and lift the verdict out of the prose, and whatever does not fit it is printed as it stands rather than
- * dropped — the file is written by an agent, so a parser that hides what it did not recognise would hide exactly
- * the round that went wrong.
- */
+/** Drafted review replies, read from the file the agent owns. Text the shape does not fit is printed as it stands. */
 @Service
 @RequiredArgsConstructor
 public class ReviewRepliesReport {
 
-    /** The shape the round brief prescribes to the agent; anything else is text this cannot separate. */
+    /** The shape the round brief prescribes; anything else is text this cannot separate. */
     private static final Pattern BLOCK = Pattern.compile("^##+\\s*(.*)$");
     private static final Pattern VERDICT = Pattern.compile("^(FIXED|NO CHANGE|QUESTION)\\s*[-–—:]?\\s*(.*)$");
 
@@ -60,10 +51,7 @@ public class ReviewRepliesReport {
                 : String.join("\n\n", sections);
     }
 
-    /**
-     * What it asks about is the FILE, never the card's badge: that one is shown only where it is actionable, so a
-     * task whose status has moved on would read as holding no drafts while the answers sat in its worktree.
-     */
+    /** Keyed on the file, never the card's badge: the badge is dropped once the status moves on. */
     private Optional<String> section(TaskView task) {
         Optional<TaskState> state = this.state.task(task.id());
         return state.map(TaskState::worktreePath)
@@ -74,10 +62,7 @@ public class ReviewRepliesReport {
                 .map(text -> header(task, state.filter(drafts::spent).isPresent()) + "\n\n" + body(text));
     }
 
-    /**
-     * A spent file is still PRINTED — it is the only record of what was answered — but never advertised as
-     * something a ship will send.
-     */
+    /** A spent file is still printed — it is the only record of what was answered. */
     private static String header(TaskView task, boolean spent) {
         return spent
                 ? "review replies for " + name(task) + " — drafted in a round already shipped, so these were"
@@ -96,10 +81,7 @@ public class ReviewRepliesReport {
         return task.alias() == null || task.alias().isBlank() ? task.id() : task.alias();
     }
 
-    /**
-     * One paragraph per comment, numbered as it is rendered rather than counted up front: a number the file did
-     * not carry would be a claim about how many comments the round had, which only the host can make.
-     */
+    /** Numbered as rendered, never counted up front: only the host can say how many comments a round had. */
     private static String body(String file) {
         List<String> out = new ArrayList<>();
         List<String> block = new ArrayList<>();

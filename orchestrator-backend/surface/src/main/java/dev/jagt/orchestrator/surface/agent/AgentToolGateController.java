@@ -14,19 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
-/**
- * What a session asks before it runs a tool, and the one answer jagt has: a push whose destination is not the
- * task's own branch is refused, with the reason the model then reads.
- *
- * <p>Every other call is answered with NOTHING, which is what lets the CLI carry on as if jagt had never been
- * asked — and the same happens when jagt is unreachable. A gate that fails closed would make a stopped backend
- * look like a rule.
- */
+/** A gate that failed closed would make a stopped backend look like a rule, so anything not refused answers nothing. */
 @RestController
 @RequiredArgsConstructor
 public class AgentToolGateController {
 
-    /** The call about to run, in the CLI's own shape: which tool, and the command it was given. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ToolCall(@JsonProperty("tool_name") String toolName,
                            @JsonProperty("tool_input") Map<String, Object> toolInput) {
@@ -39,7 +31,7 @@ public class AgentToolGateController {
 
     private final StateService stateService;
 
-    /** An allowed call answers NO BODY at all: whatever comes back here is printed into the session. */
+    /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
     @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> gate(
             @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
@@ -47,7 +39,7 @@ public class AgentToolGateController {
         if (call == null) {
             return ResponseEntity.noContent().build();
         }
-        // A call from a directory no task owns is nobody's to refuse: the branch it may push is unknown.
+        // A directory no task owns has no branch a push could be refused against.
         String taskBranch = stateService.findByWorktree(cwd).map(Map.Entry::getKey).orElse(null);
         return ToolGate.refusal(call.toolName(), call.command(), taskBranch)
                 .map(reason -> ResponseEntity.ok(denied(reason)))

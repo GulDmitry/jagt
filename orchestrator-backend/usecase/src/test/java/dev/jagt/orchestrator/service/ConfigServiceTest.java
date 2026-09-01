@@ -36,7 +36,6 @@ class ConfigServiceTest {
         assertThat(config.agent().outputStyleOrNull()).isEqualTo("acme:eng");
     }
 
-    /** A whole section may be omitted, and callers must never have to null-check the one that was. */
     @Test
     void answersForASectionTheConfigFileNeverMentioned() {
         ConfigFile config = new JsonMapper().readValue("{}", ConfigFile.class);

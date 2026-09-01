@@ -12,11 +12,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * The one entry every surface calls. It owns no rules of its own any more, so what is left to hold is that it
- * adds nothing: the sentence comes back whole, the id goes down untouched, and a refusal is not swallowed on the
- * way out.
- */
 class CommandServiceTest {
 
     private final FlowEngine flow = mock(FlowEngine.class);

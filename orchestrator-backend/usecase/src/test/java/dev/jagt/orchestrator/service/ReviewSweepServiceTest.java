@@ -72,11 +72,6 @@ class ReviewSweepServiceTest {
         verify(statusReports, never()).markApproved("ABC-1");
     }
 
-    /**
-     * Both surfaces show the approval beside the request from the moment it opens, and no status carries it until
-     * the approval has already landed — so the round's own answer is stamped, off the read that is happening
-     * anyway.
-     */
     @Test
     void stampsWhetherTheRoundIsApprovedSoBothSurfacesCanShowItBesideTheRequest() {
         when(reviewReader.read("ABC-1", "http://mr/1"))
@@ -104,10 +99,6 @@ class ReviewSweepServiceTest {
         verify(statusReports, never()).markReviewed("ABC-1");
     }
 
-    /**
-     * Polling runs on any task with an open request, so the same unresolved threads come back every interval —
-     * relaying them again would interrupt the agent to re-decide comments it has already pushed back on.
-     */
     @Test
     void reportsARoundUnchangedInsteadOfRelayingItASecondTime() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
@@ -120,7 +111,6 @@ class ReviewSweepServiceTest {
         assertThat(result.message()).contains("unchanged since the last relay");
     }
 
-    /** The human reads the whole file to approve the round, so the brief hands the agent one shape to fill. */
     @Test
     void asksForRepliesInAShapeAHumanCanReadInOnePass() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
@@ -135,11 +125,6 @@ class ReviewSweepServiceTest {
                 .contains("NECESSARY AND SUFFICIENT");
     }
 
-    /**
-     * A relayed list of comments reads as a work order, and an agent handed a work order complies with the
-     * wrong comments too — after which the human mistakes obedience in the diff for agreement. The brief has
-     * to hand the agent a decision (fix / push back / ask) before it hands it the comments.
-     */
     @Test
     void relaysAReviewRoundAsAJudgementCallAndNotAsAListOfOrders() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
@@ -155,11 +140,6 @@ class ReviewSweepServiceTest {
                 .contains("drop the cache");
     }
 
-    /**
-     * All three outcomes of a round end at REVIEW_PENDING, so the human is advised from the OUTCOME the agent
-     * reports. Without it a round that touched nothing is advised as a ship, and that ship only starts another
-     * round on the same unresolved threads.
-     */
     @Test
     void asksTheAgentToReportWhetherTheRoundChangedAnything() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
@@ -175,11 +155,6 @@ class ReviewSweepServiceTest {
                 .contains("The file holds DRAFTS: post nothing and resolve");
     }
 
-    /**
-     * A red build with no comments goes through the same brief, and its exit condition has to be one the
-     * agent can actually reach: it is forbidden to push, so it can never watch the pipeline turn green — only
-     * finish the fix locally.
-     */
     @Test
     void tellsAnAgentFixingOnlyAFailedBuildWhenTheRoundIsOver() {
         when(reviewReader.read("ABC-1", "http://mr/1"))
@@ -204,7 +179,6 @@ class ReviewSweepServiceTest {
         verify(statusReports, never()).markApproved("ABC-1");
     }
 
-    /** Whatever the trigger: two sweeps mean the read is paid for twice and two briefs go out for one round. */
     @Test
     void refusesASecondSweepOfATaskWhileTheFirstIsStillRunning() {
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
@@ -246,11 +220,6 @@ class ReviewSweepServiceTest {
         verify(reviewReader, times(2)).read("ABC-1", "http://mr/1");
     }
 
-    /**
-     * The real collision is the shell thread against the auto-review executor thread, which the reentrant tests
-     * cannot reach. The latches are what pin cross-thread EXCLUSION rather than absence of a data race — they
-     * introduce the very ordering a race needs to lack — so the setup cannot be simplified away.
-     */
     @Test
     void refusesAConcurrentSweepFromAnotherThreadNotJustAReentrantCall() throws InterruptedException {
         CountDownLatch firstSweepIsInside = new CountDownLatch(1);
@@ -363,10 +332,6 @@ class ReviewSweepServiceTest {
         verifyNoInteractions(reviewReader);
     }
 
-    /**
-     * The verdict is derived on every read, so what the task has to keep is the host's OWN wording — that is
-     * what a surface shows a human next to the dot, and no two hosts spell it the same way.
-     */
     @Test
     void keepsWhatTheHostSaidAboutTheChecksOnTheTask() {
         when(reviewReader.read("ABC-1", "http://mr/1"))
@@ -381,10 +346,6 @@ class ReviewSweepServiceTest {
                 .pipelineStatus()).isEqualTo("SUCCEEDED");
     }
 
-    /**
-     * The status clock restarts on every round and on a respawned agent re-reporting itself, so how long the
-     * review has been waiting can only come from the host.
-     */
     @Test
     void keepsWhenTheHostSaysTheRequestWasOpened() {
         when(reviewReader.read("ABC-1", "http://mr/1"))
@@ -399,7 +360,6 @@ class ReviewSweepServiceTest {
                 .requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     }
 
-    /** A task is as far along as its least finished repository, so the wait is the longest one of them. */
     @Test
     void reportsTheOldestRequestOfAMultiRepoTaskAsHowLongTheReviewHasBeenWaiting() {
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
@@ -420,7 +380,6 @@ class ReviewSweepServiceTest {
                 .requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     }
 
-    /** A model read cannot say, and "open since jagt noticed" is a different fact — wrong by days after a resume. */
     @Test
     void leavesTheRequestsAgeAloneWhenTheReadCouldNotSayWhenItWasOpened() {
         TaskState known = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")

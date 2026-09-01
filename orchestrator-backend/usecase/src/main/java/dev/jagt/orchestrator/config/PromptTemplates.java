@@ -7,11 +7,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 
-/**
- * All prompt texts live as resources under src/main/resources/prompts/ —
- * one place to edit wording, no prose inside Java code. (The agent bootstrap
- * prompt is one line and lives in application.yml.)
- */
+/** The agent bootstrap prompt is not here: it is one line in application.yml. */
 @Component
 public class PromptTemplates {
 

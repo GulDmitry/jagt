@@ -20,18 +20,14 @@ class CliEditorDriverTest {
 
     private static final String XML = """
             <application><component name="RecentProjectsManager"><option name="additionalInfo"><map>
-                <entry key="$USER_HOME$/www/repos/ABC-2391-demo">
-                  <value><RecentProjectMetaInfo><option name="frameTitle" value="ABC-2391" /></RecentProjectMetaInfo></value>
+                <entry key="$USER_HOME$/www/repos/ABC-42-demo">
+                  <value><RecentProjectMetaInfo><option name="frameTitle" value="ABC-42" /></RecentProjectMetaInfo></value>
                 </entry>
                 <entry key="$USER_HOME$/www/repos/demo-back">
                   <value><RecentProjectMetaInfo /></value>
                 </entry>
             </map></option></component></application>""";
 
-    /**
-     * The launcher is looked up HERE, where the process is spawned — the configuration keeps the bare name the
-     * human wrote, and only the launcher is resolved: the arguments after it are theirs.
-     */
     @Test
     void findsTheLauncherOnPathAndPassesItsArgumentsThroughUntouched() {
         ProcessRunner runner = mock(ProcessRunner.class);
@@ -85,19 +81,19 @@ class CliEditorDriverTest {
     @Test
     void removesTheDoneWorktreeEntryButKeepsTheOthers() {
         String pruned = CliEditorDriver.pruneRecentProjects(XML, "/Users/me",
-                Path.of("/Users/me/www/repos/ABC-2391-demo"));
+                Path.of("/Users/me/www/repos/ABC-42-demo"));
 
-        assertThat(pruned).doesNotContain("ABC-2391-demo").contains("demo-back");
+        assertThat(pruned).doesNotContain("ABC-42-demo").contains("demo-back");
     }
 
     @Test
     void prunesAnEntryTheIdeStoredAsAnAbsolutePathRatherThanUnderItsHomeMacro() {
-        String absForm = XML.replace("$USER_HOME$/www/repos/ABC-2391-demo", "/Users/me/www/repos/ABC-2391-demo");
+        String absForm = XML.replace("$USER_HOME$/www/repos/ABC-42-demo", "/Users/me/www/repos/ABC-42-demo");
 
         String pruned = CliEditorDriver.pruneRecentProjects(absForm, "/Users/me",
-                Path.of("/Users/me/www/repos/ABC-2391-demo"));
+                Path.of("/Users/me/www/repos/ABC-42-demo"));
 
-        assertThat(pruned).doesNotContain("ABC-2391-demo").contains("demo-back");
+        assertThat(pruned).doesNotContain("ABC-42-demo").contains("demo-back");
     }
 
     @Test
@@ -110,25 +106,24 @@ class CliEditorDriverTest {
 
     private static final String GC_XML = """
             <application><component name="RecentProjectsManager"><option name="additionalInfo"><map>
-                <entry key="$USER_HOME$/www/repos/ABC-2575-demo"><value><RecentProjectMetaInfo /></value></entry>
-                <entry key="$USER_HOME$/www/repos/ABC-2575-deploy"><value><RecentProjectMetaInfo /></value></entry>
-                <entry key="$USER_HOME$/www/repos/ABC-2676-demo"><value><RecentProjectMetaInfo /></value></entry>
+                <entry key="$USER_HOME$/www/repos/ABC-43-demo"><value><RecentProjectMetaInfo /></value></entry>
+                <entry key="$USER_HOME$/www/repos/ABC-43-deploy"><value><RecentProjectMetaInfo /></value></entry>
+                <entry key="$USER_HOME$/www/repos/ABC-44-demo"><value><RecentProjectMetaInfo /></value></entry>
                 <entry key="$USER_HOME$/www/repos/demo-back"><value><RecentProjectMetaInfo /></value></entry>
                 <entry key="$USER_HOME$/www/other/some-old-project"><value><RecentProjectMetaInfo /></value></entry>
             </map></option></component></application>""";
 
-    /** Only ABC-2676-demo and demo-back are still on disk; every other entry names a directory that is gone. */
     @Test
     void garbageCollectsDeadTaskAndDeployWorktreesButKeepsLiveAndForeignEntries() {
-        Predicate<Path> dirExists = p -> p.endsWith("ABC-2676-demo") || p.endsWith("demo-back");
+        Predicate<Path> dirExists = p -> p.endsWith("ABC-44-demo") || p.endsWith("demo-back");
 
         List<String> dead = CliEditorDriver.deadWorktreeKeys(GC_XML, "/Users/me",
                 List.of(new WorktreeLocation(Path.of("/Users/me/www/repos"), "demo")), dirExists);
         String pruned = CliEditorDriver.removeEntries(GC_XML, dead);
 
         assertThat(pruned)
-                .doesNotContain("ABC-2575-demo").doesNotContain("ABC-2575-deploy")
-                .contains("ABC-2676-demo")
+                .doesNotContain("ABC-43-demo").doesNotContain("ABC-43-deploy")
+                .contains("ABC-44-demo")
                 .contains("demo-back")
                 .contains("some-old-project");
     }
@@ -140,10 +135,6 @@ class CliEditorDriverTest {
         assertThat(dead).isEmpty();
     }
 
-    /**
-     * The leak the Linux port predicted and found: a prune that only looked in the macOS location left a dead
-     * entry in the IDE's recent-projects list for every {@code done} task on Linux, forever.
-     */
     @Test
     void looksForJetBrainsConfigWhereEachPlatformKeepsIt() {
         var dirs = CliEditorDriver.jetBrainsConfigDirs("/home/dev").stream().map(Path::toString).toList();

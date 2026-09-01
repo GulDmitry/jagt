@@ -1,5 +1,4 @@
-// Everything the board knows, fetched in one call and repainted once. Every action ends here, so a refusal is
-// read against a view that has already caught up.
+// Fetched in one call and repainted once: every action ends here, so a refusal is read against a fresh view.
 
 import {api} from '../core/api.js';
 import * as store from '../core/store.js';
@@ -13,6 +12,7 @@ export async function refresh() {
       tasks: data.tasks,
       projects: data.projects || [],
       branchStrategies: data.branchStrategies || [],
+      phases: data.phases || [],
       autoReview: {summary: data.autoReview, enabled: data.autoReviewEnabled},
       jobs: data.jobs,
     });
@@ -22,8 +22,7 @@ export async function refresh() {
   }
 }
 
-// Fetched, not hardcoded: the palette completes and validates against the SERVER's verb list, so a command the
-// console accepts can never be missing from the suggestions here.
+// Fetched, not hardcoded: the palette completes and validates against the server's own verb list.
 export async function refreshVerbs() {
   try {
     store.set({verbs: await api('/api/commands')});

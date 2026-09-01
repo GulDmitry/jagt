@@ -17,7 +17,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** A button may never do more than the console: everything here goes through the same gate a typed command does. */
 class TaskCommandsControllerTest {
 
     private final CommandService commands = mock(CommandService.class);
@@ -33,10 +32,6 @@ class TaskCommandsControllerTest {
         assertThat(api.act("ABC-1", "ship").message()).isEqualTo("ship ABC-1: approval relayed");
     }
 
-    /**
-     * A page that has been open a while asks for actions the task no longer allows. The sentence is for the
-     * human; the code is what lets the page tell "your view was stale" from "jagt refuses this".
-     */
     @Test
     void namesTheRefusalKindSoAStalePageCanTellItselfApartFromARealRefusal() {
         var refused = refusals.refused(new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available"));
@@ -52,7 +47,6 @@ class TaskCommandsControllerTest {
         assertThat(refused.getBody()).containsOnlyKeys("error");
     }
 
-    /** The palette adds no rule: it hands the text to the dispatcher and returns what came back, verbatim. */
     @Test
     void passesPaletteTextToTheDispatcherAndReturnsItsAnswerUnchanged() {
         when(naturalLanguage.interpret("ship the login task"))
@@ -63,10 +57,6 @@ class TaskCommandsControllerTest {
         verifyNoInteractions(commands, launcher);
     }
 
-    /**
-     * PARITY is the rule for the two surfaces, and these are the verbs the board had no way to reach at all —
-     * `resume` above all: a reopened review request, or taking over someone else's, was console-only.
-     */
     @Test
     void resumesAnExistingReviewRequestLikeTheConsoleDoes() {
         when(launcher.resume("https://host/mr/42"))
@@ -76,7 +66,6 @@ class TaskCommandsControllerTest {
                 .isEqualTo("Resumed PROJ-1 on its existing branch");
     }
 
-    /** A ticket key is not a review request: there is nothing to resume from it, so it is refused, not guessed. */
     @Test
     void refusesToResumeWithoutAReviewRequestUrl() {
         assertThatThrownBy(() -> api.resume(new TaskCommandsController.ResumeRequest("ABC-1")))

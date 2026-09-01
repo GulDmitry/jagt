@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.GitRemote;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
@@ -11,13 +12,9 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Path;
 
 /**
- * Re-enters a task on its EXISTING branch with an already-open review request, at CI_POLLING — so `sweep`
- * and `deploy` continue on that request instead of the next `ship` opening a second one.
- *
- * <p>The request is the ONLY input, because it carries every answer itself: its SOURCE branch is the task (a
- * jagt task IS its branch) and its TARGET is the base the next ship must update rather than open a second
- * request against. A ticket is deliberately not accepted: when it disagrees with the source branch, `ship`
- * pushes one branch and updates the request of another.
+ * Re-enters a task on its EXISTING branch with an already-open review request, at CI_POLLING. The request is the
+ * ONLY input: its SOURCE branch is the task and its TARGET the base the next ship must update. A ticket is not
+ * accepted — when it disagrees with the source branch, `ship` pushes one branch and updates another's request.
  */
 @Service
 @RequiredArgsConstructor
@@ -33,7 +30,7 @@ public class TaskResume {
     public Launched resume(String reviewRequestUrl) {
         var read = reviewReader.readRequest(reviewRequestUrl);
         var request = read.facts();
-        // Two different answers, and merging them into one is what let a live request be reported as missing.
+        // Two different answers: merging them reports a live request as missing.
         if (request.isEmpty()) {
             return Launched.refused("error: read failed: " + reviewRequestUrl + " (cause in the log) —"
                     + " nothing is known about it");
@@ -70,11 +67,10 @@ public class TaskResume {
                 .instructions(instructions).branchStrategy("resume")
                 // Stored bare: the pattern already prefixed the ticket, and a later ship expands it again.
                 .title(ReviewRequestTitle.stripTicketPrefix(title, taskId))
-                // The open request's OWN target, so the next ship updates it instead of opening a second one
-                // against the project default (the host matches source AND target).
+                // The open request's OWN target, the host matching source AND target.
                 .baseBranch(targetBranch)
                 .build());
-        statusReports.report("CI_POLLING", "review request: " + mrUrl, taskId);
+        statusReports.report(TaskStatus.CI_POLLING, "review request: " + mrUrl, taskId);
         return "Resumed " + taskId + " on its existing branch, linked " + mrUrl
                 + "; CI_POLLING — `sweep` or `deploy`.";
     }

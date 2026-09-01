@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.AgentRuntime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -8,6 +9,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class WorktreeFilesTest {
 
@@ -127,18 +130,37 @@ class WorktreeFilesTest {
         Files.createDirectories(gitCommonDir.resolve("info"));
         Files.writeString(gitCommonDir.resolve("info").resolve("exclude"), "*.local\n");
 
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir);
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
-                .contains("*.local", "task_context.md", "AGENTS.md", ".claude/");
+                .contains("*.local", "task_context.md", "AGENTS.md", ".jagt/");
+    }
+
+    @Test
+    void keepsTheActiveAgentsOwnFilesOutOfEveryWorktreesGitStatus(@TempDir Path gitCommonDir) throws Exception {
+        AgentRuntime runtime = mock(AgentRuntime.class);
+        when(runtime.statusExclusions()).thenReturn(List.of(".acme.json", ".acme/"));
+
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, runtime);
+
+        assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
+                .contains(".acme.json", ".acme/");
     }
 
     @Test
     void addsNothingTwiceWhenTheProjectIsInitialisedAgain(@TempDir Path gitCommonDir) throws Exception {
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir);
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir);
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
                 .containsOnlyOnce("task_context.md");
+    }
+
+    @Test
+    void countsTheActiveAgentsOwnConfigAsGeneratedRatherThanTheAgentsWork() {
+        AgentRuntime runtime = mock(AgentRuntime.class);
+        when(runtime.generatedFiles()).thenReturn(List.of(".acme.json"));
+
+        assertThat(WorktreeFiles.generated(runtime)).contains(".acme.json", "task_context.md");
     }
 }

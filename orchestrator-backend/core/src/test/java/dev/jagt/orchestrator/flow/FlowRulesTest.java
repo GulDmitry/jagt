@@ -17,10 +17,6 @@ class FlowRulesTest {
         assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.projected(false))).isTrue();
     }
 
-    /**
-     * A dead agent is what makes a task stuck at SHIPPING, so shipping again is the recovery; while the agent is
-     * alive the push it was asked for is still in flight and a second one would race it.
-     */
     @Test
     void shipsAStuckTaskAgainOnlyOnceTheAgentThatWasPushingItIsGone() {
         assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(false, () -> false))).isTrue();
@@ -41,7 +37,6 @@ class FlowRulesTest {
         assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.projected(true))).isFalse();
     }
 
-    /** A stalled deploy is finished by deploying again, whether or not a request was ever read. */
     @Test
     void deploysAStalledDeployAgainWithNoRequestAtAll() {
         assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.DEPLOY, Facts.projected(false))).isTrue();
@@ -55,10 +50,6 @@ class FlowRulesTest {
         assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.projected(false))).isFalse();
     }
 
-    /**
-     * Nothing on the branch yet, a push in flight, an agent committing into the branch the deploy would merge, or
-     * a revert that leaves the deploy branch already holding everything.
-     */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING", "REVERTED", "DONE"})
     void refusesADeployWhereItCouldOnlyRaceTheAgentOrRefuse(TaskStatus status) {
@@ -111,14 +102,12 @@ class FlowRulesTest {
         assertThat(FlowRules.reportable(status)).isTrue();
     }
 
-    /** A task must not be able to talk itself onto a shared branch, out of one, or closed. */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
     void refusesTheStatusesThatAreJagtsToSetRatherThanATasksToReport(TaskStatus status) {
         assertThat(FlowRules.reportable(status)).isFalse();
     }
 
-    /** Answering it costs a process probe, so it is asked only where the answer can change the verdict. */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "SHIPPING")
     void doesNotProbeTheAgentForAStatusWhoseVerdictLivenessCannotChange(TaskStatus status) {
@@ -132,10 +121,6 @@ class FlowRulesTest {
         assertThat(probed).isFalse();
     }
 
-    /**
-     * The bug this exists to stop: an agent whose message happens to carry a request link could say CI_POLLING
-     * about a task the review had already passed, dragging it backwards and re-arming the unattended poll.
-     */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"REVIEWED", "APPROVED", "DEPLOYED", "REVERTED"})
     void refusesToSayATaskIsWaitingOnChecksOnceTheReviewHasPassedIt(TaskStatus past) {
@@ -155,12 +140,6 @@ class FlowRulesTest {
         assertThat(FlowRules.reportable(TaskStatus.DEPLOYED, said)).isTrue();
     }
 
-    /**
-     * A respawned agent announces itself: reporting IN_PROGRESS took a reverted deploy off the record, and
-     * CI_POLLING then landed through it — laundering the guard above, since CI_POLLING is reportable FROM
-     * IN_PROGRESS. The report is accepted (the agent's protocol is to keep saying what it is doing), the STATUS
-     * stands until a human moves it.
-     */
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "SHIPPING", "REVIEW_PENDING", "CI_FAILED"})
     void keepsARevertedDeployOnTheRecordWhateverItsAgentReports(TaskStatus said) {

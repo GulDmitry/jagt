@@ -11,10 +11,6 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Pinned by the bug it was written for: the shipped default was {@code /opt/homebrew/bin/tmux}, so every task
- * on Linux failed at "Failed to start command" before the agent ever started.
- */
 class ExecutablesTest {
 
     @Test
@@ -32,7 +28,6 @@ class ExecutablesTest {
                 .isEqualTo("/opt/custom/bin/tmux");
     }
 
-    /** A GUI-launched process has neither Homebrew prefix on PATH — the reason an absolute path was hardcoded. */
     @Test
     void fallsBackToTheHomebrewPrefixWhenPathHasNothing() {
         assertThat(Executables.resolve("tmux", "/usr/sbin",
@@ -71,7 +66,6 @@ class ExecutablesTest {
                 path -> path.toString().equals("/usr/bin/tmux"))).isEqualTo("/opt/nonstandard/tmux");
     }
 
-    /** Found nowhere: the message a human then reads must name what they asked for, not a guessed location. */
     @Test
     void returnsTheBareNameWhenNothingHasIt() {
         assertThat(Executables.resolve("tmux", "/usr/bin", path -> false)).isEqualTo("tmux");

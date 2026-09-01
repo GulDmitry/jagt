@@ -4,13 +4,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * What a runtime needs to provision one task's worktree. The two agent-shaped preferences are HINTS: a runtime
- * whose CLI has no notion of an output style or of plugins simply ignores them.
- *
- * @param path             the worktree the agent will run in
- * @param orchestratorRoot the installation the agent's own config links back to
- * @param outputStyle      optional persona/output style to pin for the agent; null = the agent's own default
- * @param disabledPlugins  plugins the agent session should not load (heavy per-worktree language servers)
+ * What a runtime needs to provision one task's worktree. {@code outputStyle} and {@code disabledPlugins} are HINTS
+ * a runtime whose CLI has no such notion ignores; null {@code outputStyle} = the agent's own default.
  */
 public record AgentWorktree(Path path, Path orchestratorRoot, String outputStyle, List<String> disabledPlugins) {
 

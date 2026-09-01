@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class TokenFormatTest {
 
-    /** Rounding up crosses into the next form rather than widening this one: never "10.0k", never "1000k". */
     @ParameterizedTest
     @CsvSource({
             "0,0",

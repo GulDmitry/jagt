@@ -4,12 +4,9 @@ import dev.jagt.orchestrator.service.StateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/**
- * Which task a call may act on. The caller is identified by the worktree it runs in (the
- * {@code X-Working-Directory} header), and a sub-agent gets exactly one: its own.
- */
 @Component
 @RequiredArgsConstructor
+/** A caller is identified by the X-Working-Directory header its stdio bridge sets, and by nothing else. */
 public class CallerScope {
 
     private final StateService stateService;
@@ -31,7 +28,6 @@ public class CallerScope {
         return canonical;
     }
 
-    /** What writes outside the worktree is the human's alone. */
     public void requireMaster(String callerTaskId, String tool) {
         if (callerTaskId != null) {
             throw new IllegalArgumentException(tool + " is Master-only: a sub-agent may only act inside its"

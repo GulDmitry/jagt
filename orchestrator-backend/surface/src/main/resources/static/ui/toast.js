@@ -1,5 +1,4 @@
-// A toast is gone in seconds, so every one is also kept here for the session. No persistence: the backend's
-// own log file keeps what matters longer.
+// A toast is gone in seconds, so every one is kept here for the session; the log file keeps what matters longer.
 
 const toasts = document.getElementById('toasts');
 const opener = document.getElementById('show-log');
@@ -7,7 +6,7 @@ const messages = [];
 
 export const sessionLog = () => messages.join('\n');
 
-// What the log button OPENS is a dialog, which this module does not own: it hands over the click instead.
+// The dialog is not this module's to own, so the click is handed over.
 export const showLog = (open) => { opener.onclick = open; };
 
 export function toast(message, isError) {

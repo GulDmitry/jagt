@@ -1,5 +1,4 @@
-// The form that starts a task. It owns its fields; what the ticket read costs is why the slot says so while it
-// runs.
+// The form that starts a task, and the only place its fields are read.
 
 import {api} from '../core/api.js';
 import * as store from '../core/store.js';
@@ -12,19 +11,16 @@ const strategy = document.getElementById('strategy');
 
 export const focusRef = () => ref.focus();
 
-// The words are the server's: what each choice does is one sentence in one place, and a page that spelled them
-// out again would be the copy that goes stale.
 let rendered = null;
 
 export function render() {
   const choices = store.branchStrategies();
   const signature = choices.map((choice) => choice.id).join('\n');
-  if (rendered === signature) {
-    return;                       // a rebuild collapses the list under a human who has it open
-  }
+  if (rendered === signature) return;
   rendered = signature;
   const chosenBefore = strategy.value;
   strategy.replaceChildren(...choices.map((choice) => new Option(choice.id, choice.id)));
+  // The words are the server's: a page that spelled out what each choice does would be the copy that goes stale.
   strategy.dataset.tip = choices.map((choice) => `${choice.id} — ${choice.hint}`).join(' · ');
   if (choices.some((choice) => choice.id === chosenBefore)) {
     strategy.value = chosenBefore;
@@ -45,8 +41,7 @@ submits(form, {
       notes: document.getElementById('notes').value,
     }),
   }),
-  // Most of the ways a launch declines arrive as an ordinary answer, not as an error — and this form is
-  // holding the project, the branch and the instructions the next attempt needs.
+  // Most declines arrive as an ordinary answer, and this form holds what the next attempt needs.
   done: (result) => {
     if (!result.created) return;
     form.reset();

@@ -10,10 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The two places jagt itself owns: where it was pointed and where it writes what it knows. A state file it
- * cannot write is found on the first task, after the worktree exists.
- */
+/** The two places jagt itself owns. A state file it cannot write is found on the first task, not here. */
 @Component
 @RequiredArgsConstructor
 public class WorkspaceCheck implements StartupCheck {

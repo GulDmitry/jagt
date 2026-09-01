@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class TokenUsageTest {
 
-    /** The CLI emits a fully zeroed usage block when it aborts early; counting it would inflate CALLS. */
     @Test
     void doesNotCountACallThatNeverReachedAModel() {
         assertThat(TokenUsage.ofCall(0, 0, 0, 0)).isEqualTo(TokenUsage.NONE);

@@ -6,11 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Resolves the orchestrator root with no machine-specific configuration: walk up from the launch directory until a
- * committed marker turns up, wherever the process was started.
- *
- * <p>TWO markers are accepted, and that is deliberate: `mcp_client.js` is only still here for agents that
- * cannot talk to a remote MCP server, so "where is the root" must not depend on whether that bridge exists.
+ * Resolves the orchestrator root by walking up from the launch directory to a committed marker. TWO are accepted,
+ * so the root does not depend on whether the stdio bridge file is still there.
  */
 @Component
 public class OrchestratorPaths {
@@ -48,10 +45,7 @@ public class OrchestratorPaths {
                 : root.resolve(defaultName);
     }
 
-    /**
-     * Where the human's own file is, answered WITHOUT a Spring context — a launch has to hand Spring that file
-     * before there is one, and two answers to "which jagt.yml" is the split this whole file exists to end.
-     */
+    /** Answered WITHOUT a Spring context: a launch has to hand Spring that file before there is one. */
     public static Path configFileOutside(String[] args) {
         String named = named(args, "--orchestrator.config-file=");
         String env = System.getenv("ORCHESTRATOR_CONFIG_FILE");

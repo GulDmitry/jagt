@@ -2,19 +2,8 @@ package dev.jagt.orchestrator.prompteval;
 
 import java.util.List;
 
-/**
- * One operator request and the single command it must map onto, against the two tasks
- * {@link CommandMappingEvalTest} registers. Widening coverage is adding a row here.
- *
- * @param taskId    what the tasks list spells the answer as
- * @param taskAlias the other spelling of the same task, which the request may equally well be answered with
- */
 record CommandMappingCase(String request, String command, String taskId, String taskAlias) {
 
-    /**
-     * Every row is a way a human actually asks, never the command word in a sentence: a request that already
-     * contains "ship" proves the model can copy a word.
-     */
     static List<CommandMappingCase> matrix() {
         return List.of(
                 new CommandMappingCase("the login work is ready for someone to look at", "ship", "ABC-42", "a1"),

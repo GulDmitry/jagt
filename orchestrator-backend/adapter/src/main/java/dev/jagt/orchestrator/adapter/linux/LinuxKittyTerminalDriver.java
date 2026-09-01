@@ -10,15 +10,8 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * Both platform hooks come out EMPTY here, and that is the finding, not an omission:
- * <ul>
- *   <li>raising the window is already done by {@code kitty @ focus-window} in {@code reveal} — X11/Wayland
- *       window managers own stacking, and jagt is not going to shell out to wmctrl or xdotool to fight a WM's
- *       focus-stealing policy on one desktop and fail silently on the next;
- *   <li>the Cyrillic keymap workaround is macOS-only by construction: it exists because Cocoa matches a
- *       {@code cmd} key-equivalent by produced character. Here kitty's own {@code ascii} shortcut fallback
- *       handles a non-Latin layout, so aliases would add config the terminal does not need.
- * </ul>
+ * Both platform hooks are EMPTY by design: {@code kitty @ focus-window} already raises the window, and kitty's
+ * own {@code ascii} shortcut fallback handles a non-Latin layout here.
  */
 @Component
 @ConditionalOnProperty(name = "orchestrator.platform", havingValue = "linux", matchIfMissing = false)

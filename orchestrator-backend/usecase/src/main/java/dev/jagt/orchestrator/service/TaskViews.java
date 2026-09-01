@@ -11,12 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Builds the ONE projection a human surface renders, so a phase, an owner and a set of legal actions are
- * decided in one place.
- *
- * <p>Order is the ALIAS, and it is the projection's job because the board repaints on every state write: an
- * order that follows activity moves a task on the agent's next keep-alive, which is motion nobody asked for and
- * costs a human the position they had learnt. A task therefore moves only when one is created or closed.
+ * Builds the ONE projection a human surface renders. Order is the ALIAS, and it is the projection's job because the
+ * board repaints on every state write: an order that followed activity would move a task on every keep-alive.
  */
 @Component
 @RequiredArgsConstructor
@@ -26,10 +22,7 @@ public class TaskViews {
     private final StateService stateService;
     private final ConfigService configService;
 
-    /**
-     * One render's worth of answers, read from the configuration ONCE: the board shows the tasks AND the
-     * polling policy that explains them, and two reads could disagree with each other mid-render.
-     */
+    /** One render's worth of answers, read from the configuration ONCE so two reads cannot disagree mid-render. */
     public record Snapshot(List<TaskView> tasks, AutoReviewCadence cadence, List<String> projects) {
     }
 
@@ -50,8 +43,8 @@ public class TaskViews {
     }
 
     /**
-     * Numeric where the alias is (letter, digits): plain text order puts p10 before p2, which is not an order a
-     * human can predict. An alias-less task sorts after every aliased one, by id.
+     * Numeric where the alias is: plain text order puts p10 before p2. An alias-less task sorts after every aliased
+     * one, by id.
      */
     private static String aliasOrder(Map.Entry<String, TaskState> entry) {
         String alias = entry.getValue().alias();
@@ -67,10 +60,8 @@ public class TaskViews {
     }
 
     /**
-     * The configuration, or its defaults when the file cannot be read. The console REDRAWS THROUGH HERE on every
-     * keystroke, and {@code jagt.yml} is hand-edited while jagt runs — a half-saved file would otherwise throw
-     * out of the render loop and take the orchestrator down with it. The failure is logged, not swallowed
-     * silently, and the surfaces then show what defaults mean (nothing polling, no deploy branches).
+     * The configuration, or its defaults when the file cannot be read: {@code jagt.yml} is hand-edited while jagt
+     * runs, and a half-saved file would throw out of a render loop. The failure is logged, never swallowed.
      */
     private ConfigService.ConfigFile readableConfig() {
         try {

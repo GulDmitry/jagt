@@ -7,14 +7,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * What a task's own agent sessions have burned, read from the log each session keeps of itself.
- *
- * <p>A mark PER LOG is what keeps a re-read honest: a session appends, so only what is past its own mark is
- * new, and a task may have more than one log alive at once (a second session opened on a task whose first one
- * hung). One shared mark made those two re-read each other from nothing, over and over.
- *
- * <p>There is no cost here — a session's log prices nothing, and inventing a rate for it would be a guess in
- * dollars.
+ * What a task's own agent sessions have burned, read from the log each session keeps of itself. The mark is PER
+ * LOG: a session appends, so only what is past its own mark is new, and a task may have more than one log alive at
+ * once. There is no cost here — a session's log prices nothing.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentSpend(TokenUsage usage, Map<String, Long> marks) {

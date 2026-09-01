@@ -12,12 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Where a ticket's facts come from: the metered headless assistant, which follows the reference into whatever
- * tracker holds it through the MCP tools of whoever runs jagt. It is a full model call, and the most expensive
- * one in a task's life.
- *
- * <p>The cost is RETURNED rather than charged here: the read is what produces the key the task is named by, so
- * there is no task to attribute it to until the caller has created one — which is what {@link #charge} is for.
+ * Where a ticket's facts come from: the metered headless assistant, following the reference into whatever tracker
+ * holds it. The cost is RETURNED rather than charged, the read being what produces the key the task is named by.
  */
 @Component
 @Slf4j
@@ -48,9 +44,8 @@ public class TicketReader {
     }
 
     /**
-     * A model's "no such item" is a guess — the tool it needed may simply not have been found, which is
-     * indistinguishable from an item that is gone. So a non-answer is asked again, and only the last one is
-     * believed. Every attempt is paid for, so all of them are returned as one spend.
+     * A model's "no such item" is indistinguishable from a tool it never found, so a non-answer is asked again and
+     * only the last is believed. Every attempt is paid for, so all are returned as one spend.
      */
     private Answer<TicketFacts> askUntilUsable(String ticketRef) {
         long deadline = System.nanoTime() + BUDGET.toNanos();
@@ -64,6 +59,7 @@ public class TicketReader {
             }
             log.atWarn().setMessage("ticket read unusable")
                     .addKeyValue("ref", ticketRef)
+                    .addKeyValue("cause", answer.facts().isEmpty() ? "no answer" : "facts unusable")
                     .addKeyValue("attempt", attempt)
                     .addKeyValue("limit", maxAttempts)
                     .log();

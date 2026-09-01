@@ -5,15 +5,6 @@ import dev.jagt.orchestrator.flow.TaskStatus;
 
 import java.util.List;
 
-/**
- * One round a sweep can meet and where it must leave the task. Data, so widening coverage is adding a row.
- *
- * @param round    what the host reports; null = the request cannot be read at all, which must leave the task
- *                 exactly where it was — an unreadable review that advanced one would read as a clean one
- * @param expected the status the task must hold afterwards
- * @param sentence what the human must be told, verbatim enough to catch a reword
- * @param briefed  whether the agent was handed this round to work on
- */
 record ReviewRoundCase(String name, ReviewFacts round, TaskStatus expected, String sentence, boolean briefed) {
 
     static List<ReviewRoundCase> matrix() {

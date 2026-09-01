@@ -28,10 +28,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * The tmux/relay half of what used to live in the OrchestratorTools facade. Its whole setup is four
- * collaborators and no editor, notifier, git or provisioning — the point of extracting it.
- */
 class AgentSessionsTest {
 
     @TempDir
@@ -93,14 +89,10 @@ class AgentSessionsTest {
                 .hasMessageContaining("ABC-9");
     }
 
-    /**
-     * A boolean made the caller guess WHY nothing came forward, and the one sentence it guessed was written for
-     * a terminal whose viewer is a tab — so a terminal that simply was not running said the same thing.
-     */
     @ParameterizedTest
     @CsvSource({
             "WINDOW, and raised the agents window",
-            "UNREACHABLE_TAB, no API to select one",
+            "UNREACHABLE_TAB, a tab this terminal cannot select",
             "NOT_RUNNING, no agents viewer is open"
     })
     void saysWhatTheTerminalCouldActuallyDoAboutTheViewer(TerminalDriver.Revealed revealed, String expected) {
@@ -132,20 +124,6 @@ class AgentSessionsTest {
         verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false));
     }
 
-    /**
-     * Two flows relay into one file — a sweep's brief and ship's "post your drafted replies" — so truncating
-     * means the agent never sees whichever arrived first and the review reads as clean.
-     */
-    @Test
-    void addsToAnUnreadRelayInsteadOfWipingIt() throws Exception {
-        Path worktree = worktreeWithRelay("BRIEF: four unresolved comments");
-
-        sessions().appendTaskContext("ABC-1", "ALSO: post your drafted replies");
-
-        assertThat(Files.readString(worktree.resolve("task_context.md")))
-                .contains("BRIEF: four unresolved comments", "ALSO: post your drafted replies");
-    }
-
     @Test
     void replacesTheRelayForANewRoundOfWork() throws Exception {
         Path worktree = worktreeWithRelay("STALE: last round");
@@ -156,10 +134,6 @@ class AgentSessionsTest {
                 .isEqualTo("NEW ROUND: fix the pipeline").doesNotContain("STALE");
     }
 
-    /**
-     * The poller reads the same round every interval while the request stands still, and a relay NUDGES the
-     * session — so an unchanged brief would interrupt the agent to re-decide comments it has already answered.
-     */
     @Test
     void leavesTheAgentAloneWhenTheRoundIsTheOneItWasAlreadyHanded() throws Exception {
         worktreeWithRelay("Review round for http://mr/1.\nComment: rename x");

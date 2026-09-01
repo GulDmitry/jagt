@@ -34,7 +34,6 @@ class AgentSessionControllerTest {
                         .withStartedBy("compact"));
     }
 
-    /** Deriving where a session writes its log is a guess, and a payload that named none must not become one. */
     @Test
     void namesNoLogWhenThePayloadCarriedNone() {
         StateService state = mock(StateService.class);
@@ -64,7 +63,6 @@ class AgentSessionControllerTest {
         assertThat(answered).isEqualTo("re-read task_context.md");
     }
 
-    /** The one event that covers two waits: what the CLI told the human is what separates them. */
     @Test
     void carriesWhatTheCliToldTheHumanSoOneEventCanMeanTwoDifferentWaits() {
         StateService state = mock(StateService.class);
@@ -90,7 +88,6 @@ class AgentSessionControllerTest {
                 .hasMessageContaining("/elsewhere");
     }
 
-    /** A mistyped hook would otherwise be answered with a 200 and report nothing for the life of the install. */
     @Test
     void refusesAStateThatIsNotOneOfJagtsOwn() {
         StateService state = mock(StateService.class);

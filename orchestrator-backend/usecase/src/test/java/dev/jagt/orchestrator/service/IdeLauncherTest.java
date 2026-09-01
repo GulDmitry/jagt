@@ -26,7 +26,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** Which directory a human is shown, which is not always the task's own worktree. */
 class IdeLauncherTest {
 
     private final EditorDriver editor = mock(EditorDriver.class);
@@ -63,7 +62,6 @@ class IdeLauncherTest {
         verify(editor, never()).open(GitService.deployWorktreePath(api, "ABC-1"));
     }
 
-    /** The conflict lives on the deploy side, so the sentence must not point the human at a clean worktree. */
     @Test
     void saysItIsTheDeployWorktreeItOpenedForAConflict(@TempDir Path root) throws Exception {
         Path repo = Files.createDirectories(root.resolve("repo"));

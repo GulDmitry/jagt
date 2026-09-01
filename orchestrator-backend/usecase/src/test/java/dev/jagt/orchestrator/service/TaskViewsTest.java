@@ -41,10 +41,6 @@ class TaskViewsTest {
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
     }
 
-    /**
-     * The console redraws through here on every keystroke, and jagt.yml is hand-edited while jagt runs — a
-     * half-saved file must not throw out of the render loop.
-     */
     @Test
     void keepsRenderingWhenTheConfigurationCannotBeRead() {
         when(stateService.tasks()).thenReturn(Map.of("ABC-1",

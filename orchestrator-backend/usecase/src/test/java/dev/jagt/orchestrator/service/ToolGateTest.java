@@ -73,7 +73,6 @@ class ToolGateTest {
         assertThat(ToolGate.refusal("Bash", "git push origin dev", null)).isEmpty();
     }
 
-    /** The branch a review request is built on: deleting it discards what was shipped. */
     @ParameterizedTest
     @ValueSource(strings = {"git push origin :ABC-42", "git push --delete origin ABC-42",
             "git push -d origin ABC-42"})

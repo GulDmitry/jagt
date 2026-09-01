@@ -56,7 +56,6 @@ class TaskLauncherTest {
                         "https://tracker.example.com/browse/ABC-123");
     }
 
-    /** The read happens BEFORE the task exists, so it can only be charged once creation named one. */
     @Test
     void chargesTheTicketReadToTheTaskItJustNamed() {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
@@ -72,10 +71,6 @@ class TaskLauncherTest {
         order.verify(tickets).charge("ABC-123", spent);
     }
 
-    /**
-     * A card whose ticket link is missing cannot be repaired later — nothing can tell an item that has no link
-     * from one that was never reached — so the launch says so instead of starting work on half a task.
-     */
     @Test
     void createsNoTaskWhenTheTrackerSaysThereIsNoSuchItem() {
         oneProject("group-a");

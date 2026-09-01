@@ -16,20 +16,16 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Every sign of what a task's session is doing, and the one verdict from them. None of them costs a token or
- * asks a model: a session's own log is read, and its harness reports it.
- *
- * <p>Reports are kept in memory rather than written down. Losing them on a restart costs promptness and
- * nothing else — the log a session keeps says the same thing one threshold later.
+ * Every sign of what a task's session is doing, and the one verdict from them. None costs a token. Reports are kept
+ * in memory: losing them on a restart costs promptness and nothing else.
  */
 @Component
 @RequiredArgsConstructor
 public class SessionProbe {
 
     /**
-     * What a session's harness says about it. {@code WAITING} and {@code GONE} are verdicts on their own —
-     * nothing moves until a human acts. {@code IDLE} is not: a turn ending says only that a turn ended, and a
-     * session re-entered by whatever it left running ends dozens of them without anybody being wanted.
+     * What a session's harness says about it. {@code WAITING} and {@code GONE} are verdicts on their own;
+     * {@code IDLE} is not — a turn ending says only that a turn ended.
      */
     public enum State { WAITING, GONE, IDLE, WORKING }
 
@@ -69,9 +65,8 @@ public class SessionProbe {
     }
 
     /**
-     * Never allowed to fail. One read is asked on the scheduler's own thread, where a throw strands the job
-     * rather than skipping a run, and another inside a request a hook cannot see the answer to — while the file
-     * itself is unreadable for exactly as long as a human takes to save it.
+     * Never allowed to fail: one read is asked on the scheduler's own thread, where a throw strands the job rather
+     * than skipping a run, and the file is unreadable for exactly as long as a human takes to save it.
      */
     private ConfigService.ConfigFile config() {
         try {
@@ -89,9 +84,8 @@ public class SessionProbe {
     }
 
     /**
-     * A session reporting itself alive DROPS what was said before rather than outranking it by time: two hooks
-     * of one event (an end and the start that follows it) are stamped on arrival and can share a millisecond
-     * or arrive out of order, and a lost alarm is cheaper than one nobody can clear.
+     * A session reporting itself alive DROPS what was said before rather than outranking it by time: two hooks of
+     * one event are stamped on arrival and can share a millisecond or arrive out of order.
      */
     public void report(String taskId, State state, long at) {
         if (state == State.WORKING) {
@@ -107,10 +101,7 @@ public class SessionProbe {
         reportedLog.put(taskId, log);
     }
 
-    /**
-     * A report needs no threshold — it is what happened, not an absence — so it answers whenever it is the most
-     * recent sign. Anything newer supersedes it, which is how answering a session stops the alarm.
-     */
+    /** A report needs no threshold, being what happened rather than an absence; anything newer supersedes it. */
     public Optional<Silence> of(String taskId, TaskState task, long staleMs, long now) {
         long ownLog = ownLog(taskId, task);
         long lastSign = Math.max(Math.max(task.lastActiveTimestamp(), ownLog),
@@ -120,22 +111,18 @@ public class SessionProbe {
             if (halt.state() != State.IDLE) {
                 return Optional.of(new Silence(halt.at(), halt.state()));
             }
-            // A turn that ENDED is a sign like any other, not a verdict: a session finishes a turn every time
-            // it answers, and comes straight back when what it left running finishes. Only nothing happening
-            // AFTER it means anything, which is the threshold below — and it keeps its word for that sentence.
+            // A turn that ENDED is a sign like any other, not a verdict: only nothing happening AFTER it means
+            // anything, which is the threshold below.
             lastSign = halt.at();
         } else if (halt != null) {
-            // A tie KEEPS it: a turn is appended to the log immediately before the hook that reports it fires,
-            // and both are stamped in whichever millisecond they land in. Dropped only by a strictly newer
-            // sign, and only if it is still the one just read, or a report landing meanwhile is lost unread.
+            // A tie KEEPS it: a turn is appended to the log immediately before the hook reporting it fires, and
+            // both are stamped in whichever millisecond they land in. Dropped only if it is still the one read.
             halted.remove(taskId, halt);
             halt = null;
         }
         long printed = windowActivity(taskId, lastSign, staleMs, now);
         if (printed > lastSign) {
-            // Output AFTER the turn ended is a later sign than the report, so the report no longer describes
-            // this wait: it neither dates it nor gets to name it, and it is dropped rather than kept to be
-            // quoted hours later.
+            // Output AFTER the turn ended is a later sign, so the report no longer describes this wait.
             lastSign = printed;
             halted.remove(taskId, halt);
             halt = null;
@@ -146,9 +133,8 @@ public class SessionProbe {
     }
 
     /**
-     * The LATER of what a session named and what the runtime finds. Preferring the named file would freeze the
-     * sign the moment a session is cleared or resumed: the file it named still exists, with the mtime it had
-     * when that session stopped writing to it, while the work moved to a new one.
+     * The LATER of what a session named and what the runtime finds. Preferring the named file would freeze the sign
+     * the moment a session is cleared or resumed, the work having moved to a new file.
      */
     private long ownLog(String taskId, TaskState task) {
         Path reported = reportedLog.get(taskId);
@@ -168,11 +154,9 @@ public class SessionProbe {
     }
 
     /**
-     * A process spawn, so it is asked only once the free signs have run out and already read stale.
-     *
-     * <p>It stays a sign even though it says nothing about a session at a prompt: a log gets its entry when a
-     * tool call is ISSUED and nothing at all while that call runs, so an eight-minute build would otherwise
-     * read as death. What a prompt looks like is the harness's to report, not this threshold's to infer.
+     * A process spawn, so it is asked only once the free signs have run out and already read stale. It stays a sign
+     * even at a prompt: a log gets its entry when a tool call is ISSUED and nothing while it runs, so an
+     * eight-minute build would otherwise read as death.
      */
     private long windowActivity(String taskId, long lastSign, long staleMs, long now) {
         return now - lastSign < staleMs

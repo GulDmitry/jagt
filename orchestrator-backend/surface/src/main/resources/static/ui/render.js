@@ -1,5 +1,4 @@
-// One repaint of everything from the snapshot: no diffing, no keys. The grid is small, and a card that changes
-// in place is what keeps the position a human has learnt — position carries no state here.
+// One repaint of everything: a card that changes in place keeps the position a human has learnt.
 
 import * as store from '../core/store.js';
 import {card} from './card.js';
@@ -18,15 +17,13 @@ export function render() {
   projects.render();
   launch.render();
   header.render(tasks, shown.length);
-  // Read off the cards themselves: the configured list can be longer than anything on the board, and shorter
-  // than the truth when a project has been taken out of the config under a task that still works in it.
+  // Read off the cards themselves: the configured list can be longer than the board, and shorter than the truth.
   const manyProjects = new Set(tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project))).size > 1;
   board.replaceChildren(...shown.map((task) => card(task, manyProjects)));
 }
 
-// ONE listener for everything a card offers, dispatched by what the button CARRIES: an action to run, or a
-// report to open. A click carries NAMES, never a captured task, so a card rebuilt under the pointer cannot act
-// for the task it used to describe.
+// A click carries NAMES, never a captured task, so a card rebuilt under the pointer cannot act for the task it
+// used to describe.
 export const onClick = ({action, report}) => {
   board.onclick = (event) => {
     const button = event.target.closest('button[data-action], button[data-report]');

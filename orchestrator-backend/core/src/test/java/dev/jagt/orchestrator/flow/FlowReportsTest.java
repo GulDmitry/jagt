@@ -17,7 +17,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** The second door into the machine: what a task may say about itself, and what only jagt may set. */
 class FlowReportsTest {
 
     private final TaskStore stateService = mock(TaskStore.class);
@@ -41,7 +40,6 @@ class FlowReportsTest {
         verifyNoInteractions(stateService);
     }
 
-    /** What a `respawn` used to do to a task whose deploy had been taken back out. */
     @Test
     void recordsAStartingAgentsLineWithoutTakingARevertedDeployOffTheRecord() {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
@@ -53,7 +51,6 @@ class FlowReportsTest {
         assertThat(after.message()).isEqualTo("picking the task back up");
     }
 
-    /** A CI_POLLING with no request link is a lie on the dashboard, so the link cannot land in a later write. */
     @Test
     void recordsTheRequestLinkInTheSameWriteAsTheStatusThatNeedsIt() {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);

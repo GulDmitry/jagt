@@ -30,7 +30,6 @@ class ClaudeSessionLogTest {
         assertThat(spent.upTo()).isEqualTo(Files.size(log));
     }
 
-    /** A line that froze the mark used to freeze a task's spend for good, from the first bad byte onward. */
     @Test
     void keepsCountingPastALineItCannotRead(@TempDir Path dir) throws IOException {
         Path log = dir.resolve("session.jsonl");
@@ -46,7 +45,6 @@ class ClaudeSessionLogTest {
         assertThat(spent.upTo()).isEqualTo(Files.size(log));
     }
 
-    /** The session is writing while this reads, so the turn being written now belongs to the next read. */
     @Test
     void leavesAHalfWrittenLastLineForTheNextRead(@TempDir Path dir) throws IOException {
         String complete = """
@@ -85,7 +83,6 @@ class ClaudeSessionLogTest {
         assertThat(spent.upTo()).isEqualTo(40);
     }
 
-    /** Waiting for a newline that is not coming froze a task's spend for good; one turn is the cheaper loss. */
     @Test
     void stepsOverARecordTooLongForTheWindow(@TempDir Path dir) throws IOException {
         Path log = dir.resolve("session.jsonl");

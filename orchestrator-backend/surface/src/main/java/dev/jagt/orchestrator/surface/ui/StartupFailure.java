@@ -3,12 +3,7 @@ package dev.jagt.orchestrator.surface.ui;
 import dev.jagt.orchestrator.startup.Misconfigured;
 import org.springframework.boot.web.server.PortInUseException;
 
-/**
- * Boot reports a startup failure through logback and then marks it as handled, so the JVM prints no trace
- * either: a jagt that failed to bind its port left a shell prompt and a still-serving OLD instance as the only
- * evidence. That one case is worth naming outright, because "another jagt is already running" is what it
- * almost always means.
- */
+/** Boot marks a startup failure as handled, so nothing else prints it. */
 public final class StartupFailure {
 
     private StartupFailure() {
@@ -21,12 +16,10 @@ public final class StartupFailure {
             }
             if (cause instanceof PortInUseException portTaken) {
                 int port = portTaken.getPort();
-                return "jagt cannot start: port " + port + " is already in use — most likely a jagt that is"
-                        + " still running. Stop that one, or start this one elsewhere with"
-                        + " `--server.port=<port>`.";
+                return "jagt cannot start: port " + port + " is in use, most likely another jagt. Free it, or"
+                        + " set `--server.port=<port>`.";
             }
         }
-        return "jagt cannot start: " + failure + " — the full stack trace went to the log file"
-                + " (logging.file.name).";
+        return "jagt cannot start: " + failure + " — stack trace in logging.file.name.";
     }
 }

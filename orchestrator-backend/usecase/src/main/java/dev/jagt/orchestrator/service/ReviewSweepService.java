@@ -22,9 +22,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * One review sweep. The human-in-the-loop rule lives in the OUTCOME, not in who triggered it: an approval
- * advances state, but comments are only RELAYED to the agent as drafts — nothing is pushed or posted, so the
- * human always closes the loop.
+ * One review sweep. The human-in-the-loop rule lives in the OUTCOME, not in who triggered it: an approval advances
+ * state, but comments are only RELAYED as drafts — nothing is pushed or posted.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,9 +40,8 @@ public class ReviewSweepService {
     private final StateService stateService;
     private final Notifications notifications;
     /**
-     * One sweep at a time per task, no matter who asked. The guard lives HERE rather than in a caller because
-     * several triggers reach it, and a second sweep of one request pays for the read twice AND relays a second
-     * brief for the same review round (the agent then fixes the same comments twice, or interleaves them).
+     * One sweep at a time per task, no matter who asked: a second sweep of one request pays for the read twice and
+     * relays a second brief for the same round.
      */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
@@ -75,8 +73,7 @@ public class ReviewSweepService {
             return new SweepResult(SweepResult.Kind.NO_MR,
                     "error: no request linked to " + taskId + " — `ship` first");
         }
-        // A repository with no request yet is work nobody is reviewing, so the round cannot be called clean:
-        // advancing here would report "nothing unresolved" over a half that was never shipped.
+        // A repository with no request is work nobody is reviewing, so the round cannot be called clean.
         List<String> unshipped = stateService.task(taskId).map(TaskState::repos).orElse(List.of()).stream()
                 .filter(repo -> !repo.hasReviewRequest())
                 .map(TaskRepo::project)
@@ -86,8 +83,7 @@ public class ReviewSweepService {
                     + String.join(", ", unshipped) + " — `ship` again");
         }
         String mrUrl = reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", "));
-        // One unreadable request fails the WHOLE sweep, exactly as a partial read of one does: "nothing
-        // unresolved + green" advances a task, and half a task's repositories cannot say that.
+        // One unreadable request fails the WHOLE sweep: half a task's repositories cannot say "green".
         List<ReviewFacts> rounds = new ArrayList<>();
         for (TaskRepo repo : reviewed) {
             Optional<ReviewFacts> read = reviewReader.read(taskId, repo.mrUrl());
@@ -130,14 +126,9 @@ public class ReviewSweepService {
     }
 
     /**
-     * Keeps what the host said about this round — the checks, whether it is approved, when it says the request was
-     * opened — and taps the human ONCE when a run turns red: a later poll saying the same thing writes nothing and
-     * says nothing, or an unattended sweep would rewrite the state file and notify on a loop. ONE write for all
-     * three, since all three come off one read. The approval is STAMPED rather than left to the status, because
-     * every surface shows it beside the request from CI_POLLING on, long before any status could carry it.
-     *
-     * @return the checks word the task now carries — what this round decides on, so the sweep and the card
-     *         cannot disagree about one request
+     * Keeps what the host said about this round and taps the human ONCE when a run turns red: a later poll saying
+     * the same thing writes nothing, or an unattended sweep would notify on a loop. ONE write, all three facts
+     * coming off one read. Returns the checks word the task now carries.
      */
     private String record(String taskId, ReviewFacts facts) {
         Optional<TaskState> before = stateService.task(taskId);
@@ -173,9 +164,8 @@ public class ReviewSweepService {
     }
 
     /**
-     * Several repositories, ONE round: the task is as far along as its least finished repository. Approved only
-     * when every request is, and the pipeline is reported as the single worst one — a concatenation would read
-     * as "success" to the caller's own check while one repository was still building.
+     * Several repositories, ONE round: approved only when every request is, and the pipeline reported as the single
+     * worst one, a concatenation reading as "success" while one repository still builds.
      */
     private static ReviewFacts merged(List<ReviewFacts> rounds) {
         if (rounds.size() == 1) {
@@ -194,9 +184,8 @@ public class ReviewSweepService {
     }
 
     /**
-     * The worst repository's own wording. Ordered by VERDICT rather than by the words themselves, so the sweep's
-     * decision and what a surface shows cannot disagree about one read; a round that said nothing at all reads as
-     * "unknown", so the merged line stays something a human can read without claiming the host answered.
+     * The worst repository's own wording, ordered by VERDICT rather than by the words. A round that said nothing
+     * reads as "unknown" rather than claiming the host answered.
      */
     private static String worstPipeline(List<ReviewFacts> rounds) {
         return rounds.stream()
@@ -207,11 +196,8 @@ public class ReviewSweepService {
     }
 
     /**
-     * The round is relayed as a JUDGEMENT, not as a work order. An agent handed a list of comments complies
-     * with all of them — including the ones that are wrong about the system, which the reviewer cannot see
-     * from the diff — and the human then reads agreement into code that was merely obedient. So the brief
-     * spends its opening on the three routes a comment can take, and the reply file is what carries the
-     * disagreements and the questions back.
+     * The round is relayed as a JUDGEMENT, not as a work order: an agent handed a list of comments complies with
+     * all of them, wrong ones included. The brief opens on the three routes a comment can take.
      */
     private static String brief(String mrUrl, ReviewFacts r, String said) {
         StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
@@ -258,12 +244,9 @@ public class ReviewSweepService {
             r.comments().forEach(c -> brief.append("- ").append(c).append('\n'));
             brief.append("</comments>\n");
         }
-        // An unanswered question ENDS the round rather than parking in it: staying CI_POLLING would have the
-        // auto-review poll re-brief the agent on the very comments it was told to hold, paying for another
-        // review read every interval. With no comments this is a failed pipeline, and an agent that cannot push
-        // cannot watch the build turn green either — its exit is the local fix.
-        // The round's OUTCOME is a field of its own, because all three end at the same status: a ship for a
-        // round that changed nothing only starts another one on the same unresolved threads.
+        // An unanswered question ENDS the round rather than parking in it: staying CI_POLLING would have the poll
+        // re-brief the agent on the very comments it was told to hold. The round's OUTCOME is a field of its own,
+        // because all three end at the same status.
         brief.append(r.comments().isEmpty()
                 ? "When the build is fixed locally, set status REVIEW_PENDING (outcome=progress)."
                 : """

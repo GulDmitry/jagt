@@ -50,7 +50,6 @@ class WatchdogServiceTest {
                 && "ABC-1".equals(sent.taskId()) && "waiting for input".equals(sent.body())));
     }
 
-    /** Watching a status that idles by design — CI_POLLING on the host, REVIEW_PENDING on the human — is noise. */
     @Test
     void watchesOnlyTheStatusesInWhichAnAgentIsSupposedToBeWorking() {
         assertThat(Arrays.stream(TaskStatus.values()).filter(WatchdogService::watches).toList())
@@ -70,7 +69,6 @@ class WatchdogServiceTest {
         verify(probe, never()).of(anyString(), any(), anyLong(), anyLong());
     }
 
-    /** Its own report already put a banner on the screen; the stop that follows it is the same event. */
     @ParameterizedTest
     @EnumSource(value = SessionProbe.State.class, names = {"WAITING", "IDLE"})
     void sendsNoSecondBannerForAnAgentThatHadAlreadyAsked(SessionProbe.State reported, @TempDir Path root) {
@@ -89,7 +87,6 @@ class WatchdogServiceTest {
         verifyNoInteractions(notifications);
     }
 
-    /** A session that ENDED and one waiting for a keypress need different moves, and a stamp outlives a banner. */
     @Test
     void stampsWhySoBothSurfacesCanSayItAndNotOnlyTheBanner(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
@@ -105,10 +102,6 @@ class WatchdogServiceTest {
         assertThat(state.task("ABC-1").orElseThrow().silentBecause()).isEqualTo("the session ended");
     }
 
-    /**
-     * A desktop ping is gone the moment it is dismissed, so the block has to be readable off the board for as
-     * long as it lasts — otherwise the card keeps claiming the agent is working.
-     */
     @Test
     void stampsTheSilenceOnTheTaskSoBothSurfacesShowItAndNotOnlyTheDesktopPing(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
@@ -137,7 +130,6 @@ class WatchdogServiceTest {
         assertThat(state.task("ABC-1").orElseThrow().agentIsSilent()).isFalse();
     }
 
-    /** Both surfaces repaint on a state write, and this runs against every task there is. */
     @Test
     void writesNothingOnTheTicksThatFindTheSameVerdictAsTheOneBefore(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
@@ -158,17 +150,12 @@ class WatchdogServiceTest {
         assertThat(writes).hasValue(1);
     }
 
-    /**
-     * THE rule the board rests on: a status that reads as the agent's own turn must have something watching it,
-     * or a session blocked in it waits for a human who was never told.
-     */
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void watchesEveryStatusWhoseNextMoveIsTheAgentsOwn(TaskStatus status) {
         assertThat(WatchdogService.watches(status)).isEqualTo(Move.ownerOf(status) == Owner.AGENT);
     }
 
-    /** A question nobody answered and then a session that died is a second event, and the graver one. */
     @Test
     void bannersADeadSessionEvenWhereTheQuestionItAskedIsStillUnanswered(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
@@ -186,7 +173,6 @@ class WatchdogServiceTest {
         verify(notifications).send(argThat(sent -> "the session ended".equals(sent.body())));
     }
 
-    /** A report lands on its own thread, and the pass that decided before it arrived must not erase it. */
     @Test
     void leavesAStampThatLandedWhileItWasStillDeciding(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()
@@ -202,7 +188,6 @@ class WatchdogServiceTest {
         assertThat(state.task("ABC-1").orElseThrow().silentSince()).isEqualTo(5_000);
     }
 
-    /** A banner has one line and no clock, so an absence of any word has to become one. */
     @Test
     void saysThereIsNoSignOfLifeWhereNothingWasReportedAtAll(@TempDir Path root) {
         OrchestratorProperties properties = OrchestratorProperties.defaults()

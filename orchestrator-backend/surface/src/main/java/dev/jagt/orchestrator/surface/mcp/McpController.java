@@ -27,8 +27,7 @@ public class McpController {
         try {
             message = mapper.readTree(body);
         } catch (RuntimeException e) {
-            // Malformed JSON must yield a JSON-RPC -32700, never a Spring 500 page:
-            // the stdio proxy pipes our body verbatim to the MCP client.
+            // Malformed JSON must answer a JSON-RPC -32700, never a Spring 500 page.
             return ResponseEntity.ok(protocolService.parseError(e.getMessage()));
         }
         return protocolService.handle(message, cwd)

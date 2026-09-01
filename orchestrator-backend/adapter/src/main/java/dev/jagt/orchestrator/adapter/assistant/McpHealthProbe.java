@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.config.ClaudeProperties;
+import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.port.Processes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,12 +15,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * What the CLI says about its own MCP servers ({@code claude mcp list}, free and token-less) — the one thing a
- * read cannot report about itself: a model whose tool never loaded answers "does not exist" like a host whose
- * request is gone.
- *
- * <p>Empty = NOT established, which is a third answer and never "nothing is down": a probe that could not run
- * would otherwise clear the very failure it was called to explain.
+ * What the CLI says about its own MCP servers, free and token-less: a model whose tool never loaded answers
+ * "does not exist" exactly like a host whose item is gone. Empty is NOT established and never "nothing is
+ * down" — a probe that could not run would otherwise clear the failure it was called to explain.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,7 +30,7 @@ class McpHealthProbe {
     private static final int MAX_LISTED = 8;
     /** Every probe starts every configured server, so asking again this soon costs seconds and learns nothing. */
     private static final Duration FRESH_FOR = Duration.ofMinutes(2);
-    /** The CLI's word for a server that is up; every other verdict is one a read can trip over. */
+    /** The CLI's word for a server that is up. */
     private static final String CONNECTED = "(Connected)";
 
     private final ProcessRunner processRunner;
@@ -50,11 +47,11 @@ class McpHealthProbe {
                     .log();
             return Optional.empty();
         }
-        // `claude mcp list` takes neither --mcp-config nor --strict-mcp-config (verified 2026-08-24), so with a
-        // declared set it would report the servers of a resolution the read never used.
+        // `claude mcp list` takes neither --mcp-config nor --strict-mcp-config, so with a declared set it
+        // reports the servers of a resolution the read never used.
         if (!assistant.mcpConfig().isBlank()) {
             log.atWarn().setMessage("mcp probe skipped")
-                    .addKeyValue("cause", "servers declared in orchestrator.assistant.mcp-config")
+                    .addKeyValue("cause", "orchestrator.assistant.mcp-config set")
                     .log();
             return Optional.empty();
         }
@@ -90,8 +87,7 @@ class McpHealthProbe {
                 .map(McpHealthProbe::serverAndStatus)
                 .flatMap(Optional::stream)
                 .toList();
-        // No line was a server line: either nothing is configured, or the output no longer looks like this.
-        // Answering "nothing is down" here would clear the very failure the caller asked about.
+        // No server line at all: answering "nothing is down" would clear the failure that was asked about.
         if (servers.isEmpty()) {
             log.atError().setMessage("mcp probe listed no server")
                     .addKeyValue("cmd", claude.command() + " mcp list")
@@ -121,10 +117,8 @@ class McpHealthProbe {
         return Optional.of(line.substring(0, named) + " (" + status.trim().replaceFirst("^[^\\p{L}]+", "") + ")");
     }
 
-    /**
-     * The tick / cross / bang the CLI prints is what separates a server line from any other line carrying
-     * {@code " - "} — including a failure detail that carries one itself.
-     */
+    /** The tick / cross / bang the CLI prints is what separates a server line from any other line carrying
+     *  {@code " - "}, a failure detail included. */
     private static int markedVerdict(String line) {
         for (int at = line.lastIndexOf(" - "); at >= 0; at = line.lastIndexOf(" - ", at - 1)) {
             String rest = line.substring(at + 3).stripLeading();

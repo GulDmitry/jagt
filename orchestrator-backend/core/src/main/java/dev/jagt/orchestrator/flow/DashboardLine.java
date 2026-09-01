@@ -16,8 +16,7 @@ public final class DashboardLine {
         String message = task.message();
         AgentReport report = AgentReport.of(message);
         // A question OUTRANKS every other line and is reachable from every status — an agent may ask without
-        // moving its task. A request link reads as "ready to ship", so the human ships and the unanswered
-        // question goes out as a review reply.
+        // moving its task.
         if (report == AgentReport.QUESTION && task.status() != TaskStatus.DONE) {
             return needsInput(message);
         }
@@ -26,11 +25,9 @@ public final class DashboardLine {
             case DEPLOY_CONFLICT -> "NEEDS YOU: " + orDefault(message, "deploy conflict; resolve it in the deploy worktree");
             case CI_POLLING, REVIEWED, APPROVED, DEPLOYED, REVERTED -> requestProblem(task, usableRequestLink);
             case REVIEW_PENDING -> switch (report) {
-                // Complete on its own: this is the one round that leaves no highlighted button, so a surface
-                // that shows only this line still has to say whose move it is.
+                // The one round that leaves no highlighted button, so this line has to say whose move it is.
                 case NO_CHANGES -> "ANSWERED: " + orDefault(report.detailOf(message), "nothing to change")
                         + " — the open threads are the reviewer's to close";
-                // A question never reaches here: it is answered above, from whatever status it was asked.
                 case QUESTION, PLAIN -> requestProblem(task, usableRequestLink);
             };
             case NEW, IN_PROGRESS, SHIPPING -> silence(task);
@@ -50,12 +47,8 @@ public final class DashboardLine {
     }
 
     /**
-     * The status says the agent is working and the watchdog found otherwise — the one case where the status
-     * itself misleads, so it is shouted rather than left to the next-move line.
-     *
-     * <p>Where nothing was reported about the session there is no sentence to carry, so this one is the
-     * status's to make: at NEW the agent has not reported at all, and the launch is what a human should be
-     * looking at rather than the agent. A session that DID report is quoted whatever its status.
+     * The status says the agent is working and the watchdog found otherwise — the one case where the status itself
+     * misleads. A session that DID report is quoted whatever its status.
      */
     private static String silence(TaskState task) {
         if (!task.agentIsSilent()) {

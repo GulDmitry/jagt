@@ -8,11 +8,6 @@ import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * The verb lookups every typing surface shares. A retired spelling must resolve the same on every machine —
- * lower-casing under a Turkish default locale turns "REVIEW" into "revıew" and would silently send the line to
- * the model instead.
- */
 class TaskActionTest {
 
     @Test

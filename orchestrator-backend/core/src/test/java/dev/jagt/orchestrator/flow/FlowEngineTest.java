@@ -21,10 +21,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * The gate, the doer and the transition in one place: what the rules refuse, and what the task is left saying
- * afterwards. WHICH statuses allow which action is {@code FlowRulesTest}'s subject, not this one's.
- */
 class FlowEngineTest {
 
     private final TaskStore stateService = mock(TaskStore.class);
@@ -92,7 +88,6 @@ class FlowEngineTest {
         verify(stateService, never()).updateTask(any(), any());
     }
 
-    /** A half-written shared branch must be RECORDED, not merely complained about. */
     @Test
     void stampsWhatALandingLeftBehindBeforeItRefusesTheHalfDoneRevert() {
         havingTask("ABC-1", TaskStatus.DEPLOYED, true);

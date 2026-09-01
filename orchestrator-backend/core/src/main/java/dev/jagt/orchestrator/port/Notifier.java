@@ -2,11 +2,8 @@ package dev.jagt.orchestrator.port;
 
 
 /**
- * One way of reaching the human. Adding one must change no caller, so nothing here describes a transport: a
- * channel says which notifications it wants and delivers them.
- *
- * <p>Contract: never throw, and never block for long. A channel that cannot deliver logs and returns; the
- * dispatcher gives it a thread of its own so a slow one cannot delay the work that emitted the notification.
+ * One way of reaching the human: a channel says which notifications it wants and delivers them, so nothing here
+ * describes a transport. Never throws and never blocks for long — the dispatcher gives it a thread of its own.
  */
 public interface Notifier {
 

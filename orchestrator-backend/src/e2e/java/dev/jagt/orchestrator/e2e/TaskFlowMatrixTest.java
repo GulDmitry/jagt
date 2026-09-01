@@ -29,17 +29,6 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * The end-to-end task flow, once per {@link TaskFlowCase} — real git worktrees, real tmux windows, real state
- * transitions, with the model replaced by the scripted {@code stub} runtime so the expected result is exact
- * rather than plausible. Creation and teardown are what varies with these combinations; the flow between them
- * is {@link ReviewAndDeployFlowTest}, and what neither covers is named in {@link TaskFlowCase}.
- *
- * <p>Not part of {@code ./gradlew test}: it needs git + tmux and writes worktrees. Run it with
- * {@code ./gradlew e2eTest}. It leaves no trace — throwaway origin/clone under a temp dir, a throwaway tmux
- * session killed afterwards, the task's leftover branch deleted between cases, and every GUI-touching driver
- * replaced by a double.
- */
 @Tag("e2e")
 @SpringBootTest(properties = {"spring.config.import=",
         "orchestrator.agent.cli=stub", "orchestrator.open-terminal-window=false",
@@ -56,10 +45,8 @@ class TaskFlowMatrixTest {
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 
-    /** It would act on the DEVELOPER's machine: the cleaner rewrites the IDE's own state. */
     @MockitoBean
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
-    /** The headless doubles the oracle needs: a window, an editor or a notification cannot be asserted. */
     @MockitoBean
     private TerminalDriver terminalDriver;
     @MockitoBean
@@ -84,7 +71,6 @@ class TaskFlowMatrixTest {
         E2eWorkspace.createRepositoryWithOrigin(workspace.resolve("origin.git"), workspace.resolve("proj"));
     }
 
-    /** A run killed mid-case leaves its sessions behind, and the next run would read them as its own. */
     @BeforeEach
     void startFromNoneOfThisRunsSessions() {
         E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
@@ -97,7 +83,6 @@ class TaskFlowMatrixTest {
      */
     @AfterEach
     void leaveNothingBehindForTheNextCombination() {
-        // `done` keeps the branch by design, so the next combination would hit "branch already exists".
         E2eWorkspace.forgetTask(workspace.resolve("proj"), workspace.resolve("ABC-1-proj"), "ABC-1");
         E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
         stateService.removeTask("ABC-1");
@@ -115,9 +100,6 @@ class TaskFlowMatrixTest {
         assertThat(created).contains("ABC-1 is a1", "agent running on ABC-1");
         assertThat(worktree.resolve(AgentRuntime.SYSTEM_KNOWLEDGE_FILE)).exists();
         assertThat(worktree.resolve("task_context.md")).exists();
-        // Nothing agent-shaped: no MCP config, no Claude directory, and no stdio bridge either. The bridge is
-        // asked for by the runtimes that cannot reach the endpoint themselves (Codex today), so a worktree that
-        // has one means something outside the runtime put it there.
         assertThat(worktree.resolve("mcp_client.js")).doesNotExist();
         assertThat(worktree.resolve(".mcp.json")).doesNotExist();
         assertThat(worktree.resolve(".claude")).doesNotExist();

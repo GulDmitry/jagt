@@ -32,10 +32,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * The one path that writes a SHARED branch. Every test is about what it refuses, or about the record it leaves
- * so the undo has an exact commit to revert.
- */
 class DeployServiceTest {
 
     private final EditorDriver editor = mock(EditorDriver.class);
@@ -77,7 +73,6 @@ class DeployServiceTest {
                 .doesNotContain("Run `deploy ABC-1` again");
     }
 
-    /** Without the commit stored, `revert` has nothing exact to undo and can only send the human to git. */
     @Test
     void recordsTheMergeCommitTheDeployCreatedSoItCanBeReverted(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -113,10 +108,6 @@ class DeployServiceTest {
         assertThat(outcome.stamp()).isEqualTo("reverted on dev (f00dfeed)");
     }
 
-    /**
-     * A task deployed before jagt stored the commit: the message must be the by-hand recipe, because guessing
-     * which merge to revert on a SHARED branch is the one mistake here with no cheap undo.
-     */
     @Test
     void refusesToGuessTheMergeCommitOfADeployItDidNotRecord(@TempDir Path root) {
         StateService state = stateIn(root);
@@ -149,7 +140,6 @@ class DeployServiceTest {
                 .hasMessageContaining("origin/staging` in web");
     }
 
-    /** The human resolves a deploy conflict themselves: jagt opens no editor and briefs no agent for it. */
     @Test
     void handsBackAConflictWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
             throws Exception {

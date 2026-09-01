@@ -49,19 +49,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/**
- * The board itself, in a browser: the columns it groups tasks into, the buttons it offers, what a click posts,
- * what a refusal reads like, the push that repaints it and the command palette. Nothing here asserts a rule of
- * jagt's own — the projection and the gate have their own tests — only that the page renders what the server
- * says and asks for exactly what the human clicked.
- *
- * <p>Three write paths are mocked because a real one would act on the developer's machine rather than on the
- * test: an action reaches git and tmux, a launch creates a worktree, and free text spends a model call. The
- * recent-projects cleaner is mocked for the same reason — its schedule rewrites the real IDE's own file.
- *
- * <p>Every seeded task is stamped as active NOW, because a task that has been silent for five minutes earns its
- * human a desktop alert.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=",
                 "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false"})
@@ -87,8 +74,6 @@ class BoardPageTest {
     private NaturalLanguageDispatch naturalLanguage;
     @MockitoBean
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
-    /** Polling is ON in the config so the page can show what it looks like; the poller itself would read a
-     *  review request for real and, with no code host, pay a model to do it. */
     @MockitoBean
     private AutoReviewScheduler autoReviewScheduler;
 
@@ -161,7 +146,6 @@ class BoardPageTest {
         assertThat(page.locator("article a.mr-age")).hasCount(0);
     }
 
-    /** Every phase is counted, zeros included: a line that appears and disappears moves everything beside it. */
     @Test
     void countsEveryPhaseWhetherOrNotItHoldsATask() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -179,10 +163,6 @@ class BoardPageTest {
                 .hasText("build 1 · review 1 · check 0 · ready 0 · deploy 1 · done 0");
     }
 
-    /**
-     * A card keeps its place while its status changes under it, so the order cannot follow activity: the alias
-     * is what a human types and what they remember the position by.
-     */
     @Test
     void ordersTasksByAliasRatherThanByWhicheverAgentReportedLast() {
         state.putTask("ABC-10", TaskState.builder("alpha", root.resolve("ABC-10-alpha").toString(),
@@ -208,7 +188,6 @@ class BoardPageTest {
         assertThat(page.locator("article .alias")).hasText(new String[]{"a2"});
     }
 
-    /** A count that obeyed the phase choice would read zero the moment another phase was picked. */
     @Test
     void keepsEveryPhaseCountWhileOneOfThemIsTheFilter() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -309,10 +288,6 @@ class BoardPageTest {
         assertThat(page.locator("article .detail")).hasCount(0);
     }
 
-    /**
-     * The status clock restarts on every round and on a respawned agent re-reporting itself, so how long the
-     * review has been hanging is a clock of its own.
-     */
     @Test
     void aCardSaysHowLongTheReviewRequestHasBeenOpen() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -441,15 +416,8 @@ class BoardPageTest {
         assertThat(page.locator("article a.id")).hasCount(0);
     }
 
-    /**
-     * The one round that leaves no highlighted button and no badge, so its own line has to answer whose move it
-     * is. A card carries no next-move line of its own: one that appears for some states and not others is a rule
-     * nobody can read off the screen.
-     */
     @Test
     void answersWhoseMoveItIsOnTheCardThatOffersNoButtonToPress() {
-        // Stamped as a round the poller can time: a round it has STOPPED polling is a different card — that one
-        // does ask for the human, since nothing else will read those threads again.
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/7")
                 .mrCreatedAt(now()).lastPolledAt(now())
@@ -463,10 +431,6 @@ class BoardPageTest {
                 "ANSWERED: already handled — the open threads are the reviewer's to close");
     }
 
-    /**
-     * Comments keep arriving on an open request, and the next of them may be the answer — so a round the poll is
-     * still reading is the human's whenever, not an alarm they learn to scroll past.
-     */
     @Test
     void doesNotShoutAboutAQuestionWhileAPollIsStillReadingTheRoundItWasAskedOn() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -480,10 +444,6 @@ class BoardPageTest {
         assertThat(page.locator("#waiting")).isHidden();
     }
 
-    /**
-     * TWO tiers, or the badge is worth nothing: an approval that landed can wait, a red run cannot. Only the loud
-     * one is counted in the header and kept by the own-move filter — that count is what a human glances at.
-     */
     @Test
     void interruptsForABlockedTaskAndOnlyOffersTheNextMoveForOneThatCanWait() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -502,11 +462,6 @@ class BoardPageTest {
         assertThat(page.locator("article .alias")).hasText(new String[]{"a1"});
     }
 
-    /**
-     * The change is live: what is left is the close, whenever the human wants it. A badge here reads as an alarm
-     * beside the cards that really are blocked, which is what teaches them to ignore all three of badge, count
-     * and filter.
-     */
     @Test
     void asksForNothingOnACardWhoseChangeIsAlreadyDeployed() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -519,11 +474,6 @@ class BoardPageTest {
         assertThat(page.locator("#waiting")).isHidden();
     }
 
-    /**
-     * The one thing only a browser can answer: a card is built from a phrase that may not be broken and a title
-     * that may, and a window narrow enough is what puts them in conflict. Dragging the board sideways to read a
-     * card is the failure — nothing in the DOM says it happened.
-     */
     @Test
     void aCardStaysInsideAWindowTooNarrowForItsBadgeAndItsTitleAtOnce() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -621,7 +571,7 @@ class BoardPageTest {
                 .startsWith("Revert ABC-1?")
                 .contains("This pushes a revert commit to:")
                 .contains("alpha → dev")
-                .contains("Only the LAST deploy of this task comes out");
+                .contains("Only the LAST deploy comes out");
         verifyNoInteractions(commands);
     }
 
@@ -655,7 +605,6 @@ class BoardPageTest {
         verifyNoInteractions(commands);
     }
 
-    /** The one click that writes a branch other people build on says exactly which branches, per repository. */
     @Test
     void deployingNamesEveryRepositoryAndTheBranchItWouldBePushedTo() throws Exception {
         state.putTask("ABC-1", TaskState.builder(List.of(
@@ -681,10 +630,6 @@ class BoardPageTest {
         verifyNoInteractions(commands);
     }
 
-    /**
-     * Whether the work is worth shipping first is the human's call, and the readings jagt tried were wrong often
-     * enough to be clicked past — which is what costs the branch lines their reader.
-     */
     @Test
     void deployingAsksAboutTheBranchesAndAdvisesNothingAboutTheRound() throws Exception {
         Path worktree = Files.createDirectories(root.resolve("ABC-1-alpha"));
@@ -815,7 +760,7 @@ class BoardPageTest {
 
     @Test
     void aTypedLaunchThatIsRefusedSaysSoInsteadOfSittingThere() {
-        when(launcher.launch(any())).thenThrow(new IllegalArgumentException("No ticket ABC-9 anywhere"));
+        when(launcher.launchLine(any())).thenThrow(new IllegalArgumentException("No ticket ABC-9 anywhere"));
 
         Page page = open();
         page.keyboard().press("Control+k");
@@ -825,7 +770,6 @@ class BoardPageTest {
         assertThat(page.locator("#toasts .toast.error")).containsText("No ticket ABC-9 anywhere");
     }
 
-    /** An alias is short enough to be another task's ticket id, and the card carries the id. */
     @Test
     void aClickActsOnTheTaskWhoseCardItIsWhenAnotherTasksAliasReadsLikeItsId() {
         state.putTask("4", TaskState.builder("alpha", root.resolve("4-alpha").toString(),
@@ -913,10 +857,6 @@ class BoardPageTest {
         assertThat(page.locator("#report-body")).containsText("Measured it and pinned the count.");
     }
 
-    /**
-     * A round names the thread it is answering, and reaching it is why the report was opened at all. Anything
-     * but http(s) stays text: this file is written by an agent and hand-edited, in a page that can POST deploy.
-     */
     @Test
     void aReportsOwnLinksAreFollowableAndNothingElseBecomesOne() throws IOException {
         Path worktree = Files.createDirectories(root.resolve("ABC-6-alpha"));
@@ -1048,10 +988,6 @@ class BoardPageTest {
         verify(launcher).launch(new LaunchRequest("ABC-9", null, null, "fresh", null, null));
     }
 
-    /**
-     * The one field on the page whose loss is silent: an agent given no extra instructions simply works without
-     * them, and nothing on either surface says the human typed any.
-     */
     @Test
     void sendsTheExtraInstructionsTypedForTheAgent() {
         when(launcher.launch(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
@@ -1066,10 +1002,6 @@ class BoardPageTest {
                 "start with the failing test"));
     }
 
-    /**
-     * Most of the ways a launch declines come back as an ordinary answer, and the form is holding the project,
-     * the branch and the instructions the next attempt needs.
-     */
     @Test
     void keepsEverythingTypedWhenTheLaunchCreatedNoTask() {
         when(launcher.launch(any()))
@@ -1088,8 +1020,21 @@ class BoardPageTest {
     }
 
     @Test
+    void aTypedLaunchCarriesEveryModifierAndNotOnlyTheTicket() {
+        when(launcher.launchLine(any())).thenReturn(Launched.created("ABC-9", "Started ABC-9."));
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("do ABC-9 plan keep the API stable");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#toasts .toast")).containsText("Started ABC-9.");
+        verify(launcher).launchLine("ABC-9 plan keep the API stable");
+    }
+
+    @Test
     void keepsTheTypedPaletteLineWhenTheLaunchItRanCreatedNoTask() {
-        when(launcher.launch(any()))
+        when(launcher.launchLine(any()))
                 .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha (previous run)"));
 
         Page page = open();
@@ -1183,10 +1128,6 @@ class BoardPageTest {
         assertThat(page.locator("#report")).isVisible();
     }
 
-    /**
-     * The status word cannot carry this: a task sits at CI_POLLING whether its run is still going or already
-     * red, and only the host's own wording says which failure it was.
-     */
     @Test
     void aCardShowsTheChecksAsRedAndCarriesWhatTheHostSaidAboutThem() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1200,7 +1141,6 @@ class BoardPageTest {
                 .hasAttribute("data-tip", Pattern.compile("checks: failed"));
     }
 
-    /** The status word cannot say a run is still going: a task sits at CI_POLLING whether it is or already red. */
     @Test
     void aRunStillGoingPulsesBesideTheRequestInsteadOfColouringIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1213,10 +1153,6 @@ class BoardPageTest {
         assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
     }
 
-    /**
-     * Whether anyone has approved decides whether this card is waiting on a person or on the human reading it,
-     * and the status only ever says so once the approval has already landed.
-     */
     @Test
     void theRequestWearsATickOnceSomebodyHasApprovedIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1234,10 +1170,6 @@ class BoardPageTest {
         assertThat(page.locator("article").nth(1).locator(".meta a.mr-age.approved")).hasText("MR \u2713");
     }
 
-    /**
-     * A broken build is the agent's move and an approval is the reviewers' answer, so a card that spent one mark
-     * on both hid whichever of the two it dropped.
-     */
     @Test
     void aRedRunDoesNotSwallowTheApprovalItLandedOn() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1250,7 +1182,6 @@ class BoardPageTest {
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
     }
 
-    /** A run that passed is not an approval, and the request nobody has approved yet must not read as one. */
     @Test
     void checksThatPassedWearTheirOwnDotAndLeaveTheRequestPlain() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1264,10 +1195,6 @@ class BoardPageTest {
         assertThat(page.locator("article .meta a.mr-age")).hasClass("mr-age");
     }
 
-    /**
-     * A word the parser does not know is not a pass and not a silence: the run WAS read, and only the host's own
-     * wording says what it said.
-     */
     @Test
     void aVerdictNothingCanReadWearsNoDotAndKeepsTheHostsWordOnTheRequest() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1281,10 +1208,6 @@ class BoardPageTest {
                 .hasAttribute("data-tip", Pattern.compile("checks: completed"));
     }
 
-    /**
-     * A round nobody has read carries no verdict, and an unread request is neither an unapproved one nor a green
-     * one — so the hover has to say which silence this is.
-     */
     @Test
     void aRequestNoReadHasSeenYetWearsNoVerdictAndSaysSoOnHover() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1299,10 +1222,6 @@ class BoardPageTest {
                 .hasAttribute("data-tip", Pattern.compile("checks: nothing has read them yet"));
     }
 
-    /**
-     * The approval is the task's, not one repository's, so with several links there is no one label it can
-     * colour. The checks wear the same dot they wear on every card.
-     */
     @Test
     void aTaskSpanningRepositoriesWearsOneTickForAllOfThem() {
         state.putTask("ABC-1", TaskState.builder(List.of(
@@ -1320,10 +1239,6 @@ class BoardPageTest {
         assertThat(page.locator("article .meta .checks.red")).hasCount(1);
     }
 
-    /**
-     * A status says a deploy only while the task IS one, so a card offering it again cannot otherwise say that
-     * anything of this task is already live on the branch it would write.
-     */
     @Test
     void theDeployVerbIsColouredWhileItsLastRunIsStillLive() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1336,7 +1251,6 @@ class BoardPageTest {
         assertThat(page.locator("article .meta .status.live")).hasCount(0);
     }
 
-    /** The highlighted move is filled with the accent, so the mark has to be a ring rather than its colour. */
     @Test
     void theDeployVerbKeepsItsFillAndTakesTheMarkAsARingWhileItIsTheHighlightedMove() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1348,10 +1262,6 @@ class BoardPageTest {
         assertThat(page.locator("article button.primary.again")).hasText("Deploy");
     }
 
-    /**
-     * Deploy is not on offer from every status, and a task picked back up after one — or closed after one — is
-     * exactly where a human asks whether anything of it is already out.
-     */
     @Test
     void theStateSaysTheWorkIsLiveWhereNoVerbOnTheCardIsTheDeploy() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
@@ -1376,10 +1286,6 @@ class BoardPageTest {
         assertThat(page.locator("article button.again")).hasCount(0);
     }
 
-    /**
-     * A colour, a ring and a pulsing dot are the board's own vocabulary, and "how does this work" already has a
-     * button — a second one for the marks would be a second answer to the same question.
-     */
     @Test
     void helpAlsoSaysWhatTheBoardsOwnMarksMean() {
         Page page = open();
@@ -1395,9 +1301,6 @@ class BoardPageTest {
         return System.currentTimeMillis();
     }
 
-    /**
-     * A tab whose event stream is already connected, so a state change made after it cannot be missed.
-     */
     private Page open() {
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");

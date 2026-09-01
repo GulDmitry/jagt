@@ -21,10 +21,6 @@ import static org.mockito.Mockito.verify;
 
 class TaskEventStreamTest {
 
-    /**
-     * The change signal arrives on whatever thread wrote the state — an agent's MCP call. Writing to the open
-     * sockets there would make that call wait on the browsers, so the fan-out must leave the caller.
-     */
     @Test
     void handsTheBroadcastOffInsteadOfWritingOnTheThreadThatChangedTheState() {
         StateService stateService = mock(StateService.class);
@@ -40,10 +36,6 @@ class TaskEventStreamTest {
         verify(broadcaster).execute(any());
     }
 
-    /**
-     * The event carries no payload, so changes queued behind one another are the SAME event and the client
-     * re-fetches once. A burst — a ship moving four tasks — must not become four wake-ups per browser.
-     */
     @Test
     void keepsOnlyOnePendingBroadcastForABurstOfChanges() {
         StateService stateService = mock(StateService.class);
@@ -71,10 +63,6 @@ class TaskEventStreamTest {
         assertThat(stream.open()).isNotSameAs(stream.open());
     }
 
-    /**
-     * An open board tab is an async request with no timeout, and Tomcat's stop waits for those: leave them
-     * open and Ctrl-C never ends the process. A completed emitter refuses further sends — that is the proof.
-     */
     @Test
     void endsEveryBoardConnectionWhenTheBackendShutsDown() {
         TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ExecutorService.class));
@@ -85,11 +73,6 @@ class TaskEventStreamTest {
         assertThatIllegalStateException().isThrownBy(() -> browser.send("late"));
     }
 
-    /**
-     * The servlet keeps answering until the web server actually stops, and the board's {@code EventSource}
-     * reconnects as soon as its stream ends — so a tab can ask for a new one mid-shutdown. Handing it a live
-     * endless stream would restore the hang the sweep just cleared.
-     */
     @Test
     void handsBackAnAlreadyEndedStreamToATabThatReconnectsDuringShutdown() {
         TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ExecutorService.class));
@@ -98,11 +81,6 @@ class TaskEventStreamTest {
         assertThatIllegalStateException().isThrownBy(() -> stream.open().send("reconnected"));
     }
 
-    /**
-     * A write that fails mid-session (the laptop slept, the VPN dropped) leaves the async request registered
-     * with the container — and the shutdown sweep can only end connections it still knows about. Forgetting
-     * one without ending it is therefore a ^C that hangs again.
-     */
     @Test
     void endsAConnectionWhoseWriteFailedInsteadOfMerelyForgettingIt() {
         TaskEventStream stream = new TaskEventStream(mock(StateService.class), mock(ExecutorService.class));

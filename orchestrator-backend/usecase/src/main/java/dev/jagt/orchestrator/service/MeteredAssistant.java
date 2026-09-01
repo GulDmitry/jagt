@@ -14,16 +14,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * The master's outside-reader with its meter attached: every read lands in the session total the moment it
- * returns, so a paid call can never go uncounted, and the returned {@link Answer} still carries its cost for
- * {@link #chargeTask} to attribute later.
- *
- * <p>The cost is carried rather than charged because for {@code do}/{@code resume} the read is what PRODUCES the
- * id the task is created under: attributing it earlier writes to a task that does not exist yet, and the number
- * is silently lost.
- *
- * <p>INJECT THIS, never {@link MasterAssistant} directly: a direct injection compiles and wires fine and
- * simply spends money off the books.
+ * The master's outside-reader with its meter attached: every read lands in the session total the moment it returns,
+ * and the returned {@link Answer} still carries its cost for {@link #chargeTask} to attribute once a task exists.
+ * INJECT THIS, never {@link MasterAssistant} directly — a direct injection spends money off the books.
  */
 @Component
 @RequiredArgsConstructor

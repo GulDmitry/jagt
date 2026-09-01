@@ -22,12 +22,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * The only two operations that write a SHARED branch: merging a task into the deploy branch, and taking that
- * merge back out. Neither checks that the caller is the human; that gate sits outside.
- *
- * <p>A task spanning repositories lands one at a time, in the order it holds them, and stops at the first
- * conflict: a shared branch cannot be written atomically anyway, so the half-state is reported rather than
- * pretended away. The undo works from the other end.
+ * The only two operations that write a SHARED branch. Neither checks that the caller is the human; that gate sits
+ * outside. A task spanning repositories lands one at a time and stops at the first conflict: a shared branch cannot
+ * be written atomically, so the half-state is reported. The undo works from the other end.
  */
 @Service
 @RequiredArgsConstructor
@@ -65,8 +62,7 @@ public class DeployService {
                 idle = idle == null ? e : idle;
                 continue;
             } catch (GitService.ForeignDeployWorktreeException e) {
-                // Coming back to this repository beats refusing the whole sequence — the sibling holding the
-                // shared path is in this very list.
+                // The sibling holding the shared path is in this very list, so coming back beats refusing.
                 blocked.add(target.project());
                 obstacle = obstacle == null ? e : obstacle;
                 continue;
@@ -75,15 +71,13 @@ public class DeployService {
             } catch (RuntimeException e) {
                 return stoppedPartWay(taskId, targets, i, e);
             }
-            // A human who opened the worktree to resolve a conflict would otherwise be left with a dead entry
-            // in the editor's project list.
+            // A human who opened the worktree to resolve a conflict is left with a dead editor entry otherwise.
             editorDriver.forgetProject(GitService.deployWorktreePath(target.path(), taskId));
         }
         if (!blocked.isEmpty()) {
             return notFinished(taskId, merged, blocked, obstacle);
         }
-        // Nothing landed and nothing resumed past means there was nothing to deploy at all; a RESUMED sequence
-        // whose remainder is all idle is finished.
+        // Nothing landed and nothing resumed past means there was nothing to deploy at all.
         if (merged.isEmpty() && idle != null && from == 0) {
             throw idle;
         }
@@ -91,10 +85,9 @@ public class DeployService {
     }
 
     /**
-     * At least one repository never started, so the task is NOT deployed. A repeat is advised only where
-     * something DID land: the holder of the shared path is then a sibling that has just released it, and the next
-     * pass gets through. With nothing landed nothing was released either, so the same run would refuse again —
-     * there the obstacle itself is what the human is told, in the words that name the path and what to do with it.
+     * At least one repository never started, so the task is NOT deployed. A repeat is advised only where something
+     * DID land: the holder of the shared path is then a sibling that has just released it. With nothing landed
+     * nothing was released either, so the obstacle itself is what the human is told.
      */
     private Outcome notFinished(String taskId, Map<String, String> merged, List<String> blocked,
                                 GitService.ForeignDeployWorktreeException obstacle) {
@@ -109,10 +102,8 @@ public class DeployService {
     }
 
     /**
-     * Where a repeated deploy picks the sequence up. Only a task HANDED BACK from a conflict has one: that is the
-     * state whose deploy worktree is still on disk, and everything before it in the list has been dealt with. A
-     * worktree left over from any other round is not a resume point — jumping to it would silently skip the
-     * repositories before it and still call the task deployed.
+     * Where a repeated deploy picks the sequence up. Only a task HANDED BACK from a conflict has one; a worktree
+     * left over from any other round is not a resume point, and jumping to it would skip the ones before it.
      */
     private int resumeFrom(TaskState task, String taskId, List<Target> targets) {
         if (targets.size() == 1 || task.status() != TaskStatus.DEPLOY_CONFLICT) {
@@ -144,10 +135,8 @@ public class DeployService {
     }
 
     /**
-     * Both sides of a part-way deploy, named — the only place a human learns the task is half live on a shared
-     * branch, so neither list may be left implied. Read from WHERE the sequence stopped rather than from the
-     * recorded merge commits: those outlive the round that made them, so after a second ship every repository
-     * would read as live.
+     * Both sides of a part-way deploy, named. Read from WHERE the sequence stopped rather than from the recorded
+     * merge commits: those outlive the round that made them, so after a second ship every repository reads as live.
      */
     private String halfState(List<Target> targets, int stoppedAt) {
         List<String> live = targets.subList(0, stoppedAt).stream().map(Target::project).toList();
@@ -167,8 +156,7 @@ public class DeployService {
         List<String> landed = targets.stream().filter(target -> merged.containsKey(target.project()))
                 .map(target -> target.project() + " into " + target.deployBranch()
                         + " (" + shortSha(merged.get(target.project())) + ")").toList();
-        // A resumed sequence merged only its tail, and the human is owed the whole picture rather than the part
-        // this call happened to do.
+        // A resumed sequence merged only its tail; the whole picture is what the human is owed.
         List<String> earlier = targets.subList(0, from).stream()
                 .map(target -> target.project() + " (" + shortSha(mergeCommit(task, target)) + ")").toList();
         String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);
@@ -178,9 +166,8 @@ public class DeployService {
     }
 
     /**
-     * A deploy that broke off for a reason no resolution is waiting on — a rejected push, a fetch that failed.
-     * The status is left alone, because there is nothing for a human to resolve in a worktree; the message is
-     * stamped anyway, or a repository stays live on a shared branch with nothing but a console line admitting it.
+     * A deploy that broke off for a reason no resolution is waiting on. The status is left alone, there being
+     * nothing to resolve in a worktree; the message is stamped anyway, a console line being no record.
      */
     private Outcome stoppedPartWay(String taskId, List<Target> targets, int at, RuntimeException cause) {
         if (targets.size() == 1 || at == 0) {
@@ -198,11 +185,8 @@ public class DeployService {
 
     /**
      * Undoes one deploy: reverts the merge commits it created on the deploy branches and pushes them. The task
-     * branch keeps all its commits, so the normal follow-up is "fix and ship again".
-     *
-     * <p>Repositories are undone in reverse order, and each one that succeeds forgets its merge commit — so a
-     * revert that fails part way can be repeated and touches only what is still live. A repository that never
-     * landed is nothing to undo rather than an error.
+     * branch keeps all its commits. Repositories are undone in reverse order and each success forgets its merge
+     * commit, so a revert that fails part way can be repeated and touches only what is still live.
      */
     public Outcome revert(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
@@ -240,10 +224,8 @@ public class DeployService {
     }
 
     /**
-     * A revert that stopped part way. What already came out has been forgotten, so repeating the verb undoes
-     * only the rest — but the task stays DEPLOYED, because something of it still is. The message is stamped as
-     * well as thrown: a sentence in a console the human has since scrolled past is not a record of a shared
-     * branch holding half a change.
+     * A revert that stopped part way. What came out is forgotten, so repeating undoes only the rest, but the task
+     * stays DEPLOYED because something of it still is. Stamped as well as thrown: a console line is no record.
      */
     private Outcome stillLive(String taskId, Target at, List<String> reverted, RuntimeException cause) {
         if (reverted.isEmpty()) {
@@ -255,10 +237,7 @@ public class DeployService {
                 + "` once this is dealt with." + because(cause), half, cause);
     }
 
-    /**
-     * Guessing the merge commit (searching the log by branch name) would risk reverting the WRONG merge on a
-     * shared branch — the one mistake with no cheap undo.
-     */
+    /** Guessing the merge commit would risk reverting the WRONG merge on a shared branch. */
     private RuntimeException unrecordedDeploy(String taskId, List<Target> targets) {
         // Every repository, because a recipe naming one leaves the others live on their own branches.
         String where = targets.stream()
@@ -272,8 +251,8 @@ public class DeployService {
     }
 
     /**
-     * Every repository the task works in, paired with where it lands. All of them are resolved before anything is
-     * pushed, so a project misconfigured at the end of the list cannot be discovered half way through.
+     * Every repository the task works in, paired with where it lands. All resolved before anything is pushed, so a
+     * project misconfigured at the end of the list cannot be discovered half way through.
      */
     private List<Target> deployTargets(TaskState task) {
         List<Target> targets = new ArrayList<>();
@@ -284,9 +263,8 @@ public class DeployService {
     }
 
     /**
-     * The repositories an undo has something to take out, and ONLY those get resolved: a repository that never
-     * landed must not stand between a human and the merge that is live on a shared branch, whatever became of its
-     * project in the configuration since.
+     * The repositories an undo has something to take out, and ONLY those: a repository that never landed must not
+     * stand between a human and the merge that is live, whatever became of its configuration since.
      */
     private List<Target> landedTargets(TaskState task) {
         List<Target> landed = new ArrayList<>();
@@ -298,10 +276,7 @@ public class DeployService {
         return landed;
     }
 
-    /**
-     * HARD SAFETY: the deploy branch must NEVER be the base/release branch tasks are cut from — jagt writes to
-     * exactly one shared branch per repository and it is not that one.
-     */
+    /** The deploy branch must NEVER be the base branch tasks are cut from. */
     private static void requireDeployable(Target target) {
         ProjectConfig project = target.config();
         if (project.deployBranch() == null || project.deployBranch().isBlank()) {

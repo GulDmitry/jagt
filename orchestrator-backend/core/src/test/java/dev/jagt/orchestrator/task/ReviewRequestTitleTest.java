@@ -19,7 +19,6 @@ class ReviewRequestTitleTest {
         assertThat(ReviewRequestTitle.stripTicketPrefix(stored, ticket)).isEqualTo(expected);
     }
 
-    /** A resumed task inherits a title the pattern already prefixed, and `ship` expands it every round. */
     @Test
     void expandsThePatternIdempotentlyHoweverOftenShipRuns() {
         String once = ReviewRequestTitle.expand("{ticket} {title}", "ABC-42", "Widget layout is off");

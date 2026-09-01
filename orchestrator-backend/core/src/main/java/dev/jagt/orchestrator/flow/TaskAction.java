@@ -1,10 +1,16 @@
 package dev.jagt.orchestrator.flow;
 
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 /**
- * Something a human can do to one task, named once so every surface offers exactly the same set.
- *
- * <p>{@code id} is the wire name (URL segment, HTML data attribute) AND the CLI verb: one string, so a button and
- * a typed command cannot drift apart.
+ * Something a human can do to one task, named once so every surface offers exactly the same set. {@code id} is the
+ * wire name AND the CLI verb: one string, so a button and a typed command cannot drift apart.
  */
 public enum TaskAction {
 
@@ -18,7 +24,7 @@ public enum TaskAction {
     FOCUS(Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
     IDE(Group.TOOL, "ide", "Open IDE", "open the worktree in the IDE; Local Changes holds the uncommitted diff",
             "ide <ticket> [diff]"),
-    DIFF(Group.TOOL, "diff", "Diff", "show the diff against the deploy branch"),
+    DIFF(Group.TOOL, "diff", "Diff", "show the diff against the branch the request targets"),
     RESPAWN(Group.TOOL, "respawn", "Restart agent",
             "start a new agent session in the same worktree");
 
@@ -41,15 +47,11 @@ public enum TaskAction {
         }
     }
 
-    /**
-     * Actions that only LOOK at a task. What a click writes is not the same question as which half of the card it
-     * is rendered on: `respawn` sits with the tools and kills a running session, so a surface that locks a card
-     * while a move of its own is in flight has to ask this rather than the group.
-     */
-    private static final java.util.Set<TaskAction> READ_ONLY = java.util.EnumSet.of(FOCUS, IDE, DIFF);
+    /** Actions that only LOOK at a task — not the same question as which half of the card renders them. */
+    private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, IDE, DIFF);
 
     /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
-    private static final java.util.Map<String, TaskAction> RENAMED = java.util.Map.of("review", SWEEP);
+    private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);
 
     private final Group group;
     private final String id;
@@ -96,22 +98,19 @@ public enum TaskAction {
     }
 
     /** The action for a wire id, or empty — an unknown id from a URL must never resolve to something else. */
-    public static java.util.Optional<TaskAction> byId(String id) {
-        return java.util.Arrays.stream(values()).filter(action -> action.id.equals(id)).findFirst();
+    public static Optional<TaskAction> byId(String id) {
+        return Arrays.stream(values()).filter(action -> action.id.equals(id)).findFirst();
     }
 
-    /**
-     * The action a retired spelling still names, or empty — never a current id, so a verb set stays closed. Case
-     * and padding are normalized HERE, so no surface that accepts the old word is stricter than the next.
-     */
-    public static java.util.Optional<TaskAction> byRetiredVerb(String verb) {
-        return verb == null ? java.util.Optional.empty()
-                : java.util.Optional.ofNullable(RENAMED.get(verb.strip().toLowerCase(java.util.Locale.ROOT)));
+    /** The action a retired spelling names, or empty. Case and padding are normalized HERE, never per surface. */
+    public static Optional<TaskAction> byRetiredVerb(String verb) {
+        return verb == null ? Optional.empty()
+                : Optional.ofNullable(RENAMED.get(verb.strip().toLowerCase(Locale.ROOT)));
     }
 
     /** What this action also answers to, for a surface that must accept what it does not offer. */
-    public java.util.List<String> retiredVerbs() {
+    public List<String> retiredVerbs() {
         return RENAMED.entrySet().stream().filter(renamed -> renamed.getValue() == this)
-                .map(java.util.Map.Entry::getKey).sorted().toList();
+                .map(Map.Entry::getKey).sorted().toList();
     }
 }

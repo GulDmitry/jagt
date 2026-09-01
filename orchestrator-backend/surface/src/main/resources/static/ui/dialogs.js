@@ -1,6 +1,4 @@
-// What opens OVER the board: a plain-text report. A native <dialog> dims the board itself and cannot be lost
-// behind the window you were already reading — and it closes three ways, Escape, its button and the dimmed
-// area, which is the click a human makes first.
+// A plain-text report over the board: a <dialog> dims it, cannot be lost behind another window, and closes three ways.
 
 import {text} from '../core/api.js';
 import {link} from '../core/dom.js';
@@ -12,13 +10,8 @@ const reportBody = document.getElementById('report-body');
 const reportScroll = document.getElementById('report-scroll');
 const reportSection = document.getElementById('report-section');
 
-// `extra` is a rendered section ABOVE the text: what a colour or a mark means cannot be said in a monospace
-// column, and what is already on screen is read before what can be typed. A second dialog for it would be a
-// second answer to "how does this work".
-// A report is columns of plain text, and the request, the ticket or the thread it names is exactly what a human
-// opened it to reach — one they have to select and copy is one nobody follows. Only http(s) becomes an anchor:
-// this text is written by an agent, by a model and by a hand-edited file, and a `javascript:` URL among it would
-// run in the page that can POST `deploy`.
+// A url a human has to select and copy is one nobody follows. Only http(s) becomes an anchor: this text comes
+// from an agent, a model and a hand-edited file, and a `javascript:` URL would run in the page that can deploy.
 const WEB_LINK = /https?:\/\/[^\s<>"'`)\]]+/g;
 
 function linked(body) {
@@ -51,8 +44,7 @@ export async function openReport(title, path, extra = null) {
   }
 }
 
-// Which element the press STARTED on decides: selecting text inside and releasing outside is not a request to
-// close what you were reading.
+// Which element the press STARTED on decides: selecting text inside and releasing outside asks for nothing.
 function closeOnBackdrop(dialog) {
   let pressedBackdrop = false;
   dialog.addEventListener('mousedown', (event) => { pressedBackdrop = event.target === dialog; });

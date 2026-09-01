@@ -53,13 +53,11 @@ public class AutoReviewScheduler implements Job {
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
     private final Set<String> windowElapsedNotified = ConcurrentHashMap.newKeySet();
 
-    // @Autowired disambiguates: this class also has a package-private test constructor (injectable
-    // Executor), and with two constructors Spring otherwise demands a no-arg default and fails to start.
+    // @Autowired disambiguates: with two constructors Spring otherwise demands a no-arg default.
     @Autowired
     public AutoReviewScheduler(StateService stateService, ConfigService configService,
                                ReviewSweepService reviewSweep, Notifications notifications) {
-        // Single thread: a sweep runs for minutes, so serialising bounds the cost and keeps the tick from
-        // piling up overlapping polls.
+        // Single thread: a sweep runs for minutes, so serialising keeps the tick from piling up polls.
         this(stateService, configService, reviewSweep, notifications,
                 Executors.newSingleThreadExecutor(r -> {
                     Thread t = new Thread(r, "auto-review");
@@ -85,20 +83,17 @@ public class AutoReviewScheduler implements Job {
         }
         long now = System.currentTimeMillis();
         var tasks = stateService.tasks();
-        // A task RETIRED while still out for review never leaves that status, so the branch below would keep
-        // its marker for the life of the process.
+        // A task RETIRED while out for review never leaves that status, so its marker would never be dropped.
         windowElapsedNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
         tasks.forEach((taskId, task) -> {
-            // A task the poller has no business with any more (closed, or its request gone) re-arms its
-            // window-elapsed ping.
+            // A task the poller has no business with any more re-arms its window-elapsed ping.
             if (!cadence.polls(task)) {
                 windowElapsedNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
                 return;
             }
             switch (decide(task, cadence, now)) {
                 case WINDOW_ELAPSED -> {
-                    // Keyed by the WINDOW, not the task: shipping another round starts a new window without
-                    // ever leaving CI_POLLING, and that round deserves its own reminder.
+                    // Keyed by the WINDOW: another round starts a new one without ever leaving CI_POLLING.
                     if (windowElapsedNotified.add(taskId + "@" + task.mrCreatedAt())) {
                         notifications.send(Notification.fromAgent(taskId, "auto-review",
                                 AutoReviewWatch.windowElapsed(cadence.windowHours()).note()));
@@ -110,10 +105,7 @@ public class AutoReviewScheduler implements Job {
         });
     }
 
-    /**
-     * Pure poll decision, taken from the WATCH every human surface shows — so a card promising a poll in four
-     * minutes and a scheduler that would not make one cannot happen.
-     */
+    /** Pure poll decision, taken from the WATCH every human surface shows. */
     static Action decide(TaskState task, AutoReviewCadence cadence, long now) {
         AutoReviewWatch watch = cadence.watch(task, now);
         return switch (watch.state()) {
@@ -124,9 +116,8 @@ public class AutoReviewScheduler implements Job {
     }
 
     private void poll(String taskId, String alias) {
-        // Stops the 60s tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a
-        // task's sweeps mutually exclusive — a human typing `sweep` at the same time is a different
-        // trigger entirely; that exclusion lives in ReviewSweepService, where every trigger passes through.
+        // Stops the tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a task's
+        // sweeps mutually exclusive; that exclusion lives where every trigger passes through.
         if (!inFlight.add(taskId)) {
             return;
         }
@@ -136,9 +127,8 @@ public class AutoReviewScheduler implements Job {
         try {
             executor.execute(() -> pollNow(taskId));
         } catch (RejectedExecutionException e) {
-            // Submission itself failed (the executor is shut down with the backend). Caught NARROWLY: an
-            // exception thrown by the sweep must not land here, or it would be logged as a scheduling failure
-            // and — with a same-thread executor — leave lastPolledAt unadvanced, re-running the sweep forever.
+            // Submission itself failed. Caught NARROWLY: an exception from the sweep landing here would leave
+            // lastPolledAt unadvanced under a same-thread executor, re-running the sweep forever.
             inFlight.remove(taskId);
             log.atWarn().setMessage("auto-review poll not scheduled")
                     .addKeyValue("task", taskId)
@@ -156,9 +146,8 @@ public class AutoReviewScheduler implements Job {
                     .addKeyValue("cause", e.toString())
                     .log();
         } finally {
-            // Release the marker LAST and unconditionally: stamping the poll writes state.json, which throws
-            // when the disk is full or the file turns unwritable. Losing the release there would exclude this
-            // task from auto-review for the rest of the JVM's life, long after the disk recovered.
+            // Release the marker LAST and unconditionally: stamping the poll writes state.json and can throw,
+            // and losing the release would exclude this task from auto-review for the JVM's life.
             try {
                 stateService.updateTask(taskId, t -> t.withLastPolledAt(System.currentTimeMillis()));
             } finally {

@@ -37,17 +37,12 @@ public abstract class AbstractAgentRuntime implements AgentRuntime {
         return Files.exists(file, LinkOption.NOFOLLOW_LINKS) && !Files.isSymbolicLink(file);
     }
 
-    /**
-     * The per-agent half of provisioning: the MCP config (HTTP endpoint or the stdio bridge), unattended-run
-     * permissions, and an alias for {@link #SYSTEM_KNOWLEDGE_FILE} if this CLI reads another filename.
-     */
+    /** The per-agent half of provisioning: MCP config, unattended-run permissions, and an alias for
+     *  {@link #SYSTEM_KNOWLEDGE_FILE} where the CLI reads another filename. */
     protected abstract void wireAgent(AgentWorktree worktree);
 
-    /**
-     * For a CLI that cannot talk to a remote MCP server and can only SPAWN one. Call it ONLY from a runtime
-     * that needs it — an agent speaking HTTP wants no proxy process, and linking one for everybody is what put
-     * Node among jagt's prerequisites.
-     */
+    /** For a CLI that can only SPAWN an MCP server. Call it ONLY from such a runtime: linking the proxy for
+     *  everybody is what makes Node a prerequisite. */
     protected static void linkStdioProxy(AgentWorktree worktree) {
         symlink(worktree.path().resolve("mcp_client.js"),
                 worktree.orchestratorRoot().resolve("mcp_client.js"));

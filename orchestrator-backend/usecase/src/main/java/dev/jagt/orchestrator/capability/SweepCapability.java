@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.service.ReviewSweepService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** A round decides nothing here: what it found is reported, and that door has rules of its own. */
+/** A round decides nothing: what it found is reported and nothing more. */
 @Component
 @RequiredArgsConstructor
 public class SweepCapability implements TaskCapability {

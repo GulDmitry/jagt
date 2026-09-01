@@ -20,7 +20,6 @@ import java.util.Optional;
 public class McpProtocolService {
 
     private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
-    /** Keep-alive writes are throttled: a bump within this window carries no information. */
     private static final long KEEP_ALIVE_THROTTLE_MS = 15_000;
 
     private record ToolSpec(String name, JsonNode schema, ToolHandler handler) {
@@ -37,7 +36,6 @@ public class McpProtocolService {
     }
 
     private void register(String name, String schemaJson, ToolHandler handler) {
-        // Declarations are spread across groups, so a collision is invisible unless it is loud.
         if (tools.putIfAbsent(name, new ToolSpec(name, mapper.readTree(schemaJson), handler)) != null) {
             throw new IllegalStateException("Two MCP tool groups both declare '" + name + "'");
         }
@@ -74,7 +72,7 @@ public class McpProtocolService {
         } catch (Exception e) {
             log.atError().setMessage("mcp request failed")
                     .addKeyValue("method", method)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .setCause(e)
                     .log();
             return isNotification ? Optional.empty() : Optional.of(error(id, -32603, describe(e)));
@@ -138,7 +136,7 @@ public class McpProtocolService {
         } catch (Exception e) {
             log.atWarn().setMessage("mcp tool failed")
                     .addKeyValue("tool", name)
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
             return toolResult("Error: " + describe(e), true);
         }

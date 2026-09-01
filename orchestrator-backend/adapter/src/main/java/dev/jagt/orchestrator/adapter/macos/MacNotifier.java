@@ -13,18 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * macOS notifications. Prefers `terminal-notifier` when installed: osascript's
- * `display notification` is attributed to Script Editor, so it is silently
- * dropped unless the user has Script Editor notifications enabled — a common,
- * confusing failure. terminal-notifier has its own bundle id and reliably
- * shows a banner — and its banner can carry a CLICK: `-open <url>`, which is
- * the only reason jagt can put the human on the task the banner is about.
- *
- * <p>Which build of it sits on the machine is not jagt's to know: it is found by name wherever it was
- * installed, and one that REFUSES the banner falls back to osascript exactly like one that is absent — 3.x
+ * Prefers `terminal-notifier`: osascript's `display notification` is attributed to Script Editor, so macOS
+ * drops it silently unless the user enabled Script Editor notifications. terminal-notifier is found by name
+ * wherever installed, and one that REFUSES the banner falls back to osascript like one that is absent — 3.x
  * asks macOS for permission through its own bundle, and an ad-hoc signature is not one macOS will authorise.
- * A failure late enough to have already shown something therefore costs a second banner, which is the cheaper
- * of the two mistakes.
  */
 @Component
 @ConditionalOnProperty(prefix = "orchestrator", name = "platform", havingValue = "macos", matchIfMissing = true)
@@ -61,7 +53,7 @@ public class MacNotifier implements UserNotifier {
             return true;
         } catch (RuntimeException e) {
             log.atWarn().setMessage("terminal-notifier failed")
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .addKeyValue("effect", "falling back to osascript")
                     .log();
             return false;
@@ -75,15 +67,12 @@ public class MacNotifier implements UserNotifier {
         } catch (RuntimeException e) {
             // A broken notification must never fail the flow that raised it.
             log.atWarn().setMessage("notification failed")
-                    .addKeyValue("cause", e.getMessage())
+                    .addKeyValue("cause", e.toString())
                     .log();
         }
     }
 
-    /**
-     * {@code -open} is what makes the banner clickable; osascript has no equivalent, so a machine without
-     * terminal-notifier gets the same words and no click.
-     */
+    /** {@code -open} is what makes the banner clickable; osascript has no equivalent. */
     static List<String> command(String terminalNotifier, String title, String message, String link) {
         List<String> command = new ArrayList<>(List.of(terminalNotifier,
                 "-title", title == null ? "jagt" : title, "-message", message == null ? "" : message,

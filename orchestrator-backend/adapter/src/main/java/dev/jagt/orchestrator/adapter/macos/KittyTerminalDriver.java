@@ -9,22 +9,17 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Raising the app needs an AppleScript activate: kitty's own {@code focus-window} moves focus WITHIN the
- * application but does not bring it in front of other ones.
- */
+/** Raising the app needs an AppleScript activate: kitty's own {@code focus-window} moves focus WITHIN the
+ *  application only. */
 @Component
 @ConditionalOnProperty(name = "orchestrator.platform", havingValue = "macos", matchIfMissing = true)
 public class KittyTerminalDriver extends AbstractKittyTerminalDriver {
 
     /**
-     * kitty matches keyboard shortcuts by the character the key produces, so on a non-Latin input layout
-     * (Russian/Ukrainian ЙЦУКЕН) the physical V key emits {@code м} and physical C emits {@code с} — the
-     * default {@code cmd+v}/{@code cmd+c} no longer match, and NOTHING pastes/copies until the user flips
-     * the OS layout back to Latin. kitty ≥0.36 has an {@code ascii} shortcut fallback, but it does not fire
-     * reliably for {@code cmd} shortcuts on macOS (Cocoa matches the key-equivalent by character), which is
-     * why this is a macOS-only workaround. Additive: it does NOT replace the Latin defaults. Bound on the
-     * initial instance; every later tab inherits this instance's config.
+     * kitty matches shortcuts by the character a key produces, so on a ЙЦУКЕН layout physical V emits {@code м}
+     * and C emits {@code с}, and {@code cmd+v}/{@code cmd+c} stop matching. kitty's {@code ascii} fallback does
+     * not fire reliably for {@code cmd} on macOS, where Cocoa matches the key-equivalent by character. Additive,
+     * and bound on the initial instance: every later tab inherits its config.
      */
     static final List<String> CYRILLIC_SHORTCUT_FIXES = List.of(
             "-o", "map=cmd+м paste_from_clipboard",

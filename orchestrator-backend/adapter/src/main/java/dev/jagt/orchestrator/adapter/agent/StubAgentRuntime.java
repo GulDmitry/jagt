@@ -1,23 +1,17 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import dev.jagt.orchestrator.port.AgentWorktree;
-import dev.jagt.orchestrator.config.StubAgentProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 
-/**
- * The ONE non-deterministic participant an end-to-end assertion has to replace; everything else in such a run
- * stays real.
- *
- * <p>It writes NO agent config: a scripted agent POSTs to {@code /mcp} itself. That absence is also the
- * assertion — a Claude-shaped file in a stub worktree means something outside the runtime put it there.
- */
+/** Writes NO agent config: a scripted agent POSTs to {@code /mcp} itself. */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "stub")
 @RequiredArgsConstructor
+/** The one non-deterministic participant an end-to-end assertion has to replace. */
 public class StubAgentRuntime extends AbstractAgentRuntime {
 
     private final StubAgentProperties stub;
@@ -30,8 +24,7 @@ public class StubAgentRuntime extends AbstractAgentRuntime {
     @Override
     public String launchCommand(Path worktree, boolean planMode) {
         if (stub.script() == null) {
-            // Exits immediately and successfully: a lifecycle assertion needs a session that STARTED, and a
-            // hanging placeholder would make every matrix combination wait for its own timeout.
+            // Exits immediately and successfully: a hanging placeholder would wait out its own timeout.
             return "true";
         }
         return shellQuote(stub.script()) + " " + shellQuote(worktree.toString()) + (planMode ? " plan" : "");
@@ -39,6 +32,6 @@ public class StubAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     protected void wireAgent(AgentWorktree worktree) {
-        // Deliberately nothing — see the class javadoc.
+        // Deliberately nothing.
     }
 }

@@ -10,10 +10,6 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Reading jagt's own log back for a human. Every case is about what must NOT reach the view: an entry about no
- * task, a line the format cannot explain, and a configuration where the record does not exist at all.
- */
 class ActivityReportTest {
 
     @Test

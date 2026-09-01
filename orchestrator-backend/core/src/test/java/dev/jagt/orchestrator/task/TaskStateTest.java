@@ -87,10 +87,6 @@ class TaskStateTest {
         assertThat(round.primary().mrUrl()).isEqualTo("https://host/mr/9");
     }
 
-    /**
-     * Another round shipped onto the same request never leaves CI_POLLING, so the row would be dropped as a
-     * keep-alive — and a human reading the history would see one round where there were three.
-     */
     @Test
     void recordsSomethingDoneToTheTaskEvenWhenItsStatusDoesNotChange() {
         TaskState polling = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -112,7 +108,6 @@ class TaskStateTest {
         assertThat(again.history()).hasSize(1);
     }
 
-    /** With no history to read, statusSince used to fall back to the stamp a keep-alive bumps: always "0m". */
     @Test
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
         long anHourAgo = System.currentTimeMillis() - 3_600_000L;
@@ -124,16 +119,6 @@ class TaskStateTest {
         assertThat(afterKeepAlive.lastActiveTimestamp()).isGreaterThan(anHourAgo);
     }
 
-    /**
-     * The migration that has to hold or the human loses their tasks: every state.json written before a task
-     * could span repositories carries project/worktreePath/remoteUrl/mrUrl/deployCommit at the TOP level, and
-     * those files are read on the next start. Silently dropping them is precisely what StateService's backup
-     * machinery exists to prevent, so the old shape must map onto the single repo it always described.
-     */
-    /**
-     * The sweep stamps the checks and the round then reports a status; the report must not take the verdict with
-     * it, or "CHECKS RED" is gone by the time either surface renders the task it belongs to.
-     */
     @Test
     void keepsWhatTheHostSaidAboutTheChecksWhenTheTaskGoesOnMoving() {
         TaskState red = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
@@ -144,7 +129,6 @@ class TaskStateTest {
         assertThat(reported.pipelineStatus()).isEqualTo("failed");
     }
 
-    /** An agent that reports is alive by definition, and the board must stop asking for input it already got. */
     @Test
     void dropsTheSilenceStampAsSoonAsTheAgentReportsAnything() {
         TaskState silent = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
@@ -183,7 +167,6 @@ class TaskStateTest {
         assertThat(task.alias()).isEqualTo("a1");
     }
 
-    /** A task written by the CURRENT code round-trips, and the file no longer carries the flat duplicates. */
     @Test
     void writesRepositoriesAsAListAndReadsThemBack() {
         TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/ABC-1-php"),
@@ -199,7 +182,6 @@ class TaskStateTest {
         assertThat(reread.worktreePath()).isEqualTo("/wt/ABC-1-php");
     }
 
-    /** Two repositories mean two review requests, and putting one on top of the other loses a diff. */
     @Test
     void keepsAReviewRequestOnTheRepositoryItBelongsTo() {
         TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
@@ -213,7 +195,6 @@ class TaskStateTest {
         assertThat(shipped.hasReviewRequest()).isTrue();
     }
 
-    /** Each repository records the merge commit `revert` would undo THERE, so one deploy cannot mask another. */
     @Test
     void keepsAMergeCommitOnTheRepositoryItLandedIn() {
         TaskState task = TaskState.builder(List.of(TaskRepo.of("php", "/wt/php"), TaskRepo.of("java", "/wt/java")),
@@ -233,10 +214,6 @@ class TaskStateTest {
         assertThat(stamped.withRequestOpenedAt(0).requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     }
 
-    /**
-     * A request is linked at the moment jagt or its agent opened it, so the age is knowable without a host read —
-     * blank until the next sweep was the same request, minus its age.
-     */
     @Test
     void datesARequestItJustOpenedByTheClockInsteadOfLeavingTheAgeBlank() {
         TaskState stamped = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
@@ -247,10 +224,6 @@ class TaskStateTest {
         assertThat(stamped.withMrUrl("http://mr/1").requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     }
 
-    /**
-     * A read's answers describe ONE request: pointed at another, the task would otherwise read as approved, green
-     * and days old until the next read said otherwise.
-     */
     @Test
     void forgetsWhatWasReadAboutARequestWhenTheTaskIsPointedAtAnotherOne() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("https://host/mr/1")
@@ -263,7 +236,6 @@ class TaskStateTest {
         assertThat(relinked.requestOpenedAt()).isCloseTo(System.currentTimeMillis(), within(60_000L));
     }
 
-    /** The same call with the link it already carries is not a new request, and drops nothing. */
     @Test
     void keepsWhatWasReadWhenTheLinkHasNotChanged() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("https://host/mr/1")
@@ -272,11 +244,6 @@ class TaskStateTest {
         assertThat(task.withMrUrl("https://host/mr/1").approved()).isTrue();
     }
 
-    /**
-     * A task as an OLD state.json holds it: no history at all. The builder cannot express that (a null history
-     * means "brand new", so it seeds one), which leaves the canonical constructor — and that is a row of
-     * positional nulls that breaks on every new field, so it lives in exactly one place.
-     */
     private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
                                         List<StatusChange> history) {
         return new TaskState(List.of(TaskRepo.of("proj", "/wt")), status, lastActive, message, "a1", null,

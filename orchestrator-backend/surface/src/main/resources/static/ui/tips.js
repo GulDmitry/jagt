@@ -1,5 +1,4 @@
-// `title` shows only after a wait, and a push rebuilds the element it was waiting on. Delegated, for the same
-// reason: every element carrying a tip is rebuilt on render.
+// `title` shows only after a wait, and a push rebuilds the element it was waiting on — so a tip is delegated.
 
 const tip = Object.assign(document.createElement('div'), {id: 'tip', hidden: true});
 document.body.append(tip);

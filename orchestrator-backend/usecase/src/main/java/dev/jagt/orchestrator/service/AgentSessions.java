@@ -42,10 +42,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         return sessions.killTaskWindows(agentSession(configService.load(), taskId), taskId);
     }
 
-    /**
-     * Reserving the viewer is the default: one placed by hand — dragged into a window or a group — should survive
-     * task cycles.
-     */
+    /** Reserving the viewer is the default: one placed by hand should survive task cycles. */
     public boolean closeViewerIfNoTasksLeft() {
         ConfigService.ConfigFile config = configService.load();
         if (!stateService.tasks().isEmpty() || config.viewer().keepViewerOrDefault()) {
@@ -110,8 +107,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 respawned = true;
             }
             case DEAD_SHELL -> {
-                // The window survived only for post-mortem inspection; focusing it
-                // must hand the user a live agent, not a dead prompt.
+                // Focusing must hand the user a live agent, not the dead prompt left for inspection.
                 sessions.killTaskWindows(session, taskId);
                 sessions.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
                 respawned = true;
@@ -128,30 +124,19 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     private static String viewer(TerminalDriver.Revealed revealed) {
         return switch (revealed) {
             case WINDOW -> " and raised the agents window";
-            case UNREACHABLE_TAB -> " — the agents viewer is a TAB and this terminal has no API to select one,"
-                    + " so click it yourself (or keep it as its own window)";
+            case UNREACHABLE_TAB -> " — the agents viewer is a tab this terminal cannot select; click it"
+                    + " yourself";
             case NOT_RUNNING -> " — no agents viewer is open; the session is there, nothing is showing it";
         };
     }
 
     public String writeTaskContext(String taskId, String instructions) {
-        return relay(taskId, instructions, false);
+        return relay(taskId, instructions);
     }
 
     /**
-     * Adds to whatever the agent has not read yet instead of replacing it: independent flows relay to the same
-     * file, and truncating loses one of them outright. A NEW round of work still replaces.
-     */
-    public String appendTaskContext(String taskId, String instructions) {
-        return relay(taskId, instructions, true);
-    }
-
-    /**
-     * Relays only what the agent has not already been handed. The poller reads the same round every interval
-     * while the request stands still, and a relay does not merely write a file — it NUDGES the session, so an
-     * unchanged brief would interrupt an agent every interval to re-decide comments it has already answered.
-     *
-     * @return false when the file already holds exactly this brief, so nothing was written and nobody nudged
+     * Relays only what the agent has not already been handed, false when the file already holds exactly this brief.
+     * A relay NUDGES the session, so an unchanged brief would interrupt the agent every poll interval.
      */
     public boolean relayIfChanged(String taskId, String instructions) {
         String id = stateService.canonicalTaskId(taskId);
@@ -165,23 +150,18 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         }
     }
 
-    private String relay(String taskId, String instructions, boolean append) {
+    private String relay(String taskId, String instructions) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         Path contextFile = Path.of(task.worktreePath()).resolve("task_context.md");
-        // One relay at a time per task: a sweep runs unattended while a human can ship at any moment, and
-        // interleaving two writes to one file is how an instruction disappears.
+        // One relay at a time per task: interleaving two writes to one file loses an instruction.
         synchronized (relayLock(taskId)) {
-            WorktreeFiles.write(contextFile, append
-                    ? WorktreeFiles.read(contextFile).map(existing -> existing + "\n\n" + instructions)
-                            .orElse(instructions)
-                    : instructions);
+            WorktreeFiles.write(contextFile, instructions);
         }
         // The opening line only: a brief runs to hundreds of lines.
         log.atInfo().setMessage("instructions relayed").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias())
                 .addKeyValue("chars", instructions.length())
-                .addKeyValue("appended", append)
                 .addKeyValue("said", instructions.lines().findFirst().orElse("(empty)"))
                 .log();
         // A file on disk doesn't wake a running agent session — nudge it directly.

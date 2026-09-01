@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.surface.ui.SessionLog;
+import dev.jagt.orchestrator.surface.ui.LogFileReset;
 import dev.jagt.orchestrator.surface.ui.StartupFailure;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,9 +13,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ConfigurationPropertiesScan
 public class OrchestratorApplication {
 
-    // There is deliberately NO logback "failure-render preload" here: a NoClassDefFoundError during a startup
-    // failure or on exit is a CORRUPTED FAT JAR — `./gradlew build` rewrites it in place while a JVM runs from
-    // it. Do not add one back.
+    // A NoClassDefFoundError while a startup failure renders means the jar was rewritten in place under a
+    // running JVM, not a class that needs preloading.
     public static void main(String[] args) {
         try {
             application().run(withConfigFile(args));
@@ -26,29 +25,22 @@ public class OrchestratorApplication {
     }
 
     /**
-     * Hands Spring the SAME `jagt.yml` that {@code ConfigService} re-reads, resolved the same way — a launch is
-     * the only place that knows where it is before a context exists. Declared here rather than in the packaged
-     * `application.yml` on purpose: an import written there is loaded by every test context too, and a suite
-     * that reads the developer's own settings passes or fails on an untracked file.
+     * A launch is the only place that knows where `jagt.yml` is before a context exists. Not the packaged
+     * {@code application.yml}: an import written there is loaded by every test context too.
      */
     private static String[] withConfigFile(String[] args) {
         String resolved = OrchestratorPaths.configFileOutside(args).toString();
         String[] launched = java.util.Arrays.copyOf(args, args.length + 2);
         launched[args.length] = "--spring.config.additional-location=optional:file:" + resolved;
-        // Pinned as well as imported: `root` inside that file re-answers where the root is, and without this
-        // the bean would then look for a SECOND jagt.yml under the new root while Spring had bound the first.
+        // Pinned as well as imported: `root` inside that file would otherwise send the bean to a second jagt.yml.
         launched[args.length + 1] = "--orchestrator.config-file=" + resolved;
         return launched;
     }
 
-    /**
-     * Visible for a test, because the REGISTRATION is what breaks while {@link SessionLog} itself works: a
-     * {@code main} simplified back to a bare {@code SpringApplication.run} would report yesterday's entries as
-     * this session's work with the whole suite green.
-     */
+    // Visible for a test: the REGISTRATION is what breaks while the listener itself works.
     static SpringApplication application() {
         SpringApplication application = new SpringApplication(OrchestratorApplication.class);
-        application.addListeners(new SessionLog());
+        application.addListeners(new LogFileReset());
         return application;
     }
 }

@@ -1,5 +1,4 @@
-// The only place that talks to the backend. A failed call carries the sentence jagt refused with AND its code,
-// because a caller acts on the code and a human reads the sentence.
+// A failure carries both: the code a caller acts on and the sentence a human reads.
 
 export async function api(path, options) {
   const response = await fetch(path, options);
@@ -19,9 +18,8 @@ export async function text(path, options) {
   return body;
 }
 
-// Refusals that mean "this page was describing a task that has moved on". Every action reloads the board
-// afterwards, so by the time the message is read the view is already right — say so, or it reads as jagt
-// refusing something it will keep refusing.
+// Every action reloads the board, so by the time such a refusal is read the view is already right — say so, or
+// it reads as jagt refusing something it will keep refusing.
 const STALE_VIEW = ['NO_SUCH_TASK', 'ACTION_NOT_AVAILABLE'];
 
 export const refusal = (e) =>

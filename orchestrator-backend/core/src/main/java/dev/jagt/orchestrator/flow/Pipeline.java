@@ -13,10 +13,8 @@ public enum Pipeline {
     /** Still going, or queued: the answer is not in yet. */
     RUNNING(1),
     /**
-     * Nobody has read them: nothing looked yet, the read could not reach the host's pipelines, or the host said a
-     * word this does not recognise — and the words hosts invent are not a list anyone can finish. Separate from
-     * {@link #NONE} because "this request has no checks" is a fact the HOST stated, and answering ignorance with
-     * it is how a red run leaves no mark on the board.
+     * Nobody has read them, or the host said a word this does not recognise. Separate from {@link #NONE}, which is
+     * a fact the HOST stated.
      */
     UNKNOWN(2),
     /** The host listed no pipeline for this request. Deliberately NOT green: nothing here says the code works. */

@@ -28,10 +28,7 @@ public class ProcessRunner implements Processes {
         return run(workingDir, timeout, Map.of(), command);
     }
 
-    /**
-     * A GUI launcher's CLI blocks until its window closes, so waiting would time out and then destroy the very
-     * window it opened. Only a failure to START is reported; the launched app's own errors are its business.
-     */
+    /** A GUI launcher's CLI blocks until its window closes, so waiting would time out and destroy that window. */
     @Override
     public Process runDetached(Path workingDir, List<String> command) {
         try {
@@ -45,9 +42,8 @@ public class ProcessRunner implements Processes {
             builder.redirectOutput(ProcessBuilder.Redirect.DISCARD);
             builder.redirectError(ProcessBuilder.Redirect.DISCARD);
             Process launched = builder.start();
-            // The wrapper always starts, so a missing binary is no longer an IOException — it is the wrapper
-            // exiting 127, which would otherwise read as "the feature is not configured". A launcher that
-            // hands off to a running instance also exits at once, and that one exits ZERO.
+            // The wrapper always starts, so a missing binary is not an IOException but the wrapper exiting 127.
+            // A launcher handing off to a running instance also exits at once, and that one exits ZERO.
             if (launched.waitFor(LAUNCH_CHECK.toMillis(), TimeUnit.MILLISECONDS) && launched.exitValue() != 0) {
                 throw new IllegalStateException("Failed to launch: " + String.join(" ", command)
                         + " (exit " + launched.exitValue() + ")");
@@ -63,12 +59,10 @@ public class ProcessRunner implements Processes {
     }
 
     /**
-     * The command in a session of its OWN, because the terminal delivers Ctrl-C to jagt's whole process group
-     * and a child of {@code ProcessBuilder} is in it. Signal DISPOSITIONS stay default on purpose: ignoring
-     * SIGINT would be inherited by everything the app then spawns, and an IDE's own Stop button IS a SIGINT.
-     * Both wrappers {@code exec}, so the returned process is the app itself and can still be killed by pid.
-     * Neither tool available (a minimal container without perl) leaves the command as it was: no session of its
-     * own, but a launch.
+     * A session of its OWN, because the terminal delivers Ctrl-C to jagt's whole process group. Signal
+     * DISPOSITIONS stay default: ignoring SIGINT would be inherited by everything spawned later, and an IDE's
+     * Stop button IS a SIGINT. Both wrappers {@code exec}, so the returned process is the app itself and still
+     * killable by pid. With neither tool present the command is returned unchanged — no session, but a launch.
      */
     static List<String> detachedFrom(List<String> command) {
         if (command.isEmpty()) {
@@ -89,11 +83,7 @@ public class ProcessRunner implements Processes {
         return List.copyOf(wrapped);
     }
 
-    /**
-     * A launch outlives the call, so how it ENDED is the only thing that can later attribute a death nobody
-     * asked for — and whether it got a session of its own is what says whether a terminal could have been the
-     * one to end it.
-     */
+    /** A launch outlives the call, so only how it ENDED can later attribute a death nobody asked for. */
     private static void reportLifeOf(Process launched, List<String> command, boolean ownSession, long startedAt) {
         log.atInfo().setMessage("process launched")
                 .addKeyValue("pid", launched.pid())
@@ -130,8 +120,7 @@ public class ProcessRunner implements Processes {
                 builder.directory(workingDir.toFile());
             }
             builder.environment().putAll(env);
-            // No jagt subprocess reads our stdin — feed them /dev/null so none can steal the console's own,
-            // and so a CLI that waits on stdin gets immediate EOF instead of a several-second pause.
+            // /dev/null so no subprocess steals the console's stdin, and a CLI waiting on it gets instant EOF.
             builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
             Process process = builder.start();
             // Drain both streams before waitFor to avoid pipe-buffer deadlock on chatty commands.
