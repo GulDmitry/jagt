@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'dev.jagt'
-version = '0.7.0'
+version = '0.8.0'
 description = 'Local orchestration of AI coding-agent CLI sessions across isolated Git worktrees'
 
 dependencies {
