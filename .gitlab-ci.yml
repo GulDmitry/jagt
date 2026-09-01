@@ -64,13 +64,15 @@ board:
     paths:
       - orchestrator-backend/build/reports/tests/boardTest
 
-# The jar as a downloadable artifact. Attaching one to a RELEASE is GitHub-only by decision (2026-08-18): the
-# owner wants the per-run artifact everywhere and no published release yet, so there is nothing to mirror here.
+# The jar as a downloadable artifact, named after the version it is. Two steps stay GitHub-only, both because
+# this host cannot hold them: the release attachment (no published release yet, decided 2026-08-18) and the
+# macOS unit run (no macOS runner).
 jar:
   stage: test
   script:
     - ./gradlew --no-daemon bootJar
+    - cp build/libs/jagt.jar "build/libs/jagt-$(./gradlew --no-daemon -q printVersion).jar"
   artifacts:
     expire_in: 30 days
     paths:
-      - orchestrator-backend/build/libs/jagt.jar
+      - orchestrator-backend/build/libs/jagt-*.jar

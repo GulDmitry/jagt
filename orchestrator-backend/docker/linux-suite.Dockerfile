@@ -1,9 +1,5 @@
-# The Linux the roadmap asks for, without a Linux machine: everything jagt shells out to, installed for real.
-#
-# It exists because the drivers were written and wired from macOS. `notify-send` under a session bus, kitty's
-# remote control under an X server, tmux windows on another kernel and git on overlayfs are all things only a
-# real Linux can answer — and a container is a real Linux. What it CANNOT answer stays out of here rather than
-# being faked: IntelliJ (`idea`), the macOS AppleScript raise, the Warp URI scheme, the actual `claude` CLI.
+# A real Linux without a Linux machine: everything jagt shells out to, installed for real.
+# Why it exists, and what it can and cannot answer: scripts/linux-suite.sh.
 #
 # Build:  docker build -f docker/linux-suite.Dockerfile -t jagt-linux-suite .
 # Use:    scripts/linux-suite.sh   (mounts the repo, runs the suites inside)

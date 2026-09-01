@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
-# Runs jagt's suites on a REAL Linux, from a Mac — the "Linux runner" the roadmap asks for, in a container.
+# Runs jagt's suites on a REAL Linux, from a Mac, in a container.
 #
-# WHY this exists: every Linux-specific piece (the `notify-send` notifier, the kitty driver, tmux windows on
-# another kernel, git on overlayfs, the jar on a Linux JVM) was written and wired from macOS. A container IS a
-# real Linux, so these are answerable without a second machine. The first run of it already found a shipped
-# bug: `tmux-command` defaulted to /opt/homebrew/bin/tmux, so EVERY task on Linux died before its agent
-# started.
+# Every Linux-specific piece — the `notify-send` notifier, the kitty driver, tmux windows on another kernel,
+# git on overlayfs, the jar on a Linux JVM — was written from macOS, and only a real Linux answers for it.
 #
 # What it runs, in order:
 #   1. `test`            — the hermetic unit suite, on a Linux JVM (Java 25, aarch64 or x86_64)
@@ -15,9 +12,9 @@
 #                          notification daemon, and kitty on an Xvfb display answering remote control
 #
 # What it CANNOT answer, and therefore does not pretend to: IntelliJ (`idea`), the macOS AppleScript raise,
-# the Warp URI scheme, the real `claude` CLI, a live code host or tracker.
+# the real agent CLI, a live code host or tracker.
 #
-# Usage: scripts/linux-suite.sh [gradle-task…]      (default: the three above)
+# Usage: scripts/linux-suite.sh [gradle-task…]      (default: all four above)
 # Requires: Docker. Leaves nothing on the host but a Gradle cache volume and the image.
 set -euo pipefail
 
