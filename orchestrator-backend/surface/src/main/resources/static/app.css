@@ -70,18 +70,36 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
   padding: 0; max-width: min(1000px, 94vw); max-height: 92vh; overflow: hidden;
   box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
 }
+/* A column, so the head and the line keep their height and the body takes what is left, with or without one. */
+#report[open] { display: flex; flex-direction: column; }
 #report::backdrop { background: rgb(0 0 0 / 45%); }
 .report-head {
   display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-bottom: 1px solid var(--line);
   position: sticky; top: 0; background: var(--panel);
 }
-#report-scroll { max-height: calc(92vh - 46px); overflow: auto; }
+#report-scroll { overflow: auto; min-height: 0; }
 /* Wraps rather than scrolling sideways: a line a human has to drag the view along is one they read twice, and
    only a word longer than the dialog is broken, so a path stays one thing you can copy. */
 #report-body {
   margin: 0; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: break-word;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.45;
 }
+
+/* The two facts a round's replies carry, in weight and colour only: no report grows a separator or a box. */
+.block { font-weight: 700; }
+.verdict.ok { color: var(--ok); }
+.verdict.you { color: var(--you); }
+.verdict.muted, .quote { color: var(--muted); }
+/* The legend renders these outside the report, where the report's own font does not reach them. */
+.legend-key .block, .legend-key .quote {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+}
+/* Thin on purpose: one line, no button — Enter sends it, and the round above is what it is about. */
+#report-line {
+  display: flex; gap: 8px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line);
+}
+#report-line[hidden] { display: none; }
+#report-line input { flex: 1; font-size: 13px; }
 
 .legend {
   display: grid; grid-template-columns: max-content 1fr; gap: 10px 14px; align-items: center;
@@ -207,6 +225,8 @@ a { color: var(--accent); }
 /* A verdict is filled — red failed, green passed — and a run still going is a hollow pulsing ring, so the three
    read apart with the animation switched off. No dot at all is a verdict nothing here can read. */
 .checks { width: 9px; height: 9px; border-radius: 50%; display: inline-block; align-self: center; }
+/* The class sets a display, which outranks the browser's own [hidden]: a waiting ring stayed on screen. */
+.checks[hidden] { display: none; }
 .checks.red { background: var(--danger); }
 .checks.green { background: var(--ok); }
 .checks.running { border: 2px solid var(--muted); animation: checks-pulse 1.6s ease-in-out infinite; }

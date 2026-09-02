@@ -38,6 +38,8 @@ relayed, the agent fixes locally into `review_replies.md`, and nothing is posted
 - `replies [task]` (`command/ReviewRepliesReport`) prints every comment, its verdict and the reply to be
   posted — off the **file**, never the badge, unrecognised shape included. The card's drafted-replies line is
   its only button (`GlobalCommand.aboutOneTask`).
+- **A line typed at that report is SAID, not relayed** (`AgentSessions.say` → `nudgeTaskWindow`):
+  a relay overwrites `task_context.md`. It replaces the trip through `focus`.
 - **Drafts belong to their round**: `ReviewDrafts.pending` is the file present **and** newer than
   `mrCreatedAt`.
 - Who posts them decides when they are spent (`CodeReviewConfig.shipPostsEveryDraft`): under

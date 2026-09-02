@@ -1,9 +1,9 @@
 // Tier 2, behind ⌘K because it costs a model call: free text mapped to ONE command, run by the gate a button uses.
 
-import {api, refusal, text} from '../core/api.js';
+import {api, refusal} from '../core/api.js';
 import * as store from '../core/store.js';
 import {run} from './act.js';
-import {openReport, showReport} from './dialogs.js';
+import {openReport} from './dialogs.js';
 import {refresh} from './refresh.js';
 import {sending} from './submit.js';
 import {toast} from './toast.js';
@@ -71,7 +71,7 @@ export function refreshSuggestions() {
       button.textContent = verb.id.charAt(0).toUpperCase() + verb.id.slice(1);
       button.dataset.tip = verb.hint;
       button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`,
-        forms.reportSection(verb.id));
+        {extra: forms.reportSection(verb.id)});
       return button;
     }));
 }
@@ -116,10 +116,12 @@ async function runParsed(parsed) {
   }
   // What was typed after the verb goes with it: a report that narrows to one task must not answer for all.
   if (verb.report) {
-    const about = argument ? `?about=${encodeURIComponent(argument)}` : '';
-    showReport(`${verb.id} ${store.nameOf(argument)}`.trim(),
-      await text(`/api/commands/${encodeURIComponent(verb.id)}${about}`));
-    return HANDLED;
+    const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : '';
+    const opened = await openReport(`${verb.id} ${store.nameOf(argument)}`.trim(),
+      `/api/commands/${encodeURIComponent(verb.id)}${narrowed}`,
+      {about: verb.aboutOneTask ? argument : null});
+    // A report that could not be read leaves the typed line where it was, to try again.
+    return opened ? HANDLED : KEPT;
   }
   // With no argument the palette hands over to the form, which is where the rest of a launch is decided anyway.
   if (verb.id === 'do') {

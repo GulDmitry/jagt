@@ -115,6 +115,33 @@ class AgentSessionsTest {
     }
 
     @Test
+    void typesAHumansLineIntoTheRunningSessionWithoutTouchingTheRoundBriefOnDisk() throws Exception {
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
+        Files.writeString(worktree.resolve("task_context.md"), "Review round for http://mr/1.");
+        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow("jagt", "ABC-1", "no, answer 2 differently")).thenReturn(true);
+
+        sessions().say("ABC-1", "no, answer 2 differently");
+
+        assertThat(Files.readString(worktree.resolve("task_context.md")))
+                .isEqualTo("Review round for http://mr/1.");
+    }
+
+    @Test
+    void refusesALineForATaskWhoseAgentSessionIsGoneRatherThanRespawningOverIt() {
+        state.putTask("ABC-1", TaskState.builder("demo", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
+        when(agentRuntime.displayName()).thenReturn("Claude");
+
+        assertThatThrownBy(() -> sessions().say("ABC-1", "no, answer 2 differently"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("No Claude session is running for ABC-1");
+    }
+
+    @Test
     void respawnsATaskWhoseSessionIsGoneRatherThanDroppingTheRelay() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");

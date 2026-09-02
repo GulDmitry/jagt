@@ -187,6 +187,7 @@ What the agent does with a comment:
 | A thread the agent **fixed** | Resolved at ship time by the agent's own MCP; an unresolved thread is relayed by every later round |
 | A thread it disagreed with or asked about | Left unresolved on purpose: settling it is the reviewer's move |
 | "Where are the other comments, and what will actually be posted?" | `replies <task>` — every block of `review_replies.md` on screen; on the board, the card's drafted-replies line opens it |
+| A drafted reply is wrong | Say so in the line under the open `replies` report: it is typed into that session, which answers into the same report while a pulsing ring waits |
 | `review_replies.md` is too long to read before shipping | The round brief prescribes the shape and is relayed every round, so a re-`sweep` re-briefs |
 | An agent writes an essay in a request, a reply or a comment | It broke the brief's "How you write", which defers to the machine's own writing skill |
 | The round came back clean, nobody approved | REVIEWED, and **nothing** is asked of the human; `deploy` stays listed for whoever needs no approval |

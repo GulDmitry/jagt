@@ -135,6 +135,24 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     }
 
     /**
+     * A line the human types, typed into the running session as they would have typed it in its window. Never a
+     * relay: that OVERWRITES task_context.md, and the round's brief is still what the agent is working from.
+     */
+    public String say(String taskId, String line) {
+        String id = stateService.canonicalTaskId(taskId);
+        TaskState task = requireTask(id);
+        String session = agentSession(configService.load(), id);
+        if (sessions.taskWindowState(session, id) != SessionHost.WindowState.AGENT_RUNNING
+                || !sessions.nudgeTaskWindow(session, id, line)) {
+            throw new IllegalStateException("No " + agentRuntime.displayName() + " session is running for "
+                    + id + " — restart the agent, then say it again.");
+        }
+        log.atInfo().setMessage("line said to agent").addKeyValue("task", id)
+                .addKeyValue("alias", task.alias()).addKeyValue("said", line).log();
+        return "Said to the agent.";
+    }
+
+    /**
      * Relays only what the agent has not already been handed, false when the file already holds exactly this brief.
      * A relay NUDGES the session, so an unchanged brief would interrupt the agent every poll interval.
      */

@@ -24,6 +24,8 @@ A second surface must add no second answer to a question the board answers — t
 - A hint's text lives in `command/CommandReference`, so no caller renders its own.
 - A report opens in a `<dialog>` over the board, never a new page, and **every dialog closes three ways**:
   Escape, its button, the dimmed area.
+- A report about ONE task carries a one-line box that types into that session (`POST /api/tasks/say`) — not a
+  verb, and the only control there.
 - Stopping the backend is **not a verb**; the shutdown endpoint once built was removed.
 
 ## "What commands exist" has exactly two answers, and both are declarations

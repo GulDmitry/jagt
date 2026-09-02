@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AutoReviewScheduler;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
@@ -76,6 +77,8 @@ class BoardPageTest {
     private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
     @MockitoBean
     private AutoReviewScheduler autoReviewScheduler;
+    @MockitoBean
+    private AgentSessions sessions;
 
     private BrowserContext session;
 
@@ -855,6 +858,133 @@ class BoardPageTest {
 
         assertThat(page.locator("#report-body")).containsText("1 · FIXED · !12 thread 1");
         assertThat(page.locator("#report-body")).containsText("Measured it and pinned the count.");
+    }
+
+    @Test
+    void theCommentAndTheAnswerToItAreToldApartWithoutASeparator() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-4-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"),
+                "## !12 thread 1\n> the canonical row count is wrong\nFIXED - Measured it and pinned the count.\n");
+        state.putTask("ABC-4", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a4").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article .drafts").click();
+
+        assertThat(page.locator("#report-body .verdict.ok")).hasText("FIXED ");
+        assertThat(page.locator("#report-body .quote")).containsText("the canonical row count is wrong");
+    }
+
+    @Test
+    void aLineSaidAtAnOpenRoundReachesTheSessionOfTheTaskItIsAbout() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-5-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-5", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a5").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        when(sessions.say("a5", "no, answer 1 differently")).thenReturn("Said to the agent.");
+
+        Page page = open();
+        page.locator("article .drafts").click();
+        page.locator("#say").fill("no, answer 1 differently");
+        page.locator("#say").press("Enter");
+
+        assertThat(page.locator("#said")).isVisible();
+        verify(sessions).say("a5", "no, answer 1 differently");
+    }
+
+    @Test
+    void aReportThatIsNotAboutOneTaskOffersNoLineEvenWhenAnArgumentNamesOne() {
+        state.putTask("ABC-12", TaskState.builder("alpha", root.resolve("ABC-12-alpha").toString(),
+                TaskStatus.REVIEW_PENDING).alias("a12").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("activity a12");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#report-title")).containsText("activity");
+        assertThat(page.locator("#report-line")).isHidden();
+    }
+
+    @Test
+    void aLineTypedAtOneRoundIsNotCarriedIntoTheNextOneOpened() throws IOException {
+        Path first = Files.createDirectories(root.resolve("ABC-13-alpha"));
+        Files.writeString(first.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        Path second = Files.createDirectories(root.resolve("ABC-14-alpha"));
+        Files.writeString(second.resolve("review_replies.md"), "## thread 1\nFIXED - Pinned the count.\n");
+        state.putTask("ABC-13", TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a13").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-14", TaskState.builder("alpha", second.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a14").mrUrl("https://host.example/mr/8").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article:has-text(\"a13\") .drafts").click();
+        page.locator("#say").fill("no, answer 1 differently");
+        page.locator("#close-report").click();
+        page.locator("article:has-text(\"a14\") .drafts").click();
+
+        assertThat(page.locator("#say")).hasValue("");
+    }
+
+    @Test
+    void whatTheWaitingRingMeansIsReadableOverTheDialogItPulsesIn() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-15-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-15", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a15").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        when(sessions.say("a15", "no, answer 1 differently")).thenReturn("Said to the agent.");
+
+        Page page = open();
+        page.locator("article .drafts").click();
+        page.locator("#say").fill("no, answer 1 differently");
+        page.locator("#say").press("Enter");
+        page.locator("#said").hover();
+
+        assertThat(page.locator("#report #tip")).isVisible();
+    }
+
+    @Test
+    void anOpenRoundNobodyHasAnsweredYetShowsNothingWaiting() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-11-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-11", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a11").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article .drafts").click();
+
+        assertThat(page.locator("#said")).isHidden();
+    }
+
+    @Test
+    void aReportAnsweringForEveryTaskHasNoSessionToSayAnythingTo() {
+        state.putTask("ABC-8", TaskState.builder("alpha", root.resolve("ABC-8-alpha").toString(),
+                TaskStatus.REVIEW_PENDING).alias("a8").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("replies");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#report")).isVisible();
+        assertThat(page.locator("#report-line")).isHidden();
+    }
+
+    @Test
+    void anOpenRoundIsReadAgainWhenTheAgentAnswersUnderIt() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-9-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-9", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a9").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article .drafts").click();
+        Files.writeString(worktree.resolve("review_replies.md"),
+                "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
+        state.putTask("ABC-9", state.task("ABC-9").orElseThrow()
+                .withStatus(TaskStatus.REVIEW_PENDING, "answered"));
+
+        assertThat(page.locator("#report-body")).containsText("The name is the one the caller uses.");
     }
 
     @Test

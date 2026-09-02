@@ -63,6 +63,11 @@
     <div id="report-section"></div>
     <pre id="report-body"></pre>
   </div>
+  <!-- Only for a report about ONE task: the session it is about is the one this line reaches. -->
+  <form id="report-line" hidden>
+    <input id="say" placeholder="tell this session — no, answer 2 differently" autocomplete="off" required>
+    <span id="said" class="checks running" hidden data-tip="the session is working; this repaints when it answers"></span>
+  </form>
 </dialog>
 
 <div id="phases"></div>

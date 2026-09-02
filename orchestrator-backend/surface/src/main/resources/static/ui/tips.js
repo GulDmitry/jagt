@@ -8,6 +8,8 @@ export function hideTip() {
 }
 
 function showTip(target) {
+  // A modal dialog renders in the top layer, above every z-index: a tip under it hides behind the backdrop.
+  (target.closest('dialog[open]') || document.body).append(tip);
   tip.textContent = target.dataset.tip;
   tip.hidden = false;
   const anchor = target.getBoundingClientRect();

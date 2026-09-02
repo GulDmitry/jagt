@@ -2,7 +2,7 @@
 
 import * as store from './core/store.js';
 import {run} from './ui/act.js';
-import {openReport, showReport} from './ui/dialogs.js';
+import {openReport, repaintReport, showReport} from './ui/dialogs.js';
 import * as filters from './ui/filters.js';
 import * as header from './ui/header.js';
 import './ui/keys.js';
@@ -19,7 +19,7 @@ const live = document.getElementById('live');
 onClick({
   action: run,
   report: (id, about) => openReport(`${id} ${store.nameOf(about)}`,
-    `/api/commands/${id}?about=${encodeURIComponent(about)}`),
+    `/api/commands/${id}?about=${encodeURIComponent(about)}`, {about}),
 });
 header.onNarrow(render);
 filters.onChange(render);
@@ -51,7 +51,8 @@ events.addEventListener('open', () => {
   loadVerbs();
   refresh();
 });
-events.addEventListener('changed', refresh);
+// An open report is read again on the same signal: the round it shows may be the thing that changed.
+events.addEventListener('changed', () => { refresh(); repaintReport(); });
 events.onerror = () => live.classList.remove('on');
 // The slow repaint is for the relative clocks ("4m ago") only, which no event can announce.
 setInterval(render, 15000);

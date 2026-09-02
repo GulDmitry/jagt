@@ -3,11 +3,10 @@
 [← AGENTS.md](../../AGENTS.md)
 
 **The storybook is the board's own `Help` report**: `static/ui/legend.js` renders every mark below as the
-page's own element, and every legend row is a mark — bar a **transient** one, or one inside a control already
-open (`#palette-state.ok` / `.bad`). The COST of adding one: [`surfaces.md`](surfaces.md).
+page's own element, and every legend row is a mark — bar a **transient** one inside an open control
+(`#palette-state.ok`/`.bad`, a said line's wait). The COST of adding one: [`surfaces.md`](surfaces.md).
 
-Also marks, same rules: `.badge.required`/`.optional`, the card's own line `.detail.problem`/`.you`, the
-header's `.waiting` count, `.chip.on`/`.bad`, and `.dot.on`. **`--ok` and `--you` on one card do not
+Also marks: every sample `legend.js` renders. **`--ok` and `--you` on one card do not
 disagree**: APPROVED wears both — the approval landed, the deploy is yours.
 
 ## The colour palette
@@ -38,9 +37,11 @@ translucent blacks (four shadows, the dialog backdrop) apart.
   did is live, so pressing repeats it.
 - dotted underline — `a.id`, `a.mr-age`, `.drafts`: the text opens something.
 - 9px dot — `.checks.red` / `.checks.green` filled: a verdict is in. `.checks.running` hollow ring, carrying
-  the board's one `@keyframes`: waiting, as hollow means everywhere. The ring says it, the pulse only draws the
-  eye, surviving `prefers-reduced-motion`.
+  the board's one `@keyframes`: waiting, as hollow means everywhere — under a said line too. The ring says it,
+  the pulse only draws the eye (`prefers-reduced-motion` safe).
 - `✓` on the request, or `.tick` beside several: approved.
+- in a round's replies — `.block` head, its `.verdict` green fixed / amber a question / grey pushed back;
+  the `.quote` it answers muted.
 - countdown text — `.pulse`, amber as `.pulse.stalled`: when the poll runs next; amber once nothing will look
   again.
 - absence — no dot, no tick, no badge: the expected state, no pipeline, or nothing read yet, the hover saying
@@ -56,11 +57,11 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 ## Type, metrics and both themes
 
 One family (`ui-sans-serif, system-ui`), one mono (`ui-monospace, SFMono-Regular, Menlo`) for anything compared
-digit by digit: ages, aliases, token counts, report bodies. Sizes: 15px the `h1`, 14px body, 13px header
-controls and report meta, 12px card meta, detail, buttons and chips, 11px badges, status, `MR` age, tool-row
+digit by digit: ages, aliases, token counts, report bodies. Sizes: 15px `h1`, 14px body, 13px header
+controls and report meta, 12px card meta, detail, buttons, chips, 11px badges, status, `MR` age, tool-row
 buttons, legend heads.
 
-Radii climb with size: `999px` pills, `50%` dots, `6px` a control (button, input, tip, drafts line), `8px` a
+Radii climb with size: `999px` pills, `50%` dots, `6px` a control, `8px` a
 card or toast, `10px` the report dialog. Grid gap 12px, card padding 10px, dialog padding 14px, meta gap 8px.
 Shadow lifts a thing OFF the page and nothing else (report dialog, log button, toast, tip); its one exception
 is not depth: the 2px `--ok` ring on a primary deploy button. **One animation exists**, `checks-pulse`.

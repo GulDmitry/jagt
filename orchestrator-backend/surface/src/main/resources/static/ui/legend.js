@@ -39,6 +39,13 @@ const draftsButton = () => {
   return button;
 };
 
+// The report's own two marks, drawn as it draws them.
+const blockHead = () => {
+  const head = span('block', '1 \u00b7 ');
+  head.append(span('verdict ok', 'FIXED'), ' \u00b7 thread 4');
+  return head;
+};
+
 const detailLine = (className, text) => {
   const line = document.createElement('div');
   line.className = className;
@@ -64,6 +71,9 @@ const rows = () => [
     'approved, where a task spans repositories'],
   [[draftsButton()],
     'replies are drafted \u2014 read them before you ship'],
+  [[blockHead(), span('quote', '> the row count is wrong')],
+    'in a round\u2019s replies: the verdict \u2014 green fixed \u00b7 amber a question \u00b7 grey pushed back '
+    + '\u2014 and the comment it answers'],
   [[span('pulse stalled', 'polling stopped')],
     'nothing will look at this round again on its own'],
   [[detailLine('detail problem', 'PROBLEM: no branch to ship'), detailLine('detail you', 'NEEDS YOU: a red run')],
