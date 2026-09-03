@@ -52,6 +52,10 @@ class McpHealthProbe {
         if (!assistant.mcpConfig().isBlank()) {
             log.atWarn().setMessage("mcp probe skipped")
                     .addKeyValue("cause", "orchestrator.assistant.mcp-config set")
+                    .addKeyValue("effect", "a failed read gets no server verdict")
+                    .addKeyValue("fix", claude.command() + " --strict-mcp-config --mcp-config "
+                            + assistant.mcpConfig() + " --setting-sources " + assistant.settingSources()
+                            + ", then /mcp: a declared server carries its own login")
                     .log();
             return Optional.empty();
         }

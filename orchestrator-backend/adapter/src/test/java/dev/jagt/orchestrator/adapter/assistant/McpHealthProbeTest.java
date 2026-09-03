@@ -3,8 +3,12 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -58,6 +62,25 @@ class McpHealthProbeTest {
                 .brokenServers();
 
         assertThat(broken).isEmpty();
+    }
+
+    @Test
+    void namesTheLoginADeclaredServerNeedsWhereItCannotJudgeOne() {
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger probeLog = (Logger) LoggerFactory.getLogger(McpHealthProbe.class);
+        probeLog.addAppender(log);
+
+        new McpHealthProbe(mock(ProcessRunner.class), ClaudeProperties.defaults(),
+                AssistantProperties.empty().withMcpConfig("/opt/acme/servers.json")).brokenServers();
+
+        assertThat(List.copyOf(log.list)).filteredOn(event -> "mcp probe skipped".equals(event.getMessage()))
+                .flatExtracting(ILoggingEvent::getKeyValuePairs)
+                .extracting(pair -> pair.key + "=" + pair.value)
+                .contains("fix=claude --strict-mcp-config --mcp-config /opt/acme/servers.json"
+                        + " --setting-sources user,project,local, then /mcp: a declared server carries its"
+                        + " own login");
+        probeLog.detachAppender(log);
     }
 
     @Test
