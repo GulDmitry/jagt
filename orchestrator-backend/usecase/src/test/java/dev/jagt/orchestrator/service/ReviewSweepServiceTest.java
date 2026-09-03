@@ -169,6 +169,20 @@ class ReviewSweepServiceTest {
     }
 
     @Test
+    void handsTheAgentTheFailingJobsLogRatherThanOnlyTheWordFailed() {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "failed", "test:unit\nWidgetTest > rendersLabel FAILED\n  expected 'on' but was 'off'",
+                List.of(), 0)));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue()).contains("<checks>\ntest:unit\nWidgetTest > rendersLabel FAILED\n"
+                + "  expected 'on' but was 'off'\n</checks>");
+    }
+
+    @Test
     void reportsAnUnreadableReviewInsteadOfTreatingItAsClean() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.empty());
 
@@ -303,6 +317,21 @@ class ReviewSweepServiceTest {
         verify(sessions).relayIfChanged(eq("ABC-1"), brief.capture());
         assertThat(brief.getValue()).contains("[api] bot: tighten this", "[web] bot: rename that");
         assertThat(result.message()).contains("2 comment(s) relayed");
+    }
+
+    @Test
+    void quotesTheLogOfTheRepositoryThatFailedRatherThanOfTheGreenOne() {
+        twoRepositoriesUnderReview();
+        when(reviewReader.read("ABC-1", "http://mr/api"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
+        when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "failed", "lint: unused import Widget", List.of(), 0)));
+        ArgumentCaptor<String> brief = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), brief.capture());
+        assertThat(brief.getValue()).contains("[web] lint: unused import Widget");
     }
 
     @Test

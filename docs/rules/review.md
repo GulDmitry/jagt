@@ -28,6 +28,8 @@ relayed, the agent fixes locally into `review_replies.md`, and nothing is posted
 - Checks are read where the comments are: `TaskState.pipelineStatus` keeps the host's **own** wording and
   `flow/Pipeline` is its one parser → GREEN / RED / RUNNING / NONE / UNKNOWN, NONE no pipeline and UNKNOWN
   nobody having read one.
+- **A red round relays the failing job's error lines** (`ReviewFacts.pipelineFailure`) as `<checks>`; a repeat
+  failure must read the same, or every poll re-briefs.
 
 ## The reply file is a review artifact, so its shape is prescribed in one place
 

@@ -159,6 +159,7 @@ public class ReviewSweepService {
 
     private static ReviewFacts named(String project, ReviewFacts round) {
         return new ReviewFacts(round.exists(), round.approved(), round.pipelineStatus(),
+                round.pipelineFailure().isBlank() ? "" : "[" + project + "] " + round.pipelineFailure(),
                 round.comments().stream().map(comment -> "[" + project + "] " + comment).toList(),
                 round.openedAt());
     }
@@ -171,9 +172,10 @@ public class ReviewSweepService {
         if (rounds.size() == 1) {
             return rounds.get(0);
         }
+        ReviewFacts worst = worstChecks(rounds);
         return new ReviewFacts(true,
                 rounds.stream().allMatch(ReviewFacts::approved),
-                worstPipeline(rounds),
+                worst.pipelineStatus(), worst.pipelineFailure(),
                 rounds.stream().flatMap(round -> round.comments().stream()).toList(),
                 longestOpen(rounds));
     }
@@ -184,15 +186,13 @@ public class ReviewSweepService {
     }
 
     /**
-     * The worst repository's own wording, ordered by VERDICT rather than by the words. A round that said nothing
-     * reads as "unknown" rather than claiming the host answered.
+     * The worst repository's round, ordered by VERDICT rather than by the words: the word the task carries and the
+     * failure the agent reads must come off the SAME repository, or the brief quotes a log from a green one.
      */
-    private static String worstPipeline(List<ReviewFacts> rounds) {
+    private static ReviewFacts worstChecks(List<ReviewFacts> rounds) {
         return rounds.stream()
-                .map(round -> round.pipelineStatus() == null || round.pipelineStatus().isBlank()
-                        ? "unknown" : round.pipelineStatus())
-                .min(java.util.Comparator.comparingInt(said -> Pipeline.of(said).severity()))
-                .orElse("unknown");
+                .min(java.util.Comparator.comparingInt(round -> Pipeline.of(round.pipelineStatus()).severity()))
+                .orElseThrow();
     }
 
     /**
@@ -203,6 +203,9 @@ public class ReviewSweepService {
         StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
         if (Pipeline.of(said) == Pipeline.RED) {
             brief.append("Checks: ").append(said).append(" — fix the failing build.\n");
+            if (!r.pipelineFailure().isBlank()) {
+                brief.append("<checks>\n").append(r.pipelineFailure()).append("\n</checks>\n");
+            }
         }
         if (!r.comments().isEmpty()) {
             brief.append("""

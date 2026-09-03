@@ -60,9 +60,11 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "failure":{"type":"string"},\
             "approved":{"type":"boolean"},\
             "pipelineStatus":{"type":"string","enum":["success","failed","running","none","unknown"]},\
+            "pipelineFailure":{"type":"string"},\
             "openedAt":{"type":"string"},\
             "comments":{"type":"array","items":{"type":"string"}}},\
-            "required":["exists","failure","approved","pipelineStatus","openedAt","comments"]}""";
+            "required":["exists","failure","approved","pipelineStatus","pipelineFailure","openedAt",\
+            "comments"]}""";
     private static final String COMMAND_SCHEMA = """
             {"type":"object","properties":{\
             "command":{"type":"string"},\
@@ -79,6 +81,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     /** The sweep makes several code-host calls, not one lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
     private static final int MAX_CAUSE = 400;
+    private static final int MAX_CHECKS_DETAIL = 2000;
     /** Mapping text to a command reads nothing and must feel like typing. */
     private static final Duration MAP_TIMEOUT = Duration.ofSeconds(90);
 
@@ -145,6 +148,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " the newest one. Exactly one of success | failed | running | none | unknown,"
                 + " never the merge status (mergeable, can_be_merged) and never a review bot's verdict; none ONLY"
                 + " when that listing came back EMPTY, and unknown where you could not list them at all."
+                + " Return pipelineFailure ONLY where pipelineStatus is failed: the failing job's name and the"
+                + " error lines of its log, at most 20 lines, cut to what names the fault. No timestamps, run"
+                + " ids, URLs or durations — one failure read twice must read the same, or every poll relays a"
+                + " brief the agent has already answered. Empty string in every other case."
                 + " Return openedAt, the request's OWN creation timestamp"
                 + " as the host reports it (ISO-8601; empty string if it does not say), and comments — every"
                 + " UNRESOLVED discussion note (bots and humans alike), each as one string"
@@ -157,9 +164,15 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             List<String> comments = new ArrayList<>();
             n.path("comments").forEach(c -> comments.add(c.asString("")));
             return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
-                    n.path("pipelineStatus").asString(""), comments,
-                    HostStamp.epochMillis(n.path("openedAt").asString("")));
+                    n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
+                    comments, HostStamp.epochMillis(n.path("openedAt").asString("")));
         });
+    }
+
+    /** The excerpt is relayed into a worktree file, so a host that answered with the whole log is cut here. */
+    private static String capped(String detail) {
+        String trimmed = detail.strip();
+        return trimmed.length() <= MAX_CHECKS_DETAIL ? trimmed : trimmed.substring(0, MAX_CHECKS_DETAIL) + "…";
     }
 
     /** A read that reports what stopped it comes back unreadable, never as an answer with empty facts. */

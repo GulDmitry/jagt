@@ -220,6 +220,23 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void cutsAFailureLogTooLongToRelayIntoAWorktreeFile() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,
+                 "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
+                "pipelineFailure":"LOG","openedAt":"","comments":[]}}""".replace("LOG", "x".repeat(5000)), ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().pipelineFailure()).hasSize(2001).endsWith("…");
+    }
+
+    @Test
     void fallsBackToTheResultStringWhenTheEnvelopeCarriesNoParsedOutput() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
