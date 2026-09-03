@@ -25,14 +25,13 @@ What to decide first: where a cut may fall (a commit boundary is the only one th
 buildable), how the requests are chained so the second targets the first rather than the base branch, and what
 happens to comments on a request a later cut has superseded.
 
-## Start a task from an accepted plan, and keep its artifacts after `done` (idea)
+## Keep a task's artifacts after `done` (idea)
 
-Both halves are about the ends of [the artifact chain](ARCHITECTURE.md#the-artifact-chain): a task could start
-from an accepted plan instead of a ticket read, and `done` deletes every artifact the task left behind.
+The far end of [the artifact chain](ARCHITECTURE.md#the-artifact-chain): `done` deletes the briefing, the
+standing instruction and the drafted replies, while the branch, its commits and the request outlive the task.
 
-What to decide first: what makes a plan an *accepted* artifact rather than one more paragraph in
-`NewTask.instructions`; whether an artifact that outlives the worktree lives in git (whose, and on which branch
-— the base branch is read-only) or beside `state.json`; and what the board shows for a task that is gone.
+What to decide first: whether an artifact that outlives the worktree lives in git (whose, and on which branch —
+the base branch is read-only) or beside `state.json`, and what the board shows for a task that is gone.
 
 ## A card that keeps a red run visible through a sweep that could not read it (open)
 

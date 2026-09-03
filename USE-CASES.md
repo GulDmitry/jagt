@@ -35,6 +35,7 @@ A start checks nothing on a remote and nothing over the network.
 | situation | run | what happens |
 |---|---|---|
 | New ticket, normal | `do ABC-1` | Branch `ABC-1` cut from the project's base branch, worktree, agent |
+| Work with no ticket behind it | `do <project> <what to do…>` | Your words are the instructions and name the branch; the launch row takes them with Ticket left empty |
 | Project not obvious from the ticket | `do ABC-1 <project>` | Same, without the label lookup |
 | Work must sit on another branch, or an older task's | `do ABC-1 from <branch>` | Cut from it and the request targets it, but the task keeps its own branch and deploy still goes to `deployBranch` |
 | The base repository still has the branch checked out | nothing | Freed automatically, detached in place, with a WARN naming the branch |

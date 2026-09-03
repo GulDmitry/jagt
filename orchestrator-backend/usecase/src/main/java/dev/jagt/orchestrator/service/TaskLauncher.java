@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,9 @@ public class TaskLauncher {
     /** A bare issue key like {@code ABC-123}, as opposed to a url — never parsed OUT of one. */
     private static final Pattern KEY_REF = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
 
+    /** A ticket titles a card in a line; a task somebody typed gets the same room and no more. */
+    private static final int TITLE_MAX = 80;
+
     private final TaskProvisioning provisioning;
     private final TicketReader tickets;
     private final ConfigService configService;
@@ -38,15 +42,19 @@ public class TaskLauncher {
     }
 
     /**
-     * Spins up a task for {@code ref}, an issue key or a URL to it in any tracker, and throws
-     * {@link IllegalArgumentException} when the request itself is unusable. NO TASK IS CREATED WITHOUT THE ITEM'S
-     * OWN FACTS: a later read cannot tell an item that has no link from one that was never reached.
+     * Spins up a task for {@code ref}, an issue key or a URL to it in any tracker, or for the words a line
+     * opening on a project key carries instead. Throws {@link IllegalArgumentException} when the request itself
+     * is unusable. NO TASK NAMING AN ITEM IS CREATED WITHOUT THAT ITEM'S OWN FACTS: a later read cannot tell an
+     * item that has no link from one that was never reached.
      */
     public Launched launchLine(String line) {
         return launch(LaunchRequest.ofLine(line, configService.load().projects().keySet()));
     }
 
     public Launched launch(LaunchRequest request) {
+        if (request.ref() == null) {
+            return launchWritten(request);
+        }
         String ref = request.ref();
         String project = request.project();
         String strategy = request.strategy();
@@ -94,6 +102,33 @@ public class TaskLauncher {
         // Only NOW does the task exist, so only now can the read that named it be charged to it.
         tickets.charge(taskId, read.usage());
         return Launched.created(taskId, result);
+    }
+
+    /**
+     * A task nobody filed: the human's own words are its instructions, and they name its branch too, since a task
+     * IS its branch and no tracker handed this one a key.
+     */
+    private Launched launchWritten(LaunchRequest request) {
+        String written = request.notes();
+        if (written == null || written.isBlank()) {
+            return Launched.refused("error: no ticket and nothing to do — say what the task is: "
+                    + LaunchRequest.OWN_GRAMMAR);
+        }
+        List<String> projects = resolveProjects(request.project());
+        String named = TaskName.from(written);
+        if (named == null) {
+            return Launched.refused("error: nothing in that line can name a branch — open it with a word: "
+                    + LaunchRequest.OWN_GRAMMAR);
+        }
+        String taskId = provisioning.freeTaskName(named, projects);
+        return Launched.created(taskId, provisioning.initializeTask(
+                newTask(taskId, projects, written, request).title(titleOf(written)).build()));
+    }
+
+    /** The card's own words for a task no tracker titled. */
+    private static String titleOf(String written) {
+        String head = written.strip().lines().findFirst().orElse("").strip();
+        return head.length() <= TITLE_MAX ? head : head.substring(0, TITLE_MAX).strip() + "…";
     }
 
     public Launched resume(String reviewRequestUrl) {

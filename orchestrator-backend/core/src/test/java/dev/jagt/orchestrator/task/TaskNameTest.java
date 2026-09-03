@@ -51,4 +51,20 @@ class TaskNameTest {
     void flattensATaskIntoOneFilesystemName(String name, String slug) {
         assertThat(TaskName.slug(name)).isEqualTo(slug);
     }
+
+    @Test
+    void namesABranchAfterTheWordsAHumanOpenedTheTaskWith() {
+        assertThat(TaskName.from("Split the invoice mailer in two")).isEqualTo("split-the-invoice-mailer-in-two");
+    }
+
+    @Test
+    void cutsALongOpeningLineAtAWholeWord() {
+        assertThat(TaskName.from("rewrite the invoice mailer so that it stops retrying forever"))
+                .isEqualTo("rewrite-the-invoice-mailer-so-that-it");
+    }
+
+    @Test
+    void namesNothingWhenTheLineCarriesNoWordABranchCanUse() {
+        assertThat(TaskName.from("!!! ???")).isNull();
+    }
 }

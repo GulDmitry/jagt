@@ -30,6 +30,24 @@ class LaunchRequestTest {
     }
 
     @Test
+    void readsALineOpeningOnAProjectAsATaskTheHumanWroteThemselves() {
+        LaunchRequest typed = LaunchRequest.ofLine("demo split the invoice mailer in two",
+                Set.of("demo", "widgets"));
+
+        assertThat(typed.ref()).isNull();
+        assertThat(typed.project()).isEqualTo("demo");
+        assertThat(typed.notes()).isEqualTo("split the invoice mailer in two");
+    }
+
+    @Test
+    void sendsAMistypedTicketKeyToTheTrackerRatherThanMakingATaskOfIt() {
+        LaunchRequest typed = LaunchRequest.ofLine("ABC42 demo tighten the parser", Set.of("demo"));
+
+        assertThat(typed.ref()).isEqualTo("ABC42");
+        assertThat(typed.notes()).isEqualTo("tighten the parser");
+    }
+
+    @Test
     void refusesFromWithoutABranchInsteadOfSwallowingTheNextWord() {
         assertThatThrownBy(() -> LaunchRequest.ofLine("ABC-1 from", Set.of()))
                 .isInstanceOf(IllegalArgumentException.class)

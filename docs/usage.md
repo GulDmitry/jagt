@@ -34,6 +34,7 @@ There is no verb for stopping the backend — that belongs to whoever started th
 | command | what it does |
 |---------|--------------|
 | `do <ticket> [plan] [notes]` | read the ticket, cut a worktree, launch an agent. `plan` = plan mode |
+| `do <projA>[,<projB>] <what to do…>` | no ticket: your words are the task and name its branch |
 | `do <ticket> from <branch>` | cut from `<branch>` and target it in the request — for stacking on a feature branch |
 | `do <ticket> <projA>,<projB>` | one task, one agent, a worktree per repository |
 | `do <ticket> recreate` / `resume` | the branch already exists: cut it fresh, or take over its commits |

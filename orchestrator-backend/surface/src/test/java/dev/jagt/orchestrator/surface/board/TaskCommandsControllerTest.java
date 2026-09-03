@@ -132,10 +132,13 @@ class TaskCommandsControllerTest {
     }
 
     @Test
-    void refusesALaunchWithNothingToLookUp() {
-        assertThatThrownBy(() -> api.launch(new LaunchRequest(" ", null, null, null, null, null)))
-                .hasMessageContaining("ticket key or a URL is required");
-        verifyNoInteractions(launcher);
+    void takesAFormWithNoTicketToTheLauncherRatherThanHoldingARuleOfItsOwn() {
+        LaunchRequest written = new LaunchRequest(null, "demo", null, null, null, "split the invoice mailer");
+        when(launcher.launch(written)).thenReturn(Launched.created("split-the-invoice-mailer", "initialized"));
+
+        var result = api.launch(new LaunchRequest(" ", "demo", null, null, null, "split the invoice mailer"));
+
+        assertThat(result.created()).isTrue();
     }
 
     @Test

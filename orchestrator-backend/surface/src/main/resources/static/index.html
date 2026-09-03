@@ -27,12 +27,12 @@
 </header>
 
 <form id="launch">
-  <input id="ref" name="ref" placeholder="ABC-42 or a ticket URL" autocomplete="off" required>
+  <input id="ref" name="ref" placeholder="ABC-42 or a ticket URL — empty for a task of your own" autocomplete="off">
   <!-- Several picked = one task, one agent session, a worktree in each. -->
   <select id="project" name="project" multiple size="1" data-tip="one project, or several for work that spans them"></select>
   <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">
   <label class="checkbox" data-tip="agent writes a plan and waits for approval before changing code"><input type="checkbox" id="plan"> plan first</label>
-  <input id="notes" name="notes" placeholder="extra instructions for the agent (optional)" autocomplete="off">
+  <input id="notes" name="notes" placeholder="extra instructions — or the whole task, with no ticket" autocomplete="off">
   <select id="strategy" name="strategy" size="1"
           data-tip="what to do when a branch of this name already exists"></select>
   <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button>

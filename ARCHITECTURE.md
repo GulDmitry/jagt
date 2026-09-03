@@ -91,7 +91,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 | step | what it leaves behind | where |
 |------|----------------------|-------|
-| `do` | the ticket as the agent read it, and the rules it works under | `AGENTS.md` in the worktree (`service/SubAgentBriefing`) |
+| `do` | the task as the agent read it, and the rules it works under | `AGENTS.md` in the worktree (`service/SubAgentBriefing`) |
 | a relay | the one instruction standing right now, and no older one | `task_context.md` |
 | the agent works | the diff | the task branch |
 | `ship` | commits, a pushed branch, one review request per repository | the branch, and `reviewRequests` on the task |
@@ -103,7 +103,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 - **Only the middle is in git**: branch, commits and request outlive the task, while the briefing, the standing
   instruction and the drafted replies go with the worktree `done` removes.
 - **The chain is readable while the task lives** — `ide <alias>` opens the worktree holding all of it at once.
-- Missing at the front is the accepted intent: jagt starts at a ticket somebody else wrote ([`TODO.md`](TODO.md)).
+- **The front of the chain can be your own words**: with no ticket, what you typed is the task, names its branch,
+  and lands in `task_context.md`.
 
 ## Ports and who answers them
 

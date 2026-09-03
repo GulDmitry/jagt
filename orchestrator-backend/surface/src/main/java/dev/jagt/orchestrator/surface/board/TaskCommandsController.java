@@ -49,12 +49,9 @@ public class TaskCommandsController {
         return new ActionResult(commands.execute(taskId, action));
     }
 
-    /** Slow on purpose: reading the ticket is a remote call. */
+    /** Slow on purpose when a ticket is named: reading it is a remote call. */
     @PostMapping("/tasks")
     public LaunchResult launch(@RequestBody LaunchRequest request) {
-        if (request.ref() == null || request.ref().isBlank()) {
-            throw new IllegalArgumentException("A ticket key or a URL is required");
-        }
         Launched launched = launcher.launch(request.normalized());
         return new LaunchResult(launched.message(), launched.created());
     }

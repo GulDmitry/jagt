@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.task;
 
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -21,11 +22,32 @@ public final class TaskName {
                     + REFNAME_CHAR + "{1," + MAX + "}(?<![./])");
     private static final Pattern NOT_PLAIN = Pattern.compile("[^A-Za-z0-9_-]");
 
+    /** Long enough to read the task off a branch listing, short enough to leave the suffixes room. */
+    private static final int WRITTEN_MAX = 40;
+
     private TaskName() {
     }
 
     private static boolean isValid(String name) {
         return name != null && VALID.matcher(name).matches();
+    }
+
+    /**
+     * A branch name made of what a human wrote, for a task no tracker named. Null when their words leave nothing
+     * a branch can be called.
+     */
+    public static String from(String text) {
+        if (text == null) {
+            return null;
+        }
+        String head = text.strip().lines().findFirst().orElse("").toLowerCase(Locale.ROOT);
+        String slug = NOT_PLAIN.matcher(head).replaceAll("-").replaceAll("-{2,}", "-")
+                .replaceAll("^-+|-+$", "");
+        if (slug.length() > WRITTEN_MAX) {
+            String whole = slug.substring(0, WRITTEN_MAX).replaceAll("-[^-]*$", "");
+            slug = whole.isEmpty() ? slug.substring(0, WRITTEN_MAX) : whole;
+        }
+        return slug.isEmpty() ? null : slug;
     }
 
     /**

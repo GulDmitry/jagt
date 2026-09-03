@@ -78,6 +78,15 @@ class TaskProvisioningTest {
         return new TaskProvisioning(config, state, git, sessions, setup);
     }
 
+    @Test
+    void stepsOverAWrittenNameALiveTaskAlreadyTookRatherThanRefusingIt() {
+        state.putTask("split-the-mailer", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS)
+                .alias("a1").build());
+
+        assertThat(provisioning().freeTaskName("split-the-mailer", List.of("proj")))
+                .isEqualTo("split-the-mailer-2");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"../escape", "a b", "-lead", "feature/", "feature//x", "x.lock"})
     void rejectsTaskIdBeforeTouchingGitWhenGitWouldRefuseItAsABranch(String unsafeTaskId) {

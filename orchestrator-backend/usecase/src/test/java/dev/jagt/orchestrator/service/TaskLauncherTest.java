@@ -219,6 +219,48 @@ class TaskLauncherTest {
         verifyNoInteractions(provisioning);
     }
 
+    @Test
+    void makesATaskOfWhatTheHumanWroteWithoutSpendingATrackerRead() {
+        oneProject("group-a");
+        when(provisioning.freeTaskName("split-the-invoice-mailer", List.of("group-a")))
+                .thenReturn("split-the-invoice-mailer");
+
+        launcher.launch(new LaunchRequest(null, "group-a", null, null, null, "Split the invoice mailer"));
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue())
+                .extracting(NewTask::taskId, NewTask::title, NewTask::instructions, NewTask::ticketUrl)
+                .containsExactly("split-the-invoice-mailer", "Split the invoice mailer",
+                        "Split the invoice mailer", null);
+        verifyNoInteractions(tickets);
+    }
+
+    @Test
+    void makesATaskOfATypedLineThatOpensOnAProjectAndNamesNoTicket() {
+        oneProject("group-a");
+        when(provisioning.freeTaskName("tighten-the-parser", List.of("group-a")))
+                .thenReturn("tighten-the-parser");
+
+        launcher.launchLine("group-a tighten the parser");
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue()).extracting(NewTask::taskId, NewTask::instructions)
+                .containsExactly("tighten-the-parser", "tighten the parser");
+    }
+
+    @Test
+    void refusesATaskWithNeitherATicketNorAnythingToDo() {
+        oneProject("group-a");
+
+        var refused = launcher.launch(new LaunchRequest(null, "group-a", null, null, null, null));
+
+        assertThat(refused.created()).isFalse();
+        assertThat(refused.message()).contains("nothing to do");
+        verify(provisioning, never()).initializeTask(any());
+    }
+
     private void oneProject(String key) {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of(key, new ProjectConfig("/p", "origin/main", "dev", List.of()))));

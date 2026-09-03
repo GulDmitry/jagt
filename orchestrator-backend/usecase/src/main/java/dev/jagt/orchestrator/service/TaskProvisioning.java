@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
 public class TaskProvisioning {
 
     private static final Pattern SAFE_KEY = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_-]{0,63}");
+    /** Past this many tasks opening on the same words, the words are the problem. */
+    private static final int MAX_SAME_NAME = 20;
 
     private final ConfigService configService;
     private final StateService stateService;
@@ -44,6 +46,27 @@ public class TaskProvisioning {
                 .filter(k -> gitService.branchExists(
                         Path.of(config.projects().get(k).path()).toAbsolutePath().normalize(), taskId))
                 .findFirst().orElse(null);
+    }
+
+    /**
+     * {@code base}, or the first {@code base-2}, {@code base-3}… no task and no branch has taken. The human did
+     * not choose this name, so a collision is stepped over rather than refused back at them.
+     */
+    public String freeTaskName(String base, List<String> projectKeys) {
+        for (int suffix = 1; suffix <= MAX_SAME_NAME; suffix++) {
+            String candidate = suffix == 1 ? base : base + "-" + suffix;
+            if (!taken(candidate, projectKeys)) {
+                return candidate;
+            }
+        }
+        throw new IllegalArgumentException(MAX_SAME_NAME + " tasks are already called '" + base
+                + "' — open the line with different words");
+    }
+
+    private boolean taken(String name, List<String> projectKeys) {
+        return stateService.tasks().keySet().stream()
+                .anyMatch(registered -> TaskName.slug(registered).equals(TaskName.slug(name)))
+                || existingBranchProject(name, projectKeys) != null;
     }
 
     public String initializeTask(NewTask request) {

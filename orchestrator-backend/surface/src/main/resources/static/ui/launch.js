@@ -28,7 +28,7 @@ export function render() {
 }
 
 submits(form, {
-  waiting: 'reading the ticket…',
+  waiting: 'starting…',
   send: () => api('/api/tasks', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},

@@ -20,12 +20,13 @@ public class DoCommand implements GlobalCommand {
 
     @Override
     public String hint() {
-        return "spin up a sub-agent in a worktree, from a ticket key or a URL";
+        return "spin up a sub-agent in a worktree, from a ticket key, a URL, or your own words";
     }
 
     @Override
     public List<String> usage() {
         return List.of(LaunchRequest.GRAMMAR,
+                LaunchRequest.OWN_GRAMMAR + " — no ticket: your own words are the task, and name its branch",
                 "  … [proj1,proj2] — one session, a worktree in EACH: work that spans repositories",
                 "  … [from <branch>] — cut the worktree from <branch> and target its request at it",
                 "  … [recreate|resume] — the branch exists already: cut it fresh, or take over its commits");
