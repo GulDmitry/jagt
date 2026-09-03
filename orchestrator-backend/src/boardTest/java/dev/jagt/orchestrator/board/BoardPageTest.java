@@ -7,6 +7,8 @@ import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Playwright;
+import com.microsoft.playwright.Route;
+import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
@@ -35,6 +37,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -983,6 +986,29 @@ class BoardPageTest {
                 "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
         state.putTask("ABC-9", state.task("ABC-9").orElseThrow()
                 .withStatus(TaskStatus.REVIEW_PENDING, "answered"));
+
+        assertThat(page.locator("#report-body")).containsText("The name is the one the caller uses.");
+    }
+
+    @Test
+    void aRoundRewrittenWhileItsReportWasStillBeingReadShowsWhatTheFileSaysNow() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-10-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-10", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a10").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        Page page = open();
+        page.route("**/api/commands/replies**", route -> {
+            APIResponse read = route.fetch();
+            try {
+                Files.writeString(worktree.resolve("review_replies.md"),
+                        "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
+            } catch (IOException cannotStageTheRewrite) {
+                throw new UncheckedIOException(cannotStageTheRewrite);
+            }
+            route.fulfill(new Route.FulfillOptions().setResponse(read));
+        });
+
+        page.locator("article .drafts").click();
 
         assertThat(page.locator("#report-body")).containsText("The name is the one the caller uses.");
     }

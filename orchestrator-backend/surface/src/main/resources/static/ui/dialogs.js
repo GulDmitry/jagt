@@ -83,6 +83,8 @@ export async function openReport(title, path, {extra = null, about = null} = {})
     showing = {path, about, body: said};
     stopWaiting();
     paint(title, said, extra);
+    // Whatever changed WHILE this was being read reached no open dialog, so it is read once more now.
+    await repaintReport();
     return true;
   } catch (e) {
     toast(e.message, true);
