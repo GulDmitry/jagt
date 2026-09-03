@@ -29,8 +29,7 @@ public class AbortedConnectionFilter extends TurboFilter {
     @PostConstruct
     void install() {
         if (LoggerFactory.getILoggerFactory() instanceof LoggerContext context) {
-            start();
-            context.addTurboFilter(this);
+            installInto(context);
         }
     }
 
@@ -38,9 +37,18 @@ public class AbortedConnectionFilter extends TurboFilter {
     @PreDestroy
     void uninstall() {
         if (LoggerFactory.getILoggerFactory() instanceof LoggerContext context) {
-            context.getTurboFilterList().remove(this);
-            stop();
+            removeFrom(context);
         }
+    }
+
+    void installInto(LoggerContext context) {
+        start();
+        context.addTurboFilter(this);
+    }
+
+    void removeFrom(LoggerContext context) {
+        context.getTurboFilterList().remove(this);
+        stop();
     }
 
     @Override

@@ -83,14 +83,17 @@ tasks.register('printVersion') {
     }
 }
 
-// Only the hermetic suite: the others are order-dependent by construction.
-tasks.named('test') {
-    systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
-    systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
-    systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'
-    systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
-    // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
-    systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '3'
+// Only the hermetic suite: the others are order-dependent by construction. Every module's, not just this
+// project's — `:adapter`'s alone is most of the gate, and it spends its wall clock waiting on git.
+allprojects {
+    tasks.named('test') {
+        systemProperty 'junit.jupiter.execution.parallel.enabled', 'true'
+        systemProperty 'junit.jupiter.execution.parallel.mode.default', 'concurrent'
+        systemProperty 'junit.jupiter.execution.parallel.mode.classes.default', 'concurrent'
+        systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
+        // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
+        systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '3'
+    }
 }
 
 // `build` rewrites jagt.jar in place (same inode), and a JVM running from that path then fails on the next

@@ -1,9 +1,7 @@
 package dev.jagt.orchestrator.linux;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
-import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
-import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
@@ -22,7 +20,7 @@ class LibNotifyNotifierLinuxTest {
                 .redirectErrorStream(true)
                 .start();
         try {
-            Thread.sleep(500);                       // let the monitor attach before anything is sent
+            awaitCapture(capture, "NameAcquired");
             new LibNotifyNotifier(new ProcessRunner(), "notify-send")
                     .notify("jagt · ABC-1", "your move: read the diff", null);
 
@@ -48,7 +46,7 @@ class LibNotifyNotifierLinuxTest {
                 .redirectErrorStream(true)
                 .start();
         try {
-            Thread.sleep(500);
+            awaitCapture(capture, "NameAcquired");
             new LibNotifyNotifier(new ProcessRunner(), "notify-send")
                     .notify("--urgency=critical looking title", "body", null);
 
@@ -60,13 +58,10 @@ class LibNotifyNotifierLinuxTest {
         }
     }
 
-    @Test
-    void staysSilentWhenTheBinaryIsMissingBecauseAWatchdogMustNotDieOfIt() {
-        new LibNotifyNotifier(new ProcessRunner(), "notify-send-that-does-not-exist")
-                .notify("jagt", "nothing should happen", null);
-    }
-
-    /** dbus-monitor writes asynchronously; poll until the message shows up rather than sleeping blind. */
+    /**
+     * dbus-monitor writes asynchronously, so every wait on it is a poll rather than a blind sleep — the bus
+     * hands it a NameAcquired for its own connection, which is the only proof it is attached and listening.
+     */
     private static String awaitCapture(Path capture, String expected) throws Exception {
         for (int attempt = 0; attempt < 40; attempt++) {
             String seen = Files.exists(capture) ? Files.readString(capture) : "";

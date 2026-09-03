@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.LoggerFactory;
 
 import java.net.SocketException;
 import java.util.stream.Stream;
@@ -35,11 +34,11 @@ class AbortedConnectionFilterTest {
 
     @Test
     void registersItselfWithTheLoggerContextAndTakesItselfBackOutWhenTheBackendCloses() {
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        LoggerContext context = new LoggerContext();
 
-        filter.install();
+        filter.installInto(context);
         boolean installed = context.getTurboFilterList().contains(filter);
-        filter.uninstall();
+        filter.removeFrom(context);
 
         assertThat(installed).isTrue();
         assertThat(context.getTurboFilterList()).doesNotContain(filter);

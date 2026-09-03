@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
@@ -16,6 +17,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
+/**
+ * Alone: it reads the global process table and attaches to the shared logger, and `LoggerFactory` answers with
+ * a substitute to any thread arriving while another is still binding the backend.
+ */
+@Isolated
 class ProcessRunnerTest {
 
     @Test
@@ -55,17 +61,19 @@ class ProcessRunnerTest {
     void recordsHowALaunchEndedSoADeathNobodyAskedForCanBeAttributed() throws Exception {
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
-        ((Logger) LoggerFactory.getLogger(ProcessRunner.class)).addAppender(log);
+        Logger runnerLog = (Logger) LoggerFactory.getLogger(ProcessRunner.class);
+        runnerLog.addAppender(log);
         Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "30"));
 
         new ProcessBuilder("kill", "-TERM", String.valueOf(launched.pid())).start().waitFor();
 
         // The record is written by ITS OWN stage of the same future, which does not run before the test's.
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
-                assertThat(log.list).filteredOn(event -> "process ended".equals(event.getMessage()))
+                assertThat(List.copyOf(log.list)).filteredOn(event -> "process ended".equals(event.getMessage()))
                         .flatExtracting(ILoggingEvent::getKeyValuePairs)
                         .extracting(pair -> pair.key + "=" + pair.value)
                         .contains("pid=" + launched.pid(), "exit=on SIGTERM (143)"));
+        runnerLog.detachAppender(log);
     }
 
     @Test
