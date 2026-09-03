@@ -18,9 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class LinuxKittyTerminalDriverLinuxTest {
 
     private static final Duration T = Duration.ofSeconds(20);
-    /** Probing gets a SHORT timeout: `kitty @` against a socket nobody listens on blocks until it is cut off,
-     *  so polling with the production timeout turns a ten-second wait into a ten-minute one. */
+    /** Probing gets a SHORT timeout: `kitty @` against a socket nobody listens on blocks until it is cut off. */
     private static final Duration PROBE = Duration.ofSeconds(3);
+    /** How long a viewer gets to come up and answer: ~2s on an idle machine, and a shared runner is slower. */
+    private static final Duration UP = Duration.ofSeconds(60);
     private static final String SESSION = "jagt-kitty-linux-test";
 
     private final ProcessRunner runner = new ProcessRunner();
@@ -72,15 +73,16 @@ class LinuxKittyTerminalDriverLinuxTest {
     }
 
     private String awaitRemoteControl() throws Exception {
-        for (int attempt = 0; attempt < 40; attempt++) {
+        long until = System.nanoTime() + UP.toNanos();
+        while (System.nanoTime() < until) {
             var listed = runner.run(null, PROBE, List.of("kitty", "@", "--to", socket(), "ls"));
             if (listed.exitCode() == 0) {
                 return listed.stdout();
             }
             Thread.sleep(250);
         }
-        throw new AssertionError("kitty never answered on " + socket() + " — asked in the foreground, it says: "
-                + inTheForeground());
+        throw new AssertionError("kitty never answered on " + socket() + " in " + UP.toSeconds()
+                + "s — asked in the foreground, it says: " + inTheForeground());
     }
 
     /**
