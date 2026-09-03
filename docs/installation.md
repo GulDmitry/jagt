@@ -30,6 +30,14 @@ orchestrator:
 
 That also cuts each read to the servers it needs, which is most of what one costs.
 
+A declared server logs in as itself: a login you did through the plugin shipping the same file does not count.
+Authenticate it once against that file, and the headless read finds the token under the same server name:
+
+```sh
+claude --strict-mcp-config --mcp-config /path/to/mcp-servers.json --setting-sources user,project,local
+# /mcp -> the server -> Authenticate
+```
+
 ## Prerequisites
 
 | tool | macOS | Linux | needed for |
