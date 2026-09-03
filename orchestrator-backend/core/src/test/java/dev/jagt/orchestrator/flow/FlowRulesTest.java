@@ -148,6 +148,13 @@ class FlowRulesTest {
     }
 
     @ParameterizedTest
+    @CsvSource({"DEPLOYED, REVIEWED", "DEPLOYED, APPROVED", "DEPLOY_CONFLICT, REVIEWED",
+            "DEPLOY_CONFLICT, APPROVED", "DONE, REVIEWED", "DONE, APPROVED"})
+    void keepsATaskWhoseCodeWentOutWhereItIsWhateverAReadOfTheRoundConcludes(TaskStatus from, TaskStatus verdict) {
+        assertThat(FlowRules.reported(from, verdict)).isEqualTo(from);
+    }
+
+    @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING", "REVIEW_PENDING",
             "CI_POLLING", "CI_FAILED", "REVIEWED", "APPROVED", "DEPLOYED"})
     void landsEveryOtherTasksReportOnTheStatusItReported(TaskStatus from) {

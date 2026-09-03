@@ -149,10 +149,22 @@ public final class FlowRules {
      * saying what it is doing, and a status it cannot report is a session whose every call errors.
      */
     public static TaskStatus reported(TaskStatus from, TaskStatus to) {
-        return STANDS_UNTIL_MOVED_BY_A_HUMAN.contains(from) ? from : to;
+        if (STANDS_UNTIL_MOVED_BY_A_HUMAN.contains(from)) {
+            return from;
+        }
+        // A verdict off a review round is a READ, and reading one cannot undo a deploy: landing it would put a
+        // task whose code is on the shared branch back in a phase asking for an approval.
+        return A_VERDICT.contains(to) && PAST_THE_REVIEW.contains(from) ? from : to;
     }
 
     private static final Set<TaskStatus> STANDS_UNTIL_MOVED_BY_A_HUMAN = EnumSet.of(TaskStatus.REVERTED);
+
+    /** What a read of the round alone concludes, as opposed to what the task itself is doing. */
+    private static final Set<TaskStatus> A_VERDICT = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED);
+
+    /** Statuses a round is BEHIND: the code went to the shared branch without waiting for what it says. */
+    private static final Set<TaskStatus> PAST_THE_REVIEW = EnumSet.of(TaskStatus.DEPLOY_CONFLICT,
+            TaskStatus.DEPLOYED, TaskStatus.DONE);
 
     /** Statuses a task can still be waiting on its checks from. */
     private static final Set<TaskStatus> BEFORE_THE_VERDICT = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,

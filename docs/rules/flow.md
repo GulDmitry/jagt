@@ -23,6 +23,10 @@ A status a **human** owns is not refused but **held**: `FlowRules.reported` keep
 and records the line. Refusing it instead makes every call of that session error; letting the *following*
 status through takes the revert off the record and launders the CI_POLLING guard through `IN_PROGRESS`.
 
+The same hold covers a **verdict past a deploy**: REVIEWED or APPROVED read off the request leaves a DEPLOYED,
+DEPLOY_CONFLICT or DONE task where it is, or an unattended poll drags shipped work back into the phase asking
+for an approval.
+
 **Nothing below `flow/` DECIDES a status.** A capability reports OK / RELAYED / CONFLICT / PARTIAL / GONE plus
 the sentence and the stamp, so the same work is reachable from several statuses without every doer learning
 the machine. A report's own sentence may still tell a human which status was reached — `DeployService` says

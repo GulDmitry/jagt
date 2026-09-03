@@ -255,13 +255,18 @@ class MoveTest {
         assertThat(Move.forTask(status, true, RoundState.NONE, false).ask()).isEqualTo(ask);
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "CI_POLLING, read the review",
-            "REVIEWED, read the review"
-    })
-    void namesTheReadWhenTheRoundIsBackWithTheHumanBecauseNothingPollsIt(TaskStatus status, String ask) {
-        assertThat(Move.forTask(status, true, RoundState.NONE, false, elapsed()).ask()).isEqualTo(ask);
+    @Test
+    void namesTheReadWhenTheRoundIsBackWithTheHumanBecauseNothingPollsIt() {
+        Move move = Move.forTask(TaskStatus.CI_POLLING, true, RoundState.NONE, false, elapsed());
+
+        assertThat(move.ask()).isEqualTo("read the review");
+    }
+
+    @Test
+    void asksForTheApprovalRatherThanAReadOnARoundThatCameBackWithNothingUnresolved() {
+        Move move = Move.forTask(TaskStatus.REVIEWED, true, RoundState.NONE, false, elapsed());
+
+        assertThat(move.ask()).isEqualTo("check for the approval");
     }
 
     @ParameterizedTest

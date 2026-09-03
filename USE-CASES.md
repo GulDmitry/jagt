@@ -208,6 +208,7 @@ What the agent does with a comment:
 | An open request nothing polls | The card says `polling off` (`polling is disabled for this task`) or `cannot time this` (`no round stamp, so no poll interval can be measured`) — `sweep` by hand |
 | The expected poll has stopped | The card **does** ask for you |
 | An install with `autoReview.enabled=false` | Not that case: it polls nothing by configuration, says so once in the header, and its cards stay as they were |
+| A deployed task's request comes back green and unapproved | The poll leaves it `deployed`: a read of the round never moves work that already went out |
 | A round answered every comment and changed no code | The card does not ask for you — `nothing to ship; the open threads are the reviewer's move` — and flips once polling stops |
 | No checks dot while the host shows a failed run | The read lists the host's OWN pipelines: `none` is the host listing none, `unknown` is nobody having read one |
 | A sweep that could not read the checks | `unknown` replaces whatever stood before — the dot goes, the hover says why, and the comments and approval it did read are relayed |

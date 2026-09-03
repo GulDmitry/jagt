@@ -62,6 +62,18 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void leavesADeployedTaskAloneWhenAPolledRoundKeepsCallingItReviewed(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .message("deployed").build());
+
+        reports(state).markReviewed("ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
+        assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("deployed");
+    }
+
+    @Test
     void takesTheRequestLinkFromTheArgumentRatherThanFromTheProse(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());

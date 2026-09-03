@@ -163,6 +163,11 @@ public class AgentStatusReports {
         if (status == previous) {
             return;
         }
+        // A verdict the flow would not land is not written as a message either: every poll would rewrite the
+        // line of a task that has moved on, and tap the human for it.
+        if (previous != null && FlowRules.reported(previous, status) != status) {
+            return;
+        }
         if (flow.report(id, status, message)) {
             ping(id, status, message, stateService.task(id));
         }

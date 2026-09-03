@@ -103,7 +103,8 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
             case CI_POLLING -> hasReviewRequest ? "read the review" : "focus the agent";
             case CI_FAILED -> hasReviewRequest ? "relay the failed checks" : "focus the agent";
             case REVERTED -> hasReviewRequest ? "ship a fix" : "focus the agent";
-            case REVIEWED -> hasReviewRequest ? "read the review" : "close the task";
+            // REVIEWED is already read: nothing unresolved and the checks green, so only the approval is missing.
+            case REVIEWED -> hasReviewRequest ? "check for the approval" : "close the task";
             case APPROVED -> hasReviewRequest ? "deploy it" : "close the task";
             case DEPLOY_CONFLICT -> "resolve the conflict";
             // Unreachable: both ways an agent gives these up are answered above.
