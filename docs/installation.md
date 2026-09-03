@@ -28,7 +28,9 @@ orchestrator:
     mcpConfig: /path/to/mcp-servers.json
 ```
 
-That also cuts each read to the servers it needs, which is most of what one costs.
+That also cuts each read to the servers it needs, which is most of what one costs. Declare the tracker and
+the code host and stop there: past a few hundred loaded tools the CLI hands the read a tool SEARCH instead of
+the tools, and a read spends its turns looking for the one it already named.
 
 A declared server logs in as itself: a login you did through the plugin shipping the same file does not count.
 Authenticate it once against that file, and the headless read finds the token under the same server name:
