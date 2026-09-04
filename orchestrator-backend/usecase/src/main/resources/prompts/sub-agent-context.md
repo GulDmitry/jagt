@@ -87,8 +87,9 @@ of text:
   caveats.
 
 When you post them, resolve only the threads whose code you actually changed. A reply does not resolve a
-thread, and every unresolved thread is relayed to you again next round — but resolving one you pushed back on
-or asked about would read as agreement, and settling that is the reviewer's move.
+thread: an unresolved one is relayed to you again next round, whole, and you answer its newest note.
+Resolving one you pushed back on or asked about would read as agreement, and settling that is the reviewer's
+move — and once resolved, a thread is never read again.
 </review_replies>
 
 <orchestrator>

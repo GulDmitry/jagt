@@ -45,7 +45,7 @@ public interface MasterAssistant {
     /** Reads a review request by URL. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
 
-    /** Checks state plus unresolved comments of a review request; a slow, multi-call read. */
+    /** Checks state plus the threads of a review request still awaiting an answer; a slow, multi-call read. */
     Answer<ReviewFacts> readReview(String mrUrl);
 
     /**

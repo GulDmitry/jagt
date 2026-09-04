@@ -11,6 +11,8 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
@@ -186,6 +188,72 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void asksForEveryNoteOfAThreadSoAReplyToAReplyIsNotReadAsAnAnsweredComment() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        assistant.readReview("https://host/mr/9");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).anyMatch(argument ->
+                argument.contains("ONE entry per DISCUSSION THREAD still awaiting an answer, never one per note")
+                        && argument.contains("keep EVERY note in it, oldest first")
+                        && argument.contains("never drop a note because an earlier one already answers it"));
+    }
+
+    @Test
+    void readsAThreadsNotesOutOfTheEnvelopeAsOneRelayableBlock() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
+                        + "\"openedAt\":\"\",\"threads\":[\"https://host/mr/9#note_1\\nbot: quote the pattern"
+                        + "\\ndev: the rule IS a pattern\\nbot: then bound the input\"]}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().threads()).containsExactly("https://host/mr/9#note_1\nbot: quote the pattern\n"
+                + "dev: the rule IS a pattern\nbot: then bound the input");
+    }
+
+    @Test
+    void keepsAnOverlongThreadsNewestNotesRatherThanItsOpeningComment() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
+                        + "\"openedAt\":\"\",\"threads\":[\"bot: " + "x".repeat(3000)
+                        + "\\ndev: it is bound\\nbot: then bound the input\"]}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        var facts = assistant.readReview("https://host/mr/9").facts();
+
+        assertThat(facts).isPresent();
+        assertThat(facts.get().threads()).singleElement().asString()
+                .startsWith("…").endsWith("\ndev: it is bound\nbot: then bound the input");
+    }
+
+    @Test
+    void readsNoFactsFromAnAnswerCarryingOnlyTheSchemasGenericFields() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"type\":\"result\",\"is_error\":false,"
+                        + "\"result\":\"{\\\"title\\\":\\\"Late invoice mail\\\",\\\"url\\\":\\\"\\\"}\"}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        var answer = assistant.readTicket("ABC-7");
+
+        assertThat(answer.facts()).isEmpty();
+    }
+
+    @Test
     void readsTheTicketOutOfTheEnvelopesStructuredOutput() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
@@ -213,7 +281,7 @@ class HeadlessClaudeAssistantTest {
                 """
                 {"type":"result","is_error":false,
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success",\
-                "openedAt":"2026-08-01T09:15:00Z","comments":[]}}""", ""));
+                "openedAt":"2026-08-01T09:15:00Z","threads":[]}}""", ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty());
 
@@ -230,7 +298,7 @@ class HeadlessClaudeAssistantTest {
                 """
                 {"type":"result","is_error":false,
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
-                "pipelineFailure":"LOG","openedAt":"","comments":[]}}""".replace("LOG", "x".repeat(5000)), ""));
+                "pipelineFailure":"LOG","openedAt":"","threads":[]}}""".replace("LOG", "x".repeat(5000)), ""));
         var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
                 AssistantProperties.empty());
 
@@ -259,6 +327,7 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    @ResourceLock(Resources.GLOBAL)
     void namesTheModelsOwnWordsWhenItAnsweredPastTheSchema() {
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();

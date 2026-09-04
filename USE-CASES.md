@@ -185,7 +185,7 @@ What the agent does with a comment:
 | The agent names its outcome in the message instead of the field | Read anyway — `outcome=question: …`, `no_changes: …` — but only behind the word `outcome` |
 | Drafted replies exist | The card flags it, the push notification names the file, and they are posted only after a human `ship` |
 | The card says replies are drafted but there is nothing to post | Drafts count only while newer than the round now open; `replies` still prints the file, saying it was already sent |
-| A thread the agent **fixed** | Resolved at ship time by the agent's own MCP; an unresolved thread is relayed by every later round |
+| A thread the agent **fixed** | Resolved at ship time by the agent's own MCP; an unresolved thread is relayed WHOLE by every later round |
 | A thread it disagreed with or asked about | Left unresolved on purpose: settling it is the reviewer's move |
 | "Where are the other comments, and what will actually be posted?" | `replies <task>` — every block of `review_replies.md` on screen; on the board, the card's drafted-replies line opens it |
 | A drafted reply is wrong | Say so in the line under the open `replies` report: it is typed into that session, which answers into the same report while a pulsing ring waits |

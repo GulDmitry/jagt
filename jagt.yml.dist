@@ -72,7 +72,7 @@ orchestrator:
   codeReview:
     mrTitlePattern: "{ticket} {title}"
     postReviewReplies: true    # false leaves every reply a draft for you to post by hand
-    reviewReplyAuthors: []     # only reply to threads opened by these authors; empty = all of them
+    reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all
     mergeRequestDefaults:
       removeSourceBranch: true
       squash: true

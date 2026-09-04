@@ -25,6 +25,9 @@ then removes the worktrees and branches.
 - JUnit parallel, methods **and** classes: no `@BeforeAll`, no mutable statics, every file under a `@TempDir`;
   anything competing for a **machine-wide** resource declares it (`@ResourceLock("loopback-ports")` +
   `@Execution(SAME_THREAD)`). Only this suite is parallel.
+- **A test that asserts on a log line takes `@ResourceLock(Resources.GLOBAL)`**: an appender attached to a
+  live logger otherwise captures a concurrent test's events, and the cast to logback's `Logger` races
+  SLF4J's own start-up.
 
 ### The board is tested in a browser
 

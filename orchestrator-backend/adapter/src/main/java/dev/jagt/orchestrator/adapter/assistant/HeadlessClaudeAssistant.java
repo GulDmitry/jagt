@@ -62,9 +62,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             "pipelineStatus":{"type":"string","enum":["success","failed","running","none","unknown"]},\
             "pipelineFailure":{"type":"string"},\
             "openedAt":{"type":"string"},\
-            "comments":{"type":"array","items":{"type":"string"}}},\
+            "threads":{"type":"array","items":{"type":"string"}}},\
             "required":["exists","failure","approved","pipelineStatus","pipelineFailure","openedAt",\
-            "comments"]}""";
+            "threads"]}""";
     private static final String COMMAND_SCHEMA = """
             {"type":"object","properties":{\
             "command":{"type":"string"},\
@@ -81,7 +81,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     /** The sweep makes several code-host calls, not one lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
     private static final int MAX_CAUSE = 400;
-    private static final int MAX_CHECKS_DETAIL = 2000;
+    private static final int MAX_RELAYED = 2000;
     /** Mapping text to a command reads nothing and must feel like typing. */
     private static final Duration MAP_TIMEOUT = Duration.ofSeconds(90);
 
@@ -153,26 +153,42 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " ids, URLs or durations — one failure read twice must read the same, or every poll relays a"
                 + " brief the agent has already answered. Empty string in every other case."
                 + " Return openedAt, the request's OWN creation timestamp"
-                + " as the host reports it (ISO-8601; empty string if it does not say), and comments — every"
-                + " UNRESOLVED discussion note (bots and humans alike), each as one string"
-                + " \"author (file:line): body\". Empty array if none." + FAILURE_RULE
+                + " as the host reports it (ISO-8601; empty string if it does not say), and threads — ONE entry"
+                + " per DISCUSSION THREAD still awaiting an answer, never one per note: every thread holding a"
+                + " resolvable note that is not resolved. A RESOLVED thread is CLOSED — leave it out, whatever"
+                + " landed in it since. Read each of them WHOLE with the host's discussion tool and keep EVERY"
+                + " note in it, oldest first, bots and humans alike — never drop a note because an earlier one"
+                + " already answers it, an answer being what the exchange is. One string per thread: its own"
+                + " link (or file:line) on the first line, then one line per note as \"<author>: <body>\"."
+                + " Copy each body as the host gives it, cut at its first 60 words — never paraphrased and"
+                + " never summarised, a thread read twice having to read the same or every poll relays a brief"
+                + " the agent has already answered. Empty array where no thread awaits an answer."
+                + FAILURE_RULE
                 + " The pipelines are the ONE exception to the failure rule above, and they change nothing"
                 + " about exists: a listing you could not get is pipelineStatus=unknown with failure=\"\"."
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
         return readable(ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT), mrUrl).map(n -> {
-            List<String> comments = new ArrayList<>();
-            n.path("comments").forEach(c -> comments.add(c.asString("")));
+            List<String> threads = new ArrayList<>();
+            n.path("threads").forEach(t -> threads.add(cappedTail(t.asString(""))));
             return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
                     n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
-                    comments, HostStamp.epochMillis(n.path("openedAt").asString("")));
+                    threads, HostStamp.epochMillis(n.path("openedAt").asString("")));
         });
     }
 
-    /** The excerpt is relayed into a worktree file, so a host that answered with the whole log is cut here. */
-    private static String capped(String detail) {
-        String trimmed = detail.strip();
-        return trimmed.length() <= MAX_CHECKS_DETAIL ? trimmed : trimmed.substring(0, MAX_CHECKS_DETAIL) + "…";
+    /** Relayed into a worktree file, so a host that answered with a whole build log is cut here. */
+    private static String capped(String excerpt) {
+        String trimmed = excerpt.strip();
+        return trimmed.length() <= MAX_RELAYED ? trimmed : trimmed.substring(0, MAX_RELAYED) + "…";
+    }
+
+    /** A thread runs oldest note first, and the round answers its NEWEST: an over-long one loses its head. */
+    private static String cappedTail(String thread) {
+        String trimmed = thread.strip();
+        return trimmed.length() <= MAX_RELAYED
+                ? trimmed
+                : "…" + trimmed.substring(trimmed.length() - MAX_RELAYED);
     }
 
     /** A read that reports what stopped it comes back unreadable, never as an answer with empty facts. */
@@ -342,14 +358,14 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
     }
 
-    /** The CLI validated {@code structured_output} against the schema; this fallback nobody checked. */
+    /**
+     * The CLI validated {@code structured_output} against the schema; this fallback nobody checked. The
+     * schema's FIRST required field is its discriminator, so an answer built of generic names alone
+     * ({@code title}, {@code url}) cannot pass as facts and be read as "no such item".
+     */
     private boolean carriesSchema(JsonNode answer, String schema) {
-        for (JsonNode field : mapper.readTree(schema).path("required")) {
-            if (answer.has(field.asString(""))) {
-                return true;
-            }
-        }
-        return false;
+        String discriminator = mapper.readTree(schema).path("required").path(0).asString("");
+        return !discriminator.isEmpty() && answer.has(discriminator);
     }
 
     /** An answer read as facts would report a read that never happened as the item not existing. */

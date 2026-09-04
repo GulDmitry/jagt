@@ -16,7 +16,7 @@ public enum TaskAction {
 
     SHIP(Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
     SWEEP(Group.FLOW, "sweep", "Check review",
-            "read the checks and unresolved comments, relay them to the agent"),
+            "read the checks and open threads, relay them to the agent"),
     DEPLOY(Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
     REVERT(Group.FLOW, "revert", "Revert",
             "revert the last deploy's merge commit and push; earlier deploys stay live"),

@@ -141,6 +141,48 @@ class ReviewSweepServiceTest {
     }
 
     @Test
+    void relaysAThreadWholeSoTheAgentAnswersTheReviewersLastWord() {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern\n"
+                        + "bot: then bound the input length"))));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue()).contains("<threads>\nhttp://mr/1#note_7\nbot: quote the pattern\n"
+                + "dev: the rule IS a pattern\nbot: then bound the input length");
+    }
+
+    @Test
+    void tellsTheAgentToWeighTheReviewersAnswerRatherThanRepostItsOwnReply() {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern"))));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue())
+                .contains("what you answer is its NEWEST note")
+                .contains("never\nre-post the reply it has already read");
+    }
+
+    @Test
+    void tellsTheAgentToLeaveAThreadWaitingOnTheReviewerAlone() {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern"))));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue())
+                .contains("Where the newest note is your OWN and nobody\nanswered it, that thread is waiting"
+                        + " on the reviewer: leave it alone and give it no block.");
+    }
+
+    @Test
     void asksTheAgentToReportWhetherTheRoundChangedAnything() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
                 "success", List.of("reviewer (a.java:3): drop the cache"))));
@@ -304,19 +346,20 @@ class ReviewSweepServiceTest {
     }
 
     @Test
-    void namesTheRepositoryEachRelayedCommentCameFrom() {
+    void namesTheRepositoryEachRelayedThreadCameFrom() {
         twoRepositoriesUnderReview();
-        when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of("bot: tighten this"))));
-        when(reviewReader.read("ABC-1", "http://mr/web"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of("bot: rename that"))));
+        when(reviewReader.read("ABC-1", "http://mr/api")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("http://mr/api#note_1\nbot: tighten this"))));
+        when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("http://mr/web#note_2\nbot: rename that"))));
 
         var result = sweep.sweep("ABC-1");
 
         ArgumentCaptor<String> brief = ArgumentCaptor.captor();
         verify(sessions).relayIfChanged(eq("ABC-1"), brief.capture());
-        assertThat(brief.getValue()).contains("[api] bot: tighten this", "[web] bot: rename that");
-        assertThat(result.message()).contains("2 comment(s) relayed");
+        assertThat(brief.getValue()).contains("[api] http://mr/api#note_1\nbot: tighten this",
+                "[web] http://mr/web#note_2\nbot: rename that");
+        assertThat(result.message()).contains("2 thread(s) relayed");
     }
 
     @Test

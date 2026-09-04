@@ -46,7 +46,7 @@ Read on every access, so an edit lands without a restart. Any key may be omitted
 | `viewer.keepViewer` | `true` | keep the agents window open after the last task |
 | `codeReview.mrTitlePattern` | `{ticket} {title}` | request and commit title template |
 | `codeReview.postReviewReplies` | `true` | on `ship`, post the drafted replies to the threads |
-| `codeReview.reviewReplyAuthors` | `[]` | reply only to threads by these authors; empty = all |
+| `codeReview.reviewReplyAuthors` | `[]` | post a reply only where the note it answers is by these authors; empty = all |
 | `codeReview.mergeRequestDefaults` | both `true` | `removeSourceBranch` and `squash` on created requests |
 | `autoReview.enabled` | `false` | poll open review requests |
 | `autoReview.windowHours` | `24` | polling per round, then it pings you to `sweep` |

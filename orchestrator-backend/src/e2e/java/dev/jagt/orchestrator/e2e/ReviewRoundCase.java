@@ -9,12 +9,13 @@ record ReviewRoundCase(String name, ReviewFacts round, TaskStatus expected, Stri
 
     static List<ReviewRoundCase> matrix() {
         return List.of(
-                new ReviewRoundCase("unresolved comments",
-                        facts(false, "success", List.of("bot (Widget.java:12): tighten this", "human: rename it")),
-                        TaskStatus.CI_POLLING, "2 comment(s) relayed, checks success", true),
+                new ReviewRoundCase("threads awaiting an answer",
+                        facts(false, "success", List.of("http://mr/1#note_1\nbot: tighten this\ndev: it is bound",
+                                "http://mr/1#note_4\nhuman: rename it")),
+                        TaskStatus.CI_POLLING, "2 thread(s) relayed, checks success", true),
                 new ReviewRoundCase("red checks, nothing unresolved",
                         facts(false, "failed", List.of()),
-                        TaskStatus.CI_POLLING, "0 comment(s) relayed, checks failed", true),
+                        TaskStatus.CI_POLLING, "0 thread(s) relayed, checks failed", true),
                 new ReviewRoundCase("green and nothing unresolved",
                         facts(false, "success", List.of()),
                         TaskStatus.REVIEWED, "checks success, nothing unresolved — waiting for an approval", false),
@@ -31,8 +32,8 @@ record ReviewRoundCase(String name, ReviewFacts round, TaskStatus expected, Stri
                         TaskStatus.CI_POLLING, "no such request", false));
     }
 
-    private static ReviewFacts facts(boolean approved, String pipeline, List<String> comments) {
-        return new ReviewFacts(true, approved, pipeline, comments);
+    private static ReviewFacts facts(boolean approved, String pipeline, List<String> threads) {
+        return new ReviewFacts(true, approved, pipeline, threads);
     }
 
     @Override

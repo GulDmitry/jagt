@@ -8,6 +8,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
@@ -65,6 +67,7 @@ class McpHealthProbeTest {
     }
 
     @Test
+    @ResourceLock(Resources.GLOBAL)
     void namesTheLoginADeclaredServerNeedsWhereItCannotJudgeOne() {
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();

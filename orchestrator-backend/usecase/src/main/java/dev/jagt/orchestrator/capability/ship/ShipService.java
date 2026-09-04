@@ -79,8 +79,8 @@ public class ShipService {
             return "If review_replies.md exists, post each drafted reply to its thread, then delete it."
                     + THREADS;
         }
-        return "If review_replies.md exists, post drafted replies ONLY to threads whose comment author matches"
-                + " (case-insensitive) any of: "
+        return "If review_replies.md exists, post a drafted reply ONLY where the note its block answers is by"
+                + " an author matching (case-insensitive) any of: "
                 + String.join(", ", config.codeReview().reviewReplyAuthorsOrEmpty())
                 + ". Leave replies to OTHER authors as drafts (do NOT post them); delete only posted ones."
                 + THREADS;

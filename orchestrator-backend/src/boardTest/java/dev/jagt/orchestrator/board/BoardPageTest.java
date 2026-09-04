@@ -1205,14 +1205,14 @@ class BoardPageTest {
     @Test
     void showsWhatJagtDidOnItsOwnReadBackFromItsLog() throws IOException {
         Files.writeString(root.resolve("jagt.log"), """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 comment(s) relayed","task":"ABC-1"}
+                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 thread(s) relayed","task":"ABC-1"}
                 """, java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
 
         Page page = open();
         page.locator("#show-activity").click();
 
         assertThat(page.locator("#report-title")).containsText("activity");
-        assertThat(page.locator("#report-body")).containsText("2 comment(s) relayed");
+        assertThat(page.locator("#report-body")).containsText("2 thread(s) relayed");
     }
 
     @Test

@@ -16,13 +16,13 @@ class ActivityReportTest {
     void showsTheNewestTaskEntriesFirst(@TempDir Path root) throws IOException {
         Path log = root.resolve("jagt.log");
         Files.writeString(log, """
-                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 comment(s) relayed","task":"ABC-1","alias":"a1"}
+                {"@timestamp":"2026-08-18T08:00:00Z","message":"sweep ABC-1: 2 thread(s) relayed","task":"ABC-1","alias":"a1"}
                 {"@timestamp":"2026-08-18T09:00:00Z","message":"auto-review poll found nothing","task":"ABC-2","alias":null}
                 """);
 
         String report = new ActivityReport(log.toString(), new JsonMapper()).render();
 
-        assertThat(report).containsSubsequence("auto-review poll found nothing", "2 comment(s) relayed");
+        assertThat(report).containsSubsequence("auto-review poll found nothing", "2 thread(s) relayed");
         assertThat(report).contains("a1", "ABC-2");
     }
 

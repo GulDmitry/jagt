@@ -100,7 +100,7 @@ public class ReviewSweepService {
         ReviewFacts r = merged(rounds);
         String said = record(taskId, r);
         Pipeline checks = Pipeline.of(said);
-        if (r.comments().isEmpty() && checks != Pipeline.RED) {
+        if (r.threads().isEmpty() && checks != Pipeline.RED) {
             if (r.approved()) {
                 statusReports.markApproved(taskId);
                 return new SweepResult(SweepResult.Kind.APPROVED,
@@ -118,11 +118,11 @@ public class ReviewSweepService {
         }
         if (!sessions.relayIfChanged(taskId, brief(mrUrl, r, said))) {
             return new SweepResult(SweepResult.Kind.UNCHANGED, "sweep " + taskId + ": "
-                    + r.comments().size() + " comment(s), checks " + said
+                    + r.threads().size() + " thread(s), checks " + said
                     + " — unchanged since the last relay, so the agent was left alone");
         }
         return new SweepResult(SweepResult.Kind.RELAYED,
-                "sweep " + taskId + ": " + r.comments().size() + " comment(s) relayed, checks " + said);
+                "sweep " + taskId + ": " + r.threads().size() + " thread(s) relayed, checks " + said);
     }
 
     /**
@@ -160,7 +160,7 @@ public class ReviewSweepService {
     private static ReviewFacts named(String project, ReviewFacts round) {
         return new ReviewFacts(round.exists(), round.approved(), round.pipelineStatus(),
                 round.pipelineFailure().isBlank() ? "" : "[" + project + "] " + round.pipelineFailure(),
-                round.comments().stream().map(comment -> "[" + project + "] " + comment).toList(),
+                round.threads().stream().map(thread -> "[" + project + "] " + thread).toList(),
                 round.openedAt());
     }
 
@@ -176,7 +176,7 @@ public class ReviewSweepService {
         return new ReviewFacts(true,
                 rounds.stream().allMatch(ReviewFacts::approved),
                 worst.pipelineStatus(), worst.pipelineFailure(),
-                rounds.stream().flatMap(round -> round.comments().stream()).toList(),
+                rounds.stream().flatMap(round -> round.threads().stream()).toList(),
                 longestOpen(rounds));
     }
 
@@ -197,7 +197,7 @@ public class ReviewSweepService {
 
     /**
      * The round is relayed as a JUDGEMENT, not as a work order: an agent handed a list of comments complies with
-     * all of them, wrong ones included. The brief opens on the three routes a comment can take.
+     * all of them, wrong ones included. The brief opens on the three routes a thread can take.
      */
     private static String brief(String mrUrl, ReviewFacts r, String said) {
         StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
@@ -207,13 +207,17 @@ public class ReviewSweepService {
                 brief.append("<checks>\n").append(r.pipelineFailure()).append("\n</checks>\n");
             }
         }
-        if (!r.comments().isEmpty()) {
+        if (!r.threads().isEmpty()) {
             brief.append("""
                     <how_to_judge>
                     Your job this round is to get the code RIGHT, not to satisfy the reviewer. A comment is an
                     argument from someone who read the diff, not the system: it can be mistaken about the
-                    architecture, and you have the code in front of you. Weigh each one, then take exactly ONE
-                    route per comment:
+                    architecture, and you have the code in front of you. Each block below is one THREAD, its
+                    notes oldest first: what you answer is its NEWEST note. Where a reply of your own is
+                    followed by the reviewer answering back, that answer is the argument to weigh now — never
+                    re-post the reply it has already read. Where the newest note is your OWN and nobody
+                    answered it, that thread is waiting on the reviewer: leave it alone and give it no block.
+                    Weigh every other thread, then take exactly ONE route per thread:
                     - Right: fix it LOCALLY (no commit, no push).
                     - Wrong: change NOTHING and reply with the one concrete technical reason it is wrong.
                     - You cannot tell, or it is right but forces a design decision nobody gave you: do not guess
@@ -225,14 +229,14 @@ public class ReviewSweepService {
                     </how_to_judge>
                     <replies>
                     review_replies.md is what the human READS to approve this round — end to end, in one pass,
-                    before anything is posted. Write ONE block per comment, in this shape and nothing else:
+                    before anything is posted. Write ONE block per thread, in this shape and nothing else:
 
                     ## <thread link, or file:line>
-                    > <the comment, trimmed to the sentence that matters>
+                    > <the newest note, trimmed to the sentence that matters>
                     FIXED | NO CHANGE | QUESTION - <the reply, one or two sentences>
 
-                    The verdict word is for the human; what follows the dash is posted verbatim. Every comment
-                    gets a block, including the ones you push back on and the ones you are asking about.
+                    The verdict word is for the human; what follows the dash is posted verbatim. Every thread
+                    you answer gets a block, the ones you push back on and ask about included.
 
                     NECESSARY AND SUFFICIENT is the test for every line: drop it if the answer survives without
                     it, and answer completely with what is left. No restating the comment beyond the quoted
@@ -242,18 +246,18 @@ public class ReviewSweepService {
                     The file holds DRAFTS: post nothing and resolve no thread this round. Nothing leaves this
                     machine until the human ships.
                     </replies>
-                    <comments>
+                    <threads>
                     """);
-            r.comments().forEach(c -> brief.append("- ").append(c).append('\n'));
-            brief.append("</comments>\n");
+            r.threads().forEach(thread -> brief.append(thread).append("\n\n"));
+            brief.append("</threads>\n");
         }
         // An unanswered question ENDS the round rather than parking in it: staying CI_POLLING would have the poll
         // re-brief the agent on the very comments it was told to hold. The round's OUTCOME is a field of its own,
         // because all three end at the same status.
-        brief.append(r.comments().isEmpty()
+        brief.append(r.threads().isEmpty()
                 ? "When the build is fixed locally, set status REVIEW_PENDING (outcome=progress)."
                 : """
-                        When every comment is fixed, answered or asked about, set status REVIEW_PENDING with the
+                        When every thread is fixed, answered or asked about, set status REVIEW_PENDING with the
                         outcome of THIS round:
                         - outcome=question — a question of yours is still open; it rides in the message.
                         - outcome=no_changes — you changed no code (all already handled, or you pushed back on
