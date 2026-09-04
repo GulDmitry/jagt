@@ -284,7 +284,7 @@ public class GitService {
     /**
      * Merges the task branch into the deploy branch and pushes, in a worktree cut from {@code origin/<target>} so
      * the task branch is NEVER modified. A conflict LEAVES that worktree with its markers instead of aborting; the
-     * next call detects the resolved worktree and finishes the push.
+     * next call finishes a resolution waiting there, and otherwise merges again against the target as it is then.
      */
     public String mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
         return withRepoLock(projectPath, () -> {
@@ -294,12 +294,16 @@ public class GitService {
                     .expectSuccess("git fetch in " + projectPath);
             if (Files.isDirectory(deployWorktree)) {
                 if (hasDeployWorktree(projectPath, sourceBranch)) {
-                    return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
-                }
-                if (worktreeOwner(deployWorktree).isPresent()) {
+                    if (resolutionWaiting(deployWorktree, targetBranch)) {
+                        return finishDeploy(projectPath, deployWorktree, deployBranch, sourceBranch, targetBranch);
+                    }
+                    // No resolution to push, and the target may have moved: merged again, never replayed.
+                    removeDeployWorktree(projectPath, deployWorktree, deployBranch);
+                } else if (worktreeOwner(deployWorktree).isPresent()) {
                     throw new ForeignDeployWorktreeException(deployWorktree, projectPath);
+                } else {
+                    clearEditorResidue(deployWorktree);
                 }
-                clearEditorResidue(deployWorktree);
             }
             // Deploy is decoupled from review state: its ONLY precondition is committed work to ship.
             String ahead = processRunner.run(projectPath, GIT_TIMEOUT,
@@ -334,16 +338,27 @@ public class GitService {
         });
     }
 
+    /**
+     * Whether the leftover worktree holds a resolution to push: staged with the merge still open, or committed by
+     * hand. Markers still in, or a merge aborted, is none — that worktree is thrown away and the merge tried again.
+     */
+    private boolean resolutionWaiting(Path deployWorktree, String targetBranch) {
+        if (!unmergedPaths(deployWorktree).isBlank()) {
+            return false;
+        }
+        return mergeInProgress(deployWorktree) || !"0".equals(processRunner.run(deployWorktree, GIT_TIMEOUT,
+                        List.of("git", "rev-list", "--count", "origin/" + targetBranch + "..HEAD"))
+                .expectSuccess("git rev-list count HEAD in " + deployWorktree).stdout().trim());
+    }
+
+    private boolean mergeInProgress(Path deployWorktree) {
+        return processRunner.run(deployWorktree, GIT_TIMEOUT,
+                List.of("git", "rev-parse", "-q", "--verify", "MERGE_HEAD")).exitCode() == 0;
+    }
+
     private String finishDeploy(Path projectPath, Path deployWorktree, String deployBranch,
                                 String sourceBranch, String targetBranch) {
-        String unmerged = unmergedPaths(deployWorktree);
-        if (!unmerged.isBlank()) {
-            throw new MergeConflictException(sourceBranch, targetBranch,
-                    "still unresolved (git add them):\n" + unmerged, deployWorktree);
-        }
-        boolean mergeInProgress = processRunner.run(deployWorktree, GIT_TIMEOUT,
-                List.of("git", "rev-parse", "-q", "--verify", "MERGE_HEAD")).exitCode() == 0;
-        if (mergeInProgress) {
+        if (mergeInProgress(deployWorktree)) {
             processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "commit", "--no-edit"))
                     .expectSuccess("git commit (deploy resolution) " + deployWorktree);
         }

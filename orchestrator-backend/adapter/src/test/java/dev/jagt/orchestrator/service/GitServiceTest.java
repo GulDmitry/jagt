@@ -300,6 +300,45 @@ class GitServiceTest {
     }
 
     @Test
+    void mergesAgainstTheDeployBranchAsItIsNowWhenTheConflictWasNeverResolved(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("f.txt"), "dev change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "dev"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
+        Files.writeString(repo.resolve("f.txt"), "task change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitService.MergeConflictException.class);
+        Path deployWorktree = dir.resolve("ABC-1-deploy");
+        runner.run(repo, t, List.of("git", "checkout", "-q", "_dev"));
+        Files.writeString(repo.resolve("f.txt"), "task change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "release"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+
+        git.mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "log", "--oneline", "origin/dev")).stdout())
+                .contains("Merge branch 'ABC-1' into dev");
+        assertThat(deployWorktree).doesNotExist();
+    }
+
+    @Test
     void stopsSendingTheHumanBackToTheDeployWorktreeWhenTheDeployBranchAlreadyHoldsWhatItHeld(@TempDir Path dir)
             throws Exception {
         Processes runner = new ProcessRunner();
@@ -341,7 +380,7 @@ class GitServiceTest {
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.NothingToDeployException.class)
-                .hasMessageContaining("Nothing left to push");
+                .hasMessageContaining("no commits beyond dev");
 
         assertThat(deployWorktree).doesNotExist();
     }

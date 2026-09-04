@@ -14,13 +14,12 @@
 - `GitService.detachUpstream` unsets the inherited `origin/<baseBranch>` right after creation.
 - `GitService.pushBranch` pushes **one** task branch, both-sided refspec, never `--force`, never `-u`;
   nothing rewrites what has left the machine (sub-agent rule 8) — `--force-with-lease`, `commit --amend` and
-  `reset --hard` onto a pushed commit are the same rewrite and are refused alike.
-- Every git operation runs under a per-repository lock (`GitService` holds one `ReentrantLock` each), because
-  several sessions share one checkout.
+  `reset --hard` onto a pushed commit are refused alike.
+- Every git operation runs under a per-repository lock (`GitService`): several sessions share one checkout.
 - **A reviewer's verdict is no gate on `deploy`**: `Move.deployable` asks only whether a request is open, plus
   DEPLOY_CONFLICT; NEW, SHIPPING, IN_PROGRESS, REVERTED and DONE are excluded.
 - The confirm's `project → branch` line per repository comes from `TaskView.RepoView.deployBranch`; `revert`
-  names its **scope**, only the last deploy coming out.
+  names its **scope**: the last deploy only.
 
 ## What a commit, a ship and a worktree carry
 
@@ -47,8 +46,7 @@
   written. `deploy` and `revert` run outside it, ungated.
 - Pointing git elsewhere REPLACES the repository's hooks, so **every name git knows** gets a stub running the
   repository's own, re-resolved at run time with the override off, the guard first.
-- **Pushes only**: everything else passes without a word; `--no-verify` skips this hook as any, and a human's
-  own shell is never gated.
+- **Pushes only**: everything else passes; `--no-verify` skips this hook as any, and a human's shell is never gated.
 
 ## One session, many repositories
 
@@ -62,6 +60,8 @@
   stopped**. Every repository is checked deployable before the **first** push.
 - Siblings derive one deploy worktree path (`<taskId>-deploy`): `GitService.hasDeployWorktree` asks git who
   cut it, `mergeIntoAndPush` **refuses** another repository's, and only DEPLOY_CONFLICT resumes.
+- **Every press starts the merge over** unless a resolution is staged or committed there: an unresolved or
+  aborted worktree is cut again from the target as it is NOW.
 - Editor residue there is **deleted** (`clearEditorResidue`); anything else is left and named
   (`StaleDeployPathException`).
 - **Nothing to deploy is not a failure** (`GitService.NothingToDeployException`): passed over and named.

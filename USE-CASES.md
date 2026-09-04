@@ -24,7 +24,7 @@
 | A token is set but wrong, or the host is unreachable | start jagt | Not detected — no check reaches the network |
 | A suite or smoke script boots on a machine with no desktop | `--orchestrator.startup-checks=false` | Skips them all |
 | You work **on** jagt with Codex or Qwen | open the repository | Same rules, same MCP server: `AGENTS.md` is the knowledge file, each CLI's server declaration committed at the root |
-| "Where does a setting of mine go?" | — | `jagt.yml` at the repository root, one `orchestrator` root, comments allowed; copy `jagt.yml.dist`, which carries every key with what it means |
+| "Where does a setting of mine go?" | — | `jagt.yml` at the repository root, one `orchestrator` root, comments allowed; copy `jagt.yml.dist`, every key described |
 | A key you set had no effect | — | A command-line flag outranks the file; `projects` is re-read live, everything else needs a restart |
 | jagt refuses to start over `config.json` | — | It is no longer read, and the refusal prints the `jagt.yml` to write instead |
 
@@ -71,7 +71,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | situation | what happens |
 |---|---|
 | A **sibling repository** cut that worktree | Refused for that repository by name |
-| `deploy` keeps refusing the same way however often you press it | It was an editor, not a repository: `ide` writes project files back into the emptied directory, and that residue is now deleted |
+| `deploy` keeps refusing however often you press it | It was an editor, not a repository: `ide` writes project files back into the emptied directory; that residue is now deleted |
 | The path holds anything else | Named instead, and a repeat is advised only when something landed |
 
 ## Reading a ticket
@@ -225,7 +225,7 @@ What the agent does with a comment:
 | "What exactly will this push?" | the Deploy button | The confirmation names one `project → branch` line per repository, and nothing else |
 | "What will this revert take out?" | the Revert button | The branches it pushes to, and the scope: the last deploy only |
 | Deploy | `deploy <task>` | Merges the task branch into `deployBranch` and pushes; refused when that equals the base branch |
-| Deploy hit a conflict | resolve in the deploy worktree | DEPLOY_CONFLICT; jagt keeps the half-done state for you |
+| Deploy hit a conflict | resolve it there (`git add`), then `deploy <task>` | DEPLOY_CONFLICT; a worktree left unresolved is discarded and merged again against the branch as it now is |
 | Take a deploy back out | `revert <task>` | Reverts the last recorded merge commit; refused, with a by-hand recipe, whenever it would have to guess |
 | The task was deployed more than once | `revert <task>` | Only the **last** deploy comes out; for the earlier rounds, `git log --merges --grep ABC-1` then `git revert -m 1 <sha>` newest first |
 | An agent is restarted on a task at REVERTED | `respawn` | Its reports are recorded but move nothing: the task stays REVERTED until a human ships or closes it |
