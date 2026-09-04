@@ -294,7 +294,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     .log();
             return new Answer<>(Optional.empty(), usage);
         }
-        return new Answer<>(answerOf(envelope, label), usage);
+        return new Answer<>(answerOf(envelope, label, schema), usage);
     }
 
     /** `%kvp` quotes a value but escapes nothing, so a multi-line stderr would break the console line apart. */
@@ -319,7 +319,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     /** {@code structured_output} when the CLI already parsed it, else {@code result}, holding the same JSON. */
-    private Optional<JsonNode> answerOf(JsonNode envelope, String label) {
+    private Optional<JsonNode> answerOf(JsonNode envelope, String label, String schema) {
         JsonNode structured = envelope.path("structured_output");
         if (structured.isObject()) {
             return Optional.of(structured);
@@ -332,8 +332,34 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     .log();
             return Optional.empty();
         }
-        JsonNode answer = parseEnvelope(raw, label);
-        return Optional.ofNullable(answer);
+        try {
+            JsonNode answer = mapper.readTree(raw);
+            return answer.isObject() && carriesSchema(answer, schema)
+                    ? Optional.of(answer)
+                    : outsideSchema(label, "not the schema's object", raw);
+        } catch (RuntimeException e) {
+            return outsideSchema(label, e.getMessage(), raw);
+        }
+    }
+
+    /** The CLI validated {@code structured_output} against the schema; this fallback nobody checked. */
+    private boolean carriesSchema(JsonNode answer, String schema) {
+        for (JsonNode field : mapper.readTree(schema).path("required")) {
+            if (answer.has(field.asString(""))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** An answer read as facts would report a read that never happened as the item not existing. */
+    private Optional<JsonNode> outsideSchema(String label, String cause, String said) {
+        log.atError().setMessage("assistant answered outside the schema")
+                .addKeyValue("ref", label)
+                .addKeyValue("cause", oneLine(cause))
+                .addKeyValue("said", oneLine(said))
+                .log();
+        return Optional.empty();
     }
 
     /** Fresh input = prompt + cache WRITES, both billed at input rates; cache reads count apart, being cheaper. */

@@ -4,11 +4,15 @@ import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 
 import dev.jagt.orchestrator.port.Processes;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
@@ -252,6 +256,56 @@ class HeadlessClaudeAssistantTest {
         assertThat(facts).isPresent();
         assertThat(facts.get().key()).isEqualTo("ABC-7");
         assertThat(facts.get().title()).isEqualTo("Late invoice mail");
+    }
+
+    @Test
+    void namesTheModelsOwnWordsWhenItAnsweredPastTheSchema() {
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger assistantLog = (Logger) LoggerFactory.getLogger(HeadlessClaudeAssistant.class);
+        assistantLog.addAppender(log);
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,
+                 "result":"I need the GitLab MCP server logged in before I can read this request."}""", ""));
+
+        new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty()).readReview("https://host/mr/9");
+
+        assertThat(List.copyOf(log.list))
+                .filteredOn(event -> "assistant answered outside the schema".equals(event.getMessage()))
+                .flatExtracting(ILoggingEvent::getKeyValuePairs)
+                .extracting(pair -> pair.key + "=" + pair.value)
+                .contains("said=I need the GitLab MCP server logged in before I can read this request.");
+        assistantLog.detachAppender(log);
+    }
+
+    @Test
+    void readsNoFactsFromAnAnswerNamingNoneOfTheSchemasFields() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,
+                 "result":"{\\"error\\":\\"the GitLab MCP server is not authenticated\\"}"}""", ""));
+
+        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty()).readMergeRequest("https://host/mr/9");
+
+        assertThat(answer.facts()).isEmpty();
+    }
+
+    @Test
+    void readsNoFactsFromAnAnswerThatIsJsonButNotTheSchemasObject() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,"result":"\\"no such merge request\\""}""", ""));
+
+        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty()).readMergeRequest("https://host/mr/9");
+
+        assertThat(answer.facts()).isEmpty();
     }
 
     @Test
