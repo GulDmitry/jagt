@@ -11,13 +11,13 @@
   (`TaskState.baseBranchOr`), and `deployTask` **refuses** when the two are equal.
 - `revert` refuses rather than guess: no `deployCommit`, the commit absent, already reverted, or a conflict —
   aborted and cleaned up.
-- `GitService.detachUpstream` unsets the inherited `origin/<baseBranch>` right after creation.
+- `GitService.detachUpstream` unsets the inherited `origin/<baseBranch>` at creation.
 - `GitService.pushBranch` pushes **one** task branch, both-sided refspec, never `--force`, never `-u`;
   nothing rewrites what has left the machine (sub-agent rule 8) — `--force-with-lease`, `commit --amend` and
   `reset --hard` onto a pushed commit are refused alike.
 - Every git operation runs under a per-repository lock (`GitService`): several sessions share one checkout.
 - **A reviewer's verdict is no gate on `deploy`**: `Move.deployable` asks only whether a request is open, plus
-  DEPLOY_CONFLICT; NEW, SHIPPING, IN_PROGRESS, REVERTED and DONE are excluded.
+  DEPLOY_CONFLICT; NEW, SHIPPING, IN_PROGRESS, REVERTED and DONE are not.
 - The confirm's `project → branch` line per repository comes from `TaskView.RepoView.deployBranch`; `revert`
   names its **scope**: the last deploy only.
 
@@ -60,8 +60,8 @@
   stopped**. Every repository is checked deployable before the **first** push.
 - Siblings derive one deploy worktree path (`<taskId>-deploy`): `GitService.hasDeployWorktree` asks git who
   cut it, `mergeIntoAndPush` **refuses** another repository's, and only DEPLOY_CONFLICT resumes.
-- **Every press starts the merge over** unless a resolution is staged or committed there: an unresolved or
-  aborted worktree is cut again from the target as it is NOW.
+- **Every press starts the merge over** unless the human's own work sits there — staged, committed or part
+  done, a committed one only with its base on the target.
 - Editor residue there is **deleted** (`clearEditorResidue`); anything else is left and named
   (`StaleDeployPathException`).
 - **Nothing to deploy is not a failure** (`GitService.NothingToDeployException`): passed over and named.

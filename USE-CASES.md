@@ -225,7 +225,7 @@ What the agent does with a comment:
 | "What exactly will this push?" | the Deploy button | The confirmation names one `project → branch` line per repository, and nothing else |
 | "What will this revert take out?" | the Revert button | The branches it pushes to, and the scope: the last deploy only |
 | Deploy | `deploy <task>` | Merges the task branch into `deployBranch` and pushes; refused when that equals the base branch |
-| Deploy hit a conflict | resolve it there (`git add`), then `deploy <task>` | DEPLOY_CONFLICT; a worktree left unresolved is discarded and merged again against the branch as it now is |
+| Deploy hit a conflict | resolve it there (`git add`), then `deploy <task>` | DEPLOY_CONFLICT; a worktree with none of your work in it is discarded and merged again against the branch as it now is |
 | Take a deploy back out | `revert <task>` | Reverts the last recorded merge commit; refused, with a by-hand recipe, whenever it would have to guess |
 | The task was deployed more than once | `revert <task>` | Only the **last** deploy comes out; for the earlier rounds, `git log --merges --grep ABC-1` then `git revert -m 1 <sha>` newest first |
 | An agent is restarted on a task at REVERTED | `respawn` | Its reports are recorded but move nothing: the task stays REVERTED until a human ships or closes it |
