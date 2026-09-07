@@ -56,7 +56,7 @@ public class TaskRetirement {
             // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.
             gitService.removeDeployWorktreeIfPresent(projectPath, taskId);
             // A diff opened from the board cuts throwaway checkouts in the temp directory; nothing else ends them.
-            gitService.removeDiffWorktrees(projectPath, taskId);
+            gitService.removeDiffWorktrees(projectPath, taskId, repo.project());
             editorDriver.forgetProject(GitService.deployWorktreePath(projectPath, taskId));
         }
         stateService.removeTask(taskId);

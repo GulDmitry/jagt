@@ -22,9 +22,9 @@ public enum TaskAction {
             "revert the last deploy's merge commit and push; earlier deploys stay live"),
     DONE(Group.FLOW, "done", "Done", "kill the session, delete the worktree, drop the task; the branch is kept"),
     FOCUS(Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
-    IDE(Group.TOOL, "ide", "Open IDE", "open the worktree in the IDE; Local Changes holds the uncommitted diff",
+    IDE(Group.TOOL, "ide", "Open IDE", "open every worktree in the IDE; Local Changes holds the uncommitted diff",
             "ide <ticket> [diff]"),
-    DIFF(Group.TOOL, "diff", "Diff", "show the diff against the branch the request targets"),
+    DIFF(Group.TOOL, "diff", "Diff", "show every repository's diff against the branch its request targets"),
     RESPAWN(Group.TOOL, "respawn", "Restart agent",
             "start a new agent session in the same worktree");
 

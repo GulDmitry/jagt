@@ -94,8 +94,8 @@ class IdeLauncherTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        when(git.checkoutBaseForDiff(any(), any(), any())).thenReturn(Path.of("/tmp/base"));
-        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
+        when(git.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
         launcher(state).open("a1", "diff");
 
@@ -107,12 +107,12 @@ class IdeLauncherTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release/stage", "dev", null));
-        when(git.checkoutBaseForDiff(any(), any(), any())).thenReturn(Path.of("/tmp/base"));
-        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
+        when(git.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
         launcher(state).open("a1", "diff");
 
-        verify(git).checkoutBaseForDiff(Path.of("/repo"), "origin/release/stage", "ABC-1");
+        verify(git).checkoutBaseForDiff(Path.of("/repo"), "origin/release/stage", "ABC-1", "proj");
     }
 
     @ParameterizedTest
@@ -125,5 +125,35 @@ class IdeLauncherTest {
         launcher(state).open("a1", mode);
 
         verify(editor).open(Path.of("/wt"));
+    }
+
+    @Test
+    void opensAWorktreePerRepositoryWhenTheTaskSpansTwoProjects(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(
+                        TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
+                TaskStatus.REVIEW_PENDING).alias("a1").build());
+
+        launcher(state).open("a1", null);
+
+        verify(editor).open(Path.of("/api-wt"));
+        verify(editor).open(Path.of("/web-wt"));
+    }
+
+    @Test
+    void diffsEveryRepositoryAgainstItsOwnTargetWhenTheTaskSpansTwoProjects(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(
+                        TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
+                TaskStatus.REVIEW_PENDING).alias("a1").build());
+        when(config.project("api")).thenReturn(new ProjectConfig("/api-repo", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/next", "dev", null));
+        when(git.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
+
+        launcher(state).open("a1", "diff");
+
+        verify(git).checkoutBaseForDiff(Path.of("/api-repo"), "origin/main", "ABC-1", "api");
+        verify(git).checkoutBaseForDiff(Path.of("/web-repo"), "origin/next", "ABC-1", "web");
     }
 }

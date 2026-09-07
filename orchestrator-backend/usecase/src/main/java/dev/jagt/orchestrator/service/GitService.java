@@ -664,19 +664,22 @@ public class GitService {
         }
     }
 
-    /** Both throwaway checkouts a diff leaves in the temp directory, so retiring a task can find them again. */
-    public static List<Path> diffWorktreePaths(String taskId) {
+    /**
+     * Both throwaway checkouts a diff leaves in the temp directory, so retiring a task can find them again. The
+     * project is part of the name: the repositories of one task would otherwise clear each other's checkout.
+     */
+    public static List<Path> diffWorktreePaths(String taskId, String project) {
         Path temp = Path.of(System.getProperty("java.io.tmpdir"));
-        return List.of(temp.resolve("jagt-diff-" + TaskName.slug(taskId)),
-                temp.resolve("jagt-diff-new-" + TaskName.slug(taskId)));
+        String slug = TaskName.slug(taskId) + "-" + TaskName.slug(project);
+        return List.of(temp.resolve("jagt-diff-" + slug), temp.resolve("jagt-diff-new-" + slug));
     }
 
     /** A throwaway detached checkout at the base branch, reused per task until the task is retired. */
-    public Path checkoutBaseForDiff(Path projectPath, String baseBranch, String taskId) {
+    public Path checkoutBaseForDiff(Path projectPath, String baseBranch, String taskId, String project) {
         return withRepoLock(projectPath, () -> {
             processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
-            Path temp = diffWorktreePaths(taskId).getFirst();
+            Path temp = diffWorktreePaths(taskId, project).getFirst();
             clearWorktreePath(projectPath, temp);
             processRunner.run(projectPath, GIT_TIMEOUT,
                             List.of("git", "worktree", "add", "--detach", temp.toString(), baseBranch))
@@ -689,9 +692,10 @@ public class GitService {
      * The task's CURRENT tracked state, committed or not, snapshotted through a throwaway index so
      * {@code .gitignore} and {@code .git/info/exclude} are honored. Reused per task until the task is retired.
      */
-    public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch, String taskId) {
+    public Path checkoutWorktreeCleanForDiff(Path worktreePath, Path projectPath, String baseBranch,
+                                            String taskId, String project) {
         return withRepoLock(projectPath, () -> {
-            Path temp = diffWorktreePaths(taskId).getLast();
+            Path temp = diffWorktreePaths(taskId, project).getLast();
             clearWorktreePath(projectPath, temp);
             Path index;
             try {
@@ -727,14 +731,10 @@ public class GitService {
         });
     }
 
-    /**
-     * A diff checkout outlives the viewer that opened it, and only the task's own retirement knows it is over.
-     * Asked of every repository of the task: the paths carry no repository, so the checkout one sibling deletes
-     * leaves the admin entry in whichever repository actually cut it.
-     */
-    public void removeDiffWorktrees(Path projectPath, String taskId) {
+    /** A diff checkout outlives the viewer that opened it, and only the task's own retirement knows it is over. */
+    public void removeDiffWorktrees(Path projectPath, String taskId, String project) {
         withRepoLock(projectPath,
-                () -> diffWorktreePaths(taskId).forEach(temp -> clearWorktreePath(projectPath, temp)));
+                () -> diffWorktreePaths(taskId, project).forEach(temp -> clearWorktreePath(projectPath, temp)));
     }
 
     /** A path a prior run left behind makes `git worktree add` fail, so registration and the directory both go. */

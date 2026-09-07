@@ -106,7 +106,7 @@ class TaskRetirementTest {
 
         retirement(state).retire("ABC-1");
 
-        verify(git).removeDiffWorktrees(Path.of("/repo"), "ABC-1");
+        verify(git).removeDiffWorktrees(Path.of("/repo"), "ABC-1", "demo");
     }
 
     @Test
