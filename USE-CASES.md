@@ -23,7 +23,7 @@
 | A project path is missing, is no git repository, or `deployBranch` equals the base | start jagt | Refused, naming the project key |
 | A token is set but wrong, or the host is unreachable | start jagt | Not detected — no check reaches the network |
 | A suite or smoke script boots on a machine with no desktop | `--orchestrator.startup-checks=false` | Skips them all |
-| You work **on** jagt with Codex or Qwen | open the repository | Same rules, same MCP server: `AGENTS.md` is the knowledge file, each CLI's server declaration committed at the root |
+| You work **on** jagt with another agent CLI | open the repository | Same rules, same MCP server: `AGENTS.md` is the knowledge file, each CLI's server declaration committed at the root |
 | "Where does a setting of mine go?" | — | `jagt.yml` at the repository root, one `orchestrator` root, comments allowed; copy `jagt.yml.dist`, every key described |
 | A key you set had no effect | — | A command-line flag outranks the file; `projects` is re-read live, everything else needs a restart |
 | jagt refuses to start over `config.json` | — | It is no longer read, and the refusal prints the `jagt.yml` to write instead |

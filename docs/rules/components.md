@@ -8,7 +8,7 @@
 (`POST /mcp`), watchdog, auto-review scheduler, macOS automation, board on loopback. Reaching it is the
 `AgentRuntime` seam's (`adapter/agent/McpEndpoint`).
 
-- **HTTP** first (Claude, Qwen): the CLI is pointed at `orchestrator.mcp-url` and carries
+- **HTTP** first (Claude): the CLI is pointed at `orchestrator.mcp-url` and carries
   `X-Working-Directory: <worktree>` itself.
 - **stdio** for Codex, which can only *spawn* a server: `AbstractAgentRuntime.linkStdioProxy` links
   `mcp_client.js` (same header, `ECONNREFUSED` retry only).
@@ -17,14 +17,14 @@
 
 ### Whoever works on jagt reads the same file and reaches the same server
 
-The root is provisioned for all three CLIs as a worktree is: **a rule only one vendor loads is a rule half the
-sessions break**.Qwen finds it via `context.fileName` and declares the server with `trust` in `.qwen/settings.json`; Codex needs a
-**trusted** project.
+The root is provisioned for both CLIs as a worktree is: **a rule only one vendor loads is a rule half the
+sessions break**. Claude reads `CLAUDE.md`, a symlink to `AGENTS.md`, and declares the server in `.mcp.json`;
+Codex reads `AGENTS.md` and `.codex/config.toml`, and needs a **trusted** project.
 
 - `jagt.yml` is user config, gitignored, copied from `jagt.yml.dist`: ONE file, one
   `orchestrator` root, re-read on every access, Spring binding it once for `orchestrator.*`. Sections are
-  omissible value records (`ConfigService.ConfigFile.*Config`). Never commit user-specific paths; every key
-  belongs in `docs/configuration.md`.
+  omissible value records (`ConfigService.ConfigFile.*Config`). Never commit user-specific paths; every key is
+  described in `jagt.yml.dist` and nowhere else.
 - Root detection: the nearest parent holding `jagt.yml.dist` **or** `mcp_client.js` (`OrchestratorPaths`);
   `ORCHESTRATOR_ROOT` overrides.
 - `initialize_task` copies gitignored IDE and local files best-effort (`copyIdeProjectFiles`,

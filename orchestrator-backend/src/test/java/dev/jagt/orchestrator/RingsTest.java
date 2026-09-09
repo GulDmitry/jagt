@@ -67,7 +67,7 @@ class RingsTest {
 
     @Test
     void theVendorIsNamedOnlyAtTheEdge() {
-        List<String> vendors = List.of("claude", "codex", "qwen", "kitty", "tmux", "intellij");
+        List<String> vendors = List.of("claude", "codex", "kitty", "tmux", "intellij");
         Pattern prefix = Pattern.compile("@ConfigurationProperties\\(prefix = \"([^\"]+)\"");
 
         assertThat(ROOTS.stream().flatMap(RingsTest::javaFilesUnder)
