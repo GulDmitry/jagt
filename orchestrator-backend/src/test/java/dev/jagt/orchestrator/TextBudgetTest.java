@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TextBudgetTest {
 
     @ParameterizedTest
-    @CsvSource({"../README.md, 1000", "../AGENTS.md, 1600", "../ARCHITECTURE.md, 2900",
+    @CsvSource({"../README.md, 950", "../AGENTS.md, 1600", "../ARCHITECTURE.md, 2900",
             "../USE-CASES.md, 4600", "../TODO.md, 600"})
     void aDocumentStaysInsideItsWordBudget(Path document, int maxWords) {
         assertThat(words(document)).describedAs("%s", document).isLessThanOrEqualTo(maxWords);

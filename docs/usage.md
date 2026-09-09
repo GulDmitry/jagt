@@ -16,16 +16,13 @@ carries exactly the actions legal right now, the obvious one highlighted, in two
 along (ship … done), then what only looks at it (focus, ide, diff, restart agent). `deploy` and `done` ask for
 confirmation — one writes to a shared branch, the other deletes a worktree.
 
-**Filtering, not sorting.** There is no sort control. Type in the filter box (`/` focuses it, `Esc` clears) to
-match an alias, ticket number or title, and tick *needs my action* for what is yours. The page never polls; the
-backend pushes changes.
+**Filtering, not sorting.** Type in the filter box (`/` focuses it, `Esc` clears) to match an alias, ticket
+number or title, and tick *needs my action* for what is yours. The page never polls; the backend pushes
+changes.
 
-**Focus** selects the agent's tmux window in kitty and raises it; the toast names the window it moved to.
-**Shift+←/→** switches between agent windows there, and closing the viewer only detaches it — agents live in
-tmux and keep working; kill them with `done`. Every task also gets a short alias (`p1`, `s2`) usable anywhere
-instead of the ticket id.
-
-There is no verb for stopping the backend — that belongs to whoever started the process.
+**Focus** selects the agent's tmux window in kitty and raises it; **Shift+←/→** switches between them there.
+Closing the viewer only detaches it — agents live in tmux and keep working; `done` kills them. Every task also
+gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 
 ## Commands
 
@@ -70,68 +67,39 @@ curl -s localhost:8290/api/commands/activity
 ### Free text
 
 Type a sentence instead of a command (the board's **Ask** button, or `⌘K`) and a model maps it onto **exactly
-one** of the commands above, runs it through the same gate a button uses, and says what it understood:
-*understood as `ship a1` — …* The palette completes the grammar as you type and says whether the line will run
-(green) or why it will not (`no task "a9"`, `ship needs a task`). **A line that parses is executed as typed,
-with no model call**; a single mistyped word is treated as a typo, not as prose.
+one** of the commands above, runs it through the same gate a button uses, and says what it understood. The
+palette completes the grammar as you type and says whether the line will run (green) or why it will not
+(`no task "a9"`). **A line that parses is executed as typed, with no model call**; one mistyped word is
+treated as a typo, not as prose.
 
 ## The review loop
 
-```mermaid
-flowchart TD
-    DO["do ABC-123 [plan]"]
-    IDE1["ide ABC-123"]
-    SHIP["ship ABC-123"]
-    REVIEW["sweep ABC-123"]
-    IDE2["ide ABC-123"]
-    DEPLOY["deploy ABC-123"]
-    DONE["done ABC-123"]
-    FOCUS["focus ABC-123"]
-
-    DO -.->|"watch / talk to the agent live"| FOCUS
-    FOCUS -.-> IDE1
-    DO -->|"agent works — no commits"| IDE1
-    IDE1 -->|"needs changes: focus + tell the agent"| IDE1
-    IDE1 -->|"approved"| SHIP
-    SHIP -->|"commit + push + open the request"| REVIEW
-    REVIEW -->|"checks + comments → agent fixes locally, drafts replies"| IDE2
-    IDE2 -->|"another round"| SHIP
-    IDE2 -->|"green + all resolved"| DEPLOY
-    DEPLOY -->|"merged into deployBranch"| DONE
-    DEPLOY -.->|"more changes: ship again, deploy again"| SHIP
-
-    classDef cmd font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
-    class DO,FOCUS,IDE1,SHIP,REVIEW,IDE2,DEPLOY,DONE cmd;
-```
-
-`ship → sweep → ide → ship` repeats once per review round until CI is green and every thread is resolved, then
-`deploy`, then `done`. jagt refuses a move that makes no sense for the task's status, with a sentence rather
-than a git error.
+`do → ide → ship → sweep → ide → ship` repeats once per review round until CI is green and every thread is
+resolved, then `deploy`, then `done`. `focus` is available throughout — the agent is a session you can talk
+to — and after a deploy you may ship and deploy again as often as you like. jagt refuses a move that makes no
+sense for the task's status, with a sentence rather than a git error.
 
 ## Notes on the tricky ones
 
 **`ship`** is the agent's own work, with its own code-host tools: commit (title from `mrTitlePattern`), push
-the task branch, open or update one request **per repository**, post the drafted replies. jagt waits in
-SHIPPING for the links.
+the task branch, open or update one request **per repository**, post the drafted replies.
 
 **`sweep`** only **reads and drafts**: the agent fixes locally and writes its intended answers to
-`review_replies.md`; nothing is pushed or posted until you `ship`. Read them with `replies` first. The old
-spelling `review` still works.
+`review_replies.md`; nothing is pushed or posted until you `ship`. Read them with `replies` first.
 
 **A review round is a judgement, not a work order.** The agent may fix a comment, change nothing and say why,
 or ask you; it does not implement a suggestion it thinks is wrong.
 
 **`resume`** takes over a review request that already exists — reopened, or someone else's work. Its branch
-comes back with the commits on it, the request is linked rather than reopened, and its target branch is
-remembered, so the next `ship` updates it rather than opening a second.
+comes back with the commits on it, and its target branch is remembered, so the next `ship` updates that request
+rather than opening a second.
 
 **`deploy` on conflict** pushes nothing: the task goes `DEPLOY_CONFLICT` and `ide <ticket>` opens the **deploy**
-worktree — resolve, `git add`, `deploy` again. Your task branch and request are untouched, and you may ship and
-deploy again as often as you like.
+worktree — resolve, `git add`, `deploy` again. Your task branch and request are untouched.
 
-**`revert`** reverts the merge commit `deploy` created and pushes it. It only *adds* a commit — no history
-rewrite, no force-push — and your branch survives, so the normal follow-up is fix and `ship` again. It refuses,
-writing nothing, when the commit is already reverted, is not on the branch, or the revert conflicts.
+**`revert`** reverts the merge commit `deploy` created and pushes it — it only *adds* a commit, so your branch
+survives and the normal follow-up is fix and `ship` again. It refuses, writing nothing, when the commit is
+already reverted, is not on the branch, or the revert conflicts.
 
 **Multi-repo tasks.** One task, one agent session, a worktree per repository (the session runs in the first one
 named). `ship` opens a request per repository; `sweep` reports them as one round, as far along as the least

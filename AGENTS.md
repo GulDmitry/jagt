@@ -128,4 +128,4 @@ curl -s localhost:8290/state               # verify
 
 > [!IMPORTANT]
 > **Run the staged jar.** `./gradlew build` rewrites `jagt.jar` in place, and a JVM reading it dies with a
-> `NoClassDefFoundError` that masks the real error — [why](docs/troubleshooting.md#startup-and-the-jar).
+> `NoClassDefFoundError` that masks the real error — [why](docs/troubleshooting.md).
