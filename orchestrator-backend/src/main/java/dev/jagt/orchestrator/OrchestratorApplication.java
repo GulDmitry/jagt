@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.surface.ui.Console;
 import dev.jagt.orchestrator.surface.ui.LogFileReset;
 import dev.jagt.orchestrator.surface.ui.StartupFailure;
 import org.springframework.boot.SpringApplication;
@@ -19,7 +20,7 @@ public class OrchestratorApplication {
         try {
             application().run(withConfigFile(args));
         } catch (RuntimeException | Error failure) {
-            System.err.println(StartupFailure.describe(failure));
+            Console.problem(StartupFailure.describe(failure));
             throw failure;
         }
     }

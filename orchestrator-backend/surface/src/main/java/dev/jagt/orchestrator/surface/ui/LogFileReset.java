@@ -78,7 +78,7 @@ public class LogFileReset implements ApplicationListener<ApplicationEnvironmentP
                 }
             }
         } catch (IOException | RuntimeException e) {
-            System.err.println("Could not clear " + absolute + ": " + e.getMessage());
+            Console.problem("Could not clear " + absolute + ": " + e.getMessage());
         }
     }
 

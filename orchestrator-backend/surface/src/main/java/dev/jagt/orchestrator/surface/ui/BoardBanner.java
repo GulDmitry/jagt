@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.surface.ui;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Order(Integer.MAX_VALUE)
-@Slf4j
 public class BoardBanner implements ApplicationRunner {
 
     private final String port;
@@ -20,9 +18,6 @@ public class BoardBanner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        System.out.println("jagt board → http://localhost:" + port + "   (Ctrl-C stops)");
-        log.atInfo().setMessage("board serving")
-                .addKeyValue("url", "http://localhost:" + port)
-                .log();
+        Console.say("jagt board → http://localhost:" + port + "   (Ctrl-C stops)");
     }
 }
