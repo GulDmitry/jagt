@@ -59,7 +59,7 @@ A `NoClassDefFoundError` during a startup failure or on exit is the same cause, 
 | Focus raises no window | `grep kitty jagt-backend.log` — install kitty, or set `orchestrator.kittyCommand` |
 | You cannot find the log | `tail -f jagt-backend.log`, next to where you started the jar |
 
-Copy the log before restarting: **every start empties it and deletes the archives beside it.**
+There is one log file and it is never rolled into archives. Copy it before restarting: **every start empties it.**
 
 ## State on disk
 

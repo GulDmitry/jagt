@@ -65,5 +65,5 @@ round leaves the diff and the drafts for `ide <alias>`.
   throw booked against that job.
 - `command/ActivityReport` tails `logging.file.name` (ECS JSON) for entries carrying a `task` key, newest
   first — jagt's unattended work from its own log.
-- **One run, one log**: `surface/ui/LogFileReset` empties the file and deletes the archives beside it before
-  the appender opens; nothing gzipped is read.
+- **One run, one log**: `logback-spring.xml` drops Boot's rolling appender, and `surface/ui/LogFileReset`
+  empties the file before that appender opens.

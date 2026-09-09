@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+One run, one file. Boot's own file appender is a RollingFileAppender that rolls at midnight and keeps a week
+of `<log>.<date>.<n>.gz` beside it, so a jagt left running for days grows an archive a day that nothing sweeps
+until the next start. A plain FileAppender never writes a second file; `LogFileReset` empties this one before
+the appender opens it.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>${FILE_LOG_THRESHOLD}</level>
+        </filter>
+        <!-- The file is read by a machine, the console by a human: `logging.pattern.console` is the human's. -->
+        <encoder class="org.springframework.boot.logging.logback.StructuredLogEncoder">
+            <format>ecs</format>
+            <charset>${FILE_LOG_CHARSET}</charset>
+        </encoder>
+        <file>${LOG_FILE:-jagt-backend.log}</file>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>
