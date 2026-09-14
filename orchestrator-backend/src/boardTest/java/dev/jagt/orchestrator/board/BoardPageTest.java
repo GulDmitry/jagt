@@ -574,6 +574,21 @@ class BoardPageTest {
     }
 
     @Test
+    void keepsALongLivedTasksTimelineInsideAScrollingTipInsteadOfCoveringTheBoard() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now())
+                .history(java.util.Collections.nCopies(40,
+                        new dev.jagt.orchestrator.task.StatusChange(TaskStatus.IN_PROGRESS, now(), null)))
+                .build());
+
+        Page page = open();
+        page.locator("article .status").hover();
+
+        assertThat(page.locator("#tip")).isVisible();
+        assertThat(page.locator("#tip")).hasClass("scrolls");
+    }
+
+    @Test
     void aTooltipGoesAwayWithThePointerThatOpenedIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
