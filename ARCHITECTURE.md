@@ -172,7 +172,7 @@ question without owning a node, `ui/` owns the nodes it renders, `app.js` only w
 | `ui/refresh` | how the page learns a task changed, and the one clock it ticks itself |
 
 - **A module owns its own nodes** — never `getElementById` for another module's; one needing another to act takes a
-  callback at wiring time (`palette.wire`, `header.onNarrow`, `toast.showLog`).
+  callback at wiring time (`palette.wire`, `header.onBarClick`, `toast.showLog`).
 - **Rendering is pure and total.** A card is a function of the task, the grid is `replaceChildren`, and no card carries
   a closure — a button carries `data-action`/`data-report` and `ui/render` delegates the one listener.
 - **One answer per question.** One transport, one toast, one submit pipeline, one key table.

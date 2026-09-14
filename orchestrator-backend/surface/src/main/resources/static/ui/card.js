@@ -6,7 +6,7 @@ import {blocked} from './inflight.js';
 
 export const DRAFTS_LABEL = 'replies drafted \u2014 click to read';
 
-// The rest goes in the hover: a card must not grow taller for a title somebody pasted a paragraph into.
+// Where a pasted paragraph is cut off; the whole of it stays in the hover.
 const TITLE_LIMIT = 150;
 
 // The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
