@@ -1,14 +1,15 @@
-// The one line above the grid: whose move it is, what the install polls, what the jobs are doing, and the phase
-// counts. Every count is a NUMBER in a line that never moves — a phase that owned a column would have to move
-// the card it describes, and re-finding it is the cost a human pays for the arrangement.
+// The one line above the grid: whose move it is, what the install polls, what the jobs are doing, the phase
+// counts and the order. Every count is a NUMBER in a line that never moves — a phase that owned a column would
+// have to move the card it describes, and re-finding it is the cost a human pays for the arrangement.
 //
-// Pure rendering: the phase buttons carry `data-phase`, and the click is delegated through `onNarrow`, because
-// what narrowing MEANS on screen is the render's answer, not this module's.
+// Pure rendering: each button carries its own data attribute, and the click is delegated through `onBarClick`,
+// because what narrowing or re-ordering MEANS on screen is the render's answer, not this module's.
 
 import {span} from '../core/dom.js';
 import {countdown} from '../core/format.js';
 import * as store from '../core/store.js';
 import * as filters from './filters.js';
+import * as order from './order.js';
 
 const phaseBar = document.getElementById('phases');
 const waitingLabel = document.getElementById('waiting');
@@ -70,6 +71,14 @@ export function render(tasks, showing) {
     segment.dataset.tip = filters.holds(phase) ? `stop showing only ${label}` : `show only ${label}`;
     return index === 0 ? [segment] : [span('sep', ' · '), segment];
   }));
+  // Another segment of the same line, separator and all: it states the order the board is IN, and the hover the
+  // one a press would take it to.
+  const sort = document.createElement('button');
+  sort.className = 'order';
+  sort.dataset.order = '';
+  sort.textContent = `order: ${order.holds() ? 'alias' : 'added'}`;
+  sort.dataset.tip = order.holds() ? 'order by when each task was added' : 'order by alias';
+  phaseBar.append(span('sep', ' \u00b7 '), sort);
   if (filters.on()) {
     const clear = document.createElement('button');
     clear.className = 'clear-filters';
@@ -79,11 +88,12 @@ export function render(tasks, showing) {
   }
 }
 
-export const onNarrow = (repaint) => {
+export const onBarClick = (repaint) => {
   phaseBar.onclick = (event) => {
     const button = event.target.closest('button');
     if (!button) return;
     if (button.dataset.phase) filters.togglePhase(button.dataset.phase);
+    else if (button.hasAttribute('data-order')) order.toggle();
     else if (button.hasAttribute('data-clear')) filters.clear();
     else return;
     repaint();

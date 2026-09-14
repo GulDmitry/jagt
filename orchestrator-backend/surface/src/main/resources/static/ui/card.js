@@ -6,6 +6,9 @@ import {blocked} from './inflight.js';
 
 export const DRAFTS_LABEL = 'replies drafted \u2014 click to read';
 
+// The rest goes in the hover: a card must not grow taller for a title somebody pasted a paragraph into.
+const TITLE_LIMIT = 150;
+
 // The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
 const watchLine = (watch) => {
   if (!watch || !watch.note) return null;
@@ -85,7 +88,10 @@ export function card(task, manyProjects) {
 
   const title = document.createElement('div');
   title.className = 'title';
-  title.textContent = task.title || '';
+  const written = task.title || '';
+  const clipped = written.length > TITLE_LIMIT;
+  title.textContent = clipped ? `${written.slice(0, TITLE_LIMIT)}\u2026` : written;
+  if (clipped) title.dataset.tip = written;
 
   const meta = document.createElement('div');
   meta.className = 'meta';

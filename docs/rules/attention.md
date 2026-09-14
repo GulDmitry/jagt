@@ -55,9 +55,10 @@ gate refusing at execution time if the agent is alive.
 
 - `TaskStatus.label()` is what the board renders (`out for review`, `not shipped`, `not approved`); the enum
   name is the wire value and what `state.json` carries. It names a state, never a move.
-- `TaskViews` orders by **alias**, numerically, a status change repainting the chip in place. A phase is a **count** above the grid, zeros included.
-- No sort control, only **narrowing**: a filter over alias, id and title, plus needs-my-action. An alias is
-  the lowest free number.
+- `TaskViews` orders by REGISTRATION, a status change repainting the chip in place. A phase is a **count** above the grid, zeros included.
+- **One order control** beside the counts, `static/ui/order.js`: registration, or alias. Everything else
+  **narrows** — a filter over alias, id and title, plus needs-my-action. An alias is the lowest free number,
+  so alias order drops a new task where a retired one sat.
 
 ## Three clocks, three questions
 

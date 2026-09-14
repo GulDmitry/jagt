@@ -1,18 +1,17 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Builds the ONE projection a human surface renders. Order is the ALIAS, and it is the projection's job because the
- * board repaints on every state write: an order that followed activity would move a task on every keep-alive.
+ * Builds the ONE projection a human surface renders, in the order the tasks were REGISTERED: an alias is reused the
+ * moment it is freed, so ordering by one drops a new task into the gap a retired one left. Which order a surface
+ * shows is then the surface's own answer.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,26 +32,12 @@ public class TaskViews {
         Map<String, String> deployBranches = new java.util.LinkedHashMap<>();
         config.projects().forEach((key, project) -> deployBranches.put(key, project.deployBranch()));
         List<TaskView> views = stateService.tasks().entrySet().stream()
-                .sorted(Comparator.comparing(TaskViews::aliasOrder))
                 .map(entry -> TaskView.of(entry.getKey(), entry.getValue(),
                         ReviewDrafts.pending(entry.getValue(), entry.getValue().status(),
                                 config.codeReview().shipPostsEveryDraft()),
                         cadence.watch(entry.getValue(), now), deployBranches))
                 .toList();
         return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()));
-    }
-
-    /**
-     * Numeric where the alias is: plain text order puts p10 before p2. An alias-less task sorts after every aliased
-     * one, by id.
-     */
-    private static String aliasOrder(Map.Entry<String, TaskState> entry) {
-        String alias = entry.getValue().alias();
-        if (alias == null || alias.isBlank()) {
-            return "~" + entry.getKey();
-        }
-        String digits = alias.replaceAll("\\D", "");
-        return alias.replaceAll("\\d", "") + (digits.isEmpty() ? "" : "%09d".formatted(Long.parseLong(digits)));
     }
 
     public List<TaskView> all() {

@@ -21,7 +21,7 @@ onClick({
   report: (id, about) => openReport(`${id} ${store.nameOf(about)}`,
     `/api/commands/${id}?about=${encodeURIComponent(about)}`, {about}),
 });
-header.onNarrow(render);
+header.onBarClick(render);
 filters.onChange(render);
 palette.wire({
   focusRef: launch.focusRef,

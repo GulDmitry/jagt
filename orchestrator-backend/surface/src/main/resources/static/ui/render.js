@@ -5,6 +5,7 @@ import {card} from './card.js';
 import * as filters from './filters.js';
 import * as header from './header.js';
 import * as launch from './launch.js';
+import * as order from './order.js';
 import * as projects from './projects.js';
 import {hideTip} from './tips.js';
 
@@ -13,7 +14,7 @@ const board = document.getElementById('board');
 export function render() {
   hideTip();
   const tasks = store.tasks();
-  const shown = filters.shown(tasks);
+  const shown = order.sorted(filters.shown(tasks));
   projects.render();
   launch.render();
   header.render(tasks, shown.length);

@@ -166,11 +166,11 @@ class BoardPageTest {
         assertThat(page.locator("#phases .phase")).hasText(
                 new String[]{"build 1", "review 1", "check 0", "ready 0", "deploy 1", "done 0"});
         assertThat(page.locator("#phases"))
-                .hasText("build 1 · review 1 · check 0 · ready 0 · deploy 1 · done 0");
+                .hasText("build 1 · review 1 · check 0 · ready 0 · deploy 1 · done 0 · order: added");
     }
 
     @Test
-    void ordersTasksByAliasRatherThanByWhicheverAgentReportedLast() {
+    void ordersTasksAsTheyWereRegisteredSoAReusedAliasCannotMoveACardAlreadyOnTheBoard() {
         state.putTask("ABC-10", TaskState.builder("alpha", root.resolve("ABC-10-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a10").lastActiveTimestamp(now()).build());
         state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
@@ -178,7 +178,33 @@ class BoardPageTest {
 
         Page page = open();
 
+        assertThat(page.locator("article .alias")).hasText(new String[]{"a10", "a2"});
+    }
+
+    @Test
+    void ordersTasksByAliasWhenTheOrderControlIsPressed() {
+        state.putTask("ABC-10", TaskState.builder("alpha", root.resolve("ABC-10-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a10").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("#phases button.order").click();
+
         assertThat(page.locator("article .alias")).hasText(new String[]{"a2", "a10"});
+        assertThat(page.locator("#phases button.order")).hasText("order: alias");
+    }
+
+    @Test
+    void foldsATitleTooLongForACardIntoItsHover() {
+        String whole = "A ticket whose first paragraph was pasted into its title".repeat(4);
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").title(whole).lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .title")).hasText(whole.substring(0, 150) + "…");
+        assertThat(page.locator("article .title")).hasAttribute("data-tip", whole);
     }
 
     @Test

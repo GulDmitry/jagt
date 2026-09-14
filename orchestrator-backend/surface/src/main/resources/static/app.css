@@ -132,6 +132,7 @@ button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
 #phases button.phase[aria-pressed="true"] { background: var(--chip-bg); color: var(--text); }
 #phases button.phase:disabled { opacity: .5; cursor: default; }
 #phases .clear-filters { font-size: 11px; padding: 1px 8px; margin-left: 6px; }
+#phases .order { font-size: 11px; padding: 1px 8px; }
 #phases .count { font-weight: 700; color: var(--text); }
 #phases .phase.empty .count { font-weight: 400; color: var(--muted); }
 #phases .sep { opacity: .4; }

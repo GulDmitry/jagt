@@ -117,9 +117,9 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 
 | situation | what it means |
 |---|---|
-| "Where is my task?" | Where it was: cards are a grid ordered by alias, never reordered by a status change |
-| "It jumped anyway" | Your own action — a task created or closed; an alias is the lowest free number |
-| Finding one task among many | Type in the filter box (`/`): alias, ticket number or title, `Esc` clears, and there is no sort control |
+| "Where is my task?" | Where it was: cards sit in registration order, never reordered by a status change |
+| "It jumped anyway" | Only `order: alias` moves one: an alias is the lowest free number, so a new task takes a retired one's place |
+| Finding one task among many | The filter box (`/`): alias, ticket number or title, `Esc` clears. The one sort is `order:` |
 | "This card said 17h, I restarted the agent, now it says 0m" | The clock beside the status is time in **that** status, and a fresh session re-reports itself |
 | "How long has this request been hanging?" | The `MR 8h` chip — the request's own creation time, surviving rounds, respawns and restarts |
 | "Has anyone approved?" | The chip itself: green with a **✓** once approved, plain while it waits, and nothing else says it |

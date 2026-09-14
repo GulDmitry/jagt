@@ -163,7 +163,7 @@ question without owning a node, `ui/` owns the nodes it renders, `app.js` only w
 | `core/dom` | how an element is built — never markup: ids come from a hand-edited state file |
 | `ui/render` | one repaint from the snapshot, and the one delegated click on the grid |
 | `ui/card`, `ui/header` | what a task looks like, and the line above the grid — pure, no listeners |
-| `ui/filters`, `ui/projects` | the controls that narrow, and the project picker |
+| `ui/filters`, `ui/order`, `ui/projects` | what narrows, what re-orders, and the project picker |
 | `ui/act`, `ui/inflight`, `ui/confirm` | running one action: what is in flight, what it asks first |
 | `ui/submit`, `ui/launch`, `ui/resume` | one submit pipeline, and the two forms that use it |
 | `ui/palette`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |

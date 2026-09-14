@@ -6,9 +6,9 @@ jagt has one surface: the **board** at `http://localhost:8290`.
 
 ## The board
 
-Every task is one card, ordered by alias. **A card never moves because its status changed** — only when a task
-is created or closed. One line of counts above the grid holds the pipeline
-(build → review → check → ready → deploy → done).
+Every task is one card, in the order the tasks were registered: a new one lands at the END, and **no card
+moves because its status changed**. One line of counts above the grid holds the pipeline
+(build → review → check → ready → deploy → done), and `order: added` beside them switches to alias order.
 
 A card shows whose move it is, the status and how long it has been in it, what jagt has spent, links to the
 ticket and the review request, and a line to click when the agent has left **drafted review replies**. It
@@ -16,8 +16,9 @@ carries exactly the actions legal right now, the obvious one highlighted, in two
 along (ship … done), then what only looks at it (focus, ide, diff, restart agent). `deploy` and `done` ask for
 confirmation — one writes to a shared branch, the other deletes a worktree.
 
-**Filtering, not sorting.** Type in the filter box (`/` focuses it, `Esc` clears) to match an alias, ticket
-number or title, and tick *needs my action* for what is yours. The page never polls; the backend pushes
+**Filtering, and one order.** Type in the filter box (`/` focuses it, `Esc` clears) to match an alias, ticket
+number or title, and tick *needs my action* for what is yours. A title longer than 150 characters is cut
+with `…`, the whole one in its hover. The page never polls; the backend pushes
 changes.
 
 **Focus** selects the agent's tmux window in kitty and raises it; **Shift+←/→** switches between them there.

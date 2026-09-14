@@ -1,4 +1,4 @@
-// What NARROWS the board: a position a human has learnt is worth more than any order a click could produce.
+// What NARROWS the board. What ORDERS it is `order.js`, and nothing here decides where a card sits.
 
 export const box = document.getElementById('filter');
 const onlyMine = document.getElementById('mine');
