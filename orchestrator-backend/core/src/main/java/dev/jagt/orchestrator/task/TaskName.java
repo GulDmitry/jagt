@@ -25,7 +25,14 @@ public final class TaskName {
     /** Long enough to read the task off a branch listing, short enough to leave the suffixes room. */
     private static final int WRITTEN_MAX = 40;
 
+    /** A bare issue key like {@code ABC-123}, as opposed to a url — never parsed OUT of one. */
+    private static final Pattern TICKET_KEY = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
+
     private TaskName() {
+    }
+
+    public static boolean isTicketKey(String name) {
+        return name != null && TICKET_KEY.matcher(name).matches();
     }
 
     private static boolean isValid(String name) {

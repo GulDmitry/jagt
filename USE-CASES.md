@@ -145,15 +145,15 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 
 | situation | run | what happens |
 |---|---|---|
-| Take over an existing request | `resume <url>` | Its source branch becomes the task, its target the base; status CI_POLLING |
-| The request does not target the base branch | `resume <url>` | Nothing special: its own target is stored, so the next `ship` updates that request |
-| The request targets a branch that has since been deleted | `resume <url>` | Works; only the next `ship` needs a target that still exists |
+| Take over an existing request | `resume <url>` | Its source branch becomes the task, its target the base; CI_POLLING |
+| The request does not target the base branch | `resume <url>` | Its own target is stored, so the next `ship` updates that request |
+| The request targets a branch that has since been deleted | `resume <url>` | Works; only the next `ship` needs a target that exists |
 | Its source branch already belongs to a task | — | Refused: a task **is** its branch, so two cannot share one |
 | Its source branch is someone else's convention (`feature/x`) | `resume <url>` | Taken over as-is; the worktree directory is the flattened `feature-x-<project>` |
-| The URL is a review request | `resume <url>` | Branches and title read by a model through your own MCP (paid) |
+| The URL is a review request | `resume <url>` | Branches and title read by a model through your own MCP (paid); a ticket-key title comes from the tracker |
 | The request lives on a host jagt was never pointed at | `resume <url>` | The headless assistant follows the URL (paid) |
-| No working MCP server for that host | `resume <url>` | Refused as **unread**, never as missing: ERROR names what stopped it, plus which MCP servers are down (`claude mcp list`) |
-| That probe cannot run either (no CLI, declared servers) | `resume <url>` | Says so; "nothing is down" is printed only where the servers were actually asked |
+| No working MCP server for that host | `resume <url>` | Refused as **unread**, never as missing: ERROR names what stopped it and which MCP servers are down (`claude mcp list`) |
+| That probe cannot run either (no CLI, declared servers) | `resume <url>` | Says so; "nothing is down" prints only where the servers were asked |
 | The host itself answers that there is no such request | `resume <url>` | Refused in those words — the one case "does not exist" belongs to |
 | The configured host claims the URL and the read fails | — | Refused, **not** retried through a paid read |
 | Unreadable altogether | — | Refused; a guessed branch name would point the task at a branch the request does not track |

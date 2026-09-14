@@ -14,16 +14,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 /**
  * The one place a task is started. It owns the decisions launching needs and nothing about how the request arrived.
  */
 @Service
 public class TaskLauncher {
-
-    /** A bare issue key like {@code ABC-123}, as opposed to a url — never parsed OUT of one. */
-    private static final Pattern KEY_REF = Pattern.compile("[A-Za-z][A-Za-z0-9]*-[0-9]+");
 
     /** A ticket titles a card in a line; a task somebody typed gets the same room and no more. */
     private static final int TITLE_MAX = 80;
@@ -58,7 +54,7 @@ public class TaskLauncher {
         String ref = request.ref();
         String project = request.project();
         String strategy = request.strategy();
-        boolean bareKey = KEY_REF.matcher(ref).matches();
+        boolean bareKey = TaskName.isTicketKey(ref);
 
         // Warn before spending a ticket read on a task that would only collide later.
         if (bareKey && BranchStrategy.of(strategy) == BranchStrategy.FRESH) {

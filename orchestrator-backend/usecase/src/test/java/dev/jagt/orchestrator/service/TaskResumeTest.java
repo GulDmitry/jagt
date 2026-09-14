@@ -3,16 +3,14 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
-import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,18 +22,16 @@ import static org.mockito.Mockito.when;
 
 class TaskResumeTest {
 
-    private final GitService git = mock(GitService.class);
     private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
-    private final ConfigService configService = mock(ConfigService.class);
+    private final RequestProject projects = mock(RequestProject.class);
     private final ReviewReader reviewReader = mock(ReviewReader.class);
+    private final TicketReader tickets = mock(TicketReader.class);
     private final TaskResume resume = new TaskResume(provisioning, mock(AgentStatusReports.class),
-            configService, git, reviewReader);
+            projects, reviewReader, tickets);
 
     @Test
     void takesTheTaskItsTitleAndItsBaseFromTheRequestBeingResumed() {
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("proj", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
-        when(git.remoteUrl(Path.of("/p"))).thenReturn("git@host:group/proj.git");
+        when(projects.of("https://host/group/proj/-/merge_requests/425")).thenReturn("proj");
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "release/2",
                         "PROJ-1 Excel export")), TokenUsage.NONE));
@@ -52,9 +48,7 @@ class TaskResumeTest {
     @Test
     void chargesTheRequestReadToTheTaskItNamed() {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 120, 0.05);
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("proj", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
-        when(git.remoteUrl(Path.of("/p"))).thenReturn("git@host:group/proj.git");
+        when(projects.of("https://host/group/proj/-/merge_requests/425")).thenReturn("proj");
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "main",
                         "PROJ-1 Excel export")), spent));
@@ -65,11 +59,73 @@ class TaskResumeTest {
     }
 
     @Test
+    void titlesTheCardFromTheTicketWhenTheRequestIsNamedAfterNothingButItsKey() {
+        when(projects.of("https://host/group/proj/-/merge_requests/450")).thenReturn("proj");
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/450"))
+                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
+                        "ABC-42")), TokenUsage.NONE));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-42",
+                "Excel export drops the last row", "ABC", List.of(), "https://tracker/ABC-42")),
+                TokenUsage.NONE));
+
+        resume.resume("https://host/group/proj/-/merge_requests/450");
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue()).extracting(NewTask::title, NewTask::ticketUrl)
+                .containsExactly("Excel export drops the last row", "https://tracker/ABC-42");
+    }
+
+    @Test
+    void leavesTheTrackerAloneWhereTheRequestTitledItself() {
+        when(projects.of("https://host/group/proj/-/merge_requests/451")).thenReturn("proj");
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/451"))
+                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
+                        "ABC-42 Excel export drops the last row")), TokenUsage.NONE));
+
+        resume.resume("https://host/group/proj/-/merge_requests/451");
+
+        verifyNoInteractions(tickets);
+    }
+
+    @Test
+    void leavesTheCardUntitledWhenTheTrackerAnswersAboutAnotherItem() {
+        when(projects.of("https://host/group/proj/-/merge_requests/453")).thenReturn("proj");
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/453"))
+                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
+                        "ABC-42")), TokenUsage.NONE));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-43",
+                "Invoice totals are wrong", "ABC", List.of(), "https://tracker/ABC-43")), TokenUsage.NONE));
+
+        resume.resume("https://host/group/proj/-/merge_requests/453");
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue()).extracting(NewTask::title, NewTask::ticketUrl)
+                .containsExactly("", null);
+    }
+
+    @Test
+    void chargesTheTicketReadThatTitledTheCardToTheTaskItTitled() {
+        TokenUsage spent = TokenUsage.ofCall(9_000, 0, 80, 0.02);
+        when(projects.of("https://host/group/proj/-/merge_requests/452")).thenReturn("proj");
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/452"))
+                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
+                        "ABC-42")), TokenUsage.NONE));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-42",
+                "Excel export drops the last row", "ABC", List.of(), "https://tracker/ABC-42")), spent));
+
+        resume.resume("https://host/group/proj/-/merge_requests/452");
+
+        verify(tickets).charge("ABC-42", spent);
+    }
+
+    @Test
     void saysTheReadFailedInsteadOfCallingTheRequestMissing() {
         when(reviewReader.readRequest("https://host/mr/1")).thenReturn(Answer.unavailable());
 
         assertThat(resume.resume("https://host/mr/1").message()).contains("read failed");
-        verifyNoInteractions(git, provisioning);
+        verifyNoInteractions(projects, provisioning);
     }
 
     @Test
@@ -82,9 +138,7 @@ class TaskResumeTest {
 
     @Test
     void takesOverABranchNamedBySomeoneElsesConvention() {
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of("proj", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
-        when(git.remoteUrl(Path.of("/p"))).thenReturn("git@host:group/proj.git");
+        when(projects.of("https://host/group/proj/-/merge_requests/426")).thenReturn("proj");
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/426"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "feature/widget-layout",
                         "main", "Widget layout is off")), TokenUsage.NONE));
@@ -109,7 +163,7 @@ class TaskResumeTest {
         String result = resume.resume("https://host/mr/426").message();
 
         assertThat(result).contains(branch).contains(reason).contains("do <ticket> from");
-        verifyNoInteractions(git, provisioning);
+        verifyNoInteractions(projects, provisioning);
     }
 
     @Test
@@ -118,7 +172,7 @@ class TaskResumeTest {
                 Optional.of(new MergeRequestFacts(true, " ", "main", "t")), TokenUsage.NONE));
 
         assertThat(resume.resume("https://host/mr/427").message()).contains("names no source branch");
-        verifyNoInteractions(git, provisioning);
+        verifyNoInteractions(projects, provisioning);
     }
 
     @Test
@@ -126,7 +180,7 @@ class TaskResumeTest {
         assertThatThrownBy(() -> resume.link("a b", "https://host/mr/1", null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("is not a branch name");
-        verifyNoInteractions(git, provisioning);
+        verifyNoInteractions(projects, provisioning);
     }
 
     @Test
@@ -134,6 +188,6 @@ class TaskResumeTest {
         assertThatThrownBy(() -> resume.link("ABC-1", null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("resume needs the request url");
-        verifyNoInteractions(git, provisioning);
+        verifyNoInteractions(projects, provisioning);
     }
 }
