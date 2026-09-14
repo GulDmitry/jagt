@@ -114,6 +114,7 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
 
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults())).mergeIntoAndPush(repo, "ABC-1", "dev");
 
@@ -121,6 +122,36 @@ class GitServiceTest {
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout()).contains("task");
         assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+    }
+
+    @Test
+    void deploysWhatWasPushedWhenTheLocalRefOfTheTaskBranchHasFallenBehindTheRemote(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:ABC-1"));
+        runner.run(repo, t, List.of("git", "branch", "ABC-1", "main"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1-metrics"));
+        Files.writeString(repo.resolve("g.txt"), "the work the request shows");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "HEAD:ABC-1"));
+
+        new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults())).mergeIntoAndPush(repo, "ABC-1", "dev");
+
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
+                .contains("the work the request shows");
     }
 
     @Test
@@ -143,6 +174,7 @@ class GitServiceTest {
         Files.createDirectories(dir.resolve("ABC-1-deploy").resolve(".idea"));
         Files.writeString(dir.resolve("ABC-1-deploy").resolve(".idea").resolve("misc.xml"), "<project/>");
 
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults())).mergeIntoAndPush(repo, "ABC-1", "dev");
 
@@ -206,6 +238,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
 
@@ -285,6 +318,7 @@ class GitServiceTest {
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
         Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -322,6 +356,7 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
         Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -364,6 +399,7 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
         Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -402,6 +438,7 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
         Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -441,6 +478,7 @@ class GitServiceTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class);
         Path deployWorktree = dir.resolve("ABC-1-deploy");
@@ -489,6 +527,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
@@ -790,6 +829,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, timeout, List.of("git", "fetch", "-q"));
@@ -849,6 +889,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitService.MergeConflictException.class)
                 .hasMessageContaining("CONFLICT")
@@ -992,12 +1033,38 @@ class GitServiceTest {
         runner.run(repo, timeout, List.of("git", "branch", "dev"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "dev"));
         runner.run(repo, timeout, List.of("git", "branch", "ABC-1", "main"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Nothing to deploy");
+                .hasMessageContaining("has no commits beyond dev");
+    }
+
+    @Test
+    void refusesDeployOfWorkNobodyCanReviewBecauseTheBranchWasNeverPushed(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "-b", "ABC-1"));
+        Files.writeString(repo.resolve("g.txt"), "work that was never shipped");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("was never pushed");
     }
 
     @Test
@@ -1068,6 +1135,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, timeout, List.of("git", "fetch", "-q"));
@@ -1096,6 +1164,7 @@ class GitServiceTest {
             runner.run(repo, T, List.of("git", "checkout", "-q", "-b", taskBranch));
             Files.writeString(repo.resolve("feature.txt"), "the feature");
             fixture.commitAll("feature");
+            runner.run(repo, T, List.of("git", "push", "-q", "origin", taskBranch));
             runner.run(repo, T, List.of("git", "checkout", "-q", "main"));
             return fixture;
         }
@@ -1261,6 +1330,7 @@ class GitServiceTest {
         GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
                 new StubAgentRuntime(StubAgentProperties.defaults()));
 
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)
                 .isNotInstanceOf(GitService.MergeConflictException.class)

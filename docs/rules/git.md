@@ -4,7 +4,7 @@
 
 ## The only writes to a shared branch
 
-- `deploy` merges the task branch into `deployBranch` (`GitService.mergeIntoAndPush`), `revert` reverts the
+- `deploy` merges `origin/<task branch>` into `deployBranch` (`GitService.mergeIntoAndPush`), `revert` reverts the
   merge commit it recorded (`revertMergeAndPush`); both Master-only, via `deployTarget`.
 - A per-task base (`do <ticket> from <branch>` → `TaskState.baseBranch`) moves what the worktree is cut from
   and what the request **targets**, never a merge destination; `deploy` stays on `deployBranch`

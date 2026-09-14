@@ -58,12 +58,13 @@ A start checks nothing on a remote and nothing over the network.
 | It spans repositories | `ship ABC-1` | One instruction naming every one of them, all reported back in one call as one round |
 | The agent runs `git push origin dev` | — | Refused before it runs: only the task's own branch may be pushed from its worktree |
 | jagt is down when the agent pushes | — | Nothing is refused |
-| A round comes back | `sweep ABC-1` | Merged as the **least finished** repository: approved only when all are, the pipeline the worst one |
-| It is ready to deploy | `deploy ABC-1` | Merged and pushed repository by repository, in the order the task holds them |
-| One repository conflicts after another landed | `deploy ABC-1` | Stops there at DEPLOY_CONFLICT naming both sides; a later `deploy` continues from the one that stalled |
-| One repository has nothing to deploy | `deploy ABC-1` | Passed over and named, not a failure; every repository idle is refused |
-| The deploy breaks off for something no worktree can fix | `deploy ABC-1` | Status untouched, but the sentence and the task message name what is already live |
-| Taking it back out | `revert ABC-1` | Reverse order, only what landed; each forgets its merge commit as it comes out |
+| A round comes back | `sweep ABC-1` | Merged as the **least finished** repository: approved only when all are |
+| It is ready to deploy | `deploy ABC-1` | Merged and pushed repository by repository, in the task's own order |
+| The branch was never pushed | `deploy ABC-1` | Refused: it merges what the request shows |
+| One repository conflicts after another landed | `deploy ABC-1` | Stops at DEPLOY_CONFLICT naming both sides; a later `deploy` resumes there |
+| One repository has nothing to deploy | `deploy ABC-1` | Passed over and named, not a failure; all idle is refused |
+| The deploy breaks off for something no worktree can fix | `deploy ABC-1` | Status untouched; the sentence and task message name what is already live |
+| Taking it back out | `revert ABC-1` | Reverse order, only what landed; each forgets its merge commit |
 | On the card | — | One `<project> MR` link per repository and no age on any — one stamp for the whole task |
 
 A deploy worktree lives at the shared `<flattened task>-deploy` path, so the directory alone decides nothing:

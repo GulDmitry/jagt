@@ -304,10 +304,18 @@ public class GitService {
                     clearEditorResidue(deployWorktree);
                 }
             }
-            // Deploy is decoupled from review state: its ONLY precondition is committed work to ship.
+            // Deploy is decoupled from review state: its ONLY precondition is work that was SHIPPED. What it
+            // merges is the remote branch, which is what the request shows — a session may push HEAD under the
+            // task's name from a local branch named otherwise, leaving that local ref moved by nobody.
+            String source = "origin/" + sourceBranch;
+            if (processRunner.run(projectPath, GIT_TIMEOUT,
+                    List.of("git", "rev-parse", "--verify", "--quiet", source)).exitCode() != 0) {
+                throw new NothingToDeployException("Nothing to deploy: branch '" + sourceBranch
+                        + "' was never pushed — ship it first.");
+            }
             String ahead = processRunner.run(projectPath, GIT_TIMEOUT,
-                            List.of("git", "rev-list", "--count", "origin/" + targetBranch + ".." + sourceBranch))
-                    .expectSuccess("git rev-list count " + sourceBranch).stdout().trim();
+                            List.of("git", "rev-list", "--count", "origin/" + targetBranch + ".." + source))
+                    .expectSuccess("git rev-list count " + source).stdout().trim();
             if ("0".equals(ahead)) {
                 throw new NothingToDeployException(sourceBranch, targetBranch);
             }
@@ -321,7 +329,7 @@ public class GitService {
             // --no-ff ALWAYS: that one merge commit is what `revert` undoes; a fast-forward leaves them loose.
             var merge = processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "merge", "--no-ff",
                     "--no-edit", "-m", "Merge branch '" + sourceBranch + "' into " + targetBranch,
-                    sourceBranch));
+                    source));
             if (merge.exitCode() != 0) {
                 String details = merge.stderr().isBlank() ? merge.stdout() : merge.stderr();
                 // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer identity

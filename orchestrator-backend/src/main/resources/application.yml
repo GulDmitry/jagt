@@ -2,7 +2,7 @@
 # repository root: copy `jagt.yml.dist`, which carries every key below with what it means, and write only what
 # you change. It overrides this file key by key and survives every build.
 server:
-  # Change this and mcp_client.js needs MCP_SERVER_URL to match.
+  # Every worktree jagt provisions follows this port; a config you wrote yourself needs MCP_SERVER_URL to match.
   port: 8290
   # Loopback: the board needs no password to deploy, close a task or start an agent. Set 0.0.0.0 only if you
   # accept that everyone who can reach the port can do all of it.
