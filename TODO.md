@@ -60,3 +60,11 @@ is the only honest test, so the hermetic suite cannot cover it.
 
 What to decide first: whether it belongs in `e2eTest`, which already has tmux, or in a suite of its own asked
 for by name.
+
+## A flag for the tasks that matter, on the card (idea)
+
+An inbox flag, top-right: the few tasks you must not lose sit in a board where every card reads equally urgent.
+
+What to decide first: `card-top` already ends in the attention badge, so a flag there has to say what it
+replaces — and no colour is free, `--danger` meaning broken and `--you` meaning your move. Likely a shape
+rather than a hue, with the marked cards ordered first instead of tinted.
