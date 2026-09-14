@@ -1,13 +1,16 @@
 # jagt — TODO
 
-## The released jar does not run outside a clone (open)
+## The jar runs only inside a clone of jagt (open)
 
 `OrchestratorPaths.findRoot` walks up for `jagt.yml.dist` or `mcp_client.js`, and `AbstractAgentRuntime`
-symlinks that bridge into each worktree from disk — both are repository files, so the jar a `v*` tag attaches
-to a release starts nowhere else. The asset is unusable and the README says `git clone` anyway.
+symlinks that bridge into each worktree from disk — both are repository files, so the jar a `v*` tag releases
+starts nowhere else.
 
-What to decide first: whether the jar carries `mcp_client.js` and `jagt.yml.dist` as resources and writes them
-out on first run, and what the root is once it does — the launch directory, with no marker to walk up to.
+The plan: ship both as classpath resources; take the launch directory as root when no marker is found rather
+than throwing; write them there on first run, and let `--orchestrator.init` write `jagt.yml.dist` beside them.
+
+What to decide first: what `root` means once nothing marks it, since worktrees are cut beside it, and whether a
+packaged resource newer than the file on disk replaces it or is refused.
 
 ## An orchestrator that reads the code host and the tracker itself (concept, someday)
 
