@@ -206,6 +206,11 @@ public class TmuxSessionHost implements SessionHost {
         String windowFormat = "#I:#W#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-format", windowFormat));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-current-format", windowFormat));
+        // tmux's default bar is black on green, where `#F`'s `*` on the active window is unreadable.
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g",
+                "status-style", "bg=colour236,fg=colour250"));
+        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g",
+                "window-status-current-style", "bg=colour160,fg=colour231,bold"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Left", "previous-window"));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
     }
