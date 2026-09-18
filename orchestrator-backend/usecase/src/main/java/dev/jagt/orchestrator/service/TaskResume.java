@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.ReviewRequestTitle;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TaskResume {
 
     private final TaskProvisioning provisioning;
@@ -73,13 +75,22 @@ public class TaskResume {
         // Refused as `do` refuses it: a card with no ticket link cannot be told from one never read.
         if (asksTheTracker && named == null) {
             String other = ticket.facts().filter(TicketFacts::usable).map(TicketFacts::key).orElse(null);
+            log.atWarn().setMessage("resume refused")
+                    .addKeyValue("task", taskId)
+                    .addKeyValue("cause", other == null ? "ticket unread" : "tracker answered " + other)
+                    .addKeyValue("effect", "no task created")
+                    .log();
             return Launched.refused(other == null
                     ? "error: ticket read failed: " + taskId + " (cause in the log) — no task created"
                     : "error: asked for " + taskId + " and got " + other + " back — no task created");
         }
         String instructions = "Reopened for review. Your branch is resumed with its existing commits and"
                 + " review request " + mrUrl + " is open — there is NOTHING to build or commit right now."
-                + " Do NOT re-implement, and"
+                + " FIRST run `git status`: a rebase onto " + targetBranch + " in progress is jagt's, and it"
+                + " conflicted — resolve the conflicts, `git rebase --continue`, then `git push"
+                + " --force-with-lease origin " + taskId + "` (this brief is the permission, for THIS branch"
+                + " only), and report `question` where a resolution was not obvious. Otherwise do NOT"
+                + " re-implement and"
                 + " do NOT call update_agent_status: the Master has already set your status (CI_POLLING). Stay"
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
         provisioning.initializeTask(NewTask.builder(taskId, project)

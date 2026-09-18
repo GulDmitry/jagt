@@ -11,8 +11,8 @@
 - `revert` refuses rather than guess: no `deployCommit`, commit absent, already reverted, conflict.
 - `detachUpstream` unsets the inherited `origin/<baseBranch>` at creation.
 - `pushBranch`: **one** branch, both-sided refspec, never `--force`, never `-u`. Nothing rewrites what has left
-  the machine (sub-agent rule 8) — `--force-with-lease`, `commit --amend`, `reset --hard` onto a pushed commit
-  refused alike.
+  the machine (sub-agent rule 8) — `commit --amend` and `reset --hard` onto a pushed commit refused alike; the
+  ONE exception is the resume rebase below.
 - Per-repository lock on every git call: several sessions share one checkout.
 - **No verdict gates `deploy`**: `Move.deployable` asks only for an open request, plus DEPLOY_CONFLICT;
   NEW, SHIPPING, IN_PROGRESS, REVERTED and DONE are not.
@@ -29,10 +29,10 @@
   waits in SHIPPING.
 - **A ship approves ONE commit**: only the next relay replaces `task_context.md` (`writeTaskContext`
   truncates, `relayIfChanged` skips an identical brief). Re-reading it is no permission.
-- **A resumed branch is put on what origin holds**: fast-forwarded when merely behind, REFUSED when it also
-  carries local commits — a branch rewritten on the host would otherwise resume stale and restage every commit
-  of its target on the first merge. One this machine never had is cut from `origin/<branch>`, never from the
-  request's target.
+- **A resumed branch is put on what origin holds, then replayed on its target** (`rebaseOntoTarget`):
+  fast-forwarded when behind, REFUSED when both sides carry commits, left alone when only this machine's do.
+  The replay is pushed back under a lease, a refused lease undoing it; a CONFLICTING rebase stands in the
+  worktree for the session. One this machine never had comes from `origin/<branch>`, not the request's target.
 - **A branch the base repository holds is freed, not refused** (`freeCheckout`): detached **in place**, never
   before the strategy switch, ignoring **untracked** files. Tracked changes, or another worktree holding it,
   stay refusals.

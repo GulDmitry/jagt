@@ -653,6 +653,96 @@ class GitServiceTest {
     }
 
     @Test
+    void replaysAResumedBranchOnTheTargetItMergesIntoAndPushesItBack(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        Files.writeString(repo.resolve("task.txt"), "the task's work");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        Files.writeString(repo.resolve("release.txt"), "shipped while the request waited");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "release"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
+
+        assertThat(dir.resolve("wt").resolve("release.txt")).exists();
+        assertThat(runner.run(dir.resolve("wt"), timeout,
+                List.of("git", "rev-list", "--count", "origin/ABC-1..ABC-1")).stdout().strip()).isEqualTo("0");
+    }
+
+    @Test
+    void resumesAPushedBranchWhoseTargetIsGoneFromOrigin(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        Files.writeString(repo.resolve("task.txt"), "the task's work");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/release-that-was-deleted",
+                BranchStrategy.RESUME);
+
+        assertThat(dir.resolve("wt").resolve("task.txt")).exists();
+    }
+
+    @Test
+    void leavesAConflictingResumeRebaseStandingForTheSessionToResolve(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        Files.writeString(repo.resolve("f.txt"), "what the task made of it");
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "work"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        Files.writeString(repo.resolve("f.txt"), "what the release made of it");
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "release"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
+
+        assertThat(runner.run(dir.resolve("wt"), timeout, List.of("git", "status", "--porcelain"))
+                .stdout()).contains("UU f.txt");
+        assertThat(runner.run(dir, timeout, List.of("git", "--git-dir", origin.toString(), "log", "-1",
+                "--format=%s", "ABC-1")).stdout().strip()).isEqualTo("work");
+    }
+
+    @Test
     void resumesFromTheRequestsOwnBranchWhenThisMachineNeverHadIt(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

@@ -77,12 +77,16 @@ public class GitService {
                     case RESUME -> {
                         Runnable restore = freeCheckout(projectPath, branch);
                         run(restore, () -> {
-                            long behind = behindOrigin(projectPath, branch);
+                            Counts counts = countsAgainstOrigin(projectPath, branch);
                             processRunner.run(projectPath, GIT_TIMEOUT,
                                             List.of("git", "worktree", "add", worktreePath.toString(), branch))
                                     .expectSuccess("git worktree add (resume) " + worktreePath);
                             detachUpstream(projectPath, branch);
-                            fastForward(worktreePath, branch, behind);
+                            fastForward(worktreePath, branch, counts.behind());
+                            // A branch holding commits origin has never seen is not jagt's to publish.
+                            if (counts.tracked() && counts.ahead() == 0) {
+                                rebaseOntoTarget(worktreePath, branch, base);
+                            }
                         });
                         return;
                     }
@@ -90,6 +94,9 @@ public class GitService {
             }
             cutFrom(projectPath, worktreePath, branch,
                     strategy == BranchStrategy.RESUME ? resumeBase(projectPath, branch, base) : base);
+            if (strategy == BranchStrategy.RESUME) {
+                rebaseOntoTarget(worktreePath, branch, base);
+            }
         });
     }
 
@@ -182,31 +189,35 @@ public class GitService {
         }
     }
 
+    /** What separates a branch from origin's copy of it: {@code tracked} is false where origin has none. */
+    private record Counts(boolean tracked, long behind, long ahead) {
+    }
+
     /**
-     * How far {@code branch} trails origin, refusing outright when it also carries commits of its own: a branch
-     * rewritten on the host is the human's to reconcile, and moving over those commits would lose them.
+     * Refuses outright where both sides carry commits: a branch rewritten on the host is the human's to reconcile,
+     * and moving over what only this machine has would lose it.
      */
-    private long behindOrigin(Path projectPath, String branch) {
+    private Counts countsAgainstOrigin(Path projectPath, String branch) {
         if (!remoteRefExists(projectPath, branch)) {
-            return 0;
+            return new Counts(false, 0, 0);
         }
-        String[] counts = processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "rev-list", "--left-right",
+        String[] counted = processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "rev-list", "--left-right",
                         "--count", "origin/" + branch + "..." + branch))
                 .expectSuccess("git rev-list --count " + branch).stdout().strip().split("\\s+");
-        long behind = Long.parseLong(counts[0]);
-        long ahead = Long.parseLong(counts[1]);
+        long behind = Long.parseLong(counted[0]);
+        long ahead = Long.parseLong(counted[1]);
         if (behind > 0 && ahead > 0) {
             throw new IllegalStateException("Branch '" + branch + "' and origin/" + branch + " have diverged ("
                     + ahead + " commit(s) only here, " + behind + " only on origin) — it was rewritten on the"
                     + " host. Reconcile it yourself, then resume.");
         }
-        return behind;
+        return new Counts(true, behind, ahead);
     }
 
     /**
      * A fetch moves no local ref, so a branch pushed to elsewhere would resume stale and its first merge of the
-     * target restage every commit the request already carries. Inside the worktree, the branch being checked out
-     * there: moving the ref from the repository is refused by git.
+     * target restage every commit the request already carries. Run inside the worktree, the branch being checked
+     * out there: moving the ref from the repository is refused by git.
      */
     private void fastForward(Path worktreePath, String branch, long behind) {
         if (behind == 0) {
@@ -218,6 +229,66 @@ public class GitService {
                 .addKeyValue("branch", branch)
                 .addKeyValue("commits", behind)
                 .log();
+    }
+
+    /**
+     * The target moves on while a request waits, so a resumed branch is replayed on top of it and pushed back under
+     * a lease — the only rewrite of a pushed branch jagt makes, and only of the task's own. A CONFLICTING rebase is
+     * left standing in the worktree: resolving it is the session's first job. A push the lease refuses undoes the
+     * rebase, so the branch never sits rewritten here and whole on origin.
+     */
+    private void rebaseOntoTarget(Path worktreePath, String branch, String target) {
+        // The request outliving its target is an ordinary case: there is then nothing to replay onto.
+        if (processRunner.run(worktreePath, GIT_TIMEOUT,
+                List.of("git", "rev-parse", "--verify", "--quiet", target)).exitCode() != 0) {
+            return;
+        }
+        String before = headOf(worktreePath);
+        var rebased = processRunner.run(worktreePath, GIT_TIMEOUT, List.of("git", "rebase", target));
+        if (rebased.exitCode() != 0) {
+            // A rebase that never started is not a conflict: one left standing is what the session resolves.
+            if (!rebaseStanding(worktreePath)) {
+                throw new IllegalStateException("Rebasing '" + branch + "' onto " + target + " failed: "
+                        + rebased.stderr().strip());
+            }
+            log.atWarn().setMessage("resume rebase conflicted")
+                    .addKeyValue("branch", branch)
+                    .addKeyValue("target", target)
+                    .addKeyValue("cause", rebased.stderr().strip())
+                    .addKeyValue("effect", "left in the worktree for the session to resolve")
+                    .log();
+            return;
+        }
+        if (before.equals(headOf(worktreePath))) {
+            return;
+        }
+        var pushed = processRunner.run(worktreePath, GIT_TIMEOUT, List.of("git", "push", "--force-with-lease",
+                "origin", "refs/heads/" + branch + ":refs/heads/" + branch));
+        if (pushed.exitCode() != 0) {
+            // The push's own words are the diagnosis, so a failed undo rides along rather than replacing them.
+            var undone = processRunner.run(worktreePath, GIT_TIMEOUT, List.of("git", "reset", "--hard", before));
+            throw new IllegalStateException("Branch '" + branch + "' was rebased onto " + target + " and the"
+                    + " push was refused: " + pushed.stderr().strip()
+                    + (undone.exitCode() == 0 ? " — the rebase was undone."
+                            : " — undoing the rebase ALSO failed: " + undone.stderr().strip()));
+        }
+        log.atInfo().setMessage("resumed branch rebased")
+                .addKeyValue("branch", branch)
+                .addKeyValue("target", target)
+                .log();
+    }
+
+    /** Whether a rebase is standing in the worktree: git keeps one under a directory of its own. */
+    private boolean rebaseStanding(Path worktreePath) {
+        return List.of("rebase-merge", "rebase-apply").stream()
+                .map(kept -> processRunner.run(worktreePath, GIT_TIMEOUT,
+                        List.of("git", "rev-parse", "--git-path", kept)).stdout().strip())
+                .anyMatch(path -> !path.isBlank() && Files.exists(worktreePath.resolve(path)));
+    }
+
+    private String headOf(Path worktreePath) {
+        return processRunner.run(worktreePath, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
+                .expectSuccess("git rev-parse HEAD in " + worktreePath).stdout().strip();
     }
 
     /** A resumed branch this machine never had comes from the REQUEST's branch; its target holds none of the work. */
