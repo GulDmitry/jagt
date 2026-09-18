@@ -27,7 +27,8 @@ public final class WorktreeFiles {
     private static final Set<String> COPY_SCAN_SKIP =
             Set.of(".git", "node_modules", "build", "target", "out", "dist", ".gradle", ".idea");
 
-    private static final List<String> GENERATED = List.of(".jagt", "task_context.md", REVIEW_REPLIES);
+    /** Written into every worktree jagt cuts, whatever the runtime: a checkout carrying none is not jagt's. */
+    public static final List<String> OWN_FILES = List.of(".jagt", "task_context.md", REVIEW_REPLIES);
 
     private WorktreeFiles() {
     }
@@ -37,7 +38,7 @@ public final class WorktreeFiles {
      * included. The copy is that worktree's, not the project's, so a commit must not carry it back.
      */
     public static List<String> generated(AgentRuntime runtime) {
-        return Stream.concat(GENERATED.stream(), runtime.generatedFiles().stream()).distinct().toList();
+        return Stream.concat(OWN_FILES.stream(), runtime.generatedFiles().stream()).distinct().toList();
     }
 
     /**

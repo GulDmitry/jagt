@@ -27,8 +27,9 @@ import java.util.TreeSet;
 import java.util.stream.Stream;
 
 /**
- * WARNS about worktree directories no task owns and deletes nothing: an orphan can hold uncommitted work AND copies
- * of gitignored secrets. Each is reported with how many of those copies it still holds.
+ * WARNS about worktree directories no task owns: an orphan can hold uncommitted work AND copies of gitignored
+ * secrets. Each is reported with how many of those copies it still holds. The one it deletes instead of reporting
+ * is jagt's own residue — a directory the IDE wrote back into after the checkout was already gone.
  */
 @Service
 @RequiredArgsConstructor
@@ -41,7 +42,7 @@ public class WorktreeOrphanScanner implements Job {
 
     @Override
     public String describe() {
-        return "warn about worktree directories no task owns, which can hold work and copied secrets";
+        return "delete jagt's own worktree residue, warn about the leftovers holding work or copied secrets";
     }
 
     @Override
@@ -54,6 +55,9 @@ public class WorktreeOrphanScanner implements Job {
     private static final Set<String> SKIP = Set.of(".git", "node_modules", "build", "target", "out", "dist",
             ".gradle", ".idea");
 
+    /** What an IDE writes into a worktree by itself, so finding it says nothing about whose the directory is. */
+    private static final Set<String> IDE_FILES = Set.of(".idea", ".run");
+
     public record Orphan(Path path, String projectKey, int secretFiles) {
     }
 
@@ -64,7 +68,7 @@ public class WorktreeOrphanScanner implements Job {
     /** One WARN per leftover directory, plus a single desktop ping for whoever never opens the log. */
     @Override
     public void run() {
-        List<Orphan> orphans = scan();
+        List<Orphan> orphans = scan().stream().filter(orphan -> !sweep(orphan)).toList();
         if (orphans.isEmpty()) {
             return;
         }
@@ -77,6 +81,76 @@ public class WorktreeOrphanScanner implements Job {
         notifications.send(Notification.housekeeping(orphans.size() + " orphaned worktree(s)",
                 secrets > 0 ? secrets + " copied secret file(s) left on disk — see the log"
                         : "left over from a crashed or abandoned task — see the log"));
+    }
+
+    /**
+     * Deletes what jagt can prove is its own residue and nobody's work: no checkout, no copied secret, and every
+     * file in it either the IDE's own or empty. The IDE rewrites its project files into a path git already
+     * emptied, and the husk that leaves outlives the worktree by itself.
+     */
+    private static boolean sweep(Orphan orphan) {
+        if (orphan.secretFiles() > 0 || Files.exists(orphan.path().resolve(".git"))
+                || !holdsOnlyIdeFiles(orphan.path())) {
+            return false;
+        }
+        try {
+            Files.walkFileTree(orphan.path(), new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(Path dir, IOException failure) throws IOException {
+                    if (failure != null) {
+                        throw failure;
+                    }
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            log.atInfo().setMessage("worktree husk deleted")
+                    .addKeyValue("path", orphan.path())
+                    .log();
+            return true;
+        } catch (IOException e) {
+            log.atWarn().setMessage("worktree husk delete failed")
+                    .addKeyValue("path", orphan.path())
+                    .addKeyValue("cause", e.toString())
+                    .addKeyValue("effect", "reported as an orphan instead")
+                    .log();
+            return false;
+        }
+    }
+
+    private static boolean holdsOnlyIdeFiles(Path directory) {
+        boolean[] onlyIdeFiles = {true};
+        try {
+            Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
+                    return IDE_FILES.contains(dir.getFileName().toString())
+                            ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    if (attrs.size() == 0) {
+                        return FileVisitResult.CONTINUE;
+                    }
+                    onlyIdeFiles[0] = false;
+                    return FileVisitResult.TERMINATE;
+                }
+            });
+        } catch (IOException e) {
+            log.atWarn().setMessage("husk scan failed")
+                    .addKeyValue("path", directory)
+                    .addKeyValue("cause", e.toString())
+                    .log();
+            return false;
+        }
+        return onlyIdeFiles[0];
     }
 
     public List<Orphan> scan() {
@@ -94,13 +168,23 @@ public class WorktreeOrphanScanner implements Job {
             for (String name : orphanNames(directoryNames(parent), projectKey, owned,
                     name -> holdsCheckout(parent.resolve(name)))) {
                 Path path = parent.resolve(name);
-                if (!path.equals(projectPath)) {
+                if (!path.equals(projectPath) && !somebodyElses(name, path)) {
                     found.putIfAbsent(path, new Orphan(path, projectKey,
                             countSecretFiles(path, secretMatchers)));
                 }
             }
         });
         return List.copyOf(found.values());
+    }
+
+    /**
+     * A checkout under a name jagt could have cut but carrying no file of jagt's: a worktree somebody made by
+     * hand, whose work is nobody's business here. Only the task's own name is ambiguous — a {@code -deploy} or
+     * {@code -revert} one nothing but jagt ever writes.
+     */
+    private static boolean somebodyElses(String name, Path path) {
+        return !name.endsWith("-deploy") && !name.endsWith("-revert") && holdsCheckout(path)
+                && WorktreeFiles.OWN_FILES.stream().noneMatch(file -> Files.exists(path.resolve(file)));
     }
 
     /** A {@code -deploy} or {@code -revert} suffix is a round nobody finished, and a leftover just the same. */

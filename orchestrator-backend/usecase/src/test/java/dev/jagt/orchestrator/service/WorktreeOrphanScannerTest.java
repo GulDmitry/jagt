@@ -90,6 +90,90 @@ class WorktreeOrphanScannerTest {
     }
 
     @Test
+    void ignoresACheckoutSomebodyCutByHandOutsideJagt(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path byHand = Files.createDirectories(root.resolve("ABC-46-demo"));
+        Files.createDirectories(repo.resolve(".git/worktrees/ABC-46-demo"));
+        Files.writeString(byHand.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-46-demo") + "\n");
+        Files.writeString(byHand.resolve(".env"), "TOKEN=secret");
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+
+        assertThat(scanner.scan()).isEmpty();
+    }
+
+    @Test
+    void reportsACheckoutJagtCutItselfAndNobodyRetired(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path cutByJagt = Files.createDirectories(root.resolve("ABC-47-demo"));
+        Files.createDirectories(repo.resolve(".git/worktrees/ABC-47-demo"));
+        Files.writeString(cutByJagt.resolve(".git"),
+                "gitdir: " + repo.resolve(".git/worktrees/ABC-47-demo") + "\n");
+        Files.writeString(cutByJagt.resolve("task_context.md"), "the task");
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+
+        assertThat(scanner.scan()).singleElement()
+                .satisfies(found -> assertThat(found.path()).isEqualTo(cutByJagt));
+    }
+
+    @Test
+    void deletesAnOrphanHoldingNothingButTheFilesTheIdeWroteBackAfterTheCheckoutWasGone(@TempDir Path root)
+            throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path husk = Files.createDirectories(root.resolve("ABC-42-demo"));
+        Files.createDirectories(husk.resolve(".idea"));
+        Files.writeString(husk.resolve(".idea").resolve("workspace.xml"), "<project/>");
+        Files.createDirectories(husk.resolve(".run"));
+        Files.writeString(husk.resolve(".run").resolve("app.run.xml"), "<component/>");
+        Files.createFile(husk.resolve("N"));
+        Notifications notifications = mock(Notifications.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
+
+        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifications).run();
+
+        assertThat(husk).doesNotExist();
+        verifyNoInteractions(notifications);
+    }
+
+    @Test
+    void keepsAnOrphanStillHoldingItsCheckout(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path orphan = Files.createDirectories(root.resolve("ABC-43-demo"));
+        Files.writeString(orphan.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-43-demo") + "\n");
+        Files.createDirectories(orphan.resolve(".idea"));
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+
+        scanner.run();
+
+        assertThat(orphan).exists();
+    }
+
+    @Test
+    void keepsAnOrphanHoldingAFileWithSomethingInIt(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path orphan = Files.createDirectories(root.resolve("ABC-44-demo"));
+        Files.writeString(orphan.resolve("Notes.md"), "half a day of work");
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+
+        scanner.run();
+
+        assertThat(orphan).exists();
+    }
+
+    @Test
+    void keepsAnOrphanHoldingACopiedSecretEvenWhenItIsEmpty(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path orphan = Files.createDirectories(root.resolve("ABC-45-demo"));
+        Files.createFile(orphan.resolve(".env"));
+        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+
+        scanner.run();
+
+        assertThat(orphan).exists();
+    }
+
+    @Test
     void recognisesBothATaskWorktreeAndAnAbandonedDeployWorktree() {
         List<String> onDisk = List.of("ABC-40-demo", "ABC-41-demo", "ABC-41-deploy", "demo-repo",
                 "something-else", "XYZ-1-other");

@@ -58,9 +58,9 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [flow.md](flow.md)'s.
   directory, tmux session, socket and temp file goes through `TaskName.slug`.
 - **The MCP transport must never emit non-JSON-RPC bytes**: malformed JSON → `-32700`, an HTTP error → a
   synthesized JSON-RPC error in `mcp_client.js`, never a Spring error page.
-- **`WorktreeOrphanScanner` only ever looks**: one WARN line per unowned worktree (uncommitted work, copied
-  secrets), **nothing deleted**. No surface offers it — the board dialog and `GET /orphans` were
-  removed and do not come back.
+- **`WorktreeOrphanScanner` deletes only its own residue**: an unowned directory with no checkout, no secret
+  copy, no bytes. Every other one only WARNs; no surface offers it — the board dialog and `GET /orphans`
+  stay gone.
 
 ### What is missing is said at startup, not at the click that needed it
 

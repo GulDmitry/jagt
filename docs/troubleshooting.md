@@ -67,7 +67,9 @@ There is one log file and it is never rolled into archives. Copy it before resta
 |---------|----------------|
 | `state.json` is corrupted | recovers from `state.json.bak`, moves the bad file to `state.json.corrupt` |
 | Both the file and its backup are unusable | **refuses to start** rather than begin with an empty task list |
-| A worktree directory nobody owns is left on disk | pings you once at startup and WARNs; it never deletes it |
+| A worktree nobody owns still holds files | pings you once at startup and WARNs; it never deletes it |
+| Only the IDE's files are left where a worktree was | deletes it at the next start, one INFO line |
+| A worktree you cut yourself sits next to the project | says nothing: it carries no file of jagt's |
 
-Removing an orphaned worktree is your call — it can hold uncommitted work and copies of your secrets
-(`worktree.copyGlobs`). The log names each directory and how many copied secret files are inside.
+Removing an orphaned worktree that still holds something is your call — it can hold uncommitted work and copies
+of your secrets (`worktree.copyGlobs`). The log names each directory and how many copied secret files are inside.
