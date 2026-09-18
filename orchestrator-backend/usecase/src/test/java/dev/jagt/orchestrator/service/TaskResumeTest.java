@@ -35,6 +35,8 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "release/2",
                         "PROJ-1 Excel export")), TokenUsage.NONE));
+        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "PROJ-1",
+                "Excel export", "PROJ", List.of(), "https://tracker/PROJ-1")), TokenUsage.NONE));
 
         resume.resume("https://host/group/proj/-/merge_requests/425");
 
@@ -52,6 +54,8 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "main",
                         "PROJ-1 Excel export")), spent));
+        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "PROJ-1",
+                "Excel export", "PROJ", List.of(), "https://tracker/PROJ-1")), TokenUsage.NONE));
 
         resume.resume("https://host/group/proj/-/merge_requests/425");
 
@@ -77,19 +81,50 @@ class TaskResumeTest {
     }
 
     @Test
-    void leavesTheTrackerAloneWhereTheRequestTitledItself() {
+    void linksTheCardToTheTicketWhereTheRequestTitledItself() {
         when(projects.of("https://host/group/proj/-/merge_requests/451")).thenReturn("proj");
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/451"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
                         "ABC-42 Excel export drops the last row")), TokenUsage.NONE));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-42",
+                "Excel export is broken", "ABC", List.of(), "https://tracker/ABC-42")), TokenUsage.NONE));
 
         resume.resume("https://host/group/proj/-/merge_requests/451");
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue()).extracting(NewTask::title, NewTask::ticketUrl)
+                .containsExactly("Excel export drops the last row", "https://tracker/ABC-42");
+    }
+
+    @Test
+    void asksNoTrackerForASourceBranchThatIsNoTicketKey() {
+        when(projects.of("https://host/group/proj/-/merge_requests/455")).thenReturn("proj");
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/455"))
+                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "feature/widget-layout",
+                        "main", "Widget layout is off")), TokenUsage.NONE));
+
+        resume.resume("https://host/group/proj/-/merge_requests/455");
 
         verifyNoInteractions(tickets);
     }
 
     @Test
-    void leavesTheCardUntitledWhenTheTrackerAnswersAboutAnotherItem() {
+    void refusesARequestWhoseTicketTheTrackerNeverAnswersAbout() {
+        when(projects.of("https://host/group/proj/-/merge_requests/456")).thenReturn("proj");
+        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/456"))
+                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
+                        "ABC-42 Excel export drops the last row")), TokenUsage.NONE));
+        when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
+
+        String result = resume.resume("https://host/group/proj/-/merge_requests/456").message();
+
+        assertThat(result).contains("ticket read failed").contains("ABC-42");
+        verifyNoInteractions(provisioning);
+    }
+
+    @Test
+    void refusesToOpenACardWhenTheTrackerAnswersAboutAnotherItem() {
         when(projects.of("https://host/group/proj/-/merge_requests/453")).thenReturn("proj");
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/453"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
@@ -97,12 +132,10 @@ class TaskResumeTest {
         when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-43",
                 "Invoice totals are wrong", "ABC", List.of(), "https://tracker/ABC-43")), TokenUsage.NONE));
 
-        resume.resume("https://host/group/proj/-/merge_requests/453");
+        String result = resume.resume("https://host/group/proj/-/merge_requests/453").message();
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue()).extracting(NewTask::title, NewTask::ticketUrl)
-                .containsExactly("", null);
+        assertThat(result).isEqualTo("error: asked for ABC-42 and got ABC-43 back — no task created");
+        verifyNoInteractions(provisioning);
     }
 
     @Test

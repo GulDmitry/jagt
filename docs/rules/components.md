@@ -45,7 +45,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [flow.md](flow.md)'s.
 - **Master** is the backend process itself: a verb runs in-process, no LLM, no MCP round-trip.
 - **Sub-agents** are agent-CLI sessions in worktrees named `<taskId>-<projectKey>`, siblings of the base repo,
   briefed by `AGENTS.md` (`AgentRuntime.SYSTEM_KNOWLEDGE_FILE`) and by `task_context.md`.
-- **A task is created with its item's own facts or not at all.** `TaskLauncher` reads the reference on every
+- **A task is created with its item's own facts or not at all.** `TaskLauncher` and `TaskResume` read it on every
   launch; `TicketFacts.usable()` gates on a key, a title **and** a link. A failing answer is asked again
   (`TicketReader`: 5 attempts, 2s apart, under two minutes), a bare key answered for a **different** key is
   refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE

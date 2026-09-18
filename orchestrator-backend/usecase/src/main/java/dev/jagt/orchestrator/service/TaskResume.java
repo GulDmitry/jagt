@@ -47,12 +47,14 @@ public class TaskResume {
             return Launched.refused("error: branch '" + taskId + "' cannot be a task name (" + unusable
                     + "). Try `do <ticket> from " + taskId + "`.");
         }
-        String result = link(taskId, reviewRequestUrl, request.get().title(), request.get().targetBranch());
-        reviewReader.charge(taskId, read.usage());       // the task exists only now
-        return Launched.created(taskId, result);
+        Launched linked = link(taskId, reviewRequestUrl, request.get().title(), request.get().targetBranch());
+        if (linked.created()) {
+            reviewReader.charge(taskId, read.usage());   // the task exists only now
+        }
+        return linked;
     }
 
-    String link(String taskId, String mrUrl, String title, String targetBranch) {
+    Launched link(String taskId, String mrUrl, String title, String targetBranch) {
         if (mrUrl == null || !mrUrl.contains("http")) {
             throw new IllegalArgumentException("resume needs the request url: resume <ticket> <request-url>");
         }
@@ -61,12 +63,20 @@ public class TaskResume {
         String project = projects.of(mrUrl);
         // Stored bare: the pattern already prefixed the ticket, and a later ship expands it again.
         String bare = ReviewRequestTitle.stripTicketPrefix(title, taskId);
-        // A request titled with nothing but its ticket key leaves the card blank; the tracker holds the words.
-        boolean asksTheTracker = (bare == null || bare.isBlank()) && TaskName.isTicketKey(taskId);
+        boolean untitled = bare == null || bare.isBlank();
+        // No request carries the ticket's LINK, so a ticket-keyed branch is read like `do` reads one.
+        boolean asksTheTracker = TaskName.isTicketKey(taskId);
         Answer<TicketFacts> ticket = asksTheTracker ? tickets.read(taskId) : Answer.unavailable();
         // An answer about another item titles another card: the branch already fixed which one this is.
         TicketFacts named = ticket.facts().filter(TicketFacts::usable)
                 .filter(item -> taskId.equalsIgnoreCase(item.key())).orElse(null);
+        // Refused as `do` refuses it: a card with no ticket link cannot be told from one never read.
+        if (asksTheTracker && named == null) {
+            String other = ticket.facts().filter(TicketFacts::usable).map(TicketFacts::key).orElse(null);
+            return Launched.refused(other == null
+                    ? "error: ticket read failed: " + taskId + " (cause in the log) — no task created"
+                    : "error: asked for " + taskId + " and got " + other + " back — no task created");
+        }
         String instructions = "Reopened for review. Your branch is resumed with its existing commits and"
                 + " review request " + mrUrl + " is open — there is NOTHING to build or commit right now."
                 + " Do NOT re-implement, and"
@@ -74,7 +84,8 @@ public class TaskResume {
                 + " idle; only when the Master relays review comments via task_context.md do you address them.";
         provisioning.initializeTask(NewTask.builder(taskId, project)
                 .instructions(instructions).branchStrategy("resume")
-                .title(named == null ? bare : named.title())
+                // The request's own words where it has any: they are what the reviewer was shown.
+                .title(untitled && named != null ? named.title() : bare)
                 .ticketUrl(named == null ? null : named.url())
                 // The open request's OWN target, the host matching source AND target.
                 .baseBranch(targetBranch)
@@ -84,7 +95,7 @@ public class TaskResume {
             tickets.charge(taskId, ticket.usage());
         }
         statusReports.report(TaskStatus.CI_POLLING, "review request: " + mrUrl, taskId);
-        return "Resumed " + taskId + " on its existing branch, linked " + mrUrl
-                + "; CI_POLLING — `sweep` or `deploy`.";
+        return Launched.created(taskId, "Resumed " + taskId + " on its existing branch, linked " + mrUrl
+                + "; CI_POLLING — `sweep` or `deploy`.");
     }
 }

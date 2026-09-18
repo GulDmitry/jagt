@@ -151,7 +151,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | The request targets a branch that has since been deleted | `resume <url>` | Works; only the next `ship` needs a target that exists |
 | Its source branch already belongs to a task | — | Refused: a task **is** its branch, so two cannot share one |
 | Its source branch is someone else's convention (`feature/x`) | `resume <url>` | Taken over as-is; the worktree directory is the flattened `feature-x-<project>` |
-| The URL is a review request | `resume <url>` | Branches and title read by a model through your own MCP (paid); a ticket-key title comes from the tracker |
+| The URL is a review request | `resume <url>` | Branches and title read by a model through your own MCP (paid); a ticket-key branch is read from the tracker |
 | The request lives on a host jagt was never pointed at | `resume <url>` | The headless assistant follows the URL (paid) |
 | No working MCP server for that host | `resume <url>` | Refused as **unread**, never as missing: ERROR names what stopped it and which MCP servers are down (`claude mcp list`) |
 | That probe cannot run either (no CLI, declared servers) | `resume <url>` | Says so; "nothing is down" prints only where the servers were asked |

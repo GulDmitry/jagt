@@ -29,6 +29,10 @@
   waits in SHIPPING.
 - **A ship approves ONE commit**: only the next relay replaces `task_context.md` (`writeTaskContext`
   truncates, `relayIfChanged` skips an identical brief). Re-reading it is no permission.
+- **A resumed branch is put on what origin holds**: fast-forwarded when merely behind, REFUSED when it also
+  carries local commits — a branch rewritten on the host would otherwise resume stale and restage every commit
+  of its target on the first merge. One this machine never had is cut from `origin/<branch>`, never from the
+  request's target.
 - **A branch the base repository holds is freed, not refused** (`freeCheckout`): detached **in place**, never
   before the strategy switch, ignoring **untracked** files. Tracked changes, or another worktree holding it,
   stay refusals.

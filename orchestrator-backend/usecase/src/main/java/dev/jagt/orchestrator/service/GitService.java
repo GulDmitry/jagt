@@ -77,16 +77,19 @@ public class GitService {
                     case RESUME -> {
                         Runnable restore = freeCheckout(projectPath, branch);
                         run(restore, () -> {
+                            long behind = behindOrigin(projectPath, branch);
                             processRunner.run(projectPath, GIT_TIMEOUT,
                                             List.of("git", "worktree", "add", worktreePath.toString(), branch))
                                     .expectSuccess("git worktree add (resume) " + worktreePath);
                             detachUpstream(projectPath, branch);
+                            fastForward(worktreePath, branch, behind);
                         });
                         return;
                     }
                 }
             }
-            cutFrom(projectPath, worktreePath, branch, base);
+            cutFrom(projectPath, worktreePath, branch,
+                    strategy == BranchStrategy.RESUME ? resumeBase(projectPath, branch, base) : base);
         });
     }
 
@@ -177,6 +180,56 @@ public class GitService {
             }
             throw e;
         }
+    }
+
+    /**
+     * How far {@code branch} trails origin, refusing outright when it also carries commits of its own: a branch
+     * rewritten on the host is the human's to reconcile, and moving over those commits would lose them.
+     */
+    private long behindOrigin(Path projectPath, String branch) {
+        if (!remoteRefExists(projectPath, branch)) {
+            return 0;
+        }
+        String[] counts = processRunner.run(projectPath, GIT_TIMEOUT, List.of("git", "rev-list", "--left-right",
+                        "--count", "origin/" + branch + "..." + branch))
+                .expectSuccess("git rev-list --count " + branch).stdout().strip().split("\\s+");
+        long behind = Long.parseLong(counts[0]);
+        long ahead = Long.parseLong(counts[1]);
+        if (behind > 0 && ahead > 0) {
+            throw new IllegalStateException("Branch '" + branch + "' and origin/" + branch + " have diverged ("
+                    + ahead + " commit(s) only here, " + behind + " only on origin) — it was rewritten on the"
+                    + " host. Reconcile it yourself, then resume.");
+        }
+        return behind;
+    }
+
+    /**
+     * A fetch moves no local ref, so a branch pushed to elsewhere would resume stale and its first merge of the
+     * target restage every commit the request already carries. Inside the worktree, the branch being checked out
+     * there: moving the ref from the repository is refused by git.
+     */
+    private void fastForward(Path worktreePath, String branch, long behind) {
+        if (behind == 0) {
+            return;
+        }
+        processRunner.run(worktreePath, GIT_TIMEOUT, List.of("git", "merge", "--ff-only", "origin/" + branch))
+                .expectSuccess("git merge --ff-only origin/" + branch);
+        log.atInfo().setMessage("resumed branch fast-forwarded")
+                .addKeyValue("branch", branch)
+                .addKeyValue("commits", behind)
+                .log();
+    }
+
+    /** A resumed branch this machine never had comes from the REQUEST's branch; its target holds none of the work. */
+    private String resumeBase(Path projectPath, String branch, String base) {
+        return remoteRefExists(projectPath, branch) ? "origin/" + branch : base;
+    }
+
+    /** The just-fetched remote-tracking ref, asked of refs rather than over the network. */
+    private boolean remoteRefExists(Path projectPath, String branch) {
+        return processRunner.run(projectPath, GIT_TIMEOUT,
+                List.of("git", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/" + branch))
+                .exitCode() == 0;
     }
 
     private void cutFrom(Path projectPath, Path worktreePath, String branch, String base) {
