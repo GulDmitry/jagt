@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.EditorDriver;
@@ -280,6 +281,9 @@ class ReviewAndDeployFlowTest {
         when(assistant.readMergeRequest(request())).thenReturn(
                 new Answer<>(Optional.of(new MergeRequestFacts(true, TASK, "main", TASK + " " + TITLE)),
                         TokenUsage.NONE));
+        when(assistant.readTicket(TASK)).thenReturn(
+                new Answer<>(Optional.of(new TicketFacts(true, TASK, TITLE, "ABC", List.of(),
+                        "https://tracker.example.com/" + TASK)), TokenUsage.NONE));
 
         String resumed = post("/api/tasks/resume",
                 "{\"reviewRequestUrl\": \"" + request() + "\"}", Map.of());
