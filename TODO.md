@@ -69,10 +69,15 @@ and no colour is free, `--danger` meaning broken and `--you` your move. Likely a
 
 The human is the first and only reader of the plan and the diff. A second session reads them first, briefed as
 the reviewer — the business case, the tester, the architecture, the code. Reading is the cheap half, so it can
-run the heavier model. The end of it is that it stands where the human stands now.
+run the heavier model.
 
-What to decide first: the task's own session under another brief or a second one jagt owns, and what its finding
-IS — a file like `review_replies.md`, a round, or a refusal ([the loop only reads and drafts](docs/rules/review.md)).
+Every point needing a human is already one list: `Move.ownerOf` → `Owner.YOU`. That verdict plus a setting per
+point is what takes one off it — advise, or issue the verb the human would have pressed. The judging points go
+first; the authorising ones (`ship`, `deploy`, `revert`, posting a reply) are the invariant.
+
+What to decide first: that invariant — [jagt acts on nothing by itself](AGENTS.md) and [a trigger is
+deterministic](docs/rules/review.md), both false the moment a verdict issues a verb, on a board that binds
+loopback without auth.
 
 ## Taking work off the tracker unasked (idea, blocked)
 
