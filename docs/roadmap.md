@@ -40,8 +40,7 @@ missing is not a kind of session. It is a way to wake one, and a brief saying wh
 
 **One session, not one per task.** It reads what a worker was given and what it handed back — the plan, the
 diff, the drafted replies, the checks — and picks the move: relay, sweep, ship, or leave it for you. Reading is
-the cheap half of the work, so it runs the heavier model. Reading two thousand lines of diff is not something it
-has to do in its own context: it can put that in a one-shot and keep only the verdict.
+the cheap half of the work, so it runs the heavier model.
 
 **Deterministic where it counts.** The trigger stays a cadence, a status or an open request
 ([`review.md`](rules/review.md)) — only the judgement is the model's. And it cannot invent a move: the legal set
@@ -54,14 +53,16 @@ remembered: a brief in the install beside `jagt.yml`, and a fresh read of the ar
 replaces you is that brief; the session is a process that reads it, and step 4 is what you grade it against.
 
 - Buys: the first reader of every diff stops being you, and a verdict that can be compared with yours.
-- Must not break: which verbs it may issue is the setting at the top of this file — judging first, `ship`,
-  `deploy`, `revert` and posting last.
-- Open, and all four are real:
-  - **it is nobody's task**, so nothing watches it: `WatchdogService` watches task sessions, and a Master that
-    died overnight is silent
-  - **it reads every worktree** — the one session with no worktree of its own and no `pre-push` gate around it
-  - **its spend belongs to no task**, and `UsageTracker` books against tasks
-  - **it serialises**, one turn at a time, and which task it takes first is its own to decide
+- **jagt owns it**: a `Job` with no interval starts it at boot, one with an interval probes it the way
+  `WatchdogService` probes a task — the session's own log, never a question put to it.
+- **It reads every worktree, by design** — that is what reviewing is. The gate is not which worktree it may
+  open, but that it writes to none.
+- **Its spend is a line of its own**, booked against no task.
+- **Three settings, not two**: off; on and judging; on and issuing verbs. The last one is the invariant at the
+  top of this file. Off is the default, and no suite spawns one.
+
+Still open: whether the board carries it as a task or as a line of its own ([what a mark costs](rules/surfaces.md)),
+and whether it replaces `AutoReviewScheduler` or is woken by it.
 
 ## 3. The plan as an artifact with a gate
 
