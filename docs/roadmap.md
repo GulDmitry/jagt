@@ -1,0 +1,92 @@
+# Roadmap
+
+Where jagt grows, in what order, and what each step must not break. Loose ends nobody has scheduled stay in
+[`TODO.md`](../TODO.md); this file is the sequence and the reason.
+
+## What growing means here
+
+jagt is the loop from an accepted plan to a deploy. Every point in it that needs a human is already one list:
+`Move.ownerOf` → `Owner.YOU`. Growing means taking points off that list, the cheapest reading first.
+
+Two sorts of point, and the difference is the whole safety story:
+
+- **Judging** — is this plan right, is this diff good, is this reply right. A model may hold one of these today:
+  the outcome is still a human pressing the verb.
+- **Authorising** — `ship`, `deploy`, `revert`, posting a reply. [jagt acts on nothing by
+  itself](../AGENTS.md#the-human-in-the-loop), and [a trigger is deterministic](rules/review.md). A setting that
+  lets a verdict issue one of these makes both sentences false, on a board that binds loopback without auth.
+
+Judging points go first. The record from step 4 is what earns the right to touch an authorising one.
+
+## 1. A verdict before a round reaches a human
+
+The brief tells the agent to report REVIEW_PENDING when the work is "done and verified", and jagt takes that on
+its word — while it does **not** take `no_changes` on its word (one `git status` per report, `WorktreeChanges`).
+The same distrust, applied to the build: a command per project in `jagt.yml`, run by jagt, on the report that
+would end at REVIEW_PENDING. A red one is relayed the way a red pipeline already is (`ReviewFacts.pipelineFailure`
+→ `<checks>`) and the round never reaches the human.
+
+- Buys: nobody opens an IDE on a red tree. This is the step that raises how many tasks one person can carry.
+- Costs a status: a suite of minutes cannot run inside a report, so it is a `Job`, and "being verified" is a
+  state the board has to say.
+- Must not break: the checks dot has one source today. A local verdict is a second source for the **same** dot,
+  never a second dot ([`design.md`](rules/design.md)), and it is the open half of the stale-verdict TODO.
+
+## 2. The reviewer session
+
+A second session reads the plan and the diff before the human does, briefed as the reviewer — the business case,
+the tester, the architecture, the code — rather than as whoever wrote them. Reading is the cheap half of the
+work, so it can run a heavier model than the task does.
+
+**It is a session per task, not a daemon.** Nothing starts with the orchestrator and nothing hangs: it is
+launched in the task's worktree the first time a round needs reading, and `done` kills it with everything else.
+That reuses what exists — `AgentRuntime`, a tmux window, `AgentRuntime.launchCommand(worktree, planMode)` for the
+read-only lever, the session log for liveness, MCP to report its verdict, `UsageTracker` so its spend lands on
+the same card.
+
+**Its memory is not the session.** A session's context is compacted away, so the thing that must survive cannot
+live there. Three layers, and only the middle one is disposable:
+
+| what | where it lives | how long |
+|------|----------------|----------|
+| who the reviewer is — what you care about, in your words | a brief file in the install, beside `jagt.yml` | forever; you edit it |
+| what it knows about this task and said last round | its own session, in the task's worktree | the task |
+| where its verdict and yours disagreed | the record step 4 keeps | forever; the input to editing the brief |
+
+So the thing that replaces you is the **brief**, not the session. The session is a process that reads it.
+
+- Buys: the first reader of every diff stops being you, and a verdict that can be compared with yours.
+- Must not break: it reads and writes a file, it issues no verb. A verdict that issues one is step 5's decision,
+  not this one's.
+
+## 3. The plan as an artifact with a gate
+
+`plan first` is `--permission-mode plan` and the plan lives in terminal scrollback: nothing reads it, nothing
+versions it, nothing waits on it. Written to the worktree it becomes the cheapest artifact a human reviews — a
+plan is minutes, a diff is not — and the first thing the reviewer of step 2 has to read.
+
+- Buys: the human's attention moves to the artifact where changing your mind is still free.
+- Costs a status between NEW and IN_PROGRESS whose move is yours, a row in `FlowRules`, a `Phase`, a legend row.
+- Must not break: approving a plan is a relay, not a new verb, unless it turns out to be more than one
+  ([`surfaces.md`](rules/surfaces.md)).
+
+## 4. One record per finished task
+
+`done` deletes the briefing, the standing instruction and the drafted replies, and with no ticket behind it the
+words that started the task go too. `stats` therefore describes open work and can never be asked for throughput.
+One record per finished task, held whether or not anything reads it yet: status stamps, rounds, verdicts, spend,
+and where the reviewer of step 2 disagreed with you.
+
+- Buys: the numbers that decide whether step 5 is safe — and every later thing built on finished work.
+- Open: [where it lives](../TODO.md), given that the base branch is read-only.
+
+## 5. Work that arrives unasked, and verdicts that act
+
+The two ends of the loop the playbook closes, both blocked on something outside this repository.
+
+- **Off the tracker**: a ticket carries no project to route on and no label saying it is ready, and one written
+  without the prompts a session works from produces work nobody asked for. Tickets written per project and per
+  working prompt come first.
+- **Off production**: a signal becomes a task. jagt holds no credential and reaches outside itself only through
+  the one-shot assistant, so what jagt may promise before it holds a token is the decision, not the plumbing.
+- **A verdict issuing a verb**: the invariant at the top of this file, and the reason step 4 comes before it.

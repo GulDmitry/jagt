@@ -17,6 +17,7 @@ through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-
 | [`USE-CASES.md`](USE-CASES.md) | one line per situation, already decided |
 | [`README.md`](README.md) + `docs/` | what a human installing jagt needs |
 | [`TODO.md`](TODO.md) | only what is still open. Holding nothing is its normal state |
+| [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what each step must not break |
 
 A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/`, the road to it in git history.
 
