@@ -20,9 +20,9 @@ Judging points go first. The record from step 4 is what earns the right to touch
 
 ## 1. A verdict before a round reaches a human
 
-The brief tells the agent to report REVIEW_PENDING when the work is "done and verified", and jagt takes that on
-its word — while it does **not** take `no_changes` on its word (one `git status` per report, `WorktreeChanges`).
-The same distrust, applied to the build: a command per project in `jagt.yml`, run by jagt, on the report that
+The agent reports REVIEW_PENDING when the work is "done and verified" and jagt takes that on its word — while
+it does **not** take `no_changes` on its word (`WorktreeChanges`, one `git status` per report). The same
+distrust, applied to the build: a command per project in `jagt.yml`, run by jagt, on the report that
 would end at REVIEW_PENDING. A red one is relayed the way a red pipeline already is (`ReviewFacts.pipelineFailure`
 → `<checks>`) and the round never reaches the human.
 
@@ -34,7 +34,7 @@ would end at REVIEW_PENDING. A red one is relayed the way a red pipeline already
 
 ## 2. The quality gate: a Master session running unattended
 
-jagt already has this role and already names it: a session at the root carries no worktree header, so [every one
+jagt already names this role: a session at the root carries no worktree header, so [every one
 is Master](../AGENTS.md) — it sees every task over the same MCP, issues every verb, and writes no code. What is
 missing is not a kind of session. It is a way to wake one, and a brief saying what it judges.
 
@@ -50,9 +50,9 @@ not the prompt.**
 **Its memory is a file, not its context.** A session that lives for days gets compacted, and what goes first is
 what was said earliest — exactly the standards it was started with. So the standards are re-read rather than
 remembered: a brief in the install beside `jagt.yml`, and a fresh read of the artifacts per judgement. What
-replaces you is that brief; the session is a process that reads it, and step 4 is what you grade it against.
+replaces you is that brief; the session is a process that reads it.
 
-- Buys: the first reader of every diff stops being you, and a verdict that can be compared with yours.
+- Buys: the first reader of every diff stops being you.
 - **jagt owns it**: a `Job` with no interval starts it at boot, one with an interval probes it the way
   `WatchdogService` probes a task — the session's own log, never a question put to it.
 - **It reads every worktree, by design** — that is what reviewing is. The gate is not which worktree it may
@@ -61,8 +61,11 @@ replaces you is that brief; the session is a process that reads it, and step 4 i
 - **Three settings, not two**: off; on and judging; on and issuing verbs. The last one is the invariant at the
   top of this file. Off is the default, and no suite spawns one.
 
-Still open: whether the board carries it as a task or as a line of its own ([what a mark costs](rules/surfaces.md)),
-and whether it replaces `AutoReviewScheduler` or is woken by it.
+- **It does not replace `AutoReviewScheduler`**, it sits on top of one: whatever a light model can do stays with
+  the light model, and reading a request and relaying its threads is that. The Master judges what comes back.
+- **It stays off the grid** — the board is tasks in work. It is a report (a `GlobalCommand` with `report()`
+  true), which the board picks up on its own, and one word in the header the way the jobs chip already works.
+  A pseudo-card is what that replaces.
 
 ## 3. The plan as an artifact with a gate
 
@@ -82,7 +85,7 @@ words that started the task go too. `stats` therefore describes open work and ca
 One record per finished task, held whether or not anything reads it yet: status stamps, rounds, verdicts, spend,
 and where the reviewer of step 2 disagreed with you.
 
-- Buys: the numbers that decide whether step 5 is safe — and every later thing built on finished work.
+- Buys: the numbers that decide whether step 5 is safe, and every later thing built on finished work.
 - Open: [where it lives](../TODO.md), given that the base branch is read-only.
 
 ## 5. Work that arrives unasked, and verdicts that act
@@ -94,4 +97,4 @@ The two ends of the loop the playbook closes, both blocked on something outside 
   working prompt come first.
 - **Off production**: a signal becomes a task. jagt holds no credential and reaches outside itself only through
   the one-shot assistant, so what jagt may promise before it holds a token is the decision, not the plumbing.
-- **A verdict issuing a verb**: the invariant at the top of this file, and the reason step 4 comes before it.
+- **A verdict issuing a verb**: the invariant at the top, and the reason step 4 comes first.
