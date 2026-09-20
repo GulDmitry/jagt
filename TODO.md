@@ -36,7 +36,9 @@ chained so the second targets the first, and what happens to comments a later cu
 ## Keep a task's artifacts after `done` (idea)
 
 The far end of [the artifact chain](ARCHITECTURE.md#the-artifact-chain): `done` deletes the briefing, the
-standing instruction and the drafted replies, while the branch and the request outlive the task.
+standing instruction and the drafted replies, while the branch and the request outlive the task; with no ticket
+behind it, the words that started it go too. One record per finished task is what anything built on finished
+work reads — `stats` cannot be asked for throughput today — and it is worth holding before anything reads it.
 
 What to decide first: whether an artifact outliving the worktree lives in git (whose, and on which branch — the
 base branch is read-only) or beside `state.json`, and what the board shows for a task that is gone.
@@ -62,3 +64,20 @@ An inbox flag, top-right: the few tasks you must not lose sit in a board where e
 
 What to decide first: `card-top` already ends in the attention badge, so a flag there says what it replaces —
 and no colour is free, `--danger` meaning broken and `--you` your move. Likely a shape, sorted first not tinted.
+
+## A reviewer session, briefed as the human rather than as the worker (idea)
+
+The human is the first and only reader of the plan and the diff. A second session reads them first, briefed as
+the reviewer — the business case, the tester, the architecture, the code. Reading is the cheap half, so it can
+run the heavier model. The end of it is that it stands where the human stands now.
+
+What to decide first: the task's own session under another brief or a second one jagt owns, and what its finding
+IS — a file like `review_replies.md`, a round, or a refusal ([the loop only reads and drafts](docs/rules/review.md)).
+
+## Taking work off the tracker unasked (idea, blocked)
+
+A job that picks up the next ticket and launches it. Blocked upstream: a ticket carries no project to route on
+and no label saying it is ready, and one written without the prompts a session works from produces work nobody
+asked for. Tickets written per project and per working prompt come first.
+
+What to decide first: what marks a ticket ready to be taken, and what jagt does with one that is not.
