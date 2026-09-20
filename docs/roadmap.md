@@ -32,32 +32,36 @@ would end at REVIEW_PENDING. A red one is relayed the way a red pipeline already
 - Must not break: the checks dot has one source today. A local verdict is a second source for the **same** dot,
   never a second dot ([`design.md`](rules/design.md)), and it is the open half of the stale-verdict TODO.
 
-## 2. The reviewer session
+## 2. The quality gate: a Master session running unattended
 
-A second session reads the plan and the diff before the human does, briefed as the reviewer — the business case,
-the tester, the architecture, the code — rather than as whoever wrote them. Reading is the cheap half of the
-work, so it can run a heavier model than the task does.
+jagt already has this role and already names it: a session at the root carries no worktree header, so [every one
+is Master](../AGENTS.md) — it sees every task over the same MCP, issues every verb, and writes no code. What is
+missing is not a kind of session. It is a way to wake one, and a brief saying what it judges.
 
-**It is a session per task, not a daemon.** Nothing starts with the orchestrator and nothing hangs: it is
-launched in the task's worktree the first time a round needs reading, and `done` kills it with everything else.
-That reuses what exists — `AgentRuntime`, a tmux window, `AgentRuntime.launchCommand(worktree, planMode)` for the
-read-only lever, the session log for liveness, MCP to report its verdict, `UsageTracker` so its spend lands on
-the same card.
+**One session, not one per task.** It reads what a worker was given and what it handed back — the plan, the
+diff, the drafted replies, the checks — and picks the move: relay, sweep, ship, or leave it for you. Reading is
+the cheap half of the work, so it runs the heavier model. Reading two thousand lines of diff is not something it
+has to do in its own context: it can put that in a one-shot and keep only the verdict.
 
-**Its memory is not the session.** A session's context is compacted away, so the thing that must survive cannot
-live there. Three layers, and only the middle one is disposable:
+**Deterministic where it counts.** The trigger stays a cadence, a status or an open request
+([`review.md`](rules/review.md)) — only the judgement is the model's. And it cannot invent a move: the legal set
+is `FlowRules.allowed` and `FlowEngine` refuses anything else with a sentence. **The flow table is the guardrail,
+not the prompt.**
 
-| what | where it lives | how long |
-|------|----------------|----------|
-| who the reviewer is — what you care about, in your words | a brief file in the install, beside `jagt.yml` | forever; you edit it |
-| what it knows about this task and said last round | its own session, in the task's worktree | the task |
-| where its verdict and yours disagreed | the record step 4 keeps | forever; the input to editing the brief |
-
-So the thing that replaces you is the **brief**, not the session. The session is a process that reads it.
+**Its memory is a file, not its context.** A session that lives for days gets compacted, and what goes first is
+what was said earliest — exactly the standards it was started with. So the standards are re-read rather than
+remembered: a brief in the install beside `jagt.yml`, and a fresh read of the artifacts per judgement. What
+replaces you is that brief; the session is a process that reads it, and step 4 is what you grade it against.
 
 - Buys: the first reader of every diff stops being you, and a verdict that can be compared with yours.
-- Must not break: it reads and writes a file, it issues no verb. A verdict that issues one is step 5's decision,
-  not this one's.
+- Must not break: which verbs it may issue is the setting at the top of this file — judging first, `ship`,
+  `deploy`, `revert` and posting last.
+- Open, and all four are real:
+  - **it is nobody's task**, so nothing watches it: `WatchdogService` watches task sessions, and a Master that
+    died overnight is silent
+  - **it reads every worktree** — the one session with no worktree of its own and no `pre-push` gate around it
+  - **its spend belongs to no task**, and `UsageTracker` books against tasks
+  - **it serialises**, one turn at a time, and which task it takes first is its own to decide
 
 ## 3. The plan as an artifact with a gate
 
