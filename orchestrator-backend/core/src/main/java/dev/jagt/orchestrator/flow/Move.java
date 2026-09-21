@@ -33,7 +33,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
 
     private static Phase phaseOf(TaskStatus status) {
         return switch (status) {
-            case NEW, IN_PROGRESS -> Phase.BUILD;
+            case NEW, PLAN_PENDING, IN_PROGRESS -> Phase.BUILD;
             case REVIEW_PENDING -> Phase.REVIEW;
             case VERIFYING, SHIPPING, CI_POLLING, CI_FAILED -> Phase.CHECK;
             case REVIEWED, APPROVED -> Phase.READY;
@@ -107,6 +107,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
             case REVIEWED -> hasReviewRequest ? "check for the approval" : "close the task";
             case APPROVED -> hasReviewRequest ? "deploy it" : "close the task";
             case DEPLOY_CONFLICT -> "resolve the conflict";
+            case PLAN_PENDING -> "read the plan";
             // Unreachable: both ways an agent gives these up are answered above.
             case NEW, IN_PROGRESS, VERIFYING, SHIPPING, DEPLOYED, DONE -> null;
         };
@@ -135,6 +136,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
     public static Owner ownerOf(TaskStatus status) {
         return switch (status) {
             case NEW, IN_PROGRESS, VERIFYING, SHIPPING -> Owner.AGENT;
+            case PLAN_PENDING -> Owner.YOU;
             // REVIEWED is "nothing unresolved, checks green, NOT approved": handed in, waiting for a reviewer.
             case CI_POLLING, REVIEWED -> Owner.CI;
             case REVIEW_PENDING, CI_FAILED, APPROVED, DEPLOY_CONFLICT, REVERTED -> Owner.YOU;
@@ -150,7 +152,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
             return TaskAction.FOCUS;
         }
         return switch (status) {
-            case NEW, IN_PROGRESS, VERIFYING, SHIPPING -> TaskAction.FOCUS;
+            case NEW, PLAN_PENDING, IN_PROGRESS, VERIFYING, SHIPPING -> TaskAction.FOCUS;
             // Shipping a round that changed nothing commits nothing, unless replies wait or no request exists yet.
             case REVIEW_PENDING -> switch (round.report()) {
                 // Nothing polling means nothing will read the threads this round waits on, so the read is the move.
@@ -187,6 +189,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent is working; no action required";
             case VERIFYING -> "jagt is running this project's checks";
+            case PLAN_PENDING -> "a plan is waiting in `plan.md`; read it, then tell the session to go";
             case REVIEW_PENDING -> switch (round.report()) {
                 case NO_CHANGES -> !hasReviewRequest
                         ? "no code changed this round; ship opens the review request"

@@ -31,7 +31,7 @@ public final class DashboardLine {
                 case QUESTION, PLAIN -> requestProblem(task, usableRequestLink);
             };
             case NEW, IN_PROGRESS, SHIPPING -> silence(task);
-            case VERIFYING -> "";
+            case PLAN_PENDING, VERIFYING -> "";
             case DONE -> "";
         };
     }

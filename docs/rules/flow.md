@@ -6,7 +6,8 @@
 outcome of that action leads to. The guard reads `flow/Facts` — an open request, and a liveness probe the
 projection passes as "no" because it costs a process spawn per row.
 
-The thirteen statuses: `NEW` nothing reported yet · `IN_PROGRESS` the agent is working · `VERIFYING` jagt is
+The fourteen statuses: `NEW` nothing reported yet · `PLAN_PENDING` a plan is waiting for you ·
+`IN_PROGRESS` the agent is working · `VERIFYING` jagt is
 running the project's own command · `REVIEW_PENDING` back with the human · `SHIPPING` a push in flight ·
 `CI_POLLING` a round is open · `CI_FAILED` checks red ·
 `REVIEWED` nothing unresolved and CI green, not approved · `APPROVED` a human approved the request ·

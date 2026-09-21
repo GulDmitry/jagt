@@ -79,7 +79,8 @@ public final class FlowRules {
      * Statuses an AGENT may put its own task into. Everything else is jagt's to set — a task cannot talk itself
      * onto a shared branch, out of one, or closed.
      */
-    private static final Set<TaskStatus> AGENT_REPORTABLE = EnumSet.of(TaskStatus.IN_PROGRESS,
+    private static final Set<TaskStatus> AGENT_REPORTABLE = EnumSet.of(TaskStatus.PLAN_PENDING,
+            TaskStatus.IN_PROGRESS,
             TaskStatus.SHIPPING, TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED, TaskStatus.CI_POLLING,
             TaskStatus.REVIEWED, TaskStatus.APPROVED);
 
@@ -136,6 +137,10 @@ public final class FlowRules {
         if (!reportable(to)) {
             return Optional.of(to + " is jagt's to set, not a task's to report");
         }
+        if (to == TaskStatus.PLAN_PENDING && !BEFORE_THE_CODE.contains(from)) {
+            return Optional.of(to + " cannot be reported by a task that is already " + from
+                    + " — a plan is what comes before the code, not after it");
+        }
         if (to == TaskStatus.CI_POLLING && !BEFORE_THE_VERDICT.contains(from)) {
             return Optional.of(to + " cannot be reported by a task that is already " + from
                     + " — that would take it backwards and start polling finished work");
@@ -181,6 +186,10 @@ public final class FlowRules {
     /** Statuses a round is BEHIND: the code went to the shared branch without waiting for what it says. */
     private static final Set<TaskStatus> PAST_THE_REVIEW = EnumSet.of(TaskStatus.DEPLOY_CONFLICT,
             TaskStatus.DEPLOYED, TaskStatus.DONE);
+
+    /** Statuses a task has written nothing from yet, so a plan is still the next thing it hands over. */
+    private static final Set<TaskStatus> BEFORE_THE_CODE = EnumSet.of(TaskStatus.NEW, TaskStatus.PLAN_PENDING,
+            TaskStatus.IN_PROGRESS);
 
     /** Statuses a task can still be waiting on its checks from. */
     private static final Set<TaskStatus> BEFORE_THE_VERDICT = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,

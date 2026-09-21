@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.flow;
 
 public enum TaskStatus {
     NEW("starting"),
+    PLAN_PENDING("plan waiting"),
     IN_PROGRESS("agent working"),
     VERIFYING("verifying"),
     REVIEW_PENDING("not shipped"),

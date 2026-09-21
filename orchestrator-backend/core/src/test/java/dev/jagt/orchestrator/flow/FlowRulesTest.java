@@ -96,6 +96,12 @@ class FlowRulesTest {
     }
 
     @Test
+    void refusesAPlanReportedByATaskThatHasAlreadyWrittenCode() {
+        assertThat(FlowRules.refusedReport(TaskStatus.REVIEW_PENDING, TaskStatus.PLAN_PENDING))
+                .get().asString().contains("comes before the code");
+    }
+
+    @Test
     void holdsAHandBackAtVerifyingWhileTheProjectStillOwesAVerificationRun() {
         assertThat(FlowRules.reported(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING, true))
                 .isEqualTo(TaskStatus.VERIFYING);

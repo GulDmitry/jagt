@@ -201,8 +201,8 @@ class MoveTest {
         var waitingOnYou = Arrays.stream(TaskStatus.values())
                 .filter(status -> Move.forTask(status, true, RoundState.NONE, false).owner() == Owner.YOU).toList();
 
-        assertThat(waitingOnYou).containsExactly(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED,
-                TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.REVERTED);
+        assertThat(waitingOnYou).containsExactly(TaskStatus.PLAN_PENDING, TaskStatus.REVIEW_PENDING,
+                TaskStatus.CI_FAILED, TaskStatus.APPROVED, TaskStatus.DEPLOY_CONFLICT, TaskStatus.REVERTED);
     }
 
     @Test

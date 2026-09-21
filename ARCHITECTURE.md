@@ -92,6 +92,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | step | what it leaves behind | where |
 |------|----------------------|-------|
 | `do` | the task as the agent read it, and the rules it works under | `AGENTS.md` in the worktree (`service/SubAgentBriefing`) |
+| a plan | what the agent means to do, before it writes anything | `plan.md`, at PLAN_PENDING |
 | a relay | the one instruction standing right now, and no older one | `task_context.md` |
 | the agent works | the diff | the task branch |
 | `ship` | commits, a pushed branch, one review request per repository | the branch, and `reviewRequests` on the task |
