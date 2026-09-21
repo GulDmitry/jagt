@@ -25,7 +25,8 @@ public class FlowCheck implements StartupCheck {
     private static java.util.stream.Stream<String> unreachableStatuses() {
         return java.util.Arrays.stream(TaskStatus.values())
                 .filter(status -> !WITHOUT_A_WAY_IN.contains(status))
-                .filter(status -> !FlowRules.targets().contains(status) && !FlowRules.reportable(status))
+                .filter(status -> !FlowRules.targets().contains(status) && !FlowRules.reportable(status)
+                        && !FlowRules.redirects().contains(status))
                 .map(status -> "flow: nothing can put a task into " + status
                         + " — no action leads there and no agent may report it");
     }

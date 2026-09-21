@@ -47,8 +47,9 @@ class AgentStatusReportsTest {
 
     private AgentStatusReports reports(StateService state) {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        return new AgentStatusReports(state, notifications, new FlowReports(state), worktreeChanges,
-                new ReviewDrafts(configService));
+        return new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new ReviewDrafts(configService),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class))));
     }
 
     @Test

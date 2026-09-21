@@ -34,8 +34,7 @@ public class AgentStatusReports {
     private final StateService stateService;
     private final Notifications notifications;
     private final FlowReports flow;
-    private final WorktreeChanges worktreeChanges;
-    private final ReviewDrafts reviewDrafts;
+    private final HandBack handBack;
 
     /** For jagt's own reports, which carry no outcome of an agent's and no request to link. */
     public String report(TaskStatus status, String message, String taskId) {
@@ -102,7 +101,7 @@ public class AgentStatusReports {
                 return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
             }
             return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
-        });
+        }, handBack::verificationOwed);
         if (!updated) {
             throw new IllegalArgumentException("Task " + taskId + " not found in state.json");
         }
@@ -179,7 +178,7 @@ public class AgentStatusReports {
      */
     private void ping(String taskId, TaskStatus status, String message, Optional<TaskState> task) {
         RoundState round = RoundState.of(message,
-                task.map(t -> reviewDrafts.pending(t, status)).orElse(false));
+                task.map(t -> handBack.draftsPending(t, status)).orElse(false));
         // Not silent: whoever this ping is about has just spoken, or jagt has just read the round for it.
         Move move = Move.forTask(status, task.map(TaskState::hasReviewRequest).orElse(true), round, false);
         if (move.owner() != Owner.YOU) {
@@ -211,7 +210,7 @@ public class AgentStatusReports {
     private String stated(String message, String outcome, Optional<TaskState> task, String taskId) {
         AgentReport claimed = claimed(outcome, message);
         String detail = AgentReport.withoutMarker(message);
-        if (claimed == AgentReport.NO_CHANGES && task.filter(worktreeChanges::anyUncommitted).isPresent()) {
+        if (claimed == AgentReport.NO_CHANGES && task.filter(handBack::anyUncommitted).isPresent()) {
             log.atInfo().setMessage("report overruled").addKeyValue("task", taskId)
                     .addKeyValue("alias", task.get().alias())
                     .addKeyValue("cause", "uncommitted changes")

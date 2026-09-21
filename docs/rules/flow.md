@@ -6,8 +6,9 @@
 outcome of that action leads to. The guard reads `flow/Facts` — an open request, and a liveness probe the
 projection passes as "no" because it costs a process spawn per row.
 
-The twelve statuses: `NEW` nothing reported yet · `IN_PROGRESS` the agent is working · `REVIEW_PENDING` back
-with the human · `SHIPPING` a push in flight · `CI_POLLING` a round is open · `CI_FAILED` checks red ·
+The thirteen statuses: `NEW` nothing reported yet · `IN_PROGRESS` the agent is working · `VERIFYING` jagt is
+running the project's own command · `REVIEW_PENDING` back with the human · `SHIPPING` a push in flight ·
+`CI_POLLING` a round is open · `CI_FAILED` checks red ·
 `REVIEWED` nothing unresolved and CI green, not approved · `APPROVED` a human approved the request ·
 `DEPLOY_CONFLICT` a human resolves it in the deploy worktree · `DEPLOYED` live on the deploy branch ·
 `REVERTED` the deploy is out, branch and commits surviving · `DONE` closed.
@@ -18,6 +19,11 @@ action, write the status the table gives for its `flow/Outcome`.
 **Door two** is `flow/FlowReports`: a status the task itself reports — its agent over MCP, or a round jagt read
 for it. Refused unless `FlowRules.refusedReport` allows it, **and it owns the reason**, which is what the agent
 acts on. That stops a task talking itself onto a shared branch, out of one, or closed.
+
+**A hand-back a project still owes a verification run waits at VERIFYING**, which `FlowRules.reported` redirects
+it to — no action leads there and no agent may report it. `VerifyJob` runs the command and reports the result:
+green reaches the human, red goes back to the session with the output. `TaskStatus.heldByJagt` is why the
+watchdog leaves that silence alone.
 
 A status a **human** owns is not refused but **held**: `FlowRules.reported` keeps a REVERTED task where it is
 and records the line. Refusing it instead makes every call of that session error; letting the *following*

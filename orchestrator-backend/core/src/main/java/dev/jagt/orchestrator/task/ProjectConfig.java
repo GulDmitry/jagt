@@ -9,8 +9,15 @@ public record ProjectConfig(
         String path,
         String baseBranch,
         String deployBranch,
-        List<String> labels
+        List<String> labels,
+        // What jagt runs in the worktree before a hand-back reaches a human. Null or empty = nothing is run.
+        List<String> verifyCommand
 ) {
+
+    /** A project declaring no command of its own: the four keys every install has always had. */
+    public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
+        this(path, baseBranch, deployBranch, labels, List.of());
+    }
 
     /** The base branch as a LOCAL name, which is the form every other branch here is written in. */
     public String baseBranchName() {

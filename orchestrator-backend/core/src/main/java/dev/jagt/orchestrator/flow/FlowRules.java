@@ -33,11 +33,11 @@ public final class FlowRules {
         // `ship` IS the human's approval, so a task an agent has not reported on passes too; a SHIPPING task
         // whose agent has DIED passes as recovery, while a live one means the push is already in flight.
         rule(TaskAction.SHIP)
-                .from(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING, TaskStatus.SHIPPING,
-                        TaskStatus.CI_POLLING, TaskStatus.CI_FAILED, TaskStatus.REVIEWED, TaskStatus.DEPLOYED,
-                        TaskStatus.REVERTED)
+                .from(TaskStatus.IN_PROGRESS, TaskStatus.VERIFYING, TaskStatus.REVIEW_PENDING,
+                        TaskStatus.SHIPPING, TaskStatus.CI_POLLING, TaskStatus.CI_FAILED, TaskStatus.REVIEWED,
+                        TaskStatus.DEPLOYED, TaskStatus.REVERTED)
                 .when((status, facts) -> switch (status) {
-                    case IN_PROGRESS, REVIEW_PENDING -> true;
+                    case IN_PROGRESS, VERIFYING, REVIEW_PENDING -> true;
                     case SHIPPING -> !facts.agentLive().getAsBoolean();
                     default -> facts.hasReviewRequest();
                 })
@@ -149,12 +149,28 @@ public final class FlowRules {
      * saying what it is doing, and a status it cannot report is a session whose every call errors.
      */
     public static TaskStatus reported(TaskStatus from, TaskStatus to) {
+        return reported(from, to, false);
+    }
+
+    /**
+     * The same, told whether this project still owes a verification run. A hand-back waits at VERIFYING until
+     * jagt has run the project's own command, so a human never opens a red tree.
+     */
+    public static TaskStatus reported(TaskStatus from, TaskStatus to, boolean verificationOwed) {
         if (STANDS_UNTIL_MOVED_BY_A_HUMAN.contains(from)) {
             return from;
+        }
+        if (verificationOwed && to == TaskStatus.REVIEW_PENDING) {
+            return TaskStatus.VERIFYING;
         }
         // A verdict off a review round is a READ, and reading one cannot undo a deploy: landing it would put a
         // task whose code is on the shared branch back in a phase asking for an approval.
         return A_VERDICT.contains(to) && PAST_THE_REVIEW.contains(from) ? from : to;
+    }
+
+    /** Statuses no action leads to and no task reports: a redirect in {@link #reported} is the only way in. */
+    public static Set<TaskStatus> redirects() {
+        return EnumSet.of(TaskStatus.VERIFYING);
     }
 
     private static final Set<TaskStatus> STANDS_UNTIL_MOVED_BY_A_HUMAN = EnumSet.of(TaskStatus.REVERTED);

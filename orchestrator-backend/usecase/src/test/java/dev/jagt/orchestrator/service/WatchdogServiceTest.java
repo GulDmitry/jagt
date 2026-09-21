@@ -152,8 +152,9 @@ class WatchdogServiceTest {
 
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
-    void watchesEveryStatusWhoseNextMoveIsTheAgentsOwn(TaskStatus status) {
-        assertThat(WatchdogService.watches(status)).isEqualTo(Move.ownerOf(status) == Owner.AGENT);
+    void watchesEveryStatusWhoseNextMoveIsTheAgentsOwnAndJagtIsNotHoldingItself(TaskStatus status) {
+        assertThat(WatchdogService.watches(status))
+                .isEqualTo(Move.ownerOf(status) == Owner.AGENT && !status.heldByJagt());
     }
 
     @Test

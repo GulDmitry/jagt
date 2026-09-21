@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 /**
  * The second door into the machine: a status the task itself reports, rather than one an action led to. Every
@@ -28,6 +29,16 @@ public class FlowReports {
      */
     public boolean report(String taskId, TaskStatus status, String message,
                           BiFunction<TaskStatus, TaskState, TaskState> alsoRecord) {
+        return report(taskId, status, message, alsoRecord, task -> false);
+    }
+
+    /**
+     * The same, told per task whether a hand-back still owes jagt a verification run. Asked of the state being
+     * written, so two reports arriving together cannot disagree about it.
+     */
+    public boolean report(String taskId, TaskStatus status, String message,
+                          BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
+                          Predicate<TaskState> verificationOwed) {
         if (!FlowRules.reportable(status)) {
             throw new IllegalArgumentException(FlowRules.refusedReport(status, status).orElseThrow());
         }
@@ -37,8 +48,8 @@ public class FlowReports {
             FlowRules.refusedReport(task.status(), status).ifPresent(why -> {
                 throw new IllegalArgumentException(why);
             });
-            return alsoRecord.apply(task.status(),
-                    task.withStatus(FlowRules.reported(task.status(), status), message));
+            return alsoRecord.apply(task.status(), task.withStatus(
+                    FlowRules.reported(task.status(), status, verificationOwed.test(task)), message));
         });
     }
 }

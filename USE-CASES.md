@@ -96,6 +96,8 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 
 | situation | run | what happens |
 |---|---|---|
+| A card sits at `verifying` | — | jagt is running that project's `verifyCommand` in the worktree; the agent is idle and the watchdog leaves it alone |
+| That command fails | — | The output goes back to the session, the card returns to the agent, and the round never reaches your IDE |
 | An agent stops mid-work to ask | — | Its `outcome=question` report turns the card over: NEEDS INPUT, and one desktop ping the first time it asks |
 | The task contradicts what the code already guarantees | — | A question, asked before the code picks a side; "the ticket wins" is yours to say |
 | The agent settled something without you | `focus <task>` | An `OPEN QUESTIONS:` list ends its terminal output, reaching neither the status line, the replies file nor the request |

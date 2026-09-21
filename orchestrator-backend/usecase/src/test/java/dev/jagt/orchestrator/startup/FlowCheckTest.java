@@ -19,7 +19,8 @@ class FlowCheckTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"NEW", "DONE"})
     void everyStatusCanBeReachedEitherByAnActionOrByTheTaskReportingIt(TaskStatus status) {
-        assertThat(FlowRules.targets().contains(status) || FlowRules.reportable(status))
+        assertThat(FlowRules.targets().contains(status) || FlowRules.reportable(status)
+                || FlowRules.redirects().contains(status))
                 .as("%s has a way in", status).isTrue();
     }
 

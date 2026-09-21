@@ -95,15 +95,28 @@ class FlowRulesTest {
         assertThat(FlowRules.next(action, outcome)).isEmpty();
     }
 
+    @Test
+    void holdsAHandBackAtVerifyingWhileTheProjectStillOwesAVerificationRun() {
+        assertThat(FlowRules.reported(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING, true))
+                .isEqualTo(TaskStatus.VERIFYING);
+    }
+
+    @Test
+    void letsAHandBackReachTheHumanWhereNothingIsLeftToVerify() {
+        assertThat(FlowRules.reported(TaskStatus.IN_PROGRESS, TaskStatus.REVIEW_PENDING, false))
+                .isEqualTo(TaskStatus.REVIEW_PENDING);
+    }
+
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE,
-            names = {"NEW", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
+            names = {"NEW", "VERIFYING", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
     void acceptsTheStatusesATasksOwnAgentIsReportingAbout(TaskStatus status) {
         assertThat(FlowRules.reportable(status)).isTrue();
     }
 
     @ParameterizedTest
-    @EnumSource(value = TaskStatus.class, names = {"NEW", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
+    @EnumSource(value = TaskStatus.class,
+            names = {"NEW", "VERIFYING", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
     void refusesTheStatusesThatAreJagtsToSetRatherThanATasksToReport(TaskStatus status) {
         assertThat(FlowRules.reportable(status)).isFalse();
     }

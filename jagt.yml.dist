@@ -13,6 +13,8 @@ orchestrator:
       baseBranch: origin/main       # tasks are cut from here; jagt never pushes to it
       deployBranch: dev             # omit to disable deploy for this project
       # labels: [proj, my-project]  # ticket labels that pick this project when `do` names none
+      # verifyCommand: ["./gradlew", "test"]   # jagt runs it in the worktree before a hand-back reaches you;
+                                               # a failing run goes back to the agent, never to your IDE
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
