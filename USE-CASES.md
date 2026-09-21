@@ -57,7 +57,6 @@ A start checks nothing on a remote and nothing over the network.
 | One change moving two repositories (a service and its client) | `do ABC-1 api,web` | One task, one agent session, a worktree per repository; the session runs in the first named |
 | It reaches review | `ship ABC-1` | A commit, push and request **per repository**, each targeting its own base branch |
 | It spans repositories | `ship ABC-1` | One instruction naming every one of them, all reported back in one call as one round |
-| The agent runs `git push origin dev` | — | Refused before it runs: only the task's own branch may be pushed from its worktree |
 | jagt is down when the agent pushes | — | Nothing is refused |
 | A round comes back | `sweep ABC-1` | Merged as the **least finished** repository: approved only when all are |
 | It is ready to deploy | `deploy ABC-1` | Merged and pushed repository by repository, in the task's own order |
@@ -141,7 +140,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | Clicking a desktop notification | Opens the board filtered to that task; needs `terminal-notifier` and a board being served |
 | "Which of these buttons changes something?" | Two rows: what moves the task on above, what only looks or restarts below (`TaskAction.Group`) |
 | "What does this colour / ring / dot mean?" | `Help` — **above** the commands, every mark beside what it means, as the page's own element; there is no second button |
-| What each colour means | One thing each, board-wide: the list is `Help`'s legend, written down in [`docs/rules/design.md`](docs/rules/design.md) |
+| What each colour means | One thing each, board-wide, and written down in [`docs/rules/design.md`](docs/rules/design.md) |
 | "Has this branch been deployed already?" | The **Deploy button is green** while this task's work is live on the branch it writes; `revert` takes the colour off |
 
 ## Review requests
@@ -196,8 +195,7 @@ What the agent does with a comment:
 | An agent writes an essay in a request, a reply or a comment | It broke the brief's "How you write", which defers to the machine's own writing skill |
 | The round came back clean, nobody approved | REVIEWED, and **nothing** is asked of the human; `deploy` stays listed for whoever needs no approval |
 | An approval arrives | Lands unattended, and is the one thing the human is tapped for: it is theirs to deploy |
-| The pipeline goes red while the request is open | A red dot on the card, and one notification the first time that run goes red |
-| The dot is red while the request itself is mergeable | Read its tip: it prints the host's word verbatim |
+| The pipeline goes red while the request is open | A red dot on the card, and one notification the first time that run goes red — even where the request itself is mergeable |
 | You type `review <task>` out of habit | It runs the sweep; the old spelling still resolves, and only the new one is advertised |
 
 ## Auto-review
@@ -208,9 +206,8 @@ What the agent does with a comment:
 | Comments arrive after the agent handed the round back | The next poll picks them up: polling follows the open request, not the status |
 | A task goes back out for review on the same request | Every entry into CI_POLLING is a new round: the window restarts and the previous checks verdict is dropped |
 | "Is anything actually polling?" | The header says so unasked: `auto-review on/off` |
-| Polling stopped and nothing is happening | The round outlived `autoReview.windowHours`: the card says `polling stopped`, hovering it `no further polls: this round is past its 24h window` |
+| Polling stopped and nothing is happening | The round outlived `autoReview.windowHours`: the card says `polling stopped`, hovering it `no further polls: this round is past its 24h window`, and it **does** ask for you |
 | An open request nothing polls | The card says `polling off` (`polling is disabled for this task`) or `cannot time this` (`no round stamp, so no poll interval can be measured`) — `sweep` by hand |
-| The expected poll has stopped | The card **does** ask for you |
 | An install with `autoReview.enabled=false` | Not that case: it polls nothing by configuration, says so once in the header, and its cards stay as they were |
 | A deployed task's request comes back green and unapproved | The poll leaves it `deployed`: a read of the round never moves work that already went out |
 | A round answered every comment and changed no code | The card does not ask for you — `nothing to ship; the open threads are the reviewer's move` — and flips once polling stops |
@@ -232,8 +229,7 @@ What the agent does with a comment:
 | Take a deploy back out | `revert <task>` | Reverts the last recorded merge commit; refused, with a by-hand recipe, whenever it would have to guess |
 | The task was deployed more than once | `revert <task>` | Only the **last** deploy comes out; for the earlier rounds, `git log --merges --grep ABC-1` then `git revert -m 1 <sha>` newest first |
 | An agent is restarted on a task at REVERTED | `respawn` | Its reports are recorded but move nothing: the task stays REVERTED until a human ships or closes it |
-| A shipped task gets one more change | `do`-style instructions, or the palette | It stays UNCOMMITTED: the ship instruction is spent, and standing `task_context.md` text is not permission to repeat |
-| An agent repaired a red build | — | The repair stays uncommitted and comes back at REVIEW_PENDING; only a new `ship` puts it on the branch |
+| A shipped task gets one more change, a red build repaired included | `do`-style instructions | Back UNCOMMITTED at REVIEW_PENDING: the ship instruction is spent, and only a new `ship` lands it |
 | A pushed commit turns out wrong | — | Another commit, never a rewrite: no `--force`, no `--amend`, no `reset --hard` on what is pushed |
 | A task sits at REVERTED | `focus`, then `ship` or `done` | `deploy` is not offered: a revert adds a commit, so re-merging the same branch brings nothing |
 
