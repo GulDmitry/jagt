@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
@@ -91,8 +92,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        reports(state).report("CI_POLLING", "handed over", null,
-                "https://gitlab/x/-/merge_requests/9", "ABC-1");
+        reports(state).report(new AgentStatusMessage("CI_POLLING", "handed over", null, "https://gitlab/x/-/merge_requests/9", Map.of()), "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
@@ -104,9 +104,8 @@ class AgentStatusReportsTest {
                 .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", null, null),
                         new TaskRepo("web", "/wt-web", "git@host:web.git", null, null))).build());
 
-        reports(state).report("CI_POLLING", "requests up", null, null,
-                Map.of("proj", "https://host/proj/-/merge_requests/9",
-                        "web", "https://host/web/-/merge_requests/3"), "ABC-1");
+        reports(state).report(new AgentStatusMessage("CI_POLLING", "requests up", null, null, Map.of("proj", "https://host/proj/-/merge_requests/9",
+                        "web", "https://host/web/-/merge_requests/3")), "ABC-1");
 
         TaskState reported = state.task("ABC-1").orElseThrow();
         assertThat(reported.repos()).extracting(TaskRepo::mrUrl)
@@ -120,8 +119,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        assertThatThrownBy(() -> reports(state).report("CI_POLLING", "requests up", null, null,
-                Map.of("frontend", "https://host/x/-/merge_requests/9"), "ABC-1"))
+        assertThatThrownBy(() -> reports(state).report(new AgentStatusMessage("CI_POLLING", "requests up", null, null, Map.of("frontend", "https://host/x/-/merge_requests/9")), "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("project 'frontend' is not on this task")
                 .hasMessageContaining("proj");
@@ -135,8 +133,7 @@ class AgentStatusReportsTest {
                         new TaskRepo("web", "/wt-web", "git@host:web.git", null, null)))
                 .mrCreatedAt(1_000L).lastPolledAt(9_000L).build());
 
-        reports(state).report("CI_POLLING", "web is up too", null, null,
-                Map.of("proj", "https://host/proj/mr/9", "web", "https://host/web/mr/3"), "ABC-1");
+        reports(state).report(new AgentStatusMessage("CI_POLLING", "web is up too", null, null, Map.of("proj", "https://host/proj/mr/9", "web", "https://host/web/mr/3")), "ABC-1");
 
         TaskState reported = state.task("ABC-1").orElseThrow();
         assertThat(reported.reviewRequestOf("web")).contains("https://host/web/mr/3");
@@ -149,7 +146,7 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
 
-        reports(state).report("IN_PROGRESS", "which cache should this use", "question", null, "ABC-1");
+        reports(state).report(new AgentStatusMessage("IN_PROGRESS", "which cache should this use", "question", null, Map.of()), "ABC-1");
 
         assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message()))
                 .isEqualTo(AgentReport.QUESTION);
@@ -162,7 +159,7 @@ class AgentStatusReportsTest {
                 .mrUrl("https://host/mr/1").build());
         when(worktreeChanges.anyUncommitted(any())).thenReturn(true);
 
-        reports(state).report("REVIEW_PENDING", "already handled", "no_changes", null, "ABC-1");
+        reports(state).report(new AgentStatusMessage("REVIEW_PENDING", "already handled", "no_changes", null, Map.of()), "ABC-1");
 
         assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message())).isEqualTo(AgentReport.PLAIN);
     }
@@ -174,7 +171,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .mrUrl("https://host/mr/1").build());
 
-        reports(state).report("REVIEW_PENDING", "already handled", outcome, null, "ABC-1");
+        reports(state).report(new AgentStatusMessage("REVIEW_PENDING", "already handled", outcome, null, Map.of()), "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("no changes: already handled");
     }

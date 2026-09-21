@@ -7,6 +7,8 @@ import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
+import dev.jagt.orchestrator.protocol.Message;
+import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Reported;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.TaskState;
@@ -20,7 +22,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * What an agent says about its own task, and the one ping the human gets for it. WHICH task a caller may touch is
@@ -40,32 +41,25 @@ public class AgentStatusReports {
 
     /** For jagt's own reports, which carry no outcome of an agent's and no request to link. */
     public String report(TaskStatus status, String message, String taskId) {
-        return report(status.name(), message, null, null, Map.of(), taskId);
+        return report(new AgentStatusMessage(status.name(), message, null, null, Map.of()), taskId);
     }
 
     /**
-     * {@code outcome} is what this report SAYS about a review round; null falls back to the marker the message
-     * opens with. {@code reviewRequestUrl} is the request it is about, instead of one scraped out of the message.
+     * A message that reached the door. It is judged here as well as at the transport, because jagt's own reports
+     * and a session's come through the same door and only one of them crossed a wire.
      */
-    public String report(String status, String message, String outcome, String reviewRequestUrl,
-                         String taskId) {
-        return report(status, message, outcome, reviewRequestUrl, Map.of(), taskId);
-    }
-
-    /**
-     * {@code requestsByProject} holds one request per project when the ship landed in several repositories, and
-     * wins over a single named one. It stays ONE round however many it names.
-     */
-    public String report(String status, String message, String outcome, String reviewRequestUrl,
-                         Map<String, String> requestsByProject, String taskId) {
-        AgentStatusMessage said = new AgentStatusMessage(status, message, outcome, reviewRequestUrl,
-                requestsByProject);
-        List<Violation> violations = said.violations(known(taskId));
+    public String report(AgentStatusMessage said, String taskId) {
+        MessageContext context = contextFor(taskId);
+        List<Violation> violations = said.violations(context);
         if (!violations.isEmpty()) {
-            throw new IllegalArgumentException("This report was not accepted. Fix every line and send it again:\n"
-                    + violations.stream().map(Violation::toString).collect(Collectors.joining("\n")));
+            throw new IllegalArgumentException(Message.refusal(violations));
         }
-        return report(said.accepted(known(taskId)).orElseThrow(), taskId);
+        return report(said.accepted(context).orElseThrow(), taskId);
+    }
+
+    /** What the rules may ask about the task this message is about. */
+    public MessageContext contextFor(String taskId) {
+        return new MessageContext(known(taskId));
     }
 
     /** The task's repositories, primary first: which link a human follows first is the session's own. */

@@ -15,21 +15,21 @@ class AgentStatusMessageTest {
     void refusesAnOutcomeThatIsNotOneOfTheThreeInsteadOfReadingTheMessageInstead() {
         var said = new AgentStatusMessage("IN_PROGRESS", "still going", "done", null, Map.of());
 
-        assertThat(said.violations(List.of())).extracting(Violation::field).containsExactly("outcome");
+        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field).containsExactly("outcome");
     }
 
     @Test
     void refusesAStatusThisMachineDoesNotHave() {
         var said = new AgentStatusMessage("ALMOST_DONE", "still going", null, null, Map.of());
 
-        assertThat(said.violations(List.of())).extracting(Violation::field).containsExactly("status");
+        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field).containsExactly("status");
     }
 
     @Test
     void refusesARoundThatIsOutForReviewWithNoRequestAnywhereInIt() {
         var said = new AgentStatusMessage("CI_POLLING", "shipped it", null, null, Map.of());
 
-        assertThat(said.violations(List.of())).extracting(Violation::expected)
+        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::expected)
                 .allSatisfy(expected -> assertThat(expected).contains("required with CI_POLLING"));
     }
 
@@ -38,7 +38,7 @@ class AgentStatusMessageTest {
         var said = new AgentStatusMessage("CI_POLLING", "review request: https://host/mr/9", null, null,
                 Map.of());
 
-        assertThat(said.violations(List.of())).isEmpty();
+        assertThat(said.violations(MessageContext.NONE)).isEmpty();
     }
 
     @Test
@@ -46,7 +46,7 @@ class AgentStatusMessageTest {
         var said = new AgentStatusMessage("CI_POLLING", "shipped", null, "https://host/mr/9",
                 Map.of("api", "https://host/api/mr/1"));
 
-        assertThat(said.violations(List.of("api"))).extracting(Violation::field)
+        assertThat(said.violations(new MessageContext(List.of("api")))).extracting(Violation::field)
                 .containsExactly("reviewRequests");
     }
 
@@ -54,7 +54,7 @@ class AgentStatusMessageTest {
     void refusesALinkNobodyCanOpen() {
         var said = new AgentStatusMessage("CI_POLLING", "shipped", null, "git@host:proj.git", Map.of());
 
-        assertThat(said.violations(List.of())).extracting(Violation::field)
+        assertThat(said.violations(MessageContext.NONE)).extracting(Violation::field)
                 .contains("reviewRequestUrl");
     }
 
@@ -63,7 +63,7 @@ class AgentStatusMessageTest {
         var said = new AgentStatusMessage("CI_POLLING", "shipped", null, null,
                 Map.of("nope", "https://host/mr/9"));
 
-        assertThat(said.violations(List.of("api", "web"))).extracting(Violation::expected)
+        assertThat(said.violations(new MessageContext(List.of("api", "web")))).extracting(Violation::expected)
                 .allSatisfy(expected -> assertThat(expected).contains("not on this task"));
     }
 
@@ -71,7 +71,7 @@ class AgentStatusMessageTest {
     void namesEveryBrokenRuleAtOnceSoASenderFixesThemInOneGo() {
         var said = new AgentStatusMessage("ALMOST_DONE", "shipped", "done", "git@host:proj.git", Map.of());
 
-        assertThat(said.violations(List.of())).hasSize(3);
+        assertThat(said.violations(MessageContext.NONE)).hasSize(3);
     }
 
     @Test
@@ -79,7 +79,7 @@ class AgentStatusMessageTest {
         var said = new AgentStatusMessage("CI_POLLING", "shipped", null, null,
                 Map.of("api", "https://host/api/mr/1", "web", "https://host/web/mr/2"));
 
-        assertThat(said.accepted(List.of("web", "api")).orElseThrow().link())
+        assertThat(said.accepted(new MessageContext(List.of("web", "api"))).orElseThrow().link())
                 .isEqualTo("https://host/web/mr/2");
     }
 
@@ -88,7 +88,7 @@ class AgentStatusMessageTest {
         var said = new AgentStatusMessage("REVIEW_PENDING", "outcome=question: which branch?", null, null,
                 Map.of());
 
-        assertThat(said.accepted(List.of()).orElseThrow().claimed()).isEqualTo(AgentReport.QUESTION);
+        assertThat(said.accepted(MessageContext.NONE).orElseThrow().claimed()).isEqualTo(AgentReport.QUESTION);
     }
 
     @Test
@@ -96,7 +96,7 @@ class AgentStatusMessageTest {
         var said = new AgentStatusMessage("REVIEW_PENDING", "outcome=no_changes: all handled", "no_changes",
                 null, Map.of());
 
-        Reported accepted = said.accepted(List.of()).orElseThrow();
+        Reported accepted = said.accepted(MessageContext.NONE).orElseThrow();
         assertThat(accepted.status()).isEqualTo(TaskStatus.REVIEW_PENDING);
         assertThat(accepted.detail()).isEqualTo("all handled");
     }

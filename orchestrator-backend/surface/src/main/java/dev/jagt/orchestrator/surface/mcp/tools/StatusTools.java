@@ -18,13 +18,16 @@ public class StatusTools implements McpTools {
     private final AgentStatusReports statusReports;
     private final CallerScope callerScope;
 
+    /** The task a report is about: the one it names where a Master sent it, else the caller's own worktree. */
+    private String taskOf(AgentStatusMessage said, String caller) {
+        return callerScope.resolve(said.taskId(), caller);
+    }
+
     @Override
     public void declare(McpToolRegistry tools) {
-        tools.tool("update_agent_status", AgentStatusMessage.SCHEMA.json(),
-                (args, caller) -> statusReports.report(text(args, "status"), text(args, "message"),
-                        text(args, "outcome"), text(args, "reviewRequestUrl"),
-                        pairs(args, "reviewRequests"),
-                        callerScope.resolve(text(args, "taskId"), caller)));
+        tools.tool("update_agent_status", AgentStatusMessage.SCHEMA, AgentStatusMessage.class,
+                (said, caller) -> statusReports.contextFor(taskOf(said, caller)),
+                (said, caller) -> statusReports.report(said, taskOf(said, caller)));
 
         tools.tool("notify_user", """
                 {

@@ -16,6 +16,16 @@ speaks the centre's vocabulary and nothing else, and the centre does not know it
 - What a message cannot carry is not the protocol's to answer: a claim it makes about the worktree is measured
   where the worktree is (`service/HandBack`), and which status it may LAND on is `flow/FlowRules`.
 
+## The arguments are read INTO the message, never field by field
+
+`MessageTool` is the one path from the wire to a verb: the arguments are deserialized into the message, judged,
+and only then does the tool run. A field added to a message arrives without anyone remembering to read it, which
+the hand-written extraction it replaces is exactly where a new field went missing. A field the message does not
+declare is **ignored**: a CLI one version ahead must not have its call rejected over a word jagt has not learned.
+
+**Required-ness is the message's answer too.** The transport used to check presence by parsing the schema it had
+just been handed, one field at a time and before the rules ran. It still does that for tools read by hand.
+
 ## Two kinds of rule, one report
 
 - **Field**: a value out of its enum, a missing required field, a link nobody can open.
@@ -50,5 +60,4 @@ reads the fields is the duplication this replaces.
 
 `protocol/AgentStatusMessage` is the first message gathered. The others are still scattered — the MCP tool
 declarations are inline schema strings in `surface/mcp/tools/`, and the paid reads carry `--json-schema` blocks
-in `adapter/assistant/`. Gathering them is [`TODO.md`](../../TODO.md); a schema expresses the field rules and
-never the consistency ones, so both halves belong wherever they land.
+in `adapter/assistant/`. Gathering them is [`TODO.md`](../../TODO.md).

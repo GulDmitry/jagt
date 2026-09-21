@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.surface.mcp.ToolHandler;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
@@ -20,6 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -35,8 +39,22 @@ class McpToolScopeTest {
 
     private static Map<String, ToolHandler> declared(McpTools group) {
         Map<String, ToolHandler> handlers = new HashMap<>();
-        McpToolRegistry registry = (name, schema, handler) -> handlers.put(name, handler);
-        group.declare(registry);
+        group.declare(new McpToolRegistry() {
+            @Override
+            public void tool(String name, String schemaJson, ToolHandler handler) {
+                handlers.put(name, handler);
+            }
+
+            @Override
+            public <T extends dev.jagt.orchestrator.protocol.Message> void tool(String name,
+                    dev.jagt.orchestrator.protocol.Schema schema, Class<T> message,
+                    java.util.function.BiFunction<T, String,
+                            dev.jagt.orchestrator.protocol.MessageContext> context,
+                    dev.jagt.orchestrator.surface.mcp.MessageHandler<T> handler) {
+                handlers.put(name, dev.jagt.orchestrator.surface.mcp.MessageTool.of(new JsonMapper(), message,
+                        context, handler));
+            }
+        });
         return handlers;
     }
 
@@ -79,11 +97,12 @@ class McpToolScopeTest {
 
     @Test
     void letsAnAgentReportOnItsOwnTaskWithoutNamingIt() {
+        when(statusReports.contextFor(any())).thenReturn(MessageContext.NONE);
         ToolHandler handler = declared(new StatusTools(statusReports, scope)).get("update_agent_status");
 
         handler.call(args("{\"status\":\"IN_PROGRESS\",\"message\":\"working\"}"), "MINE-1");
 
-        verify(statusReports).report("IN_PROGRESS", "working", null, null, java.util.Map.of(), "MINE-1");
+        verify(statusReports).report(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1"));
     }
 
     @Test

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.TaskStatus;
 
@@ -15,8 +17,9 @@ import java.util.regex.Pattern;
  * What a session says about its own task, as it arrives on the wire. Raw strings: a value out of its enum is a
  * VIOLATION to report back, not an exception on the way in.
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentStatusMessage(String status, String message, String outcome, String reviewRequestUrl,
-                                 Map<String, String> reviewRequests) {
+                                 Map<String, String> reviewRequests, String taskId) implements Message {
 
     /** The wire spelling of what a report says about a round; absent falls back to a marker in the message. */
     public static final Set<String> OUTCOMES = Set.of("progress", "question", "no_changes");
@@ -50,8 +53,26 @@ public record AgentStatusMessage(String status, String message, String outcome, 
             .text("taskId", "Optional explicit task id or alias (Master use). Sub-agents may only target their"
                     + " own task.");
 
+    /** Where a link is not in the fields that name one, the message text is read for it. */
+
     public AgentStatusMessage {
+        // Blank is absent: a field the sender left as "" must read the same as one it left out.
+        status = absent(status);
+        message = absent(message);
+        outcome = absent(outcome);
+        reviewRequestUrl = absent(reviewRequestUrl);
+        taskId = absent(taskId);
         reviewRequests = reviewRequests == null ? Map.of() : Map.copyOf(reviewRequests);
+    }
+
+    /** The five-field form, for jagt's own reports, which name no task of someone else's. */
+    public AgentStatusMessage(String status, String message, String outcome, String reviewRequestUrl,
+                              Map<String, String> reviewRequests) {
+        this(status, message, outcome, reviewRequestUrl, reviewRequests, null);
+    }
+
+    private static String absent(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     /**
@@ -59,15 +80,19 @@ public record AgentStatusMessage(String status, String message, String outcome, 
      * time fixes them one call at a time. {@code projectsOnTask} empty means the task is unknown, which is a
      * different refusal and not this one's to make.
      */
-    public List<Violation> violations(List<String> projectsOnTask) {
+    @Override
+    public List<Violation> violations(MessageContext context) {
+        List<String> projectsOnTask = context.projectsOnTask();
         List<Violation> found = new ArrayList<>();
-        if (parsedStatus() == null) {
+        if (status == null) {
+            found.add(new Violation("status", "required, one of " + List.of(TaskStatus.values())));
+        } else if (parsedStatus() == null) {
             found.add(new Violation("status", "one of " + List.of(TaskStatus.values())));
         }
-        if (outcome != null && !outcome.isBlank() && !OUTCOMES.contains(normalised(outcome))) {
+        if (outcome != null && !OUTCOMES.contains(normalised(outcome))) {
             found.add(new Violation("outcome", "one of " + OUTCOMES + ", or left out"));
         }
-        if (!reviewRequests.isEmpty() && reviewRequestUrl != null && !reviewRequestUrl.isBlank()) {
+        if (!reviewRequests.isEmpty() && reviewRequestUrl != null) {
             found.add(new Violation("reviewRequests", "given instead of reviewRequestUrl, never beside it"));
         }
         notWebLinks().forEach(link -> found.add(new Violation("reviewRequestUrl",
@@ -85,17 +110,17 @@ public record AgentStatusMessage(String status, String message, String outcome, 
      * The message in jagt's own types, or empty when it broke a rule. {@code projectsOnTask} is the task's
      * repositories, primary first, since which link a human follows first is the session's own repository.
      */
-    public Optional<Reported> accepted(List<String> projectsOnTask) {
-        if (!violations(projectsOnTask).isEmpty()) {
+    public Optional<Reported> accepted(MessageContext context) {
+        if (!violations(context).isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new Reported(parsedStatus(), claimed(), detail(), link(projectsOnTask),
-                reviewRequests));
+        return Optional.of(new Reported(parsedStatus(), claimed(), detail(),
+                link(context.projectsOnTask()), reviewRequests));
     }
 
     /** What this report says about a round: the typed field first, the marker the message opens with second. */
     private AgentReport claimed() {
-        if (outcome == null || outcome.isBlank()) {
+        if (outcome == null) {
             return AgentReport.of(message);
         }
         return switch (normalised(outcome)) {
