@@ -25,13 +25,6 @@ would send the same work out as several, cut at a configured size — around 300
 What to decide first: where a cut may fall (only a commit boundary leaves each request buildable), how they are
 chained so the second targets the first, and what happens to comments a later cut has superseded.
 
-## `TmuxSessionHost` has no test beside it (open)
-
-The sole `SessionHost` implementation and the only adapter class with nothing testing it: a real tmux is the
-only honest test, so the hermetic suite cannot cover it.
-
-What to decide first: whether it belongs in `e2eTest`, which already has tmux, or in a suite of its own.
-
 ## A flag for the tasks that matter, on the card (idea)
 
 An inbox flag, top-right: the few tasks you must not lose sit in a board where every card reads equally urgent.
