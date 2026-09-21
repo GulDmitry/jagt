@@ -10,21 +10,20 @@ speaks the centre's vocabulary and nothing else, and the centre does not know it
 
 - A message arrives as the strings and maps it was written in. `violations(...)` judges it; `accepted(...)`
   returns it in jagt's own types (`protocol/Reported`) or nothing.
-- **Nothing downstream re-reads the wire.** Which status, what the round claims, which request it is about and
-  what the human is shown are resolved in `protocol/`, once. A caller that parses a field again has found a
-  leak, not a convenience.
+- **Nothing downstream re-reads the wire**: which status, what the round claims, which request it is about and
+  what the human is shown are resolved once, here. A caller parsing a field again has found a leak.
 - What a message cannot carry is not the protocol's to answer: a claim it makes about the worktree is measured
   where the worktree is (`service/HandBack`), and which status it may LAND on is `flow/FlowRules`.
 
 ## The arguments are read INTO the message, never field by field
 
-`MessageTool` is the one path from the wire to a verb: the arguments are deserialized into the message, judged,
-and only then does the tool run. A field added to a message arrives without anyone remembering to read it, which
-the hand-written extraction it replaces is exactly where a new field went missing. A field the message does not
-declare is **ignored**: a CLI one version ahead must not have its call rejected over a word jagt has not learned.
+`MessageTool` is the one path from the wire to a verb: the arguments are read into the message, judged, and
+only then does the tool run. A field added to a message arrives without anyone remembering to read it — the
+hand-written extraction it replaces is where a new one went missing. A field the message does not declare is
+**ignored**: a CLI a version ahead must not have its call rejected over a word jagt has not learned.
 
-**Required-ness is the message's answer too.** The transport used to check presence by parsing the schema it had
-just been handed, one field at a time and before the rules ran. It still does that for tools read by hand.
+**Required-ness is the message's answer too.** The transport parsed `required` back out of the schema it had
+just rendered, answering one field at a time and first; it still does for tools read by hand.
 
 ## Two kinds of rule, one report
 
@@ -39,8 +38,7 @@ just been handed, one field at a time and before the rules ran. It still does th
 
 `protocol/Schema` renders what a caller is given out of the fields a message declares, so the JSON a CLI reads
 and the rules that judge the answer cannot disagree. The enum comes from whatever enumerates it
-(`TaskStatus.values()`), never from a list written out beside it. A schema written by hand next to the code that
-reads the fields is the duplication this replaces.
+(`TaskStatus.values()`), never from a list written beside it.
 
 ## A refusal is a correction, and the same request is sent again
 
@@ -51,10 +49,10 @@ reads the fields is the duplication this replaces.
 - **To a paid read**: jagt is the sender. `protocol/TicketRead` judges the answer and the violations ride into
   the next ask, because the identical question is what returns the identical answer.
 - **Retries are bounded and end in a person** (`protocol/RetryPolicy`): three attempts for a paid read, spaced,
-  under a budget, since every one of them is paid for. An exhausted policy answers with NO facts and never a
-  guess — reaching the human is then the caller's, and a caller that logs it and moves on is the bug this
-  exists to stop. A round nobody could read taps the human ONCE per round (`AutoReviewScheduler`), because an
-  unattended poll is the one caller with nobody watching its log.
+  under a budget, since every one is paid for. An exhausted policy answers with NO facts and never a guess:
+  reaching the human is the caller's, and one that logs it and moves on is the bug this exists to stop. A round
+  nobody could read taps the human ONCE (`AutoReviewScheduler`) — an unattended poll is the caller whose log
+  nobody reads.
 
 ## Where the shapes are today
 
