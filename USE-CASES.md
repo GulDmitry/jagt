@@ -154,7 +154,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | Its source branch is someone else's convention (`feature/x`) | `resume <url>` | Taken over as-is; the worktree directory is the flattened `feature-x-<project>` |
 | The URL is a review request | `resume <url>` | Branches and title read by a model (paid); a ticket-key branch needs its tracker too |
 | The request lives on a host jagt was never pointed at | `resume <url>` | The headless assistant follows the URL (paid) |
-| No working MCP server for that host | `resume <url>` | Refused as **unread**, never as missing: ERROR names what stopped it and which MCP servers are down (`claude mcp list`) |
+| No working MCP server for that host | `resume <url>` | Asked again up to the policy, then refused as **unread**, never as missing: ERROR names what stopped it and which MCP servers are down (`claude mcp list`) |
 | That probe cannot run either (no CLI, declared servers) | `resume <url>` | Says so; "nothing is down" prints only where the servers were asked |
 | The host itself answers that there is no such request | `resume <url>` | Refused in those words — the one case "does not exist" belongs to |
 | The configured host claims the URL and the read fails | — | Refused, **not** retried through a paid read |
@@ -205,6 +205,7 @@ What the agent does with a comment:
 | The reviewer never resolves the threads | The poll keeps reading the request, but the brief is relayed only when the round actually changed |
 | Comments arrive after the agent handed the round back | The next poll picks them up: polling follows the open request, not the status |
 | A task goes back out for review on the same request | Every entry into CI_POLLING is a new round: the window restarts and the previous checks verdict is dropped |
+| A poll could not read the round at all | Retried to the policy, then **one** desktop ping naming what stopped it — an unattended poll is the one caller whose log nobody reads |
 | "Is anything actually polling?" | The header says so unasked: `auto-review on/off` |
 | Polling stopped and nothing is happening | The round outlived `autoReview.windowHours`: the card says `polling stopped`, hovering it `no further polls: this round is past its 24h window`, and it **does** ask for you |
 | An open request nothing polls | The card says `polling off` (`polling is disabled for this task`) or `cannot time this` (`no round stamp, so no poll interval can be measured`) — `sweep` by hand |

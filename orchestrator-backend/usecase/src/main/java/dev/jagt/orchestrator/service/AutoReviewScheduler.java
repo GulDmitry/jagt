@@ -52,6 +52,7 @@ public class AutoReviewScheduler implements Job {
     private final Executor executor;
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
     private final Set<String> windowElapsedNotified = ConcurrentHashMap.newKeySet();
+    private final Set<String> unreadableNotified = ConcurrentHashMap.newKeySet();
 
     // @Autowired disambiguates: with two constructors Spring otherwise demands a no-arg default.
     @Autowired
@@ -85,10 +86,12 @@ public class AutoReviewScheduler implements Job {
         var tasks = stateService.tasks();
         // A task RETIRED while out for review never leaves that status, so its marker would never be dropped.
         windowElapsedNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
+        unreadableNotified.removeIf(marker -> !tasks.containsKey(marker.substring(0, marker.lastIndexOf('@'))));
         tasks.forEach((taskId, task) -> {
             // A task the poller has no business with any more re-arms its window-elapsed ping.
             if (!cadence.polls(task)) {
                 windowElapsedNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
+                unreadableNotified.removeIf(marker -> marker.startsWith(taskId + "@"));
                 return;
             }
             switch (decide(task, cadence, now)) {
@@ -99,7 +102,7 @@ public class AutoReviewScheduler implements Job {
                                 AutoReviewWatch.windowElapsed(cadence.windowHours()).note()));
                     }
                 }
-                case POLL -> poll(taskId, task.alias());
+                case POLL -> poll(taskId, task.alias(), task.mrCreatedAt());
                 case SKIP -> { }
             }
         });
@@ -115,7 +118,7 @@ public class AutoReviewScheduler implements Job {
         };
     }
 
-    private void poll(String taskId, String alias) {
+    private void poll(String taskId, String alias, long round) {
         // Stops the tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a task's
         // sweeps mutually exclusive; that exclusion lives where every trigger passes through.
         if (!inFlight.add(taskId)) {
@@ -125,7 +128,7 @@ public class AutoReviewScheduler implements Job {
                 .addKeyValue("alias", alias)
                 .log();
         try {
-            executor.execute(() -> pollNow(taskId));
+            executor.execute(() -> pollNow(taskId, round));
         } catch (RejectedExecutionException e) {
             // Submission itself failed. Caught NARROWLY: an exception from the sweep landing here would leave
             // lastPolledAt unadvanced under a same-thread executor, re-running the sweep forever.
@@ -137,9 +140,16 @@ public class AutoReviewScheduler implements Job {
         }
     }
 
-    private void pollNow(String taskId) {
+    private void pollNow(String taskId, long round) {
         try {
-            OriginContext.as(ActionOrigin.AUTO_REVIEW, () -> reviewSweep.sweep(taskId));
+            ReviewSweepService.SweepResult result = OriginContext.as(ActionOrigin.AUTO_REVIEW,
+                    () -> reviewSweep.sweep(taskId));
+            // A round nobody could read is the one outcome an unattended poll must not keep to itself: the
+            // retries are spent, and every further tick would say the same thing to the same log.
+            if (result.kind() == ReviewSweepService.SweepResult.Kind.UNREADABLE
+                    && unreadableNotified.add(taskId + "@" + round)) {
+                notifications.send(Notification.fromAgent(taskId, "auto-review", result.message()));
+            }
         } catch (RuntimeException e) {
             log.atWarn().setMessage("auto-review sweep failed")
                     .addKeyValue("task", taskId)

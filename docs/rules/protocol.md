@@ -43,7 +43,8 @@ reads the fields is the duplication this replaces.
 - **Retries are bounded and end in a person** (`protocol/RetryPolicy`): three attempts for a paid read, spaced,
   under a budget, since every one of them is paid for. An exhausted policy answers with NO facts and never a
   guess — reaching the human is then the caller's, and a caller that logs it and moves on is the bug this
-  exists to stop. The reads for `resume` and a review round still have no policy at all.
+  exists to stop. A round nobody could read taps the human ONCE per round (`AutoReviewScheduler`), because an
+  unattended poll is the one caller with nobody watching its log.
 
 ## Where the shapes are today
 

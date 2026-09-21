@@ -90,6 +90,26 @@ class AutoReviewSchedulerTest {
     }
 
     @Test
+    void tapsTheHumanOnceForARoundNobodyCouldReadInsteadOfOnlyLoggingIt(@TempDir Path root) {
+        StateService state = stateWith(root, polling()
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
+                .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
+        ReviewSweepService sweep = mock(ReviewSweepService.class);
+        when(sweep.sweep("ABC-1")).thenReturn(new ReviewSweepService.SweepResult(
+                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
+        Notifications notifications = mock(Notifications.class);
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(), sweep, notifications,
+                Runnable::run);
+
+        scheduler.run();
+        state.updateTask("ABC-1", task -> task.withLastPolledAt(0));
+        scheduler.run();
+
+        verify(sweep, times(2)).sweep("ABC-1");
+        verify(notifications, times(1)).send(argThat(sent -> sent.body().contains("read failed")));
+    }
+
+    @Test
     void tapsTheHumanOncePerElapsedWindowInsteadOfPollingOn(@TempDir Path root) {
         StateService state = stateWith(root, polling()
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis()).build());

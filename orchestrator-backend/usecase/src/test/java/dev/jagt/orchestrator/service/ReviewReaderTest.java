@@ -6,12 +6,17 @@ import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 
+import dev.jagt.orchestrator.protocol.RetryPolicy;
+
+import java.time.Duration;
+
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -28,6 +33,39 @@ class ReviewReaderTest {
                 .read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
         assertThat(facts).contains(new ReviewFacts(true, false, "running", List.of()));
+    }
+
+    @Test
+    void sendsAReadThatCameBackWithNothingToReadAgainUpToTheLimit() {
+        when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
+                .thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
+
+        new ReviewReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+                .read("ABC-1", "https://host/g/p/-/merge_requests/7");
+
+        verify(assistant, times(3)).readReview("https://host/g/p/-/merge_requests/7");
+    }
+
+    @Test
+    void believesAHostSayingThereIsNoSuchRequestWithoutPayingToHearItAgain() {
+        when(assistant.readReview("https://host/g/p/-/merge_requests/7")).thenReturn(new Answer<>(
+                Optional.of(new ReviewFacts(false, false, "unknown", List.of())), TokenUsage.NONE));
+
+        new ReviewReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+                .read("ABC-1", "https://host/g/p/-/merge_requests/7");
+
+        verify(assistant, times(1)).readReview("https://host/g/p/-/merge_requests/7");
+    }
+
+    @Test
+    void chargesEveryAttemptItPaidForEvenWhereTheReadCameBackEmpty() {
+        when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
+                .thenReturn(new Answer<>(Optional.empty(), TokenUsage.ofCall(10, 0, 1, 0.5)));
+
+        new ReviewReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+                .read("ABC-1", "https://host/g/p/-/merge_requests/7");
+
+        verify(assistant).chargeTask("ABC-1", new TokenUsage(3, 30, 0, 3, 1.5));
     }
 
     @Test
@@ -62,14 +100,4 @@ class ReviewReaderTest {
         verify(assistant, never()).brokenMcpServers();
     }
 
-    @Test
-    void chargesAReadToTheTaskEvenWhenItCameBackEmpty() {
-        TokenUsage spent = TokenUsage.ofCall(26_000, 0, 120, 0.06);
-        when(assistant.readReview("https://other.example.com/g/p/-/merge_requests/7"))
-                .thenReturn(new Answer<>(Optional.empty(), spent));
-
-        new ReviewReader(assistant).read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
-
-        verify(assistant).chargeTask("ABC-1", spent);
-    }
 }
