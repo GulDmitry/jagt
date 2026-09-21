@@ -5,7 +5,11 @@ import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.surface.mcp.ToolHandler;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.Schema;
+import dev.jagt.orchestrator.surface.mcp.MessageHandler;
+import dev.jagt.orchestrator.surface.mcp.MessageTool;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.StateService;
@@ -19,6 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -41,18 +46,10 @@ class McpToolScopeTest {
         Map<String, ToolHandler> handlers = new HashMap<>();
         group.declare(new McpToolRegistry() {
             @Override
-            public void tool(String name, String schemaJson, ToolHandler handler) {
-                handlers.put(name, handler);
-            }
-
-            @Override
-            public <T extends dev.jagt.orchestrator.protocol.Message> void tool(String name,
-                    dev.jagt.orchestrator.protocol.Schema schema, Class<T> message,
-                    java.util.function.BiFunction<T, String,
-                            dev.jagt.orchestrator.protocol.MessageContext> context,
-                    dev.jagt.orchestrator.surface.mcp.MessageHandler<T> handler) {
-                handlers.put(name, dev.jagt.orchestrator.surface.mcp.MessageTool.of(new JsonMapper(), message,
-                        context, handler));
+            public <T extends Message> void tool(String name, Schema schema, Class<T> message,
+                                                 BiFunction<T, String, MessageContext> context,
+                                                 MessageHandler<T> handler) {
+                handlers.put(name, MessageTool.of(new JsonMapper(), message, context, handler));
             }
         });
         return handlers;

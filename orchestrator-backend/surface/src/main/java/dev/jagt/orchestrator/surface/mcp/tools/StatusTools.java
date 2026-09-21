@@ -4,12 +4,12 @@ import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.surface.mcp.CallerScope;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
+import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.UserNotice;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.pairs;
-import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 
 @Component
 @RequiredArgsConstructor
@@ -29,16 +29,8 @@ public class StatusTools implements McpTools {
                 (said, caller) -> statusReports.contextFor(taskOf(said, caller)),
                 (said, caller) -> statusReports.report(said, taskOf(said, caller)));
 
-        tools.tool("notify_user", """
-                {
-                  "description": "Send an OS push notification to the human (e.g. 'review round addressed — ABC-123'). Use when human attention is needed.",
-                  "type": "object",
-                  "properties": {
-                    "title": {"type": "string", "description": "Defaults to 'jagt'."},
-                    "message": {"type": "string"}
-                  },
-                  "required": ["message"]
-                }""",
-                (args, caller) -> statusReports.notifyUser(text(args, "title"), text(args, "message")));
+        tools.tool("notify_user", UserNotice.SCHEMA, UserNotice.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> statusReports.notifyUser(said.title(), said.message()));
     }
 }

@@ -58,6 +58,13 @@ public final class Schema {
         return this;
     }
 
+    /** A list of strings; an absent list and an empty one are the same answer. */
+    public Schema texts(String name, String describes) {
+        ObjectNode field = field(name, "array", describes);
+        field.putObject("items").put("type", "string");
+        return this;
+    }
+
     /** A string-to-string object, with examples because a shape is easier shown than described. */
     public Schema pairs(String name, String describes, List<Map<String, String>> examples) {
         ObjectNode field = field(name, "object", describes);

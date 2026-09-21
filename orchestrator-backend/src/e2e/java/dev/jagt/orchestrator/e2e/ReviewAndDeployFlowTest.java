@@ -48,6 +48,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @Tag("e2e")
@@ -281,7 +283,7 @@ class ReviewAndDeployFlowTest {
         when(assistant.readMergeRequest(request())).thenReturn(
                 new Answer<>(Optional.of(new MergeRequestFacts(true, TASK, "main", TASK + " " + TITLE)),
                         TokenUsage.NONE));
-        when(assistant.readTicket(TASK)).thenReturn(
+        when(assistant.readTicket(eq(TASK), any())).thenReturn(
                 new Answer<>(Optional.of(new TicketFacts(true, TASK, TITLE, "ABC", List.of(),
                         "https://tracker.example.com/" + TASK)), TokenUsage.NONE));
 

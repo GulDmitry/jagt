@@ -5,10 +5,11 @@ import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.surface.mcp.CallerScope;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.TaskRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import static dev.jagt.orchestrator.surface.mcp.tools.ToolArgs.text;
 
 @Component
 @RequiredArgsConstructor
@@ -19,27 +20,18 @@ public class DeployTools implements McpTools {
 
     @Override
     public void declare(McpToolRegistry tools) {
-        tools.tool("deploy_task", """
-                {
-                  "description": "Merge the task's branch into the project's deployBranch (jagt.yml) and push it. On merge conflict nothing is pushed and the human resolves manually. Master-only.",
-                  "type": "object",
-                  "properties": {
-                    "taskId": {"type": "string", "description": "Task id or its short alias."}
-                  },
-                  "required": ["taskId"]
-                }""",
-                (args, caller) -> deploy(text(args, "taskId"), caller));
+        tools.tool("deploy_task", TaskRef.schema("Merge the task's branch into the project's deployBranch"
+                        + " (jagt.yml) and push it. On merge conflict nothing is pushed and the human resolves"
+                        + " manually. Master-only."),
+                TaskRef.class, (said, caller) -> MessageContext.NONE,
+                (said, caller) -> deploy(said.taskId(), caller));
 
-        tools.tool("revert_task", """
-                {
-                  "description": "Undo a task's deploy: revert the merge commit it created on the deployBranch and push the revert. Only for a DEPLOYED task; refuses (nothing is written) when the commit is unknown, already reverted, or the revert conflicts. Master-only.",
-                  "type": "object",
-                  "properties": {
-                    "taskId": {"type": "string", "description": "Task id or its short alias."}
-                  },
-                  "required": ["taskId"]
-                }""",
-                (args, caller) -> revert(text(args, "taskId"), caller));
+        tools.tool("revert_task", TaskRef.schema("Undo a task's deploy: revert the merge commit it created on"
+                        + " the deployBranch and push the revert. Only for a DEPLOYED task; refuses (nothing is"
+                        + " written) when the commit is unknown, already reverted, or the revert conflicts."
+                        + " Master-only."),
+                TaskRef.class, (said, caller) -> MessageContext.NONE,
+                (said, caller) -> revert(said.taskId(), caller));
     }
 
     private String deploy(String taskId, String callerTaskId) {

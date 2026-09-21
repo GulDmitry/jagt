@@ -8,6 +8,8 @@ import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;
 import dev.jagt.orchestrator.surface.mcp.tools.StatusTools;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
+import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.NoArguments;
 import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -101,8 +103,9 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools failing = tools -> tools.tool("boom", "{\"type\":\"object\",\"properties\":{}}",
-                (args, caller) -> { throw new IllegalStateException(); });
+        McpTools failing = tools -> tools.tool("boom", NoArguments.schema("throws"), NoArguments.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> { throw new IllegalStateException(); });
         McpProtocolService protocol = new McpProtocolService(mapper, state, List.of(failing));
 
         JsonNode response = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\","

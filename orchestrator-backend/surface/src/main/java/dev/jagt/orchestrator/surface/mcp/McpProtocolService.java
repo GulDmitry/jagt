@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
-import dev.jagt.orchestrator.surface.mcp.tools.ToolArgs;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,8 +25,7 @@ public class McpProtocolService implements McpToolRegistry {
     private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
     private static final long KEEP_ALIVE_THROTTLE_MS = 15_000;
 
-    /** {@code judged} = the arguments ARE a protocol message, which reports a missing field itself. */
-    private record ToolSpec(String name, JsonNode schema, ToolHandler handler, boolean judged) {
+    private record ToolSpec(String name, JsonNode schema, ToolHandler handler) {
     }
 
     private final ObjectMapper mapper;
@@ -40,13 +38,8 @@ public class McpProtocolService implements McpToolRegistry {
         groups.forEach(group -> group.declare(this));
     }
 
-    @Override
-    public void tool(String name, String schemaJson, ToolHandler handler) {
-        register(name, schemaJson, handler, false);
-    }
-
-    private void register(String name, String schemaJson, ToolHandler handler, boolean judged) {
-        if (tools.putIfAbsent(name, new ToolSpec(name, mapper.readTree(schemaJson), handler, judged)) != null) {
+    private void register(String name, String schemaJson, ToolHandler handler) {
+        if (tools.putIfAbsent(name, new ToolSpec(name, mapper.readTree(schemaJson), handler)) != null) {
             throw new IllegalStateException("Two MCP tool groups both declare '" + name + "'");
         }
     }
@@ -134,7 +127,7 @@ public class McpProtocolService implements McpToolRegistry {
     public <T extends Message> void tool(String name, Schema schema, Class<T> message,
                                          BiFunction<T, String, MessageContext> context,
                                          MessageHandler<T> handler) {
-        register(name, schema.json(), MessageTool.of(mapper, message, context, handler), true);
+        register(name, schema.json(), MessageTool.of(mapper, message, context, handler));
     }
 
     private JsonNode callTool(JsonNode message, String callerTaskId) {
@@ -143,16 +136,6 @@ public class McpProtocolService implements McpToolRegistry {
         ToolSpec spec = tools.get(name);
         if (spec == null) {
             return toolResult("Error: Unknown tool: " + name, true);
-        }
-        // A message says which of its fields are missing along with everything else wrong, in one answer the
-        // sender corrects against; checking presence here first would answer one field at a time and in worse
-        // words. Tools whose arguments are still read by hand keep this check until they carry a message.
-        if (!spec.judged()) {
-            for (JsonNode required : spec.schema().path("required")) {
-                if (ToolArgs.text(args, required.asText()) == null) {
-                    return toolResult("Error: Argument '" + required.asText() + "' is required", true);
-                }
-            }
         }
         try {
             return toolResult(spec.handler().call(args, callerTaskId), false);

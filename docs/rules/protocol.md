@@ -56,6 +56,6 @@ and the rules that judge the answer cannot disagree. The enum comes from whateve
 
 ## Where the shapes are today
 
-`protocol/AgentStatusMessage` is the first message gathered. The others are still scattered — the MCP tool
-declarations are inline schema strings in `surface/mcp/tools/`, and the paid reads carry `--json-schema` blocks
-in `adapter/assistant/`. Gathering them is [`TODO.md`](../../TODO.md).
+Every MCP tool is a message: `McpToolRegistry` has one way to declare one and it takes a message class, so a
+tool that skips validation does not compile rather than failing a test. The four paid reads still carry
+`--json-schema` blocks in `adapter/assistant/` — [`TODO.md`](../../TODO.md).
