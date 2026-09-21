@@ -16,23 +16,17 @@ Two sorts of point, and the difference is the whole safety story:
   itself](../AGENTS.md#the-human-in-the-loop), and [a trigger is deterministic](rules/review.md). A setting that
   lets a verdict issue one of these makes both sentences false, on a board that binds loopback without auth.
 
-Judging points go first. The record from step 4 is what earns the right to touch an authorising one.
+Judging points go first. The finished-task record is what earns the right to touch an authorising one.
 
-## 1. A verdict before a round reaches a human
+## Built, and where the rules for it live
 
-The agent reports REVIEW_PENDING when the work is "done and verified" and jagt takes that on its word — while
-it does **not** take `no_changes` on its word (`WorktreeChanges`, one `git status` per report). The same
-distrust, applied to the build: a command per project in `jagt.yml`, run by jagt, on the report that
-would end at REVIEW_PENDING. A red one is relayed the way a red pipeline already is (`ReviewFacts.pipelineFailure`
-→ `<checks>`) and the round never reaches the human.
+- A verdict before a round reaches a human — `verifyCommand` per project, the VERIFYING status and `VerifyJob`
+  ([`flow.md`](rules/flow.md)).
+- The plan as an artifact with a gate — `plan.md` and PLAN_PENDING, whose move is yours.
+- One record per finished task — `finished.jsonl` beside `state.json`, the status log kept whole, read by the
+  `finished` report ([`components.md`](rules/components.md)).
 
-- Buys: nobody opens an IDE on a red tree. This is the step that raises how many tasks one person can carry.
-- Costs a status: a suite of minutes cannot run inside a report, so it is a `Job`, and "being verified" is a
-  state the board has to say.
-- Must not break: the checks dot has one source today. A local verdict is a second source for the **same** dot,
-  never a second dot ([`design.md`](rules/design.md)), and it is the open half of the stale-verdict TODO.
-
-## 2. The quality gate: a Master session running unattended
+## 1. The quality gate: a Master session running unattended
 
 jagt already names this role: a session at the root carries no worktree header, so [every one
 is Master](../AGENTS.md) — it sees every task over the same MCP, issues every verb, and writes no code. What is
@@ -67,28 +61,7 @@ replaces you is that brief; the session is a process that reads it.
   true), which the board picks up on its own, and one word in the header the way the jobs chip already works.
   A pseudo-card is what that replaces.
 
-## 3. The plan as an artifact with a gate
-
-`plan first` is `--permission-mode plan` and the plan lives in terminal scrollback: nothing reads it, nothing
-versions it, nothing waits on it. Written to the worktree it becomes the cheapest artifact a human reviews — a
-plan is minutes, a diff is not — and the first thing the reviewer of step 2 has to read.
-
-- Buys: the human's attention moves to the artifact where changing your mind is still free.
-- Costs a status between NEW and IN_PROGRESS whose move is yours, a row in `FlowRules`, a `Phase`, a legend row.
-- Must not break: approving a plan is a relay, not a new verb, unless it turns out to be more than one
-  ([`surfaces.md`](rules/surfaces.md)).
-
-## 4. One record per finished task
-
-`done` deletes the briefing, the standing instruction and the drafted replies, and with no ticket behind it the
-words that started the task go too. `stats` therefore describes open work and can never be asked for throughput.
-One record per finished task, held whether or not anything reads it yet: status stamps, rounds, verdicts, spend,
-and where the reviewer of step 2 disagreed with you.
-
-- Buys: the numbers that decide whether step 5 is safe, and every later thing built on finished work.
-- Open: [where it lives](../TODO.md), given that the base branch is read-only.
-
-## 5. Work that arrives unasked, and verdicts that act
+## 2. Work that arrives unasked, and verdicts that act
 
 The two ends of the loop the playbook closes, both blocked on something outside this repository.
 
@@ -97,4 +70,4 @@ The two ends of the loop the playbook closes, both blocked on something outside 
   working prompt come first.
 - **Off production**: a signal becomes a task. jagt holds no credential and reaches outside itself only through
   the one-shot assistant, so what jagt may promise before it holds a token is the decision, not the plumbing.
-- **A verdict issuing a verb**: the invariant at the top, and the reason step 4 comes first.
+- **A verdict issuing a verb**: the invariant at the top, and the reason the finished record came first.
