@@ -23,6 +23,33 @@ public record AgentStatusMessage(String status, String message, String outcome, 
 
     private static final Pattern URL = Pattern.compile("https?://\\S+");
 
+    /** The form a caller is given, beside the rules it is judged by: one declaration, never two that drift. */
+    public static final Schema SCHEMA = Schema.of(
+                    "Update the task status and keep-alive timestamp in state.json. Sub-agents MUST call this"
+                            + " frequently to avoid Watchdog alerts, and MUST call it with outcome=question BEFORE"
+                            + " putting any question to the human — an interactive choice in your own window"
+                            + " reaches nobody, and this call is the only thing that puts the question on their"
+                            + " board. taskId defaults to the calling worktree's task.")
+            .choiceRequired("status", List.of(TaskStatus.values()), null)
+            .choice("outcome", OUTCOMES,
+                    "What this report says about the work, in jagt's own words rather than yours:"
+                            + " `question` = you have STOPPED and need the human (the message is the question),"
+                            + " `no_changes` = a review round edited no code (all comments already handled, or"
+                            + " you pushed back on every one), `progress` = anything else. Checked where it can"
+                            + " be: report no_changes over an edited worktree and it is recorded as a round with"
+                            + " a diff.")
+            .text("reviewRequestUrl", "The review request this report is about. Required with CI_POLLING (jagt"
+                    + " links it, and the board is where the human follows it).")
+            .pairs("reviewRequests", "One request URL per project key, for a task spanning several repositories:"
+                            + " {\"<project>\": \"<url>\"}. Give it instead of reviewRequestUrl and name EVERY"
+                            + " repository you opened one in — it is still one round.",
+                    List.of(Map.of("api", "https://host/api/-/merge_requests/7",
+                            "web", "https://host/web/-/merge_requests/3")))
+            .text("message", "For the HUMAN, 10 words MAX — it renders as one narrow dashboard table line"
+                    + " (longer text is truncated). No marker words: what the report MEANS is the outcome field.")
+            .text("taskId", "Optional explicit task id or alias (Master use). Sub-agents may only target their"
+                    + " own task.");
+
     public AgentStatusMessage {
         reviewRequests = reviewRequests == null ? Map.of() : Map.copyOf(reviewRequests);
     }

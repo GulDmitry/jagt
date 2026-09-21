@@ -25,6 +25,22 @@ speaks the centre's vocabulary and nothing else, and the centre does not know it
   one call per error. `startup/StartupValidation` refuses a bad install the same way.
 - A violation names **the field and what was expected**, because the refusal is what the sender acts on.
 
+## The shape is declared once, in the code
+
+`protocol/Schema` renders what a caller is given out of the fields a message declares, so the JSON a CLI reads
+and the rules that judge the answer cannot disagree. The enum comes from whatever enumerates it
+(`TaskStatus.values()`), never from a list written out beside it. A schema written by hand next to the code that
+reads the fields is the duplication this replaces.
+
+## A refusal is a correction, and the same request is sent again
+
+- Every violation at once, each naming its field and what was expected, because the next thing a sender does is
+  re-send the message corrected — not escalate it, not give up on it.
+- **From a session**: the refusal comes back from the call; the brief tells the session to fix every line and
+  call again, which is not a block and never a question for the human.
+- **To a paid read**: jagt is the sender, and an answer that breaks its own schema is re-asked with the
+  violations appended rather than logged as unreadable. Not built — [`TODO.md`](../../TODO.md).
+
 ## Where the shapes are today
 
 `protocol/AgentStatusMessage` is the first message gathered. The others are still scattered — the MCP tool
