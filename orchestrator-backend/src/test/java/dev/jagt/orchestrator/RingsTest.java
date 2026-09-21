@@ -25,11 +25,18 @@ class RingsTest {
             Path.of("surface/src/main/java/dev/jagt/orchestrator"),
             Path.of("src/main/java/dev/jagt/orchestrator"));
     private static final Set<String> CORE = Set.of("flow", "task", "port");
+    /** The protocol may speak the centre's vocabulary; the centre must not know the protocol exists. */
+    private static final Set<String> PROTOCOL_MAY_SEE = Set.of("flow", "task", "port", "protocol");
 
     @ParameterizedTest
     @ValueSource(strings = {"flow", "task", "port"})
     void theCentreImportsNothingFromTheRingsAroundIt(String ring) {
         assertThat(importsOf(ring).filter(imported -> !CORE.contains(imported))).isEmpty();
+    }
+
+    @Test
+    void theProtocolSpeaksOnlyTheCentresVocabulary() {
+        assertThat(importsOf("protocol").filter(imported -> !PROTOCOL_MAY_SEE.contains(imported))).isEmpty();
     }
 
     @ParameterizedTest
@@ -39,7 +46,7 @@ class RingsTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"flow", "task", "port"})
+    @ValueSource(strings = {"flow", "task", "port", "protocol"})
     void theCentreCarriesNoFrameworkAtAll(String ring) {
         assertThat(sources(ring).filter(text -> text.contains("org.springframework")
                 || text.contains("lombok"))).isEmpty();
@@ -49,8 +56,8 @@ class RingsTest {
     void readsEveryRingItClaimsToCheck() {
         assertThat(ROOTS).allSatisfy(root -> assertThat(Files.isDirectory(root))
                 .describedAs("source root %s", root).isTrue());
-        assertThat(List.of("flow", "task", "port", "capability", "command", "job", "notify", "service",
-                "surface", "adapter", "config", "startup")).allSatisfy(ring ->
+        assertThat(List.of("flow", "task", "port", "protocol", "capability", "command", "job", "notify",
+                "service", "surface", "adapter", "config", "startup")).allSatisfy(ring ->
                 assertThat(sources(ring).count()).describedAs("java files in %s", ring).isPositive());
     }
 

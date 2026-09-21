@@ -6,6 +6,9 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.flow.RoundState;
+import dev.jagt.orchestrator.protocol.AgentStatusMessage;
+import dev.jagt.orchestrator.protocol.Reported;
+import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
@@ -17,7 +20,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * What an agent says about its own task, and the one ping the human gets for it. WHICH task a caller may touch is
@@ -28,7 +31,6 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AgentStatusReports {
 
-    private static final Pattern URL = Pattern.compile("https?://\\S+");
     private static final int MAX_MESSAGE = 100;
 
     private final StateService stateService;
@@ -38,7 +40,7 @@ public class AgentStatusReports {
 
     /** For jagt's own reports, which carry no outcome of an agent's and no request to link. */
     public String report(TaskStatus status, String message, String taskId) {
-        return report(status, message, null, null, Map.of(), taskId);
+        return report(status.name(), message, null, null, Map.of(), taskId);
     }
 
     /**
@@ -56,37 +58,31 @@ public class AgentStatusReports {
      */
     public String report(String status, String message, String outcome, String reviewRequestUrl,
                          Map<String, String> requestsByProject, String taskId) {
-        return report(parsed(status), message, outcome, reviewRequestUrl, requestsByProject, taskId);
-    }
-
-    private static TaskStatus parsed(String status) {
-        try {
-            return TaskStatus.valueOf(status.trim().toUpperCase(java.util.Locale.ROOT));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Unknown status '" + status + "'. Allowed: "
-                    + List.of(TaskStatus.values()));
+        AgentStatusMessage said = new AgentStatusMessage(status, message, outcome, reviewRequestUrl,
+                requestsByProject);
+        List<Violation> violations = said.violations(known(taskId));
+        if (!violations.isEmpty()) {
+            throw new IllegalArgumentException("This report was not accepted. Fix every line and send it again:\n"
+                    + violations.stream().map(Violation::toString).collect(Collectors.joining("\n")));
         }
+        return report(said.accepted(known(taskId)).orElseThrow(), taskId);
     }
 
-    private String report(TaskStatus newStatus, String message, String outcome, String reviewRequestUrl,
-                          Map<String, String> requestsByProject, String taskId) {
+    /** The task's repositories, primary first: which link a human follows first is the session's own. */
+    private List<String> known(String taskId) {
+        return stateService.task(taskId).map(TaskState::projects).orElse(List.of());
+    }
+
+    private String report(Reported said, String taskId) {
         Optional<TaskState> current = stateService.task(taskId);
-        refuseUnknownProjects(requestsByProject, current, taskId);
-        String shortMessage = abbreviate(stated(message, outcome, current, taskId));
-        // A message is cut down to one dashboard line, and a cut URL is a dead link. The named request wins.
-        String named = requestsByProject.isEmpty()
-                ? (reviewRequestUrl == null || reviewRequestUrl.isBlank() ? null : reviewRequestUrl.strip())
-                : sessionRepoRequest(requestsByProject, current);
-        String url = named == null ? extractUrl(message) : named;
-        // The dashboard is the SSOT for "where is my request", so a linkless CI_POLLING is a lie.
-        if (newStatus == TaskStatus.CI_POLLING && url == null) {
-            throw new IllegalArgumentException(
-                    "CI_POLLING requires the request link in the message, e.g."
-                            + " \"review request: https://...\"");
-        }
+        TaskStatus newStatus = said.status();
+        Map<String, String> requestsByProject = said.requests();
+        String shortMessage = abbreviate(stated(said, current, taskId));
+        String url = said.link();
         TaskStatus previous = current.map(TaskState::status).orElse(null);
+        boolean owed = current.map(handBack::verificationOwed).orElse(false);
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
-        TaskStatus landed = previous == null ? newStatus : FlowRules.reported(previous, newStatus);
+        TaskStatus landed = previous == null ? newStatus : FlowRules.reported(previous, newStatus, owed);
         boolean updated = flow.report(taskId, newStatus, shortMessage, (was, next) -> {
             if (url == null) {
                 return next;
@@ -101,7 +97,7 @@ public class AgentStatusReports {
                 return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
             }
             return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
-        }, handBack::verificationOwed);
+        }, task -> owed);
         if (!updated) {
             throw new IllegalArgumentException("Task " + taskId + " not found in state.json");
         }
@@ -207,9 +203,9 @@ public class AgentStatusReports {
      * typed argument first, the agent's own opening as the fallback. NO_CHANGES is then CHECKED — it is the one
      * claim jagt can measure, and a round that edited files is a diff for the human to read.
      */
-    private String stated(String message, String outcome, Optional<TaskState> task, String taskId) {
-        AgentReport claimed = claimed(outcome, message);
-        String detail = AgentReport.withoutMarker(message);
+    private String stated(Reported said, Optional<TaskState> task, String taskId) {
+        AgentReport claimed = said.claimed();
+        String detail = said.detail();
         if (claimed == AgentReport.NO_CHANGES && task.filter(handBack::anyUncommitted).isPresent()) {
             log.atInfo().setMessage("report overruled").addKeyValue("task", taskId)
                     .addKeyValue("alias", task.get().alias())
@@ -221,52 +217,12 @@ public class AgentStatusReports {
         return switch (claimed) {
             case QUESTION -> marked("awaiting", detail);
             case NO_CHANGES -> marked("no changes", detail);
-            case PLAIN -> message == null ? null : detail;
-        };
-    }
-
-    private static AgentReport claimed(String outcome, String message) {
-        if (outcome == null || outcome.isBlank()) {
-            return AgentReport.of(message);
-        }
-        return switch (outcome.strip().toLowerCase(java.util.Locale.ROOT)) {
-            case "question" -> AgentReport.QUESTION;
-            case "no_changes", "no-changes", "no changes" -> AgentReport.NO_CHANGES;
-            default -> AgentReport.of(message);
+            case PLAIN -> detail;
         };
     }
 
     private static String marked(String marker, String detail) {
         return detail.isBlank() ? marker : marker + ": " + detail;
-    }
-
-    /** An unknown key would be dropped silently, leaving a task that reads as shipped with no request on it. */
-    private static void refuseUnknownProjects(Map<String, String> requestsByProject, Optional<TaskState> task,
-                                              String taskId) {
-        if (requestsByProject.isEmpty() || task.isEmpty()) {
-            return;
-        }
-        List<String> known = task.get().projects();
-        List<String> unknown = requestsByProject.keySet().stream().filter(key -> !known.contains(key)).toList();
-        if (!unknown.isEmpty()) {
-            throw new IllegalArgumentException("Task " + taskId + " has no " + String.join(", ", unknown)
-                    + " in it. Its projects are: " + String.join(", ", known));
-        }
-    }
-
-    /** The link a human follows first, and the one a repeat is compared against. */
-    private static String sessionRepoRequest(Map<String, String> requestsByProject, Optional<TaskState> task) {
-        String sessionRepo = task.map(state -> state.primary().project()).orElse(null);
-        return sessionRepo == null ? requestsByProject.values().iterator().next()
-                : requestsByProject.getOrDefault(sessionRepo, requestsByProject.values().iterator().next());
-    }
-
-    private static String extractUrl(String text) {
-        if (text == null) {
-            return null;
-        }
-        var matcher = URL.matcher(text);
-        return matcher.find() ? matcher.group() : null;
     }
 
     /** One dashboard line: a status message is a headline, and an agent's essay ruins the table. */

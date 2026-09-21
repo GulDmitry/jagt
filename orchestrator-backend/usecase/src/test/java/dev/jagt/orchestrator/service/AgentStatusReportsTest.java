@@ -53,6 +53,18 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void tellsTheSessionItsHandBackIsWaitingOnVerificationRatherThanOnTheHuman(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(configService.project("proj")).thenReturn(new dev.jagt.orchestrator.task.ProjectConfig(
+                "/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test")));
+
+        String answer = reports(state).report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
+
+        assertThat(answer).contains("VERIFYING");
+    }
+
+    @Test
     void storesTheRequestLinkTheAgentPutInItsStatusMessage(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
@@ -111,7 +123,7 @@ class AgentStatusReportsTest {
         assertThatThrownBy(() -> reports(state).report("CI_POLLING", "requests up", null, null,
                 Map.of("frontend", "https://host/x/-/merge_requests/9"), "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("has no frontend in it")
+                .hasMessageContaining("project 'frontend' is not on this task")
                 .hasMessageContaining("proj");
     }
 
@@ -229,7 +241,7 @@ class AgentStatusReportsTest {
 
         assertThatThrownBy(() -> reports(state).report(TaskStatus.CI_POLLING, message, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("request link");
+                .hasMessageContaining("required with CI_POLLING");
     }
 
     @Test
@@ -250,7 +262,7 @@ class AgentStatusReportsTest {
 
         assertThatThrownBy(() -> reports(state).report(TaskStatus.CI_POLLING, "waiting for the pipeline", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("request link");
+                .hasMessageContaining("required with CI_POLLING");
     }
 
     @Test

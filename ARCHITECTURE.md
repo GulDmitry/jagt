@@ -6,7 +6,7 @@ The map of the code: **what kinds of thing jagt has, and where a new one goes.**
 Every path below is a package under `dev.jagt.orchestrator`, inside `orchestrator-backend/` — where `gradlew` lives too,
 **not** the repository root. So `flow/` is `orchestrator-backend/core/src/main/java/dev/jagt/orchestrator/flow`.
 
-Status is part of the map: a row saying *built* means built, checked on 2026-09-01; fix a stale row, never delete it.
+Status is part of the map: *built* means built; fix a stale row, never delete it.
 
 ## The kinds
 
@@ -19,10 +19,11 @@ missing. Add a kind, never an exception.**
 | `task/` | the task record and everything it is made of | built — `service/StateService` writes it to `state.json` |
 | `flow/` | which status allows what, and where each outcome leads | built — `FlowRules`, `FlowEngine`, `FlowReports`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
-| `job/` | work that runs with nobody watching | built — `Job` + `Jobs`; the five impls still live in `service/` |
+| `job/` | work that runs with nobody watching | built — `Job` + `Jobs`, the impls still in `service/` |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
+| `protocol/` | what crosses into jagt, and what makes it valid | partial — `AgentStatusMessage`; the reads and hooks are still scattered |
 
 `service/` is the rest: work more than one kind shares — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither. The board renders `flow/TaskView`; a report is text from the
@@ -61,7 +62,7 @@ answer. Every type in `flow/`, one question each:
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
 | `FlowReports` | door two: a status the task itself reports, gated by `FlowRules.reportable` |
 | `Capabilities` | every `port/TaskCapability` there is, one per action — the `capability/` kind's registry |
-| `Phase` | the step of a task's life a human reads, since four statuses all read as "review" |
+| `Phase` | the step of a task's life a human reads |
 | `Pipeline` | what the host last said about the checks, as a verdict rather than as its own wording |
 | `AgentReport` | what the agent is reporting about a round — a question, no changes, or progress |
 | `RoundState` | what the last round left behind: that report, plus whether drafted replies are waiting |
@@ -145,7 +146,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
   legal ones only, `FlowRules.allowed(...)`), and `FlowEngine` refuses an illegal one with a sentence.
 - **The surface holds no list** — the usual way to break that is building a button in `static/ui/card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
-- A capability gets a folder once it owns work (`capability/ship/`); five verbs are still flat.
+- A capability gets a folder once it owns work (`capability/ship/`); the rest are flat.
 - Two equal `priority()` values are refused rather than ordered arbitrarily.
 - `do` and `resume` are named literally in `app.js` and `TaskCommandsController`, so a new launch shortcut costs the
   board a change.
