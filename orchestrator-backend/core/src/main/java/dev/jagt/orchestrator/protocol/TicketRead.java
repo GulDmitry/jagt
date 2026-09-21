@@ -11,6 +11,15 @@ import java.util.List;
  */
 public final class TicketRead {
 
+    public static final Schema SCHEMA = Schema.answer()
+            .required("exists", "boolean", null)
+            .required("failure", "string", null)
+            .required("key", "string", null)
+            .required("title", "string", null)
+            .required("trackerProject", "string", null)
+            .requiredTexts("labels", null)
+            .required("url", "string", null);
+
     private TicketRead() {
     }
 

@@ -44,11 +44,11 @@ A schema alone carries half of it: "in this enum" and "required" it expresses, "
 does not. Both halves belong in one place.
 
 Decided: the code is the source and the JSON is rendered from it (`protocol/Schema`), so a shape and the rules
-judging it cannot drift. Sixteen messages still declare their own — eleven MCP tools, four reads, the hook
-endpoint. The read direction has no retry at all: an answer breaking its own schema is logged as unreadable
-instead of being re-asked with the violations appended.
+judging it cannot drift. Every MCP tool and every paid read is gathered; what the session hooks report
+(`surface/agent`) is not, and it is the one edge still shaped by whatever the CLI happens to send.
 
-What to decide first: whether a re-ask is bounded by attempts or by cost, since a read is paid for every time.
+What to decide first: whether a hook report is jagt's to shape at all, since the CLI writes it and jagt only
+receives it.
 
 ## Run the Master session against real work before anyone turns it on (idea)
 

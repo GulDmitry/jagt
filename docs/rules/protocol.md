@@ -10,10 +10,10 @@ speaks the centre's vocabulary and nothing else, and the centre does not know it
 
 - A message arrives as the strings and maps it was written in. `violations(...)` judges it; `accepted(...)`
   returns it in jagt's own types (`protocol/Reported`) or nothing.
-- **Nothing downstream re-reads the wire**: which status, what the round claims, which request it is about and
+- **Nothing downstream re-reads the wire**: which status, what a round claims, which request it is about and
   what the human is shown are resolved once, here. A caller parsing a field again has found a leak.
-- What a message cannot carry is not the protocol's to answer: a claim it makes about the worktree is measured
-  where the worktree is (`service/HandBack`), and which status it may LAND on is `flow/FlowRules`.
+- What a message cannot carry is not the protocol's: a claim about the worktree is measured where the worktree
+  is (`service/HandBack`), and which status it may LAND on is `flow/FlowRules`.
 
 ## The arguments are read INTO the message, never field by field
 
@@ -56,6 +56,6 @@ and the rules that judge the answer cannot disagree. The enum comes from whateve
 
 ## Where the shapes are today
 
-Every MCP tool is a message: `McpToolRegistry` has one way to declare one and it takes a message class, so a
-tool that skips validation does not compile rather than failing a test. The four paid reads still carry
-`--json-schema` blocks in `adapter/assistant/` — [`TODO.md`](../../TODO.md).
+`McpToolRegistry` has one way to declare a tool and it takes a message class, so a tool that skips validation
+does not compile. The paid reads declare theirs the same way (`TicketRead`, `MergeRequestRead`, `ReviewRead`,
+`CommandRead`) and their answers are judged before being believed. The hooks are not gathered yet.

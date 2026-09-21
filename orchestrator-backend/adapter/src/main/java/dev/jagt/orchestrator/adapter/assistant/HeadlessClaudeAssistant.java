@@ -6,6 +6,10 @@ import dev.jagt.orchestrator.port.Processes;
 
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.protocol.CommandRead;
+import dev.jagt.orchestrator.protocol.MergeRequestRead;
+import dev.jagt.orchestrator.protocol.ReviewRead;
+import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
@@ -36,43 +40,6 @@ import java.util.Optional;
 public class HeadlessClaudeAssistant implements MasterAssistant {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(3);
-    private static final String TICKET_SCHEMA = """
-            {"type":"object","properties":{\
-            "exists":{"type":"boolean"},\
-            "failure":{"type":"string"},\
-            "key":{"type":"string"},\
-            "title":{"type":"string"},\
-            "trackerProject":{"type":"string"},\
-            "labels":{"type":"array","items":{"type":"string"}},\
-            "url":{"type":"string"}},\
-            "required":["exists","failure","key","title","trackerProject","labels","url"]}""";
-    private static final String MR_SCHEMA = """
-            {"type":"object","properties":{\
-            "exists":{"type":"boolean"},\
-            "failure":{"type":"string"},\
-            "sourceBranch":{"type":"string"},\
-            "targetBranch":{"type":"string"},\
-            "title":{"type":"string"}},\
-            "required":["exists","failure","sourceBranch","targetBranch","title"]}""";
-    /** {@code pipelineStatus} is an enum, not free text: it is read by keyword, so a sentence carrying "fail" is one. */
-    private static final String REVIEW_SCHEMA = """
-            {"type":"object","properties":{\
-            "exists":{"type":"boolean"},\
-            "failure":{"type":"string"},\
-            "approved":{"type":"boolean"},\
-            "pipelineStatus":{"type":"string","enum":["success","failed","running","none","unknown"]},\
-            "pipelineFailure":{"type":"string"},\
-            "openedAt":{"type":"string"},\
-            "threads":{"type":"array","items":{"type":"string"}}},\
-            "required":["exists","failure","approved","pipelineStatus","pipelineFailure","openedAt",\
-            "threads"]}""";
-    private static final String COMMAND_SCHEMA = """
-            {"type":"object","properties":{\
-            "command":{"type":"string"},\
-            "task":{"type":"string"},\
-            "ticket":{"type":"string"},\
-            "reason":{"type":"string"}},\
-            "required":["command","task","ticket","reason"]}""";
     /** A model cannot otherwise tell "no such item" from "I never got to look"; the second must not read as the first. */
     private static final String FAILURE_RULE = " Answer failure=\"\" ONLY when the host itself answered you:"
             + " with an answer, or with a no such item — that one is exists=false and empty fields. If ANYTHING"
@@ -109,7 +76,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " asks for, from its description. Never answer exists=true with an empty title or an"
                 + " empty url." + FAILURE_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
-        return readable(ask(prompt + correcting(corrections), TICKET_SCHEMA, ticketRef,
+        return readable(ask(prompt + correcting(corrections), TicketRead.SCHEMA.json(), ticketRef,
                 AssistantCallKind.TICKET_READ), ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
@@ -131,7 +98,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " with its source branch as sourceBranch, the branch it merges INTO as targetBranch, and its"
                 + " title." + FAILURE_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
-        return readable(ask(prompt, MR_SCHEMA, mrUrl, AssistantCallKind.MR_READ), mrUrl).map(n -> new MergeRequestFacts(
+        return readable(ask(prompt, MergeRequestRead.SCHEMA.json(), mrUrl, AssistantCallKind.MR_READ), mrUrl).map(n -> new MergeRequestFacts(
                 n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
                 n.path("targetBranch").asString(""), n.path("title").asString("")));
     }
@@ -170,7 +137,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " about exists: a listing you could not get is pipelineStatus=unknown with failure=\"\"."
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
-        Answer<JsonNode> answer = ask(prompt, REVIEW_SCHEMA, mrUrl, AssistantCallKind.REVIEW_SWEEP,
+        Answer<JsonNode> answer = ask(prompt, ReviewRead.SCHEMA.json(), mrUrl, AssistantCallKind.REVIEW_SWEEP,
                 REVIEW_TIMEOUT);
         return readable(answer, mrUrl).map(n -> {
             List<String> threads = new ArrayList<>();
@@ -233,7 +200,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " command=\"none\" and put the ambiguity in reason. Do NOT guess between two tasks:"
                 + " ambiguity is a `none`. Respond directly.";
         // Text -> command reads nothing, so a tool call could only be a mistake, and each loaded server costs context.
-        return ask(prompt, COMMAND_SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP, MAP_TIMEOUT)
+        return ask(prompt, CommandRead.SCHEMA.json(), "command mapping", AssistantCallKind.COMMAND_MAP, MAP_TIMEOUT)
                 .map(n -> new CommandProposal(n.path("command").asString(""), n.path("task").asString(""),
                         n.path("ticket").asString(""), n.path("reason").asString("")));
     }

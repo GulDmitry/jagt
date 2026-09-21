@@ -33,6 +33,11 @@ public final class Schema {
         return new Schema(description);
     }
 
+    /** A schema for an ANSWER: the model is told what to fill in by the prompt, so it carries no description. */
+    public static Schema answer() {
+        return new Schema(null);
+    }
+
     public Schema text(String name, String describes) {
         field(name, "string", describes);
         return this;
@@ -65,6 +70,12 @@ public final class Schema {
         return this;
     }
 
+    public Schema requiredTexts(String name, String describes) {
+        texts(name, describes);
+        required.add(name);
+        return this;
+    }
+
     /** A string-to-string object, with examples because a shape is easier shown than described. */
     public Schema pairs(String name, String describes, List<Map<String, String>> examples) {
         ObjectNode field = field(name, "object", describes);
@@ -86,12 +97,15 @@ public final class Schema {
 
     public String json() {
         ObjectNode root = MAPPER.createObjectNode();
-        root.put("description", description);
+        if (description != null) {
+            root.put("description", description);
+        }
         root.put("type", "object");
         root.set("properties", properties);
         ArrayNode names = root.putArray("required");
         required.forEach(names::add);
-        return root.toPrettyString();
+        // Compact: it rides in a command line and in every tools/list, and nobody reads it there.
+        return root.toString();
     }
 
     private ObjectNode field(String name, String type, String describes) {
