@@ -73,6 +73,38 @@ class ReviewSweepServiceTest {
     }
 
     @Test
+    void keepsAnEarlierRoundsVerdictFlaggedWhenThisSweepCouldNotReadTheChecks() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
+                .pipelineStatus("failed").build()));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "unknown", List.of())));
+        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
+        TaskState after = stamped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .pipelineStatus("failed").build());
+        assertThat(after.pipelineStatus()).isEqualTo("failed");
+        assertThat(after.pipelineUnread()).isTrue();
+    }
+
+    @Test
+    void leavesAGreenThisSweepCouldNotReReadOutOfTheReviewedDecision() {
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
+                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
+                .pipelineStatus("success").build()));
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "unknown", List.of())));
+
+        var result = sweep.sweep("ABC-1");
+
+        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
+        verify(statusReports, never()).markReviewed("ABC-1");
+    }
+
+    @Test
     void stampsWhetherTheRoundIsApprovedSoBothSurfacesCanShowItBesideTheRequest() {
         when(reviewReader.read("ABC-1", "http://mr/1"))
                 .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));

@@ -122,7 +122,7 @@ class TaskStateTest {
     @Test
     void keepsWhatTheHostSaidAboutTheChecksWhenTheTaskGoesOnMoving() {
         TaskState red = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()
-                .withPipelineStatus("failed");
+                .withChecksRead("failed");
 
         TaskState reported = red.withStatus(TaskStatus.CI_FAILED, "build broken");
 
@@ -247,6 +247,6 @@ class TaskStateTest {
     private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
                                         List<StatusChange> history) {
         return new TaskState(List.of(TaskRepo.of("proj", "/wt")), status, lastActive, message, "a1", null,
-                null, null, 0, 0, 0, 0, null, null, null, null, null, null, history);
+                null, null, 0, 0, 0, 0, null, null, null, false, null, null, null, history);
     }
 }

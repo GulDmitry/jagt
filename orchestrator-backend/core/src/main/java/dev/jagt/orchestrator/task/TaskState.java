@@ -42,6 +42,8 @@ public record TaskState(
         Boolean autoReview,
         // The host's own wording for the checks, unparsed. Null = never read.
         String pipelineStatus,
+        // Whether the NEWEST round failed to read them, so the word above is an older round's.
+        boolean pipelineUnread,
         // Whether the host says this round is approved. Null = no read has said yet.
         Boolean approved,
         // Null until the first metered call.
@@ -85,6 +87,7 @@ public record TaskState(
             @JsonProperty("silentBecause") String silentBecause,
             @JsonProperty("autoReview") Boolean autoReview,
             @JsonProperty("pipelineStatus") String pipelineStatus,
+            @JsonProperty("pipelineUnread") Boolean pipelineUnread,
             @JsonProperty("approved") Boolean approved,
             @JsonProperty("usage") TokenUsage usage,
             @JsonProperty("agentSpend") AgentSpend agentSpend,
@@ -94,8 +97,8 @@ public record TaskState(
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
         return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
-                silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus, approved,
-                usage, agentSpend, history);
+                silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
+                pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history);
     }
 
     @JsonIgnore
@@ -176,7 +179,7 @@ public record TaskState(
         long now = System.currentTimeMillis();
         return relinked(project, reviewRequestUrl).lastActiveTimestamp(now)
                 // A new round has new checks and no verdict yet; the last one's answers describe a dead state.
-                .pipelineStatus(null).approved(null)
+                .pipelineStatus(null).pipelineUnread(false).approved(null)
                 // The polling window is per ROUND, not per request; lastPolledAt=0 means "poll at the next tick".
                 .mrCreatedAt(now).lastPolledAt(0)
                 .build();
@@ -239,8 +242,14 @@ public record TaskState(
         return requestOpenedAt <= 0 ? this : toBuilder().requestOpenedAt(requestOpenedAt).build();
     }
 
-    public TaskState withPipelineStatus(String hostStatus) {
-        return toBuilder().pipelineStatus(hostStatus).build();
+    /** What a round actually READ off the host, which also ends any older round's failure to read it. */
+    public TaskState withChecksRead(String hostStatus) {
+        return toBuilder().pipelineStatus(hostStatus).pipelineUnread(false).build();
+    }
+
+    /** A round that could not read them: the last verdict stands, marked as not this round's. */
+    public TaskState withChecksUnread() {
+        return toBuilder().pipelineUnread(true).build();
     }
 
     public TaskState withApproved(Boolean approved) {
@@ -310,7 +319,7 @@ public record TaskState(
             return toBuilder().repos(repos);
         }
         return toBuilder().repos(repos).requestOpenedAt(System.currentTimeMillis())
-                .pipelineStatus(null).approved(null);
+                .pipelineStatus(null).pipelineUnread(false).approved(null);
     }
 
     public TaskState withMrUrl(String mrUrl) {
@@ -389,7 +398,8 @@ public record TaskState(
                 .title(title).ticketUrl(ticketUrl).baseBranch(baseBranch)
                 .mrCreatedAt(mrCreatedAt).requestOpenedAt(requestOpenedAt)
                 .lastPolledAt(lastPolledAt).silentSince(silentSince).silentBecause(silentBecause)
-                .autoReview(autoReview).pipelineStatus(pipelineStatus).approved(approved)
+                .autoReview(autoReview).pipelineStatus(pipelineStatus).pipelineUnread(pipelineUnread)
+                .approved(approved)
                 .usage(usage).agentSpend(agentSpend).history(history);
     }
 
@@ -410,6 +420,7 @@ public record TaskState(
         private String silentBecause;
         private Boolean autoReview;
         private String pipelineStatus;
+        private boolean pipelineUnread;
         private Boolean approved;
         private TokenUsage usage;
         private AgentSpend agentSpend;
@@ -515,6 +526,11 @@ public record TaskState(
             return this;
         }
 
+        public Builder pipelineUnread(boolean pipelineUnread) {
+            this.pipelineUnread = pipelineUnread;
+            return this;
+        }
+
         public Builder approved(Boolean approved) {
             this.approved = approved;
             return this;
@@ -541,7 +557,7 @@ public record TaskState(
                     lastActiveTimestamp > 0 ? lastActiveTimestamp : System.currentTimeMillis(), null));
             return new TaskState(repos, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                     baseBranch, mrCreatedAt, requestOpenedAt, lastPolledAt, silentSince, silentBecause,
-                    autoReview, pipelineStatus, approved, usage, agentSpend, log);
+                    autoReview, pipelineStatus, pipelineUnread, approved, usage, agentSpend, log);
         }
     }
 }

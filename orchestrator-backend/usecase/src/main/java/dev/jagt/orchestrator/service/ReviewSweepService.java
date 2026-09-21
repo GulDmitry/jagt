@@ -98,7 +98,10 @@ public class ReviewSweepService {
             rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
         }
         ReviewFacts r = merged(rounds);
-        String said = record(taskId, r);
+        // THIS round's own read is what decides and what is relayed; the word the CARD carries is the last one
+        // a round managed to read, and a green nobody looked at must not mark the task REVIEWED.
+        String said = orUnknown(r.pipelineStatus());
+        record(taskId, r);
         Pipeline checks = Pipeline.of(said);
         if (r.threads().isEmpty() && checks != Pipeline.RED) {
             if (r.approved()) {
@@ -128,28 +131,38 @@ public class ReviewSweepService {
     /**
      * Keeps what the host said about this round and taps the human ONCE when a run turns red: a later poll saying
      * the same thing writes nothing, or an unattended sweep would notify on a loop. ONE write, all three facts
-     * coming off one read. Returns the checks word the task now carries.
+     * coming off one read. A round that could not read them leaves the older round's word standing, flagged.
      */
-    private String record(String taskId, ReviewFacts facts) {
+    private void record(String taskId, ReviewFacts facts) {
         Optional<TaskState> before = stateService.task(taskId);
-        String said = before.map(TaskState::pipelineStatus).orElse(null);
-        String checks = orUnknown(facts.pipelineStatus());
-        boolean newChecks = !java.util.Objects.equals(said, checks);
+        String standing = before.map(TaskState::pipelineStatus).orElse(null);
+        String read = orUnknown(facts.pipelineStatus());
+        boolean unread = gotNoListing(facts.pipelineStatus());
+        String checks = unread ? standing : read;
+        boolean newChecks = !java.util.Objects.equals(standing, checks)
+                || before.map(TaskState::pipelineUnread).orElse(false) != unread;
         boolean newApproval = !java.util.Objects.equals(before.map(TaskState::approved).orElse(null),
                 facts.approved());
         boolean newOpened = facts.openedAt() > 0
                 && before.map(TaskState::requestOpenedAt).orElse(0L) != facts.openedAt();
         if (!newChecks && !newApproval && !newOpened) {
-            return checks;
+            return;
         }
-        stateService.updateTask(taskId, task -> task.withPipelineStatus(checks)
+        stateService.updateTask(taskId, task -> (unread ? task.withChecksUnread() : task.withChecksRead(read))
                 .withApproved(facts.approved()).withRequestOpenedAt(facts.openedAt()));
-        Pipeline was = Pipeline.of(said);
+        Pipeline was = Pipeline.of(standing);
         Pipeline now = Pipeline.of(checks);
         if (newChecks && now.worthATap() && now != was) {
             notifications.send(Notification.checksFailed(taskId, checks));
         }
-        return checks;
+    }
+
+    /**
+     * Whether the round got no listing at all — the one word the reader writes for that. NOT the verdict:
+     * {@code Pipeline.UNKNOWN} also covers a word the parser does not recognise, which IS a read.
+     */
+    private static boolean gotNoListing(String read) {
+        return read == null || read.isBlank() || read.strip().equalsIgnoreCase("unknown");
     }
 
     /** A round that answered nothing still has to say so in a word, or every line quoting it renders a hole. */

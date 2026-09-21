@@ -27,8 +27,9 @@ round leaves the diff and the drafts for `ide <alias>`.
 - The agent resolves at **ship** time over its own MCP (`ShipService.repliesStep`), and only threads whose
   code it changed; during the round it posts nothing, and a draft goes only where the note it answers is by
   an author matching `reviewReplyAuthors`.
-- `TaskState.pipelineStatus` keeps the host's **own** wording and `flow/Pipeline` is its one parser →
-  GREEN / RED / RUNNING / NONE / UNKNOWN — NONE no pipeline, UNKNOWN nobody having read one.
+- `TaskState.pipelineStatus` keeps the host's **own** wording, `flow/Pipeline` its one parser → GREEN, RED,
+  RUNNING, NONE, UNKNOWN — NONE no pipeline, UNKNOWN nobody read one; **a round reading no listing writes
+  nothing**, the last word standing flagged.
 - **A red round relays the failing job's error lines** (`ReviewFacts.pipelineFailure`) as `<checks>`; read
   twice, a thread and a failure must read the same, or every poll re-briefs.
 

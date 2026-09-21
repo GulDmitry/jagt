@@ -48,6 +48,8 @@ public record TaskView(
         // `pipeline` is the verdict anything decides on; `pipelineSaid` is the host's own wording, for display.
         Pipeline pipeline,
         String pipelineSaid,
+        // Whether the newest round could not read them, so the verdict above is an older round's.
+        boolean pipelineUnread,
         // Whether the request is approved; null until a read has said. No status can answer this.
         Boolean approved,
         long tokens
@@ -84,7 +86,7 @@ public record TaskView(
                         .toList(),
                 task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
                 task.history(), deployed, draftedReplies, AgentReport.of(task.message()), autoReview,
-                Pipeline.of(task.pipelineStatus()), task.pipelineStatus(),
+                Pipeline.of(task.pipelineStatus()), task.pipelineStatus(), task.pipelineUnread(),
                 task.hasReviewRequest() ? task.approved() : null,
                 task.totalUsage().total());
     }

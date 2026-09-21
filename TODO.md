@@ -41,14 +41,6 @@ standing instruction and the drafted replies, while the branch and the request o
 What to decide first: whether an artifact outliving the worktree lives in git (whose, and on which branch — the
 base branch is read-only) or beside `state.json`, and what the board shows for a task that is gone.
 
-## A card that keeps a red run visible through a sweep that could not read it (open)
-
-A task carries ONE checks word, so a round whose pipeline listing failed writes `unknown` over a `failed` still
-true, while carrying the old word forward would advance a task on a green nobody looked at.
-
-What to decide first: whether "what was last READ" and "whether the latest round could read it" earn two fields
-on `TaskState`, and what mark keeps a stale verdict from reading as a current one.
-
 ## `TmuxSessionHost` has no test beside it (open)
 
 The sole `SessionHost` implementation and the only adapter class with nothing testing it: a real tmux is the

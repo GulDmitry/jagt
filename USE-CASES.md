@@ -213,7 +213,7 @@ What the agent does with a comment:
 | A deployed task's request comes back green and unapproved | The poll leaves it `deployed`: a read of the round never moves work that already went out |
 | A round answered every comment and changed no code | The card does not ask for you — `nothing to ship; the open threads are the reviewer's move` — and flips once polling stops |
 | No checks dot while the host shows a failed run | The read lists the host's OWN pipelines: `none` is the host listing none, `unknown` is nobody having read one |
-| A sweep that could not read the checks | `unknown` replaces whatever stood before — the dot goes, the hover says why, and the comments and approval it did read are relayed |
+| A sweep that could not read the checks | The last verdict a round DID read stands, the hover saying this one could not; what it did read is relayed |
 | The MR link shows no age | Only a request written into `state.json` before any of this and never read since |
 | "Is anything else running behind my back?" | The header carries the soonest run of any unattended job and, outranking it, that a run threw; `jobs` is the detail |
 | The jobs chip reads `due` and stays there | Right: a job run writes no state, and the ticker runs every 60s; open the Jobs report for the real schedule |

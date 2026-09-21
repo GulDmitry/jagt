@@ -51,7 +51,8 @@ const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING' 
 
 const checksDot = (task) => {
   const dot = span(`checks ${task.pipeline.toLowerCase()}`, '');
-  dot.dataset.tip = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
+  const said = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
+  dot.dataset.tip = task.pipelineUnread ? `${said}\nthe last sweep could not read them` : said;
   return dot;
 };
 
