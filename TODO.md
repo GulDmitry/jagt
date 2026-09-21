@@ -32,24 +32,6 @@ An inbox flag, top-right: the few tasks you must not lose sit in a board where e
 What to decide first: `card-top` already ends in the attention badge, so a flag there says what it replaces —
 and no colour is free, `--danger` meaning broken and `--you` your move. Likely a shape, sorted first not tinted.
 
-## One declared language for everything that crosses into jagt (concept)
-
-Every message between a session, the orchestrator and the Master speaks one protocol: the operations, their
-invariants and their validation in one place, covering a ticket read, a `resume`, a push, what the hooks report
-and a status report. A violation obliges the sender to send the same request again, corrected.
-`protocol/AgentStatusMessage` is the first one gathered.
-
-A schema alone carries half of it: "in this enum" and "required" it expresses, "`reviewRequests` instead of
-`reviewRequestUrl`" and "a listing you could not get is `pipelineStatus=unknown` with an empty `failure`" it
-does not. Both halves belong in one place.
-
-Decided: the code is the source and the JSON is rendered from it (`protocol/Schema`), so a shape and the rules
-judging it cannot drift. Every MCP tool and every paid read is gathered; what the session hooks report
-(`surface/agent`) is not, and it is the one edge still shaped by whatever the CLI happens to send.
-
-What to decide first: whether a hook report is jagt's to shape at all, since the CLI writes it and jagt only
-receives it.
-
 ## Run the Master session against real work before anyone turns it on (idea)
 
 It ships off, marked experimental, and stays off until it has been driven by hand against live tasks: what it

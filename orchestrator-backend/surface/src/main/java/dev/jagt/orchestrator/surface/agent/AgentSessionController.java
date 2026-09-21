@@ -1,11 +1,13 @@
 package dev.jagt.orchestrator.surface.agent;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import dev.jagt.orchestrator.protocol.MessageContext;
+import dev.jagt.orchestrator.protocol.SessionHookReport;
+import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.SessionReports;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,21 +16,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 
 /** The state comes from the address; the payload is read only for what jagt can use, and never required. */
 @RestController
 @RequestMapping("/api/agent/session")
 @RequiredArgsConstructor
+@Slf4j
 public class AgentSessionController {
-
-    /** {@code source} is what STARTED this session — the only way to tell a compaction from an ordinary start. */
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Session(@JsonProperty("transcript_path") String transcriptPath,
-                          @JsonProperty("source") String source,
-                          @JsonProperty("message") String message) {
-    }
 
     private final StateService stateService;
     private final SessionReports reports;
@@ -37,23 +33,24 @@ public class AgentSessionController {
     @PostMapping(value = "/{state}", produces = MediaType.TEXT_PLAIN_VALUE)
     public String report(@PathVariable String state,
                          @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
-                         @RequestBody(required = false) Session session) {
+                         @RequestBody(required = false) SessionHookReport session) {
         String taskId = stateService.findByWorktree(cwd)
                 .orElseThrow(() -> new IllegalArgumentException("No task runs in '" + cwd + "'"))
                 .getKey();
-        return reports.record(taskId, reported(state), reported(session));
-    }
-
-    /** Deriving where a session writes its log is a guess, so a payload that named none must not become one. */
-    private static SessionReports.Report reported(Session session) {
-        if (session == null) {
-            return SessionReports.Report.defaults();
+        SessionHookReport said = session == null ? SessionHookReport.none() : session;
+        // Nobody reads a refusal here — the hook posts what its CLI handed it and discards the answer — so what
+        // cannot be believed is dropped and said once in the log.
+        List<Violation> violations = said.violations(MessageContext.NONE);
+        if (!violations.isEmpty()) {
+            log.atWarn().setMessage("session hook field dropped")
+                    .addKeyValue("task", taskId)
+                    .addKeyValue("cause", violations.toString())
+                    .log();
         }
-        String log = session.transcriptPath();
-        return SessionReports.Report.defaults()
-                .withSessionLog(log == null || log.isBlank() ? null : Path.of(log))
-                .withStartedBy(session.source())
-                .withSaid(session.message());
+        return reports.record(taskId, reported(state), SessionReports.Report.defaults()
+                .withSessionLog(said.sessionLog().orElse(null))
+                .withStartedBy(said.source())
+                .withSaid(said.message()));
     }
 
     private static SessionProbe.State reported(String state) {

@@ -2,14 +2,14 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-**Everything that crosses into jagt from outside is a message, and a message is validated once, at the door.**
-`protocol/` in `core/` holds them: the wire record, its rules, and the types the rest of jagt works in. It
-speaks the centre's vocabulary and nothing else, and the centre does not know it exists (`RingsTest`).
+**Everything crossing into jagt is a message, validated once, at the door.** `protocol/` in `core/` holds
+them: the wire record, its rules, and the types the rest of jagt works in. It speaks the centre's vocabulary
+and nothing else, and the centre does not know it exists (`RingsTest`).
 
 ## No raw wire value travels inward
 
-- A message arrives as the strings and maps it was written in. `violations(...)` judges it; `accepted(...)`
-  returns it in jagt's own types (`protocol/Reported`) or nothing.
+- A message arrives as the strings and maps it was written in: `violations(...)` judges it, `accepted(...)`
+  returns it in jagt's own types or nothing.
 - **Nothing downstream re-reads the wire**: which status, what a round claims, which request it is about and
   what the human is shown are resolved once, here. A caller parsing a field again has found a leak.
 - What a message cannot carry is not the protocol's: a claim about the worktree is measured where the worktree
@@ -22,8 +22,8 @@ only then does the tool run. A field added to a message arrives without anyone r
 hand-written extraction it replaces is where a new one went missing. A field the message does not declare is
 **ignored**: a CLI a version ahead must not have its call rejected over a word jagt has not learned.
 
-**Required-ness is the message's answer too.** The transport parsed `required` back out of the schema it had
-just rendered, answering one field at a time and first; it still does for tools read by hand.
+**Which fields are required is the message's answer too**, named with everything else wrong rather than first
+and alone.
 
 ## Two kinds of rule, one report
 
@@ -42,10 +42,11 @@ and the rules that judge the answer cannot disagree. The enum comes from whateve
 
 ## A refusal is a correction, and the same request is sent again
 
-- Every violation at once, each naming its field and what was expected, because the next thing a sender does is
-  re-send the message corrected — not escalate it, not give up on it.
 - **From a session**: the refusal comes back from the call; the brief tells the session to fix every line and
   call again, which is not a block and never a question for the human.
+- **Except what a hook posts** (`protocol/SessionHookReport`): it sends what its CLI handed it and throws the
+  answer away, so nothing there can be corrected. jagt DROPS what it cannot believe — a relative log path names
+  a file some other process writes — keeps the rest, and logs once what it dropped.
 - **To a paid read**: jagt is the sender. `protocol/TicketRead` judges the answer and the violations ride into
   the next ask, because the identical question is what returns the identical answer.
 - **Retries are bounded and end in a person** (`protocol/RetryPolicy`): three attempts for a paid read, spaced,
@@ -54,8 +55,5 @@ and the rules that judge the answer cannot disagree. The enum comes from whateve
   nobody could read taps the human ONCE (`AutoReviewScheduler`) — an unattended poll is the caller whose log
   nobody reads.
 
-## Where the shapes are today
-
 `McpToolRegistry` has one way to declare a tool and it takes a message class, so a tool that skips validation
-does not compile. The paid reads declare theirs the same way (`TicketRead`, `MergeRequestRead`, `ReviewRead`,
-`CommandRead`) and their answers are judged before being believed. The hooks are not gathered yet.
+does not compile.

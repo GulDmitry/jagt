@@ -23,7 +23,7 @@ missing. Add a kind, never an exception.**
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
-| `protocol/` | what crosses into jagt, and what makes it valid | built for the tools and the reads; not for the hooks |
+| `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks |
 
 `service/` is the rest: work more than one kind shares — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither. The board renders `flow/TaskView`; a report is text from the

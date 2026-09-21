@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.agent;
 
 import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.protocol.SessionHookReport;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.service.SessionReports;
 import dev.jagt.orchestrator.service.StateService;
@@ -27,7 +28,7 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports).report("waiting", "/wt/ABC-1-proj",
-                new AgentSessionController.Session("/logs/session.jsonl", "compact", null));
+                new SessionHookReport("/logs/session.jsonl", "compact", null));
 
         verify(reports).record("ABC-1", SessionProbe.State.WAITING,
                 SessionReports.Report.defaults().withSessionLog(Path.of("/logs/session.jsonl"))
@@ -58,7 +59,7 @@ class AgentSessionControllerTest {
                 .thenReturn("re-read task_context.md");
 
         String answered = new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj",
-                new AgentSessionController.Session(null, "compact", null));
+                new SessionHookReport(null, "compact", null));
 
         assertThat(answered).isEqualTo("re-read task_context.md");
     }
@@ -71,7 +72,7 @@ class AgentSessionControllerTest {
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports).report("idle", "/wt/ABC-1-proj",
-                new AgentSessionController.Session(null, null, "Claude needs your permission to use Bash"));
+                new SessionHookReport(null, null, "Claude needs your permission to use Bash"));
 
         verify(reports).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
