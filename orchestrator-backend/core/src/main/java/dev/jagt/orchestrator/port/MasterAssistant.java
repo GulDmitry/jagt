@@ -40,7 +40,15 @@ public interface MasterAssistant {
     }
 
     /** Reads a work item given an issue KEY or a URL to it in any tracker at all. */
-    Answer<TicketFacts> readTicket(String ticketRef);
+    default Answer<TicketFacts> readTicket(String ticketRef) {
+        return readTicket(ticketRef, List.of());
+    }
+
+    /**
+     * The same read, told what was wrong with the last answer. Asking the identical question again is how a
+     * retry gets the identical answer, so every correction the caller found rides with it.
+     */
+    Answer<TicketFacts> readTicket(String ticketRef, List<String> corrections);
 
     /** Reads a review request by URL. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);

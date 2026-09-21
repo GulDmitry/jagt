@@ -93,7 +93,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private final JsonMapper mapper = new JsonMapper();
 
     @Override
-    public Answer<TicketFacts> readTicket(String ticketRef) {
+    public Answer<TicketFacts> readTicket(String ticketRef, List<String> corrections) {
         if (ticketRef == null || ticketRef.isBlank()) {
             return Answer.unavailable();
         }
@@ -109,7 +109,8 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " asks for, from its description. Never answer exists=true with an empty title or an"
                 + " empty url." + FAILURE_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
-        return readable(ask(prompt, TICKET_SCHEMA, ticketRef, AssistantCallKind.TICKET_READ), ticketRef).map(n -> {
+        return readable(ask(prompt + correcting(corrections), TICKET_SCHEMA, ticketRef,
+                AssistantCallKind.TICKET_READ), ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
             return new TicketFacts(n.path("exists").asBoolean(false), n.path("key").asString(""),
@@ -178,6 +179,13 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     n.path("pipelineStatus").asString(""), capped(n.path("pipelineFailure").asString("")),
                     threads, HostStamp.epochMillis(n.path("openedAt").asString("")));
         });
+    }
+
+    /** What the last answer got wrong, appended so the next one is not the same answer. */
+    private static String correcting(List<String> corrections) {
+        return corrections.isEmpty() ? ""
+                : "\n\nYour last answer was refused:\n- " + String.join("\n- ", corrections)
+                + "\nAnswer again, fixing every one of those.";
     }
 
     /** Relayed into a worktree file, so a host that answered with a whole build log is cut here. */

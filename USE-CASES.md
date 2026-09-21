@@ -80,7 +80,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | situation | run | what happens |
 |---|---|---|
 | The ref is a key or a URL | `do ABC-1`, `do <url>` | Title, labels and project read by a model through your own MCP (paid) |
-| The read says "does not exist" for a ticket that plainly does | `do ABC-1` | Asked again — 5 attempts, 2s apart, at most two minutes |
+| The read says "does not exist" for a ticket that plainly does | `do ABC-1` | Asked again, each attempt carrying what the last answer got wrong — 3 of them, 2s apart, at most two minutes |
 | The read answers with no key, no title or no link | `do ABC-1` | No task, and the sentence says why |
 | The item genuinely has no summary | `do ABC-1` | The read **writes** a title of at most eight words from the description; a url is never invented |
 | The read answers about a different key | `do ABC-1` | Refused, naming both |

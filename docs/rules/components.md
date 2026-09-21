@@ -48,8 +48,8 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [flow.md](flow.md)'s.
   briefed by `AGENTS.md` (`AgentRuntime.SYSTEM_KNOWLEDGE_FILE`) and by `task_context.md`.
 - **A task is created with its item's own facts or not at all.** `TaskLauncher` and `TaskResume` read it on every
   launch; `TicketFacts.usable()` gates on a key, a title **and** a link. A failing answer is asked again
-  (`TicketReader`: 5 attempts, 2s apart, under two minutes), a bare key answered for a **different** key is
-  refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
+  (`protocol/RetryPolicy`, 3 attempts, each carrying what the last got wrong), a bare key answered for a
+  **different** key is refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
   the task and `TaskName.from` cuts its branch out of them.
 - **Sub-agents can only act on their own task**: `surface/mcp/CallerScope` enforces X-Working-Directory.
   A new MCP tool taking a taskId gets a **row** in `McpToolScopeTest`.

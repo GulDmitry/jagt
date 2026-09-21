@@ -25,8 +25,8 @@ public class MeteredAssistant {
     private final MasterAssistant assistant;
     private final UsageTracker usageTracker;
 
-    public Answer<TicketFacts> readTicket(String ticketRef) {
-        return metered(AssistantCallKind.TICKET_READ, assistant.readTicket(ticketRef));
+    public Answer<TicketFacts> readTicket(String ticketRef, List<String> corrections) {
+        return metered(AssistantCallKind.TICKET_READ, assistant.readTicket(ticketRef, corrections));
     }
 
     public Answer<MergeRequestFacts> readMergeRequest(String mrUrl) {

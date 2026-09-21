@@ -26,10 +26,10 @@ class MeteredAssistantTest {
     @Test
     void booksATicketReadUnderItsOwnKind() {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
-        when(port.readTicket("ABC-1")).thenReturn(new Answer<>(
+        when(port.readTicket("ABC-1", List.of())).thenReturn(new Answer<>(
                 Optional.of(new TicketFacts(true, "ABC-1", "t", "ABC", List.of(), "")), spent));
 
-        var answer = metered.readTicket("ABC-1");
+        var answer = metered.readTicket("ABC-1", List.of());
 
         assertThat(answer.facts()).isPresent();
         verify(usageTracker).record(AssistantCallKind.TICKET_READ, spent);

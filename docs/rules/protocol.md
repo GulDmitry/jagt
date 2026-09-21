@@ -38,8 +38,12 @@ reads the fields is the duplication this replaces.
   re-send the message corrected — not escalate it, not give up on it.
 - **From a session**: the refusal comes back from the call; the brief tells the session to fix every line and
   call again, which is not a block and never a question for the human.
-- **To a paid read**: jagt is the sender, and an answer that breaks its own schema is re-asked with the
-  violations appended rather than logged as unreadable. Not built — [`TODO.md`](../../TODO.md).
+- **To a paid read**: jagt is the sender. `protocol/TicketRead` judges the answer and the violations ride into
+  the next ask, because the identical question is what returns the identical answer.
+- **Retries are bounded and end in a person** (`protocol/RetryPolicy`): three attempts for a paid read, spaced,
+  under a budget, since every one of them is paid for. An exhausted policy answers with NO facts and never a
+  guess — reaching the human is then the caller's, and a caller that logs it and moves on is the bug this
+  exists to stop. The reads for `resume` and a review round still have no policy at all.
 
 ## Where the shapes are today
 

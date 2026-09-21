@@ -1,6 +1,9 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.protocol.RetryPolicy;
+import dev.jagt.orchestrator.protocol.TicketRead;
+import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.extern.slf4j.Slf4j;
@@ -19,24 +22,17 @@ import java.util.Optional;
 @Slf4j
 public class TicketReader {
 
-    private static final int MAX_ATTEMPTS = 5;
-    private static final Duration RETRY_DELAY = Duration.ofSeconds(2);
-    /** Bounds a launch a human is waiting on: a read that hangs to its own timeout leaves no room for another. */
-    private static final Duration BUDGET = Duration.ofMinutes(2);
-
     private final MeteredAssistant assistant;
-    private final int maxAttempts;
-    private final Duration retryDelay;
+    private final RetryPolicy policy;
 
     @Autowired
     public TicketReader(MeteredAssistant assistant) {
-        this(assistant, MAX_ATTEMPTS, RETRY_DELAY);
+        this(assistant, RetryPolicy.PAID_READ);
     }
 
-    TicketReader(MeteredAssistant assistant, int maxAttempts, Duration retryDelay) {
+    TicketReader(MeteredAssistant assistant, RetryPolicy policy) {
         this.assistant = assistant;
-        this.maxAttempts = maxAttempts;
-        this.retryDelay = retryDelay;
+        this.policy = policy;
     }
 
     public Answer<TicketFacts> read(String ticketRef) {
@@ -44,26 +40,33 @@ public class TicketReader {
     }
 
     /**
-     * A model's "no such item" is indistinguishable from a tool it never found, so a non-answer is asked again and
-     * only the last is believed. Every attempt is paid for, so all are returned as one spend.
+     * A model's "no such item" is indistinguishable from a tool it never found, so a non-answer is asked again —
+     * carrying what was wrong with the last one, or the same question returns the same answer. Every attempt is
+     * paid for, so all are returned as one spend, and an exhausted policy answers with no facts: the caller's job
+     * is then to reach a human, never to guess.
      */
     private Answer<TicketFacts> askUntilUsable(String ticketRef) {
-        long deadline = System.nanoTime() + BUDGET.toNanos();
+        long deadline = System.nanoTime() + policy.budget().toNanos();
         Answer<TicketFacts> answer = Answer.unavailable();
         TokenUsage spent = TokenUsage.NONE;
-        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-            answer = assistant.readTicket(ticketRef);
+        List<String> corrections = List.of();
+        for (int attempt = 1; attempt <= policy.attempts(); attempt++) {
+            answer = assistant.readTicket(ticketRef, corrections);
             spent = spent.plus(answer.usage());
             if (answer.facts().filter(TicketFacts::usable).isPresent()) {
                 return new Answer<>(answer.facts(), spent);
             }
+            corrections = answer.facts()
+                    .map(facts -> TicketRead.violations(ticketRef, facts).stream()
+                            .map(Violation::toString).toList())
+                    .orElse(List.of());
             log.atWarn().setMessage("ticket read unusable")
                     .addKeyValue("ref", ticketRef)
-                    .addKeyValue("cause", answer.facts().isEmpty() ? "no answer" : "facts unusable")
+                    .addKeyValue("cause", answer.facts().isEmpty() ? "no answer" : String.join("; ", corrections))
                     .addKeyValue("attempt", attempt)
-                    .addKeyValue("limit", maxAttempts)
+                    .addKeyValue("limit", policy.attempts())
                     .log();
-            if (attempt == maxAttempts || System.nanoTime() > deadline || !pause()) {
+            if (policy.lastAttempt(attempt) || System.nanoTime() > deadline || !pause()) {
                 break;
             }
         }
@@ -77,7 +80,7 @@ public class TicketReader {
 
     private boolean pause() {
         try {
-            Thread.sleep(retryDelay);
+            Thread.sleep(policy.between());
             return true;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
