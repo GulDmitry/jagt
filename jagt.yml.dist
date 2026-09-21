@@ -69,6 +69,9 @@ orchestrator:
     permissionMode: bypassPermissions   # nothing can answer a permission prompt in a headless call
     # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # takes precedence over permissionMode
     # mcpConfig: /path/to/mcp-servers.json   # pin the servers instead of inheriting all of them
+    # mcpConfigByKind:                       # one list per kind of read, so a cheap one loads only what it needs
+    #   TICKET_READ: /path/to/tracker-only.json     # falls back to mcpConfig, then to your own configuration
+    #   REVIEW_SWEEP: /path/to/code-host-only.json  # kinds: TICKET_READ, MR_READ, REVIEW_SWEEP, COMMAND_MAP
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:

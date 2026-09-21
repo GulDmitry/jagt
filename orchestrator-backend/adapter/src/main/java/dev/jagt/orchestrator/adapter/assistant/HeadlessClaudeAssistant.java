@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.Processes;
 
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -108,7 +109,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " asks for, from its description. Never answer exists=true with an empty title or an"
                 + " empty url." + FAILURE_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
-        return readable(ask(prompt, TICKET_SCHEMA, ticketRef), ticketRef).map(n -> {
+        return readable(ask(prompt, TICKET_SCHEMA, ticketRef, AssistantCallKind.TICKET_READ), ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
             return new TicketFacts(n.path("exists").asBoolean(false), n.path("key").asString(""),
@@ -129,7 +130,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " with its source branch as sourceBranch, the branch it merges INTO as targetBranch, and its"
                 + " title." + FAILURE_RULE + "</rules>\n"
                 + "Respond directly, no preamble.";
-        return readable(ask(prompt, MR_SCHEMA, mrUrl), mrUrl).map(n -> new MergeRequestFacts(
+        return readable(ask(prompt, MR_SCHEMA, mrUrl, AssistantCallKind.MR_READ), mrUrl).map(n -> new MergeRequestFacts(
                 n.path("exists").asBoolean(false), n.path("sourceBranch").asString(""),
                 n.path("targetBranch").asString(""), n.path("title").asString("")));
     }
@@ -168,7 +169,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " about exists: a listing you could not get is pipelineStatus=unknown with failure=\"\"."
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
-        return readable(ask(prompt, REVIEW_SCHEMA, mrUrl, REVIEW_TIMEOUT), mrUrl).map(n -> {
+        Answer<JsonNode> answer = ask(prompt, REVIEW_SCHEMA, mrUrl, AssistantCallKind.REVIEW_SWEEP,
+                REVIEW_TIMEOUT);
+        return readable(answer, mrUrl).map(n -> {
             List<String> threads = new ArrayList<>();
             n.path("threads").forEach(t -> threads.add(cappedTail(t.asString(""))));
             return new ReviewFacts(n.path("exists").asBoolean(false), n.path("approved").asBoolean(false),
@@ -222,28 +225,28 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " command=\"none\" and put the ambiguity in reason. Do NOT guess between two tasks:"
                 + " ambiguity is a `none`. Respond directly.";
         // Text -> command reads nothing, so a tool call could only be a mistake, and each loaded server costs context.
-        return ask(prompt, COMMAND_SCHEMA, "command mapping", MAP_TIMEOUT, false)
+        return ask(prompt, COMMAND_SCHEMA, "command mapping", AssistantCallKind.COMMAND_MAP, MAP_TIMEOUT)
                 .map(n -> new CommandProposal(n.path("command").asString(""), n.path("task").asString(""),
                         n.path("ticket").asString(""), n.path("reason").asString("")));
     }
 
-    private Answer<JsonNode> ask(String prompt, String schema, String label) {
-        return ask(prompt, schema, label, TIMEOUT, true);
+    private Answer<JsonNode> ask(String prompt, String schema, String label, AssistantCallKind kind) {
+        return ask(prompt, schema, label, kind, TIMEOUT);
     }
 
-    private Answer<JsonNode> ask(String prompt, String schema, String label, Duration timeout) {
-        return ask(prompt, schema, label, timeout, true);
-    }
-
-    private Answer<JsonNode> ask(String prompt, String schema, String label, Duration timeout, boolean withMcp) {
+    /** Which servers load, and whether any load at all, are the KIND's to answer — never a flag beside it. */
+    private Answer<JsonNode> ask(String prompt, String schema, String label, AssistantCallKind kind,
+                                 Duration timeout) {
+        boolean withMcp = kind != AssistantCallKind.COMMAND_MAP;
+        String pinned = assistant.mcpConfigFor(kind);
         List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
                 "--json-schema", schema,
                 // The envelope carries the call's token usage and cost alongside the answer.
                 "--output-format", "json"));
         if (!withMcp) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
-        } else if (!assistant.mcpConfig().isBlank()) {
-            cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", assistant.mcpConfig(),
+        } else if (!pinned.isBlank()) {
+            cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", pinned,
                     "--setting-sources", assistant.settingSources()));
         } else {
             cmd.addAll(List.of("--setting-sources", assistant.settingSources()));

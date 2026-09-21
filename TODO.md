@@ -17,14 +17,6 @@ What jagt must promise before it may hold a token — where it is read from, wha
 board needs first, listening on loopback without auth and able to deploy. As it stands:
 [`docs/rules/seams.md`](docs/rules/seams.md).
 
-## Make the small reads thin (open)
-
-A read that fetches one ticket loads every MCP server the human's config carries, which is what makes the
-cheapest call in jagt cost ~25k tokens before it reads anything.
-
-What to decide first: `orchestrator.assistant.mcp-config` pins one server list for every call, so the open part
-is a list per kind of read (`AssistantCallKind` names them) and what a kind without one falls back to.
-
 ## Split one task's work into review requests a human can actually read (idea)
 
 A large ticket lands as one request, and a request nobody can read is a request nobody reviews. A splitter
