@@ -4,7 +4,7 @@
 
 ## Components
 
-`orchestrator-backend/` is the Spring Boot app ("The Brain"): state manager, git lock, MCP HTTP server
+`orchestrator-backend/` is the Spring Boot app: state manager, git lock, MCP HTTP server
 (`POST /mcp`), watchdog, auto-review scheduler, macOS automation, board on loopback. Reaching it is the
 `AgentRuntime` seam's (`adapter/agent/McpEndpoint`).
 
@@ -34,7 +34,8 @@ Codex reads `AGENTS.md` and `.codex/config.toml`, and needs a **trusted** projec
 
 SSOT for tasks, gitignored, auto-created. Its statuses are [flow.md](flow.md)'s.
 
-- `history`: every status a task moved **to**, with when and **who asked**, oldest first, capped at 50.
+- `history`: every status a task moved **to**, with when and **who asked**, oldest first, capped at 50, and
+  copied whole into `finished.jsonl` on `done`.
 - The asker (`task/ActionOrigin`) rides `service/OriginContext` and is set at an **entry point** only —
   `surface/board/OriginFilter`, `NaturalLanguageDispatch`, `AutoReviewScheduler` — never passed down.
 - `StateService` writes atomically and keeps `state.json.bak`, recovering from it and moving an unparsable
@@ -51,7 +52,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [flow.md](flow.md)'s.
   refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
   the task and `TaskName.from` cuts its branch out of them.
 - **Sub-agents can only act on their own task**: `surface/mcp/CallerScope` enforces X-Working-Directory.
-  A new MCP tool taking a taskId gets a **row** in `McpToolScopeTest`; four of seven were once unscoped.
+  A new MCP tool taking a taskId gets a **row** in `McpToolScopeTest`.
   `initialize_task`, `remove_task`, `deploy_task` and `revert_task` are Master-only; every MCP call from a
   registered worktree bumps `lastActiveTimestamp`.
 - **A task id is any name git accepts as a branch** (`core/task/TaskName`): a task IS its branch, and every
@@ -59,8 +60,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [flow.md](flow.md)'s.
 - **The MCP transport must never emit non-JSON-RPC bytes**: malformed JSON → `-32700`, an HTTP error → a
   synthesized JSON-RPC error in `mcp_client.js`, never a Spring error page.
 - **`WorktreeOrphanScanner` deletes only its own residue**: an unowned directory with no checkout, no secret
-  copy, no bytes. Every other one only WARNs; no surface offers it — the board dialog and `GET /orphans`
-  stay gone.
+  copy, no bytes. Every other one only WARNs; no surface offers it — no dialog, no `GET /orphans`.
 
 ### What is missing is said at startup, not at the click that needed it
 

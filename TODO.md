@@ -33,14 +33,6 @@ would send the same work out as several, cut at a configured size — around 300
 What to decide first: where a cut may fall (only a commit boundary leaves each request buildable), how they are
 chained so the second targets the first, and what happens to comments a later cut has superseded.
 
-## Keep a task's artifacts after `done` (idea)
-
-The far end of [the artifact chain](ARCHITECTURE.md#the-artifact-chain): `done` deletes the briefing, the
-standing instruction and the drafted replies, while the branch and the request outlive the task.
-
-What to decide first: whether an artifact outliving the worktree lives in git (whose, and on which branch — the
-base branch is read-only) or beside `state.json`, and what the board shows for a task that is gone.
-
 ## `TmuxSessionHost` has no test beside it (open)
 
 The sole `SessionHost` implementation and the only adapter class with nothing testing it: a real tmux is the

@@ -251,6 +251,6 @@ What the agent does with a comment:
 | `git worktree list` shows `jagt-diff-*` in the temp directory | `done <task>` | A diff opened from the board cuts them and reuses them; retiring the task is what ends them |
 | Someone types `prune all` anyway | — | Answered by name, before any model call |
 | "Is it me holding these up?" | `stats` | Per task: time on you, its agent and the code host, the rounds it has been out, and which is slowest |
-| The same numbers a week later | — | Not available: `done` removes the task, so `stats` describes open work, never throughput |
+| The same numbers a week later | `finished` | Every retired task is a line in `finished.jsonl` beside `state.json`, whole status log included; `stats` still describes open work only |
 | jagt on Linux with the platform left unset | — | Refused at startup: unset means macOS, whose notifier reaches nothing here and logs a failed alert rather than raising it |
 | A banner on Linux does not open the board | — | `notify-send` carries a click only while the process waits for the daemon, so the task is in the title and the filter does the rest |
