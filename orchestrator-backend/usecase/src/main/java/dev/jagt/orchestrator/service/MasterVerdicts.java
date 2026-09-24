@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.task.MasterMode;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,16 +26,18 @@ public class MasterVerdicts {
     private final CommandService commands;
 
     /** Answers whether the verdict moved anything, so a caller can say so without reading the file again. */
-    public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict, MasterMode mode) {
+    public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict,
+                       ConfigService.ConfigFile.MasterConfig config) {
         if (!verdict.ready()) {
             return sessions.relayIfChanged(taskId, findings(task));
         }
-        if (mode != MasterMode.ACT) {
+        if (!config.may(MasterRight.SHIP)) {
             return false;
         }
-        // Through the same door a human's press uses, so an illegal move is refused rather than taken.
         log.atInfo().setMessage("master ships").addKeyValue("task", taskId).log();
-        commands.execute(taskId, TaskAction.SHIP);
+        // Through the same door a human's press uses, so an illegal move is refused rather than taken, and
+        // stamped as the Master's so what a ship does on its behalf can differ from what it does on yours.
+        OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, TaskAction.SHIP));
         return true;
     }
 

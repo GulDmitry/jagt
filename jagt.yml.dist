@@ -82,6 +82,8 @@ orchestrator:
                              # to this file. Required unless off, and refused at startup when it is not there
     # model: fable           # reading is the cheap half, so it can run a heavier model than the work does;
                              # blank inherits whatever the agent CLI would have used
+    # withhold: [reply]      # rights you keep for yourself in `act`: ship, sweep, deploy, revert, reply.
+                             # `done` is always yours — you open a task and you close it
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:

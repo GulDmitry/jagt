@@ -2,6 +2,9 @@ package dev.jagt.orchestrator.capability.ship;
 
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.OriginContext;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.ReviewRequestTitle;
@@ -72,6 +75,11 @@ public class ShipService {
     }
 
     static String repliesStep(ConfigService.ConfigFile config) {
+        // A right withheld from the Master is withheld from the ship it asked for, not from every ship.
+        if (OriginContext.current() == ActionOrigin.MASTER && !config.master().may(MasterRight.REPLY)) {
+            return "Do NOT post any replies — this ship is the Master session's, which may not answer a"
+                    + " person. LEAVE review_replies.md for the human.\n";
+        }
         if (!config.codeReview().postReviewRepliesOrDefault()) {
             return "Do NOT post any replies — LEAVE review_replies.md untouched for the human to post.\n";
         }

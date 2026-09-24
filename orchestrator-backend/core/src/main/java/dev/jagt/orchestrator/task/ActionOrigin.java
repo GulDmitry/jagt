@@ -8,7 +8,9 @@ public enum ActionOrigin {
     PALETTE,
     /** An MCP call: a sub-agent reporting its own progress, or a session working on jagt itself. */
     MCP,
-    AUTO_REVIEW;
+    AUTO_REVIEW,
+    /** The Master session acting where a human would have. */
+    MASTER;
 
     public String label() {
         return name().toLowerCase().replace('_', '-');

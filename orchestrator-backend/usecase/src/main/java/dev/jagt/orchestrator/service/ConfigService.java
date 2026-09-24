@@ -4,6 +4,7 @@ import lombok.With;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.MasterMode;
+import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -134,13 +135,25 @@ public class ConfigService {
          */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record MasterConfig(String mode, String brief, String model) {
+        public record MasterConfig(String mode, String brief, String model, List<String> withhold) {
 
             /** Copied from `master-brief.md.dist`, beside `jagt.yml`, and not versioned. */
             private static final String BRIEF = "master-brief.md";
 
             public static MasterConfig defaults() {
-                return new MasterConfig(null, null, null);
+                return new MasterConfig(null, null, null, null);
+            }
+
+            /** Rights a human keeps for themselves, by name; anything not named here it holds in `act`. */
+            public List<String> withholdOrNone() {
+                return withhold == null ? List.of() : withhold;
+            }
+
+            /** Whether the session may do this, which in any mode but `act` is never. */
+            public boolean may(MasterRight right) {
+                return modeOrOff() == MasterMode.ACT
+                        && withholdOrNone().stream().noneMatch(named -> MasterRight.of(named)
+                                .filter(right::equals).isPresent());
             }
 
             /** The file it judges by. Named here so an install that copied the shipped one sets nothing. */

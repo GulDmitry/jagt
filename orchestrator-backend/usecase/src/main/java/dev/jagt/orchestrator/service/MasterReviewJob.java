@@ -51,7 +51,7 @@ public class MasterReviewJob implements Job {
                 return;
             }
             reviews.of(task).filter(verdict -> verdict.writtenAt() >= task.statusSince())
-                    .ifPresent(verdict -> verdicts.act(taskId, task, verdict, config.modeOrOff()));
+                    .ifPresent(verdict -> verdicts.act(taskId, task, verdict, config));
         });
         // Asked LAST and one at a time: the session reads one round at a time, and a queue typed into its
         // window would interleave two reviews into one answer.

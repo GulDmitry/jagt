@@ -40,3 +40,17 @@ the shape; the finished-task record is what the comparison is read from.
 
 What to decide first: what a trial run is allowed to touch — reading and writing a file only, with no verb
 issued, is the answer unless something says otherwise.
+
+## Extension points: a named event, a deterministic condition, a channel (concept)
+
+Say in `jagt.yml` that something outside jagt is told when a stated thing becomes true — every thread on a
+request closed, a round gone red, a deploy landed. Two of the three pieces exist: `notify/` fans out to every
+`port/Notifier` an install carries, and adding a channel is one adapter class plus a config value.
+
+What is missing is the middle: jagt has no named events, only the few places that happen to notify, and no
+routing — every notifier gets everything. **The condition must be the machine's**: computed from facts jagt
+already holds (`ReviewFacts.threads` empty, `Pipeline.RED`, a status reached), never a model's opinion that
+something looks done.
+
+What to decide first: where an event is declared so it is checked by the compiler rather than spelled in a
+config string, and whether routing is per channel, per event, or a pair of both.

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.MasterMode;
+import dev.jagt.orchestrator.task.MasterRight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -40,6 +41,9 @@ public class MasterCheck implements StartupCheck {
             problems.add("orchestrator.master.model: " + agentRuntime.displayName()
                     + " cannot be told which model to run — leave it blank to inherit its own");
         }
+        master.withholdOrNone().stream().filter(named -> MasterRight.of(named).isEmpty())
+                .forEach(named -> problems.add("orchestrator.master.withhold: '" + named + "' is not one of "
+                        + MasterRight.ids()));
         Path brief = brief(master.briefOrDefault());
         if (!Files.isRegularFile(brief)) {
             problems.add("orchestrator.master.brief: no file at " + brief

@@ -34,19 +34,19 @@ class MasterCheckTest {
 
     @Test
     void refusesAModeThisMachineDoesNotHave(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("supervise", null, null)).problems())
+        assertThat(checking(root, new MasterConfig("supervise", null, null, null)).problems())
                 .singleElement().asString().contains("orchestrator.master.mode");
     }
 
     @Test
     void refusesToRunAReviewerWhoseBriefWasNeverCopiedFromTheShippedOne(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("judge", null, null)).problems())
+        assertThat(checking(root, new MasterConfig("judge", null, null, null)).problems())
                 .singleElement().asString().contains("copy master-brief.md.dist");
     }
 
     @Test
     void refusesABriefNamedByHandThatIsNotThere(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("judge", "mine.md", null)).problems())
+        assertThat(checking(root, new MasterConfig("judge", "mine.md", null, null)).problems())
                 .singleElement().asString().contains("mine.md");
     }
 
@@ -55,7 +55,7 @@ class MasterCheckTest {
         Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
         when(agentRuntime.displayName()).thenReturn("Codex");
 
-        assertThat(checking(root, new MasterConfig("judge", null, "fable")).problems())
+        assertThat(checking(root, new MasterConfig("judge", null, "fable", null)).problems())
                 .singleElement().asString().contains("orchestrator.master.model", "Codex");
     }
 
@@ -63,6 +63,6 @@ class MasterCheckTest {
     void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
 
-        assertThat(checking(root, new MasterConfig("act", null, null)).problems()).isEmpty();
+        assertThat(checking(root, new MasterConfig("act", null, null, null)).problems()).isEmpty();
     }
 }
