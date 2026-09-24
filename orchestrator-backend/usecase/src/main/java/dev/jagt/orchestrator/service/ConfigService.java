@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import lombok.With;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +35,7 @@ public class ConfigService {
     @With
     public record ConfigFile(Map<String, ProjectConfig> projects, ViewerConfig viewer,
                              CodeReviewConfig codeReview, AgentConfig agent, WorktreeConfig worktree,
-                             AutoReviewConfig autoReview) {
+                             AutoReviewConfig autoReview, MasterConfig master) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -127,6 +128,28 @@ public class ConfigService {
             }
         }
 
+        /**
+         * The Master session: EXPERIMENTAL, and off unless a human turned it on. {@code brief} is the file
+         * saying what it judges — the thing that outlives every session it runs.
+         */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record MasterConfig(String mode, String brief) {
+
+            public static MasterConfig defaults() {
+                return new MasterConfig(null, null);
+            }
+
+            /** OFF where the word is not one this machine has: an unreadable setting starts nothing. */
+            public MasterMode modeOrOff() {
+                return MasterMode.of(mode).orElse(MasterMode.OFF);
+            }
+
+            public boolean running() {
+                return modeOrOff() != MasterMode.OFF;
+            }
+        }
+
         /** The numbers only; {@code AutoReviewCadence} is the policy that reads them. */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -173,10 +196,15 @@ public class ConfigService {
         }
 
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null);
         }
 
         // The raw field is still what the withers copy, so an omitted section stays null until set.
+        @Override
+        public MasterConfig master() {
+            return master == null ? MasterConfig.defaults() : master;
+        }
+
         @Override
         public ViewerConfig viewer() {
             return viewer == null ? ViewerConfig.defaults() : viewer;
