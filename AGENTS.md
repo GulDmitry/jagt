@@ -109,8 +109,11 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 
 ## The human in the loop
 
-- jagt never commits to a shared branch, opens a review request, deploys, or posts a reply **on its own**.
-- **The auto-review loop only reads and drafts** — never ships, deploys, pushes or posts; the gate is in the outcome, not the trigger.
+- **One thing other than a human may act as one: the Master session in `act`** — it stands where the human
+  stands and holds the same rights. Experimental, off by default, refused without a brief, and bounded by
+  `FlowRules`: it picks a legal move, never invents one.
+- **Nothing else acts on its own**, the auto-review loop included: it reads and drafts, its gate in the
+  outcome rather than the trigger. The base branch stays read-only for both.
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human, and a
   task contradicting what the code guarantees is such a question, asked before the code picks a side — never

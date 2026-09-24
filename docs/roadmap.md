@@ -12,9 +12,10 @@ Two sorts of point, and the difference is the whole safety story:
 
 - **Judging** — is this plan right, is this diff good, is this reply right. A model may hold one of these today:
   the outcome is still a human pressing the verb.
-- **Authorising** — `ship`, `deploy`, `revert`, posting a reply. [jagt acts on nothing by
-  itself](../AGENTS.md#the-human-in-the-loop), and [a trigger is deterministic](rules/review.md). A setting that
-  lets a verdict issue one of these makes both sentences false, on a board that binds loopback without auth.
+- **Authorising** — `ship`, `deploy`, `revert`, posting a reply. These are the human's, and the Master in `act`
+  holds them because it stands where the human stands ([AGENTS.md](../AGENTS.md#the-human-in-the-loop)). The
+  trigger stays deterministic either way; what changes is who the verdict belongs to, on a board that binds
+  loopback without auth.
 
 Judging points go first. The finished-task record is what earns the right to touch an authorising one.
 

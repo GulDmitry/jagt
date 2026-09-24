@@ -44,6 +44,11 @@ public class MasterSession {
         return true;
     }
 
+    /** Types a line into it as if a human had; false where it is not running to read one. */
+    public boolean say(String line) {
+        return sessions.nudgeTaskWindow(session(), WINDOW, line);
+    }
+
     /** Ends it; answers how many windows there were, which is 0 where it was not running. */
     public int stop() {
         return sessions.killTaskWindows(session(), WINDOW);
