@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -26,6 +27,20 @@ final class ClaudeTranscripts {
         return (configured == null || configured.isBlank()
                 ? Path.of(System.getProperty("user.home"), ".claude")
                 : Path.of(configured)).resolve("projects");
+    }
+
+    /** The log this session is appending to — the newest in its directory — or empty where it keeps none. */
+    static Optional<Path> newestLog(Path projectsDir, Path sessionDirectory) {
+        Path dir = projectsDir.resolve(slug(sessionDirectory));
+        if (!Files.isDirectory(dir)) {
+            return Optional.empty();
+        }
+        try (Stream<Path> logs = Files.list(dir)) {
+            return logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
+                    .max(java.util.Comparator.comparingLong(ClaudeTranscripts::modified));
+        } catch (IOException | RuntimeException unreadable) {
+            return Optional.empty();
+        }
     }
 
     static long lastEntryMillis(Path projectsDir, Path sessionDirectory) {

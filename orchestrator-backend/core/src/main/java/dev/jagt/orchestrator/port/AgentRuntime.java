@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.port;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalLong;
 
 /** One implementation per agent CLI, selected by {@code orchestrator.agent.cli}. */
@@ -26,6 +27,11 @@ public interface AgentRuntime {
     /** Whether this runtime can be told which model to run. */
     default boolean choosesModel() {
         return false;
+    }
+
+    /** The log a session in {@code worktree} is appending to, where this runtime keeps one jagt can find. */
+    default Optional<Path> sessionLogOf(Path worktree) {
+        return Optional.empty();
     }
 
     /** Where this agent's system knowledge goes; a name the checkout already uses is the project's own, never taken. */

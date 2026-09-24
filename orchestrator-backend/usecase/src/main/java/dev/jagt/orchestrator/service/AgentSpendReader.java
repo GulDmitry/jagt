@@ -6,8 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -20,41 +18,19 @@ import java.nio.file.Path;
 @Slf4j
 public class AgentSpendReader {
 
-    /** One report reads at most this much, so a log of any size costs a bounded read and the rest waits. */
-    private static final long WINDOW = 8L * 1024 * 1024;
-
     private final StateService stateService;
     private final SessionLog sessionLog;
 
     /** Best-effort: a log that is gone, unreadable or in another shape costs a number, never a report. */
     public void charge(String taskId, Path log) {
         String name = log.toAbsolutePath().normalize().toString();
-        long size;
-        try {
-            size = Files.size(log);
-        } catch (IOException | RuntimeException gone) {
-            return;
-        }
         long from = stateService.task(taskId).map(task -> task.agentSpendOrNone().markFor(name)).orElse(0L);
-        // A log SHORTER than its own mark was rewritten under jagt, and what was counted cannot be told. Its
-        // total stands and the mark follows the file.
-        if (size < from) {
-            stateService.updateTask(taskId, task -> task.withAgentSpend(
-                    task.agentSpendOrNone().plus(dev.jagt.orchestrator.task.TokenUsage.NONE, name, size)));
-            return;
-        }
-        if (size == from) {
-            return;
-        }
-        SessionLog.Spent spent = sessionLog.spent(log, from, Math.min(size - from, WINDOW));
-        if (spent.upTo() <= from) {
-            return;
-        }
-        stateService.updateTask(taskId, task -> {
+        LogSpend.since(sessionLog, log, from).ifPresent(advance -> stateService.updateTask(taskId, task -> {
             AgentSpend counted = task.agentSpendOrNone();
+            // Checked again inside the write: two reports arriving together book the window once.
             return counted.markFor(name) == from
-                    ? task.withAgentSpend(counted.plus(spent.usage(), name, spent.upTo()))
+                    ? task.withAgentSpend(counted.plus(advance.usage(), name, advance.mark()))
                     : task;
-        });
+        }));
     }
 }

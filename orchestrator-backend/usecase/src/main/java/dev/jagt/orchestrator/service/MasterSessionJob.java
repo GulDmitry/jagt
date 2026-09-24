@@ -15,6 +15,7 @@ import java.time.Duration;
 public class MasterSessionJob implements Job {
 
     private final MasterSession master;
+    private final MasterSpend spend;
 
     @Override
     public String id() {
@@ -34,5 +35,6 @@ public class MasterSessionJob implements Job {
     @Override
     public void run() {
         master.startIfWanted();
+        spend.advance();
     }
 }

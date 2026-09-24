@@ -57,6 +57,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public java.util.Optional<Path> sessionLogOf(Path worktree) {
+        return ClaudeTranscripts.newestLog(ClaudeTranscripts.projectsDir(), worktree);
+    }
+
+    @Override
     public OptionalLong lastSessionActivity(Path worktree) {
         return OptionalLong.of(ClaudeTranscripts.lastEntryMillis(ClaudeTranscripts.projectsDir(), worktree));
     }

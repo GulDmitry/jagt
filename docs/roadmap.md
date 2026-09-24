@@ -51,7 +51,7 @@ replaces you is that brief; the session is a process that reads it.
   gone are the same question asked of the same window.
 - **It reads every worktree, by design** — built: its window is cut in the root. The gate is not which worktree
   it may open, but that it writes to none.
-- **Its spend is a line of its own**, booked against no task.
+- **Its spend is a line of its own** — built: `MasterSpend` reads its log and the `master` report shows it.
 - **Three settings, not two**: off; on and judging; on and issuing verbs. The last one is the invariant at the
   top of this file. Off is the default, and no suite spawns one.
 

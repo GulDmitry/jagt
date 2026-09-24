@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.MasterSession;
+import dev.jagt.orchestrator.service.MasterSpend;
+import dev.jagt.orchestrator.service.TokenFormat;
 import dev.jagt.orchestrator.task.MasterMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,6 +14,7 @@ public class MasterCommand implements GlobalCommand {
 
     private final ConfigService configService;
     private final MasterSession master;
+    private final MasterSpend spend;
 
     @Override
     public String id() {
@@ -43,6 +46,9 @@ public class MasterCommand implements GlobalCommand {
                 + "\n  judges by: " + config.briefOrDefault()
                 + "\n  model:     " + (config.modelOrInherited().isEmpty()
                         ? "inherited from the agent CLI" : config.modelOrInherited())
-                + "\n  running:   " + (this.master.live() ? "yes" : "no — the next tick starts it");
+                + "\n  running:   " + (master.live() ? "yes" : "no — the next tick starts it")
+                + "\n  spent:     " + TokenFormat.compact(spend.total().total())
+                + " tokens, $" + String.format(java.util.Locale.ROOT, "%.2f", spend.total().costUsd())
+                + " — its own line, no task's";
     }
 }
