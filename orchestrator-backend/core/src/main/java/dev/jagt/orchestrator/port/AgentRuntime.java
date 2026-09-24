@@ -15,6 +15,19 @@ public interface AgentRuntime {
     /** A bare shell command to run with {@code worktree} as its working directory, bootstrap prompt inside it. */
     String launchCommand(Path worktree, boolean planMode);
 
+    /**
+     * The same, run by a named model. A runtime that cannot be told answers {@link #choosesModel()} false, and a
+     * configured model is refused at startup rather than ignored here.
+     */
+    default String launchCommand(Path worktree, boolean planMode, String model) {
+        return launchCommand(worktree, planMode);
+    }
+
+    /** Whether this runtime can be told which model to run. */
+    default boolean choosesModel() {
+        return false;
+    }
+
     /** Where this agent's system knowledge goes; a name the checkout already uses is the project's own, never taken. */
     Path systemKnowledgeFile(Path worktree);
 

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -18,11 +19,12 @@ import static org.mockito.Mockito.when;
 class MasterCheckTest {
 
     private final ConfigService configService = mock(ConfigService.class);
+    private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
 
     private MasterCheck checking(Path root, MasterConfig master) {
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(master));
         return new MasterCheck(configService, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString())));
+                .withRoot(root.toString())), agentRuntime);
     }
 
     @Test
@@ -49,9 +51,18 @@ class MasterCheckTest {
     }
 
     @Test
+    void refusesAModelTheRuntimeRunningTheSessionsCannotBeTold(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
+        when(agentRuntime.displayName()).thenReturn("Codex");
+
+        assertThat(checking(root, new MasterConfig("judge", null, "fable")).problems())
+                .singleElement().asString().contains("orchestrator.master.model", "Codex");
+    }
+
+    @Test
     void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
 
-        assertThat(checking(root, new MasterConfig("act", null, "fable")).problems()).isEmpty();
+        assertThat(checking(root, new MasterConfig("act", null, null)).problems()).isEmpty();
     }
 }

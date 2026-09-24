@@ -40,9 +40,20 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     public String launchCommand(Path worktree, boolean planMode) {
+        return launchCommand(worktree, planMode, "");
+    }
+
+    @Override
+    public String launchCommand(Path worktree, boolean planMode, String model) {
         return claude.command()
                 + (planMode ? " --permission-mode plan" : "")
+                + (model == null || model.isBlank() ? "" : " --model " + shellQuote(model.strip()))
                 + " " + shellQuote(properties.agentPrompt());
+    }
+
+    @Override
+    public boolean choosesModel() {
+        return true;
     }
 
     @Override

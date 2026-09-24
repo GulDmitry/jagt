@@ -47,10 +47,10 @@ remembered: a brief in the install beside `jagt.yml`, and a fresh read of the ar
 replaces you is that brief; the session is a process that reads it.
 
 - Buys: the first reader of every diff stops being you.
-- **jagt owns it**: a `Job` with no interval starts it at boot, one with an interval probes it the way
-  `WatchdogService` probes a task — the session's own log, never a question put to it.
-- **It reads every worktree, by design** — that is what reviewing is. The gate is not which worktree it may
-  open, but that it writes to none.
+- **jagt owns it** — built: `MasterSessionJob` starts it and restarts it, because starting it and finding it
+  gone are the same question asked of the same window.
+- **It reads every worktree, by design** — built: its window is cut in the root. The gate is not which worktree
+  it may open, but that it writes to none.
 - **Its spend is a line of its own**, booked against no task.
 - **Three settings, not two**: off; on and judging; on and issuing verbs. The last one is the invariant at the
   top of this file. Off is the default, and no suite spawns one.

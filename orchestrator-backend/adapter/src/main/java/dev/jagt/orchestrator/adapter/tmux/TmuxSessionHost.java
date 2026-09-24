@@ -45,24 +45,8 @@ public class TmuxSessionHost implements SessionHost {
             ensureSession(session);
             // One task = one window: respawns must never accumulate duplicates.
             killTaskWindows(session, taskId);
-            // An interactive shell here would linger forever and read as a hung process.
-            String command = WorktreeHooks.gitEnv(worktreePath)
-                    + agentRuntime.launchCommand(worktreePath, planMode)
-                    + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
-            // -P -F prints the window id: the only target immune to name collisions on a respawn.
-            String windowId = processRunner.run(null, TIMEOUT, List.of(tmux(), "new-window",
-                            "-P", "-F", "#{window_id}",
-                            "-t", "=" + session + ":", "-n", taskId, "-c", worktreePath.toString(), command))
-                    .expectSuccess("tmux new-window " + taskId)
-                    .stdout().trim();
-            var rename = processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
-                    "-w", "-t", windowId, "automatic-rename", "off"));
-            if (rename.exitCode() != 0) {
-                log.atWarn().setMessage("tmux window rename failed")
-                        .addKeyValue("task", taskId)
-                        .addKeyValue("cause", rename.stderr())
-                        .log();
-            }
+            String windowId = newWindow(session, taskId, worktreePath,
+                    WorktreeHooks.gitEnv(worktreePath) + agentRuntime.launchCommand(worktreePath, planMode));
             // The window name must stay the taskId; the alias rides in a window user-option.
             if (alias != null && !alias.isBlank()) {
                 processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
@@ -70,6 +54,37 @@ public class TmuxSessionHost implements SessionHost {
             }
             ensureViewer(session, dedicatedTitle);
         }
+    }
+
+    @Override
+    public void openWindow(String session, String dedicatedTitle, String name, Path cwd, String command) {
+        synchronized (lock) {
+            ensureSession(session);
+            killTaskWindows(session, name);
+            newWindow(session, name, cwd, command);
+            ensureViewer(session, dedicatedTitle);
+        }
+    }
+
+    /** The window id, which is the only target immune to a name collision on a respawn. */
+    private String newWindow(String session, String name, Path cwd, String command) {
+        // An interactive shell here would linger forever and read as a hung process.
+        String ran = command
+                + "; printf '\\n[jagt] agent exited — window closes in 15s (Ctrl+C to close now)\\n'; sleep 15";
+        String windowId = processRunner.run(null, TIMEOUT, List.of(tmux(), "new-window",
+                        "-P", "-F", "#{window_id}",
+                        "-t", "=" + session + ":", "-n", name, "-c", cwd.toString(), ran))
+                .expectSuccess("tmux new-window " + name)
+                .stdout().trim();
+        var rename = processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",
+                "-w", "-t", windowId, "automatic-rename", "off"));
+        if (rename.exitCode() != 0) {
+            log.atWarn().setMessage("tmux window rename failed")
+                    .addKeyValue("window", name)
+                    .addKeyValue("cause", rename.stderr())
+                    .log();
+        }
+        return windowId;
     }
 
     @Override

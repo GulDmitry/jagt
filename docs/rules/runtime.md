@@ -5,8 +5,8 @@
 - **The backend owns no terminal**, and **no terminal UI comes back.**
 - **No GUI or keystroke automation, ever**: keystrokes land in whatever is focused. Agent terminals are windows
   in a session host (`port/SessionHost`, tmux today), one kitty window attached.
-- **One task = one tmux window**; `openTaskWindow` kills same-named ones first. Liveness in a window is the
-  child processes of `#{pane_pid}`.
+- **One name = one tmux window**: opening one kills same-named first, and liveness there is the child
+  processes of `#{pane_pid}`.
 - After the agent exits, its window shows the tail for 15s, then closes. **Never leave an interactive shell in
   an agent window.**
 - Closing the viewer only **detaches** it; killing is explicit — `done`, `remove`, `close_task_tab`.
@@ -27,8 +27,8 @@
   (`--single-instance --instance-group --listen-on -o allow_remote_control=yes`), over tmux (the tab execs
   `tmux attach`). `closeViewerWindow` kills the instance by socket path.
 
-- Claude Code's auto-mode classifier silently blocks tool calls unless pre-approved. The Master needs none;
-  the committed root `.claude/settings.json` is for a dev session working **on** jagt.
+- Claude Code's auto-mode classifier silently blocks tool calls unless pre-approved. The backend itself makes
+  none; the committed root `.claude/settings.json` covers the sessions that run there.
 - Every sub-agent worktree (generated `.claude/settings.local.json`) needs `enableAllProjectMcpServers: true`
   plus `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]`: without the first, `ship` / `feedback`
   stall on an invisible prompt; without the second, `git commit` freezes.
@@ -42,8 +42,8 @@
 - **A session reports itself through its CLI's own hooks, never through the model**: `HookEndpoint` writes each
   line, a POST to `/api/agent/session/<state>` with the worktree as `X-Working-Directory`.
 - **Which of a CLI's events mean what is a resource, not code**:
-  `adapter/src/main/resources/hooks/<runtime>.properties`, one line per event; a runtime with no resource writes
-  none. The three states are `waiting`, `gone` and `working`.
+  `adapter/src/main/resources/hooks/<runtime>.properties`, one line per event, each naming the state it means;
+  a runtime with no resource writes none.
 - Two things the payload buys, neither required: the file the session appends to (otherwise derived from the
   worktree path) and what STARTED it — **a missing payload costs a detail, never the report**. That log is read
   twice: the last sign of life, and the spend (`AgentSpendReader`).
@@ -59,3 +59,9 @@
   cwd, `kill -9`).
 - `orchestrator.agent-disabled-plugins` writes `enabledPlugins: {"<name>": false}` into the worktree settings,
   default **empty**.
+
+## The Master session is a window owned by no task
+
+EXPERIMENTAL, off by default (`master.mode`). One window named `master`, cut in the orchestrator ROOT: it reads
+every worktree and belongs to none. `MasterSessionJob` starts it and finds it gone in one act, and it judges by a
+re-read file rather than accumulated context.

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.MasterMode;
@@ -22,6 +23,7 @@ public class MasterCheck implements StartupCheck {
 
     private final ConfigService configService;
     private final OrchestratorPaths paths;
+    private final AgentRuntime agentRuntime;
 
     @Override
     public List<String> problems() {
@@ -33,6 +35,10 @@ public class MasterCheck implements StartupCheck {
         }
         if (!master.running()) {
             return List.copyOf(problems);
+        }
+        if (!master.modelOrInherited().isEmpty() && !agentRuntime.choosesModel()) {
+            problems.add("orchestrator.master.model: " + agentRuntime.displayName()
+                    + " cannot be told which model to run — leave it blank to inherit its own");
         }
         Path brief = brief(master.briefOrDefault());
         if (!Files.isRegularFile(brief)) {

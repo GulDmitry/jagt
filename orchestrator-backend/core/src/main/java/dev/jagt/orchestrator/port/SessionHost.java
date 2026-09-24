@@ -7,8 +7,8 @@ import java.nio.file.Path;
  * letting a human attach later. Not a {@link TerminalDriver}, which only shows a session to a human; the two are
  * swapped independently.
  *
- * <p>The model is two levels: one SESSION holds a WINDOW per task. A host without that shape maps a window onto
- * whatever it has, as long as the window can be found again by the task's id.
+ * <p>The model is two levels: one SESSION holds WINDOWS, usually one per task. A host without that shape maps a
+ * window onto whatever it has, as long as the window can be found again by its name.
  */
 public interface SessionHost {
 
@@ -28,6 +28,12 @@ public interface SessionHost {
     /** Starts a task's agent in its own window, replacing any window of the same name. */
     void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias, Path worktreePath,
                         boolean planMode);
+
+    /**
+     * Starts a command in a window of its own, replacing any window of that name. What runs there is the
+     * caller's; every other method here finds the window again by the same name, task or not.
+     */
+    void openWindow(String session, String dedicatedTitle, String name, Path cwd, String command);
 
     /** Brings the task's window to whoever is attached; false when there is no such window. */
     boolean focusTaskWindow(String session, String dedicatedTitle, String taskId);
