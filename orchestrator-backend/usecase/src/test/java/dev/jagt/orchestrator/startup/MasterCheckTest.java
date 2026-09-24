@@ -32,26 +32,26 @@ class MasterCheckTest {
 
     @Test
     void refusesAModeThisMachineDoesNotHave(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("supervise", null)).problems())
+        assertThat(checking(root, new MasterConfig("supervise", null, null)).problems())
                 .singleElement().asString().contains("orchestrator.master.mode");
     }
 
     @Test
-    void refusesToRunAReviewerWithNoStandardsToJudgeBy(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("judge", null)).problems())
-                .singleElement().asString().contains("orchestrator.master.brief: required");
+    void refusesToRunAReviewerWhoseBriefWasNeverCopiedFromTheShippedOne(@TempDir Path root) {
+        assertThat(checking(root, new MasterConfig("judge", null, null)).problems())
+                .singleElement().asString().contains("copy master-brief.md.dist");
     }
 
     @Test
-    void refusesABriefThatIsNotThere(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("judge", "reviewer.md")).problems())
-                .singleElement().asString().contains("no file at");
+    void refusesABriefNamedByHandThatIsNotThere(@TempDir Path root) {
+        assertThat(checking(root, new MasterConfig("judge", "mine.md", null)).problems())
+                .singleElement().asString().contains("mine.md");
     }
 
     @Test
     void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
-        Files.writeString(root.resolve("reviewer.md"), "what I care about\n");
+        Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
 
-        assertThat(checking(root, new MasterConfig("act", "reviewer.md")).problems()).isEmpty();
+        assertThat(checking(root, new MasterConfig("act", null, "fable")).problems()).isEmpty();
     }
 }

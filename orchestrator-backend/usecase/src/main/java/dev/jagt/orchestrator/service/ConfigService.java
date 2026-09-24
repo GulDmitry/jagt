@@ -134,10 +134,23 @@ public class ConfigService {
          */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record MasterConfig(String mode, String brief) {
+        public record MasterConfig(String mode, String brief, String model) {
+
+            /** Copied from `master-brief.md.dist`, beside `jagt.yml`, and not versioned. */
+            private static final String BRIEF = "master-brief.md";
 
             public static MasterConfig defaults() {
-                return new MasterConfig(null, null);
+                return new MasterConfig(null, null, null);
+            }
+
+            /** The file it judges by. Named here so an install that copied the shipped one sets nothing. */
+            public String briefOrDefault() {
+                return brief == null || brief.isBlank() ? BRIEF : brief;
+            }
+
+            /** Blank inherits whatever the agent CLI would have used; reading is the half worth paying for. */
+            public String modelOrInherited() {
+                return model == null || model.isBlank() ? "" : model.strip();
             }
 
             /** OFF where the word is not one this machine has: an unreadable setting starts nothing. */

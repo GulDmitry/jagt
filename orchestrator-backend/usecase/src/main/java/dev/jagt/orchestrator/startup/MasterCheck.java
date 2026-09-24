@@ -34,11 +34,10 @@ public class MasterCheck implements StartupCheck {
         if (!master.running()) {
             return List.copyOf(problems);
         }
-        if (master.brief() == null || master.brief().isBlank()) {
-            problems.add("orchestrator.master.brief: required with mode " + master.modeOrOff().id()
-                    + " — it is what the session judges by, and it outlives the session");
-        } else if (!Files.isRegularFile(brief(master.brief()))) {
-            problems.add("orchestrator.master.brief: no file at " + brief(master.brief()));
+        Path brief = brief(master.briefOrDefault());
+        if (!Files.isRegularFile(brief)) {
+            problems.add("orchestrator.master.brief: no file at " + brief
+                    + " — copy master-brief.md.dist to it and edit it until it reads like you");
         }
         return List.copyOf(problems);
     }

@@ -32,3 +32,6 @@ orchestrator-backend/*.log
 orchestrator-backend/bin/
 orchestrator-backend/*/bin/
 CLAUDE.local.md
+
+# The Master session brief, copied from master-brief.md.dist
+master-brief.md

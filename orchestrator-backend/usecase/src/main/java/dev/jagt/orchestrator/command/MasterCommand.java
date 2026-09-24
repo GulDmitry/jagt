@@ -31,13 +31,16 @@ public class MasterCommand implements GlobalCommand {
         ConfigService.ConfigFile.MasterConfig master = configService.load().master();
         MasterMode mode = master.modeOrOff();
         if (mode == MasterMode.OFF) {
-            return "master: off. It is experimental: set `orchestrator.master.mode` to "
-                    + MasterMode.JUDGE.id() + " and point `brief` at the file saying what it judges.";
+            return "master: off, and experimental. To try it: copy master-brief.md.dist to "
+                    + master.briefOrDefault() + ", edit it until it reads like you, and set"
+                    + " `orchestrator.master.mode` to " + MasterMode.JUDGE.id() + ".";
         }
         return "master: " + mode.id() + (mode == MasterMode.JUDGE
                 ? " — it reads and writes what it found; it presses nothing."
                 : " — it also presses the button you would have.")
-                + "\n  judges by: " + master.brief()
+                + "\n  judges by: " + master.briefOrDefault()
+                + "\n  model:     " + (master.modelOrInherited().isEmpty()
+                        ? "inherited from the agent CLI" : master.modelOrInherited())
                 + "\n  running:   nothing yet; the session itself is not built.";
     }
 }

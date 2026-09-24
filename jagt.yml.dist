@@ -77,8 +77,11 @@ orchestrator:
   # An unattended reviewer that reads what a task produced before you do. Off unless you turn it on, and it has
   # not been driven against real work yet — see TODO.md.
   master:
-    mode: off              # off | judge (reads and writes what it found) | act (also presses the button)
-    # brief: reviewer.md   # required unless off: the file saying what it judges by, relative to this file
+    mode: off                # off | judge (reads and writes what it found) | act (also presses the button)
+    # brief: master-brief.md # what it judges by: copy master-brief.md.dist to this name and edit it. Relative
+                             # to this file. Required unless off, and refused at startup when it is not there
+    # model: fable           # reading is the cheap half, so it can run a heavier model than the work does;
+                             # blank inherits whatever the agent CLI would have used
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:
