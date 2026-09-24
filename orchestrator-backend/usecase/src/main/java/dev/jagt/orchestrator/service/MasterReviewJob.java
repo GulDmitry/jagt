@@ -23,6 +23,7 @@ public class MasterReviewJob implements Job {
     private final ConfigService configService;
     private final MasterSession master;
     private final MasterReview reviews;
+    private final MasterVerdicts verdicts;
 
     @Override
     public String id() {
@@ -31,7 +32,7 @@ public class MasterReviewJob implements Job {
 
     @Override
     public String describe() {
-        return "hand the Master session each round that came back, before a human reads it";
+        return "hand the Master session each round that came back, and act on what it answered";
     }
 
     @Override
@@ -41,16 +42,25 @@ public class MasterReviewJob implements Job {
 
     @Override
     public void run() {
-        if (!configService.load().master().running() || !master.live()) {
+        ConfigService.ConfigFile.MasterConfig config = configService.load().master();
+        if (!config.running() || !master.live()) {
             return;
         }
+        stateService.tasks().forEach((taskId, task) -> {
+            if (task.status() != TaskStatus.REVIEW_PENDING) {
+                return;
+            }
+            reviews.of(task).filter(verdict -> verdict.writtenAt() >= task.statusSince())
+                    .ifPresent(verdict -> verdicts.act(taskId, task, verdict, config.modeOrOff()));
+        });
+        // Asked LAST and one at a time: the session reads one round at a time, and a queue typed into its
+        // window would interleave two reviews into one answer.
         stateService.tasks().entrySet().stream()
                 .filter(entry -> waiting(entry.getValue()))
                 .findFirst()
                 .ifPresent(entry -> ask(entry.getKey(), entry.getValue()));
     }
 
-    /** One at a time: the session reads one round at a time, and a queue typed into it would interleave. */
     private boolean waiting(TaskState task) {
         return task.status() == TaskStatus.REVIEW_PENDING && !reviews.readsTheRoundInFront(task);
     }
@@ -66,7 +76,9 @@ public class MasterReviewJob implements Job {
 
     /** Names the task and the file, and nothing about what to conclude: that is the brief's, not this line's. */
     private String brief(String taskId, TaskState task) {
-        return "Review task " + taskId + " in " + task.repos().stream().map(repo -> repo.worktreePath()).collect(java.util.stream.Collectors.joining(", "))
+        return "Review task " + taskId + " in "
+                + task.repos().stream().map(repo -> repo.worktreePath())
+                        .collect(java.util.stream.Collectors.joining(", "))
                 + ". Read its uncommitted diff against " + task.baseBranchOr("the base branch")
                 + " as the roles your brief names, write your findings to " + MasterReview.FILE
                 + " in that worktree, and end that file with VERDICT: ready or VERDICT: not ready."

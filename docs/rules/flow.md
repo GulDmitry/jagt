@@ -14,6 +14,10 @@ running the project's own command · `REVIEW_PENDING` back with the human · `SH
 `DEPLOY_CONFLICT` a human resolves it in the deploy worktree · `DEPLOYED` live on the deploy branch ·
 `REVERTED` the deploy is out, branch and commits surviving · `DONE` closed.
 
+**A verb a human keeps is named in the table**, not in prose: `TaskAction.humanOnly` — `done` alone. A task is
+opened by a person and closed by one; what happens in between is the work, and the work is what the Master
+session stands in for where `master.mode` is `act`.
+
 **Door one** is `flow/FlowEngine.run`: check the rules, run the `port/TaskCapability` registered for the
 action, write the status the table gives for its `flow/Outcome`.
 

@@ -50,6 +50,12 @@ public enum TaskAction {
     /** Actions that only LOOK at a task — not the same question as which half of the card renders them. */
     private static final Set<TaskAction> READ_ONLY = EnumSet.of(FOCUS, IDE, DIFF);
 
+    /**
+     * Verbs a human keeps even where the Master session acts for them. A task is opened by a person and closed
+     * by one; what happens in between is the work, and the work is what the reviewer stands in for.
+     */
+    private static final Set<TaskAction> HUMAN_ONLY = EnumSet.of(DONE);
+
     /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
     private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);
 
@@ -73,6 +79,11 @@ public enum TaskAction {
 
     public Group group() {
         return group;
+    }
+
+    /** Whether this verb stays a human's however much else is delegated. */
+    public boolean humanOnly() {
+        return HUMAN_ONLY.contains(this);
     }
 
     /** Whether this action changes nothing, so nothing else being in flight is a reason to refuse it. */
