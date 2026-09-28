@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.FinishedTask;
@@ -14,6 +15,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class FinishedTasksTest {
 
@@ -25,7 +27,7 @@ class FinishedTasksTest {
         StateService state = new StateService(mapper, paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1")
                 .title("a thing").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, paths);
+        FinishedTasks finished = new FinishedTasks(mapper, state, mock(Notifications.class), paths);
 
         finished.record("ABC-1");
         state.removeTask("ABC-1");
@@ -44,7 +46,7 @@ class FinishedTasksTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(mapper, paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, paths);
+        FinishedTasks finished = new FinishedTasks(mapper, state, mock(Notifications.class), paths);
         finished.record("ABC-1");
         Files.writeString(root.resolve("finished.jsonl"),
                 Files.readString(root.resolve("finished.jsonl")) + "{ this is not json\n");
