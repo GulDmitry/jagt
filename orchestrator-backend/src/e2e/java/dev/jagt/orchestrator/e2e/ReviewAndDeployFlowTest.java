@@ -284,8 +284,8 @@ class ReviewAndDeployFlowTest {
                 new Answer<>(Optional.of(new MergeRequestFacts(true, TASK, "main", TASK + " " + TITLE)),
                         TokenUsage.NONE));
         when(assistant.readTicket(eq(TASK), any())).thenReturn(
-                new Answer<>(Optional.of(new TicketFacts(true, TASK, TITLE, "ABC", List.of(),
-                        "https://tracker.example.com/" + TASK)), TokenUsage.NONE));
+                new Answer<>(Optional.of(TicketFacts.defaults().withExists(true).withKey(TASK).withTitle(TITLE)
+                        .withTrackerProject("ABC").withUrl("https://tracker.example.com/" + TASK)), TokenUsage.NONE));
 
         String resumed = post("/api/tasks/resume",
                 "{\"reviewRequestUrl\": \"" + request() + "\"}", Map.of());

@@ -18,7 +18,9 @@ public final class TicketRead {
             .required("title", "string", null)
             .required("trackerProject", "string", null)
             .requiredTexts("labels", null)
-            .required("url", "string", null);
+            .required("url", "string", null)
+            .required("trackerStatus", "string", null)
+            .required("assignee", "string", null);
 
     private TicketRead() {
     }
@@ -40,6 +42,11 @@ public final class TicketRead {
             found.add(new Violation("url", "the item's canonical web link; never invent one"));
         } else if (!facts.url().startsWith("http://") && !facts.url().startsWith("https://")) {
             found.add(new Violation("url", "an http(s) link, not " + facts.url()));
+        }
+        // An unassigned item is an answer; a blank status is not, an intake trigger having nothing to fire on.
+        if (blank(facts.trackerStatus())) {
+            found.add(new Violation("trackerStatus", "the item's own workflow status, spelled as the tracker"
+                    + " spells it"));
         }
         if (answersForAnotherItem(ref, facts.key())) {
             found.add(new Violation("key", "the item asked for, which was " + ref + ", not " + facts.key()));

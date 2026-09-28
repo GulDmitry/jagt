@@ -35,8 +35,9 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "release/2",
                         "PROJ-1 Excel export")), TokenUsage.NONE));
-        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "PROJ-1",
-                "Excel export", "PROJ", List.of(), "https://tracker/PROJ-1")), TokenUsage.NONE));
+        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("PROJ-1").withTitle("Excel export").withTrackerProject("PROJ")
+                .withUrl("https://tracker/PROJ-1")), TokenUsage.NONE));
 
         resume.resume("https://host/group/proj/-/merge_requests/425");
 
@@ -54,8 +55,9 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "main",
                         "PROJ-1 Excel export")), spent));
-        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "PROJ-1",
-                "Excel export", "PROJ", List.of(), "https://tracker/PROJ-1")), TokenUsage.NONE));
+        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("PROJ-1").withTitle("Excel export").withTrackerProject("PROJ")
+                .withUrl("https://tracker/PROJ-1")), TokenUsage.NONE));
 
         resume.resume("https://host/group/proj/-/merge_requests/425");
 
@@ -68,8 +70,9 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/450"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
                         "ABC-42")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-42",
-                "Excel export drops the last row", "ABC", List.of(), "https://tracker/ABC-42")),
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-42").withTitle("Excel export drops the last row").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-42")),
                 TokenUsage.NONE));
 
         resume.resume("https://host/group/proj/-/merge_requests/450");
@@ -86,8 +89,9 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/451"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
                         "ABC-42 Excel export drops the last row")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-42",
-                "Excel export is broken", "ABC", List.of(), "https://tracker/ABC-42")), TokenUsage.NONE));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-42").withTitle("Excel export is broken").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
 
         resume.resume("https://host/group/proj/-/merge_requests/451");
 
@@ -129,8 +133,9 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/453"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
                         "ABC-42")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-43",
-                "Invoice totals are wrong", "ABC", List.of(), "https://tracker/ABC-43")), TokenUsage.NONE));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-43").withTitle("Invoice totals are wrong").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-43")), TokenUsage.NONE));
 
         String result = resume.resume("https://host/group/proj/-/merge_requests/453").message();
 
@@ -145,8 +150,9 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/452"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
                         "ABC-42")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-42",
-                "Excel export drops the last row", "ABC", List.of(), "https://tracker/ABC-42")), spent));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-42").withTitle("Excel export drops the last row").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-42")), spent));
 
         resume.resume("https://host/group/proj/-/merge_requests/452");
 

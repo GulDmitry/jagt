@@ -3,31 +3,38 @@ package dev.jagt.orchestrator.protocol;
 import dev.jagt.orchestrator.task.TicketFacts;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TicketReadTest {
 
     @Test
     void acceptsAnItemTheTrackerSaysIsNotThere() {
-        var facts = new TicketFacts(false, "", "", "", List.of(), "");
+        var facts = TicketFacts.defaults();
 
         assertThat(TicketRead.violations("ABC-42", facts)).isEmpty();
     }
 
     @Test
     void refusesAnItemThatExistsWithNothingToNameItBy() {
-        var facts = new TicketFacts(true, "", "", "ABC", List.of(), "");
+        var facts = TicketFacts.defaults().withExists(true).withTrackerStatus("In Progress");
 
         assertThat(TicketRead.violations("ABC-42", facts)).extracting(Violation::field)
                 .containsExactlyInAnyOrder("key", "title", "url");
     }
 
     @Test
+    void refusesAnItemWhoseWorkflowStatusCameBackEmpty() {
+        var facts = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget")
+                .withUrl("https://tracker/ABC-42");
+
+        assertThat(TicketRead.violations("ABC-42", facts)).extracting(Violation::field)
+                .containsExactly("trackerStatus");
+    }
+
+    @Test
     void refusesAnAnswerAboutAnotherItemThanTheOneAskedFor() {
-        var facts = new TicketFacts(true, "ABC-7", "Something else", "ABC", List.of(),
-                "https://tracker/ABC-7");
+        var facts = TicketFacts.defaults().withExists(true).withKey("ABC-7").withTitle("Something else")
+                .withUrl("https://tracker/ABC-7").withTrackerStatus("In Progress");
 
         assertThat(TicketRead.violations("ABC-42", facts)).extracting(Violation::expected)
                 .allSatisfy(expected -> assertThat(expected).contains("which was ABC-42"));
@@ -35,14 +42,16 @@ class TicketReadTest {
 
     @Test
     void asksNothingAboutTheKeyWhenTheReferenceWasAUrl() {
-        var facts = new TicketFacts(true, "ABC-7", "Something", "ABC", List.of(), "https://tracker/ABC-7");
+        var facts = TicketFacts.defaults().withExists(true).withKey("ABC-7").withTitle("Something")
+                .withUrl("https://tracker/ABC-7").withTrackerStatus("In Progress");
 
         assertThat(TicketRead.violations("https://tracker/ABC-7", facts)).isEmpty();
     }
 
     @Test
     void refusesALinkNobodyCanOpen() {
-        var facts = new TicketFacts(true, "ABC-42", "Widget", "ABC", List.of(), "tracker://ABC-42");
+        var facts = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget")
+                .withUrl("tracker://ABC-42").withTrackerStatus("In Progress");
 
         assertThat(TicketRead.violations("ABC-42", facts)).extracting(Violation::field).containsExactly("url");
     }

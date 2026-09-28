@@ -42,8 +42,9 @@ class TaskLauncherTest {
     void namesTheTaskByTheCanonicalKeyTheReadGaveBackWhenGivenAUrl() {
         oneProject("group-a");
         when(tickets.read("https://tracker.example.com/browse/ABC-123"))
-                .thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-123", "Some title", "ABC",
-                        List.of(), "https://tracker.example.com/browse/ABC-123")), TokenUsage.NONE));
+                .thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true).withKey("ABC-123")
+                        .withTitle("Some title").withTrackerProject("ABC")
+                        .withUrl("https://tracker.example.com/browse/ABC-123")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("https://tracker.example.com/browse/ABC-123", "group-a", null, null,
                 null, null));
@@ -61,8 +62,8 @@ class TaskLauncherTest {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
         oneProject("group-a");
         when(tickets.read("https://tracker/ABC-123")).thenReturn(new Answer<>(
-                Optional.of(new TicketFacts(true, "ABC-123", "t", "ABC", List.of(),
-                        "https://tracker/ABC-123")), spent));
+                Optional.of(TicketFacts.defaults().withExists(true).withKey("ABC-123").withTitle("t")
+                        .withTrackerProject("ABC").withUrl("https://tracker/ABC-123")), spent));
 
         launcher.launch(new LaunchRequest("https://tracker/ABC-123", "group-a", null, null, null, null));
 
@@ -75,7 +76,7 @@ class TaskLauncherTest {
     void createsNoTaskWhenTheTrackerSaysThereIsNoSuchItem() {
         oneProject("group-a");
         when(tickets.read("ABC-42")).thenReturn(new Answer<>(
-                Optional.of(new TicketFacts(false, "", "", "", List.of(), "")),
+                Optional.of(TicketFacts.defaults()),
                 TokenUsage.ofCall(38_000, 0, 60, 0.41)));
 
         String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
@@ -95,8 +96,9 @@ class TaskLauncherTest {
     @Test
     void createsNoTaskWhenTheReadAnsweredAboutADifferentItem() {
         oneProject("group-a");
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-99",
-                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-99")), TokenUsage.NONE));
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-99").withTitle("Widget layout is off").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-99")), TokenUsage.NONE));
 
         String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
 
@@ -130,8 +132,9 @@ class TaskLauncherTest {
     @Test
     void relaysTheHumansNotesToTheAgentAlongsideTheTicket() {
         oneProject("demo");
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
-                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
 
@@ -143,8 +146,9 @@ class TaskLauncherTest {
     @Test
     void carriesTheModeTheHumanAskedForThroughToTheAgent() {
         oneProject("demo");
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
-                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
 
@@ -156,8 +160,9 @@ class TaskLauncherTest {
     @Test
     void carriesTheHumansBranchStrategyThroughToTheWorktreeCut() {
         oneProject("demo");
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
-                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", null, "recreate", null, null));
 
@@ -169,8 +174,9 @@ class TaskLauncherTest {
     @Test
     void carriesTheHumansBaseBranchThroughToTheWorktreeCut() {
         oneProject("demo");
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
-                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "demo", null, null, "feature/parent", null));
 
@@ -181,8 +187,8 @@ class TaskLauncherTest {
 
     @Test
     void matchesTheProjectWhoseLabelIsAmongTheTicketLabels() {
-        TicketFacts facts = new TicketFacts(true, "ABC-1", "Some ticket title", "ABC",
-                List.of("area-x", "no-test", "backend"), null);
+        TicketFacts facts = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Some ticket title")
+                .withTrackerProject("ABC").withLabels(List.of("area-x", "no-test", "backend"));
 
         List<String> matches = TaskLauncher.projectsMatching(facts,
                 Map.of("group-a", List.of("backend"), "group-b", List.of("frontend")));
@@ -196,8 +202,9 @@ class TaskLauncherTest {
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
 
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(new TicketFacts(true, "ABC-1",
-                "Widget layout is off", "ABC", List.of(), "https://tracker/ABC-1")), TokenUsage.NONE));
+        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
+                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
+                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
         launcher.launch(new LaunchRequest("ABC-1", "web,api", null, null, null, null).normalized());
 

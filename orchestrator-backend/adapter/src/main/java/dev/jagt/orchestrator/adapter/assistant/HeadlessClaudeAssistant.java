@@ -70,7 +70,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " with the matching MCP tool: if it is a URL, follow the URL — do NOT try to parse a key"
                 + " out of it.</task>\n"
                 + "<rules>Return exists=true with its canonical issue key as key, its summary as"
-                + " title, its project key as trackerProject, its labels, and its canonical web URL as url"
+                + " title, its project key as trackerProject, its labels, its workflow status as"
+                + " trackerStatus and the login or display name it is assigned to as assignee — empty where"
+                + " nobody holds it — and its canonical web URL as url"
                 + " — the link the item itself reports, never one you assemble. Where the item carries no"
                 + " summary of its own, WRITE the title yourself: at most eight words naming what the item"
                 + " asks for, from its description. Never answer exists=true with an empty title or an"
@@ -80,9 +82,15 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 AssistantCallKind.TICKET_READ), ticketRef).map(n -> {
             List<String> labels = new ArrayList<>();
             n.path("labels").forEach(l -> labels.add(l.asString("")));
-            return new TicketFacts(n.path("exists").asBoolean(false), n.path("key").asString(""),
-                    n.path("title").asString(""), n.path("trackerProject").asString(""), labels,
-                    n.path("url").asString(""));
+            return TicketFacts.defaults()
+                    .withExists(n.path("exists").asBoolean(false))
+                    .withKey(n.path("key").asString(""))
+                    .withTitle(n.path("title").asString(""))
+                    .withTrackerProject(n.path("trackerProject").asString(""))
+                    .withLabels(labels)
+                    .withUrl(n.path("url").asString(""))
+                    .withTrackerStatus(n.path("trackerStatus").asString(""))
+                    .withAssignee(n.path("assignee").asString(""));
         });
     }
 

@@ -26,7 +26,8 @@ class TicketReaderTest {
     @Test
     void answersWithTheReadAndWhatItCost() {
         Answer<TicketFacts> paid = new Answer<>(Optional.of(
-                new TicketFacts(true, "ABC-42", "t", "ABC", List.of(), "https://elsewhere.example.com/item/9")),
+                TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("t").withTrackerProject("ABC")
+                        .withUrl("https://elsewhere.example.com/item/9")),
                 TokenUsage.ofCall(25_000, 0, 120, 0.05));
         when(assistant.readTicket(eq("https://elsewhere.example.com/item/9"), any())).thenReturn(paid);
 
@@ -37,10 +38,10 @@ class TicketReaderTest {
 
     @Test
     void readsTheTicketOnASecondAttemptWhenTheModelFirstSaidItDoesNotExist() {
-        TicketFacts read = new TicketFacts(true, "ABC-42", "Widget layout is off", "ABC", List.of(),
-                "https://tracker/ABC-42");
+        TicketFacts read = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
+                .withTrackerProject("ABC").withUrl("https://tracker/ABC-42");
         when(assistant.readTicket(eq("ABC-42"), any()))
-                .thenReturn(new Answer<>(Optional.of(new TicketFacts(false, "", "", "", List.of(), "")),
+                .thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()),
                         TokenUsage.ofCall(10, 0, 1, 0.5)))
                 .thenReturn(new Answer<>(Optional.of(read), TokenUsage.ofCall(20, 0, 2, 0.25)));
 
@@ -54,13 +55,13 @@ class TicketReaderTest {
     @Test
     void givesUpOnTheAttemptLimitAndKeepsWhatTheLastReadSaid() {
         Answer<TicketFacts> denial = new Answer<>(
-                Optional.of(new TicketFacts(false, "", "", "", List.of(), "")), TokenUsage.NONE);
+                Optional.of(TicketFacts.defaults()), TokenUsage.NONE);
         when(assistant.readTicket(eq("ABC-42"), any())).thenReturn(denial);
 
         var answer = new TicketReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-42");
 
-        assertThat(answer.facts()).contains(new TicketFacts(false, "", "", "", List.of(), ""));
+        assertThat(answer.facts()).contains(TicketFacts.defaults());
         verify(assistant, times(3)).readTicket(eq("ABC-42"), any());
     }
 
@@ -68,11 +69,12 @@ class TicketReaderTest {
     void tellsTheNextAttemptWhatWasWrongWithTheLastAnswer() {
         when(assistant.readTicket(eq("ABC-42"), any()))
                 .thenReturn(new Answer<>(Optional.of(
-                        new TicketFacts(true, "ABC-42", "", "ABC", List.of(), "https://tracker/ABC-42")),
+                        TicketFacts.defaults().withExists(true).withKey("ABC-42").withTrackerProject("ABC")
+                                .withUrl("https://tracker/ABC-42")),
                         TokenUsage.NONE))
                 .thenReturn(new Answer<>(Optional.of(
-                        new TicketFacts(true, "ABC-42", "Widget layout is off", "ABC", List.of(),
-                                "https://tracker/ABC-42")), TokenUsage.NONE));
+                        TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
+                                .withTrackerProject("ABC").withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
         ArgumentCaptor<List<String>> corrections = ArgumentCaptor.captor();
 
         new TicketReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2))).read("ABC-42");

@@ -27,7 +27,8 @@ class MeteredAssistantTest {
     void booksATicketReadUnderItsOwnKind() {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
         when(port.readTicket("ABC-1", List.of())).thenReturn(new Answer<>(
-                Optional.of(new TicketFacts(true, "ABC-1", "t", "ABC", List.of(), "")), spent));
+                Optional.of(TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("t")
+                        .withTrackerProject("ABC")), spent));
 
         var answer = metered.readTicket("ABC-1", List.of());
 
