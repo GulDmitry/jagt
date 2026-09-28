@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -142,13 +143,36 @@ class AgentSessionsTest {
     }
 
     @Test
-    void respawnsATaskWhoseSessionIsGoneRatherThanDroppingTheRelay() {
+    void reEntersTheSessionOfATaskWhoseWindowIsGoneRatherThanDroppingTheRelay() {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
 
-        assertThat(sessions().writeTaskContext("ABC-1", "new instructions")).contains("respawned");
+        assertThat(sessions().writeTaskContext("ABC-1", "new instructions")).contains("re-entered");
+        verify(tmux).reviveTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any());
+    }
+
+    @Test
+    void reEntersWhatTheDeadSessionKnewWhenFocusingATaskTheMachineRestartedUnder() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
+        when(terminal.reveal("jagt")).thenReturn(TerminalDriver.Revealed.WINDOW);
+        when(agentRuntime.displayName()).thenReturn("Claude");
+
+        assertThat(sessions().focusTask("ABC-1")).contains("re-entered its Claude session");
+        verify(tmux).reviveTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any());
+    }
+
+    @Test
+    void startsAFreshSessionWhenAHumanRestartsTheAgentInsteadOfReEnteringTheOldOne() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.displayName()).thenReturn("Claude");
+
+        assertThat(sessions().openTaskTab("ABC-1", "auto")).contains("New Claude session started");
         verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false));
+        verify(tmux, never()).reviveTaskWindow(anyString(), anyString(), anyString(), any(), any());
     }
 
     @Test

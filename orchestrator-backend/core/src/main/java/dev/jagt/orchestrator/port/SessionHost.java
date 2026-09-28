@@ -30,6 +30,13 @@ public interface SessionHost {
                         boolean planMode);
 
     /**
+     * Re-enters a task's window after the session behind it was lost — a killed tmux server, a rebooted machine —
+     * keeping what that session knew where the runtime can. A human asking for a restart gets {@link
+     * #openTaskWindow} instead.
+     */
+    void reviveTaskWindow(String session, String dedicatedTitle, String taskId, String alias, Path worktreePath);
+
+    /**
      * Starts a command in a window of its own, replacing any window of that name. What runs there is the
      * caller's; every other method here finds the window again by the same name, task or not.
      */

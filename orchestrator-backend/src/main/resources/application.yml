@@ -68,6 +68,11 @@ orchestrator:
     own — leave ALL changes UNCOMMITTED so the human reviews your working tree; committing happens ONLY
     when task_context.md later instructs it (that is the human's `ship`). When done and verified, set
     status REVIEW_PENDING.
+  # Prompt a session gets when jagt re-enters one it did not end itself — a lost tmux server, a rebooted machine.
+  agent-revive-prompt: >-
+    Your session was interrupted and has been re-entered, so the context above may be incomplete. Re-read
+    task_context.md and run `git status`: uncommitted changes in this worktree are your own work, and you
+    continue from them rather than starting the task over.
   # The one-shot headless reads. They inherit YOUR MCP servers; jagt hardcodes no server or path.
   assistant:
     # Do NOT narrow to `project`: the call runs from a temp dir, where that scope loads zero servers.

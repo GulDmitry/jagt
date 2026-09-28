@@ -50,6 +50,9 @@ orchestrator:
   # The built-in prompt starts every sub-agent on task_context.md and holds it to leaving work uncommitted.
   # agentPrompt: >-
   #   You are the sub-agent for this worktree. …
+  # What a session jagt re-enters is told instead — after a lost tmux server or a rebooted machine.
+  # agentRevivePrompt: >-
+  #   Your session was interrupted and has been re-entered, so the context above may be incomplete. …
 
   watchdog:
     staleAfter: 5m        # silence before an "agent stopped" alert; a hook report needs no wait

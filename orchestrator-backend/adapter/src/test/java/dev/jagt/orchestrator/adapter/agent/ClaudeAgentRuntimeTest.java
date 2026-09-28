@@ -40,6 +40,17 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void continuesTheWorktreesNewestConversationWhenJagtReEntersASessionItDidNotEnd() {
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults()
+                .withAgentPrompt("go").withAgentRevivePrompt("pick up where you left off"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+
+        assertThat(runtime.reviveCommand(Path.of("/wt")))
+                .isEqualTo("claude --continue 'pick up where you left off'");
+    }
+
+    @Test
     void keepsAPromptWithAnApostropheOneShellArgumentInsteadOfBreakingTheLaunch() {
         var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("it's fine"),
                 new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),

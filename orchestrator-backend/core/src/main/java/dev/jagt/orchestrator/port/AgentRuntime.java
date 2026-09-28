@@ -24,6 +24,14 @@ public interface AgentRuntime {
         return launchCommand(worktree, planMode);
     }
 
+    /**
+     * The command re-entering the session this worktree last held, for a window jagt revives on its own rather
+     * than one a human restarted; the fresh {@link #launchCommand} where the runtime keeps nothing to re-enter.
+     */
+    default String reviveCommand(Path worktree) {
+        return launchCommand(worktree, false);
+    }
+
     /** Whether this runtime can be told which model to run. */
     default boolean choosesModel() {
         return false;

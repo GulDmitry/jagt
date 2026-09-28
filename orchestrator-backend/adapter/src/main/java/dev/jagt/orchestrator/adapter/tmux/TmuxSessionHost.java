@@ -41,12 +41,25 @@ public class TmuxSessionHost implements SessionHost {
     @Override
     public void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias,
                                Path worktreePath, boolean planMode) {
+        taskWindow(session, dedicatedTitle, taskId, alias, worktreePath,
+                agentRuntime.launchCommand(worktreePath, planMode));
+    }
+
+    @Override
+    public void reviveTaskWindow(String session, String dedicatedTitle, String taskId, String alias,
+                                 Path worktreePath) {
+        taskWindow(session, dedicatedTitle, taskId, alias, worktreePath,
+                agentRuntime.reviveCommand(worktreePath));
+    }
+
+    private void taskWindow(String session, String dedicatedTitle, String taskId, String alias,
+                            Path worktreePath, String command) {
         synchronized (lock) {
             ensureSession(session);
             // One task = one window: respawns must never accumulate duplicates.
             killTaskWindows(session, taskId);
             String windowId = newWindow(session, taskId, worktreePath,
-                    WorktreeHooks.gitEnv(worktreePath) + agentRuntime.launchCommand(worktreePath, planMode));
+                    WorktreeHooks.gitEnv(worktreePath) + command);
             // The window name must stay the taskId; the alias rides in a window user-option.
             if (alias != null && !alias.isBlank()) {
                 processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option",

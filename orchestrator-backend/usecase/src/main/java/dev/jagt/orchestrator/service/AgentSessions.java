@@ -92,32 +92,22 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                         + task.worktreePath();
     }
 
-    /** A session that is gone or dead is started fresh first: focus must always land somewhere. */
+    /** A session that is gone or dead is re-entered first: focus must always land on a live agent. */
     public String focusTask(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
         String dedicatedTitle = sessions.sessionName(config.viewer().tmuxSession());
-        boolean respawned = false;
-        Path worktreePath = Path.of(task.worktreePath());
-        switch (sessions.taskWindowState(session, taskId)) {
-            case MISSING -> {
-                sessions.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
-                respawned = true;
-            }
-            case DEAD_SHELL -> {
-                // Focusing must hand the user a live agent, not the dead prompt left for inspection.
-                sessions.killTaskWindows(session, taskId);
-                sessions.openTaskWindow(session, dedicatedTitle, taskId, task.alias(), worktreePath, false);
-                respawned = true;
-            }
-            case AGENT_RUNNING -> {
-            }
+        boolean revived = sessions.taskWindowState(session, taskId) != SessionHost.WindowState.AGENT_RUNNING;
+        if (revived) {
+            sessions.reviveTaskWindow(session, dedicatedTitle, taskId, task.alias(),
+                    Path.of(task.worktreePath()));
         }
         sessions.focusTaskWindow(session, dedicatedTitle, taskId);
         return "Focused tmux window '" + taskId + "'" + viewer(terminalDriver.reveal(dedicatedTitle))
-                + (respawned ? "; the session was dead, started a fresh " + agentRuntime.displayName() + " session" : "");
+                + (revived ? "; the session was down, re-entered its " + agentRuntime.displayName()
+                        + " session" : "");
     }
 
     /** What is left for the human to do about the viewer, which only the terminal can say. */
@@ -183,19 +173,21 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 .addKeyValue("said", instructions.lines().findFirst().orElse("(empty)"))
                 .log();
         // A file on disk doesn't wake a running agent session — nudge it directly.
-        String session = agentSession(configService.load(), taskId);
+        ConfigService.ConfigFile config = configService.load();
+        String session = agentSession(config, taskId);
         if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING
                 && sessions.nudgeTaskWindow(session, taskId,
                         "The Master updated task_context.md — re-read it now and follow the new instructions.")) {
             return "Instructions written to task_context.md and the agent was nudged to re-read them.";
         }
-        log.atInfo().setMessage("agent session respawning").addKeyValue("task", taskId)
+        log.atInfo().setMessage("agent session re-entered").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias())
                 .addKeyValue("cause", "session was down when instructions were relayed")
                 .log();
-        // A fresh session reads task_context.md on start, so a relay cannot dead-end against a dead agent.
-        openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(), false);
-        return "Instructions written to task_context.md; the agent session was down, so it was respawned"
+        // A re-entered session reads task_context.md again, so a relay cannot dead-end against a dead agent.
+        sessions.reviveTaskWindow(session, sessions.sessionName(config.viewer().tmuxSession()), taskId,
+                task.alias(), Path.of(task.worktreePath()));
+        return "Instructions written to task_context.md; the agent session was down, so it was re-entered"
                 + " to read and follow them.";
     }
 

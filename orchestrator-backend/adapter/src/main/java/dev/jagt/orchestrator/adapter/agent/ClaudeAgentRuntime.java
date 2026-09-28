@@ -51,6 +51,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                 + " " + shellQuote(properties.agentPrompt());
     }
 
+    /** `--continue` takes the newest conversation this worktree holds, and simply starts one where it holds none. */
+    @Override
+    public String reviveCommand(Path worktree) {
+        return claude.command() + " --continue " + shellQuote(properties.agentRevivePrompt());
+    }
+
     @Override
     public boolean choosesModel() {
         return true;

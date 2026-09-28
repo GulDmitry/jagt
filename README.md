@@ -120,7 +120,8 @@ onto exactly one of them, through the same gate the button uses. `revert`, `resp
 - The base branch is **read-only**; only `deploy` and its undo `revert` write a shared branch, both yours to
   trigger and neither rewriting history.
 - **Nothing is written into your project's tracked files** — no git hook, nothing to uninstall.
-- Sessions live in tmux and the state is one JSON file, so restarting the backend loses nothing.
+- Sessions live in tmux and the state is one JSON file, so restarting the backend loses nothing; a reboot
+  costs the windows, and `focus` re-enters each session where it left off.
 - **Four things cost a model call**: a ticket, a merge request, a review round, a `⌘K` sentence.
 - The board asks for no password and can deploy, so it stays on `127.0.0.1`.
 
