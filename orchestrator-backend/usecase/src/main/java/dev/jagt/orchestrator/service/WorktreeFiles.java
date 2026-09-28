@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.Artifact;
 import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -21,14 +22,13 @@ import java.util.stream.Stream;
 @Slf4j
 public final class WorktreeFiles {
 
-    public static final String REVIEW_REPLIES = "review_replies.md";
-
     /** Directories never worth scanning for local files (huge and/or generated). */
     private static final Set<String> COPY_SCAN_SKIP =
             Set.of(".git", "node_modules", "build", "target", "out", "dist", ".gradle", ".idea");
 
     /** Written into every worktree jagt cuts, whatever the runtime: a checkout carrying none is not jagt's. */
-    public static final List<String> OWN_FILES = List.of(".jagt", "task_context.md", REVIEW_REPLIES);
+    public static final List<String> OWN_FILES =
+            Stream.concat(Stream.of(".jagt"), Artifact.fileNames().stream()).toList();
 
     private WorktreeFiles() {
     }
@@ -46,10 +46,10 @@ public final class WorktreeFiles {
      * affects untracked files, so a project's own tracked AGENTS.md/CLAUDE.md is unaffected.
      */
     public static void excludeOrchestratorPlumbing(Path gitCommonDir, AgentRuntime runtime) {
-        List<String> entries = Stream.concat(
-                Stream.of("mcp_client.js", AgentRuntime.SYSTEM_KNOWLEDGE_FILE, "task_context.md",
-                        REVIEW_REPLIES, ".jagt/", ".run/"),
-                runtime.statusExclusions().stream()).distinct().toList();
+        Stream<String> plumbing =
+                Stream.of("mcp_client.js", AgentRuntime.SYSTEM_KNOWLEDGE_FILE, ".jagt/", ".run/");
+        List<String> entries = Stream.of(plumbing, Artifact.fileNames().stream(),
+                runtime.statusExclusions().stream()).flatMap(names -> names).distinct().toList();
         try {
             Path exclude = gitCommonDir.resolve("info").resolve("exclude");
             Files.createDirectories(exclude.getParent());

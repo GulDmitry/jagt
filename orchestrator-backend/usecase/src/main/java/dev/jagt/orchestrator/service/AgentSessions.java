@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.TerminalDriver;
+import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -148,7 +149,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
      */
     public boolean relayIfChanged(String taskId, String instructions) {
         String id = stateService.canonicalTaskId(taskId);
-        Path contextFile = Path.of(requireTask(id).worktreePath()).resolve("task_context.md");
+        Path contextFile = Path.of(requireTask(id).worktreePath()).resolve(Artifact.CONTEXT.fileName());
         synchronized (relayLock(id)) {
             if (WorktreeFiles.read(contextFile).filter(instructions::equals).isPresent()) {
                 return false;
@@ -161,7 +162,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     private String relay(String taskId, String instructions) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        Path contextFile = Path.of(task.worktreePath()).resolve("task_context.md");
+        Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
         // One relay at a time per task: interleaving two writes to one file loses an instruction.
         synchronized (relayLock(taskId)) {
             WorktreeFiles.write(contextFile, instructions);

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -65,6 +66,6 @@ public class ReviewDrafts {
     private static Path draftsIn(String worktree) {
         return worktree == null || worktree.isBlank()
                 ? null
-                : Path.of(worktree).resolve(WorktreeFiles.REVIEW_REPLIES);
+                : Path.of(worktree).resolve(Artifact.REPLIES.fileName());
     }
 }

@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.service.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
+import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -57,7 +58,7 @@ public class ReviewRepliesReport {
         return state.map(TaskState::worktreePath)
                 .filter(worktree -> !worktree.isBlank())
                 .flatMap(worktree -> WorktreeFiles.read(Path.of(worktree)
-                        .resolve(WorktreeFiles.REVIEW_REPLIES)))
+                        .resolve(Artifact.REPLIES.fileName())))
                 .filter(text -> !text.isBlank())
                 .map(text -> header(task, state.filter(drafts::spent).isPresent()) + "\n\n" + body(text));
     }

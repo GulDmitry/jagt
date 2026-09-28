@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
+import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -41,7 +42,7 @@ public class WorktreeSetup {
         WorktreeFiles.write(systemKnowledge, briefing.of(request, repo, repos));
         // The instructions live where the session reads them, and a relay writes to that same one worktree.
         if (repo.primary() && request.instructions() != null && !request.instructions().isBlank()) {
-            WorktreeFiles.write(worktreePath.resolve("task_context.md"), request.instructions());
+            WorktreeFiles.write(worktreePath.resolve(Artifact.CONTEXT.fileName()), request.instructions());
         }
     }
 }
