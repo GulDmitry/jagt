@@ -68,6 +68,10 @@ public class MasterCheck implements StartupCheck {
                     + " round waiting for you to post the drafted replies — turn posting on, or withhold"
                     + " `reply` from the Master");
         }
+        if (master.may(MasterRight.DEPLOY) != master.may(MasterRight.REVERT)) {
+            problems.add("orchestrator.master.withhold: deploy and revert write the same shared branch, so"
+                    + " they are one step with one owner — withhold both or neither");
+        }
         if (MasterRight.ids().stream().noneMatch(right -> master.may(MasterRight.of(right).orElseThrow()))) {
             problems.add("orchestrator.master.withhold: withholding every right in act is `judge` written"
                     + " long — set orchestrator.master.mode to " + MasterMode.JUDGE.id());

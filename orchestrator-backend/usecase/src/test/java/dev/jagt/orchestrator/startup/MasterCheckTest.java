@@ -54,6 +54,23 @@ class MasterCheckTest {
     }
 
     @Test
+    void refusesKeepingTheDeployWhileLeavingItsUndoToTheMaster(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+
+        assertThat(checking(root, new MasterConfig("act", null, null, List.of("reply", "deploy"))).problems())
+                .singleElement().asString().contains("withhold both or neither");
+    }
+
+    @Test
+    void findsNothingWrongWithShippingUnattendedWhileRepliesAndTheSharedBranchStayYours(@TempDir Path root)
+            throws Exception {
+        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+
+        assertThat(checking(root, new MasterConfig("act", null, null,
+                List.of("reply", "deploy", "revert"))).problems()).isEmpty();
+    }
+
+    @Test
     void refusesWithholdingEveryRightWhereSayingJudgeMeansTheSame(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
 
