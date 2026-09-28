@@ -34,23 +34,27 @@ and no colour is free, `--danger` meaning broken and `--you` your move. Likely a
 
 ## Run the Master session against real work before anyone turns it on (idea)
 
-It ships off, marked experimental, and stays off until it has been driven by hand against live tasks: what it
-judged, where its verdict and yours differed, what it cost per wake. [`docs/roadmap.md`](docs/roadmap.md) has
-the shape; the finished-task record is what the comparison is read from.
+It stays off until it has been driven by hand against live tasks: what it judged, where its verdict and yours
+differed, what it cost per wake. [`docs/roadmap.md`](docs/roadmap.md) has the shape; the finished-task record
+is what the comparison is read from.
 
-What to decide first: what a trial run is allowed to touch — reading and writing a file only, with no verb
-issued, is the answer unless something says otherwise.
+What to decide first: what a trial run may touch — reading and writing a file only, no verb issued.
 
-## Extension points: a named event, a deterministic condition, a channel (concept)
+## The closed loop: a named event, a deterministic condition, and what it fires (concept, experimental)
 
-Say in `jagt.yml` that something outside jagt is told when a stated thing becomes true — every thread on a
-request closed, a round gone red, a deploy landed. Two of the three pieces exist: `notify/` fans out to every
+Where this ends: a task reaching a status someone else's board reports — `Ready for Stage` in one install — is
+`done`, its worktree dropped, nobody in the line. Two pieces exist: `notify/` fans out to every
 `port/Notifier` an install carries, and adding a channel is one adapter class plus a config value.
 
-What is missing is the middle: jagt has no named events, only the few places that happen to notify, and no
-routing — every notifier gets everything. **The condition must be the machine's**: computed from facts jagt
-already holds (`ReviewFacts.threads` empty, `Pipeline.RED`, a status reached), never a model's opinion that
-something looks done.
+The middle is missing: jagt has no named events, only the few places that happen to notify, and no routing —
+every notifier gets everything. **The condition must be the machine's**: computed from facts jagt already holds
+(`ReviewFacts.threads` empty, `Pipeline.RED`, a status reached), never a model's opinion that something looks
+done. `done` is `HUMAN_ONLY` and withheld from the Master in every mode, so an event closing a task is the
+report door judging a fact, never a verb pressed for you.
 
-What to decide first: where an event is declared so it is checked by the compiler rather than spelled in a
-config string, and whether routing is per channel, per event, or a pair of both.
+**Every trigger is a strategy, and so is the stage it fires** — intake, `done`, cleanup: an install with no
+tracker configures a different fact rather than losing the stage.
+
+What to decide first: where an event is declared so the compiler checks it rather than a config string; whether
+routing is per channel, per event or both; and whether a strategy resolves by id per call, keeping `jagt.yml`
+hot, or is wired at startup.
