@@ -120,7 +120,7 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
   decided quietly and named in the closing report.
 - **What is still open is a list, not a paragraph**: one `OPEN QUESTIONS:` line ends the session's terminal
   output with what the agent settled unasked. If the answer would have changed the code, it asks instead.
-- **No limit on concurrent tasks, and no bulk branch cleanup** — never a cap, a queue, a slots indicator or a `prune` verb.
+- **Tasks are capped at 24, and no bulk branch cleanup** — never a queue, a slots indicator or a `prune` verb.
 
 ## Build & run
 

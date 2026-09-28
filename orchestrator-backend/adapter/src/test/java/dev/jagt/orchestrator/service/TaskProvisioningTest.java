@@ -124,6 +124,18 @@ class TaskProvisioningTest {
     }
 
     @Test
+    void refusesToOpenAnotherTaskOnceTheLimitIsAlreadyRunning() {
+        for (int i = 0; i < TaskProvisioning.MAX_TASKS; i++) {
+            state.putTask("ABC-" + i, TaskState.builder("proj", root.resolve("wt" + i).toString(),
+                    TaskStatus.IN_PROGRESS).alias("a" + i).build());
+        }
+
+        assertThatThrownBy(() -> provisioning().initializeTask(NewTask.builder("ABC-99", "proj").build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("tasks are already open");
+    }
+
+    @Test
     void rejectsUnknownModeBeforeTouchingGit() {
         assertThatThrownBy(() -> provisioning().initializeTask(NewTask.builder("ABC-1", "proj").mode("bogus").build()))
                 .isInstanceOf(IllegalArgumentException.class)

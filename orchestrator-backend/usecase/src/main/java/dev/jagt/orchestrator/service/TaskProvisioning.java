@@ -63,6 +63,9 @@ public class TaskProvisioning {
                 + "' — open the line with different words");
     }
 
+    /** A ceiling rather than a queue: a board nobody can read is the failure this refuses, not a busy machine. */
+    static final int MAX_TASKS = 24;
+
     private boolean taken(String name, List<String> projectKeys) {
         return stateService.tasks().keySet().stream()
                 .anyMatch(registered -> TaskName.slug(registered).equals(TaskName.slug(name)))
@@ -72,6 +75,11 @@ public class TaskProvisioning {
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();
         TaskName.require(taskId, "taskId");
+        // Before anything is cut: a refusal after a worktree exists leaves the disk ahead of state.json.
+        if (stateService.tasks().size() >= MAX_TASKS) {
+            throw new IllegalArgumentException(MAX_TASKS + " tasks are already open, which is the limit —"
+                    + " finish one with `done` before starting another.");
+        }
         boolean plan = AgentSessions.planMode(request.mode());
         BranchStrategy strategy = BranchStrategy.of(request.branchStrategy());
         if (stateService.task(taskId).isPresent()) {
