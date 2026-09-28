@@ -35,3 +35,7 @@ CLAUDE.local.md
 
 # The Master session brief, copied from master-brief.md.dist
 master-brief.md
+
+# Records of finished tasks, written beside state.json and never read back
+finished.jsonl
+/artifacts/

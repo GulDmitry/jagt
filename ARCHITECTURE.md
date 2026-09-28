@@ -100,10 +100,10 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | a round | what the agent means to answer, before anything is posted | `review_replies.md` |
 | any report | the sentence, its stamp, whose move it is | `state.json` |
 | `deploy` | the merge commit `revert` walks back | the deploy branch, and `deployCommit` on the task |
-| `done` | nothing: the worktree goes, and everything jagt wrote into it with it | — |
+| `done` | the documents, copied out before the worktree goes | `artifacts/<date>-<taskId>/`, beside `state.json` |
 
-- **Only the middle is in git**: branch, commits and request outlive the task, while the briefing, the standing
-  instruction and the drafted replies go with the worktree `done` removes.
+- **Only the middle is in git**: branch, commits and request outlive the task; the documents are copied out
+  first (`service/FinishedArtifacts`) and never read back, so changing their format migrates nothing.
 - **The chain is readable while the task lives** — `ide <alias>` opens the worktree holding all of it at once.
 - **The front of the chain can be your own words**: with no ticket, what you typed is the task, names its branch,
   and lands in `task_context.md`.
