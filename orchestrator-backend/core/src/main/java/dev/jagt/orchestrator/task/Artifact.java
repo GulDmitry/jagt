@@ -17,7 +17,9 @@ public enum Artifact {
     /** What the agent means to do, before it writes anything. */
     PLAN("plan.md"),
     /** What the agent means to answer, before anything is posted. */
-    REPLIES("review_replies.md");
+    REPLIES("review_replies.md"),
+    /** What the unattended reviewer concluded about the round, and the verdict jagt reads back. */
+    REVIEW("master-review.md");
 
     private final String fileName;
 

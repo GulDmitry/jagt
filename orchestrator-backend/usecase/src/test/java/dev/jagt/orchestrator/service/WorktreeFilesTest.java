@@ -133,7 +133,7 @@ class WorktreeFilesTest {
         WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
-                .contains("*.local", "task_context.md", "plan.md", "AGENTS.md", ".jagt/");
+                .contains("*.local", "task_context.md", "plan.md", "master-review.md", "AGENTS.md", ".jagt/");
     }
 
     @Test

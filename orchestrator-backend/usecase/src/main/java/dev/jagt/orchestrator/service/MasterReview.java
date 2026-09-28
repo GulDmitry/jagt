@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,8 @@ import java.util.Optional;
 @Slf4j
 public class MasterReview {
 
-    /** In the worktree, beside `review_replies.md`, and read back by jagt rather than reported over a wire. */
-    public static final String FILE = "master-review.md";
+    /** In the worktree, beside the drafted replies, and read back by jagt rather than reported over a wire. */
+    public static final String FILE = Artifact.REVIEW.fileName();
 
     /** The last line the reviewer writes, and the only part of the file jagt reads as an answer. */
     private static final String VERDICT = "VERDICT:";
