@@ -42,8 +42,12 @@ public class MasterCheck implements StartupCheck {
             problems.add("orchestrator.master.model: " + agentRuntime.displayName()
                     + " cannot be told which model to run — leave it blank to inherit its own");
         }
-        master.withholdOrNone().stream().filter(named -> MasterRight.of(named).isEmpty())
-                .forEach(named -> problems.add("orchestrator.master.withhold: '" + named + "' is not one of "
+        if (master.usesTheRetiredName()) {
+            problems.add("orchestrator.master.withhold is now orchestrator.master.mine — the same list, named"
+                    + " from your side rather than the Master's. Rename the key.");
+        }
+        master.mineOrNone().stream().filter(named -> MasterRight.of(named).isEmpty())
+                .forEach(named -> problems.add("orchestrator.master.mine: '" + named + "' is not one of "
                         + MasterRight.ids()));
         if (master.modeOrOff() == MasterMode.ACT) {
             refuseAHalfAutomatedLoop(config, master, problems);
@@ -65,15 +69,15 @@ public class MasterCheck implements StartupCheck {
                                                  List<String> problems) {
         if (master.may(MasterRight.REPLY) && !config.codeReview().postReviewRepliesOrDefault()) {
             problems.add("orchestrator.master.mode: act with codeReview.postReviewReplies: false leaves every"
-                    + " round waiting for you to post the drafted replies — turn posting on, or withhold"
-                    + " `reply` from the Master");
+                    + " round waiting for you to post the drafted replies — turn posting on, or keep"
+                    + " `reply` in orchestrator.master.mine");
         }
         if (master.may(MasterRight.DEPLOY) != master.may(MasterRight.REVERT)) {
-            problems.add("orchestrator.master.withhold: deploy and revert write the same shared branch, so"
-                    + " they are one step with one owner — withhold both or neither");
+            problems.add("orchestrator.master.mine: deploy and revert write the same shared branch, so they"
+                    + " are one step with one owner — keep both or neither");
         }
         if (MasterRight.ids().stream().noneMatch(right -> master.may(MasterRight.of(right).orElseThrow()))) {
-            problems.add("orchestrator.master.withhold: withholding every right in act is `judge` written"
+            problems.add("orchestrator.master.mine: keeping every step in act is `judge` written"
                     + " long — set orchestrator.master.mode to " + MasterMode.JUDGE.id());
         }
     }

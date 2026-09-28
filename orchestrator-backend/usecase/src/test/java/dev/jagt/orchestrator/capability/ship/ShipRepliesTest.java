@@ -15,7 +15,7 @@ class ShipRepliesTest {
     @Test
     void forbidsTheMasterFromAnsweringAPersonWhereThatRightWasWithheld() {
         ConfigFile config = ConfigFile.defaults()
-                .withMaster(new MasterConfig("act", null, null, List.of("reply")));
+                .withMaster(new MasterConfig("act", null, null, List.of("reply"), null));
 
         String step = OriginContext.as(ActionOrigin.MASTER, () -> ShipService.repliesStep(config));
 
@@ -25,7 +25,7 @@ class ShipRepliesTest {
     @Test
     void leavesAHumansOwnShipPostingItsRepliesAsBefore() {
         ConfigFile config = ConfigFile.defaults()
-                .withMaster(new MasterConfig("act", null, null, List.of("reply")));
+                .withMaster(new MasterConfig("act", null, null, List.of("reply"), null));
 
         String step = OriginContext.as(ActionOrigin.BOARD, () -> ShipService.repliesStep(config));
 

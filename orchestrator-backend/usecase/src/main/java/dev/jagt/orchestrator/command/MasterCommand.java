@@ -47,9 +47,9 @@ public class MasterCommand implements GlobalCommand {
                 + "\n  model:     " + (config.modelOrInherited().isEmpty()
                         ? "inherited from the agent CLI" : config.modelOrInherited())
                 + "\n  running:   " + (master.live() ? "yes" : "no — the next tick starts it")
-                + "\n  withheld:  " + (config.withholdOrNone().isEmpty()
+                + "\n  yours:     " + (config.mineOrNone().isEmpty()
                         ? "nothing — it holds every right a human has but `done`"
-                        : String.join(", ", config.withholdOrNone()))
+                        : String.join(", ", config.mineOrNone()))
                 + "\n  spent:     " + TokenFormat.compact(spend.total().total())
                 + " tokens, $" + String.format(java.util.Locale.ROOT, "%.2f", spend.total().costUsd())
                 + " — its own line, no task's";

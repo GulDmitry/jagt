@@ -1,6 +1,7 @@
 # jagt — your whole configuration, and the only file there is: `cp jagt.yml.dist jagt.yml`, then fill in ONE
 # project. Every other key already has the value shown and can stay commented out.
-# `projects` is re-read on every access; the rest is read once, at startup.
+# `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview` and `master` are re-read on every
+# access; every other key is read once, at startup.
 
 orchestrator:
 
@@ -85,8 +86,9 @@ orchestrator:
                              # to this file. Required unless off, and refused at startup when it is not there
     # model: fable           # reading is the cheap half, so it can run a heavier model than the work does;
                              # blank inherits whatever the agent CLI would have used
-    # withhold: [reply]      # rights you keep for yourself in `act`: ship, sweep, deploy, revert, reply.
-                             # `done` is always yours — you open a task and you close it
+    # mine: [reply]         # the steps that stay YOURS in `act`: ship, sweep, deploy, revert, reply.
+                             # Anything not listed the Master may do. `done` is always yours — you open a
+                             # task and you close it, and it cannot be given away
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:

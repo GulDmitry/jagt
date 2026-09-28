@@ -46,7 +46,7 @@ class MasterSessionTest {
     void runsItInTheOrchestratorRootRatherThanAnyTasksWorktree() {
         when(agentRuntime.launchCommand(any(), anyBoolean(), anyString())).thenReturn("claude --model fable");
 
-        boolean started = session(new MasterConfig("judge", null, "fable", null)).startIfWanted();
+        boolean started = session(new MasterConfig("judge", null, "fable", null, null)).startIfWanted();
 
         assertThat(started).isTrue();
         verify(sessions).openWindow(eq("jagt"), any(), eq("master"), eq(Path.of("/repo")), anyString());
@@ -56,7 +56,7 @@ class MasterSessionTest {
     void marksItsOwnCallsSoAVerbItIssuesIsNotReadAsTheHumansAtTheSameRoot() {
         when(agentRuntime.launchCommand(any(), anyBoolean(), anyString())).thenReturn("claude --model fable");
 
-        session(new MasterConfig("act", null, "fable", null)).startIfWanted();
+        session(new MasterConfig("act", null, "fable", null, null)).startIfWanted();
 
         ArgumentCaptor<String> command = ArgumentCaptor.forClass(String.class);
         verify(sessions).openWindow(anyString(), any(), anyString(), any(), command.capture());
@@ -68,7 +68,7 @@ class MasterSessionTest {
         when(sessions.taskWindowState("jagt", "master"))
                 .thenReturn(SessionHost.WindowState.AGENT_RUNNING);
 
-        boolean started = session(new MasterConfig("judge", null, null, null)).startIfWanted();
+        boolean started = session(new MasterConfig("judge", null, null, null, null)).startIfWanted();
 
         assertThat(started).isFalse();
         verify(sessions, never()).openWindow(anyString(), any(), anyString(), any(), anyString());

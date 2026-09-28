@@ -6,7 +6,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * A right a human may withhold from the Master session even where it acts for them. Named rather than inferred
+ * A step a human may keep for themselves even where the Master acts for them. Named rather than inferred
  * from the verbs, because one of them — answering a reviewer — is a step inside a verb rather than a verb.
  */
 public enum MasterRight {
@@ -30,7 +30,7 @@ public enum MasterRight {
         return Arrays.stream(values()).map(MasterRight::id).toList();
     }
 
-    /** Empty where the word is not one of these, so a misspelled withholding is refused rather than ignored. */
+    /** Empty where the word is not one of these, so a misspelled step is refused rather than ignored. */
     public static Optional<MasterRight> of(String right) {
         return right == null ? Optional.empty()
                 : Arrays.stream(values()).filter(value -> value.id().equals(right.strip().toLowerCase(Locale.ROOT)))

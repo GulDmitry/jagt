@@ -25,11 +25,11 @@ class MasterVerdictsTest {
     private final MasterVerdicts verdicts = new MasterVerdicts(new MasterReview(), sessions, commands);
 
     private static ConfigService.ConfigFile.MasterConfig acting() {
-        return new ConfigService.ConfigFile.MasterConfig("act", null, null, null);
+        return new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
     }
 
     private static ConfigService.ConfigFile.MasterConfig judging() {
-        return new ConfigService.ConfigFile.MasterConfig("judge", null, null, null);
+        return new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
     }
 
     private static TaskState in(Path worktree) {
@@ -55,11 +55,11 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void shipsNothingWhereTheHumanWithheldThatRightFromIt(@TempDir Path worktree) {
-        var withheld = new ConfigService.ConfigFile.MasterConfig("act", null, null, java.util.List.of("ship"));
+    void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path worktree) {
+        var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, java.util.List.of("ship"), null);
 
         boolean moved = verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(true, "ready", 1),
-                withheld);
+                kept);
 
         assertThat(moved).isFalse();
         verify(commands, never()).execute(anyString(), any());

@@ -36,7 +36,7 @@ class MasterCheckTest {
 
     @Test
     void refusesAModeThisMachineDoesNotHave(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("supervise", null, null, null)).problems())
+        assertThat(checking(root, new MasterConfig("supervise", null, null, null, null)).problems())
                 .singleElement().asString().contains("orchestrator.master.mode");
     }
 
@@ -45,7 +45,7 @@ class MasterCheckTest {
             throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(new MasterConfig("act", null, null, null))
+                .withMaster(new MasterConfig("act", null, null, null, null))
                 .withCodeReview(new CodeReviewConfig(null, false, null, null)));
 
         assertThat(new MasterCheck(configService, new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -54,11 +54,19 @@ class MasterCheckTest {
     }
 
     @Test
+    void refusesTheRetiredNameRatherThanSilentlyGivingTheMasterEveryStep(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md"), "judge like me");
+
+        assertThat(checking(root, new MasterConfig("act", null, null, null, List.of("reply"))).problems())
+                .singleElement().asString().contains("orchestrator.master.mine");
+    }
+
+    @Test
     void refusesKeepingTheDeployWhileLeavingItsUndoToTheMaster(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
 
-        assertThat(checking(root, new MasterConfig("act", null, null, List.of("reply", "deploy"))).problems())
-                .singleElement().asString().contains("withhold both or neither");
+        assertThat(checking(root, new MasterConfig("act", null, null, List.of("reply", "deploy"), null)).problems())
+                .singleElement().asString().contains("keep both or neither");
     }
 
     @Test
@@ -67,27 +75,27 @@ class MasterCheckTest {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
 
         assertThat(checking(root, new MasterConfig("act", null, null,
-                List.of("reply", "deploy", "revert"))).problems()).isEmpty();
+                List.of("reply", "deploy", "revert"), null)).problems()).isEmpty();
     }
 
     @Test
-    void refusesWithholdingEveryRightWhereSayingJudgeMeansTheSame(@TempDir Path root) throws Exception {
+    void refusesKeepingEveryStepWhereSayingJudgeMeansTheSame(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
 
         assertThat(checking(root, new MasterConfig("act", null, null,
-                List.of("ship", "sweep", "deploy", "revert", "reply"))).problems())
+                List.of("ship", "sweep", "deploy", "revert", "reply"), null)).problems())
                 .singleElement().asString().contains("`judge` written long");
     }
 
     @Test
     void refusesToRunAReviewerWhoseBriefWasNeverCopiedFromTheShippedOne(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("judge", null, null, null)).problems())
+        assertThat(checking(root, new MasterConfig("judge", null, null, null, null)).problems())
                 .singleElement().asString().contains("copy master-brief.md.dist");
     }
 
     @Test
     void refusesABriefNamedByHandThatIsNotThere(@TempDir Path root) {
-        assertThat(checking(root, new MasterConfig("judge", "mine.md", null, null)).problems())
+        assertThat(checking(root, new MasterConfig("judge", "mine.md", null, null, null)).problems())
                 .singleElement().asString().contains("mine.md");
     }
 
@@ -96,7 +104,7 @@ class MasterCheckTest {
         Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
         when(agentRuntime.displayName()).thenReturn("Codex");
 
-        assertThat(checking(root, new MasterConfig("judge", null, "fable", null)).problems())
+        assertThat(checking(root, new MasterConfig("judge", null, "fable", null, null)).problems())
                 .singleElement().asString().contains("orchestrator.master.model", "Codex");
     }
 
@@ -104,6 +112,6 @@ class MasterCheckTest {
     void acceptsAModeWhoseBriefTheInstallActuallyCarries(@TempDir Path root) throws Exception {
         Files.writeString(root.resolve("master-brief.md"), "what I care about\n");
 
-        assertThat(checking(root, new MasterConfig("act", null, null, null)).problems()).isEmpty();
+        assertThat(checking(root, new MasterConfig("act", null, null, null, null)).problems()).isEmpty();
     }
 }
