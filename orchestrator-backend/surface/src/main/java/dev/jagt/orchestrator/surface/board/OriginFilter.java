@@ -17,7 +17,7 @@ public class OriginFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        ActionOrigin origin = originOf(request.getRequestURI());
+        ActionOrigin origin = originOf(request);
         if (origin == null) {
             chain.doFilter(request, response);
             return;
@@ -27,9 +27,13 @@ public class OriginFilter extends OncePerRequestFilter {
         }
     }
 
-    private static ActionOrigin originOf(String path) {
+    /** Every root session is Master, so the session jagt started says so itself; a human's carries nothing. */
+    private static final String ORIGIN_HEADER = "X-Jagt-Origin";
+
+    private static ActionOrigin originOf(HttpServletRequest request) {
+        String path = request.getRequestURI();
         if (path.equals("/mcp")) {
-            return ActionOrigin.MCP;
+            return "master".equals(request.getHeader(ORIGIN_HEADER)) ? ActionOrigin.MASTER : ActionOrigin.MCP;
         }
         return path.startsWith("/api/") ? ActionOrigin.BOARD : null;
     }

@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Path;
 
@@ -48,8 +49,18 @@ class MasterSessionTest {
         boolean started = session(new MasterConfig("judge", null, "fable", null)).startIfWanted();
 
         assertThat(started).isTrue();
-        verify(sessions).openWindow(eq("jagt"), any(), eq("master"), eq(Path.of("/repo")),
-                eq("claude --model fable"));
+        verify(sessions).openWindow(eq("jagt"), any(), eq("master"), eq(Path.of("/repo")), anyString());
+    }
+
+    @Test
+    void marksItsOwnCallsSoAVerbItIssuesIsNotReadAsTheHumansAtTheSameRoot() {
+        when(agentRuntime.launchCommand(any(), anyBoolean(), anyString())).thenReturn("claude --model fable");
+
+        session(new MasterConfig("act", null, "fable", null)).startIfWanted();
+
+        ArgumentCaptor<String> command = ArgumentCaptor.forClass(String.class);
+        verify(sessions).openWindow(anyString(), any(), anyString(), any(), command.capture());
+        assertThat(command.getValue()).isEqualTo("JAGT_ORIGIN=master claude --model fable");
     }
 
     @Test

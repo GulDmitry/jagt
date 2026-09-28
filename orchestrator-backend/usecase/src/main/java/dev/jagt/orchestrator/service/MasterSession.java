@@ -20,6 +20,9 @@ public class MasterSession {
     /** Its window name, which is also how it is found again — it is not a task and has no id of its own. */
     public static final String WINDOW = "master";
 
+    /** Marks the MCP calls of the session jagt started, so a verb it issues is not read as the human's. */
+    private static final String ORIGIN_ENV = "JAGT_ORIGIN=master ";
+
     private final ConfigService configService;
     private final SessionHost sessions;
     private final AgentRuntime agentRuntime;
@@ -36,7 +39,8 @@ public class MasterSession {
             return false;
         }
         sessions.openWindow(session(config), viewerTitle(config), WINDOW, paths.root(),
-                agentRuntime.launchCommand(paths.root(), false, config.master().modelOrInherited()));
+                ORIGIN_ENV + agentRuntime.launchCommand(paths.root(), false,
+                        config.master().modelOrInherited()));
         log.atInfo().setMessage("master session started")
                 .addKeyValue("mode", config.master().modeOrOff().id())
                 .addKeyValue("model", config.master().modelOrInherited())

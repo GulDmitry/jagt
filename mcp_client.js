@@ -13,6 +13,8 @@ const readline = require('node:readline');
 // which costs a refused connection per call, or every call on a Node without happy-eyeballs.
 const SERVER_URL = process.env.MCP_SERVER_URL || 'http://127.0.0.1:8290/mcp';
 const CWD = process.cwd();
+// Set by jagt on the Master session's launch command; empty for a human's own session at the same root.
+const ORIGIN = process.env.JAGT_ORIGIN || '';
 
 // A backend restart must not kill the session's MCP connection: agents tend to
 // mark the server as failed on the first error, so retry transient connection
@@ -27,6 +29,7 @@ async function postWithRetry(body) {
         headers: {
           'Content-Type': 'application/json',
           'X-Working-Directory': CWD,
+          'X-Jagt-Origin': ORIGIN,
         },
         body,
       });
