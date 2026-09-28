@@ -28,7 +28,8 @@ public class MasterCheck implements StartupCheck {
 
     @Override
     public List<String> problems() {
-        ConfigService.ConfigFile.MasterConfig master = configService.load().master();
+        ConfigService.ConfigFile config = configService.load();
+        ConfigService.ConfigFile.MasterConfig master = config.master();
         List<String> problems = new ArrayList<>();
         if (MasterMode.of(master.mode()).isEmpty()) {
             problems.add("orchestrator.master.mode: '" + master.mode() + "' is not one of "
@@ -44,12 +45,33 @@ public class MasterCheck implements StartupCheck {
         master.withholdOrNone().stream().filter(named -> MasterRight.of(named).isEmpty())
                 .forEach(named -> problems.add("orchestrator.master.withhold: '" + named + "' is not one of "
                         + MasterRight.ids()));
+        if (master.modeOrOff() == MasterMode.ACT) {
+            refuseAHalfAutomatedLoop(config, master, problems);
+        }
         Path brief = brief(master.briefOrDefault());
         if (!Files.isRegularFile(brief)) {
             problems.add("orchestrator.master.brief: no file at " + brief
                     + " — copy master-brief.md.dist to it and edit it until it reads like you");
         }
         return List.copyOf(problems);
+    }
+
+    /**
+     * A reviewer standing where a human stands cannot leave a step only a human can take: either it finishes a
+     * round or it is judging, and a configuration saying both at once is refused rather than half-run.
+     */
+    private static void refuseAHalfAutomatedLoop(ConfigService.ConfigFile config,
+                                                 ConfigService.ConfigFile.MasterConfig master,
+                                                 List<String> problems) {
+        if (master.may(MasterRight.REPLY) && !config.codeReview().postReviewRepliesOrDefault()) {
+            problems.add("orchestrator.master.mode: act with codeReview.postReviewReplies: false leaves every"
+                    + " round waiting for you to post the drafted replies — turn posting on, or withhold"
+                    + " `reply` from the Master");
+        }
+        if (MasterRight.ids().stream().noneMatch(right -> master.may(MasterRight.of(right).orElseThrow()))) {
+            problems.add("orchestrator.master.withhold: withholding every right in act is `judge` written"
+                    + " long — set orchestrator.master.mode to " + MasterMode.JUDGE.id());
+        }
     }
 
     /** Relative to the orchestrator root, like everything else a human writes into `jagt.yml`. */
