@@ -46,11 +46,11 @@ Where this ends: a task reaching a status someone else's board reports — `Read
 `done`, its worktree dropped, nobody in the line. Two pieces exist: `notify/` fans out to every
 `port/Notifier` an install carries, and adding a channel is one adapter class plus a config value.
 
-The middle is missing: jagt has no named events, only the few places that happen to notify, and no routing —
-every notifier gets everything. **The condition must be the machine's**: computed from facts jagt already holds
-(`ReviewFacts.threads` empty, `Pipeline.RED`, a status reached), never a model's opinion that something looks
-done. `done` is `HUMAN_ONLY` and withheld from the Master in every mode, so an event closing a task is the
-report door judging a fact, never a verb pressed for you.
+The middle is missing: jagt has no named events, and routes only on `Notification.Topic` — four buckets, not
+events. **The condition must be the machine's**: computed from facts jagt already holds (`ReviewFacts`,
+`Pipeline.RED`, a status reached), never a model's opinion that something looks done. `done` is refused by the
+report door and held by no `MasterRight`, so an event closing a task issues the verb under an `ActionOrigin`
+of its own — machine, not model.
 
 **Every trigger is a strategy, and so is the stage it fires** — intake, `done`, cleanup: an install with no
 tracker configures a different fact rather than losing the stage.
