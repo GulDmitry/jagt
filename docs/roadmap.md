@@ -19,6 +19,19 @@ Two sorts of point, and the difference is the whole safety story:
 
 Judging points go first. The finished-task record is what earns the right to touch an authorising one.
 
+### Where this ends
+
+The list stops being what jagt happens to automate and becomes **configuration**: automatic is the default, and
+an install names the steps it keeps — answering real people, pressing deploy, opening a task. Take the last one
+off that list and the loop is closed.
+
+Two kinds of flexibility, and only one is wanted:
+
+- **How a step is done is pluggable** — a strategy behind a port, chosen by one value, a new one added as a
+  class. Tracker or none, one code host or another, whatever a model can read over the MCP an install holds.
+- **Who owns a step stays coarse.** Never a matrix of per-point toggles: a configuration able to leave a step
+  ownerless is a bug nobody finds, and the fallback is always the human.
+
 ## Built, and where the rules for it live
 
 - A verdict before a round reaches a human — `verifyCommand` per project, the VERIFYING status and `VerifyJob`
