@@ -14,8 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * One JSON object per line, an assistant turn carrying {@code message.usage}. Cache WRITES bill at input rates
- * and cache reads do not; the log prices nothing, so a call read from it carries no cost.
+ * One JSON object per line, an assistant turn carrying {@code message.usage}. The log prices nothing itself: a
+ * turn is priced by the model it names, at list price.
  */
 @Component
 @Slf4j
@@ -71,14 +71,28 @@ public class ClaudeSessionLog implements SessionLog {
             return TokenUsage.NONE;
         }
         try {
-            JsonNode usage = mapper.readTree(line).path("message").path("usage");
-            return TokenUsage.ofCall(
-                    usage.path("input_tokens").asLong(0) + usage.path("cache_creation_input_tokens").asLong(0),
-                    usage.path("cache_read_input_tokens").asLong(0),
-                    usage.path("output_tokens").asLong(0),
-                    0);
+            JsonNode message = mapper.readTree(line).path("message");
+            JsonNode usage = message.path("usage");
+            long input = usage.path("input_tokens").asLong(0);
+            long cacheWrite = usage.path("cache_creation_input_tokens").asLong(0);
+            long cacheRead = usage.path("cache_read_input_tokens").asLong(0);
+            long output = usage.path("output_tokens").asLong(0);
+            return TokenUsage.ofCall(input + cacheWrite, cacheRead, output,
+                    priceOf(message.path("model").asString(null), usage, input, cacheRead, output));
         } catch (RuntimeException unreadable) {
             return TokenUsage.NONE;
         }
+    }
+
+    /** A cache write without its TTL split is priced as the five-minute kind, the cheaper of the two. */
+    private static double priceOf(String model, JsonNode usage, long input, long cacheRead, long output) {
+        JsonNode split = usage.path("cache_creation");
+        long write1h = split.path("ephemeral_1h_input_tokens").asLong(0);
+        long write5m = split.isMissingNode()
+                ? usage.path("cache_creation_input_tokens").asLong(0)
+                : split.path("ephemeral_5m_input_tokens").asLong(0);
+        return ClaudePrices.of(model)
+                .map(prices -> prices.costOf(input, write5m, write1h, cacheRead, output))
+                .orElse(0d);
     }
 }

@@ -15,8 +15,8 @@
 
 - **A detached launch gets its own session.** Ctrl-C reaches jagt's whole process
   **group**, which `ProcessBuilder.start()` never leaves, so `ProcessRunner.detachedFrom` runs it under
-  `setsid`, or `perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV'` where there is none. Trapping the signals is the
-  **wrong** fix — every descendant inherits the disposition.
+  `setsid`, or `perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV'` where there is none. Trapping the signals is
+  **wrong**: every descendant inherits the disposition.
 - Both wrappers `exec`, so the returned `Process` is still the app and `destroy()` reaches it; only the
   editor's `runDetached` needs it. A missing binary exits non-zero rather than throwing, so `runDetached`
   **fails** the launch.
@@ -30,7 +30,7 @@
   `tmux attach`). `closeViewerWindow` kills the instance by socket path.
 
 - Claude Code's auto-mode classifier silently blocks tool calls unless pre-approved. The backend makes
-  none; the committed root `.claude/settings.json` covers the sessions that run there.
+  none; the committed root `.claude/settings.json` covers sessions running there.
 - Every sub-agent worktree (generated `.claude/settings.local.json`) needs `enableAllProjectMcpServers: true`
   plus `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]`: without the first, `ship` / `feedback`
   stall on an invisible prompt; without the second, `git commit` freezes.
@@ -46,15 +46,15 @@
 - **Which of a CLI's events mean what is a resource, not code**:
   `adapter/src/main/resources/hooks/<runtime>.properties`, one line per event, each naming the state it means;
   a runtime with no resource writes none.
-- Two things the payload buys, neither required: the file the session appends to (else derived from the
+- The payload buys two optional things: the file the session appends to (else derived from the
   worktree path) and what STARTED it — **a missing payload costs a detail, never the report**. That log is read
-  twice: the last sign of life, and the spend (`AgentSpendReader`).
+  twice: last sign of life, and spend (`AgentSpendReader`).
 - **What jagt ANSWERS a hook is context, not output**: a harness adds the stdout to the session, so the line
   prints the body (`curl -sf`). jagt answers one thing: a session started from a COMPACTION gets a line naming
   its brief, every other report empty.
 - **One hook is a gate, declared as one**: `gate=PreToolUse` in the same resource is answered rather
-  than recorded, scoped to the shell tool, refusing nothing where unreachable. **This is not a git hook**; the
-  ban does not reach it.
+  than recorded, scoped to the shell tool, refusing nothing where unreachable. **Not a git hook**; the ban
+  does not reach it.
 
 - Each sub-agent spawns its **own** language server (jdtls ~1–2 GB per Java worktree), unshareable and never released,
   so jagt **reaps** each worktree's on `done` / `remove_task` (`reapWorktreeProcesses`: `lsof` by
@@ -65,5 +65,5 @@
 ## The Master session is a window owned by no task
 
 EXPERIMENTAL, off by default (`master.mode`): one window named `master` in the orchestrator ROOT, reading
-every worktree and belonging to none. `MasterSessionJob` starts it and finds it gone in one act; it judges by a
-re-read file, never accumulated context.
+every worktree. `MasterSessionJob` starts it and finds it gone in one act, and ends one that
+outlived the backend on its first tick; it judges by a re-read file, never accumulated context.

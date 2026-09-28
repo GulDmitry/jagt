@@ -31,6 +31,47 @@ class ClaudeSessionLogTest {
     }
 
     @Test
+    void pricesATurnAtTheListPriceOfTheModelItNames(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"model":"claude-opus-5","usage":{"input_tokens":1000000,\
+                "cache_creation_input_tokens":1000000,"cache_read_input_tokens":1000000,"output_tokens":1000000,\
+                "cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":1000000}}}}
+                """);
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.usage().costUsd()).isEqualTo(5 + 10 + 0.5 + 25);
+    }
+
+    @Test
+    void pricesACacheWriteWithoutItsTtlAsTheFiveMinuteKind(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"model":"claude-haiku-4-5","usage":{"input_tokens":0,\
+                "cache_creation_input_tokens":1000000,"output_tokens":0}}}
+                """);
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.usage().costUsd()).isEqualTo(1.25);
+    }
+
+    @Test
+    void pricesNothingForAModelNoRowNames(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"model":"claude-unknown-9","usage":{"input_tokens":1000000,\
+                "output_tokens":1000000}}}
+                """);
+
+        SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
+
+        assertThat(spent.usage().costUsd()).isZero();
+        assertThat(spent.usage().total()).isEqualTo(2000000);
+    }
+
+    @Test
     void keepsCountingPastALineItCannotRead(@TempDir Path dir) throws IOException {
         Path log = dir.resolve("session.jsonl");
         Files.writeString(log, """

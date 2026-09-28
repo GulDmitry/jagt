@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.service.MasterSpend;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -17,8 +18,12 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class UsageStatsRendererTest {
+
+    private final MasterSpend idleMaster = mock(MasterSpend.class);
 
     private static StateService stateIn(Path root) {
         return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -32,7 +37,8 @@ class UsageStatsRendererTest {
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
 
-        String out = new UsageStatsRenderer(tracker).render(state.tasks());
+        when(idleMaster.total()).thenReturn(TokenUsage.NONE);
+        String out = new UsageStatsRenderer(tracker, idleMaster).render(state.tasks());
 
         assertThat(out).contains("BY CALL");
         assertThat(out.indexOf("review sweep")).isLessThan(out.indexOf("ticket read"));
@@ -50,7 +56,8 @@ class UsageStatsRendererTest {
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
         tracker.chargeTask("ABC-2", TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
 
-        String out = new UsageStatsRenderer(tracker).render(state.tasks());
+        when(idleMaster.total()).thenReturn(TokenUsage.NONE);
+        String out = new UsageStatsRenderer(tracker, idleMaster).render(state.tasks());
 
         assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
         assertThat(out).contains("average per call");
@@ -65,7 +72,8 @@ class UsageStatsRendererTest {
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
         state.removeTask("ABC-1");
 
-        String out = new UsageStatsRenderer(tracker).render(state.tasks());
+        when(idleMaster.total()).thenReturn(TokenUsage.NONE);
+        String out = new UsageStatsRenderer(tracker, idleMaster).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out.lines().filter(l -> l.startsWith("this session")).findFirst().orElseThrow())
@@ -77,10 +85,24 @@ class UsageStatsRendererTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
-        String out = new UsageStatsRenderer(new UsageTracker(state)).render(state.tasks());
+        when(idleMaster.total()).thenReturn(TokenUsage.NONE);
+        String out = new UsageStatsRenderer(new UsageTracker(state), idleMaster).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out).doesNotContain("average per call");
+    }
+
+    @Test
+    void showsTheMasterSessionOnALineOfItsOwnPricedInDollars(@TempDir Path root) {
+        StateService state = stateIn(root);
+        MasterSpend master = mock(MasterSpend.class);
+        when(master.total()).thenReturn(new TokenUsage(3, 200_000, 4_000_000, 20_000, 3.5));
+
+        String out = new UsageStatsRenderer(new UsageTracker(state), master).render(state.tasks());
+
+        assertThat(out).contains("AGENT SESSION");
+        assertThat(out.lines().filter(l -> l.startsWith("master")).findFirst().orElseThrow())
+                .contains("4.2M").endsWith("3.50");
     }
 
     @ParameterizedTest

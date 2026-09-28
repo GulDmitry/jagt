@@ -8,7 +8,8 @@ import java.time.Duration;
 
 /**
  * Keeps the Master session running while a human wants it. One job rather than a start and a watchdog: starting
- * it and finding it gone are the same act, and its own log is what says whether it is there.
+ * it and finding it gone are the same act, and its own log is what says whether it is there. A session that
+ * outlived the backend is ended on the first tick: it still runs the model it was launched with.
  */
 @Service
 @RequiredArgsConstructor
@@ -16,6 +17,8 @@ public class MasterSessionJob implements Job {
 
     private final MasterSession master;
     private final MasterSpend spend;
+
+    private boolean restarted;
 
     @Override
     public String id() {
@@ -34,6 +37,10 @@ public class MasterSessionJob implements Job {
 
     @Override
     public void run() {
+        if (!restarted) {
+            master.stop();
+            restarted = true;
+        }
         master.startIfWanted();
         spend.advance();
     }

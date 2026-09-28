@@ -38,15 +38,15 @@ A start checks nothing on a remote and nothing over the network.
 | Work with no ticket behind it | `do <project> <what to do…>` | Your words are the instructions and name the branch; the launch row takes them with Ticket left empty |
 | You want the plan before the code | `plan first` | `plan.md` is written, the card reads `plan waiting`, and your next instruction to the session approves it |
 | Project not obvious from the ticket | `do ABC-1 <project>` | Same, without the label lookup |
-| Work must sit on another branch, or an older task's | `do ABC-1 from <branch>` | Cut from it and the request targets it, but the task keeps its own branch and deploy still goes to `deployBranch` |
+| Work must sit on another branch, or an older task's | `do ABC-1 from <branch>` | Cut from it and the request targets it; the task keeps its own branch and deploy still goes to `deployBranch` |
 | The base repository still has the branch checked out | nothing | Freed automatically, detached in place, with a WARN naming the branch |
 | Uncommitted **tracked** changes there, or another worktree holds the branch | commit/stash, or free that worktree | Refused naming the directory, nothing registered; untracked files block nothing |
 | `do <ticket>` on a branch that already exists | pick `recreate` or `resume` — typed, or in the launch row | The refusal comes first: nothing is freed or moved until you decide |
 | The app needs a gitignored `.env`, key or cert | nothing — `worktree.copyGlobs` | Copied to the same relative path, root-level files included; a path the checkout produced is left alone |
-| The repository ships its own `CLAUDE.md` or `AGENTS.md` | `do <ticket>` | Kept untouched, the briefing going to `CLAUDE.local.md`; other agents refuse rather than start unbriefed |
+| The repository ships its own `CLAUDE.md` or `AGENTS.md` | `do <ticket>` | Kept untouched, the briefing going to `CLAUDE.local.md`; other agents refuse to start unbriefed |
 | The project ships its own `.codex/config.toml` | `do <ticket>` with `agent=codex` | Left alone: `CODEX_HOME` points at `.jagt/codex/` in the worktree |
 | The project has git hooks of its own (husky included) | `do <ticket>` | Untouched and still running: jagt's `pre-push` lives in the worktree and delegates to them |
-| The agent pushes a branch that is not the task's | nothing | Refused by git itself before anything leaves the machine, and by the CLI gate before that |
+| The agent pushes a branch that is not the task's | nothing | Refused by git before anything leaves the machine, and by the CLI gate before that |
 | On the board | the launch row, always open | Ticket, project, base branch, `plan first`, notes, the branch strategy, Start; a project and a strategy are sent only if you pick one |
 
 ## Multi-repo tasks
@@ -56,7 +56,7 @@ A start checks nothing on a remote and nothing over the network.
 | Two repositories that move **independently** | two tasks | Every verb is per task; one task with two statuses is not a thing |
 | One change moving two repositories (a service and its client) | `do ABC-1 api,web` | One task, one agent session, a worktree per repository; the session runs in the first named |
 | It reaches review | `ship ABC-1` | A commit, push and request **per repository**, each targeting its own base branch |
-| It spans repositories | `ship ABC-1` | One instruction naming every one of them, all reported back in one call as one round |
+| It spans repositories | `ship ABC-1` | One instruction naming each of them, all reported back in one call as one round |
 | jagt is down when the agent pushes | — | Nothing is refused |
 | A round comes back | `sweep ABC-1` | Merged as the **least finished** repository: approved only when all are |
 | It is ready to deploy | `deploy ABC-1` | Merged and pushed repository by repository, in the task's own order |
@@ -80,7 +80,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | situation | run | what happens |
 |---|---|---|
 | The ref is a key or a URL | `do ABC-1`, `do <url>` | Title, labels and project read by a model through your own MCP (paid) |
-| The read says "does not exist" for a ticket that plainly does | `do ABC-1` | Asked again, each attempt carrying what the last answer got wrong — 3 of them, 2s apart, at most two minutes |
+| The read says "does not exist" for a ticket that plainly does | `do ABC-1` | Asked again, each attempt carrying what the last got wrong — 3 of them, 2s apart, at most two minutes |
 | The read answers with no key, no title or no link | `do ABC-1` | No task, and the sentence says why |
 | The item genuinely has no summary | `do ABC-1` | The read **writes** a title of at most eight words from the description; a url is never invented |
 | The read answers about a different key | `do ABC-1` | Refused, naming both |
@@ -96,20 +96,21 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 
 | situation | run | what happens |
 |---|---|---|
-| A card sits at `verifying` | — | jagt is running that project's `verifyCommand`; the agent is idle by design, so the watchdog leaves it alone, and a failing run goes back to the session rather than to you |
+| A card sits at `verifying` | — | jagt runs that project's `verifyCommand`; the agent is idle by design, so the watchdog leaves it alone, and a failing run goes back to the session, not to you |
 | An agent stops mid-work to ask | — | Its `outcome=question` report turns the card over: NEEDS INPUT, and one desktop ping the first time it asks |
 | The task contradicts what the code already guarantees | — | A question, asked before the code picks a side; "the ticket wins" is yours to say |
 | The agent settled something without you | `focus <task>` | An `OPEN QUESTIONS:` list ends its terminal output, reaching neither the status line, the replies file nor the request |
 | An agent stops and never says so | — | The watchdog probes (stale MCP + the session's own log), stamps the task, and the card turns over: NEEDS YOU, Focus highlighted |
-| A session sits at a permission prompt | — | Its own hooks report it within seconds, and its log stops growing either way |
+| A session sits at a permission prompt | — | Its own hooks report it within seconds; its log stops growing either way |
 | An agent finishes a turn and the card says nothing | — | Correct: a turn end is silent until nothing has moved for the whole stale window |
 | A worktree created before the hooks existed | recreate the task | Its settings file is written once, at `initialize_task`; the log a session keeps still answers, one threshold later |
-| The agent CLI never came up at all | `focus <task>` | The card says so in those words rather than "no sign of life": at NEW the launch is what to look at |
+| The agent CLI never came up at all | `focus <task>` | The card says so in those words, not "no sign of life": at NEW the launch is what to look at |
 | The agent is asking something | `focus <task>` | Its tmux window is selected in the kitty viewer, and the viewer raised |
 | `focus` says it could not show you the window | `focus <task>` | The terminal's own answer: the viewer is a tab it cannot select, or none is open; the tmux window was selected either way |
-| The viewer was closed by mistake | Focus | Nothing stops: the agent lives in tmux, and Focus opens another viewer onto the same session |
+| The viewer was closed by mistake | Focus | Nothing stops: the agent lives in tmux; Focus opens another viewer onto the same session |
 | You want the board from a second machine | `--server.address=0.0.0.0` | Not served by default — the board binds loopback, and it needs no password to deploy or start an agent |
 | The backend restarts while a session is live (HTTP transport) | — | Nothing to do: the next tool call reaches the new process |
+| The backend restarts while the Master is live | — | Ended and restarted on the first tick: it still runs the model it was launched with |
 
 > [!IMPORTANT]
 > A worktree is briefed once, at creation. A worktree created before a brief changed keeps the old wording —
@@ -139,7 +140,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | A task at SHIPPING | The status and the move line are the whole answer; the detail line stays empty unless the watchdog found it silent |
 | Clicking a desktop notification | Opens the board filtered to that task; needs `terminal-notifier` and a board being served |
 | "Which of these buttons changes something?" | Two rows: what moves the task on above, what only looks or restarts below (`TaskAction.Group`) |
-| "What does this colour / ring / dot mean?" | `Help` — **above** the commands, every mark beside what it means, as the page's own element; there is no second button |
+| "What does this colour / ring / dot mean?" | `Help` — **above** the commands, every mark beside what it means, as the page's own element; no second button |
 | What each colour means | One thing each, board-wide, and written down in [`docs/rules/design.md`](docs/rules/design.md) |
 | "Has this branch been deployed already?" | The **Deploy button is green** while this task's work is live on the branch it writes; `revert` takes the colour off |
 
@@ -156,7 +157,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | The request lives on a host jagt was never pointed at | `resume <url>` | The headless assistant follows the URL (paid) |
 | No working MCP server for that host | `resume <url>` | Asked again up to the policy, then refused as **unread**, never as missing: ERROR names what stopped it and which MCP servers are down (`claude mcp list`) |
 | That probe cannot run either (no CLI, declared servers) | `resume <url>` | Says so; "nothing is down" prints only where the servers were asked |
-| The host itself answers that there is no such request | `resume <url>` | Refused in those words — the one case "does not exist" belongs to |
+| The host itself answers there is no such request | `resume <url>` | Refused in those words — the one case "does not exist" belongs to |
 | The configured host claims the URL and the read fails | — | Refused, **not** retried through a paid read |
 | Unreadable altogether | — | Refused; a guessed branch name would point the task at a branch the request does not track |
 
@@ -186,11 +187,11 @@ What the agent does with a comment:
 | An agent reports `no_changes` over files it edited | Not believed: one `git status` at report time, and the round is recorded as having a diff |
 | The agent names its outcome in the message instead of the field | Read anyway — `outcome=question: …`, `no_changes: …` — but only behind the word `outcome` |
 | Drafted replies exist | The card flags it, the push notification names the file, and they are posted only after a human `ship` |
-| The card says replies are drafted but there is nothing to post | Drafts count only while newer than the round now open; `replies` still prints the file, saying it was already sent |
+| Replies are drafted but nothing is left to post | Drafts count only while newer than the round now open; `replies` still prints the file, saying it was already sent |
 | A thread the agent **fixed** | Resolved at ship time by the agent's own MCP; an unresolved thread is relayed WHOLE by every later round |
 | A thread it disagreed with or asked about | Left unresolved on purpose: settling it is the reviewer's move |
 | "Where are the other comments, and what will actually be posted?" | `replies <task>` — every block of `review_replies.md` on screen; on the board, the card's drafted-replies line opens it |
-| A drafted reply is wrong | Say so in the line under the open `replies` report: it is typed into that session, which answers into the same report while a pulsing ring waits |
+| A drafted reply is wrong | Say so in the line under the open `replies` report: it is typed into that session, which answers into the same report under a pulsing ring |
 | `review_replies.md` is too long to read before shipping | The round brief prescribes the shape and is relayed every round, so a re-`sweep` re-briefs |
 | An agent writes an essay in a request, a reply or a comment | It broke the brief's "How you write", which defers to the machine's own writing skill |
 | The round came back clean, nobody approved | REVIEWED, and **nothing** is asked of the human; `deploy` stays listed for whoever needs no approval |
@@ -204,7 +205,7 @@ What the agent does with a comment:
 |---|---|
 | The reviewer never resolves the threads | The poll keeps reading the request, but the brief is relayed only when the round actually changed |
 | Comments arrive after the agent handed the round back | The next poll picks them up: polling follows the open request, not the status |
-| A task goes back out for review on the same request | Every entry into CI_POLLING is a new round: the window restarts and the previous checks verdict is dropped |
+| A task goes back out for review on the same request | Every entry into CI_POLLING is a new round: the window restarts, the previous checks verdict is dropped |
 | A poll could not read the round at all | Retried to the policy, then **one** desktop ping naming what stopped it — an unattended poll is the one caller whose log nobody reads |
 | "Is anything actually polling?" | The header says so unasked: `auto-review on/off` |
 | Polling stopped and nothing is happening | The round outlived `autoReview.windowHours`: the card says `polling stopped`, hovering it `no further polls: this round is past its 24h window`, and it **does** ask for you |
@@ -226,9 +227,9 @@ What the agent does with a comment:
 | "What exactly will this push?" | the Deploy button | The confirmation names one `project → branch` line per repository, and nothing else |
 | "What will this revert take out?" | the Revert button | The branches it pushes to, and the scope: the last deploy only |
 | Deploy | `deploy <task>` | Merges the task branch into `deployBranch` and pushes; refused when that equals the base branch |
-| Deploy hit a conflict | resolve it there (`git add`), then `deploy <task>` | DEPLOY_CONFLICT; a worktree with none of your work in it is discarded and merged again against the branch as it now is |
+| Deploy hit a conflict | resolve it there (`git add`), then `deploy <task>` | DEPLOY_CONFLICT; a worktree holding none of your work is discarded and merged again against the branch as it now is |
 | Take a deploy back out | `revert <task>` | Reverts the last recorded merge commit; refused, with a by-hand recipe, whenever it would have to guess |
-| The task was deployed more than once | `revert <task>` | Only the **last** deploy comes out; for the earlier rounds, `git log --merges --grep ABC-1` then `git revert -m 1 <sha>` newest first |
+| The task was deployed more than once | `revert <task>` | Only the **last** deploy comes out; for earlier rounds, `git log --merges --grep ABC-1` then `git revert -m 1 <sha>` newest first |
 | An agent is restarted on a task at REVERTED | `respawn` | Its reports are recorded but move nothing: the task stays REVERTED until a human ships or closes it |
 | A shipped task gets one more change, a red build repaired included | `do`-style instructions | Back UNCOMMITTED at REVIEW_PENDING: the ship instruction is spent, and only a new `ship` lands it |
 | A pushed commit turns out wrong | — | Another commit, never a rewrite: no `--force`, no `--amend`, no `reset --hard` on what is pushed |
@@ -246,9 +247,9 @@ What the agent does with a comment:
 | A deployed task wears no badge at all | — | Correct: DEPLOYED waits on nobody, like DONE, and `done` is the only move left |
 | An agent stops at a permission prompt nobody answers | — | jagt records the acceptance when it wires the worktree, since a directory Claude never ran in discards its whole allow-list |
 | A diff carries files nobody on the task touched | `ide <task> diff` | It is read against what the request targets (`TaskState.baseBranchOr(project.baseBranch())`), never `deployBranch` |
-| `git worktree list` shows `jagt-diff-*` in the temp directory | `done <task>` | A diff opened from the board cuts them and reuses them; retiring the task is what ends them |
+| `git worktree list` shows `jagt-diff-*` in the temp directory | `done <task>` | A diff opened from the board cuts and reuses them; retiring the task ends them |
 | Someone types `prune all` anyway | — | Answered by name, before any model call |
-| "Is it me holding these up?" | `stats` | Per task: time on you, its agent and the code host, the rounds it has been out, and which is slowest |
+| "Is it me holding these up?" | `stats` | Per task: time on you, its agent and the code host, rounds out, and which is slowest |
 | The same numbers a week later | `finished` | Every retired task is a line in `finished.jsonl` beside `state.json`, whole status log included; `stats` still describes open work only |
-| jagt on Linux with the platform left unset | — | Refused at startup: unset means macOS, whose notifier reaches nothing here and logs a failed alert rather than raising it |
+| jagt on Linux with the platform left unset | — | Refused at startup: unset means macOS, whose notifier reaches nothing here and logs a failed alert instead of raising it |
 | A banner on Linux does not open the board | — | `notify-send` carries a click only while the process waits for the daemon, so the task is in the title and the filter does the rest |

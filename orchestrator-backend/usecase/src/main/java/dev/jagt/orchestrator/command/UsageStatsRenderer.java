@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.service.MasterSpend;
 import dev.jagt.orchestrator.service.TokenFormat;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -9,11 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
+import java.util.Locale;
 import java.util.Map;
 
 /**
- * What a task has consumed, in TOKENS. Two sources kept apart — jagt's own metered reads and what each task's
- * agent sessions burned — and two bottom lines: the tasks still open, against every call since the backend started.
+ * What a task has consumed, in tokens and at list price. Two sources kept apart — jagt's own metered reads and what
+ * each agent session burned, the Master's on a line of its own — and two bottom lines: the tasks still open,
+ * against every call since the backend started.
  */
 @Component
 @RequiredArgsConstructor
@@ -21,14 +24,15 @@ public class UsageStatsRenderer {
 
     /** Must fit the longest {@link AssistantCallKind} label, or a number shifts out of its column. */
     static final int LABEL_W = 18;
-    private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s%n";
+    private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s %8s%n";
 
     private final UsageTracker usageTracker;
+    private final MasterSpend masterSpend;
 
     public String render(Map<String, TaskState> tasks) {
         StringBuilder out = new StringBuilder("token spend — jagt's own reads, then what the agent"
                 + " sessions burned\n\n");
-        out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL"));
+        out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD"));
 
         TokenUsage tasksTotal = TokenUsage.NONE;
         var billed = tasks.entrySet().stream()
@@ -52,8 +56,10 @@ public class UsageStatsRenderer {
                 .sorted(Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
                         e.getValue().agentSpendOrNone().usageOrNone().total()).reversed())
                 .toList();
-        if (!agents.isEmpty()) {
-            out.append('\n').append(String.format(ROW, "AGENT SESSION", "TURNS", "IN", "CACHED", "OUT", "TOTAL"));
+        TokenUsage master = masterSpend.total();
+        if (!agents.isEmpty() || !master.isNone()) {
+            out.append('\n').append(String.format(ROW, "AGENT SESSION", "TURNS", "IN", "CACHED", "OUT", "TOTAL",
+                    "USD"));
             TokenUsage agentTotal = TokenUsage.NONE;
             for (var entry : agents) {
                 TokenUsage usage = entry.getValue().agentSpendOrNone().usageOrNone();
@@ -61,11 +67,14 @@ public class UsageStatsRenderer {
                 out.append(row(entry.getKey(), usage));
             }
             out.append(row("agents", agentTotal));
+            if (!master.isNone()) {
+                out.append(row("master", master));
+            }
         }
 
         var byKind = usageTracker.sessionByKind();
         if (!byKind.isEmpty()) {
-            out.append('\n').append(String.format(ROW, "BY CALL", "CALLS", "IN", "CACHED", "OUT", "TOTAL"));
+            out.append('\n').append(String.format(ROW, "BY CALL", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD"));
             byKind.entrySet().stream()
                     .sorted(Comparator.comparingLong((Map.Entry<AssistantCallKind, TokenUsage> e) ->
                             e.getValue().total()).reversed())
@@ -89,6 +98,7 @@ public class UsageStatsRenderer {
                 TokenFormat.compact(usage.inputTokens()),
                 TokenFormat.compact(usage.cachedInputTokens()),
                 TokenFormat.compact(usage.outputTokens()),
-                TokenFormat.compact(usage.total()));
+                TokenFormat.compact(usage.total()),
+                String.format(Locale.ROOT, "%.2f", usage.costUsd()));
     }
 }

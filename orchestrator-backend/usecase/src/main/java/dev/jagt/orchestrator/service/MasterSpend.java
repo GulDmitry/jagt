@@ -11,8 +11,8 @@ import java.nio.file.Path;
 
 /**
  * What the Master session has cost. A line of its own: it is nobody's task, and booking it against one would
- * charge a human's work to a reviewer's reading. Kept in memory and recounted from the log after a restart,
- * since the log is cumulative and nothing is lost by reading it again.
+ * charge a human's work to a reviewer's reading. Kept in memory: a backend restart ends the session, so the count
+ * starts over with it.
  */
 @Service
 @RequiredArgsConstructor

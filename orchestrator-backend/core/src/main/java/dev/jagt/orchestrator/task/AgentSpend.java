@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * What a task's own agent sessions have burned, read from the log each session keeps of itself. The mark is PER
  * LOG: a session appends, so only what is past its own mark is new, and a task may have more than one log alive at
- * once. There is no cost here — a session's log prices nothing.
+ * once. The cost is list price for the model each turn names, counted from the turn it was first read.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record AgentSpend(TokenUsage usage, Map<String, Long> marks) {
