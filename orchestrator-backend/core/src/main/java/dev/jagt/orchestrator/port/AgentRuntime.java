@@ -25,6 +25,14 @@ public interface AgentRuntime {
     }
 
     /**
+     * The same session started on a brief of its own rather than on the sub-agent bootstrap. A runtime that
+     * cannot be told what to start on falls back to that bootstrap, which is wrong for a session owning no task.
+     */
+    default String launchCommand(Path worktree, boolean planMode, String model, String prompt) {
+        return launchCommand(worktree, planMode, model);
+    }
+
+    /**
      * The command re-entering the session this worktree last held, for a window jagt revives on its own rather
      * than one a human restarted; the fresh {@link #launchCommand} where the runtime keeps nothing to re-enter.
      */

@@ -40,7 +40,7 @@ public class MasterSession {
         }
         sessions.openWindow(session(config), viewerTitle(config), WINDOW, paths.root(),
                 ORIGIN_ENV + agentRuntime.launchCommand(paths.root(), false,
-                        config.master().modelOrInherited()));
+                        config.master().modelOrInherited(), openingLine(config)));
         log.atInfo().setMessage("master session started")
                 .addKeyValue("mode", config.master().modeOrOff().id())
                 .addKeyValue("model", config.master().modelOrInherited())
@@ -56,6 +56,18 @@ public class MasterSession {
     /** Ends it; answers how many windows there were, which is 0 where it was not running. */
     public int stop() {
         return sessions.killTaskWindows(session(), WINDOW);
+    }
+
+    /**
+     * What it is started on. NOT the sub-agent bootstrap: this session owns no task and there is no
+     * `task_context.md` under the root, so that prompt would have it hunt for work that is not there. The brief
+     * is named rather than pasted, because it is re-read per verdict and a session's context is compacted away.
+     */
+    private static String openingLine(ConfigService.ConfigFile config) {
+        return "You are jagt's Master session. This is the orchestrator root: you own no task, there is no"
+                + " task_context.md here, and you report no status. Read " + config.master().briefOrDefault()
+                + " in this directory now — it is what you judge by, and you re-read it before every verdict."
+                + " Then wait; jagt will name the task to review and the file to write.";
     }
 
     private String session() {

@@ -53,10 +53,15 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
 
     @Override
     public String launchCommand(Path worktree, boolean planMode) {
+        return launchCommand(worktree, planMode, "", properties.agentPrompt());
+    }
+
+    @Override
+    public String launchCommand(Path worktree, boolean planMode, String model, String prompt) {
         // A read-only sandbox IS plan mode here: the agent can reason but cannot touch the files.
         return "CODEX_HOME=" + shellQuote(worktree.resolve(CODEX_HOME_DIR).toString()) + " " + codex.command()
                 + (planMode ? " --sandbox read-only" : "")
-                + " " + shellQuote(properties.agentPrompt());
+                + " " + shellQuote(prompt);
     }
 
     @Override

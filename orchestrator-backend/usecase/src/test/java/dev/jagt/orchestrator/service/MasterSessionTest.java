@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -44,7 +45,8 @@ class MasterSessionTest {
 
     @Test
     void runsItInTheOrchestratorRootRatherThanAnyTasksWorktree() {
-        when(agentRuntime.launchCommand(any(), anyBoolean(), anyString())).thenReturn("claude --model fable");
+        when(agentRuntime.launchCommand(any(), anyBoolean(), anyString(), anyString()))
+                .thenReturn("claude --model fable");
 
         boolean started = session(new MasterConfig("judge", null, "fable", null, null)).startIfWanted();
 
@@ -54,13 +56,26 @@ class MasterSessionTest {
 
     @Test
     void marksItsOwnCallsSoAVerbItIssuesIsNotReadAsTheHumansAtTheSameRoot() {
-        when(agentRuntime.launchCommand(any(), anyBoolean(), anyString())).thenReturn("claude --model fable");
+        when(agentRuntime.launchCommand(any(), anyBoolean(), anyString(), anyString()))
+                .thenReturn("claude --model fable");
 
         session(new MasterConfig("act", null, "fable", null, null)).startIfWanted();
 
         ArgumentCaptor<String> command = ArgumentCaptor.forClass(String.class);
         verify(sessions).openWindow(anyString(), any(), anyString(), any(), command.capture());
         assertThat(command.getValue()).isEqualTo("JAGT_ORIGIN=master claude --model fable");
+    }
+
+    @Test
+    void startsItOnItsBriefRatherThanOnTheBootstrapOfASubAgentOwningATask() {
+        when(agentRuntime.launchCommand(any(), anyBoolean(), anyString(), contains("master-brief.md")))
+                .thenReturn("claude 'read the brief'");
+
+        session(new MasterConfig("judge", null, null, null, null)).startIfWanted();
+
+        ArgumentCaptor<String> command = ArgumentCaptor.forClass(String.class);
+        verify(sessions).openWindow(anyString(), any(), anyString(), any(), command.capture());
+        assertThat(command.getValue()).isEqualTo("JAGT_ORIGIN=master claude 'read the brief'");
     }
 
     @Test

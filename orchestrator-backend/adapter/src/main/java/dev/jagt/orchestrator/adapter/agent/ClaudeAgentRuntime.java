@@ -45,10 +45,15 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     public String launchCommand(Path worktree, boolean planMode, String model) {
+        return launchCommand(worktree, planMode, model, properties.agentPrompt());
+    }
+
+    @Override
+    public String launchCommand(Path worktree, boolean planMode, String model, String prompt) {
         return claude.command()
                 + (planMode ? " --permission-mode plan" : "")
                 + (model == null || model.isBlank() ? "" : " --model " + shellQuote(model.strip()))
-                + " " + shellQuote(properties.agentPrompt());
+                + " " + shellQuote(prompt);
     }
 
     /** `--continue` takes the newest conversation this worktree holds, and simply starts one where it holds none. */
