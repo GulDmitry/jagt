@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "orchestrator.mcp-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/mcp",
         "orchestrator.hook-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/api/agent/session",
         "orchestrator.gate-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/api/agent"})
+@org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
 class MasterVerdictEvalTest {
 
     /** Nothing may listen here, and the suite refuses to start if anything does. */
@@ -44,11 +45,14 @@ class MasterVerdictEvalTest {
 
     /** One turn of a heavy model reading a diff, plus the wait for it to be typed at. */
     private static final Duration VERDICT_WAIT = Duration.ofMinutes(6);
+    /** Long enough for a CLI to come up, short enough that a session which never will says so. */
+    private static final Duration SESSION_WAIT = Duration.ofSeconds(90);
 
     private static final AtomicInteger ROUND = new AtomicInteger();
 
     @DynamicPropertySource
     static void orchestratorLivesInTheTrustedEvalRoot(DynamicPropertyRegistry registry) throws Exception {
+        MasterEvalWorkspace.claim();
         MasterEvalWorkspace.clean();
         Path root = MasterEvalWorkspace.root();
         Files.createDirectories(root);
@@ -70,25 +74,9 @@ class MasterVerdictEvalTest {
     private MasterReview reviews;
 
     @BeforeAll
-    static void nothingLiveIsWithinReachAndTheRootIsOneAHumanTrusted() throws Exception {
+    static void nothingLiveIsWithinReach() throws Exception {
         refuseIfSomethingAnswers(Integer.parseInt(DEAD_PORT));
-        refuseUntilAHumanHasTrustedTheRoot();
         killTmux();
-    }
-
-    /**
-     * An agent CLI started where nobody said it may work sits at its own prompt forever, and the suite would
-     * read that as a reviewer with nothing to say. Trust is a human's to give, so this only checks.
-     */
-    private static void refuseUntilAHumanHasTrustedTheRoot() throws Exception {
-        Path root = MasterEvalWorkspace.root();
-        // Made before the refusal names it: there is nothing to trust until the directory is there.
-        Files.createDirectories(root);
-        if (MasterEvalWorkspace.trusted(root)) {
-            return;
-        }
-        throw new IllegalStateException("The eval root is not one this machine trusts, so no session would"
-                + " start in it. Run `claude` once in " + root + " and accept, then run this again.");
     }
 
     /**
@@ -105,9 +93,23 @@ class MasterVerdictEvalTest {
         }
     }
 
-    @AfterAll
-    static void theSessionLeavesNoWindowBehind() throws Exception {
-        killTmux();
+    /**
+     * A session that never comes up is the failure this suite would otherwise spend twenty minutes reading as
+     * a reviewer with nothing to say. Asked of the session itself rather than of any CLI's config file: what
+     * matters is that it is running, whatever was in the way.
+     */
+    private void refuseUntilTheSessionIsLive() throws InterruptedException {
+        long deadline = System.nanoTime() + SESSION_WAIT.toNanos();
+        while (System.nanoTime() < deadline) {
+            if (master.live()) {
+                return;
+            }
+            Thread.sleep(2_000);
+        }
+        throw new IllegalStateException("No Master session came up inside " + SESSION_WAIT + ". If "
+                + MasterEvalWorkspace.root() + " is new, the agent CLI is waiting to be told it may work"
+                + " there: run it once in that directory, accept, then END that session — the answer is"
+                + " written when it exits — and run this again.");
     }
 
     @ParameterizedTest
@@ -119,6 +121,7 @@ class MasterVerdictEvalTest {
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("m" + ROUND.get()).title(round.instructions()).build();
         master.startIfWanted();
+        refuseUntilTheSessionIsLive();
 
         stateService.putTask(taskId, task);
         Optional<MasterReview.Verdict> verdict = awaitVerdict(task);
@@ -127,7 +130,10 @@ class MasterVerdictEvalTest {
         assertThat(verdict).describedAs("no verdict inside %s", VERDICT_WAIT).isPresent();
         assertThat(verdict.orElseThrow().ready()).describedAs(verdict.orElseThrow().said())
                 .isEqualTo(round.ready());
-        assertThat(verdict.orElseThrow().said()).contains(round.names());
+        // The verdict line carries one word; what the review is ABOUT is the file it wrote. A round with
+        // nothing to find names nothing, and that is an empty list rather than a case of its own.
+        String review = Files.readString(reviews.file(task));
+        assertThat(round.names()).allSatisfy(name -> assertThat(review).contains(name));
     }
 
     /** The job is what asks; this only waits for the file it ends up writing. */

@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.mastereval;
 
-import tools.jackson.databind.json.JsonMapper;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,9 +11,9 @@ final class MasterEvalWorkspace {
 
     static final String TMUX_SESSION = "jagt-master-eval";
     /**
-     * A FIXED root rather than a temp one, and the reason is trust: an agent CLI refuses to start in a
-     * directory nobody has said it may work in, and a fresh path every run would ask again every run. This one
-     * is trusted once, by a human, and nothing here forges that.
+     * A FIXED root rather than a temp one, and the reason is trust: an agent CLI refuses to work in a
+     * directory nobody has said it may, and a fresh path every run would be asked about every run. Trusted
+     * once, by a human, and nothing here forges that.
      */
     private static final Path ROOT = Path.of("..", ".master-eval").toAbsolutePath().normalize();
 
@@ -24,6 +22,33 @@ final class MasterEvalWorkspace {
 
     static Path root() {
         return ROOT.resolve("root");
+    }
+
+    /**
+     * Refuses while another run of this suite is alive. Two of them share one tmux session and one Master
+     * window, and each would type its own rounds at the other's reviewer — which reads as a reviewer answering
+     * about a task it was never given. Beside the tree rather than inside it: {@link #clean} empties that.
+     */
+    static void claim() throws IOException {
+        Path lock = ROOT.resolveSibling(".master-eval.lock");
+        if (Files.isRegularFile(lock) && alive(Files.readString(lock).strip())) {
+            throw new IllegalStateException("Another masterEval run holds " + lock + " — one session cannot"
+                    + " serve two. Wait for it, or end it and delete that file.");
+        }
+        Files.createDirectories(lock.getParent());
+        Files.writeString(lock, String.valueOf(ProcessHandle.current().pid()));
+    }
+
+    static void release() throws IOException {
+        Files.deleteIfExists(ROOT.resolveSibling(".master-eval.lock"));
+    }
+
+    private static boolean alive(String pid) {
+        try {
+            return ProcessHandle.of(Long.parseLong(pid)).map(ProcessHandle::isAlive).orElse(false);
+        } catch (NumberFormatException unreadable) {
+            return false;
+        }
     }
 
     /** Between runs, since the rounds are rebuilt and a worktree left behind would be reviewed again. */
@@ -42,19 +67,6 @@ final class MasterEvalWorkspace {
         }
     }
 
-    /**
-     * Whether a human has told the agent CLI it may work in {@code directory}. READ ONLY: that file is written
-     * by every session the human has open, and a suite rewriting it would race all of them.
-     */
-    static boolean trusted(Path directory) throws IOException {
-        Path config = Path.of(System.getProperty("user.home"), ".claude.json");
-        if (!Files.isRegularFile(config)) {
-            return false;
-        }
-        return new JsonMapper().readTree(Files.readString(config))
-                .path("projects").path(directory.toString()).path("hasTrustDialogAccepted").asBoolean(false);
-    }
-
     /** Answers the worktree the round is to be reviewed in. */
     static Path worktreeFor(Path repo, MasterCase round, String taskId) throws Exception {
         Files.createDirectories(repo);
@@ -71,14 +83,18 @@ final class MasterEvalWorkspace {
     }
 
     static void writeConfig(Path configFile, Path projectPath, String brief) throws IOException {
+        writeConfig(configFile, projectPath, brief, "judge");
+    }
+
+    static void writeConfig(Path configFile, Path projectPath, String brief, String mode) throws IOException {
         Files.createDirectories(configFile.getParent());
         Files.writeString(configFile, """
                 orchestrator:
                   projects:
                     proj: { path: "%s", baseBranch: main }
                   viewer: { tmuxSession: "%s" }
-                  master: { mode: judge, brief: "%s" }
-                """.formatted(projectPath, TMUX_SESSION, brief));
+                  master: { mode: %s, brief: "%s" }
+                """.formatted(projectPath, TMUX_SESSION, mode, brief));
     }
 
     private static void write(Path root, Map<String, String> files) throws IOException {

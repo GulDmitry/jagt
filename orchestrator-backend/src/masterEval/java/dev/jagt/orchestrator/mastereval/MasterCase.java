@@ -15,22 +15,36 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
         return List.of(
                 new MasterCase("a fix and the test that fails without it",
                         "Discount was applied to the shipping line too. Charge it on goods only.",
-                        Map.of("src/Basket.java", """
+                        Map.of("build.gradle", """
+                                plugins { id 'java' }
+                                repositories { mavenCentral() }
+                                dependencies {
+                                    testImplementation 'org.junit.jupiter:junit-jupiter:5.14.0'
+                                    testImplementation 'org.assertj:assertj-core:3.27.6'
+                                }
+                                test { useJUnitPlatform() }
+                                """,
+                                "src/main/java/Basket.java", """
                                 class Basket {
                                     static int total(int goods, int shipping, int percentOff) {
                                         return (goods + shipping) * (100 - percentOff) / 100;
                                     }
                                 }
                                 """),
-                        Map.of("src/Basket.java", """
+                        Map.of("src/main/java/Basket.java", """
                                 class Basket {
                                     static int total(int goods, int shipping, int percentOff) {
                                         return goods * (100 - percentOff) / 100 + shipping;
                                     }
                                 }
                                 """,
-                                "test/BasketTest.java", """
+                                "src/test/java/BasketTest.java", """
+                                import org.junit.jupiter.api.Test;
+
+                                import static org.assertj.core.api.Assertions.assertThat;
+
                                 class BasketTest {
+
                                     @Test
                                     void leavesShippingOutOfTheDiscount() {
                                         assertThat(Basket.total(100, 10, 50)).isEqualTo(60);
@@ -55,7 +69,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     }
                                 }
                                 """),
-                        false, List.of("subList")),
+                        false, List.of("Page.java")),
 
                 new MasterCase("a fix nothing tests",
                         "A blank surname crashed the label printer. Stop it crashing.",
@@ -73,7 +87,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     }
                                 }
                                 """),
-                        false, List.of("test")),
+                        false, List.of("Label.java", "test")),
 
                 new MasterCase("work nobody asked for, carried along",
                         "Rename `qty` to `quantity` in Order.",
@@ -101,7 +115,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     int retries = 3;
                                 }
                                 """),
-                        false, List.of("Invoice")));
+                        false, List.of("Invoice.java")));
     }
 
     @Override
