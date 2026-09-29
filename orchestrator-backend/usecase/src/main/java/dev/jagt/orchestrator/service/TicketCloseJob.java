@@ -3,20 +3,16 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Job;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
-import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * The far end of the loop: a task whose work has left the worktree is closed by the stage its own item reached,
@@ -33,8 +29,7 @@ public class TicketCloseJob implements Job {
 
     private final ConfigService configService;
     private final StateService stateService;
-    private final TicketReader tickets;
-    private final TrackerWorkflow workflow;
+    private final TrackerClose close;
     private final CommandService commands;
 
     @Override
@@ -67,30 +62,16 @@ public class TicketCloseJob implements Job {
                 continue;
             }
             reads++;
-            closeIfLanded(entry.getKey());
+            closeIfLanded(entry.getKey(), entry.getValue());
         }
     }
 
-    private void closeIfLanded(String taskId) {
-        Answer<TicketFacts> read = tickets.read(taskId);
-        tickets.charge(taskId, read.usage());
-        Optional<TicketFacts> facts = read.facts().filter(TicketFacts::usable);
-        // A stage nobody could read leaves the task exactly where it was: closing on silence would drop a
-        // worktree because a tracker was down.
-        if (facts.isEmpty() || facts.get().trackerStatus().isBlank()) {
-            log.atWarn().setMessage("close stage unreadable")
-                    .addKeyValue("task", taskId)
-                    .addKeyValue("cause", read.facts().isEmpty() ? "the read never reached the tracker"
-                            : "the item came back with no workflow status")
-                    .log();
-            return;
-        }
-        if (!workflow.closesWork(facts.get())) {
+    private void closeIfLanded(String taskId, TaskState task) {
+        if (!close.closes(taskId, task)) {
             return;
         }
         log.atInfo().setMessage("tracker closed a task")
                 .addKeyValue("task", taskId)
-                .addKeyValue("stage", facts.get().trackerStatus())
                 .log();
         // Through the same door a human's press uses, stamped as nobody's judgement but the tracker's.
         OriginContext.as(ActionOrigin.TRACKER, () -> commands.execute(taskId, TaskAction.DONE));

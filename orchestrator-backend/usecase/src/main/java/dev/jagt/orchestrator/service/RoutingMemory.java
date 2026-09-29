@@ -52,9 +52,10 @@ public class RoutingMemory {
 
     /**
      * Writes {@code key} placing work in {@code project}, replacing whatever that key said before. Answers
-     * whether the file changed, so a caller can say what it did without reading it back.
+     * whether the file changed, so a caller can say what it did without reading it back. Serialised: a job and
+     * a typed launch write the same file, and read-modify-write from both loses one of them.
      */
-    public boolean remember(String key, String project) {
+    public synchronized boolean remember(String key, String project) {
         if (key == null || key.isBlank() || project == null || project.isBlank()) {
             return false;
         }

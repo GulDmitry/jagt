@@ -2,17 +2,12 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
-import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TicketFacts;
-import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -25,23 +20,21 @@ class TicketCloseJobTest {
 
     private final ConfigService configService = mock(ConfigService.class);
     private final StateService stateService = mock(StateService.class);
-    private final TicketReader tickets = mock(TicketReader.class);
-    private final TrackerWorkflow workflow = mock(TrackerWorkflow.class);
+    private final TrackerClose close = mock(TrackerClose.class);
     private final CommandService commands = mock(CommandService.class);
-    private final TicketCloseJob job = new TicketCloseJob(configService, stateService, tickets, workflow,
-            commands);
+    private final TicketCloseJob job = new TicketCloseJob(configService, stateService, close, commands);
 
     @Test
-    void closesNothingWhileIntakeIsOff() {
+    void asksAboutNothingWhileIntakeIsOff() {
         when(configService.load()).thenReturn(ConfigFile.defaults());
 
         job.run();
 
-        verify(tickets, never()).read(anyString());
+        verify(close, never()).closes(anyString(), any());
     }
 
     @Test
-    void buysNoReadAboutATaskWhoseWorkIsStillInItsWorktree() {
+    void asksAboutNoTaskWhoseWorkIsStillInItsWorktree() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
         when(stateService.tasks()).thenReturn(Map.of("ABC-42",
@@ -49,19 +42,16 @@ class TicketCloseJobTest {
 
         job.run();
 
-        verify(tickets, never()).read(anyString());
+        verify(close, never()).closes(anyString(), any());
     }
 
     @Test
-    void closesTheTaskWhoseItemReachedTheStageThatSaysTheWorkLanded() {
+    void closesTheTaskTheTrackerSaysIsFinishedWith() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
-        when(stateService.tasks()).thenReturn(Map.of("ABC-42",
-                TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build()));
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget")
-                .withUrl("https://tracker/ABC-42").withTrackerStatus("Ready for Stage");
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
-        when(workflow.closesWork(item)).thenReturn(true);
+        when(stateService.tasks()).thenReturn(Map.of("ABC-42", task));
+        when(close.closes("ABC-42", task)).thenReturn(true);
 
         job.run();
 
@@ -69,32 +59,15 @@ class TicketCloseJobTest {
     }
 
     @Test
-    void leavesTheTaskOpenWhileItsItemStandsShortOfThatStage() {
+    void leavesOpenTheTaskTheTrackerHasNotFinishedWith() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
-        when(stateService.tasks()).thenReturn(Map.of("ABC-42",
-                TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build()));
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Widget")
-                .withUrl("https://tracker/ABC-42").withTrackerStatus("In Review");
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
-        when(workflow.closesWork(item)).thenReturn(false);
+        when(stateService.tasks()).thenReturn(Map.of("ABC-42", task));
+        when(close.closes("ABC-42", task)).thenReturn(false);
 
         job.run();
 
         verify(commands, never()).execute(anyString(), any());
-    }
-
-    @Test
-    void leavesTheTaskOpenWhenNobodyCouldReadTheStageItStandsIn() {
-        when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
-        when(stateService.tasks()).thenReturn(Map.of("ABC-42",
-                TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build()));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
-
-        job.run();
-
-        verify(commands, never()).execute(anyString(), any());
-        verify(workflow, never()).closesWork(any());
     }
 }
