@@ -80,7 +80,7 @@ A deploy worktree lives at the shared `<flattened task>-deploy` path, so the dir
 | situation | run | what happens |
 |---|---|---|
 | The ref is a key or a URL | `do ABC-1`, `do <url>` | Title, labels and project read by a model through your own MCP (paid) |
-| An item reaches your start stage | nothing | Intake opens the task; labels pick the project, one nothing routes is turned away |
+| An item reaches your start stage | nothing | Intake opens the task; labels place it, a paid router where they cannot, a human where it cannot |
 | An item reaches your landed stage | nothing | The task closes under `ActionOrigin.TRACKER`, its work having left the worktree |
 | The read says "does not exist" for a ticket that plainly does | `do ABC-1` | Asked again, each attempt carrying what the last got wrong — 3 of them, 2s apart, at most two minutes |
 | The read answers with no key, no title or no link | `do ABC-1` | No task, and the sentence says why |

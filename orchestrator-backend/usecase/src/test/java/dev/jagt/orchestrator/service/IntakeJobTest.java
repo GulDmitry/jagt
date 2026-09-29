@@ -27,9 +27,10 @@ class IntakeJobTest {
 
     private final ConfigService configService = mock(ConfigService.class);
     private final IntakeCandidates candidates = mock(IntakeCandidates.class);
+    private final IntakeRouting routing = mock(IntakeRouting.class);
     private final IntakeHistory history = mock(IntakeHistory.class);
     private final TaskLauncher launcher = mock(TaskLauncher.class);
-    private final IntakeJob job = new IntakeJob(configService, candidates, history, launcher);
+    private final IntakeJob job = new IntakeJob(configService, candidates, routing, history, launcher);
 
     @Test
     void takesNothingOffTheTrackerWhileIntakeIsOff() {
@@ -61,6 +62,7 @@ class IntakeJobTest {
                         List.of("backend")))));
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
                 new IntakeCandidates.Ready(item, TokenUsage.NONE))));
+        when(routing.projectFor(item)).thenReturn(Optional.of("api"));
         when(launcher.launch(any(), any())).thenReturn(Launched.created("ABC-42", "started"));
 
         job.run();
@@ -70,7 +72,7 @@ class IntakeJobTest {
     }
 
     @Test
-    void turnsAwayAnItemNoConfiguredProjectRoutes() {
+    void turnsAwayAnItemNothingCouldPlaceInAProject() {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42")
                 .withTrackerStatus("In Progress").withLabels(List.of("nothing-matches-this"));
@@ -80,6 +82,7 @@ class IntakeJobTest {
                         List.of("backend")))));
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
                 new IntakeCandidates.Ready(item, TokenUsage.NONE))));
+        when(routing.projectFor(item)).thenReturn(Optional.empty());
 
         job.run();
 
@@ -102,6 +105,8 @@ class IntakeJobTest {
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
                 new IntakeCandidates.Ready(first, TokenUsage.NONE),
                 new IntakeCandidates.Ready(second, TokenUsage.NONE))));
+        when(routing.projectFor(first)).thenReturn(Optional.of("api"));
+        when(routing.projectFor(second)).thenReturn(Optional.of("api"));
         when(launcher.launch(any(), any()))
                 .thenThrow(new IllegalArgumentException("24 tasks are already open, which is the limit"));
 

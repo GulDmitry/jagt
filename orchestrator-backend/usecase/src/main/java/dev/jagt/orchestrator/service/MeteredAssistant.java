@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,6 +32,10 @@ public class MeteredAssistant {
 
     public Answer<List<String>> findCandidates(String query) {
         return metered(AssistantCallKind.INTAKE, assistant.findCandidates(query));
+    }
+
+    public Answer<String> routeProject(TicketFacts item, Collection<String> projectKeys) {
+        return metered(AssistantCallKind.ROUTE, assistant.routeProject(item, projectKeys));
     }
 
     public Answer<MergeRequestFacts> readMergeRequest(String mrUrl) {

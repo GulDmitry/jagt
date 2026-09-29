@@ -38,15 +38,14 @@ What to decide first: what a trial run may touch — reading and writing a file 
 
 ## The closed loop: routing an item to a project, and events with names (concept, experimental)
 
-Built: `TrackerWorkflow` per install, `IntakeJob` opening a task on the stage it names and `TicketCloseJob`
-closing one on the stage that says the work landed, under `ActionOrigin.TRACKER`.
+Built: `TrackerWorkflow` per install, `IntakeJob` opening a task on the stage it names, `IntakeRouting`
+placing it, and `TicketCloseJob` closing one on the stage that says the work landed, under
+`ActionOrigin.TRACKER`.
 
-Missing: an item whose labels match no project, or several, is turned away for a human rather than routed —
-the Master session is what could decide it, holding every project and every open session at once. Still
-missing too: named events, and routing beyond `Notification.Topic`'s four buckets.
+Missing: named events, and routing beyond `Notification.Topic`'s four buckets.
 
-What to decide first: whether a routing the Master chose is a fact or a proposal, and where an event is
-declared so the compiler checks it.
+What to decide first: where an event is declared so the compiler checks it, and whether routing is per channel,
+per event or both.
 
 ## The Master checks the worker understood the brief (idea)
 

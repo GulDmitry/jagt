@@ -93,7 +93,8 @@ orchestrator:
   # ── Work that arrives unasked (EXPERIMENTAL) ───────────────────────────────────────────────────────────────
   # Polls your tracker and starts a task on every item it says is ready. Off unless you turn it on. Every stage
   # name is YOUR workflow's: nothing here has a default, because a guessed stage starts work nobody asked for.
-  # One search call per poll, plus one read per item it has not seen.
+  # One search call per poll, one read per item it has not seen, and one routing call per item whose
+  # labels place it in no project or in several — configure `labels` per project and it never asks.
   intake:
     enabled: false
     tracker: none         # none | jira. Read at startup, unlike everything beside it here

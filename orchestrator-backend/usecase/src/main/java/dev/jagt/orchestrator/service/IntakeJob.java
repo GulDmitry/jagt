@@ -11,9 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -27,6 +25,7 @@ public class IntakeJob implements Job {
 
     private final ConfigService configService;
     private final IntakeCandidates candidates;
+    private final IntakeRouting routing;
     private final IntakeHistory history;
     private final TaskLauncher launcher;
 
@@ -62,17 +61,15 @@ public class IntakeJob implements Job {
 
     private boolean start(IntakeCandidates.Ready ready) {
         TicketFacts item = ready.item();
-        List<String> projects = TaskLauncher.projectsMatching(item, labelsByProject());
-        if (projects.size() != 1) {
-            history.turnAway(item.key(), projects.isEmpty()
-                    ? "nothing routes its labels " + item.labels() + " or its tracker project '"
-                            + item.trackerProject() + "' to a configured project"
-                    : "it routes to several projects " + projects);
+        Optional<String> project = routing.projectFor(item);
+        if (project.isEmpty()) {
+            history.turnAway(item.key(), "nothing places its labels " + item.labels()
+                    + " or its tracker project '" + item.trackerProject() + "' in a configured project");
             return true;
         }
         try {
             Launched launched = launcher.launch(
-                    new LaunchRequest(item.key(), projects.get(0), null, null, null, null),
+                    new LaunchRequest(item.key(), project.get(), null, null, null, null),
                     new Answer<>(Optional.of(item), ready.paid()));
             if (!launched.created()) {
                 history.turnAway(item.key(), launched.message());
@@ -80,7 +77,7 @@ public class IntakeJob implements Job {
             }
             log.atInfo().setMessage("intake started a task")
                     .addKeyValue("task", item.key())
-                    .addKeyValue("project", projects.get(0))
+                    .addKeyValue("project", project.get())
                     .addKeyValue("stage", item.trackerStatus())
                     .log();
             return true;
@@ -91,11 +88,5 @@ public class IntakeJob implements Job {
                     .log();
             return false;
         }
-    }
-
-    private Map<String, List<String>> labelsByProject() {
-        Map<String, List<String>> labels = new LinkedHashMap<>();
-        configService.load().projects().forEach((key, project) -> labels.put(key, project.labels()));
-        return labels;
     }
 }

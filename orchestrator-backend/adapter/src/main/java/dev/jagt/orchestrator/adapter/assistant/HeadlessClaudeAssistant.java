@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.protocol.CommandRead;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
+import dev.jagt.orchestrator.protocol.ProjectRead;
 import dev.jagt.orchestrator.protocol.ReviewRead;
 import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.protocol.TicketSearch;
@@ -27,6 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -114,6 +116,24 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     keys.removeIf(String::isEmpty);
                     return List.copyOf(keys);
                 });
+    }
+
+    @Override
+    public Answer<String> routeProject(TicketFacts item, Collection<String> projectKeys) {
+        if (item == null || projectKeys == null || projectKeys.isEmpty()) {
+            return Answer.unavailable();
+        }
+        String prompt = "<role>You place one work item in the repository its work belongs in.</role>\n"
+                + "<task>The item is \"" + item.key() + " — " + item.title() + "\", labelled "
+                + item.labels() + " in tracker project '" + item.trackerProject() + "'. The repositories"
+                + " configured here are " + projectKeys + ".</task>\n"
+                + "<rules>Answer project with the ONE key whose repository the work belongs in. Answer "
+                + ProjectRead.NONE + " where the item does not say clearly enough to be sure — a wrong"
+                + " repository costs more than a human being asked. reason is one line." + FAILURE_RULE
+                + "</rules>\n"
+                + "Respond directly, no preamble.";
+        return readable(ask(prompt, ProjectRead.schemaFor(projectKeys).json(), item.key(),
+                AssistantCallKind.ROUTE), item.key()).map(n -> n.path("project").asString(""));
     }
 
     @Override

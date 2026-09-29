@@ -15,7 +15,9 @@ public enum AssistantCallKind {
     /** Free text mapped to a command (the palette / an unknown console line). */
     COMMAND_MAP("command mapping"),
     /** Listing the items a tracker says are ready to be worked on — one call per intake poll. */
-    INTAKE("intake search");
+    INTAKE("intake search"),
+    /** Which repository an item belongs in, asked only where its labels did not say. */
+    ROUTE("project routing");
 
     private final String label;
 

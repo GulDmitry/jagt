@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -55,6 +56,13 @@ public interface MasterAssistant {
      * LIST means the tracker answered and nothing matched; an empty {@code Optional} means nobody got to ask.
      */
     Answer<List<String>> findCandidates(String query);
+
+    /**
+     * Which of {@code projectKeys} an item's work belongs in, for an item whose labels named none or several.
+     * The answer is one of those keys or {@code "none"}; anything else is a read that failed in the shape of an
+     * answer.
+     */
+    Answer<String> routeProject(TicketFacts item, Collection<String> projectKeys);
 
     /** Reads a review request by URL. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
