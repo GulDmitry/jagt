@@ -9,7 +9,7 @@ import dev.jagt.orchestrator.task.TicketFacts;
  */
 public interface TrackerWorkflow {
 
-    /** The {@code orchestrator.intake.tracker} value selecting this one. */
+    /** The {@code orchestrator.tracker.workflow} value selecting this one. */
     String id();
 
     /** What the assistant is asked to find, phrased the way THIS tracker is searched. */

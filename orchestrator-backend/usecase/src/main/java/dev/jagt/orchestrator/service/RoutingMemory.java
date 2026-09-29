@@ -10,6 +10,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,7 @@ public class RoutingMemory {
 
     private final OrchestratorPaths paths;
     private final int maxRules;
+    private final Clock clock;
 
     @Autowired
     public RoutingMemory(OrchestratorPaths paths) {
@@ -41,8 +45,13 @@ public class RoutingMemory {
     }
 
     RoutingMemory(OrchestratorPaths paths, int maxRules) {
+        this(paths, maxRules, Clock.systemDefaultZone());
+    }
+
+    RoutingMemory(OrchestratorPaths paths, int maxRules, Clock clock) {
         this.paths = paths;
         this.maxRules = maxRules;
+        this.clock = clock;
     }
 
     /** Every rule the install holds, oldest first; empty where nobody has written one. */
@@ -61,13 +70,25 @@ public class RoutingMemory {
         }
         Map<String, String> rules = byKey();
         String cleaned = key.strip().replace('\n', ' ');
-        if (project.strip().equals(rules.get(cleaned))) {
+        String stood = rules.get(cleaned);
+        if (project.strip().equals(stood)) {
             return false;
         }
         rules.remove(cleaned);
         rules.put(cleaned, project.strip());
-        write(rules);
+        // A rule that stopped being true is kept, dated: only the retired line answers why a task went where
+        // it went last quarter, and a line silently gone answers nothing.
+        List<String> retired = new ArrayList<>(retired());
+        if (stood != null) {
+            retired.add("# until " + LocalDate.now(clock) + ": " + cleaned + SEPARATOR + stood);
+        }
+        write(rules, retired);
         return true;
+    }
+
+    /** The dated lines of rules that stopped being true, oldest first. */
+    private List<String> retired() {
+        return lines().stream().map(String::strip).filter(line -> line.startsWith("# until ")).toList();
     }
 
     private Map<String, String> byKey() {
@@ -107,11 +128,13 @@ public class RoutingMemory {
         }
     }
 
-    private void write(Map<String, String> rules) {
-        List<String> kept = rules.entrySet().stream()
+    private void write(Map<String, String> rules, List<String> retired) {
+        List<String> kept = new ArrayList<>(rules.entrySet().stream()
                 .skip(Math.max(0, rules.size() - maxRules))
                 .map(entry -> entry.getKey() + SEPARATOR + entry.getValue())
-                .toList();
+                .toList());
+        // The history is bounded too: a file nothing ever drops is one nobody opens.
+        retired.stream().skip(Math.max(0, retired.size() - maxRules)).forEach(kept::add);
         Path file = file();
         try {
             Files.createDirectories(file.getParent());

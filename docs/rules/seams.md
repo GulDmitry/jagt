@@ -15,8 +15,8 @@ implementation plus a config value, never `if claude` or `if macos`. The flow st
   except that a notifier reaching nothing logs and returns.
 - **The tracker and the code host are not seams of jagt's**: a model reads them through the MCP of whoever
   runs it, jagt holding no credential. Its WORKFLOW is one — `TrackerWorkflow` by
-  `orchestrator.intake.tracker` names the stage that starts work and the stage that closes it, and reads
-  nothing itself.
+  `orchestrator.tracker.workflow` names the stage that starts work and the stage that closes it, and
+  reads nothing itself.
 - `AgentRuntime` covers `launchCommand`, `provisionWorktree` (template in `AbstractAgentRuntime` + per-agent
   hook) and `lastSessionActivity`.
 - `mcp_client.js` is a **standard, agent-agnostic** stdio↔HTTP proxy; only the config declaring it differs

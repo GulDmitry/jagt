@@ -92,26 +92,28 @@ orchestrator:
                              # Anything not listed the Master may do. `done` is always yours — you open a
                              # task and you close it, and it cannot be given away
 
-  # ── Work that arrives unasked (EXPERIMENTAL) ───────────────────────────────────────────────────────────────
-  # Polls your tracker and starts a task on every item it says is ready. Off unless you turn it on. Every stage
-  # name is YOUR workflow's: nothing here has a default, because a guessed stage starts work nobody asked for.
-  # Per poll: one search, then one read and one routing call per item it has not seen. The routing call
-  # OPENS the item and reads it — labels are a suggestion it confirms, never the answer, because a board
-  # carries items for every repository and a label naming a layer places none of them. It is also shown where
-  # items like it were finished before — only the ones you placed yourself or a deploy confirmed, read off
+  # ── The two ends the tracker drives (EXPERIMENTAL) ─────────────────────────────────────────────────────────
+  # `take` turns items at your starting stage into tasks; `close` ends a task whose item reached the stage that
+  # says the work landed. Each end asks only for the stage IT reads. Every stage name is YOUR workflow's:
+  # nothing here has a default, because a guessed stage starts work nobody asked for.
+  # Per poll: one search, then one read and one routing call per item it has not seen. The routing call OPENS
+  # the item and reads it — labels are a suggestion it confirms, never the answer, because a board carries
+  # items for every repository and a label naming a layer places none of them. It is also shown where items
+  # like it were finished before — only the ones you placed yourself or a deploy confirmed, read off
   # `finished.jsonl`, so it never learns from a guess of its own. With one repository configured there is
   # nothing to choose and nothing is asked.
-  intake:
-    enabled: false
-    tracker: none         # none | jira. Read at startup, unlike everything beside it here
-    assignee: ""          # the item is yours: spelled exactly as your tracker reports it, case aside
-    startStatus: ""       # the stage an item must stand in before a machine may start it
-    doneStatus: ""        # the stage that says the work landed; reaching it closes the task
+  tracker:
+    mode: off             # off | take | close | both
+    workflow: none        # none | jira. Read at startup, unlike everything beside it here
+    assignee: ""          # `take`: the item is yours, spelled exactly as your tracker reports it, case aside
+    startStatus: ""       # `take`: the stage an item must stand in before a machine may start it
+    doneStatus: ""        # `close`: the stage that says the work landed; reaching it closes the task
     everyMinutes: 10      # a task the tracker has not moved is then asked about ever less often,
                           # doubling to twice a day, so a deploy nobody finishes stops costing reads
   # It writes what placed an item no label could place to `memory/routing.md`, one rule per line, newest
-  # winning and the oldest dropped past 60. Open it and fix a line: it outranks everything else the router
-  # is shown, and you can write rules there before the first item of their kind ever arrives.
+  # winning and the oldest dropped past 60. A rule it retires is kept, commented out with the date it stopped
+  # being true. Open the file and fix a line: it outranks everything else the router is shown, and you can
+  # write rules there before the first item of their kind ever arrives.
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:

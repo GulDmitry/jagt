@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
@@ -40,7 +40,7 @@ class TicketCloseJobTest {
     @Test
     void asksAboutNoTaskWhoseWorkIsStillInItsWorktree() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
         when(stateService.tasks()).thenReturn(Map.of("ABC-42",
                 TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()));
 
@@ -53,7 +53,7 @@ class TicketCloseJobTest {
     void closesTheTaskTheTrackerSaysIsFinishedWith() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
         when(stateService.tasks()).thenReturn(Map.of("ABC-42", task));
         when(close.closes("ABC-42", task)).thenReturn(true);
 
@@ -73,7 +73,7 @@ class TicketCloseJobTest {
         six.put("ABC-5", task);
         six.put("ABC-6", task);
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
         when(stateService.tasks()).thenReturn(six);
 
         job.run();
@@ -87,7 +87,7 @@ class TicketCloseJobTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
                 .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null))).build();
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
         when(stateService.tasks()).thenReturn(Map.of("ABC-42", task));
         when(close.closes("ABC-42", task)).thenReturn(false);
 
@@ -104,7 +104,7 @@ class TicketCloseJobTest {
         TaskState moved = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
                 .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 2_000L, null))).build();
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
         when(stateService.tasks()).thenReturn(Map.of("ABC-42", stood), Map.of("ABC-42", moved));
         when(close.closes(anyString(), any())).thenReturn(false);
 
@@ -118,7 +118,7 @@ class TicketCloseJobTest {
     void leavesOpenTheTaskTheTrackerHasNotFinishedWith() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
         when(stateService.tasks()).thenReturn(Map.of("ABC-42", task));
         when(close.closes("ABC-42", task)).thenReturn(false);
 

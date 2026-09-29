@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 /** An install with no tracker: every stage still has an answer, and the answer is that nothing arrives unasked. */
 @Component
-@ConditionalOnProperty(name = "orchestrator.intake.tracker", havingValue = "none", matchIfMissing = true)
+@ConditionalOnProperty(name = "orchestrator.tracker.workflow", havingValue = "none", matchIfMissing = true)
 public class NoTrackerWorkflow implements TrackerWorkflow {
 
     @Override

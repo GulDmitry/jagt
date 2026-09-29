@@ -145,7 +145,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " repository costs more than a human being asked. reason is one line.\n"
                 + "Answer rule with the short phrase that would place the NEXT item like this one, and ONLY"
                 + " where placing this one took something no label carried — leave it EMPTY otherwise, an"
-                + " obvious placement being worth nothing to write down." + FAILURE_RULE
+                + " obvious placement being worth nothing to write down. Where a rule above already covers"
+                + " this case, answer ITS phrase character for character rather than a rewording: two"
+                + " wordings of one rule are two rules, and this file is read whole every time."
+                + FAILURE_RULE
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
         return readable(ask(prompt, ProjectRead.schemaFor(question.projects().keySet()).json(), item.key(),

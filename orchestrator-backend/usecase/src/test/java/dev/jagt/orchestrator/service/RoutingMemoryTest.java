@@ -7,6 +7,9 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -44,6 +47,19 @@ class RoutingMemoryTest {
         memory.remember("PAN items about quote import", "sc");
 
         assertThat(memory.remember("PAN items about quote import", "sc")).isFalse();
+    }
+
+    @Test
+    void keepsTheRuleItRetiredWithTheDateItStoppedBeingTrue() throws IOException {
+        when(paths.root()).thenReturn(root);
+        Clock frozen = Clock.fixed(Instant.parse("2026-09-29T00:00:00Z"), ZoneOffset.UTC);
+        RoutingMemory memory = new RoutingMemory(paths, 60, frozen);
+
+        memory.remember("PAN items about quote import", "sc");
+        memory.remember("PAN items about quote import", "api");
+
+        assertThat(Files.readString(root.resolve("memory/routing.md")))
+                .contains("# until 2026-09-29: PAN items about quote import -> sc");
     }
 
     @Test

@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -44,7 +44,7 @@ class IntakeJobTest {
     @Test
     void takesNothingOffTheTrackerWhileAStageNameIsStillBlank() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", null, null)));
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", null, null)));
 
         job.run();
 
@@ -57,7 +57,7 @@ class IntakeJobTest {
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42")
                 .withTrackerStatus("In Progress").withLabels(List.of("backend"));
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null))
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null))
                 .withProjects(Map.of("api", new ProjectConfig("/api", "origin/main", "dev",
                         List.of("backend")))));
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
@@ -77,7 +77,7 @@ class IntakeJobTest {
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42")
                 .withTrackerStatus("In Progress").withLabels(List.of("nothing-matches-this"));
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null))
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null))
                 .withProjects(Map.of("api", new ProjectConfig("/api", "origin/main", "dev",
                         List.of("backend")))));
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
@@ -99,7 +99,7 @@ class IntakeJobTest {
                 .withUrl("https://tracker/ABC-2").withTrackerStatus("In Progress")
                 .withLabels(List.of("backend"));
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null))
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null))
                 .withProjects(Map.of("api", new ProjectConfig("/api", "origin/main", "dev",
                         List.of("backend")))));
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(

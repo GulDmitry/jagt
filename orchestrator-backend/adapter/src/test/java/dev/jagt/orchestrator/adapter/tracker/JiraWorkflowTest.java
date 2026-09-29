@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.adapter.tracker;
 
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.task.TicketFacts;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,7 +25,7 @@ class JiraWorkflowTest {
             "In Progress,,false"})
     void startsWorkOnlyOnTheConfiguredStageHeldByTheConfiguredPerson(String stage, String assignee,
                                                                      boolean starts) {
-        when(configService.load()).thenReturn(ConfigFile.defaults().withIntake(new IntakeConfig(true, "jira",
+        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("both", "jira",
                 "dzmitry", "In Progress", "Ready for Stage", null)));
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTrackerStatus(stage).withAssignee(assignee);
@@ -35,7 +35,7 @@ class JiraWorkflowTest {
 
     @Test
     void closesWorkOnTheStageTheInstallCallsDoneWhoeverHoldsTheItem() {
-        when(configService.load()).thenReturn(ConfigFile.defaults().withIntake(new IntakeConfig(true, "jira",
+        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("both", "jira",
                 "dzmitry", "In Progress", "Ready for Stage", null)));
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTrackerStatus("Ready for Stage").withAssignee("someone-else");
@@ -45,7 +45,7 @@ class JiraWorkflowTest {
 
     @Test
     void asksForTheItemsTheConfiguredPersonHoldsAtTheConfiguredStage() {
-        when(configService.load()).thenReturn(ConfigFile.defaults().withIntake(new IntakeConfig(true, "jira",
+        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("both", "jira",
                 "dzmitry", "In Progress", "Ready for Stage", null)));
 
         assertThat(workflow.candidateQuery())

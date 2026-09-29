@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.job.Job;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.TrackerConfig;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
@@ -56,17 +56,17 @@ public class TicketCloseJob implements Job {
 
     @Override
     public Duration every() {
-        return Duration.ofMinutes(configService.load().intake().everyMinutesOrDefault());
+        return Duration.ofMinutes(configService.load().tracker().everyMinutesOrDefault());
     }
 
     @Override
     public void run() {
-        IntakeConfig intake = configService.load().intake();
-        if (!intake.enabledOrDefault() || !intake.missing().isEmpty()) {
+        TrackerConfig tracker = configService.load().tracker();
+        if (!tracker.modeOrOff().closes() || !tracker.missing().isEmpty()) {
             return;
         }
         long now = System.currentTimeMillis();
-        Duration every = Duration.ofMinutes(intake.everyMinutesOrDefault());
+        Duration every = Duration.ofMinutes(tracker.everyMinutesOrDefault());
         int asked = 0;
         for (Map.Entry<String, TaskState> entry : handedOver().entrySet()) {
             if (asked == READS_PER_POLL) {

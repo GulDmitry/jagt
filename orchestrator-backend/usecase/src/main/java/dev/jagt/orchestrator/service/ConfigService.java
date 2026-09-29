@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.TrackerMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.json.JsonMapper;
@@ -37,7 +38,7 @@ public class ConfigService {
     @With
     public record ConfigFile(Map<String, ProjectConfig> projects, ViewerConfig viewer,
                              CodeReviewConfig codeReview, AgentConfig agent, WorktreeConfig worktree,
-                             AutoReviewConfig autoReview, MasterConfig master, IntakeConfig intake) {
+                             AutoReviewConfig autoReview, MasterConfig master, TrackerConfig tracker) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -229,40 +230,45 @@ public class ConfigService {
         }
 
         /**
-         * Work jagt takes off a tracker without being asked. {@code tracker} names the workflow vocabulary the
-         * stages are read in and is bound at STARTUP, unlike everything beside it here. Nothing carries a default
-         * stage name: no two installs spell their workflow alike, and a guessed one starts work nobody asked for.
+         * The two ends the tracker drives: work arriving unasked, and a task closing on the stage that says it
+         * landed. {@code workflow} names the vocabulary those stages are read in and is bound at STARTUP, unlike
+         * everything beside it. Nothing carries a default stage name: no two installs spell their workflow
+         * alike, and a guessed one starts work nobody asked for.
          */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record IntakeConfig(Boolean enabled, String tracker, String assignee, String startStatus,
-                                   String doneStatus, Integer everyMinutes) {
+        public record TrackerConfig(String mode, String workflow, String assignee, String startStatus,
+                                    String doneStatus, Integer everyMinutes) {
 
-            public static IntakeConfig defaults() {
-                return new IntakeConfig(null, null, null, null, null, null);
+            public static TrackerConfig defaults() {
+                return new TrackerConfig(null, null, null, null, null, null);
             }
 
-            public boolean enabledOrDefault() {
-                return enabled != null && enabled;
+            public TrackerMode modeOrOff() {
+                return TrackerMode.of(mode).orElse(TrackerMode.OFF);
             }
 
             public int everyMinutesOrDefault() {
                 return everyMinutes == null || everyMinutes <= 0 ? 10 : everyMinutes;
             }
 
-            /** The keys left blank, so a startup check can name them all at once rather than one per restart. */
+            /**
+             * The keys this mode needs and nobody filled in, so a startup check names them all at once rather
+             * than one per restart. A stage only one end reads is asked for only where that end is on.
+             */
             public List<String> missing() {
+                TrackerMode running = modeOrOff();
                 List<String> blank = new ArrayList<>();
-                if (blank(tracker)) {
-                    blank.add("tracker");
+                if (blank(workflow)) {
+                    blank.add("workflow");
                 }
-                if (blank(assignee)) {
+                if (running.takes() && blank(assignee)) {
                     blank.add("assignee");
                 }
-                if (blank(startStatus)) {
+                if (running.takes() && blank(startStatus)) {
                     blank.add("startStatus");
                 }
-                if (blank(doneStatus)) {
+                if (running.closes() && blank(doneStatus)) {
                     blank.add("doneStatus");
                 }
                 return List.copyOf(blank);
@@ -309,8 +315,8 @@ public class ConfigService {
         }
 
         @Override
-        public IntakeConfig intake() {
-            return intake == null ? IntakeConfig.defaults() : intake;
+        public TrackerConfig tracker() {
+            return tracker == null ? TrackerConfig.defaults() : tracker;
         }
 
     }
