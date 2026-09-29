@@ -26,7 +26,7 @@ public class IntakeJob implements Job {
 
     private final ConfigService configService;
     private final IntakeCandidates candidates;
-    private final IntakeRouting routing;
+    private final ProjectRouting routing;
     private final IntakeHistory history;
     private final TaskLauncher launcher;
 

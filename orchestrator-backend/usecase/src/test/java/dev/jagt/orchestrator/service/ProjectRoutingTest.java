@@ -26,13 +26,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class IntakeRoutingTest {
+class ProjectRoutingTest {
 
     private final ConfigService configService = mock(ConfigService.class);
     private final MeteredAssistant assistant = mock(MeteredAssistant.class);
     private final FinishedTasks finished = mock(FinishedTasks.class);
     private final RoutingMemory memory = mock(RoutingMemory.class);
-    private final IntakeRouting routing = new IntakeRouting(configService, assistant, finished, memory);
+    private final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
 
     @Test
     void buysNoRoutingCallWhenThereIsNothingToChooseBetween() {

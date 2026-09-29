@@ -30,13 +30,15 @@ public class TaskLauncher {
     private final TicketReader tickets;
     private final ConfigService configService;
     private final TaskResume resumes;
+    private final ProjectRouting routing;
 
     public TaskLauncher(TaskProvisioning provisioning, TicketReader tickets, ConfigService configService,
-                        TaskResume resumes) {
+                        TaskResume resumes, ProjectRouting routing) {
         this.provisioning = provisioning;
         this.tickets = tickets;
         this.configService = configService;
         this.resumes = resumes;
+        this.routing = routing;
     }
 
     /**
@@ -107,7 +109,12 @@ public class TaskLauncher {
                     + " created. Launch it under the key the tracker itself reports.");
         }
         String taskId = f.key();
-        List<String> resolved = chosen != null ? chosen : List.of(resolveByLabels(f));
+        // A human who named a project has settled it; only an unplaced one is worth asking about.
+        List<String> resolved = chosen != null ? chosen : routing.projectFor(f).map(List::of).orElse(null);
+        if (resolved == null) {
+            return Launched.refused("error: nothing places " + taskId + " in a configured project — say which:"
+                    + " do " + taskId + " <project>");
+        }
         String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
                 + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
         String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
@@ -146,31 +153,6 @@ public class TaskLauncher {
 
     public Launched resume(String reviewRequestUrl) {
         return resumes.resume(reviewRequestUrl);
-    }
-
-    private String resolveByLabels(TicketFacts facts) {
-        Map<String, List<String>> projectLabels = new LinkedHashMap<>();
-        configService.load().projects().forEach((key, project) -> projectLabels.put(key, project.labels()));
-        List<String> matches = projectsMatching(facts, projectLabels);
-        if (matches.size() == 1) {
-            return matches.get(0);
-        }
-        if (matches.isEmpty()) {
-            throw new IllegalArgumentException("no project matches ticket labels " + facts.labels()
-                    + " — specify the project");
-        }
-        throw new IllegalArgumentException("ticket labels match multiple projects " + matches
-                + " — specify the project");
-    }
-
-    public static List<String> projectsMatching(TicketFacts facts, Map<String, List<String>> projectLabels) {
-        Set<String> tokens = new HashSet<>(facts.labels());
-        tokens.add(facts.trackerProject());
-        return projectLabels.entrySet().stream()
-                .filter(entry -> entry.getValue() != null
-                        && entry.getValue().stream().anyMatch(tokens::contains))
-                .map(Map.Entry::getKey)
-                .toList();
     }
 
     /** In the order given, the FIRST being where the agent's session runs; or the only project configured. */

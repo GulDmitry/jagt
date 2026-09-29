@@ -13,7 +13,7 @@ orchestrator:
       path: /absolute/path/to/base/repository
       baseBranch: origin/main       # tasks are cut from here; jagt never pushes to it
       deployBranch: dev             # omit to disable deploy for this project
-      # labels: [proj, my-project]  # ticket labels that pick this project when `do` names none
+      # labels: [proj, my-project]  # ticket labels suggesting this project where `do` names none
       # about: "the Java backend behind the customer portal"   # what this repository IS, in one line, for
       #                             # placing an item no label places; its path is used where you write none
       # verifyCommand: ["./gradlew", "test"]   # jagt runs it in the worktree before a hand-back reaches you;

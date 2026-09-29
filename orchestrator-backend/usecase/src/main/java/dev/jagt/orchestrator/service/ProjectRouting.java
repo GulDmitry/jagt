@@ -11,10 +11,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Which repository an item's work belongs in. A board carries items for every repository at once and a label
@@ -24,7 +26,7 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class IntakeRouting {
+public class ProjectRouting {
 
     /** What fits in a prompt without drowning the item being placed; the newest, an install's layout drifting. */
     private static final int PRECEDENTS = 40;
@@ -41,7 +43,7 @@ public class IntakeRouting {
         if (projects.size() == 1) {
             return Optional.of(projects.keySet().iterator().next());
         }
-        List<String> suggested = TaskLauncher.projectsMatching(item, labelsOf(projects));
+        List<String> suggested = projectsMatching(item, labelsOf(projects));
         return asked(item, projects, suggested, RoutingQuestion.defaults()
                 .withItem(item)
                 .withProjects(aboutEach(projects))
@@ -110,6 +112,17 @@ public class IntakeRouting {
         return learnable.stream()
                 .skip(Math.max(0, learnable.size() - PRECEDENTS))
                 .map(task -> "- " + task.id() + " \"" + task.title() + "\" → " + task.projects().get(0))
+                .toList();
+    }
+
+    /** Every project a label of the item, or the tracker project it sits under, names outright. */
+    public static List<String> projectsMatching(TicketFacts facts, Map<String, List<String>> projectLabels) {
+        Set<String> tokens = new HashSet<>(facts.labels());
+        tokens.add(facts.trackerProject());
+        return projectLabels.entrySet().stream()
+                .filter(entry -> entry.getValue() != null
+                        && entry.getValue().stream().anyMatch(tokens::contains))
+                .map(Map.Entry::getKey)
                 .toList();
     }
 

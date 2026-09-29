@@ -31,8 +31,9 @@ class TaskLauncherTest {
     private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
     private final TicketReader tickets = mock(TicketReader.class);
     private final ConfigService configService = mock(ConfigService.class);
+    private final ProjectRouting routing = mock(ProjectRouting.class);
     private final TaskLauncher launcher = new TaskLauncher(provisioning, tickets, configService,
-            mock(TaskResume.class));
+            mock(TaskResume.class), routing);
 
     @BeforeEach
     void configIsReadable() {
@@ -71,6 +72,33 @@ class TaskLauncherTest {
         var order = inOrder(provisioning, tickets);
         order.verify(provisioning).initializeTask(any());
         order.verify(tickets).charge("ABC-123", spent);
+    }
+
+    @Test
+    void refusesAnItemTheRouterCouldNotPlaceRatherThanPickingARepository() {
+        oneProject("group-a");
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()
+                .withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
+        when(routing.projectFor(any())).thenReturn(Optional.empty());
+
+        String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
+
+        assertThat(out).contains("nothing places ABC-42");
+        verify(provisioning, never()).initializeTask(any());
+    }
+
+    @Test
+    void asksTheRouterWhereToPutAnItemNobodyNamedAProjectFor() {
+        oneProject("group-a");
+        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()
+                .withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
+        when(routing.projectFor(any())).thenReturn(Optional.of("group-a"));
+
+        launcher.launch(LaunchRequest.of("ABC-42"));
+
+        verify(provisioning).initializeTask(any());
     }
 
     @Test
@@ -203,7 +231,7 @@ class TaskLauncherTest {
         TicketFacts facts = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Some ticket title")
                 .withTrackerProject("ABC").withLabels(List.of("area-x", "no-test", "backend"));
 
-        List<String> matches = TaskLauncher.projectsMatching(facts,
+        List<String> matches = ProjectRouting.projectsMatching(facts,
                 Map.of("group-a", List.of("backend"), "group-b", List.of("frontend")));
 
         assertThat(matches).containsExactly("group-a");

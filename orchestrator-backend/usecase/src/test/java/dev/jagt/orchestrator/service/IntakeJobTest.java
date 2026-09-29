@@ -27,7 +27,7 @@ class IntakeJobTest {
 
     private final ConfigService configService = mock(ConfigService.class);
     private final IntakeCandidates candidates = mock(IntakeCandidates.class);
-    private final IntakeRouting routing = mock(IntakeRouting.class);
+    private final ProjectRouting routing = mock(ProjectRouting.class);
     private final IntakeHistory history = mock(IntakeHistory.class);
     private final TaskLauncher launcher = mock(TaskLauncher.class);
     private final IntakeJob job = new IntakeJob(configService, candidates, routing, history, launcher);
