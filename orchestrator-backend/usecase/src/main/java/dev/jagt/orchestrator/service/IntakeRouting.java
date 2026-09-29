@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.protocol.ProjectRead;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.RoutingAnswer;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class IntakeRouting {
     private final ConfigService configService;
     private final MeteredAssistant assistant;
     private final FinishedTasks finished;
+    private final RoutingMemory memory;
 
     /** Empty where nothing could place it, which is a human's to settle rather than anything's to guess. */
     public Optional<String> projectFor(TicketFacts item) {
@@ -44,12 +46,13 @@ public class IntakeRouting {
                 .withItem(item)
                 .withProjects(aboutEach(projects))
                 .withSuggested(suggested)
-                .withPrecedents(precedents()));
+                .withPrecedents(precedents())
+                .withRules(memory.rules()));
     }
 
     private Optional<String> asked(TicketFacts item, Map<String, ProjectConfig> projects,
                                    List<String> suggested, RoutingQuestion question) {
-        Answer<String> answer = assistant.routeProject(question);
+        Answer<RoutingAnswer> answer = assistant.routeProject(question);
         if (answer.facts().isEmpty()) {
             log.atError().setMessage("project routing unreadable")
                     .addKeyValue("ref", item.key())
@@ -57,7 +60,8 @@ public class IntakeRouting {
                     .log();
             return Optional.empty();
         }
-        String chosen = answer.facts().get();
+        RoutingAnswer routed = answer.facts().get();
+        String chosen = routed.project();
         // A key outside the configured set is a read that failed in the shape of an answer.
         if (ProjectRead.NONE.equals(chosen) || !projects.containsKey(chosen)) {
             log.atInfo().setMessage("project routing undecided")
@@ -74,7 +78,25 @@ public class IntakeRouting {
                     .addKeyValue("chose", chosen)
                     .log();
         }
+        learn(item, suggested, routed);
         return Optional.of(chosen);
+    }
+
+    /**
+     * A rule is kept only where the labels did NOT already place the item: what the machine can work out is
+     * not worth a line, and a memory full of the obvious is one nobody reads.
+     */
+    private void learn(TicketFacts item, List<String> suggested, RoutingAnswer routed) {
+        if (!routed.teaches() || suggested.contains(routed.project())) {
+            return;
+        }
+        if (memory.remember(routed.rule(), routed.project())) {
+            log.atInfo().setMessage("routing memory written")
+                    .addKeyValue("ref", item.key())
+                    .addKeyValue("rule", routed.rule())
+                    .addKeyValue("project", routed.project())
+                    .log();
+        }
     }
 
     /**

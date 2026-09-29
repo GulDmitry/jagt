@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.protocol.TicketSearch;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.RoutingAnswer;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -121,7 +122,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     @Override
-    public Answer<String> routeProject(RoutingQuestion question) {
+    public Answer<RoutingAnswer> routeProject(RoutingQuestion question) {
         if (question == null || !question.answerable()) {
             return Answer.unavailable();
         }
@@ -137,19 +138,31 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + " SUGGESTION and nothing more — whoever filed the item wrote those labels, and a label"
                 + " naming a layer rather than a system places nothing. Confirm it against what the item"
                 + " actually asks for, and answer a different key where the item says otherwise.\n"
+                + written(question.rules())
                 + precedents(question.precedents())
                 + "Answer project with the ONE key whose repository the work belongs in, or "
                 + ProjectRead.NONE + " where the item does not say clearly enough to be sure — a wrong"
-                + " repository costs more than a human being asked. reason is one line." + FAILURE_RULE
+                + " repository costs more than a human being asked. reason is one line.\n"
+                + "Answer rule with the short phrase that would place the NEXT item like this one, and ONLY"
+                + " where placing this one took something no label carried — leave it EMPTY otherwise, an"
+                + " obvious placement being worth nothing to write down." + FAILURE_RULE
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
         return readable(ask(prompt, ProjectRead.schemaFor(question.projects().keySet()).json(), item.key(),
-                AssistantCallKind.ROUTE), item.key()).map(n -> n.path("project").asString(""));
+                AssistantCallKind.ROUTE), item.key())
+                .map(n -> new RoutingAnswer(n.path("project").asString(""), n.path("rule").asString("")));
     }
 
     private static String listed(Map<String, String> projects) {
         return projects.entrySet().stream().map(entry -> "- " + entry.getKey() + ": " + entry.getValue())
                 .collect(Collectors.joining("\n"));
+    }
+
+    /** What the install wrote down itself, which outranks a pattern because a human meant it. */
+    private static String written(List<String> rules) {
+        return rules.isEmpty() ? ""
+                : "Rules this install has written, which outrank everything above:\n"
+                        + String.join("\n", rules) + "\n";
     }
 
     /** Where items like this one were actually worked on, which is the only evidence here nobody wrote down. */

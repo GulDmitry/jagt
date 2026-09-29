@@ -20,7 +20,8 @@ public final class ProjectRead {
         return Schema.answer()
                 .required("failure", "string", null)
                 .choiceRequired("project", withNone(projectKeys), null)
-                .required("reason", "string", null);
+                .required("reason", "string", null)
+                .required("rule", "string", null);
     }
 
     private static Collection<String> withNone(Collection<String> projectKeys) {

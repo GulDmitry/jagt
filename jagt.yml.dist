@@ -108,6 +108,9 @@ orchestrator:
     startStatus: ""       # the stage an item must stand in before a machine may start it
     doneStatus: ""        # the stage that says the work landed; reaching it closes the task
     everyMinutes: 10
+  # It writes what placed an item no label could place to `memory/routing.md`, one rule per line, newest
+  # winning and the oldest dropped past 60. Open it and fix a line: it outranks everything else the router
+  # is shown, and you can write rules there before the first item of their kind ever arrives.
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:

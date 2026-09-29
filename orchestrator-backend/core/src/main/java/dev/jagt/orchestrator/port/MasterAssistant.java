@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.port;
 
 import dev.jagt.orchestrator.task.MergeRequestFacts;
+import dev.jagt.orchestrator.task.RoutingAnswer;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -61,7 +62,7 @@ public interface MasterAssistant {
      * Which repository an item's work belongs in. The answer is one of the question's project keys or
      * {@code "none"}; anything else is a read that failed in the shape of an answer.
      */
-    Answer<String> routeProject(RoutingQuestion question);
+    Answer<RoutingAnswer> routeProject(RoutingQuestion question);
 
     /** Reads a review request by URL. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);

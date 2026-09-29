@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.RoutingAnswer;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
@@ -30,7 +31,8 @@ class IntakeRoutingTest {
     private final ConfigService configService = mock(ConfigService.class);
     private final MeteredAssistant assistant = mock(MeteredAssistant.class);
     private final FinishedTasks finished = mock(FinishedTasks.class);
-    private final IntakeRouting routing = new IntakeRouting(configService, assistant, finished);
+    private final RoutingMemory memory = mock(RoutingMemory.class);
+    private final IntakeRouting routing = new IntakeRouting(configService, assistant, finished, memory);
 
     @Test
     void buysNoRoutingCallWhenThereIsNothingToChooseBetween() {
@@ -48,7 +50,7 @@ class IntakeRoutingTest {
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
         when(finished.all()).thenReturn(List.of());
-        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of("api"), TokenUsage.NONE));
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
         ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
 
         assertThat(routing.projectFor(item)).contains("api");
@@ -63,7 +65,7 @@ class IntakeRoutingTest {
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
         when(finished.all()).thenReturn(List.of());
-        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of("web"), TokenUsage.NONE));
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("web", "")), TokenUsage.NONE));
 
         assertThat(routing.projectFor(item)).contains("web");
     }
@@ -79,7 +81,7 @@ class IntakeRoutingTest {
                 FinishedTask.of("ABC-2", TaskState.builder("web", "/wt", TaskStatus.DONE).title("Guessed one")
                         .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
                         .build(), 2L)));
-        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of("api"), TokenUsage.NONE));
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
         ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
 
         routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
@@ -89,12 +91,41 @@ class IntakeRoutingTest {
     }
 
     @Test
+    void writesDownWhatPlacedAnItemNoLabelCouldPlace() {
+        when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
+        when(finished.all()).thenReturn(List.of());
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(
+                Optional.of(new RoutingAnswer("api", "PAN items about quote import")), TokenUsage.NONE));
+
+        routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
+
+        verify(memory).remember("PAN items about quote import", "api");
+    }
+
+    @Test
+    void writesDownNothingWhereTheLabelsHadAlreadyPlacedIt() {
+        TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
+        when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
+        when(finished.all()).thenReturn(List.of());
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(
+                Optional.of(new RoutingAnswer("api", "anything at all")), TokenUsage.NONE));
+
+        routing.projectFor(item);
+
+        verify(memory, never()).remember(any(), any());
+    }
+
+    @Test
     void leavesTheItemForAHumanWhenTheRouterNamedARepositoryJagtDoesNotHave() {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
         when(finished.all()).thenReturn(List.of());
-        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of("mobile"), TokenUsage.NONE));
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("mobile", "")), TokenUsage.NONE));
 
         assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).isEmpty();
     }

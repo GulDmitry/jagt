@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.RoutingAnswer;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -34,7 +35,7 @@ public class MeteredAssistant {
         return metered(AssistantCallKind.INTAKE, assistant.findCandidates(query));
     }
 
-    public Answer<String> routeProject(RoutingQuestion question) {
+    public Answer<RoutingAnswer> routeProject(RoutingQuestion question) {
         return metered(AssistantCallKind.ROUTE, assistant.routeProject(question));
     }
 
