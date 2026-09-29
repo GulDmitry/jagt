@@ -64,6 +64,13 @@ public interface MasterAssistant {
      */
     Answer<RoutingAnswer> routeProject(RoutingQuestion question);
 
+    /**
+     * Which of {@code rules} the placing of {@code ticketKey} in {@code project} has just contradicted — asked
+     * only where a human placed by hand what a written rule had placed elsewhere. One of those rules, or
+     * {@code "none"}, which is the usual answer.
+     */
+    Answer<String> staleRule(String ticketKey, String project, List<String> rules);
+
     /** Reads a review request by URL. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
 

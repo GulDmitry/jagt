@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.protocol.CommandRead;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
 import dev.jagt.orchestrator.protocol.ProjectRead;
+import dev.jagt.orchestrator.protocol.RuleRead;
 import dev.jagt.orchestrator.protocol.ReviewRead;
 import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.protocol.TicketSearch;
@@ -173,6 +174,24 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         return precedents.isEmpty() ? ""
                 : "Items finished before, and the repository each was done in:\n"
                         + String.join("\n", precedents) + "\n";
+    }
+
+    @Override
+    public Answer<String> staleRule(String ticketKey, String project, List<String> rules) {
+        if (ticketKey == null || project == null || rules == null || rules.isEmpty()) {
+            return Answer.unavailable();
+        }
+        String prompt = "<role>You find the written rule a person has just contradicted.</role>\n"
+                + "<task>A person placed the work item " + ticketKey + " in the repository '" + project
+                + "' by hand. Read that item with the matching tracker MCP tool.</task>\n"
+                + "<rules>These rules are written down here:\n" + String.join("\n", rules) + "\n"
+                + "Answer rule with the ONE of them that would have sent this item somewhere else, or "
+                + RuleRead.NONE + " where none of them covers it — which is the usual answer, and retiring a"
+                + " rule that was never wrong costs more than leaving it. reason is one line."
+                + FAILURE_RULE + "</rules>\n"
+                + "Respond directly, no preamble.";
+        return readable(ask(prompt, RuleRead.schemaFor(rules).json(), ticketKey, AssistantCallKind.ROUTE),
+                ticketKey).map(n -> n.path("rule").asString(""));
     }
 
     @Override

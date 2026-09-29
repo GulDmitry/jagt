@@ -47,17 +47,16 @@ Missing: named events, and routing beyond `Notification.Topic`'s four buckets.
 What to decide first: where an event is declared so the compiler checks it, and whether routing is per channel,
 per event or both.
 
-## A rule the install outgrew is still taught (concept)
+## A rule nothing has ever used is evicted last (concept)
 
-Built: `memory/routing.md`, written where labels placed nothing and read before every routing, one rule per
-key, oldest dropped past sixty.
+Built: `memory/routing.md`, written where labels placed nothing and retired with the date it stopped being
+true — by the router changing its mind, or by you placing an item it had placed elsewhere.
 
-Missing: nothing notices a rule the world contradicts. You launching `do ABC-1 sc` by hand against what a rule
-says is that contradiction, and a fact jagt holds. Dropping the oldest is not merging either: two rules saying
-nearly the same thing survive until the ceiling evicts the wrong one.
+Missing: eviction drops the OLDEST, and nothing records which rule ever placed anything, so one never used
+outlives one placing something weekly. Nothing merges two rules meaning the same thing either — the prompt
+asking for a phrase reused verbatim is the whole defence.
 
-What to decide first: whether a contradicted rule is deleted or kept with the date it stopped being true, since
-only the second can say why a task went where it went last quarter.
+What to decide first: whether a use is counted in the file, where a human would see it, or beside it.
 
 ## The Master checks the worker understood the brief (idea)
 

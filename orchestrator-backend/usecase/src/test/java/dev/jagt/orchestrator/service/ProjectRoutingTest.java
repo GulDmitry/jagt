@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -117,6 +118,35 @@ class ProjectRoutingTest {
         routing.projectFor(item);
 
         verify(memory, never()).remember(any(), any());
+    }
+
+    @Test
+    void retiresTheRuleAHumanHasJustContradicted() {
+        when(memory.rules()).thenReturn(List.of("PAN items about quote import -> web"));
+        when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-42",
+                TaskState.builder("web", "/wt", TaskStatus.DONE).title("Quote import")
+                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
+                        .build(), 2L)));
+        when(assistant.staleRule("ABC-42", "api", List.of("PAN items about quote import -> web")))
+                .thenReturn(new Answer<>(Optional.of("PAN items about quote import -> web"), TokenUsage.NONE));
+
+        routing.placedByHand("ABC-42", "api");
+
+        verify(memory).retire("PAN items about quote import -> web");
+    }
+
+    @Test
+    void asksNothingWhereTheRouterHadNeverPlacedThatItemItself() {
+        when(memory.rules()).thenReturn(List.of("PAN items about quote import -> web"));
+        when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-42",
+                TaskState.builder("web", "/wt", TaskStatus.DONE).title("Quote import")
+                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD)))
+                        .build(), 2L)));
+
+        routing.placedByHand("ABC-42", "api");
+
+        verify(assistant, never()).staleRule(anyString(), anyString(), any());
+        verify(memory, never()).retire(anyString());
     }
 
     @Test

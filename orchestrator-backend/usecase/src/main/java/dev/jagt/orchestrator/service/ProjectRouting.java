@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.protocol.ProjectRead;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.RoutingAnswer;
@@ -82,6 +83,45 @@ public class ProjectRouting {
         }
         learn(item, suggested, routed);
         return Optional.of(chosen);
+    }
+
+    /**
+     * A human placing an item where the router had not is the world contradicting what is written down, and
+     * the only correction nothing else here carries. Nothing is asked unless a rule exists AND the router had
+     * placed this very item somewhere else: retiring a rule that was never wrong costs more than leaving it.
+     */
+    public void placedByHand(String ticketKey, String project) {
+        List<String> rules = memory.rules();
+        if (rules.isEmpty() || !routerPlacedElsewhere(ticketKey, project)) {
+            return;
+        }
+        Answer<String> answer = assistant.staleRule(ticketKey, project, rules);
+        if (answer.facts().isEmpty()) {
+            log.atWarn().setMessage("stale rule unreadable")
+                    .addKeyValue("ref", ticketKey)
+                    .addKeyValue("cause", "nothing answered, so every rule stands")
+                    .log();
+            return;
+        }
+        String stale = answer.facts().get();
+        if (!rules.contains(stale)) {
+            return;
+        }
+        if (memory.retire(stale)) {
+            log.atInfo().setMessage("routing rule retired")
+                    .addKeyValue("ref", ticketKey)
+                    .addKeyValue("rule", stale)
+                    .addKeyValue("placedIn", project)
+                    .log();
+        }
+    }
+
+    /** Only the router's own placements can be contradicted: what a human did before was never a rule's doing. */
+    private boolean routerPlacedElsewhere(String ticketKey, String project) {
+        return finished.all().stream()
+                .filter(task -> task.id().equals(ticketKey))
+                .anyMatch(task -> task.openedBy() == ActionOrigin.TRACKER
+                        && !task.projects().contains(project));
     }
 
     /**

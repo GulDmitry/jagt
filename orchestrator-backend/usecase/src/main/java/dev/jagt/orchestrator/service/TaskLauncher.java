@@ -119,6 +119,11 @@ public class TaskLauncher {
                 + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
         String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
                 .title(f.title()).ticketUrl(f.url()).build());
+        // Only where the human named it: their word against a rule is the correction, and the router's own
+        // placement contradicts nothing.
+        if (chosen != null) {
+            routing.placedByHand(taskId, resolved.get(0));
+        }
         // Only NOW does the task exist, so only now can the read that named it be charged to it.
         tickets.charge(taskId, read.usage());
         return Launched.created(taskId, result);

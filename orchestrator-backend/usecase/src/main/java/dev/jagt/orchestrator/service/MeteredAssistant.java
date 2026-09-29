@@ -39,6 +39,10 @@ public class MeteredAssistant {
         return metered(AssistantCallKind.ROUTE, assistant.routeProject(question));
     }
 
+    public Answer<String> staleRule(String ticketKey, String project, List<String> rules) {
+        return metered(AssistantCallKind.ROUTE, assistant.staleRule(ticketKey, project, rules));
+    }
+
     public Answer<MergeRequestFacts> readMergeRequest(String mrUrl) {
         return metered(AssistantCallKind.MR_READ, assistant.readMergeRequest(mrUrl));
     }

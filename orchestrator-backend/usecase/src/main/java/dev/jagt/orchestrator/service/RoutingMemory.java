@@ -91,6 +91,30 @@ public class RoutingMemory {
         return lines().stream().map(String::strip).filter(line -> line.startsWith("# until ")).toList();
     }
 
+    /**
+     * Takes a rule out of use, keeping it dated. {@code rendered} is a line as {@link #rules()} hands it out,
+     * so a caller never has to know how a rule is spelled on disk.
+     */
+    public synchronized boolean retire(String rendered) {
+        if (rendered == null) {
+            return false;
+        }
+        int split = rendered.lastIndexOf(SEPARATOR);
+        if (split < 0) {
+            return false;
+        }
+        String key = rendered.substring(0, split).strip();
+        Map<String, String> rules = byKey();
+        String stood = rules.remove(key);
+        if (stood == null) {
+            return false;
+        }
+        List<String> retired = new ArrayList<>(retired());
+        retired.add("# until " + LocalDate.now(clock) + ": " + key + SEPARATOR + stood);
+        write(rules, retired);
+        return true;
+    }
+
     private Map<String, String> byKey() {
         Map<String, String> rules = new LinkedHashMap<>();
         for (String line : lines()) {

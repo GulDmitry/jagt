@@ -111,8 +111,8 @@ orchestrator:
     everyMinutes: 10      # a task the tracker has not moved is then asked about ever less often,
                           # doubling to twice a day, so a deploy nobody finishes stops costing reads
   # It writes what placed an item no label could place to `memory/routing.md`, one rule per line, newest
-  # winning and the oldest dropped past 60. A rule it retires is kept, commented out with the date it stopped
-  # being true. Open the file and fix a line: it outranks everything else the router is shown, and you can
+  # winning and the oldest dropped past 60. A rule stops being used when the router changes its mind or when
+  # you place by hand an item it had placed elsewhere, and is kept, commented out with the date. Open the file and fix a line: it outranks everything else the router is shown, and you can
   # write rules there before the first item of their kind ever arrives.
 
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
