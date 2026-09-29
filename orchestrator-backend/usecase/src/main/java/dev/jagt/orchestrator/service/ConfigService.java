@@ -18,6 +18,7 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +37,7 @@ public class ConfigService {
     @With
     public record ConfigFile(Map<String, ProjectConfig> projects, ViewerConfig viewer,
                              CodeReviewConfig codeReview, AgentConfig agent, WorktreeConfig worktree,
-                             AutoReviewConfig autoReview, MasterConfig master) {
+                             AutoReviewConfig autoReview, MasterConfig master, IntakeConfig intake) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
@@ -227,8 +228,53 @@ public class ConfigService {
             }
         }
 
+        /**
+         * Work jagt takes off a tracker without being asked. {@code tracker} names the workflow vocabulary the
+         * stages are read in and is bound at STARTUP, unlike everything beside it here. Nothing carries a default
+         * stage name: no two installs spell their workflow alike, and a guessed one starts work nobody asked for.
+         */
+        @JsonIgnoreProperties(ignoreUnknown = true)
+        @With
+        public record IntakeConfig(Boolean enabled, String tracker, String assignee, String startStatus,
+                                   String doneStatus, Integer everyMinutes) {
+
+            public static IntakeConfig defaults() {
+                return new IntakeConfig(null, null, null, null, null, null);
+            }
+
+            public boolean enabledOrDefault() {
+                return enabled != null && enabled;
+            }
+
+            public int everyMinutesOrDefault() {
+                return everyMinutes == null || everyMinutes <= 0 ? 10 : everyMinutes;
+            }
+
+            /** The keys left blank, so a startup check can name them all at once rather than one per restart. */
+            public List<String> missing() {
+                List<String> blank = new ArrayList<>();
+                if (blank(tracker)) {
+                    blank.add("tracker");
+                }
+                if (blank(assignee)) {
+                    blank.add("assignee");
+                }
+                if (blank(startStatus)) {
+                    blank.add("startStatus");
+                }
+                if (blank(doneStatus)) {
+                    blank.add("doneStatus");
+                }
+                return List.copyOf(blank);
+            }
+
+            private static boolean blank(String value) {
+                return value == null || value.isBlank();
+            }
+        }
+
         public static ConfigFile defaults() {
-            return new ConfigFile(Map.of(), null, null, null, null, null, null);
+            return new ConfigFile(Map.of(), null, null, null, null, null, null, null);
         }
 
         // The raw field is still what the withers copy, so an omitted section stays null until set.
@@ -260,6 +306,11 @@ public class ConfigService {
         @Override
         public AutoReviewConfig autoReview() {
             return autoReview == null ? AutoReviewConfig.defaults() : autoReview;
+        }
+
+        @Override
+        public IntakeConfig intake() {
+            return intake == null ? IntakeConfig.defaults() : intake;
         }
 
     }

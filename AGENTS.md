@@ -112,8 +112,9 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 - **One thing other than a human may act as one: the Master session in `act`** — it stands where the human
   stands and holds the same rights. Experimental, off by default, refused without a brief, and bounded by
   `FlowRules`: it picks a legal move, never invents one.
-- **Nothing else acts on its own**, the auto-review loop included: it reads and drafts, its gate in the
-  outcome rather than the trigger. The base branch stays read-only for both.
+- **Nothing else acts unasked but on a stage the tracker reports**: intake opens a task, the close ends one,
+  both `ActionOrigin.TRACKER` and off by default. The auto-review loop reads and drafts, its gate in the
+  outcome rather than the trigger. The base branch stays read-only for all three.
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human, and a
   task contradicting what the code guarantees is such a question, asked before the code picks a side — never

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
@@ -13,6 +14,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -51,26 +53,41 @@ public class TaskLauncher {
         if (request.ref() == null) {
             return launchWritten(request);
         }
-        String ref = request.ref();
-        String project = request.project();
-        String strategy = request.strategy();
-        boolean bareKey = TaskName.isTicketKey(ref);
-
-        // Warn before spending a ticket read on a task that would only collide later.
-        if (bareKey && BranchStrategy.of(strategy) == BranchStrategy.FRESH) {
-            String existing = provisioning.existingBranchProject(ref,
-                    project == null ? List.of() : resolveProjects(project));
-            if (existing != null) {
-                return Launched.refused("branch '" + ref + "' already exists in " + existing + " (previous run"
-                        + " of this ticket). Say which: " + choice(BranchStrategy.RECREATE) + ", or "
-                        + choice(BranchStrategy.RESUME) + ".");
-            }
+        Optional<Launched> refused = refusedForExistingBranch(request);
+        if (refused.isPresent()) {
+            return refused.get();
         }
         // An unknown project is settled before the read, not after paying for one.
-        List<String> chosen = project != null ? resolveProjects(project) : null;
-
+        List<String> chosen = request.project() != null ? resolveProjects(request.project()) : null;
         // The read answers with the canonical key, which is what names the branch and the worktree.
-        var read = tickets.read(ref);
+        return launched(request, tickets.read(request.ref()), chosen);
+    }
+
+    /**
+     * The same launch with the item's facts already read and PAID FOR. Intake reads them to decide the item may
+     * be started at all, and paying a second time for the one answer is a cost jagt need not carry.
+     */
+    public Launched launch(LaunchRequest request, Answer<TicketFacts> read) {
+        return refusedForExistingBranch(request).orElseGet(() -> launched(request, read,
+                request.project() != null ? resolveProjects(request.project()) : null));
+    }
+
+    /** Warns before a task is started that would only collide later; empty where nothing is in the way. */
+    private Optional<Launched> refusedForExistingBranch(LaunchRequest request) {
+        String ref = request.ref();
+        if (!TaskName.isTicketKey(ref) || BranchStrategy.of(request.strategy()) != BranchStrategy.FRESH) {
+            return Optional.empty();
+        }
+        String existing = provisioning.existingBranchProject(ref,
+                request.project() == null ? List.of() : resolveProjects(request.project()));
+        return existing == null ? Optional.empty()
+                : Optional.of(Launched.refused("branch '" + ref + "' already exists in " + existing
+                        + " (previous run of this ticket). Say which: " + choice(BranchStrategy.RECREATE)
+                        + ", or " + choice(BranchStrategy.RESUME) + "."));
+    }
+
+    private Launched launched(LaunchRequest request, Answer<TicketFacts> read, List<String> chosen) {
+        String ref = request.ref();
         // Three different answers: one names a missing item, the others a read that never got there.
         if (read.facts().isEmpty()) {
             return Launched.refused("error: read failed: " + ref + " (cause in the log) — no task created");
@@ -85,7 +102,7 @@ public class TaskLauncher {
                     + " created");
         }
         TicketFacts f = facts.get();
-        if (bareKey && !ref.equalsIgnoreCase(f.key())) {
+        if (TaskName.isTicketKey(ref) && !ref.equalsIgnoreCase(f.key())) {
             return Launched.refused("error: asked for " + ref + " and got " + f.key() + " back — no task"
                     + " created. Launch it under the key the tracker itself reports.");
         }

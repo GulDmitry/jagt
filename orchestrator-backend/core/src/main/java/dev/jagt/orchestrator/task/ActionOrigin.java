@@ -10,7 +10,9 @@ public enum ActionOrigin {
     MCP,
     AUTO_REVIEW,
     /** The Master session acting where a human would have. */
-    MASTER;
+    MASTER,
+    /** A stage the tracker itself reports, which is nobody's judgement and so nobody's to hold. */
+    TRACKER;
 
     public String label() {
         return name().toLowerCase().replace('_', '-');

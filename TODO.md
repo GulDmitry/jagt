@@ -36,22 +36,17 @@ is what the comparison is read from.
 
 What to decide first: what a trial run may touch — reading and writing a file only, no verb issued.
 
-## The closed loop: a named event, a deterministic condition, and what it fires (concept, experimental)
+## The closed loop: routing an item to a project, and events with names (concept, experimental)
 
-Where this ends: a task reaching a status someone else's board reports — `Ready for Stage` in one install — is
-`done`, its worktree dropped, nobody in the line. `notify/` fans out to every `port/Notifier` an install
-carries, and a channel is one adapter class plus a config value.
+Built: `TrackerWorkflow` per install, `IntakeJob` opening a task on the stage it names and `TicketCloseJob`
+closing one on the stage that says the work landed, under `ActionOrigin.TRACKER`.
 
-Missing: named events, and routing beyond `Notification.Topic`'s four buckets. **The condition must be the
-machine's** — computed from facts jagt holds (`ReviewFacts`, `Pipeline.RED`, a status reached), never a
-model's opinion that something looks done. `done` is refused by the report door and held by no `MasterRight`,
-so an event closing a task issues the verb under an `ActionOrigin` of its own.
+Missing: an item whose labels match no project, or several, is turned away for a human rather than routed —
+the Master session is what could decide it, holding every project and every open session at once. Still
+missing too: named events, and routing beyond `Notification.Topic`'s four buckets.
 
-**Every trigger is a strategy, and so is the stage it fires** — intake, `done`, cleanup: an install with no
-tracker configures a different fact rather than losing the stage.
-
-What to decide first: where an event is declared so the compiler checks it; whether routing is per channel,
-per event or both; and whether a strategy resolves by id per call, keeping `jagt.yml` hot, or at startup.
+What to decide first: whether a routing the Master chose is a fact or a proposal, and where an event is
+declared so the compiler checks it.
 
 ## The Master checks the worker understood the brief (idea)
 

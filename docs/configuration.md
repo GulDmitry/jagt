@@ -34,7 +34,7 @@ orchestrator:
 | `path` | absolute path to the base repository |
 | `baseBranch` | where task branches are cut from. **Read-only**: jagt never pushes here |
 | `deployBranch` | target of `deploy`; omit to disable deploy here. Equal to `baseBranch` is refused |
-| `labels` | hints for mapping a ticket to this project when `do` names none |
+| `labels` | hints for mapping a ticket to this project when `do` names none, and what intake routes on |
 
 ## What a key does not say for itself
 

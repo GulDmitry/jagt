@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -70,6 +71,18 @@ class TaskLauncherTest {
         var order = inOrder(provisioning, tickets);
         order.verify(provisioning).initializeTask(any());
         order.verify(tickets).charge("ABC-123", spent);
+    }
+
+    @Test
+    void buysNoSecondReadOfFactsTheCallerAlreadyPaidFor() {
+        oneProject("group-a");
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
+                .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42");
+
+        launcher.launch(new LaunchRequest("ABC-42", "group-a", null, null, null, null),
+                new Answer<>(Optional.of(item), TokenUsage.NONE));
+
+        verify(tickets, never()).read(anyString());
     }
 
     @Test

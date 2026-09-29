@@ -173,6 +173,11 @@ public final class FlowRules {
         return A_VERDICT.contains(to) && PAST_THE_REVIEW.contains(from) ? from : to;
     }
 
+    /** Whether the work has left the worktree, which is the only point a tracker's word can end the task. */
+    public static boolean handedOver(TaskStatus status) {
+        return HANDED_OVER.contains(status);
+    }
+
     /** Statuses no action leads to and no task reports: a redirect in {@link #reported} is the only way in. */
     public static Set<TaskStatus> redirects() {
         return EnumSet.of(TaskStatus.VERIFYING);
@@ -186,6 +191,10 @@ public final class FlowRules {
     /** Statuses a round is BEHIND: the code went to the shared branch without waiting for what it says. */
     private static final Set<TaskStatus> PAST_THE_REVIEW = EnumSet.of(TaskStatus.DEPLOY_CONFLICT,
             TaskStatus.DEPLOYED, TaskStatus.DONE);
+
+    /** Statuses the work has been handed over from, so a tracker reaching its own last stage may close it. */
+    private static final Set<TaskStatus> HANDED_OVER = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,
+            TaskStatus.DEPLOYED);
 
     /** Statuses a task has written nothing from yet, so a plan is still the next thing it hands over. */
     private static final Set<TaskStatus> BEFORE_THE_CODE = EnumSet.of(TaskStatus.NEW, TaskStatus.PLAN_PENDING,

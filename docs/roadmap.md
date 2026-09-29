@@ -80,9 +80,9 @@ replaces you is that brief; the session is a process that reads it.
 
 The two ends of the loop the playbook closes, both blocked on something outside this repository.
 
-- **Off the tracker**: a ticket carries no project to route on and no label saying it is ready, and one written
-  without the prompts a session works from produces work nobody asked for. Tickets written per project and per
-  working prompt come first.
+- **Off the tracker** — built: `IntakeJob` takes the items a configured `TrackerWorkflow` says are ready, and
+  `TicketCloseJob` closes a task whose item reached the stage that says the work landed. What is left is the
+  routing: an item whose labels name no project is turned away rather than guessed at.
 - **Off production**: a signal becomes a task. jagt holds no credential and reaches outside itself only through
   the one-shot assistant, so what jagt may promise before it holds a token is the decision, not the plumbing.
 - **A verdict issuing a verb**: the invariant at the top, and the reason the finished record came first.

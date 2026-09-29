@@ -90,6 +90,18 @@ orchestrator:
                              # Anything not listed the Master may do. `done` is always yours — you open a
                              # task and you close it, and it cannot be given away
 
+  # ── Work that arrives unasked (EXPERIMENTAL) ───────────────────────────────────────────────────────────────
+  # Polls your tracker and starts a task on every item it says is ready. Off unless you turn it on. Every stage
+  # name is YOUR workflow's: nothing here has a default, because a guessed stage starts work nobody asked for.
+  # One search call per poll, plus one read per item it has not seen.
+  intake:
+    enabled: false
+    tracker: none         # none | jira. Read at startup, unlike everything beside it here
+    assignee: ""          # the item is yours: spelled exactly as your tracker reports it, case aside
+    startStatus: ""       # the stage an item must stand in before a machine may start it
+    doneStatus: ""        # the stage that says the work landed; reaching it closes the task
+    everyMinutes: 10
+
   # ── Review rounds ──────────────────────────────────────────────────────────────────────────────────────────
   codeReview:
     mrTitlePattern: "{ticket} {title}"

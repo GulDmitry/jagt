@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.protocol.CommandRead;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
 import dev.jagt.orchestrator.protocol.ReviewRead;
 import dev.jagt.orchestrator.protocol.TicketRead;
+import dev.jagt.orchestrator.protocol.TicketSearch;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
@@ -92,6 +93,27 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     .withTrackerStatus(n.path("trackerStatus").asString(""))
                     .withAssignee(n.path("assignee").asString(""));
         });
+    }
+
+    @Override
+    public Answer<List<String>> findCandidates(String query) {
+        if (query == null || query.isBlank()) {
+            return Answer.unavailable();
+        }
+        String prompt = "<role>You list work items from whichever tracker holds them.</role>\n"
+                + "<task>Find every work item matching: " + query + ". Use the matching tracker MCP tool's own"
+                + " search.</task>\n"
+                + "<rules>Return keys: the canonical issue key of each item the search answered with, and"
+                + " NOTHING else — no item you were not shown, none you think belongs there. An empty list is"
+                + " the right answer where the search matched nothing." + FAILURE_RULE + "</rules>\n"
+                + "Respond directly, no preamble.";
+        return readable(ask(prompt, TicketSearch.SCHEMA.json(), query, AssistantCallKind.INTAKE), query)
+                .map(n -> {
+                    List<String> keys = new ArrayList<>();
+                    n.path("keys").forEach(key -> keys.add(key.asString("").strip()));
+                    keys.removeIf(String::isEmpty);
+                    return List.copyOf(keys);
+                });
     }
 
     @Override

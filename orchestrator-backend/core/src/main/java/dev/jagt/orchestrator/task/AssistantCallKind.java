@@ -13,7 +13,9 @@ public enum AssistantCallKind {
     /** One review round: the manual `sweep` and every auto-review poll. */
     REVIEW_SWEEP("review sweep"),
     /** Free text mapped to a command (the palette / an unknown console line). */
-    COMMAND_MAP("command mapping");
+    COMMAND_MAP("command mapping"),
+    /** Listing the items a tracker says are ready to be worked on — one call per intake poll. */
+    INTAKE("intake search");
 
     private final String label;
 

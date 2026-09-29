@@ -29,6 +29,10 @@ public class MeteredAssistant {
         return metered(AssistantCallKind.TICKET_READ, assistant.readTicket(ticketRef, corrections));
     }
 
+    public Answer<List<String>> findCandidates(String query) {
+        return metered(AssistantCallKind.INTAKE, assistant.findCandidates(query));
+    }
+
     public Answer<MergeRequestFacts> readMergeRequest(String mrUrl) {
         return metered(AssistantCallKind.MR_READ, assistant.readMergeRequest(mrUrl));
     }
