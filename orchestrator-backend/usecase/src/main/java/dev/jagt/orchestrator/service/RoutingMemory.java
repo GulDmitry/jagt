@@ -13,9 +13,12 @@ import java.nio.file.StandardOpenOption;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * What places an item that no finished task can teach — a rule written before the first item of its kind
@@ -34,6 +37,8 @@ public class RoutingMemory {
     private static final int MAX_RULES = 60;
     private static final String FILE = "memory/routing.md";
     private static final String SEPARATOR = " -> ";
+    /** What follows a rule on its line: how many items it has placed, which is what decides who goes first. */
+    private static final String USES = " #";
 
     private final OrchestratorPaths paths;
     private final int maxRules;
@@ -54,9 +59,18 @@ public class RoutingMemory {
         this.clock = clock;
     }
 
-    /** Every rule the install holds, oldest first; empty where nobody has written one. */
+    /** What a rule has placed, and how often. */
+    private record Rule(String project, int uses) {
+    }
+
+    /**
+     * Every rule the install holds, oldest first and WITHOUT its count: the count is for the human reading the
+     * file, and a number in the prompt is one more thing for a router to weigh that nobody meant it to.
+     */
     public List<String> rules() {
-        return byKey().entrySet().stream().map(entry -> entry.getKey() + SEPARATOR + entry.getValue()).toList();
+        return byKey().entrySet().stream()
+                .map(entry -> entry.getKey() + SEPARATOR + entry.getValue().project())
+                .toList();
     }
 
     /**
@@ -68,19 +82,23 @@ public class RoutingMemory {
         if (key == null || key.isBlank() || project == null || project.isBlank()) {
             return false;
         }
-        Map<String, String> rules = byKey();
+        Map<String, Rule> rules = byKey();
         String cleaned = key.strip().replace('\n', ' ');
-        String stood = rules.get(cleaned);
-        if (project.strip().equals(stood)) {
+        Rule stood = rules.get(cleaned);
+        // The router was asked to answer an existing phrase verbatim where one fits, so saying the same thing
+        // again is that rule placing another item — the only use anything here can count.
+        if (stood != null && stood.project().equals(project.strip())) {
+            rules.put(cleaned, new Rule(stood.project(), stood.uses() + 1));
+            write(rules, retired());
             return false;
         }
         rules.remove(cleaned);
-        rules.put(cleaned, project.strip());
+        rules.put(cleaned, new Rule(project.strip(), 0));
         // A rule that stopped being true is kept, dated: only the retired line answers why a task went where
         // it went last quarter, and a line silently gone answers nothing.
         List<String> retired = new ArrayList<>(retired());
         if (stood != null) {
-            retired.add("# until " + LocalDate.now(clock) + ": " + cleaned + SEPARATOR + stood);
+            retired.add("# until " + LocalDate.now(clock) + ": " + cleaned + SEPARATOR + stood.project());
         }
         write(rules, retired);
         return true;
@@ -104,19 +122,19 @@ public class RoutingMemory {
             return false;
         }
         String key = rendered.substring(0, split).strip();
-        Map<String, String> rules = byKey();
-        String stood = rules.remove(key);
+        Map<String, Rule> rules = byKey();
+        Rule stood = rules.remove(key);
         if (stood == null) {
             return false;
         }
         List<String> retired = new ArrayList<>(retired());
-        retired.add("# until " + LocalDate.now(clock) + ": " + key + SEPARATOR + stood);
+        retired.add("# until " + LocalDate.now(clock) + ": " + key + SEPARATOR + stood.project());
         write(rules, retired);
         return true;
     }
 
-    private Map<String, String> byKey() {
-        Map<String, String> rules = new LinkedHashMap<>();
+    private Map<String, Rule> byKey() {
+        Map<String, Rule> rules = new LinkedHashMap<>();
         for (String line : lines()) {
             String read = line.strip();
             if (read.isEmpty() || read.startsWith("#")) {
@@ -130,9 +148,23 @@ public class RoutingMemory {
                         .log();
                 continue;
             }
-            rules.put(read.substring(0, split).strip(), read.substring(split + SEPARATOR.length()).strip());
+            rules.put(read.substring(0, split).strip(), rule(read.substring(split + SEPARATOR.length())));
         }
         return rules;
+    }
+
+    /** A line a human wrote by hand carries no count, and starting it at zero is the honest reading. */
+    private static Rule rule(String tail) {
+        int counted = tail.lastIndexOf(USES);
+        if (counted < 0) {
+            return new Rule(tail.strip(), 0);
+        }
+        try {
+            return new Rule(tail.substring(0, counted).strip(),
+                    Integer.parseInt(tail.substring(counted + USES.length()).strip()));
+        } catch (NumberFormatException notACount) {
+            return new Rule(tail.strip(), 0);
+        }
     }
 
     private List<String> lines() {
@@ -152,11 +184,20 @@ public class RoutingMemory {
         }
     }
 
-    private void write(Map<String, String> rules, List<String> retired) {
-        List<String> kept = new ArrayList<>(rules.entrySet().stream()
-                .skip(Math.max(0, rules.size() - maxRules))
-                .map(entry -> entry.getKey() + SEPARATOR + entry.getValue())
-                .toList());
+    private void write(Map<String, Rule> rules, List<String> retired) {
+        // Least used goes first, and the sort being stable the oldest among equals goes with it: a rule
+        // nothing has ever placed is what the ceiling is for, and dropping the one that works weekly because
+        // it was written first is the bug this replaces. Only the CHOICE is sorted — the file keeps its order.
+        Set<String> dropped = rules.entrySet().stream()
+                .sorted(Comparator.comparingInt(entry -> entry.getValue().uses()))
+                .limit(Math.max(0, rules.size() - maxRules))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+        List<String> kept = rules.entrySet().stream()
+                .filter(entry -> !dropped.contains(entry.getKey()))
+                .map(entry -> entry.getKey() + SEPARATOR + entry.getValue().project() + USES
+                        + entry.getValue().uses())
+                .collect(Collectors.toCollection(ArrayList::new));
         // The history is bounded too: a file nothing ever drops is one nobody opens.
         retired.stream().skip(Math.max(0, retired.size() - maxRules)).forEach(kept::add);
         Path file = file();

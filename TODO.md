@@ -44,16 +44,17 @@ compiler can see it, and `Notification.Topic`'s four buckets are all the routing
 
 What to decide first: where an event is declared, and whether routing is per channel, per event or both.
 
-## A rule nothing has ever used is evicted last (concept)
+## Two rules meaning the same thing both survive (concept)
 
-Built: `memory/routing.md`, written where labels placed nothing and retired with the date it stopped being
-true — by the router changing its mind, or by you placing an item it had placed elsewhere.
+Built: `memory/routing.md` carries what each rule has placed, and past the ceiling the least used goes rather
+than the oldest.
 
-Missing: eviction drops the OLDEST, and nothing records which rule ever placed anything, so one never used
-outlives one placing something weekly. Nothing merges two rules meaning the same thing either — the prompt
-asking for a phrase reused verbatim is the whole defence.
+Missing: nothing merges two rules that mean the same thing. The prompt asks for an existing phrase back
+character for character, and that is the whole defence — a rewording becomes a second rule with its own count,
+and both are shown to the router for as long as they fit.
 
-What to decide first: whether a use is counted in the file, where a human would see it, or beside it.
+What to decide first: whether merging is the router's answer or a pass over the file, since only the second can
+see two rules nobody asked about together.
 
 ## The Master checks the worker understood the brief (idea)
 

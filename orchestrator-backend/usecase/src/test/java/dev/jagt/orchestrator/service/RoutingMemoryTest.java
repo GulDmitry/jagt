@@ -63,15 +63,50 @@ class RoutingMemoryTest {
     }
 
     @Test
-    void dropsTheOldestRuleOncePastItsCeiling() {
+    void dropsTheRuleNothingHasEverPlacedBeforeOneThatWorks() {
         when(paths.root()).thenReturn(root);
         RoutingMemory memory = new RoutingMemory(paths, 2);
+        memory.remember("oldest but used", "api");
+        memory.remember("oldest but used", "api");
+        memory.remember("never used", "web");
 
+        memory.remember("newest", "sc");
+
+        assertThat(memory.rules()).containsExactly("oldest but used -> api", "newest -> sc");
+    }
+
+    @Test
+    void dropsTheOldestOfTheRulesNothingHasPlaced() {
+        when(paths.root()).thenReturn(root);
+        RoutingMemory memory = new RoutingMemory(paths, 2);
         memory.remember("oldest", "api");
         memory.remember("middle", "web");
+
         memory.remember("newest", "sc");
 
         assertThat(memory.rules()).containsExactly("middle -> web", "newest -> sc");
+    }
+
+    @Test
+    void countsTheSameRuleSaidAgainAsThatRulePlacingAnotherItem() throws IOException {
+        when(paths.root()).thenReturn(root);
+        RoutingMemory memory = new RoutingMemory(paths, 60);
+
+        memory.remember("PAN items about quote import", "sc");
+        memory.remember("PAN items about quote import", "sc");
+
+        assertThat(Files.readString(root.resolve("memory/routing.md")))
+                .contains("PAN items about quote import -> sc #1");
+    }
+
+    @Test
+    void readsARuleAHumanWroteByHandWithNoCountOnIt() throws IOException {
+        when(paths.root()).thenReturn(root);
+        Files.createDirectories(root.resolve("memory"));
+        Files.writeString(root.resolve("memory/routing.md"), "PAN items about quote import -> sc\n");
+
+        assertThat(new RoutingMemory(paths, 60).rules())
+                .containsExactly("PAN items about quote import -> sc");
     }
 
     @Test
