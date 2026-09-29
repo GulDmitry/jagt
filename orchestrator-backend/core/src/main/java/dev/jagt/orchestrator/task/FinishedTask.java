@@ -26,12 +26,28 @@ public record FinishedTask(
         // The host's last word on the checks, or null if nothing ever read one.
         String checks,
         long tokens,
-        List<StatusChange> history
+        List<StatusChange> history,
+        // What the unattended reviewer concluded last, or null where nothing judged this task.
+        String masterVerdict
 ) {
 
     public static FinishedTask of(String id, TaskState task, long finishedAt) {
+        return of(id, task, finishedAt, null);
+    }
+
+    public static FinishedTask of(String id, TaskState task, long finishedAt, String masterVerdict) {
         return new FinishedTask(id, task.alias(), task.title(), task.projects(), task.ticketUrl(), finishedAt,
-                rounds(task), task.pipelineStatus(), task.totalUsage().total(), task.history());
+                rounds(task), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict);
+    }
+
+    /** Whether the reviewer read this task at all; every comparison below is over these and no others. */
+    public boolean judged() {
+        return masterVerdict != null && !masterVerdict.isBlank();
+    }
+
+    /** The one word that means it passed; every other ending was a round going back. */
+    public boolean passed() {
+        return "ready".equalsIgnoreCase(masterVerdict == null ? "" : masterVerdict.strip());
     }
 
     private static int rounds(TaskState task) {

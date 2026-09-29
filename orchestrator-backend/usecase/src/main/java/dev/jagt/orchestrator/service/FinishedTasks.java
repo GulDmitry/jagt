@@ -30,20 +30,26 @@ public class FinishedTasks {
     private final ObjectMapper mapper;
     private final StateService stateService;
     private final Notifications notifications;
+    private final MasterReview reviews;
     private final Path file;
 
     public FinishedTasks(ObjectMapper mapper, StateService stateService, Notifications notifications,
-                         OrchestratorPaths paths) {
+                         OrchestratorPaths paths, MasterReview reviews) {
         this.mapper = mapper;
         this.stateService = stateService;
         this.notifications = notifications;
+        this.reviews = reviews;
         this.file = paths.stateFile().resolveSibling("finished.jsonl");
     }
 
-    /** Called while the task still exists: after retirement there is nothing left to record. */
+    /**
+     * Called while the task still exists: after retirement there is nothing left to record. The reviewer's
+     * verdict is read HERE, from a worktree about to go — the kept artifacts are for a human and nothing
+     * parses them, so a verdict nobody put in this record could never be compared with what happened next.
+     */
     public void record(String taskId) {
         stateService.task(taskId).ifPresent(task -> append(FinishedTask.of(taskId, task,
-                System.currentTimeMillis())));
+                System.currentTimeMillis(), reviews.of(task).map(MasterReview.Verdict::said).orElse(null))));
     }
 
     /** Newest first. A line written by an older jagt that no longer parses is skipped, never fatal. */

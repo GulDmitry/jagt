@@ -27,7 +27,7 @@ class FinishedTasksTest {
         StateService state = new StateService(mapper, paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1")
                 .title("a thing").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, mock(Notifications.class), paths);
+        FinishedTasks finished = new FinishedTasks(mapper, state, mock(Notifications.class), paths, mock(MasterReview.class));
 
         finished.record("ABC-1");
         state.removeTask("ABC-1");
@@ -46,7 +46,7 @@ class FinishedTasksTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
         StateService state = new StateService(mapper, paths);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1").build());
-        FinishedTasks finished = new FinishedTasks(mapper, state, mock(Notifications.class), paths);
+        FinishedTasks finished = new FinishedTasks(mapper, state, mock(Notifications.class), paths, mock(MasterReview.class));
         finished.record("ABC-1");
         Files.writeString(root.resolve("finished.jsonl"),
                 Files.readString(root.resolve("finished.jsonl")) + "{ this is not json\n");

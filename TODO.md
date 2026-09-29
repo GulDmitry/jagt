@@ -30,10 +30,10 @@ and no colour is free, `--danger` meaning broken and `--you` your move. Likely a
 
 ## Run the Master against real work, and one day from a pipeline (idea)
 
-`masterEval` reads the shipped brief against rounds whose verdict is known, by hand. Live work it does not
-answer: what the Master judged, where its verdict and yours differed, what it cost per wake. A pipeline could
-run it, but wants an agent CLI, a trusted root, tokens and minutes — and a verdict that varies is a red build
-nobody can reproduce.
+`masterEval` reads the shipped brief against rounds whose verdict is known, and the `master` report counts
+where its verdicts and yours differed on real finished tasks. Left: the running. Nobody has driven it in
+`judge` against live work and read that count back. A pipeline could run it too, but wants an agent CLI, a
+trusted root, tokens and minutes — a varying verdict is a red build nobody reproduces.
 
 What to decide first: what a trial run may touch — a file read and written, no verb issued.
 
@@ -46,15 +46,14 @@ What to decide first: where an event is declared, and whether routing is per cha
 
 ## Two rules meaning the same thing both survive (concept)
 
-Built: `memory/routing.md` carries what each rule has placed, and past the ceiling the least used goes rather
-than the oldest.
+Built: `memory/routing.md` carries what each rule has placed, and past the ceiling the least used goes.
 
-Missing: nothing merges two rules that mean the same thing. The prompt asks for an existing phrase back
+Missing: nothing merges two rules meaning the same thing. The prompt asks for an existing phrase back
 character for character, and that is the whole defence — a rewording becomes a second rule with its own count,
-and both are shown to the router for as long as they fit.
+and both are shown to the router while they fit.
 
-What to decide first: whether merging is the router's answer or a pass over the file, since only the second can
-see two rules nobody asked about together.
+What to decide first: whether merging is the router's answer or a pass over the file — only the second sees
+two rules nobody asked about together.
 
 ## The Master checks the worker understood the brief (idea)
 
