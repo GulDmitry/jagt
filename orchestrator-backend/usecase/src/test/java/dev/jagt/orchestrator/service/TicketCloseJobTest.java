@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -56,6 +57,26 @@ class TicketCloseJobTest {
         job.run();
 
         verify(commands).execute("ABC-42", TaskAction.DONE);
+    }
+
+    @Test
+    void reachesTheTaskPastTheReadsOnePollCanAffordOnTheNextPoll() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build();
+        Map<String, TaskState> six = new LinkedHashMap<>();
+        six.put("ABC-1", task);
+        six.put("ABC-2", task);
+        six.put("ABC-3", task);
+        six.put("ABC-4", task);
+        six.put("ABC-5", task);
+        six.put("ABC-6", task);
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+        when(stateService.tasks()).thenReturn(six);
+
+        job.run();
+        job.run();
+
+        verify(close).closes("ABC-6", task);
     }
 
     @Test

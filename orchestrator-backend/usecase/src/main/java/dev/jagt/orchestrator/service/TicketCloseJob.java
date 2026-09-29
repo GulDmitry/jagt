@@ -12,6 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,6 +34,8 @@ public class TicketCloseJob implements Job {
     private final StateService stateService;
     private final TrackerClose close;
     private final CommandService commands;
+    /** Where the last poll stopped, so the next one carries on rather than starting over. */
+    private String lastAsked;
 
     @Override
     public String id() {
@@ -53,17 +58,26 @@ public class TicketCloseJob implements Job {
         if (!intake.enabledOrDefault() || !intake.missing().isEmpty()) {
             return;
         }
-        int reads = 0;
-        for (Map.Entry<String, TaskState> entry : stateService.tasks().entrySet()) {
-            if (reads == READS_PER_POLL) {
-                return;
-            }
-            if (!FlowRules.handedOver(entry.getValue().status()) || !TaskName.isTicketKey(entry.getKey())) {
-                continue;
-            }
-            reads++;
-            closeIfLanded(entry.getKey(), entry.getValue());
+        Map<String, TaskState> handedOver = handedOver();
+        // From wherever the last poll stopped: a task is handed over until it is closed, so starting at the top
+        // every time would spend every read on the first few and never reach the rest.
+        List<String> order = new ArrayList<>(handedOver.keySet());
+        int from = Math.max(0, order.indexOf(lastAsked) + 1);
+        for (int asked = 0; asked < Math.min(READS_PER_POLL, order.size()); asked++) {
+            String taskId = order.get((from + asked) % order.size());
+            lastAsked = taskId;
+            closeIfLanded(taskId, handedOver.get(taskId));
         }
+    }
+
+    private Map<String, TaskState> handedOver() {
+        Map<String, TaskState> waiting = new LinkedHashMap<>();
+        stateService.tasks().forEach((taskId, task) -> {
+            if (FlowRules.handedOver(task.status()) && TaskName.isTicketKey(taskId)) {
+                waiting.put(taskId, task);
+            }
+        });
+        return waiting;
     }
 
     private void closeIfLanded(String taskId, TaskState task) {
