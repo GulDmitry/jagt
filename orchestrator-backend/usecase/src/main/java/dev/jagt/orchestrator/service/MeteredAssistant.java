@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -11,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -34,8 +34,8 @@ public class MeteredAssistant {
         return metered(AssistantCallKind.INTAKE, assistant.findCandidates(query));
     }
 
-    public Answer<String> routeProject(TicketFacts item, Map<String, String> projects, List<String> suggested) {
-        return metered(AssistantCallKind.ROUTE, assistant.routeProject(item, projects, suggested));
+    public Answer<String> routeProject(RoutingQuestion question) {
+        return metered(AssistantCallKind.ROUTE, assistant.routeProject(question));
     }
 
     public Answer<MergeRequestFacts> readMergeRequest(String mrUrl) {

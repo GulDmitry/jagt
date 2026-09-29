@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.task;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import dev.jagt.orchestrator.flow.TaskStatus;
+
 import java.util.List;
 
 /**
@@ -34,7 +36,26 @@ public record FinishedTask(
 
     private static int rounds(TaskState task) {
         return (int) task.history().stream()
-                .filter(step -> step.status() == dev.jagt.orchestrator.flow.TaskStatus.CI_POLLING).count();
+                .filter(step -> step.status() == TaskStatus.CI_POLLING).count();
+    }
+
+    /** Who opened it, which is who chose its repository; null for a task opened before origins were stamped. */
+    public ActionOrigin openedBy() {
+        return history.isEmpty() ? null : history.get(0).origin();
+    }
+
+    /** Whether the task ever stood in this status, which is how a claim about it is checked against what it did. */
+    public boolean reached(TaskStatus status) {
+        return history.stream().anyMatch(step -> step.status() == status);
+    }
+
+    /**
+     * Whether where this task was done can be LEARNED from. A human chose the repository, or the work reached
+     * the shared branch from it — a routing nothing confirmed is the router's own guess coming back as a lesson.
+     */
+    public boolean routingWorthLearningFrom() {
+        return projects.size() == 1
+                && (openedBy() != ActionOrigin.TRACKER || reached(TaskStatus.DEPLOYED));
     }
 
     /** From the first step it took to the moment it was retired; zero where nothing was ever recorded. */

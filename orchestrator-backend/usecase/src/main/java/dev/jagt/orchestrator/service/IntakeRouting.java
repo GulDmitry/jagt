@@ -2,7 +2,9 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.protocol.ProjectRead;
+import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,16 +17,20 @@ import java.util.Optional;
 
 /**
  * Which repository an item's work belongs in. A board carries items for every repository at once and a label
- * naming a layer places none of them, so the labels are a suggestion to be checked rather than the answer: what
- * decides is a read of the item itself, against what each repository is.
+ * naming a layer places none of them, so what decides is a read of the item itself — against what each
+ * repository is, and against where items like it were actually done.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class IntakeRouting {
 
+    /** What fits in a prompt without drowning the item being placed; the newest, an install's layout drifting. */
+    private static final int PRECEDENTS = 40;
+
     private final ConfigService configService;
     private final MeteredAssistant assistant;
+    private final FinishedTasks finished;
 
     /** Empty where nothing could place it, which is a human's to settle rather than anything's to guess. */
     public Optional<String> projectFor(TicketFacts item) {
@@ -33,12 +39,17 @@ public class IntakeRouting {
         if (projects.size() == 1) {
             return Optional.of(projects.keySet().iterator().next());
         }
-        return asked(item, projects, TaskLauncher.projectsMatching(item, labelsOf(projects)));
+        List<String> suggested = TaskLauncher.projectsMatching(item, labelsOf(projects));
+        return asked(item, projects, suggested, RoutingQuestion.defaults()
+                .withItem(item)
+                .withProjects(aboutEach(projects))
+                .withSuggested(suggested)
+                .withPrecedents(precedents()));
     }
 
     private Optional<String> asked(TicketFacts item, Map<String, ProjectConfig> projects,
-                                   List<String> suggested) {
-        Answer<String> answer = assistant.routeProject(item, aboutEach(projects), suggested);
+                                   List<String> suggested, RoutingQuestion question) {
+        Answer<String> answer = assistant.routeProject(question);
         if (answer.facts().isEmpty()) {
             log.atError().setMessage("project routing unreadable")
                     .addKeyValue("ref", item.key())
@@ -64,6 +75,20 @@ public class IntakeRouting {
                     .log();
         }
         return Optional.of(chosen);
+    }
+
+    /**
+     * Where items like this one were done, read off the record jagt already keeps. Only what a human chose or
+     * a deploy confirmed: a routing nothing checked would come back as a lesson taught by the router itself.
+     */
+    private List<String> precedents() {
+        List<FinishedTask> learnable = finished.all().stream()
+                .filter(FinishedTask::routingWorthLearningFrom)
+                .toList();
+        return learnable.stream()
+                .skip(Math.max(0, learnable.size() - PRECEDENTS))
+                .map(task -> "- " + task.id() + " \"" + task.title() + "\" → " + task.projects().get(0))
+                .toList();
     }
 
     private static Map<String, List<String>> labelsOf(Map<String, ProjectConfig> projects) {

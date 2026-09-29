@@ -1,11 +1,18 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.task.ActionOrigin;
+import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
+import dev.jagt.orchestrator.task.RoutingQuestion;
+import dev.jagt.orchestrator.task.StatusChange;
+import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +20,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -23,7 +29,8 @@ class IntakeRoutingTest {
 
     private final ConfigService configService = mock(ConfigService.class);
     private final MeteredAssistant assistant = mock(MeteredAssistant.class);
-    private final IntakeRouting routing = new IntakeRouting(configService, assistant);
+    private final FinishedTasks finished = mock(FinishedTasks.class);
+    private final IntakeRouting routing = new IntakeRouting(configService, assistant, finished);
 
     @Test
     void buysNoRoutingCallWhenThereIsNothingToChooseBetween() {
@@ -31,7 +38,7 @@ class IntakeRoutingTest {
                 Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
 
         assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).contains("api");
-        verify(assistant, never()).routeProject(any(), any(), any());
+        verify(assistant, never()).routeProject(any());
     }
 
     @Test
@@ -40,11 +47,13 @@ class IntakeRoutingTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(assistant.routeProject(any(), any(), any()))
-                .thenReturn(new Answer<>(Optional.of("api"), TokenUsage.NONE));
+        when(finished.all()).thenReturn(List.of());
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of("api"), TokenUsage.NONE));
+        ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
 
         assertThat(routing.projectFor(item)).contains("api");
-        verify(assistant).routeProject(eq(item), any(), eq(List.of("api")));
+        verify(assistant).routeProject(asked.capture());
+        assertThat(asked.getValue().suggested()).containsExactly("api");
     }
 
     @Test
@@ -53,10 +62,30 @@ class IntakeRoutingTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(assistant.routeProject(any(), any(), any()))
-                .thenReturn(new Answer<>(Optional.of("web"), TokenUsage.NONE));
+        when(finished.all()).thenReturn(List.of());
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of("web"), TokenUsage.NONE));
 
         assertThat(routing.projectFor(item)).contains("web");
+    }
+
+    @Test
+    void showsTheRouterOnlyThePlacementsSomethingConfirmed() {
+        when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
+        when(finished.all()).thenReturn(List.of(
+                FinishedTask.of("ABC-1", TaskState.builder("api", "/wt", TaskStatus.DONE).title("Quote import")
+                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD))).build(), 2L),
+                FinishedTask.of("ABC-2", TaskState.builder("web", "/wt", TaskStatus.DONE).title("Guessed one")
+                        .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
+                        .build(), 2L)));
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of("api"), TokenUsage.NONE));
+        ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
+
+        routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
+
+        verify(assistant).routeProject(asked.capture());
+        assertThat(asked.getValue().precedents()).containsExactly("- ABC-1 \"Quote import\" → api");
     }
 
     @Test
@@ -64,8 +93,8 @@ class IntakeRoutingTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(assistant.routeProject(any(), any(), any()))
-                .thenReturn(new Answer<>(Optional.of("mobile"), TokenUsage.NONE));
+        when(finished.all()).thenReturn(List.of());
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of("mobile"), TokenUsage.NONE));
 
         assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).isEmpty();
     }
@@ -75,7 +104,8 @@ class IntakeRoutingTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(assistant.routeProject(any(), any(), any())).thenReturn(Answer.unavailable());
+        when(finished.all()).thenReturn(List.of());
+        when(assistant.routeProject(any())).thenReturn(Answer.unavailable());
 
         assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).isEmpty();
     }

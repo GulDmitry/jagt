@@ -97,8 +97,10 @@ orchestrator:
   # name is YOUR workflow's: nothing here has a default, because a guessed stage starts work nobody asked for.
   # Per poll: one search, then one read and one routing call per item it has not seen. The routing call
   # OPENS the item and reads it — labels are a suggestion it confirms, never the answer, because a board
-  # carries items for every repository and a label naming a layer places none of them. With one repository
-  # configured there is nothing to choose and nothing is asked.
+  # carries items for every repository and a label naming a layer places none of them. It is also shown where
+  # items like it were finished before — only the ones you placed yourself or a deploy confirmed, read off
+  # `finished.jsonl`, so it never learns from a guess of its own. With one repository configured there is
+  # nothing to choose and nothing is asked.
   intake:
     enabled: false
     tracker: none         # none | jira. Read at startup, unlike everything beside it here

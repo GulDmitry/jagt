@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -50,10 +51,12 @@ public class IntakeJob implements Job {
         if (!intake.enabledOrDefault() || !intake.missing().isEmpty()) {
             return;
         }
+        // Stamped as the tracker's so the record says who chose each repository, which is what a later
+        // routing may learn from and what it must not.
         for (IntakeCandidates.Ready ready : candidates.waiting(history.held()).orElse(List.of())) {
             // One refusal stops the poll: what refuses a launch is the board rather than the item, and the
             // rest of the list would buy the same answer once per candidate.
-            if (!start(ready)) {
+            if (!OriginContext.as(ActionOrigin.TRACKER, () -> start(ready))) {
                 return;
             }
         }

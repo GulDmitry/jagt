@@ -15,6 +15,7 @@ import dev.jagt.orchestrator.protocol.TicketSearch;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
+import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.adapter.HostStamp;
@@ -120,33 +121,42 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     @Override
-    public Answer<String> routeProject(TicketFacts item, Map<String, String> projects,
-                                       List<String> suggested) {
-        if (item == null || projects == null || projects.isEmpty()) {
+    public Answer<String> routeProject(RoutingQuestion question) {
+        if (question == null || !question.answerable()) {
             return Answer.unavailable();
         }
+        TicketFacts item = question.item();
         String prompt = "<role>You place one work item in the repository whose code has to change.</role>\n"
                 + "<task>The item is \"" + item.key() + " — " + item.title() + "\". OPEN it with the"
                 + " matching tracker MCP tool and read it: its description, its components, its epic,"
                 + " whatever says which system changes. Its board says nothing about which repository that"
                 + " is.</task>\n"
-                + "<rules>The repositories configured here, each with what it is:\n" + listed(projects)
-                + "\nIts labels " + item.labels() + " matched " + suggested + ". That is a SUGGESTION and"
-                + " nothing more — whoever filed the item wrote those labels, and a label naming a layer"
-                + " rather than a system places nothing. Confirm it against what the item actually asks for,"
-                + " and answer a different key where the item says otherwise.\n"
+                + "<rules>The repositories configured here, each with what it is:\n"
+                + listed(question.projects())
+                + "\nIts labels " + item.labels() + " matched " + question.suggested() + ". That is a"
+                + " SUGGESTION and nothing more — whoever filed the item wrote those labels, and a label"
+                + " naming a layer rather than a system places nothing. Confirm it against what the item"
+                + " actually asks for, and answer a different key where the item says otherwise.\n"
+                + precedents(question.precedents())
                 + "Answer project with the ONE key whose repository the work belongs in, or "
                 + ProjectRead.NONE + " where the item does not say clearly enough to be sure — a wrong"
                 + " repository costs more than a human being asked. reason is one line." + FAILURE_RULE
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
-        return readable(ask(prompt, ProjectRead.schemaFor(projects.keySet()).json(), item.key(),
+        return readable(ask(prompt, ProjectRead.schemaFor(question.projects().keySet()).json(), item.key(),
                 AssistantCallKind.ROUTE), item.key()).map(n -> n.path("project").asString(""));
     }
 
     private static String listed(Map<String, String> projects) {
         return projects.entrySet().stream().map(entry -> "- " + entry.getKey() + ": " + entry.getValue())
                 .collect(Collectors.joining("\n"));
+    }
+
+    /** Where items like this one were actually worked on, which is the only evidence here nobody wrote down. */
+    private static String precedents(List<String> precedents) {
+        return precedents.isEmpty() ? ""
+                : "Items finished before, and the repository each was done in:\n"
+                        + String.join("\n", precedents) + "\n";
     }
 
     @Override
