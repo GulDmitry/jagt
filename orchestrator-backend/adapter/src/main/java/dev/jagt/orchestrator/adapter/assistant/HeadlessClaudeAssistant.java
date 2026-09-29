@@ -28,8 +28,9 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.Optional;
 
 /**
@@ -119,21 +120,33 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     }
 
     @Override
-    public Answer<String> routeProject(TicketFacts item, Collection<String> projectKeys) {
-        if (item == null || projectKeys == null || projectKeys.isEmpty()) {
+    public Answer<String> routeProject(TicketFacts item, Map<String, String> projects,
+                                       List<String> suggested) {
+        if (item == null || projects == null || projects.isEmpty()) {
             return Answer.unavailable();
         }
-        String prompt = "<role>You place one work item in the repository its work belongs in.</role>\n"
-                + "<task>The item is \"" + item.key() + " — " + item.title() + "\", labelled "
-                + item.labels() + " in tracker project '" + item.trackerProject() + "'. The repositories"
-                + " configured here are " + projectKeys + ".</task>\n"
-                + "<rules>Answer project with the ONE key whose repository the work belongs in. Answer "
+        String prompt = "<role>You place one work item in the repository whose code has to change.</role>\n"
+                + "<task>The item is \"" + item.key() + " — " + item.title() + "\". OPEN it with the"
+                + " matching tracker MCP tool and read it: its description, its components, its epic,"
+                + " whatever says which system changes. Its board says nothing about which repository that"
+                + " is.</task>\n"
+                + "<rules>The repositories configured here, each with what it is:\n" + listed(projects)
+                + "\nIts labels " + item.labels() + " matched " + suggested + ". That is a SUGGESTION and"
+                + " nothing more — whoever filed the item wrote those labels, and a label naming a layer"
+                + " rather than a system places nothing. Confirm it against what the item actually asks for,"
+                + " and answer a different key where the item says otherwise.\n"
+                + "Answer project with the ONE key whose repository the work belongs in, or "
                 + ProjectRead.NONE + " where the item does not say clearly enough to be sure — a wrong"
                 + " repository costs more than a human being asked. reason is one line." + FAILURE_RULE
                 + "</rules>\n"
                 + "Respond directly, no preamble.";
-        return readable(ask(prompt, ProjectRead.schemaFor(projectKeys).json(), item.key(),
+        return readable(ask(prompt, ProjectRead.schemaFor(projects.keySet()).json(), item.key(),
                 AssistantCallKind.ROUTE), item.key()).map(n -> n.path("project").asString(""));
+    }
+
+    private static String listed(Map<String, String> projects) {
+        return projects.entrySet().stream().map(entry -> "- " + entry.getKey() + ": " + entry.getValue())
+                .collect(Collectors.joining("\n"));
     }
 
     @Override

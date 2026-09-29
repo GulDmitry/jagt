@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -25,32 +26,34 @@ class IntakeRoutingTest {
     private final IntakeRouting routing = new IntakeRouting(configService, assistant);
 
     @Test
-    void buysNoRoutingCallWhenOnlyOneRepositoryIsConfigured() {
+    void buysNoRoutingCallWhenThereIsNothingToChooseBetween() {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(
                 Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
 
         assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).contains("api");
-        verify(assistant, never()).routeProject(any(), any());
+        verify(assistant, never()).routeProject(any(), any(), any());
     }
 
     @Test
-    void buysNoRoutingCallWhenTheLabelsNameExactlyOneRepository() {
+    void confirmsTheLabelsRatherThanTakingThemEvenWhenTheyNameOneRepository() {
+        TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
+        when(assistant.routeProject(any(), any(), any()))
+                .thenReturn(new Answer<>(Optional.of("api"), TokenUsage.NONE));
 
-        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")
-                .withLabels(List.of("backend")))).contains("api");
-        verify(assistant, never()).routeProject(any(), any());
+        assertThat(routing.projectFor(item)).contains("api");
+        verify(assistant).routeProject(eq(item), any(), eq(List.of("api")));
     }
 
     @Test
-    void takesTheRoutersAnswerForAnItemTheLabelsPlaceInSeveralRepositories() {
-        TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend", "frontend"));
+    void takesARepositoryTheLabelsDidNotSuggestWhenTheItemItselfSaysSo() {
+        TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(assistant.routeProject(any(), any()))
+        when(assistant.routeProject(any(), any(), any()))
                 .thenReturn(new Answer<>(Optional.of("web"), TokenUsage.NONE));
 
         assertThat(routing.projectFor(item)).contains("web");
@@ -58,24 +61,22 @@ class IntakeRoutingTest {
 
     @Test
     void leavesTheItemForAHumanWhenTheRouterNamedARepositoryJagtDoesNotHave() {
-        TicketFacts item = TicketFacts.defaults().withKey("ABC-42");
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(assistant.routeProject(any(), any()))
+        when(assistant.routeProject(any(), any(), any()))
                 .thenReturn(new Answer<>(Optional.of("mobile"), TokenUsage.NONE));
 
-        assertThat(routing.projectFor(item)).isEmpty();
+        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).isEmpty();
     }
 
     @Test
     void leavesTheItemForAHumanWhenNothingCouldBeAskedAtAll() {
-        TicketFacts item = TicketFacts.defaults().withKey("ABC-42");
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(assistant.routeProject(any(), any())).thenReturn(Answer.unavailable());
+        when(assistant.routeProject(any(), any(), any())).thenReturn(Answer.unavailable());
 
-        assertThat(routing.projectFor(item)).isEmpty();
+        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).isEmpty();
     }
 }

@@ -47,6 +47,17 @@ Missing: named events, and routing beyond `Notification.Topic`'s four buckets.
 What to decide first: where an event is declared so the compiler checks it, and whether routing is per channel,
 per event or both.
 
+## The Master session remembers what it worked out (concept)
+
+Placing an item by indirect signals is judged from nothing every time, and one board teaches the same lesson
+weekly. A store local to the install and beside `state.json` — SQLite, nothing hosted — would let a
+routing once settled be recalled rather than bought again, and WHAT is worth keeping is the session's own to
+decide rather than a schema's.
+
+What to decide first: whether a memory is a fact under a key or free text reached by search, since that settles
+whether recall is a lookup or another model call; and what evicts one, a store forgetting nothing teaching
+last quarter's layout.
+
 ## The Master checks the worker understood the brief (idea)
 
 One read of `plan.md` against the brief before any code, keeping nothing: the verdict goes to the artifacts,

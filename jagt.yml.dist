@@ -14,6 +14,8 @@ orchestrator:
       baseBranch: origin/main       # tasks are cut from here; jagt never pushes to it
       deployBranch: dev             # omit to disable deploy for this project
       # labels: [proj, my-project]  # ticket labels that pick this project when `do` names none
+      # about: "the Java backend behind the customer portal"   # what this repository IS, in one line, for
+      #                             # placing an item no label places; its path is used where you write none
       # verifyCommand: ["./gradlew", "test"]   # jagt runs it in the worktree before a hand-back reaches you;
                                                # a failing run goes back to the agent, never to your IDE
 
@@ -93,8 +95,10 @@ orchestrator:
   # ── Work that arrives unasked (EXPERIMENTAL) ───────────────────────────────────────────────────────────────
   # Polls your tracker and starts a task on every item it says is ready. Off unless you turn it on. Every stage
   # name is YOUR workflow's: nothing here has a default, because a guessed stage starts work nobody asked for.
-  # One search call per poll, one read per item it has not seen, and one routing call per item whose
-  # labels place it in no project or in several — configure `labels` per project and it never asks.
+  # Per poll: one search, then one read and one routing call per item it has not seen. The routing call
+  # OPENS the item and reads it — labels are a suggestion it confirms, never the answer, because a board
+  # carries items for every repository and a label naming a layer places none of them. With one repository
+  # configured there is nothing to choose and nothing is asked.
   intake:
     enabled: false
     tracker: none         # none | jira. Read at startup, unlike everything beside it here

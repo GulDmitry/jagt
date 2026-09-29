@@ -5,8 +5,8 @@ import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -58,11 +58,14 @@ public interface MasterAssistant {
     Answer<List<String>> findCandidates(String query);
 
     /**
-     * Which of {@code projectKeys} an item's work belongs in, for an item whose labels named none or several.
+     * Which of {@code projects} an item's work belongs in — keyed by project, each value one line saying what
+     * that repository is. {@code suggested} is what the item's labels matched, which is a suggestion to be
+     * checked rather than an answer: a label is written by whoever filed the item and is wrong often enough
+     * that confirming it is the point.
      * The answer is one of those keys or {@code "none"}; anything else is a read that failed in the shape of an
      * answer.
      */
-    Answer<String> routeProject(TicketFacts item, Collection<String> projectKeys);
+    Answer<String> routeProject(TicketFacts item, Map<String, String> projects, List<String> suggested);
 
     /** Reads a review request by URL. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);
