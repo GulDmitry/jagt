@@ -4,16 +4,19 @@ import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.IntakeConfig;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,6 +80,38 @@ class TicketCloseJobTest {
         job.run();
 
         verify(close).closes("ABC-6", task);
+    }
+
+    @Test
+    void buysNoSecondReadAboutATaskThatHasNotMovedSinceItWasAsked() {
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null))).build();
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+        when(stateService.tasks()).thenReturn(Map.of("ABC-42", task));
+        when(close.closes("ABC-42", task)).thenReturn(false);
+
+        job.run();
+        job.run();
+
+        verify(close, times(1)).closes("ABC-42", task);
+    }
+
+    @Test
+    void asksAgainTheMomentTheTaskItselfHasMoved() {
+        TaskState stood = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1_000L, null))).build();
+        TaskState moved = TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
+                .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 2_000L, null))).build();
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withIntake(new IntakeConfig(true, "jira", "dzmitry", "In Progress", "Ready for Stage", null)));
+        when(stateService.tasks()).thenReturn(Map.of("ABC-42", stood), Map.of("ABC-42", moved));
+        when(close.closes(anyString(), any())).thenReturn(false);
+
+        job.run();
+        job.run();
+
+        verify(close).closes("ABC-42", moved);
     }
 
     @Test
