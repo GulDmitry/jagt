@@ -10,8 +10,8 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * Whether a task's worktrees hold uncommitted work. A round's own account of itself is a claim; this is the
- * measurement jagt can take instead of believing it.
+ * Whether a task's worktrees hold work. A round's own account of itself is a claim; this is the measurement jagt
+ * can take instead of believing it.
  */
 @Service
 @RequiredArgsConstructor
@@ -47,15 +47,38 @@ public class WorktreeChanges {
 
     private Optional<Boolean> uncommitted(TaskRepo repo) {
         try {
-            return Optional.of(gitService.hasUncommittedChanges(
-                    Path.of(configService.project(repo.project()).path()).toAbsolutePath().normalize(),
+            return Optional.of(gitService.hasUncommittedChanges(projectPath(repo.project()),
                     Path.of(repo.worktreePath())));
         } catch (RuntimeException e) {
-            log.atWarn().setMessage("worktree read failed")
-                    .addKeyValue("path", repo.worktreePath())
-                    .addKeyValue("cause", e.toString())
-                    .log();
+            warn(repo.worktreePath(), e);
             return Optional.empty();
         }
+    }
+
+    /**
+     * Whether this repository holds anything a ship could carry: work in the worktree, or commits its target does
+     * not hold. A worktree git cannot answer for counts as HOLDING work — one passed over on ignorance is a
+     * half-shipped task.
+     */
+    public boolean holdsWork(String project, String worktreePath, String targetBranch) {
+        Path worktree = Path.of(worktreePath);
+        try {
+            return gitService.hasUncommittedChanges(projectPath(project), worktree)
+                    || gitService.aheadOfTarget(projectPath(project), worktree, targetBranch);
+        } catch (RuntimeException e) {
+            warn(worktreePath, e);
+            return true;
+        }
+    }
+
+    private Path projectPath(String project) {
+        return Path.of(configService.project(project).path()).toAbsolutePath().normalize();
+    }
+
+    private void warn(String worktreePath, RuntimeException cause) {
+        log.atWarn().setMessage("worktree read failed")
+                .addKeyValue("path", worktreePath)
+                .addKeyValue("cause", cause.toString())
+                .log();
     }
 }

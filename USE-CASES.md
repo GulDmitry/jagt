@@ -54,9 +54,9 @@ A start checks nothing on a remote and nothing over the network.
 | situation | run | what happens |
 |---|---|---|
 | Two repositories that move **independently** | two tasks | Every verb is per task; one task with two statuses is not a thing |
-| One change moving two repositories (a service and its client) | `do ABC-1 api,web` | One task, one agent session, a worktree per repository; the session runs in the first named |
-| It reaches review | `ship ABC-1` | A commit, push and request **per repository**, each targeting its own base branch |
-| It spans repositories | `ship ABC-1` | One instruction naming each of them, all reported back in one call as one round |
+| One change moving two repositories | `do ABC-1 api,web` | One task, one agent session, a worktree per repository; the session runs in the first named |
+| It reaches review | `ship ABC-1` | ONE instruction: a commit, push and request **per repository**, each onto its own base, reported in one round |
+| One of them needed no change | `ship ABC-1` | Passed over and named; one holding nothing gets no empty request |
 | jagt is down when the agent pushes | — | Nothing is refused |
 | A round comes back | `sweep ABC-1` | Merged as the **least finished** repository: approved only when all are |
 | It is ready to deploy | `deploy ABC-1` | Merged and pushed repository by repository, in the task's own order |

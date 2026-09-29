@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.OriginContext;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.ReviewRequestTitle;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -18,8 +19,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * {@code ship} — the human's approval, executed. The work is the agent's, in every repository the task holds; the
- * status only leaves SHIPPING when the agent reports the requests back.
+ * {@code ship} — the human's approval, executed. The work is the agent's, in every repository holding work or
+ * already in review; the status only leaves SHIPPING when the agent reports the requests back.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,7 @@ public class ShipService {
     private final StateService stateService;
     private final ConfigService configService;
     private final AgentSessions sessions;
+    private final WorktreeChanges changes;
     /** One ship at a time per task: two clicks in a row would relay the same instruction twice. */
     private final Set<String> inFlight = ConcurrentHashMap.newKeySet();
 
@@ -50,11 +52,26 @@ public class ShipService {
         String title = ReviewRequestTitle.expand(config.codeReview().mrTitlePatternOrDefault(), taskId,
                 task.title());
 
-        sessions.writeTaskContext(taskId, shipInstruction(title, taskId, targets(task), repliesStep(config)));
+        List<Target> targets = targets(task);
+        List<Target> carrying = targets.stream().filter(this::carries).toList();
+        if (carrying.isEmpty()) {
+            return Outcome.nothing("ship " + taskId + ": nothing to ship — no repository of this task holds"
+                    + " work");
+        }
+        List<String> idle = targets.stream().filter(target -> !carrying.contains(target))
+                .map(Target::project).toList();
+        sessions.writeTaskContext(taskId, shipInstruction(title, taskId, carrying, repliesStep(config)));
         return Outcome.relayed("ship " + taskId + ": relayed to the agent; SHIPPING until it reports the"
-                + " request" + (task.repos().size() > 1 ? "s" : "")
+                + " request" + (carrying.size() > 1 ? "s" : "")
+                + (idle.isEmpty() ? "" : "; nothing to ship in " + String.join(", ", idle))
                 + (config.codeReview().postReviewRepliesOrDefault()
                         ? "" : "; review_replies.md is yours to post (postReviewReplies=false)"), "shipping");
+    }
+
+    /** One already in review stays in whatever it holds: a later commit and the drafted replies both go there. */
+    private boolean carries(Target target) {
+        return target.hasRequest()
+                || changes.holdsWork(target.project(), target.worktreePath(), target.targetBranch());
     }
 
     /** {@code hasRequest} is asked of THAT repository: one of them can be a round behind after an unfinished ship. */

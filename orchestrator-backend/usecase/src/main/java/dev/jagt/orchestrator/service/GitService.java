@@ -346,6 +346,16 @@ public class GitService {
     }
 
     /**
+     * Whether this worktree's branch carries commits its target does not hold. Read in the worktree against the
+     * {@code origin/} ref the repository already has: a ship asks what is here, not what the host has since gained.
+     */
+    public boolean aheadOfTarget(Path projectPath, Path worktree, String targetBranch) {
+        return withRepoLock(projectPath, () -> !"0".equals(processRunner.run(worktree, GIT_TIMEOUT,
+                        List.of("git", "rev-list", "--count", "origin/" + targetBranch + "..HEAD"))
+                .expectSuccess("git rev-list count in " + worktree).stdout().trim()));
+    }
+
+    /**
      * The path out of one {@code git status --porcelain} line. Split at the FIRST space of the stripped line rather
      * than a fixed offset: the status field is one or two letters wide, and a path may hold spaces of its own.
      */

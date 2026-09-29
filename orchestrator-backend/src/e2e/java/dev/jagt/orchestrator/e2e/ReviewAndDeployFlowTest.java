@@ -234,6 +234,25 @@ class ReviewAndDeployFlowTest {
     }
 
     @Test
+    void opensNoRequestInTheRepositoryTheTaskNeverChanged() throws Exception {
+        E2eWorkspace.writeConfig(paths.configFile(), new LinkedHashMap<>(Map.of(
+                "proj", repo(), "web", webRepo())), "shared", false);
+
+        provisioning.initializeTask(NewTask.builder(TASK, "proj").alsoIn(List.of("web"))
+                .instructions("Move the api side").title(TITLE).build());
+        Files.writeString(worktree().resolve("widget.txt"), "api side\n");
+        agentReports("REVIEW_PENDING", "api side done");
+
+        String shipped = act("ship");
+
+        assertThat(shipped).contains("nothing to ship in web");
+        assertThat(Files.readString(worktree().resolve("task_context.md")))
+                .contains("proj: " + worktree() + ", merges into main")
+                .contains("reviewRequestUrl=<the url>")
+                .doesNotContain("web: " + webWorktree());
+    }
+
+    @Test
     void oneSessionShipsAndDeploysEveryRepositoryTheTaskSpansAndTakesThemBackOutInReverse() throws Exception {
         E2eWorkspace.writeConfig(paths.configFile(), new LinkedHashMap<>(Map.of(
                 "proj", repo(), "web", webRepo())), "shared", false);
