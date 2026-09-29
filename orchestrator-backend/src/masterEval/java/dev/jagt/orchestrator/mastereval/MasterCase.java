@@ -21,6 +21,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                 dependencies {
                                     testImplementation 'org.junit.jupiter:junit-jupiter:5.14.0'
                                     testImplementation 'org.assertj:assertj-core:3.27.6'
+                                    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
                                 }
                                 test { useJUnitPlatform() }
                                 """,
@@ -48,6 +49,11 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     @Test
                                     void leavesShippingOutOfTheDiscount() {
                                         assertThat(Basket.total(100, 10, 50)).isEqualTo(60);
+                                    }
+
+                                    @Test
+                                    void roundsTheDiscountedGoodsDownBeforeShippingIsAdded() {
+                                        assertThat(Basket.total(101, 10, 50)).isEqualTo(60);
                                     }
                                 }
                                 """),

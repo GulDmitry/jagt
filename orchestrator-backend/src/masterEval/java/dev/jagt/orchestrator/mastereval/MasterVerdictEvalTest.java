@@ -80,6 +80,22 @@ class MasterVerdictEvalTest {
     }
 
     /**
+     * Killing the window is not enough: the job that starts the Master is still ticking in a context nobody
+     * has closed, and would put it straight back. It is turned OFF first, in the file that job re-reads.
+     */
+    @AfterAll
+    void leavesNothingOfItsOwnRunning() throws Exception {
+        try {
+            MasterEvalWorkspace.writeConfig(MasterEvalWorkspace.root().resolve("jagt.yml"),
+                    MasterEvalWorkspace.root().resolve("placeholder"), "master-brief.md", "off");
+            master.stop();
+            killTmux();
+        } finally {
+            MasterEvalWorkspace.release();
+        }
+    }
+
+    /**
      * The one failure this suite must not have: a session of its own reaching an install that is not it. The
      * port it is pointed at is proved dead before a session exists to use it.
      */
