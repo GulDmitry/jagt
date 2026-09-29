@@ -38,7 +38,7 @@ What to decide first: what a trial run may touch — reading and writing a file 
 
 ## The closed loop: routing an item to a project, and events with names (concept, experimental)
 
-Built: `TrackerWorkflow` per install, `IntakeJob` opening a task on the stage it names, `IntakeRouting`
+Built: `TrackerWorkflow` per install, `IntakeJob` opening a task on the stage it names, `ProjectRouting`
 placing it, and `TicketCloseJob` closing one on the stage that says the work landed, under
 `ActionOrigin.TRACKER`.
 
