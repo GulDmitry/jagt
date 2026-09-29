@@ -21,6 +21,7 @@ project rule into a vendor-named file.
 | `./gradlew boardTest` | a Chromium (downloaded on first run) | the board in a real browser |
 | `./gradlew linuxDriverTest` | Linux + notify-send/kitty + a display | the Linux drivers against real binaries |
 | `./gradlew promptEval` | the assistant's CLI, and tokens | whether an operator's own words still map onto one command |
+| `./gradlew masterEval` | the assistant's CLI, tokens and minutes | whether the shipped Master brief still reaches a human's verdict |
 
 Only `test` is in `check`; the rest are asked for by name, each needing something a hermetic run must not
 depend on.

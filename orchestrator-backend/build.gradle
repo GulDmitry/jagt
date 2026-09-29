@@ -152,6 +152,14 @@ sourceSets {
 
 // Needs a browser, so it stays out of `check`, which must remain hermetic.
 sourceSets {
+    masterEval {
+        java.srcDirs = ['src/masterEval/java']
+        compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
+        runtimeClasspath += sourceSets.main.output + configurations.testRuntimeClasspath
+    }
+}
+
+sourceSets {
     boardTest {
         java.srcDirs = ['src/boardTest/java']
         compileClasspath += sourceSets.main.output + configurations.testCompileClasspath
@@ -235,6 +243,32 @@ tasks.register('e2eTest', Test) {
     shouldRunAfter tasks.named('test')
 }
 
+tasks.register('masterEval', Test) {
+    description = 'Reads the shipped Master brief against rounds whose verdict is known (spends tokens, minutes).'
+    group = 'verification'
+    testClassesDirs = sourceSets.masterEval.output.classesDirs
+    classpath = sourceSets.masterEval.runtimeClasspath
+    useJUnitPlatform()
+    // Gated on CAPABILITY, and it names what is missing rather than failing every round on it.
+    onlyIf {
+        List<String> missing = []
+        ['claude', 'tmux', 'git'].each { binary ->
+            if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
+                    .any { dir -> dir && new File(dir, binary).canExecute() }) {
+                missing << binary
+            }
+        }
+        if (!file('../master-brief.md.dist').exists()) {
+            missing << 'master-brief.md.dist'
+        }
+        if (missing) {
+            logger.lifecycle("Skipping masterEval — missing: ${missing.join(', ')}.")
+        }
+        missing.isEmpty()
+    }
+    shouldRunAfter tasks.named('test')
+}
+
 tasks.register('promptEval', Test) {
     description = 'Maps operator phrasings onto the grammar through the real assistant (spends tokens).'
     group = 'verification'
@@ -256,7 +290,7 @@ tasks.register('promptEval', Test) {
 
 // What these prove is the MACHINE — or a model — and no such state is in a cache key: a restored result would
 // come back green without anything having run.
-['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval'].each { name ->
+['e2eTest', 'boardTest', 'linuxDriverTest', 'promptEval', 'masterEval'].each { name ->
     tasks.named(name) {
         outputs.cacheIf { false }
         outputs.upToDateWhen { false }

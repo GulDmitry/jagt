@@ -83,7 +83,7 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 
 ## Tests
 
-- The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest` and `promptEval` are asked for by name.
+- The gate is `cd orchestrator-backend && ./gradlew test`; `e2eTest`, `boardTest`, `linuxDriverTest`, `promptEval` and `masterEval` are asked for by name.
 - **Load `sob-ai:unit-testing` before touching any test file**, however small the change.
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it.
 - Run `./gradlew boardTest` after any change to `static/`.

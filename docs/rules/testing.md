@@ -2,10 +2,9 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate. `e2eTest` needs git + tmux (`src/e2e/java`),
-`boardTest` Playwright's own Chromium (`src/boardTest/java`), `linuxDriverTest` Linux + binaries + a display
-(`src/linuxTest/java`, gated on `JAGT_IN_CONTAINER`), `promptEval` the assistant's CLI and tokens
-(`src/promptEval/java`) — none of the four in `check`.
+`./gradlew test` is the hermetic gate. `e2eTest` needs git + tmux, `boardTest` Playwright's own Chromium,
+`linuxDriverTest` Linux + binaries + a display (gated on `JAGT_IN_CONTAINER`), `promptEval` the assistant's CLI
+and tokens, `masterEval` those plus minutes — each in `src/<name>/java`, none in `check`.
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix, and
 **every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite booting the app
@@ -31,7 +30,7 @@ then removes the worktrees and branches.
 
 ### The board is tested in a browser
 
-- `boardTest` boots the app on a random port and drives the real page in Playwright's own headless Chromium —
+- `boardTest` boots the app on a random port and drives the real page in Playwright's headless Chromium —
   the only place the grid's order, a card's buttons, the SSE repaint and the palette's verdict are proved.
 - **Run it after any change to `static/`**, asserting through the **server** (seed `StateService`, stub a
   command), never by evaluating page JS. Three write paths are `@MockitoBean`s: `CommandService`,
@@ -39,7 +38,7 @@ then removes the worktrees and branches.
 - Shared browser libraries are one list (`scripts/linux-test-deps.sh`). Geometry is in scope: assert an element
   inside the viewport at a set size, not a screenshot.
 
-### The e2e matrix and the prompt eval
+### The e2e matrix and the model evals
 
 - `e2eTest` runs the flow per `TaskFlowCase` under `orchestrator.agent.cli=stub` (`StubAgentRuntime`, GUI
   drivers doubled), asserting an exact end state. Widening coverage is a **row** in `TaskFlowCase.matrix()`;
@@ -50,20 +49,22 @@ then removes the worktrees and branches.
   on **one** combination, its verbs through the board's HTTP endpoints and the agent reporting over
   `POST /mcp`, so origins (`board` vs `mcp`) are asserted end to end.
 - `promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant. It guards
-  the mapping prompt, the hint each `TaskAction` carries and the shape of the task list — run it on a change to
-  any of those, and when the model changes.
+  the mapping prompt, each `TaskAction`'s hint and the task-list shape — run it on a change to any, or to the
+  model.
+- `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped
+  `master-brief.md.dist` — so it measures that document. Run it when either changes.
 
 ### Linux from a Mac, and one set of steps for every host
 
 - `scripts/linux-suite.sh` runs `test` + `e2eTest` + `linuxDriverTest` in a container
-  (`docker/linux-suite.Dockerfile`). `linuxDriverTest` is the only place the Linux drivers meet real binaries:
+  (`docker/linux-suite.Dockerfile`), the only place the Linux drivers meet real binaries:
   the notifier asserted off the session bus with `dbus-monitor`, kitty under Xvfb.
 - Anything a container cannot host — IntelliJ, the AppleScript raise, the real `claude` — stays **named as
-  uncovered**, never faked; raising the viewer and closing it stay `@Disabled`
+  uncovered**, never faked; raising and closing the viewer stay `@Disabled`
   (`LinuxKittyTerminalDriverLinuxTest`).
 - `.github/workflows/ci.yml` and `.gitlab-ci.yml` run the same suites through the **same scripts**
   (`scripts/linux-test-deps.sh` the package list, `scripts/with-linux-desktop.sh` Xvfb + session bus +
   notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.** `linuxDriverTest` is
   gated on **capability**, never on the harness.
-- **The build cache is for the hermetic suite only**: `e2eTest` / `boardTest` / `linuxDriverTest` prove the
-  **machine** and `promptEval` a model, so all four opt out (`cacheIf` / `upToDateWhen` false).
+- **The build cache is for the hermetic suite only**: three of them prove the **machine** and two a model, so
+  all five opt out (`cacheIf` / `upToDateWhen` false).
