@@ -47,16 +47,17 @@ Missing: named events, and routing beyond `Notification.Topic`'s four buckets.
 What to decide first: where an event is declared so the compiler checks it, and whether routing is per channel,
 per event or both.
 
-## The Master session remembers what it worked out (concept)
+## A rule the install outgrew is still taught (concept)
 
-Placing an item by indirect signals is judged from nothing every time, and one board teaches the same lesson
-weekly. A store local to the install and beside `state.json` — SQLite, nothing hosted — would let a
-routing once settled be recalled rather than bought again, and WHAT is worth keeping is the session's own to
-decide rather than a schema's.
+Built: `memory/routing.md`, written where labels placed nothing and read before every routing, one rule per
+key, oldest dropped past sixty.
 
-What to decide first: whether a memory is a fact under a key or free text reached by search, since that settles
-whether recall is a lookup or another model call; and what evicts one, a store forgetting nothing teaching
-last quarter's layout.
+Missing: nothing notices a rule the world contradicts. You launching `do ABC-1 sc` by hand against what a rule
+says is that contradiction, and a fact jagt holds. Dropping the oldest is not merging either: two rules saying
+nearly the same thing survive until the ceiling evicts the wrong one.
+
+What to decide first: whether a contradicted rule is deleted or kept with the date it stopped being true, since
+only the second can say why a task went where it went last quarter.
 
 ## The Master checks the worker understood the brief (idea)
 
