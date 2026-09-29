@@ -82,6 +82,8 @@ class MasterVerdictEvalTest {
      */
     private static void refuseUntilAHumanHasTrustedTheRoot() throws Exception {
         Path root = MasterEvalWorkspace.root();
+        // Made before the refusal names it: there is nothing to trust until the directory is there.
+        Files.createDirectories(root);
         if (MasterEvalWorkspace.trusted(root)) {
             return;
         }
