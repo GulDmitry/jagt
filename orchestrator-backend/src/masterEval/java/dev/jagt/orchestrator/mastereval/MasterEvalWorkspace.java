@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.mastereval;
 
+import tools.jackson.databind.json.JsonMapper;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,8 +12,47 @@ import java.util.concurrent.TimeUnit;
 final class MasterEvalWorkspace {
 
     static final String TMUX_SESSION = "jagt-master-eval";
+    /**
+     * A FIXED root rather than a temp one, and the reason is trust: an agent CLI refuses to start in a
+     * directory nobody has said it may work in, and a fresh path every run would ask again every run. This one
+     * is trusted once, by a human, and nothing here forges that.
+     */
+    private static final Path ROOT = Path.of("..", ".master-eval").toAbsolutePath().normalize();
 
     private MasterEvalWorkspace() {
+    }
+
+    static Path root() {
+        return ROOT.resolve("root");
+    }
+
+    /** Between runs, since the rounds are rebuilt and a worktree left behind would be reviewed again. */
+    static void clean() throws IOException {
+        if (!Files.exists(ROOT)) {
+            return;
+        }
+        try (var walk = Files.walk(ROOT)) {
+            walk.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException leftBehind) {
+                    throw new java.io.UncheckedIOException(leftBehind);
+                }
+            });
+        }
+    }
+
+    /**
+     * Whether a human has told the agent CLI it may work in {@code directory}. READ ONLY: that file is written
+     * by every session the human has open, and a suite rewriting it would race all of them.
+     */
+    static boolean trusted(Path directory) throws IOException {
+        Path config = Path.of(System.getProperty("user.home"), ".claude.json");
+        if (!Files.isRegularFile(config)) {
+            return false;
+        }
+        return new JsonMapper().readTree(Files.readString(config))
+                .path("projects").path(directory.toString()).path("hasTrustDialogAccepted").asBoolean(false);
     }
 
     /** Answers the worktree the round is to be reviewed in. */

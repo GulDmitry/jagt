@@ -28,24 +28,21 @@ An inbox flag, top-right: the few tasks you must not lose sit in a board where e
 What to decide first: `card-top` already ends in the attention badge, so a flag there says what it replaces —
 and no colour is free, `--danger` meaning broken and `--you` your move. Likely a shape, sorted first not tinted.
 
-## Run the Master session against real work before anyone turns it on (idea)
+## Run the Master against real work, and one day from a pipeline (idea)
 
-It stays off until driven by hand against live tasks: what it judged, where its verdict and yours
-differed, what it cost per wake. [`docs/roadmap.md`](docs/roadmap.md) has the shape; the finished-task record
-is what the comparison is read from.
+`masterEval` reads the shipped brief against rounds whose verdict is known, by hand. Live work it does not
+answer: what the Master judged, where its verdict and yours differed, what it cost per wake. A pipeline could
+run it, but wants an agent CLI, a trusted root, tokens and minutes — and a verdict that varies is a red build
+nobody can reproduce.
 
-What to decide first: what a trial run may touch — reading and writing a file only, no verb issued.
+What to decide first: what a trial run may touch — a file read and written, no verb issued.
 
-## The closed loop: routing an item to a project, and events with names (concept, experimental)
+## Events with names, and routing past four buckets (concept)
 
-Built: `TrackerWorkflow` per install, `IntakeJob` opening a task on the stage it names, `ProjectRouting`
-placing it, and `TicketCloseJob` closing one on the stage that says the work landed, under
-`ActionOrigin.TRACKER`.
+Both ends of the tracker loop are built. What is missing is naming: an event is declared nowhere the
+compiler can see it, and `Notification.Topic`'s four buckets are all the routing there is.
 
-Missing: named events, and routing beyond `Notification.Topic`'s four buckets.
-
-What to decide first: where an event is declared so the compiler checks it, and whether routing is per channel,
-per event or both.
+What to decide first: where an event is declared, and whether routing is per channel, per event or both.
 
 ## A rule nothing has ever used is evicted last (concept)
 
