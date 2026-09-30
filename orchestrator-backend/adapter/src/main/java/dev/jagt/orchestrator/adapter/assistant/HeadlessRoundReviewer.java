@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.protocol.RoundRead;
 import dev.jagt.orchestrator.task.TokenUsage;
+import dev.jagt.orchestrator.task.AssistantCallKind;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,13 +26,16 @@ import java.util.Optional;
 @Slf4j
 public class HeadlessRoundReviewer implements RoundReviewer {
 
-    /** Long enough for a role to run the project's tests. */
     private static final Duration TIMEOUT = Duration.ofMinutes(15);
     private static final List<String> READS = List.of("Read", "Grep", "Glob", "Bash");
     /** Writes nothing, moves no ref, and does not read the author's own account first. */
     private static final List<String> REFUSED = List.of("Edit", "Write", "NotebookEdit",
             "Bash(git push:*)", "Bash(git commit:*)", "Bash(git reset:*)", "Bash(git checkout:*)",
             "Bash(git stash:*)", "Bash(git restore:*)", "Read(**/review_replies.md)");
+    /** The tests ran before the round reached review; every role building at once in one worktree is the cost. */
+    private static final List<String> BUILDS = List.of("Bash(./gradlew:*)", "Bash(gradle:*)", "Bash(./mvnw:*)",
+            "Bash(mvn:*)", "Bash(npm:*)", "Bash(npx:*)", "Bash(yarn:*)", "Bash(pnpm:*)", "Bash(composer:*)",
+            "Bash(vendor/bin/phpunit:*)", "Bash(pytest:*)", "Bash(make:*)", "Bash(docker:*)", "Bash(timeout:*)");
 
     private final ProcessRunner processRunner;
     private final ClaudeProperties claude;
@@ -43,6 +47,10 @@ public class HeadlessRoundReviewer implements RoundReviewer {
         List<String> cmd = new ArrayList<>(List.of(claude.command(), round.prompt(), "-p",
                 "--json-schema", RoundRead.SCHEMA.json(), "--output-format", "json",
                 "--setting-sources", assistant.settingSources()));
+        String pinned = assistant.mcpConfigFor(AssistantCallKind.MASTER_REVIEW);
+        if (!pinned.isBlank()) {
+            cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", pinned));
+        }
         round.worktrees().stream().skip(1).forEach(dir -> cmd.addAll(List.of("--add-dir", dir.toString())));
         if (!round.model().isBlank()) {
             cmd.addAll(List.of("--model", round.model()));
@@ -55,6 +63,7 @@ public class HeadlessRoundReviewer implements RoundReviewer {
         }
         cmd.add("--disallowedTools");
         cmd.addAll(REFUSED);
+        cmd.addAll(BUILDS);
         Processes.Result result;
         try {
             result = processRunner.run(round.worktrees().getFirst(), TIMEOUT, cmd);

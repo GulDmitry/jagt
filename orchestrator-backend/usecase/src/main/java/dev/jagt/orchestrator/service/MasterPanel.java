@@ -161,11 +161,11 @@ public class MasterPanel {
                         .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + ticket + ".\n"
                 + "Read the ticket with your tracker tools, then everything the task changed against its base,"
                 + " committed and not. Judge from the ticket and the diff: the author's own account is not"
-                + " evidence.\n"
+                + " evidence. Run no build and no test: they ran before the round reached you.\n"
                 + "verdict: ready, not ready, or question. findings: one per problem — file, what is wrong and the"
                 + " one clause of why, and pattern: two to four words naming the kind of problem. question: only"
                 + " with verdict question, the one thing the human must decide. premises: every claim the verdict"
-                + " rests on, each with provenBy — the command you ran and what it printed, blank where you only"
-                + " reasoned it. failure: blank unless something stopped you reading the round, then what.";
+                + " rests on, each with provenBy — the file:line, or the read-only command and what it printed, that"
+                + " shows it; blank where you only reasoned it. failure: blank unless something stopped you reading the round, then what.";
     }
 }

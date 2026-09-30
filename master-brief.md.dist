@@ -22,13 +22,13 @@ own. This brief only adds to it; a `| role | the question it asks |` table here 
   beside v2, or replace v2?" The ticket reads two ways and v2 has callers; the author's "they cannot be told
   apart" is a premise nobody ran.
 - *Ticket: "twenty results per page". Diff: `subList(0, 20)` on a list that can be shorter.* → not ready,
-  `Page.java`, pattern `unchecked boundary`, proven by a failing call with five items.
+  `Page.java`, pattern `unchecked boundary`, proven by `Page.java` taking `subList(0, 20)` of an unchecked size.
 - *Ticket: "stop the label printer crashing on a blank surname". Diff: the guard plus a test red without it,
-  and the test run green.* → ready, premise "the new test fails without the guard" proven by that run.
+  and the tests green before review.* → ready, premise "the new test covers a blank surname" proven by its file:line.
 
 ## What you hand back
 
 Each finding: the file, what is wrong with the one clause of why, and a pattern naming its kind in two to four
 words. No praise, no summary of the change, no verification narrative. Every premise your verdict rests on
-carries the command you ran and what it printed; one you only reasoned is left unproven, and an unproven
+carries the file:line or read-only command that shows it; one you only reasoned is left unproven, and an unproven
 premise is a finding. `ready` means you found nothing; a question is the one thing the human must decide.

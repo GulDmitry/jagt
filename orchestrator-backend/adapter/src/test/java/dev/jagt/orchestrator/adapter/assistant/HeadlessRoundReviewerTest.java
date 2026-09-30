@@ -38,6 +38,32 @@ class HeadlessRoundReviewerTest {
     }
 
     @Test
+    void refusesTheReviewEveryBuildBecauseTheTestsRanBeforeItsRoundCame() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).contains("Bash(./gradlew:*)", "Bash(mvn:*)", "Bash(npm:*)", "Bash(timeout:*)");
+    }
+
+    @Test
+    void loadsOnlyTheServersPinnedForAReview() {
+        HeadlessRoundReviewer pinned = new HeadlessRoundReviewer(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty().withMcpConfig("/cfg/mcp.json"));
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        pinned.review(new RoundReviewer.Round("review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSubsequence("--strict-mcp-config", "--mcp-config", "/cfg/mcp.json");
+    }
+
+    @Test
     void answersARunThatPrintedNothingReadableAsAFailureRatherThanAVerdict() {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(1, "", "session limit reached"));
