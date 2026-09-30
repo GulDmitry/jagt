@@ -34,9 +34,9 @@ public class AgentSessionController {
     public String report(@PathVariable String state,
                          @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
                          @RequestBody(required = false) SessionHookReport session) {
-        String taskId = stateService.findByWorktree(cwd)
-                .orElseThrow(() -> new IllegalArgumentException("No task runs in '" + cwd + "'"))
-                .getKey();
+        var task = stateService.findByWorktree(cwd)
+                .orElseThrow(() -> new IllegalArgumentException("No task runs in '" + cwd + "'"));
+        String taskId = task.getKey();
         SessionHookReport said = session == null ? SessionHookReport.none() : session;
         // Nobody reads a refusal here — the hook posts what its CLI handed it and discards the answer — so what
         // cannot be believed is dropped and said once in the log.
@@ -50,7 +50,8 @@ public class AgentSessionController {
         return reports.record(taskId, reported(state), SessionReports.Report.defaults()
                 .withSessionLog(said.sessionLog().orElse(null))
                 .withStartedBy(said.source())
-                .withSaid(said.message()));
+                .withSaid(said.message())
+                .withTask(task.getValue()));
     }
 
     private static SessionProbe.State reported(String state) {

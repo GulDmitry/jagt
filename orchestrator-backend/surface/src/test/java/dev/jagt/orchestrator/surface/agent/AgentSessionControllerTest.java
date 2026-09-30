@@ -23,8 +23,8 @@ class AgentSessionControllerTest {
     @Test
     void recordsTheReportAgainstTheTaskRunningInThatWorktree() {
         StateService state = mock(StateService.class);
-        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
-                TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports).report("waiting", "/wt/ABC-1-proj",
@@ -32,30 +32,30 @@ class AgentSessionControllerTest {
 
         verify(reports).record("ABC-1", SessionProbe.State.WAITING,
                 SessionReports.Report.defaults().withSessionLog(Path.of("/logs/session.jsonl"))
-                        .withStartedBy("compact"));
+                        .withStartedBy("compact").withTask(task));
     }
 
     @Test
     void namesNoLogWhenThePayloadCarriedNone() {
         StateService state = mock(StateService.class);
-        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
-                TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj", null);
 
         verify(reports).record("ABC-1", SessionProbe.State.WORKING,
-                SessionReports.Report.defaults());
+                SessionReports.Report.defaults().withTask(task));
     }
 
     @Test
     void answersTheSessionWithWhateverTheReportProduced() {
         StateService state = mock(StateService.class);
-        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
-                TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
         when(reports.record("ABC-1", SessionProbe.State.WORKING,
-                SessionReports.Report.defaults().withStartedBy("compact")))
+                SessionReports.Report.defaults().withStartedBy("compact").withTask(task)))
                 .thenReturn("re-read task_context.md");
 
         String answered = new AgentSessionController(state, reports).report("working", "/wt/ABC-1-proj",
@@ -67,15 +67,15 @@ class AgentSessionControllerTest {
     @Test
     void carriesWhatTheCliToldTheHumanSoOneEventCanMeanTwoDifferentWaits() {
         StateService state = mock(StateService.class);
-        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1",
-                TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
         SessionReports reports = mock(SessionReports.class);
 
         new AgentSessionController(state, reports).report("idle", "/wt/ABC-1-proj",
                 new SessionHookReport(null, null, "Claude needs your permission to use Bash"));
 
         verify(reports).record("ABC-1", SessionProbe.State.IDLE,
-                SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
+                SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash").withTask(task));
     }
 
     @Test

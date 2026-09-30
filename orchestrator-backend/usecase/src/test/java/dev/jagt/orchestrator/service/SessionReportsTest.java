@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
@@ -67,6 +69,20 @@ class SessionReportsTest {
                 .record("ABC-1", SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("compact"));
 
         assertThat(answered).contains("sub-agent for ABC-1", "task_context.md");
+    }
+
+    @Test
+    void restatesTheTaskAndItsOpenQuestionToACompactedSession() {
+        when(runtime.compactedStart()).thenReturn("compact");
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .title("Add v3 beside v2").ticketUrl("https://tracker.example/ABC-1")
+                .message("outcome=question — keep v2?").build();
+
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime).record("ABC-1",
+                SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
+
+        assertThat(answered).contains("Add v3 beside v2", "https://tracker.example/ABC-1", "IN_PROGRESS",
+                "your open question: keep v2?");
     }
 
     @Test
