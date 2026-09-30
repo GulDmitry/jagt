@@ -66,7 +66,8 @@ public class MasterVerdicts {
 
     /** The reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
     private static String findings(MasterReview.Verdict verdict) {
-        return "The review of your round came back NOT READY. Fix every line below, leave the fix uncommitted,"
-                + " and report REVIEW_PENDING again.\n\n" + String.join("\n", verdict.findings());
+        return "The review of your round came back NOT READY. Each line below is a review comment: fix it, or"
+                + " where you believe it wrong, ask (rule 1), because the reviewer cannot read your reasons. Leave"
+                + " the fix uncommitted and report REVIEW_PENDING again.\n\n" + String.join("\n", verdict.findings());
     }
 }

@@ -6,16 +6,23 @@ import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /** The system knowledge a fresh sub-agent wakes up with: its own task, and where everything else lives. */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SubAgentBriefing {
+
+    private static final String REVIEWER_ONLY = "## For the reviewer only";
 
     private final PromptTemplates prompts;
     private final OrchestratorProperties properties;
@@ -43,12 +50,34 @@ public class SubAgentBriefing {
                 properties.watchdog().staleAfter().toMinutes() + " minutes",
                 taskId,
                 taskId, repo.baseBranch(),
+                standard(),
                 paths.root(),
                 boardPort,
                 paths.stateFile(),
                 paths.configFile(),
                 projectsTable.isBlank() ? "| (none) | | |" : projectsTable,
                 activeTasks.isBlank() ? "- (none)" : activeTasks);
+    }
+
+    /** The brief both sides hold, so the author is never reviewed by a standard it was not given. */
+    private String standard() {
+        Path brief = paths.root().resolve(configService.load().master().briefOrDefault());
+        if (!Files.isRegularFile(brief)) {
+            return "No standard is configured: the task and the skills are the bar.";
+        }
+        try {
+            return shared(Files.readString(brief));
+        } catch (IOException unreadable) {
+            log.atWarn().setMessage("standard unreadable").addKeyValue("file", brief)
+                    .addKeyValue("cause", unreadable.toString())
+                    .log();
+            return "The standard could not be read: the task and the skills are the bar.";
+        }
+    }
+
+    static String shared(String brief) {
+        int reviewerOnly = brief.indexOf(REVIEWER_ONLY);
+        return (reviewerOnly < 0 ? brief : brief.substring(0, reviewerOnly)).strip();
     }
 
     /** The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are none. */

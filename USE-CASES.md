@@ -187,6 +187,7 @@ What the agent does with a comment:
 | You want it to act for you | `master.mode: act` | A `ready` round is shipped for you; `master.mine` keeps steps yours, `done` always is |
 | No brief configured | start jagt | Refused: it judges by `master.brief`, copied from `master-brief.md.dist` |
 | The Master is reading a round | — | The chip says `master review`, nothing asks you; the session was told to end its turn |
+| The session and the reviewer disagree on the bar | — | They cannot: the brief above `## For the reviewer only` is every session's `<standard>` |
 | A round is not ready | — | Its findings go back to the session that wrote the code, in any mode, and the task to `IN_PROGRESS`: the fix is a new round |
 | It writes `ready` but its file still lists findings | — | Counted as not ready: the findings go back to the session |
 | It is unsure what the ticket asks ("switch" or "add beside") | — | `VERDICT: question`: NEEDS INPUT, the question relayed to the session you answer in; nothing ships, whatever the mode |

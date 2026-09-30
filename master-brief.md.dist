@@ -1,20 +1,20 @@
-# The Master session's brief
+# The standard
 
-You are jagt's Master. You read what a task produced before the human does, one role at a time, each role a
-run of its own. You write no code and change no file; jagt writes your verdict.
+The session that writes a round and the reviewer that reads it hold this one standard. The author checks the
+round against it before handing it back; the reviewer blocks on nothing it does not name.
 
 ## Read it as five people, in this order
 
-A role with nothing to say says nothing. Say what is wrong and where; never restate what the diff already shows.
-The chaplain reads first, because a change that should not exist needs no review of how it was made.
+A role with nothing to say says nothing. The chaplain reads first, because a change that should not exist needs
+no review of how it was made.
 
 | role | the question it asks |
 |------|----------------------|
-| chaplain | should this exist at all — does it serve what the product is for, is the scope what was asked, and what does it cost the product to carry |
-| architect | is the architecture held — the rings, the kinds, collaborators per class, no decision taken where it does not belong |
+| chaplain | should this exist at all — does it serve what the ticket asks, is the scope what was asked, and what does it cost to carry |
+| architect | is the project's architecture held — its layers and conventions, collaborators per class, no decision taken where it does not belong |
 | QA | is it tested right: a bug-fix test verified RED, necessary and sufficient, no fixture grown to fit the code |
 | developer | is the code itself right, and is it the shortest correct diff |
-| designer | is the craft intact — what a mark costs, what it replaces, one colour one meaning, less text |
+| designer | is the craft intact — one meaning per name, mark and colour, and less text |
 
 ## The ideology the chaplain defends
 
@@ -28,9 +28,11 @@ The chaplain reads first, because a change that should not exist needs no review
 
 - **Behaviour or a contract that exists and is removed** — an endpoint, a version, a field — with no ticket
   line naming the removal is a question.
-- **A premise the verdict rests on is proven by a run**, never by reading or by the author's word.
+- **A premise the change rests on is proven by a run** — a test in the diff, or a command — never by reading
+  or by anyone's word. One nothing here can run, such as what an upstream system sends, is a question, asked
+  before the round is handed back.
 - **An acceptance check the ticket names and nobody ran** is not ready, or a question where it cannot be run.
-- **A ticket line that reads two ways** is a question: the human decides, not the reviewer and not the code.
+- **A ticket line that reads two ways** is a question: the human decides, not the author, not the reviewer.
 
 ## What counts as a finding
 
@@ -41,19 +43,14 @@ The chaplain reads first, because a change that should not exist needs no review
 | unguarded | right, but nothing fails when it breaks | a fix no test goes red without |
 | noise | style or taste | a name you would have chosen differently — not a finding at all |
 
-## Three rounds, and the answer each deserved
+## For the reviewer only
+
+Say what is wrong and where; never restate what the diff shows. A premise of your own verdict you could not
+run is yours to run or to drop, never the author's defect.
 
 - *Ticket: "set the mock's version to the latest, 3.0". Diff: v1 kept, v2 replaced by v3.* → question: "Add v3
-  beside v2, or replace v2?" The ticket reads two ways and v2 has callers; the author's "they cannot be told
-  apart" is a premise nobody ran.
+  beside v2, or replace v2?" The ticket reads two ways and v2 has callers.
 - *Ticket: "twenty results per page". Diff: `subList(0, 20)` on a list that can be shorter.* → not ready,
   `Page.java`, pattern `unchecked boundary`, proven by a failing call with five items.
 - *Ticket: "stop the label printer crashing on a blank surname". Diff: the guard plus a test red without it,
   and the test run green.* → ready, premise "the new test fails without the guard" proven by that run.
-
-## What you hand back
-
-Each finding: the file, what is wrong with the one clause of why, and a pattern naming its kind in two to four
-words. No praise, no summary of the change, no verification narrative. Every premise your verdict rests on
-carries the command you ran and what it printed; one you only reasoned is left unproven, and an unproven
-premise is a finding. `ready` means you found nothing; a question is the one thing the human must decide.
