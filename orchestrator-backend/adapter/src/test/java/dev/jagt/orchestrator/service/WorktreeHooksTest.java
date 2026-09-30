@@ -25,6 +25,14 @@ class WorktreeHooksTest {
     }
 
     @Test
+    void writesNoStubForAHookThatNeverRunsInAWorktree(@TempDir Path worktree) {
+        WorktreeHooks.install(worktree, "ABC-42");
+
+        assertThat(worktree.resolve(".jagt/hooks")).isDirectoryNotContaining(
+                "glob:**/{pre-receive,update,post-receive,p4-pre-submit}");
+    }
+
+    @Test
     void leavesTheRepositorysOwnHooksExactlyAsTheyWere(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

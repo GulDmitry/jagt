@@ -44,7 +44,7 @@
 - **Kept out of the project**: `core.hooksPath` via `GIT_CONFIG_*` on the launch command (`WorktreeHooks.gitEnv`
   in `TmuxSessionHost`) — that session and its children, no repository config written. `deploy` and `revert`
   run ungated.
-- Pointing git elsewhere REPLACES the repository's hooks, so **every name git knows** gets a stub running the
+- Pointing git elsewhere REPLACES the repository's hooks, so **every client-side name** gets a stub running the
   repository's own, re-resolved at run time with the override off, guard first.
 - **Pushes only**, everything else passes; `--no-verify` skips this hook as any, and a human's shell is never
   gated.

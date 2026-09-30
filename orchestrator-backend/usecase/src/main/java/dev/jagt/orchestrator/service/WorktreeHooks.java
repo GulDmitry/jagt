@@ -33,13 +33,11 @@ public final class WorktreeHooks {
             "$(GIT_CONFIG_COUNT=0 git rev-parse --path-format=absolute --git-path hooks 2>/dev/null)";
     private static final Set<PosixFilePermission> EXECUTABLE = Set.of(
             PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE);
-    /** Every name git will look for, from {@code githooks(5)} — a stub for one nobody has costs a file. */
+    /** The client-side names from {@code githooks(5)}; a server-side or git-p4 hook never runs in a worktree. */
     private static final List<String> GIT_HOOKS = List.of("applypatch-msg", "pre-applypatch", "post-applypatch",
             "pre-commit", "pre-merge-commit", "prepare-commit-msg", "commit-msg", "post-commit", "pre-rebase",
-            "post-checkout", "post-merge", "pre-receive", "update", "proc-receive", "post-receive",
-            "post-update", "reference-transaction", "push-to-checkout", "pre-auto-gc", "post-rewrite",
-            "sendemail-validate", "fsmonitor-watchman", "p4-changelist", "p4-prepare-changelist",
-            "p4-post-changelist", "p4-pre-submit", "post-index-change");
+            "post-checkout", "post-merge", "post-rewrite", "reference-transaction", "pre-auto-gc",
+            "post-index-change");
 
     private WorktreeHooks() {
     }
