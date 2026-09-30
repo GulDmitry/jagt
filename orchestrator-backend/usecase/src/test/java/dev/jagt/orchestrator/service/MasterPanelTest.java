@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.RoundReviewer.Premise;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,6 +15,28 @@ class MasterPanelTest {
 
     private static final List<MasterPanel.Role> TWO = List.of(new MasterPanel.Role("chaplain", "should it exist"),
             new MasterPanel.Role("developer", "is the code right"));
+
+    @Test
+    void showsEachReviewerTheBriefTheAuthorWorkedTo() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
+                new MasterPanel.Role("QA", "is it tested right"));
+
+        assertThat(prompt).contains("never commit unasked");
+    }
+
+    @Test
+    void readsTheRoundByTheAuthorsRolesWhereTheMastersBriefNamesNone() {
+        String authorBrief = """
+                | role | the question it asks |
+                |------|----------------------|
+                | developer | is the code right |
+                """;
+
+        assertThat(MasterPanel.roles("# Brief\n\nJudge hard.\n", authorBrief))
+                .extracting(MasterPanel.Role::name).containsExactly("developer");
+    }
 
     @Test
     void readsEveryRowOfTheBriefsRoleTableAsItsOwnReviewer() {
@@ -27,7 +51,7 @@ class MasterPanelTest {
                 Afterwards.
                 """;
 
-        assertThat(MasterPanel.roles(brief)).extracting(MasterPanel.Role::name).containsExactly("chaplain", "QA");
+        assertThat(MasterPanel.roles(brief, "")).extracting(MasterPanel.Role::name).containsExactly("chaplain", "QA");
     }
 
     @Test

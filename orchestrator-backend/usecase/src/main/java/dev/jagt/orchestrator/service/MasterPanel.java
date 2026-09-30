@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
@@ -33,6 +34,7 @@ public class MasterPanel {
     private final RoundReviewer reviewer;
     private final UsageTracker usage;
     private final OrchestratorPaths paths;
+    private final PromptTemplates prompts;
 
     public record Role(String name, String question) {
     }
@@ -50,11 +52,11 @@ public class MasterPanel {
             return false;
         }
         List<Path> worktrees = task.repos().stream().map(TaskRepo::worktreePath).map(Path::of).toList();
-        List<Role> roles = roles(brief);
+        List<Role> roles = roles(brief, prompts.subAgentContext());
         List<Judgement> judgements = new ArrayList<>();
         try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<Answer<Judgement>>> asked = roles.stream()
-                    .map(role -> new RoundReviewer.Round(prompt(taskId, task, brief, role), worktrees,
+                    .map(role -> new RoundReviewer.Round(prompt(taskId, task, brief, prompts.subAgentContext(), role), worktrees,
                             config.modelOrInherited()))
                     .map(round -> threads.submit(() -> reviewer.review(round))).toList();
             for (Future<Answer<Judgement>> answer : asked) {
@@ -87,8 +89,14 @@ public class MasterPanel {
         }
     }
 
-    /** The rows of the brief's `| role | question |` table; the whole brief as one role where it has none. */
-    static List<Role> roles(String brief) {
+    /** The Master's own table where its brief has one, else the author's: the Master extends the session. */
+    static List<Role> roles(String brief, String authorBrief) {
+        List<Role> own = table(brief);
+        List<Role> roles = own.isEmpty() ? table(authorBrief) : own;
+        return roles.isEmpty() ? List.of(new Role("reviewer", "every question your brief asks")) : roles;
+    }
+
+    private static List<Role> table(String brief) {
         List<Role> roles = new ArrayList<>();
         boolean inTable = false;
         for (String line : brief.lines().map(String::strip).toList()) {
@@ -101,7 +109,7 @@ public class MasterPanel {
                 roles.add(new Role(cells.get(0).strip(), cells.get(1).strip()));
             }
         }
-        return roles.isEmpty() ? List.of(new Role("reviewer", "every question your brief asks")) : roles;
+        return roles;
     }
 
     static String verdictFile(String taskId, List<Role> roles, List<Judgement> judgements) {
@@ -142,11 +150,13 @@ public class MasterPanel {
         return text.replaceAll("\\s+", " ").strip();
     }
 
-    private static String prompt(String taskId, TaskState task, String brief, Role role) {
+    static String prompt(String taskId, TaskState task, String brief, String authorBrief, Role role) {
         String ticket = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
         return "You are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
                 + role.question() + ". The other roles read this round separately; say nothing outside yours.\n\n"
                 + "The brief you judge by:\n" + brief + "\n\n"
+                + "The brief the author worked to, its %s filled per task; yours extends it:\n"
+                + authorBrief + "\n\n"
                 + "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
                         .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + ticket + ".\n"
                 + "Read the ticket with your tracker tools, then everything the task changed against its base,"
