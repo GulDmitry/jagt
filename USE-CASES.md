@@ -190,7 +190,7 @@ What the agent does with a comment:
 | Whose roles a round is read by | — | The session's own `<self_review>`, before it hands back; the Master reads by the same, unless its brief names its own table |
 | A round is not ready | — | Its findings go back to the session that wrote the code, in any mode, and the task to `IN_PROGRESS`: the fix is a new round |
 | It writes `ready` but its file still lists findings | — | Counted as not ready: the findings go back to the session |
-| It is unsure what the ticket asks ("switch" or "add beside") | — | `VERDICT: question`: NEEDS INPUT, the question relayed to the session you answer in; nothing ships, whatever the mode |
+| It is unsure what the ticket asks ("switch" or "add beside") | — | In `act` it decides as you would and sends the decision back as a finding; a question reaches you in `judge`, or where `mine` keeps `answer` |
 | A round removes something that exists (an endpoint, a version) and no ticket line asks for it | — | A question, not a verdict |
 | The ticket's acceptance check was never run | — | Not ready, or a question where it cannot be run |
 | What it reads | — | The ticket and the diff; a premise its verdict rests on is proven by a run, never taken from the author |

@@ -21,9 +21,19 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
-                new MasterPanel.Role("QA", "is it tested right"));
+                new MasterPanel.Role("QA", "is it tested right"), false);
 
         assertThat(prompt).contains("never commit unasked");
+    }
+
+    @Test
+    void letsAReviewerStandingInForTheHumanDecideWhatItWouldHaveAsked() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
+                new MasterPanel.Role("QA", "is it tested right"), true);
+
+        assertThat(prompt).contains("never answer question");
     }
 
     @Test

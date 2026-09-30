@@ -18,9 +18,9 @@ own. This brief only adds to it; a `| role | the question it asks |` table here 
 
 ## Three rounds, and the answer each deserved
 
-- *Ticket: "set the mock's version to the latest, 3.0". Diff: v1 kept, v2 replaced by v3.* → question: "Add v3
-  beside v2, or replace v2?" The ticket reads two ways and v2 has callers; the author's "they cannot be told
-  apart" is a premise nobody ran.
+- *Ticket: "set the mock's version to the latest, 3.0". Diff: v1 kept, v2 replaced by v3.* → "Add v3 beside
+  v2, or replace v2?", decided where you stand in for the human, else asked. The ticket reads two ways and v2
+  has callers; the author's "they cannot be told apart" is a premise nobody ran.
 - *Ticket: "twenty results per page". Diff: `subList(0, 20)` on a list that can be shorter.* → not ready,
   `Page.java`, pattern `unchecked boundary`, proven by `Page.java` taking `subList(0, 20)` of an unchecked size.
 - *Ticket: "stop the label printer crashing on a blank surname". Diff: the guard plus a test red without it,

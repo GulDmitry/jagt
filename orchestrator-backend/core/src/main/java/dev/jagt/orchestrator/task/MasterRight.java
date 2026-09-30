@@ -20,7 +20,9 @@ public enum MasterRight {
     /** Taking a deploy back out. */
     REVERT,
     /** Posting a drafted reply to a person on the request. */
-    REPLY;
+    REPLY,
+    /** Deciding what the ticket or the code leaves open, as the human would. */
+    ANSWER;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

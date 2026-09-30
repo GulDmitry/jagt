@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -56,7 +57,8 @@ public class MasterPanel {
         List<Judgement> judgements = new ArrayList<>();
         try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<Answer<Judgement>>> asked = roles.stream()
-                    .map(role -> new RoundReviewer.Round(prompt(taskId, task, brief, prompts.subAgentContext(), role), worktrees,
+                    .map(role -> new RoundReviewer.Round(prompt(taskId, task, brief, prompts.subAgentContext(), role,
+                            config.may(MasterRight.ANSWER)), worktrees,
                             config.modelOrInherited()))
                     .map(round -> threads.submit(() -> reviewer.review(round))).toList();
             for (Future<Answer<Judgement>> answer : asked) {
@@ -150,7 +152,8 @@ public class MasterPanel {
         return text.replaceAll("\\s+", " ").strip();
     }
 
-    static String prompt(String taskId, TaskState task, String brief, String authorBrief, Role role) {
+    static String prompt(String taskId, TaskState task, String brief, String authorBrief, Role role,
+                         boolean decides) {
         String ticket = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
         return "You are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
                 + role.question() + ". The other roles read this round separately; say nothing outside yours.\n\n"
@@ -164,8 +167,12 @@ public class MasterPanel {
                 + " evidence. Run no build and no test: they ran before the round reached you.\n"
                 + "verdict: ready, not ready, or question. findings: one per problem — file, what is wrong and the"
                 + " one clause of why, and pattern: two to four words naming the kind of problem. question: only"
-                + " with verdict question, the one thing the human must decide. premises: every claim the verdict"
-                + " rests on, each with provenBy — the file:line, or the read-only command and what it printed, that"
-                + " shows it; blank where you only reasoned it. failure: blank unless something stopped you reading the round, then what.";
+                + " with verdict question, the one thing the human must decide."
+                + (decides ? " You stand in for the human: never answer question. Where the ticket or the code"
+                        + " leaves something open, decide it as they would, by both briefs and the codebase, and"
+                        + " write the decision as a finding." : "")
+                + " premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
+                + " command and what it printed, that shows it; blank where you only reasoned it. failure: blank"
+                + " unless something stopped you reading the round, then what.";
     }
 }
