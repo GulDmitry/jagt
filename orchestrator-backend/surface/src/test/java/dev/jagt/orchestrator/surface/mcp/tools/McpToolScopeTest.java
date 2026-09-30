@@ -1,9 +1,11 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
+import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.CallerScope;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.surface.mcp.ToolHandler;
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
@@ -46,10 +48,10 @@ class McpToolScopeTest {
         Map<String, ToolHandler> handlers = new HashMap<>();
         group.declare(new McpToolRegistry() {
             @Override
-            public <T extends Message> void tool(String name, Schema schema, Class<T> message,
+            public <T extends Message> void tool(String name, Audience audience, Schema schema, Class<T> message,
                                                  BiFunction<T, String, MessageContext> context,
                                                  MessageHandler<T> handler) {
-                handlers.put(name, MessageTool.of(new JsonMapper(), message, context, handler));
+                handlers.put(name, MessageTool.of(new JsonMapper(), name, audience, message, context, handler));
             }
         });
         return handlers;
@@ -62,7 +64,7 @@ class McpToolScopeTest {
     @ParameterizedTest
     @ValueSource(strings = {"deploy_task", "revert_task"})
     void refusesASubAgentReachingForTheToolsThatWriteASharedBranch(String tool) {
-        ToolHandler handler = declared(new DeployTools(commands, scope)).get(tool);
+        ToolHandler handler = declared(new DeployTools(commands)).get(tool);
 
         assertThatThrownBy(() -> handler.call(args("{\"taskId\":\"ABC-1\"}"), "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -73,12 +75,21 @@ class McpToolScopeTest {
     @Test
     void refusesASubAgentRetiringATask() {
         ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class), retirement,
-                stateService, scope)).get("remove_task");
+                stateService)).get("remove_task");
 
         assertThatThrownBy(() -> handler.call(args("{\"taskId\":\"ABC-1\"}"), "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("remove_task is Master-only");
         verifyNoInteractions(retirement);
+    }
+
+    @Test
+    void letsTheMasterDeployBecauseItRunsInNoWorktree() {
+        ToolHandler handler = declared(new DeployTools(commands)).get("deploy_task");
+
+        handler.call(args("{\"taskId\":\"ABC-1\"}"), null);
+
+        verify(commands).execute("ABC-1", TaskAction.DEPLOY);
     }
 
     @Test
@@ -105,7 +116,7 @@ class McpToolScopeTest {
     @Test
     void refusesASubAgentCreatingATask() {
         TaskProvisioning provisioning = mock(TaskProvisioning.class);
-        ToolHandler handler = declared(new TaskLifecycleTools(provisioning, retirement, stateService, scope))
+        ToolHandler handler = declared(new TaskLifecycleTools(provisioning, retirement, stateService))
                 .get("initialize_task");
 
         assertThatThrownBy(() -> handler.call(args("{\"taskId\":\"ABC-2\",\"projectKey\":\"demo\"}"), "ABC-1"))

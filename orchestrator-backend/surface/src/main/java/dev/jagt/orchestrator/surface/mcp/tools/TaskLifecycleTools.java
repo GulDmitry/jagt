@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
+import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
-import dev.jagt.orchestrator.surface.mcp.CallerScope;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -23,13 +23,12 @@ public class TaskLifecycleTools implements McpTools {
     private final TaskProvisioning provisioning;
     private final TaskRetirement retirement;
     private final StateService stateService;
-    private final CallerScope callerScope;
 
     @Override
     public void declare(McpToolRegistry tools) {
-        tools.tool("initialize_task", NewTaskMessage.SCHEMA, NewTaskMessage.class,
+        tools.tool("initialize_task", Audience.MASTER, NewTaskMessage.SCHEMA, NewTaskMessage.class,
                 (said, caller) -> MessageContext.NONE,
-                (said, caller) -> initialize(caller, NewTask.builder(said.taskId(), said.projectKey())
+                (said, caller) -> provisioning.initializeTask(NewTask.builder(said.taskId(), said.projectKey())
                         .alsoIn(said.alsoProjects())
                         .instructions(said.instructions())
                         .mode(said.mode())
@@ -39,24 +38,14 @@ public class TaskLifecycleTools implements McpTools {
                         .ticketUrl(said.ticketUrl())
                         .build()));
 
-        tools.tool("remove_task", TaskRef.schema("Remove a finished or abandoned task: deletes its worktree and"
-                        + " its state.json entry, keeping the branch. Master-only."),
+        tools.tool("remove_task", Audience.MASTER, TaskRef.schema("Remove a finished or abandoned task: deletes its"
+                        + " worktree and its state.json entry, keeping the branch."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> retire(said.taskId(), caller));
+                (said, caller) -> retirement.retire(said.taskId()));
 
-        tools.tool("list_tasks", NoArguments.schema("Return the full orchestrator state (all tasks, statuses,"
-                        + " worktree paths) from state.json."),
+        tools.tool("list_tasks", Audience.ANYONE, NoArguments.schema("Return the full orchestrator state (all tasks,"
+                        + " statuses, worktree paths) from state.json."),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> stateService.prettyJson());
-    }
-
-    private String retire(String taskId, String callerTaskId) {
-        callerScope.requireMaster(callerTaskId, "remove_task");
-        return retirement.retire(taskId);
-    }
-
-    private String initialize(String callerTaskId, NewTask request) {
-        callerScope.requireMaster(callerTaskId, "initialize_task");
-        return provisioning.initializeTask(request);
     }
 }

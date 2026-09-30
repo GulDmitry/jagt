@@ -2,11 +2,8 @@ package dev.jagt.orchestrator.surface.mcp;
 
 import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -43,18 +40,5 @@ class CallerScopeTest {
         assertThatThrownBy(() -> scope.resolve(null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("caller is not inside a registered worktree");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"remove_task", "deploy_task", "revert_task"})
-    void keepsWhatWritesOutsideTheWorktreeWithTheHuman(String tool) {
-        assertThatThrownBy(() -> scope.requireMaster("MINE-1", tool))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(tool + " is Master-only");
-    }
-
-    @Test
-    void letsTheMasterThroughBecauseItRunsInNoWorktree() {
-        assertThatCode(() -> scope.requireMaster(null, "deploy_task")).doesNotThrowAnyException();
     }
 }

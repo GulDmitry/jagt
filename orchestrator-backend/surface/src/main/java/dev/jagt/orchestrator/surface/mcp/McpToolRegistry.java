@@ -15,6 +15,6 @@ import java.util.function.BiFunction;
 public interface McpToolRegistry {
 
     /** {@code context} answers what the message's rules need to know about the world. */
-    <T extends Message> void tool(String name, Schema schema, Class<T> message,
+    <T extends Message> void tool(String name, Audience audience, Schema schema, Class<T> message,
                                   BiFunction<T, String, MessageContext> context, MessageHandler<T> handler);
 }

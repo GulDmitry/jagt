@@ -25,7 +25,7 @@ public class McpProtocolService implements McpToolRegistry {
     private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
     private static final long KEEP_ALIVE_THROTTLE_MS = 15_000;
 
-    private record ToolSpec(String name, JsonNode schema, ToolHandler handler) {
+    private record ToolSpec(String name, Audience audience, JsonNode schema, ToolHandler handler) {
     }
 
     private final ObjectMapper mapper;
@@ -38,8 +38,8 @@ public class McpProtocolService implements McpToolRegistry {
         groups.forEach(group -> group.declare(this));
     }
 
-    private void register(String name, String schemaJson, ToolHandler handler) {
-        if (tools.putIfAbsent(name, new ToolSpec(name, mapper.readTree(schemaJson), handler)) != null) {
+    private void register(String name, Audience audience, String schemaJson, ToolHandler handler) {
+        if (tools.putIfAbsent(name, new ToolSpec(name, audience, mapper.readTree(schemaJson), handler)) != null) {
             throw new IllegalStateException("Two MCP tool groups both declare '" + name + "'");
         }
     }
@@ -57,7 +57,7 @@ public class McpProtocolService implements McpToolRegistry {
             JsonNode result = switch (method) {
                 case "initialize" -> initializeResult(message);
                 case "ping" -> mapper.createObjectNode();
-                case "tools/list" -> toolsList();
+                case "tools/list" -> toolsList(callerTaskId);
                 case "tools/call" -> callTool(message, callerTaskId);
                 default -> null;
             };
@@ -108,10 +108,10 @@ public class McpProtocolService implements McpToolRegistry {
         return result;
     }
 
-    private JsonNode toolsList() {
+    private JsonNode toolsList(String callerTaskId) {
         ObjectNode result = mapper.createObjectNode();
         ArrayNode list = result.putArray("tools");
-        tools.values().forEach(spec -> {
+        tools.values().stream().filter(spec -> spec.audience().admits(callerTaskId)).forEach(spec -> {
             ObjectNode tool = list.addObject();
             tool.put("name", spec.name());
             tool.put("description", spec.schema().path("description").asText(""));
@@ -124,10 +124,10 @@ public class McpProtocolService implements McpToolRegistry {
 
     /** The one place a message is read off the wire and judged, so no tool can be the one that forgot. */
     @Override
-    public <T extends Message> void tool(String name, Schema schema, Class<T> message,
+    public <T extends Message> void tool(String name, Audience audience, Schema schema, Class<T> message,
                                          BiFunction<T, String, MessageContext> context,
                                          MessageHandler<T> handler) {
-        register(name, schema.json(), MessageTool.of(mapper, message, context, handler));
+        register(name, audience, schema.json(), MessageTool.of(mapper, name, audience, message, context, handler));
     }
 
     private JsonNode callTool(JsonNode message, String callerTaskId) {
@@ -135,27 +135,37 @@ public class McpProtocolService implements McpToolRegistry {
         JsonNode args = message.path("params").path("arguments");
         ToolSpec spec = tools.get(name);
         if (spec == null) {
-            return toolResult("Error: Unknown tool: " + name, true);
+            return failed(ToolFailure.VALIDATION, "Unknown tool: " + name);
         }
         try {
-            return toolResult(spec.handler().call(args, callerTaskId), false);
+            return toolResult(spec.handler().call(args, callerTaskId));
         } catch (Exception e) {
+            ToolFailure failure = ToolFailure.of(e);
             log.atWarn().setMessage("mcp tool failed")
                     .addKeyValue("tool", name)
+                    .addKeyValue("note", failure.wire())
                     .addKeyValue("cause", e.toString())
                     .log();
-            return toolResult("Error: " + describe(e), true);
+            return failed(failure, describe(e));
         }
     }
 
-    private JsonNode toolResult(String text, boolean isError) {
+    private ObjectNode toolResult(String text) {
         ObjectNode result = mapper.createObjectNode();
         ObjectNode content = result.putArray("content").addObject();
         content.put("type", "text");
         content.put("text", text);
-        if (isError) {
-            result.put("isError", true);
-        }
+        return result;
+    }
+
+    /** The category rides in the text too: a CLI may hand the model the text and drop the structured half. */
+    private JsonNode failed(ToolFailure failure, String why) {
+        ObjectNode result = toolResult("Error (" + failure.wire() + ", "
+                + (failure.retryable() ? "retryable" : "not retryable") + "): " + why);
+        result.put("isError", true);
+        ObjectNode structured = result.putObject("structuredContent");
+        structured.put("category", failure.wire());
+        structured.put("retryable", failure.retryable());
         return result;
     }
 

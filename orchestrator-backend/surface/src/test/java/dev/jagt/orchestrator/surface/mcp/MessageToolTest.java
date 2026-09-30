@@ -17,7 +17,7 @@ class MessageToolTest {
     @Test
     void refusesABrokenMessageBeforeTheToolItselfRunsAtAll() {
         AtomicBoolean ran = new AtomicBoolean();
-        ToolHandler tool = MessageTool.of(mapper, AgentStatusMessage.class,
+        ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
                 (said, caller) -> MessageContext.NONE,
                 (said, caller) -> {
                     ran.set(true);
@@ -30,8 +30,18 @@ class MessageToolTest {
     }
 
     @Test
+    void countsAnArgumentOfTheWrongShapeAsACallToCorrect() {
+        ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
+                (said, caller) -> MessageContext.NONE, (said, caller) -> "ran");
+
+        assertThatThrownBy(() -> tool.call(mapper.readTree("{\"status\":{\"is\":\"DONE\"}}"), "ABC-1"))
+                .isInstanceOfSatisfying(ToolRefusal.class,
+                        refusal -> assertThat(refusal.failure()).isEqualTo(ToolFailure.VALIDATION));
+    }
+
+    @Test
     void namesAMissingFieldBesideEverythingElseWrongRatherThanOnItsOwn() {
-        ToolHandler tool = MessageTool.of(mapper, AgentStatusMessage.class,
+        ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
                 (said, caller) -> MessageContext.NONE, (said, caller) -> "ran");
 
         assertThatThrownBy(() -> tool.call(mapper.readTree("{\"outcome\":\"done\"}"), "ABC-1"))
@@ -41,7 +51,7 @@ class MessageToolTest {
 
     @Test
     void ignoresAFieldTheMessageDoesNotDeclare() {
-        ToolHandler tool = MessageTool.of(mapper, AgentStatusMessage.class,
+        ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
                 (said, caller) -> MessageContext.NONE, (said, caller) -> said.message());
 
         String answer = tool.call(mapper.readTree(
@@ -52,7 +62,7 @@ class MessageToolTest {
 
     @Test
     void readsEveryFieldTheMessageDeclaresWithoutBeingToldOneByOne() {
-        ToolHandler tool = MessageTool.of(mapper, AgentStatusMessage.class,
+        ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
                 (said, caller) -> new MessageContext(java.util.List.of("api")),
                 (said, caller) -> said.reviewRequests().toString() + " " + said.taskId());
 
@@ -64,7 +74,7 @@ class MessageToolTest {
 
     @Test
     void readsAFieldLeftBlankAsOneLeftOut() {
-        ToolHandler tool = MessageTool.of(mapper, AgentStatusMessage.class,
+        ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
                 (said, caller) -> MessageContext.NONE, (said, caller) -> String.valueOf(said.outcome()));
 
         String answer = tool.call(mapper.readTree(

@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
 import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;
 import dev.jagt.orchestrator.surface.mcp.tools.StatusTools;
 import dev.jagt.orchestrator.service.AgentSessions;
@@ -103,8 +105,8 @@ class McpProtocolServiceTest {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        McpTools failing = tools -> tools.tool("boom", NoArguments.schema("throws"), NoArguments.class,
-                (said, caller) -> MessageContext.NONE,
+        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, NoArguments.schema("throws"),
+                NoArguments.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> { throw new IllegalStateException(); });
         McpProtocolService protocol = new McpProtocolService(mapper, state, List.of(failing));
 
@@ -112,7 +114,58 @@ class McpProtocolServiceTest {
                 + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null).orElseThrow();
 
         assertThat(response.path("result").path("content").get(0).path("text").asText())
-                .isEqualTo("Error: IllegalStateException");
+                .endsWith(": IllegalStateException");
+    }
+
+    @Test
+    void tellsTheAgentAFailedCallIsNotWorthRepeating(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpTools failing = tools -> tools.tool("boom", Audience.ANYONE, NoArguments.schema("throws"),
+                NoArguments.class, (said, caller) -> MessageContext.NONE,
+                (said, caller) -> { throw new IllegalStateException("branch ABC-1 is checked out elsewhere"); });
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of(failing));
+
+        JsonNode result = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":7,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null).orElseThrow().path("result");
+
+        assertThat(result.path("isError").asBoolean()).isTrue();
+        assertThat(result.path("structuredContent").path("category").asText()).isEqualTo("business");
+        assertThat(result.path("structuredContent").path("retryable").asBoolean()).isFalse();
+        assertThat(result.path("content").get(0).path("text").asText())
+                .isEqualTo("Error (business, not retryable): branch ABC-1 is checked out elsewhere");
+    }
+
+    @Test
+    void listsASubAgentNoToolThatWritesOutsideItsWorktree(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(System.currentTimeMillis()).alias("a1").build());
+        McpProtocolService protocol = new McpProtocolService(mapper, state,
+                List.of(new DeployTools(mock(CommandService.class))));
+
+        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}"),
+                root.toString()).orElseThrow().path("result").path("tools");
+
+        assertThat(listed).isEmpty();
+    }
+
+    @Test
+    void listsTheMasterTheToolsThatWriteASharedBranch(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpProtocolService protocol = new McpProtocolService(mapper, state,
+                List.of(new DeployTools(mock(CommandService.class))));
+
+        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
+                null).orElseThrow().path("result").path("tools");
+
+        assertThat(listed).extracting(tool -> tool.path("name").asText())
+                .containsExactly("deploy_task", "revert_task");
     }
 
     @Test

@@ -45,15 +45,15 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [flow.md](flow.md)'s.
 
 - **Master** is the backend process itself: a verb runs in-process, no LLM, no MCP round-trip.
 - **Sub-agents** are agent-CLI sessions in worktrees named `<taskId>-<projectKey>`, siblings of the base repo,
-  briefed by `AGENTS.md` (`AgentRuntime.SYSTEM_KNOWLEDGE_FILE`) and by `task_context.md`.
+  briefed by `AGENTS.md` (`AgentRuntime.SYSTEM_KNOWLEDGE_FILE`) and `task_context.md`.
 - **A task is created with its item's own facts or not at all.** `TaskLauncher` and `TaskResume` read it on every
   launch; `TicketFacts.usable()` gates on a key, a title **and** a link. A failing answer is asked again
   (`protocol/RetryPolicy`, 3 attempts, each carrying what the last got wrong), a bare key answered for a
   **different** key is refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
   the task and `TaskName.from` cuts its branch out of them.
 - **Sub-agents can only act on their own task**: `surface/mcp/CallerScope` enforces X-Working-Directory.
-  A new MCP tool taking a taskId gets a **row** in `McpToolScopeTest`.
-  `initialize_task`, `remove_task`, `deploy_task` and `revert_task` are Master-only; every MCP call from a
+  A tool taking a taskId gets a `McpToolScopeTest` row. `Audience.MASTER` tools (`initialize_task`,
+  `remove_task`, `deploy_task`, `revert_task`) are neither listed nor answered to a sub-agent; every call from a
   registered worktree bumps `lastActiveTimestamp`.
 - **A task id is any name git accepts as a branch** (`core/task/TaskName`): a task IS its branch, and every
   directory, tmux session, socket and temp file goes through `TaskName.slug`.

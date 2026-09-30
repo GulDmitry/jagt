@@ -44,6 +44,8 @@ and the rules that judge the answer cannot disagree. The enum comes from whateve
 
 - **From a session**: the refusal comes back from the call; the brief tells the session to fix every line and
   call again, which is not a block and never a question for the human.
+- **A failed call says what comes next** (`surface/mcp/ToolFailure`, off what the handler threw): `validation`
+  is fixed and resent, `business` and `permission` are the answer, `transient` alone is `retryable`.
 - **Except what a hook posts** (`protocol/SessionHookReport`): it sends what its CLI handed it and throws the
   answer away, so nothing there can be corrected. jagt DROPS what it cannot believe — a relative log path names
   a file some other process writes — keeps the rest, and logs once what it dropped.

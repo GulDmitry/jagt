@@ -22,16 +22,9 @@ public class CallerScope {
         }
         String canonical = stateService.canonicalTaskId(explicitTaskId);
         if (callerTaskId != null && !canonical.equals(callerTaskId)) {
-            throw new IllegalArgumentException("Sub-agents may only act on their own task ("
+            throw new ToolRefusal(ToolFailure.PERMISSION, "Sub-agents may only act on their own task ("
                     + callerTaskId + "); omit taskId or use your own");
         }
         return canonical;
-    }
-
-    public void requireMaster(String callerTaskId, String tool) {
-        if (callerTaskId != null) {
-            throw new IllegalArgumentException(tool + " is Master-only: a sub-agent may only act inside its"
-                    + " own worktree");
-        }
     }
 }
