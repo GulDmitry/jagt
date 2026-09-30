@@ -57,7 +57,8 @@ public class MasterVerdicts {
      */
     private boolean ask(String taskId, String question) {
         if (!sessions.relayIfChanged(taskId, "The reviewer asked the human: " + question
-                + "\n\nWait for the answer in this window, apply it uncommitted, and report REVIEW_PENDING again.")) {
+                + "\n\nYour status already carries the question. Report nothing and end your turn; the human answers"
+                + " in this window. Then report IN_PROGRESS, apply the answer uncommitted, and hand the round back.")) {
             return false;
         }
         log.atInfo().setMessage("master asks").addKeyValue("task", taskId).log();
