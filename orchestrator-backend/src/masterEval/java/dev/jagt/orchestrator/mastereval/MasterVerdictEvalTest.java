@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.mastereval;
 
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.MasterReview;
-import dev.jagt.orchestrator.service.MasterSession;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.AfterAll;
@@ -27,12 +26,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * The reviewer that replaces the first reading of every diff, read against rounds whose answer is already known.
  * It judges by the SHIPPED brief rather than an install's own, so what this measures is the document, and the
- * whole path is the real one: the job's trigger, the session, the file it writes and how that file is parsed.
+ * whole path is the real one: the job's trigger, the panel, the file it writes and how that file is parsed.
  */
 @Tag("masterEval")
 @SpringBootTest(properties = {"spring.config.import=", "orchestrator.startup-checks=false",
         "orchestrator.open-terminal-window=false",
-        // Every one of these defaults to the running board's own port. A session started here is a real CLI
+        // Every one of these defaults to the running board's own port. A review started here is a real CLI
         // with real tools, and pointed at a live install it would act on tasks that are not the suite's.
         "orchestrator.mcp-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/mcp",
         "orchestrator.hook-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/api/agent/session",
@@ -43,10 +42,8 @@ class MasterVerdictEvalTest {
     /** Nothing may listen here, and the suite refuses to start if anything does. */
     static final String DEAD_PORT = "8391";
 
-    /** One turn of a heavy model reading a diff, plus the wait for it to be typed at. */
-    private static final Duration VERDICT_WAIT = Duration.ofMinutes(6);
-    /** Long enough for a CLI to come up, short enough that a session which never will says so. */
-    private static final Duration SESSION_WAIT = Duration.ofSeconds(90);
+    /** Every role of the panel reading the round, run in parallel, plus the job's next tick. */
+    private static final Duration VERDICT_WAIT = Duration.ofMinutes(20);
 
     private static final AtomicInteger ROUND = new AtomicInteger();
 
@@ -69,63 +66,36 @@ class MasterVerdictEvalTest {
     @Autowired
     private StateService stateService;
     @Autowired
-    private MasterSession master;
-    @Autowired
     private MasterReview reviews;
 
     @BeforeAll
     static void nothingLiveIsWithinReach() throws Exception {
         refuseIfSomethingAnswers(Integer.parseInt(DEAD_PORT));
-        killTmux();
     }
 
-    /**
-     * Killing the window is not enough: the job that starts the Master is still ticking in a context nobody
-     * has closed, and would put it straight back. It is turned OFF first, in the file that job re-reads.
-     */
+    /** The job is still ticking in a context nobody has closed; turned OFF in the file it re-reads. */
     @AfterAll
     void leavesNothingOfItsOwnRunning() throws Exception {
         try {
             MasterEvalWorkspace.writeConfig(MasterEvalWorkspace.root().resolve("jagt.yml"),
                     MasterEvalWorkspace.root().resolve("placeholder"), "master-brief.md", "off");
-            master.stop();
-            killTmux();
         } finally {
             MasterEvalWorkspace.release();
         }
     }
 
     /**
-     * The one failure this suite must not have: a session of its own reaching an install that is not it. The
-     * port it is pointed at is proved dead before a session exists to use it.
+     * The one failure this suite must not have: a review of its own reaching an install that is not it. The
+     * port it is pointed at is proved dead before a review exists to use it.
      */
     private static void refuseIfSomethingAnswers(int port) {
         try (var socket = new java.net.Socket()) {
             socket.connect(new java.net.InetSocketAddress("127.0.0.1", port), 500);
             throw new IllegalStateException("Something is listening on 127.0.0.1:" + port
-                    + " — masterEval points its session there precisely because nothing should be. Move it.");
+                    + " — masterEval points its reviews there precisely because nothing should be. Move it.");
         } catch (java.io.IOException refused) {
             // Nothing there, which is the whole requirement.
         }
-    }
-
-    /**
-     * A session that never comes up is the failure this suite would otherwise spend twenty minutes reading as
-     * a reviewer with nothing to say. Asked of the session itself rather than of any CLI's config file: what
-     * matters is that it is running, whatever was in the way.
-     */
-    private void refuseUntilTheSessionIsLive() throws InterruptedException {
-        long deadline = System.nanoTime() + SESSION_WAIT.toNanos();
-        while (System.nanoTime() < deadline) {
-            if (master.live()) {
-                return;
-            }
-            Thread.sleep(2_000);
-        }
-        throw new IllegalStateException("No Master session came up inside " + SESSION_WAIT + ". If "
-                + MasterEvalWorkspace.root() + " is new, the agent CLI is waiting to be told it may work"
-                + " there: run it once in that directory, accept, then END that session — the answer is"
-                + " written when it exits — and run this again.");
     }
 
     @ParameterizedTest
@@ -136,9 +106,6 @@ class MasterVerdictEvalTest {
                 MasterEvalWorkspace.root().resolve("repos/" + taskId + "/repo"), round, taskId);
         TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
                 .alias("m" + ROUND.get()).title(round.instructions()).build();
-        master.startIfWanted();
-        refuseUntilTheSessionIsLive();
-
         stateService.putTask(taskId, task);
         Optional<MasterReview.Verdict> verdict = awaitVerdict(task);
         stateService.removeTask(taskId);
@@ -163,11 +130,6 @@ class MasterVerdictEvalTest {
             Thread.sleep(2_000);
         }
         return Optional.empty();
-    }
-
-    private static void killTmux() throws Exception {
-        new ProcessBuilder("tmux", "kill-session", "-t", MasterEvalWorkspace.TMUX_SESSION)
-                .redirectErrorStream(true).start().waitFor();
     }
 
     static List<MasterCase> rounds() {

@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.service.MasterSpend;
 import dev.jagt.orchestrator.service.TokenFormat;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -27,7 +26,6 @@ public class UsageStatsRenderer {
     private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s %8s%n";
 
     private final UsageTracker usageTracker;
-    private final MasterSpend masterSpend;
 
     public String render(Map<String, TaskState> tasks) {
         StringBuilder out = new StringBuilder("token spend — jagt's own reads, then what the agent"
@@ -56,8 +54,7 @@ public class UsageStatsRenderer {
                 .sorted(Comparator.comparingLong((Map.Entry<String, TaskState> e) ->
                         e.getValue().agentSpendOrNone().usageOrNone().total()).reversed())
                 .toList();
-        TokenUsage master = masterSpend.total();
-        if (!agents.isEmpty() || !master.isNone()) {
+        if (!agents.isEmpty()) {
             out.append('\n').append(String.format(ROW, "AGENT SESSION", "TURNS", "IN", "CACHED", "OUT", "TOTAL",
                     "USD"));
             TokenUsage agentTotal = TokenUsage.NONE;
@@ -67,9 +64,6 @@ public class UsageStatsRenderer {
                 out.append(row(entry.getKey(), usage));
             }
             out.append(row("agents", agentTotal));
-            if (!master.isNone()) {
-                out.append(row("master", master));
-            }
         }
 
         var byKind = usageTracker.sessionByKind();

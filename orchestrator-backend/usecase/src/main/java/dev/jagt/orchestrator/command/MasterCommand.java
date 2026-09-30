@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.MasterSession;
 import dev.jagt.orchestrator.service.MasterRecord;
-import dev.jagt.orchestrator.service.MasterSpend;
+import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.service.TokenFormat;
 import dev.jagt.orchestrator.task.MasterMode;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +15,7 @@ import org.springframework.stereotype.Component;
 public class MasterCommand implements GlobalCommand {
 
     private final ConfigService configService;
-    private final MasterSession master;
-    private final MasterSpend spend;
+    private final UsageTracker usage;
     private final MasterRecord record;
 
     @Override
@@ -48,14 +48,18 @@ public class MasterCommand implements GlobalCommand {
                 + "\n  judges by: " + config.briefOrDefault()
                 + "\n  model:     " + (config.modelOrInherited().isEmpty()
                         ? "inherited from the agent CLI" : config.modelOrInherited())
-                + "\n  running:   " + (master.live() ? "yes" : "no — the next tick starts it")
                 + "\n  yours:     " + (config.mineOrNone().isEmpty()
                         ? "nothing — it holds every right a human has but `done`"
                         : String.join(", ", config.mineOrNone()))
                 + judged()
-                + "\n  spent:     " + TokenFormat.compact(spend.total().total())
-                + " tokens, $" + String.format(java.util.Locale.ROOT, "%.2f", spend.total().costUsd())
-                + " — its own line, no task's";
+                + spent();
+    }
+
+    private String spent() {
+        TokenUsage spent = usage.sessionByKind().getOrDefault(AssistantCallKind.MASTER_REVIEW, TokenUsage.NONE);
+        return "\n  spent:     " + TokenFormat.compact(spent.total()) + " tokens, $"
+                + String.format(java.util.Locale.ROOT, "%.2f", spent.costUsd()) + " since jagt started, each"
+                + " round also charged to its task";
     }
 
     /** Silent until it has judged something: a line of zeroes says nothing a human did not already know. */

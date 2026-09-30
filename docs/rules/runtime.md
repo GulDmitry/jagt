@@ -62,8 +62,7 @@
 - `orchestrator.agent-disabled-plugins` writes `enabledPlugins: {"<name>": false}` into the worktree settings,
   default **empty**.
 
-## The Master session is a window owned by no task
+## The Master is a headless run per role, not a window
 
-EXPERIMENTAL, off by default (`master.mode`): one window named `master` in the orchestrator ROOT, reading
-every worktree. `MasterSessionJob` starts it and finds it gone in one act, and ends one that
-outlived the backend on its first tick; it judges by a re-read file, never accumulated context.
+EXPERIMENTAL (`master.mode`): one headless run per role of the brief reads each round in the task's worktrees,
+refused every write, commit and push (`HeadlessRoundReviewer`); jagt writes the verdict (`MasterPanel`).

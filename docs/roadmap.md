@@ -46,27 +46,23 @@ jagt already names this role: a session at the root carries no worktree header, 
 is Master](../AGENTS.md) — it sees every task over the same MCP, issues every verb, and writes no code. What is
 missing is not a kind of session. It is a way to wake one, and a brief saying what it judges.
 
-**One session, not one per task.** It reads what a worker was given and what it handed back — the plan, the
-diff, the drafted replies, the checks — and picks the move: relay, sweep, ship, or leave it for you. Reading is
-the cheap half of the work, so it runs the heavier model.
+**A fresh reader per round, one per role.** Each role of the brief reads the ticket and the diff on its own,
+without the author's account or the other roles' reasoning, and the code sums them: a question or an unreadable
+round to you, any finding back to the session, ready only where every role proved it. Reading is the cheap half
+of the work, so it runs the heavier model.
 
 **Deterministic where it counts.** The trigger stays a cadence, a status or an open request
 ([`review.md`](rules/review.md)) — only the judgement is the model's. And it cannot invent a move: the legal set
 is `FlowRules.allowed` and `FlowEngine` refuses anything else with a sentence. **The flow table is the guardrail,
 not the prompt.**
 
-**Its memory is a file, not its context.** A session that lives for days gets compacted, and what goes first is
-what was said earliest — exactly the standards it was started with. So the standards are re-read rather than
-remembered: a brief in the install beside `jagt.yml`, and a fresh read of the artifacts per judgement. What
-replaces you is that brief; the session is a process that reads it.
+**Its memory is a file, not its context.** The standards are a brief in the install beside `jagt.yml`, pasted
+into every run. What replaces you is that brief; each run is a process that reads it.
 
 - Buys: the first reader of every diff stops being you.
-- **jagt owns it** — built: `MasterSessionJob` starts it and restarts it, because starting it and finding it
-  gone are the same question asked of the same window.
-- **It reads every worktree, by design** — built: its window is cut in the root. The gate is not which worktree
-  it may open, but that it writes to none.
-- **Its spend is a line of its own** — built: `MasterSpend` reads its log, priced per turn at the model's list
-  price, and the `master` and `usage` reports show it beside what the task sessions burned.
+- **It reads the task's worktrees and writes to none** — built: refused every write, commit and push tool.
+- **Its spend is metered like any read** — built: each run is charged to its task and counted under
+  `master review`, which the `master` report totals.
 - **What its verdicts were worth is readable** — built: the verdict lands in the finished record at `done`,
   and `MasterRecord` counts the ways it and you can disagree — work it passed that never deployed or that you
   reverted, work it failed that you deployed anyway — and a question apart, since it judged nothing. The kept

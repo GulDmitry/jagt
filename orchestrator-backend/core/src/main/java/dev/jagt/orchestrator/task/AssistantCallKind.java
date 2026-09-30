@@ -17,7 +17,9 @@ public enum AssistantCallKind {
     /** Listing the items a tracker says are ready to be worked on — one call per intake poll. */
     INTAKE("intake search"),
     /** Which repository an item belongs in, asked only where its labels did not say. */
-    ROUTE("project routing");
+    ROUTE("project routing"),
+    /** One role's reading of a round handed back to the Master. */
+    MASTER_REVIEW("master review");
 
     private final String label;
 

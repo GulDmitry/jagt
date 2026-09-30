@@ -76,6 +76,19 @@ public final class Schema {
         return this;
     }
 
+    /** A list of objects, every one of {@code fields} a required string. */
+    public Schema records(String name, String describes, List<String> fields) {
+        ObjectNode item = field(name, "array", describes).putObject("items");
+        item.put("type", "object");
+        ObjectNode props = item.putObject("properties");
+        ArrayNode names = item.putArray("required");
+        fields.forEach(field -> {
+            props.putObject(field).put("type", "string");
+            names.add(field);
+        });
+        return this;
+    }
+
     /** A string-to-string object, with examples because a shape is easier shown than described. */
     public Schema pairs(String name, String describes, List<Map<String, String>> examples) {
         ObjectNode field = field(name, "object", describes);

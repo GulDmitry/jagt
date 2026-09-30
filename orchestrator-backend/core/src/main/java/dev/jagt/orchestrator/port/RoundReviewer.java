@@ -1,0 +1,33 @@
+package dev.jagt.orchestrator.port;
+
+import java.nio.file.Path;
+import java.util.List;
+
+/**
+ * One reading of a review round by a fresh model, able to read and run in the task's worktrees and to write
+ * nothing there. Metered, and asked once per role per round.
+ */
+public interface RoundReviewer {
+
+    /** {@code model} blank inherits the agent CLI's own. */
+    record Round(String prompt, List<Path> worktrees, String model) {
+    }
+
+    record Finding(String file, String issue, String pattern) {
+    }
+
+    /** {@code provenBy} is the command run and what it printed; blank where the claim was only reasoned. */
+    record Premise(String claim, String provenBy) {
+    }
+
+    /** {@code failure} non-blank means nothing else in it was read. */
+    record Judgement(String failure, String verdict, List<Finding> findings, String question,
+                     List<Premise> premises) {
+
+        public static Judgement failed(String failure) {
+            return new Judgement(failure, "", List.of(), "", List.of());
+        }
+    }
+
+    MasterAssistant.Answer<Judgement> review(Round round);
+}
