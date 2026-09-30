@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
@@ -34,11 +36,18 @@ public class MasterReview {
             return Optional.empty();
         }
         try {
-            return Files.readAllLines(file).reversed().stream()
-                    .map(String::strip)
-                    .filter(line -> line.startsWith(VERDICT))
-                    .findFirst()
-                    .map(line -> Verdict.of(line.substring(VERDICT.length()), modified(file)));
+            List<String> lines = Files.readAllLines(file).stream().map(String::strip).toList();
+            int verdictAt = lines.size() - 1;
+            while (verdictAt >= 0 && !lines.get(verdictAt).startsWith(VERDICT)) {
+                verdictAt--;
+            }
+            if (verdictAt < 0) {
+                return Optional.empty();
+            }
+            List<String> findings = lines.subList(0, verdictAt).stream()
+                    .filter(line -> !line.isEmpty() && !line.startsWith("#")).toList();
+            return Optional.of(Verdict.of(lines.get(verdictAt).substring(VERDICT.length()), findings,
+                    modified(file)));
         } catch (IOException | RuntimeException unreadable) {
             log.atWarn().setMessage("master review unreadable")
                     .addKeyValue("file", file)
@@ -58,12 +67,31 @@ public class MasterReview {
         return worktree == null || worktree.isBlank() ? null : Path.of(worktree).resolve(FILE);
     }
 
-    /** {@code ready} is the one word that means anything; every other ending is a round going back. */
-    public record Verdict(boolean ready, String said, long writtenAt) {
+    public enum Kind { READY, NOT_READY, QUESTION }
 
-        static Verdict of(String line, long writtenAt) {
-            String said = line.strip();
-            return new Verdict(said.equalsIgnoreCase("ready"), said, writtenAt);
+    /** {@code findings} are the lines above the verdict, headings left out. */
+    public record Verdict(Kind kind, List<String> findings, long writtenAt) {
+
+        /** Ready beside anything but the one line saying nothing is wrong is a finding waved through. */
+        static Verdict of(String word, List<String> findings, long writtenAt) {
+            String said = word.strip();
+            if (said.equalsIgnoreCase("question")) {
+                return new Verdict(Kind.QUESTION, findings, writtenAt);
+            }
+            boolean ready = said.equalsIgnoreCase("ready") && findings.size() <= 1;
+            return new Verdict(ready ? Kind.READY : Kind.NOT_READY, findings, writtenAt);
+        }
+
+        public boolean ready() {
+            return kind == Kind.READY;
+        }
+
+        public String said() {
+            return kind.name().toLowerCase(Locale.ROOT).replace('_', ' ');
+        }
+
+        public String question() {
+            return findings.isEmpty() ? "" : findings.getLast();
         }
     }
 

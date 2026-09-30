@@ -144,8 +144,8 @@ class MasterVerdictEvalTest {
         stateService.removeTask(taskId);
 
         assertThat(verdict).describedAs("no verdict inside %s", VERDICT_WAIT).isPresent();
-        assertThat(verdict.orElseThrow().ready()).describedAs(verdict.orElseThrow().said())
-                .isEqualTo(round.ready());
+        assertThat(verdict.orElseThrow().kind()).describedAs("%s", verdict.orElseThrow().findings())
+                .isEqualTo(round.verdict());
         // The verdict line carries one word; what the review is ABOUT is the file it wrote. A round with
         // nothing to find names nothing, and that is an empty list rather than a case of its own.
         String review = Files.readString(reviews.file(task));

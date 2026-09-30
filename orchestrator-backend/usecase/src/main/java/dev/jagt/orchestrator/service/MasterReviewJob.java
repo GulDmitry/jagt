@@ -80,8 +80,10 @@ public class MasterReviewJob implements Job {
                 + task.repos().stream().map(repo -> repo.worktreePath())
                         .collect(java.util.stream.Collectors.joining(", "))
                 + ". Read its uncommitted diff against " + task.baseBranchOr("the base branch")
+                + (task.ticketUrl() == null || task.ticketUrl().isBlank() ? "" : " and the ticket " + task.ticketUrl())
                 + " as the roles your brief names, write your findings to " + MasterReview.FILE
-                + " in that worktree, and end that file with VERDICT: ready or VERDICT: not ready."
+                + " in that worktree, and end that file with VERDICT: ready, VERDICT: not ready, or VERDICT: question"
+                + " with the question on the line above it. Ready beside any finding counts as not ready."
                 + " Change nothing else there.";
     }
 }

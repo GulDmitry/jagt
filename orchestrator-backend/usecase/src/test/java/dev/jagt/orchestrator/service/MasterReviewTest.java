@@ -41,6 +41,27 @@ class MasterReviewTest {
     }
 
     @Test
+    void countsAReadyThatStillListsFindingsAsNotReady(@TempDir Path worktree) throws Exception {
+        Files.writeString(worktree.resolve(MasterReview.FILE),
+                "# ABC-1 review\nFoo.java:12 no test pins it\nBar.java no v2 branch remains, recorded as the cost\n"
+                        + "VERDICT: ready\n");
+
+        assertThat(reviews.of(in(worktree))).get()
+                .satisfies(verdict -> assertThat(verdict.kind()).isEqualTo(MasterReview.Kind.NOT_READY));
+    }
+
+    @Test
+    void readsAQuestionAsTheLineAboveTheVerdict(@TempDir Path worktree) throws Exception {
+        Files.writeString(worktree.resolve(MasterReview.FILE),
+                "Foo.java drops v2\nAdd v3 beside v2, or replace it?\n\nVERDICT: question\n");
+
+        assertThat(reviews.of(in(worktree))).get().satisfies(verdict -> {
+            assertThat(verdict.kind()).isEqualTo(MasterReview.Kind.QUESTION);
+            assertThat(verdict.question()).isEqualTo("Add v3 beside v2, or replace it?");
+        });
+    }
+
+    @Test
     void ignoresAFileThatStopsBeforeTheVerdict(@TempDir Path worktree) throws Exception {
         Files.writeString(worktree.resolve(MasterReview.FILE), "Foo.java:12 the guard is inverted\n");
 

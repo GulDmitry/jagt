@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.mastereval;
 
+import dev.jagt.orchestrator.service.MasterReview;
+
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +11,7 @@ import java.util.Map;
  * since how a verdict is phrased is the model's and what it is about is not.
  */
 record MasterCase(String name, String instructions, Map<String, String> baseline, Map<String, String> change,
-                  boolean ready, List<String> names) {
+                  MasterReview.Kind verdict, List<String> names) {
 
     static List<MasterCase> matrix() {
         return List.of(
@@ -57,7 +59,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     }
                                 }
                                 """),
-                        true, List.of()),
+                        MasterReview.Kind.READY, List.of()),
 
                 new MasterCase("a boundary the diff plainly gets wrong",
                         "Send the first page of results, twenty per page.",
@@ -75,7 +77,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     }
                                 }
                                 """),
-                        false, List.of("Page.java")),
+                        MasterReview.Kind.NOT_READY, List.of("Page.java")),
 
                 new MasterCase("a fix nothing tests",
                         "A blank surname crashed the label printer. Stop it crashing.",
@@ -93,7 +95,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     }
                                 }
                                 """),
-                        false, List.of("Label.java", "test")),
+                        MasterReview.Kind.NOT_READY, List.of("Label.java", "test")),
 
                 new MasterCase("work nobody asked for, carried along",
                         "Rename `qty` to `quantity` in Order.",
@@ -121,7 +123,33 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     int retries = 3;
                                 }
                                 """),
-                        false, List.of("Invoice.java")));
+                        MasterReview.Kind.NOT_READY, List.of("Invoice.java")),
+
+                new MasterCase("a version dropped that the ticket never named",
+                        "Set the quote mock's mapping version to the latest, 3.0.",
+                        Map.of("src/QuoteMock.java", """
+                                class QuoteMock {
+                                    static String answer(int version) {
+                                        return switch (version) {
+                                            case 1 -> "/quote/v1";
+                                            case 2 -> "/quote/v2";
+                                            default -> throw new IllegalArgumentException("version " + version);
+                                        };
+                                    }
+                                }
+                                """),
+                        Map.of("src/QuoteMock.java", """
+                                class QuoteMock {
+                                    static String answer(int version) {
+                                        return switch (version) {
+                                            case 1 -> "/quote/v1";
+                                            case 3 -> "/quote/v3";
+                                            default -> throw new IllegalArgumentException("version " + version);
+                                        };
+                                    }
+                                }
+                                """),
+                        MasterReview.Kind.QUESTION, List.of("v2")));
     }
 
     @Override

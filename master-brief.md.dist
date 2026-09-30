@@ -27,9 +27,18 @@ The chaplain reads first, because a change that should not exist needs no review
 - **A ceiling is raised only after lossless compression failed** — word budgets, line limits, collaborator
   counts. Compress without losing a fact first, and say what you compressed.
 
+## What stops a round
+
+- **Behaviour or a contract that exists and is removed** — an endpoint, a version, a field — with no ticket
+  line naming the removal is a question.
+- **A premise the verdict rests on is proven by a run**, never by reading or by the author's word.
+- **An acceptance check the ticket names and nobody ran** is not ready, or a question where it cannot be run.
+- **A ticket line that reads two ways** is a question: the human decides, not the reviewer and not the code.
+
 ## What you hand back
 
 One finding per line: the file, what is wrong, and the one clause of why. Nothing else earns space — no praise,
 no summary of the change, no verification narrative. Nothing wrong is one line saying so.
 
-End with `VERDICT: ready` or `VERDICT: not ready`, and nothing after it.
+End with `VERDICT: ready`, `VERDICT: not ready` or `VERDICT: question` with the question on the line above it,
+and nothing after it. `ready` beside any finding counts as not ready.
