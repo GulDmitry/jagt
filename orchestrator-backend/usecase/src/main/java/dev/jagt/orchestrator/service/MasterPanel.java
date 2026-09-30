@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -42,17 +44,12 @@ public class MasterPanel {
 
     /** Writes the round's review file; false where the brief could not be read, and nothing was asked. */
     public boolean review(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-        String brief;
-        try {
-            brief = Files.readString(paths.root().resolve(config.briefOrDefault()));
-        } catch (IOException unreadable) {
-            log.atError().setMessage("master brief unreadable").addKeyValue("task", taskId)
-                    .addKeyValue("file", config.briefOrDefault())
-                    .addKeyValue("cause", unreadable.toString())
-                    .log();
+        Optional<String> read = brief(taskId, config);
+        if (read.isEmpty()) {
             return false;
         }
-        List<Path> worktrees = task.repos().stream().map(TaskRepo::worktreePath).map(Path::of).toList();
+        String brief = read.get();
+        List<Path> worktrees = worktrees(task);
         List<Role> roles = roles(brief, prompts.subAgentContext());
         List<Judgement> judgements = new ArrayList<>();
         try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -78,6 +75,38 @@ public class MasterPanel {
             return false;
         }
         return true;
+    }
+
+    /** The session's question decided as the human would; empty where no decision came back. */
+    public Optional<String> answer(String taskId, TaskState task, String question,
+                                   ConfigService.ConfigFile.MasterConfig config) {
+        Optional<String> brief = brief(taskId, config);
+        if (brief.isEmpty()) {
+            return Optional.empty();
+        }
+        Answer<Judgement> read = reviewer.review(new RoundReviewer.Round(
+                answerPrompt(taskId, task, brief.get(), prompts.subAgentContext(), question), worktrees(task),
+                config.modelOrInherited()));
+        usage.record(AssistantCallKind.MASTER_REVIEW, read.usage());
+        usage.chargeTask(taskId, read.usage());
+        return read.facts().filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
+                .map(said -> said.findings().stream().map(f -> oneLine(f.issue())).collect(Collectors.joining("\n")));
+    }
+
+    private Optional<String> brief(String taskId, ConfigService.ConfigFile.MasterConfig config) {
+        try {
+            return Optional.of(Files.readString(paths.root().resolve(config.briefOrDefault())));
+        } catch (IOException unreadable) {
+            log.atError().setMessage("master brief unreadable").addKeyValue("task", taskId)
+                    .addKeyValue("file", config.briefOrDefault())
+                    .addKeyValue("cause", unreadable.toString())
+                    .log();
+            return Optional.empty();
+        }
+    }
+
+    private static List<Path> worktrees(TaskState task) {
+        return task.repos().stream().map(TaskRepo::worktreePath).map(Path::of).toList();
     }
 
     private Judgement read(String taskId, Future<Answer<Judgement>> answer) throws InterruptedException {
@@ -150,6 +179,25 @@ public class MasterPanel {
     /** The file is read line by line: a finding that wraps would count twice. */
     private static String oneLine(String text) {
         return text.replaceAll("\\s+", " ").strip();
+    }
+
+    static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question) {
+        return "You stand in for the human on task " + taskId + ". The session working it stopped to ask: "
+                + question + "\n\nThe brief you judge by:\n" + brief + "\n\n"
+                + "The brief the session works to, its %s filled per task:\n" + authorBrief + "\n\n"
+                + round(taskId, task)
+                + "Read the ticket and the code, then decide as the human would, by both briefs and the codebase."
+                + " Never answer question and never defer: the decision is the answer. verdict: ready. findings:"
+                + " the decision, one per line — what the session does, and the one clause of why. premises: what"
+                + " it rests on, each with provenBy — the file:line or read-only command that shows it. failure:"
+                + " blank unless something stopped you reading, then what.";
+    }
+
+    private static String round(String taskId, TaskState task) {
+        String ticket = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
+        return "The task: " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath).toList()
+                + ", base " + task.baseBranchOr("the base branch") + ", ticket " + ticket + ". Run no build and no"
+                + " test.\n";
     }
 
     static String prompt(String taskId, TaskState task, String brief, String authorBrief, Role role,

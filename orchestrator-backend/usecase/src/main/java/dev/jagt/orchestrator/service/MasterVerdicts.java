@@ -65,6 +65,16 @@ public class MasterVerdicts {
         return reports.report(taskId, TaskStatus.IN_PROGRESS, "outcome=question — reviewer: " + question);
     }
 
+    /** The Master's answer to the session's own question, and the task back at work on it. */
+    public boolean answered(String taskId, String decision) {
+        if (!sessions.relayIfChanged(taskId, "The Master answered your question, standing in for the human:\n"
+                + decision + "\n\nReport IN_PROGRESS, apply it, and hand the round back as usual.")) {
+            return false;
+        }
+        log.atInfo().setMessage("master answered").addKeyValue("task", taskId).log();
+        return reports.report(taskId, TaskStatus.IN_PROGRESS, "master answered the question");
+    }
+
     /** The reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
     private static String findings(MasterReview.Verdict verdict) {
         return "The review of your round came back NOT READY. Each line below is a review comment: fix it, or"

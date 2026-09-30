@@ -59,6 +59,15 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path worktree) {
+        when(sessions.relayIfChanged(eq("ABC-1"), contains("keep v2 beside v3"))).thenReturn(true);
+
+        verdicts.answered("ABC-1", "keep v2 beside v3");
+
+        verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "master answered the question");
+    }
+
+    @Test
     void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path worktree) {
         verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
 

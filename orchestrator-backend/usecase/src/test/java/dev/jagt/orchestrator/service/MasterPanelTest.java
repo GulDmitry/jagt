@@ -37,6 +37,16 @@ class MasterPanelTest {
     }
 
     @Test
+    void asksTheMasterToDecideTheSessionsQuestionRatherThanDeferIt() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+
+        String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
+                "outcome=question — keep v2?");
+
+        assertThat(prompt).contains("outcome=question — keep v2?").contains("Never answer question");
+    }
+
+    @Test
     void readsTheRoundByTheAuthorsRolesWhereTheMastersBriefNamesNone() {
         String authorBrief = """
                 | role | the question it asks |

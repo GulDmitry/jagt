@@ -188,6 +188,7 @@ What the agent does with a comment:
 | No brief configured | start jagt | Refused: it judges by `master.brief`, copied from `master-brief.md.dist` |
 | The Master is reading a round | — | The chip says `master review`, nothing asks you; the session was told to end its turn |
 | Whose roles a round is read by | — | The session's own `<self_review>`, before it hands back; the Master reads by the same, unless its brief names its own table |
+| A session stops to ask | `master.mode: act` | The Master answers it in the session's window and the task goes back to work; `mine: [answer]` keeps it yours |
 | A round is not ready | — | Its findings go back to the session that wrote the code, in any mode, and the task to `IN_PROGRESS`: the fix is a new round |
 | It writes `ready` but its file still lists findings | — | Counted as not ready: the findings go back to the session |
 | It is unsure what the ticket asks ("switch" or "add beside") | — | In `act` it decides as you would and sends the decision back as a finding; a question reaches you in `judge`, or where `mine` keeps `answer` |
