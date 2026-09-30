@@ -10,7 +10,7 @@ public final class RoundRead {
     public static final Schema SCHEMA = Schema.answer()
             .required("failure", "string", null)
             .choiceRequired("verdict", VERDICTS, null)
-            .records("findings", null, List.of("file", "issue", "pattern"))
+            .records("findings", null, List.of("file", "issue", "pattern", "severity"))
             .text("question", null)
             .records("premises", null, List.of("claim", "provenBy"));
 

@@ -30,5 +30,5 @@ own. This brief only adds to it; a `| role | the question it asks |` table here 
 
 Each finding: the file, what is wrong with the one clause of why, and a pattern naming its kind in two to four
 words. No praise, no summary of the change, no verification narrative. Every premise your verdict rests on
-carries the file:line or read-only command that shows it; one you only reasoned is left unproven, and an unproven
-premise is a finding. `ready` means you found nothing; a question is the one thing the human must decide.
+carries the file:line or read-only command that shows it; one you only reasoned is left unproven, and is advice.
+Only blocking and wrong stop a round; what earlier rounds settled is not reopened for less. `ready` means you found nothing; a question is the one thing the human must decide.

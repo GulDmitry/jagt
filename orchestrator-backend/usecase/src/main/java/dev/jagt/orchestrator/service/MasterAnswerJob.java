@@ -63,7 +63,7 @@ public class MasterAnswerJob implements Job {
         log.atInfo().setMessage("master answers").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
                 .log();
         Optional<String> decision = panel.answer(taskId, task, task.message(), config);
-        if (decision.isEmpty() || !verdicts.answered(taskId, decision.get())) {
+        if (decision.isEmpty() || !verdicts.answered(taskId, task, task.message(), decision.get())) {
             log.atWarn().setMessage("master answer unusable").addKeyValue("task", taskId)
                     .addKeyValue("effect", "the question waits for the human")
                     .log();

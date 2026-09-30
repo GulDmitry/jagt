@@ -25,7 +25,8 @@ class MasterVerdictsTest {
     private final AgentSessions sessions = mock(AgentSessions.class);
     private final CommandService commands = mock(CommandService.class);
     private final FlowReports reports = mock(FlowReports.class);
-    private final MasterVerdicts verdicts = new MasterVerdicts(sessions, commands, reports);
+    private final MasterDecisions decisions = mock(MasterDecisions.class);
+    private final MasterVerdicts verdicts = new MasterVerdicts(sessions, commands, reports, decisions);
 
     private static ConfigService.ConfigFile.MasterConfig acting() {
         return new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
@@ -62,9 +63,20 @@ class MasterVerdictsTest {
     void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path worktree) {
         when(sessions.relayIfChanged(eq("ABC-1"), contains("keep v2 beside v3"))).thenReturn(true);
 
-        verdicts.answered("ABC-1", "keep v2 beside v3");
+        verdicts.answered("ABC-1", in(worktree), "keep v2?", "keep v2 beside v3");
 
         verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "master answered the question");
+    }
+
+    @Test
+    void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path worktree) {
+        TaskState task = in(worktree);
+        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("Foo.java:12 the guard is inverted"), 1), acting());
+
+        verify(decisions).record(task, "Foo.java:12 the guard is inverted");
     }
 
     @Test

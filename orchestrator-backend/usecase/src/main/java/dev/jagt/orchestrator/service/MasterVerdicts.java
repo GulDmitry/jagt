@@ -22,6 +22,7 @@ public class MasterVerdicts {
     private final AgentSessions sessions;
     private final CommandService commands;
     private final FlowReports reports;
+    private final MasterDecisions decisions;
 
     /** Answers whether the verdict moved anything, so a caller can say so without reading the file again. */
     public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict,
@@ -31,6 +32,7 @@ public class MasterVerdicts {
                 if (!sessions.relayIfChanged(taskId, findings(verdict))) {
                     return false;
                 }
+                decisions.record(task, String.join("\n", verdict.findings()));
                 // Back to work, or the session's REVIEW_PENDING is no transition and the verdict reads as this round's.
                 return reports.report(taskId, TaskStatus.IN_PROGRESS, "reviewer: not ready; relayed");
             }
@@ -66,11 +68,12 @@ public class MasterVerdicts {
     }
 
     /** The Master's answer to the session's own question, and the task back at work on it. */
-    public boolean answered(String taskId, String decision) {
+    public boolean answered(String taskId, TaskState task, String question, String decision) {
         if (!sessions.relayIfChanged(taskId, "The Master answered your question, standing in for the human:\n"
                 + decision + "\n\nReport IN_PROGRESS, apply it, and hand the round back as usual.")) {
             return false;
         }
+        decisions.record(task, "- asked: " + question + " — decided: " + decision.replace('\n', ' '));
         log.atInfo().setMessage("master answered").addKeyValue("task", taskId).log();
         return reports.report(taskId, TaskStatus.IN_PROGRESS, "master answered the question");
     }

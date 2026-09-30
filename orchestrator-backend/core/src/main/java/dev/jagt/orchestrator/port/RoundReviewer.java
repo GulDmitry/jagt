@@ -13,7 +13,12 @@ public interface RoundReviewer {
     record Round(String prompt, List<Path> worktrees, String model) {
     }
 
-    record Finding(String file, String issue, String pattern) {
+    /** {@code severity}: blocking, wrong, unguarded or noise; only the first two stop a round. */
+    record Finding(String file, String issue, String pattern, String severity) {
+
+        public boolean stops() {
+            return !severity.equals("unguarded") && !severity.equals("noise");
+        }
     }
 
     /** {@code provenBy} is the command run and what it printed; blank where the claim was only reasoned. */

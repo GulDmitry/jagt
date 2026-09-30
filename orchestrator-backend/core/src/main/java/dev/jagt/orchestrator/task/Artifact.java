@@ -19,7 +19,9 @@ public enum Artifact {
     /** What the agent means to answer, before anything is posted. */
     REPLIES("review_replies.md"),
     /** What the unattended reviewer concluded about the round, and the verdict jagt reads back. */
-    REVIEW("master-review.md");
+    REVIEW("master-review.md"),
+    /** What earlier rounds of this task decided, which a later reader does not reopen without a blocking reason. */
+    DECISIONS("master-decisions.md");
 
     private final String fileName;
 

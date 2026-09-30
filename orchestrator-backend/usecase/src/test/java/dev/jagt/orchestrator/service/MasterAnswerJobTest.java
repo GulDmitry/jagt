@@ -35,7 +35,7 @@ class MasterAnswerJobTest {
 
         job.run();
 
-        verify(verdicts).answered("ABC-1", "keep v2 beside v3");
+        verify(verdicts).answered("ABC-1", asking, "outcome=question — keep v2?", "keep v2 beside v3");
     }
 
     @Test

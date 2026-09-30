@@ -21,7 +21,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
-                new MasterPanel.Role("QA", "is it tested right"), false);
+                new MasterPanel.Role("QA", "is it tested right"), false, "");
 
         assertThat(prompt).contains("never commit unasked");
     }
@@ -31,7 +31,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
-                new MasterPanel.Role("QA", "is it tested right"), true);
+                new MasterPanel.Role("QA", "is it tested right"), true, "");
 
         assertThat(prompt).contains("never answer question");
     }
@@ -41,9 +41,19 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — keep v2?");
+                "outcome=question — keep v2?", "");
 
         assertThat(prompt).contains("outcome=question — keep v2?").contains("Never answer question");
+    }
+
+    @Test
+    void holdsEveryReviewerToWhatEarlierRoundsSettled() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
+                new MasterPanel.Role("QA", "is it tested right"), true, "- keep the extraction per the human");
+
+        assertThat(prompt).contains("binding").contains("- keep the extraction per the human");
     }
 
     @Test
@@ -86,7 +96,7 @@ class MasterPanelTest {
     @Test
     void sendsBackARoundOneRoleFoundFaultWithWhateverTheOthersSaid() {
         String file = MasterPanel.verdictFile("ABC-42", TWO, List.of(
-                new Judgement("", "not ready", List.of(new Finding("QuoteMock.java", "v2 dropped", "removed contract")),
+                new Judgement("", "not ready", List.of(new Finding("QuoteMock.java", "v2 dropped", "removed contract", "blocking")),
                         "", List.of()),
                 new Judgement("", "ready", List.of(), "", List.of())));
 
@@ -95,13 +105,23 @@ class MasterPanelTest {
     }
 
     @Test
-    void doesNotPassARoundThatRestsOnAClaimNobodyRan() {
+    void passesARoundWhoseOnlyDoubtIsAClaimTheReviewerDidNotProve() {
         String file = MasterPanel.verdictFile("ABC-42", TWO, List.of(
                 new Judgement("", "ready", List.of(), "", List.of(new Premise("v2 and v3 cannot be told apart", ""))),
                 new Judgement("", "ready", List.of(), "", List.of())));
 
-        assertThat(file).contains("- [chaplain] unproven: v2 and v3 cannot be told apart")
-                .endsWith("VERDICT: not ready\n");
+        assertThat(file).contains("# unproven [chaplain] v2 and v3 cannot be told apart")
+                .endsWith("VERDICT: ready\n");
+    }
+
+    @Test
+    void passesARoundWhoseOnlyFindingsAreAdvice() {
+        String file = MasterPanel.verdictFile("ABC-42", TWO, List.of(
+                new Judgement("", "not ready", List.of(new Finding("Foo.java", "rename present", "naming", "noise")),
+                        "", List.of()),
+                new Judgement("", "ready", List.of(), "", List.of())));
+
+        assertThat(file).contains("# advice [chaplain] Foo.java — rename present").endsWith("VERDICT: ready\n");
     }
 
     @Test

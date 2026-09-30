@@ -103,7 +103,8 @@ public class HeadlessRoundReviewer implements RoundReviewer {
     private static Judgement judgement(JsonNode answer) {
         List<Finding> findings = new ArrayList<>();
         answer.path("findings").forEach(f -> findings.add(new Finding(f.path("file").asString(""),
-                f.path("issue").asString(""), f.path("pattern").asString(""))));
+                f.path("issue").asString(""), f.path("pattern").asString(""),
+                f.path("severity").asString("").strip().toLowerCase(java.util.Locale.ROOT))));
         List<Premise> premises = new ArrayList<>();
         answer.path("premises").forEach(p -> premises.add(new Premise(p.path("claim").asString(""),
                 p.path("provenBy").asString(""))));
