@@ -49,6 +49,9 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         if (asking(status, round)) {
             return Owner.YOU;
         }
+        if (masterReading(status, round)) {
+            return Owner.AGENT;
+        }
         Owner owner = waitingOn(status, hasReviewRequest, round);
         if (owner == Owner.AGENT && agentSilent && !status.heldByJagt()) {
             return Owner.YOU;
@@ -127,6 +130,10 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         return ownerOf(status);
     }
 
+    private static boolean masterReading(TaskStatus status, RoundState round) {
+        return status == TaskStatus.REVIEW_PENDING && round.masterReading();
+    }
+
     /** A closed task's leftover message is not a question anybody still owes an answer to. */
     private static boolean asking(TaskStatus status, RoundState round) {
         return round.report() == AgentReport.QUESTION && status != TaskStatus.DONE;
@@ -156,6 +163,9 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         // The answer is what unblocks the session, whatever state-changing verb the status would advise.
         if (asking(status, round)) {
             return TaskAction.FOCUS;
+        }
+        if (masterReading(status, round)) {
+            return null;
         }
         return switch (status) {
             case NEW, PLAN_PENDING, IN_PROGRESS, VERIFYING, SHIPPING -> TaskAction.FOCUS;
@@ -191,6 +201,9 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         }
         if (ownerOf(status) == Owner.AGENT && agentSilent) {
             return "agent stopped without reporting: focus to see why, or respawn";
+        }
+        if (masterReading(status, round)) {
+            return "the Master is reading this round; no action required";
         }
         return switch (status) {
             case NEW, IN_PROGRESS -> "agent is working; no action required";

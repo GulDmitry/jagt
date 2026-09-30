@@ -50,7 +50,8 @@ class AgentStatusReportsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         return new AgentStatusReports(state, notifications, new FlowReports(state),
                 new HandBack(worktreeChanges, new ReviewDrafts(configService),
-                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class))));
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService));
     }
 
     @Test
@@ -63,6 +64,19 @@ class AgentStatusReportsTest {
         String answer = reports(state).report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
         assertThat(answer).contains("VERIFYING");
+    }
+
+    @Test
+    void tellsTheSessionTheMasterReadsItsHandBackNext(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+
+        String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
+
+        assertThat(answer).endsWith("the Master reads this round next; end your turn");
     }
 
     @Test

@@ -38,7 +38,7 @@ class NaturalLanguageDispatchTest {
     private NaturalLanguageDispatch dispatchWith(StateService state) {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        return new NaturalLanguageDispatch(assistant, state, new TaskViews(state, config), commands, launcher);
+        return new NaturalLanguageDispatch(assistant, state, new TaskViews(state, config, new MasterReview()), commands, launcher);
     }
 
     private static StateService stateWithOneTask(Path root) {

@@ -18,14 +18,15 @@
 
 ## `Owner` means an action of theirs exists
 
-`Phase` and `Owner` are an unpersisted projection, never a second state machine: `TaskStatus` is the SSOT,
-twelve statuses collapsing into six phases. Liveness is no input — SHIPPING is offered SHIP, the
+`Phase` and `Owner` are an unpersisted projection, never a second state machine: `TaskStatus` is the SSOT.
+Liveness is no input — SHIPPING is offered SHIP, the
 gate refusing at execution time if the agent is alive.
 
 - Beyond the status (`Move.ownerOf`): a REVIEW_PENDING round that changed nothing and drafted no reply waits
   on the **reviewer**, one whose poll `AutoReviewWatch.stopped()` on the human.
-- REVIEWED's owner is the review request: nothing highlighted, no ping, `deploy` still listed where no
-  approval is needed. APPROVED is the one the human is tapped for — `AgentStatusReports.ping` is silent
+- A REVIEW_PENDING round the Master has not read (`RoundState.masterReading`) is AGENT: `master review`, no badge.
+- REVIEWED's owner is the review request: nothing highlighted, no ping, `deploy` listed where no approval
+  is needed. APPROVED is the one the human is tapped for — `AgentStatusReports.ping` is silent
   unless `Move` says YOU. DEPLOYED's owner is nobody, as DONE's; `done` stays highlighted.
 
 ## An action that can wait is not an interruption

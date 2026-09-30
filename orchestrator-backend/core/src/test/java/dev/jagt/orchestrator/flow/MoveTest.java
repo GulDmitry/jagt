@@ -51,6 +51,16 @@ class MoveTest {
     }
 
     @Test
+    void leavesARoundTheMasterHasYetToReadOffTheHumansMoves() {
+        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, false,
+                RoundState.of("done", false).withMasterReading(true), false);
+
+        assertThat(move.owner()).isEqualTo(Owner.AGENT);
+        assertThat(move.attention()).isEqualTo(Attention.NONE);
+        assertThat(move.hint()).isEqualTo("the Master is reading this round; no action required");
+    }
+
+    @Test
     void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true,
                 new RoundState(AgentReport.NO_CHANGES, false), false, watching());

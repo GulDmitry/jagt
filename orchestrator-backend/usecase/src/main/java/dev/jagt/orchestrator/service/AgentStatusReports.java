@@ -124,7 +124,10 @@ public class AgentStatusReports {
             return "Task " + taskId + " stays " + landed + ": that one is a human's to move on from. Your line"
                     + " was recorded" + (shortMessage == null ? "" : " (" + shortMessage + ")");
         }
-        return "Task " + taskId + " -> " + landed + (shortMessage == null ? "" : " (" + shortMessage + ")");
+        boolean reviewedNext = (landed == TaskStatus.REVIEW_PENDING || landed == TaskStatus.VERIFYING)
+                && handBack.masterReads();
+        return "Task " + taskId + " -> " + landed + (shortMessage == null ? "" : " (" + shortMessage + ")")
+                + (reviewedNext ? "; the Master reads this round next; end your turn" : "");
     }
 
     /** A clean review IS a transition: another round stops being the next move. It is not an approval. */

@@ -13,6 +13,7 @@ public class HandBack {
     private final WorktreeChanges worktreeChanges;
     private final ReviewDrafts reviewDrafts;
     private final Verification verification;
+    private final ConfigService configService;
 
     public boolean anyUncommitted(TaskState task) {
         return worktreeChanges.anyUncommitted(task);
@@ -25,5 +26,9 @@ public class HandBack {
     /** Whether this hand-back still owes jagt a verification run, which holds it at VERIFYING. */
     public boolean verificationOwed(TaskState task) {
         return verification.configured(task);
+    }
+
+    public boolean masterReads() {
+        return configService.load().master().running();
     }
 }

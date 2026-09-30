@@ -66,8 +66,13 @@ public record TaskView(
 
     public static TaskView of(String id, TaskState task, boolean draftedReplies, AutoReviewWatch autoReview,
                               Map<String, String> deployBranches) {
-        Move move = Move.forTask(task.status(), task.hasReviewRequest(),
-                RoundState.of(task.message(), draftedReplies), task.agentIsSilent(),
+        return of(id, task, RoundState.of(task.message(), draftedReplies), autoReview, deployBranches);
+    }
+
+    public static TaskView of(String id, TaskState task, RoundState round, AutoReviewWatch autoReview,
+                              Map<String, String> deployBranches) {
+        boolean draftedReplies = round.draftedReplies();
+        Move move = Move.forTask(task.status(), task.hasReviewRequest(), round, task.agentIsSilent(),
                 autoReview == null ? AutoReviewWatch.none() : autoReview);
         boolean deployed = deployed(task);
         List<ActionView> actions = move.actions().stream()
@@ -76,7 +81,8 @@ public record TaskView(
                         deployed && action == TaskAction.DEPLOY))
                 .toList();
         return new TaskView(id, task.alias(), task.project(), task.title(), task.status(),
-                task.status().label(), move.phase(),
+                round.masterReading() ? "master review"
+                        : task.status().label(), move.phase(),
                 move.owner(), move.attention(), move.ask(), move.hint(), actions,
                 DashboardLine.forTask(task, webLink(task.mrUrl())), webLink(task.ticketUrl()),
                 webLink(task.mrUrl()),
