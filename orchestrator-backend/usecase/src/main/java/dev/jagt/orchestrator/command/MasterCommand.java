@@ -65,9 +65,10 @@ public class MasterCommand implements GlobalCommand {
             return "";
         }
         return "\n  judged:    " + seen.judged() + " finished, " + seen.passed() + " passed"
+                + (seen.asked() == 0 ? "" : ", " + seen.asked() + " asked you")
                 + (seen.disagreed() == 0 ? " — and you did the same with every one"
                         : "; you differed on " + seen.disagreed() + " (" + seen.passedNeverDeployed()
-                                + " passed and never deployed, " + seen.failedButDeployed()
-                                + " failed and deployed)");
+                                + " passed and never deployed, " + seen.passedReverted()
+                                + " passed and reverted, " + seen.failedButDeployed() + " failed and deployed)");
     }
 }

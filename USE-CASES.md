@@ -122,6 +122,7 @@
 | The project key is missing from a card | The install has one project |
 | Clicking a desktop notification | Opens the board filtered to that task; on Linux the task is in the title instead |
 | "Is it me holding these up?" | `stats`: per task, time on you, the agent and the code host |
+| "Can I trust the Master?" | `master`: what it judged, and where you did otherwise — passed then never deployed or reverted, failed then deployed |
 | The same numbers a week later | `finished`: every retired task, whole status log included |
 
 ## Review requests

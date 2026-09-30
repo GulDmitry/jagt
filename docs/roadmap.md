@@ -68,8 +68,9 @@ replaces you is that brief; the session is a process that reads it.
 - **Its spend is a line of its own** — built: `MasterSpend` reads its log, priced per turn at the model's list
   price, and the `master` and `usage` reports show it beside what the task sessions burned.
 - **What its verdicts were worth is readable** — built: the verdict lands in the finished record at `done`,
-  and `MasterRecord` counts the only two ways it and you can disagree — work it passed that never deployed,
-  and work it failed that you deployed anyway. The kept artifacts stay unparsed, so nothing here reads one.
+  and `MasterRecord` counts the ways it and you can disagree — work it passed that never deployed or that you
+  reverted, work it failed that you deployed anyway — and a question apart, since it judged nothing. The kept
+  artifacts stay unparsed, so nothing here reads one.
 - **Three settings, not two**: off; on and judging; on and issuing verbs. The last one is the invariant at the
   top of this file. Off is the default, and no suite spawns one.
 

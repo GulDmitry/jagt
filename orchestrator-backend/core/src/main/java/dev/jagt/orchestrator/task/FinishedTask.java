@@ -50,6 +50,11 @@ public record FinishedTask(
         return "ready".equalsIgnoreCase(masterVerdict == null ? "" : masterVerdict.strip());
     }
 
+    /** A question judged nothing, so whatever you did after it cannot disagree with it. */
+    public boolean asked() {
+        return "question".equalsIgnoreCase(masterVerdict == null ? "" : masterVerdict.strip());
+    }
+
     private static int rounds(TaskState task) {
         return (int) task.history().stream()
                 .filter(step -> step.status() == TaskStatus.CI_POLLING).count();

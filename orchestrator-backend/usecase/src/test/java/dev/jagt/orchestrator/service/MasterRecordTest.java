@@ -33,7 +33,7 @@ class MasterRecordTest {
                         .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD))).build(),
                 2L, "ready")));
 
-        assertThat(record.seen()).isEqualTo(new MasterRecord.Seen(1, 1, 1, 0));
+        assertThat(record.seen()).isEqualTo(new MasterRecord.Seen(1, 1, 0, 1, 0, 0));
     }
 
     @Test
@@ -43,7 +43,7 @@ class MasterRecordTest {
                         .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, ActionOrigin.BOARD)))
                         .build(), 2L, "not ready")));
 
-        assertThat(record.seen()).isEqualTo(new MasterRecord.Seen(1, 0, 0, 1));
+        assertThat(record.seen()).isEqualTo(new MasterRecord.Seen(1, 0, 0, 0, 0, 1));
     }
 
     @Test
@@ -54,5 +54,26 @@ class MasterRecordTest {
                         .build(), 2L, "ready")));
 
         assertThat(record.seen().disagreed()).isZero();
+    }
+
+    @Test
+    void readsWorkItPassedThatYouRevertedAsADisagreement() {
+        when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-1",
+                TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                        .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, ActionOrigin.BOARD),
+                                new StatusChange(TaskStatus.REVERTED, 2L, ActionOrigin.BOARD)))
+                        .build(), 3L, "ready")));
+
+        assertThat(record.seen()).isEqualTo(new MasterRecord.Seen(1, 1, 0, 0, 1, 0));
+    }
+
+    @Test
+    void readsAQuestionYouAnsweredAndDeployedAsNoDisagreement() {
+        when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-1",
+                TaskState.builder("proj", "/wt", TaskStatus.DONE)
+                        .history(List.of(new StatusChange(TaskStatus.DEPLOYED, 1L, ActionOrigin.BOARD)))
+                        .build(), 2L, "question")));
+
+        assertThat(record.seen()).isEqualTo(new MasterRecord.Seen(1, 0, 1, 0, 0, 0));
     }
 }
