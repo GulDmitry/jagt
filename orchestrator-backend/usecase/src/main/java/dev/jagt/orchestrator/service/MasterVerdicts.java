@@ -28,7 +28,11 @@ public class MasterVerdicts {
                        ConfigService.ConfigFile.MasterConfig config) {
         switch (verdict.kind()) {
             case NOT_READY -> {
-                return sessions.relayIfChanged(taskId, findings(verdict));
+                if (!sessions.relayIfChanged(taskId, findings(verdict))) {
+                    return false;
+                }
+                // Back to work, or the session's REVIEW_PENDING is no transition and the verdict reads as this round's.
+                return reports.report(taskId, TaskStatus.IN_PROGRESS, "reviewer: not ready; relayed");
             }
             case QUESTION -> {
                 return ask(taskId, task, verdict.question());

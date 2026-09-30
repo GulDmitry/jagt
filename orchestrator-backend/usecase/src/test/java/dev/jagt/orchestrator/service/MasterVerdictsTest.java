@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class MasterVerdictsTest {
 
@@ -45,6 +46,16 @@ class MasterVerdictsTest {
 
         verify(sessions).relayIfChanged(eq("ABC-1"), contains("the guard is inverted"));
         verify(commands, never()).execute(anyString(), any());
+    }
+
+    @Test
+    void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path worktree) {
+        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+
+        verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("Foo.java:12 the guard is inverted"), 1), acting());
+
+        verify(reports).report(eq("ABC-1"), eq(TaskStatus.IN_PROGRESS), anyString());
     }
 
     @Test
