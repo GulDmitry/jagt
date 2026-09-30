@@ -11,4 +11,5 @@ paths:
 
 Load `sob-ai:unit-testing` before touching any test file. Every fixed bug gets a regression test, verified RED.
 
-Full rules for testing etiquette: **`docs/rules/testing.md`** — read it before changing behaviour here.
+Full rules for testing etiquette: **[`docs/rules/testing.md`](../../docs/rules/testing.md)** —
+read it before changing behaviour here.

@@ -11,4 +11,5 @@ paths:
 
 The loop only reads and drafts. It never ships, deploys, pushes or posts.
 
-Full rules for review rounds and unattended work: **`docs/rules/review.md`** — read it before changing behaviour here.
+Full rules for review rounds and unattended work: **[`docs/rules/review.md`](../../docs/rules/review.md)** —
+read it before changing behaviour here.
