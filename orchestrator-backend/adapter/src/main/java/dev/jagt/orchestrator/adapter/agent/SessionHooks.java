@@ -23,12 +23,18 @@ final class SessionHooks {
     private static final String GATE = "gate";
     private static final String COMPACTED_START = "compacted-start";
     private static final String BLOCKING_NOTIFICATION = "blocking-notification";
+    private static final String TURN_END = "turn-end";
     private static final java.util.Set<String> NOT_A_STATE =
-            java.util.Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION);
+            java.util.Set.of(GATE, COMPACTED_START, BLOCKING_NOTIFICATION, TURN_END);
 
     /** The event this CLI answers with allow or deny, or nothing where it has none. */
     static Optional<String> gate(String runtime) {
         return Optional.ofNullable(declared(runtime).getProperty(GATE));
+    }
+
+    /** The event ending every turn, answered with whether the turn may end, or nothing where it has none. */
+    static Optional<String> turnEnd(String runtime) {
+        return Optional.ofNullable(declared(runtime).getProperty(TURN_END));
     }
 
     /** What this CLI calls a start that follows a compaction, or blank where it says nothing about starts. */

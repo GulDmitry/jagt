@@ -179,14 +179,18 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         return SessionHooks.blockingNotification("claude");
     }
 
+    @Override
+    public String refusedTurnEnd(String reason) {
+        return "{\"decision\": \"block\", \"reason\": " + quoted(reason) + "}";
+    }
+
     /** Which of Claude's events mean what is declared in {@code hooks/claude.properties}, not here. */
     private String hooksJson(Path worktree) {
-        String events = Stream.concat(
+        String events = Stream.of(
                         SessionHooks.of("claude").entrySet().stream()
-                                .map(event -> """
-                                        %s: [{"hooks": [{"type": "command", "command": %s, "timeout": 5}]}]"""
-                                        .formatted(quoted(event.getKey()),
-                                                quoted(hooks.command(worktree, event.getValue())))),
+                                .map(event -> hook(event.getKey(), hooks.command(worktree, event.getValue()))),
+                        SessionHooks.turnEnd("claude").stream()
+                                .map(event -> hook(event, hooks.command(worktree, "turn-end"))),
                         // Scoped to the one tool that can push: a hook on all of them would sit in front of
                         // every step the agent takes.
                         SessionHooks.gate("claude").stream()
@@ -194,8 +198,15 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                                         %s: [{"matcher": "Bash", "hooks": [{"type": "command", "command": %s,\
                                          "timeout": 5}]}]"""
                                         .formatted(quoted(event), quoted(hooks.gateCommand(worktree)))))
+                .flatMap(stream -> stream)
                 .collect(Collectors.joining(",\n    "));
         return events.isBlank() ? "" : "\n  \"hooks\": {\n    " + events + "\n  },";
+    }
+
+    private static String hook(String event, String command) {
+        return """
+                %s: [{"hooks": [{"type": "command", "command": %s, "timeout": 5}]}]"""
+                .formatted(quoted(event), quoted(command));
     }
 
     /** Serialized rather than hand-quoted: a control character in a path would make the whole file unreadable,

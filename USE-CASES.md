@@ -86,6 +86,7 @@
 | An agent stops to ask | — | NEEDS INPUT on the card, and one desktop ping the first time |
 | The task contradicts what the code guarantees | — | The agent asks before the code picks a side; "the ticket wins" is yours to say |
 | The agent settled something without asking | `focus <task>` | An `OPEN QUESTIONS:` line ends its terminal output |
+| An agent ends its turn without reporting | — | Claude is sent back once to report first; after that, the row below |
 | An agent stops and never says so | — | The card turns over: NEEDS YOU, Focus highlighted |
 | A session sits at a permission prompt | — | Reported within seconds |
 | A turn ends and the card says nothing | — | Correct: a turn end is silent until nothing has moved for a while |

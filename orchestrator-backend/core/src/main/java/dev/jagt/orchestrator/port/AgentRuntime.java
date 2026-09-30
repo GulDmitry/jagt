@@ -82,4 +82,9 @@ public interface AgentRuntime {
     default String blockingNotification() {
         return "";
     }
+
+    /** The answer that keeps this CLI's turn going with {@code reason} as its next input; blank where it cannot. */
+    default String refusedTurnEnd(String reason) {
+        return "";
+    }
 }

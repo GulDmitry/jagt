@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.nio.file.Path;
 
@@ -83,6 +85,45 @@ class SessionReportsTest {
 
         assertThat(answered).contains("Add v3 beside v2", "https://tracker.example/ABC-1", "IN_PROGRESS",
                 "your open question: keep v2?");
+    }
+
+    @Test
+    void sendsOnATurnThatEndsWithTheAgentsMoveUnreported() {
+        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
+        when(runtime.refusedTurnEnd(org.mockito.ArgumentMatchers.contains("update_agent_status")))
+                .thenReturn("{\"decision\": \"block\"}");
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .lastActiveTimestamp(1_000L).build();
+
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+                .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
+
+        assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
+    }
+
+    @Test
+    void letsATurnEndThatReportedAfterItBegan() {
+        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .lastActiveTimestamp(3_000L).build();
+
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+                .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
+
+        assertThat(answered).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true, false", "false, true"})
+    void letsATurnEndThatWasAlreadySentOnOrWaitsOnBackgroundWork(boolean sentOn, boolean paused) {
+        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
+                .lastActiveTimestamp(1_000L).build();
+
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+                .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), sentOn, paused);
+
+        assertThat(answered).isEmpty();
     }
 
     @Test

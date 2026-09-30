@@ -49,12 +49,11 @@
 - The payload buys two optional things: the file the session appends to (else derived from the
   worktree path) and what STARTED it — **a missing payload costs a detail, never the report**. That log is read
   twice: last sign of life, and spend (`AgentSpendReader`).
-- **What jagt ANSWERS a hook is context, not output**: a harness adds the stdout to the session, so the line
-  prints the body (`curl -sf`). jagt answers one thing: a session started from a COMPACTION gets a line naming
-  its brief, every other report empty.
-- **One hook is a gate, declared as one**: `gate=PreToolUse` in the same resource is answered rather
-  than recorded, scoped to the shell tool, refusing nothing where unreachable. **Not a git hook**; the ban
-  does not reach it.
+- **What jagt ANSWERS a hook, the harness reads** (`curl -sf` prints the body): a start after a COMPACTION gets
+  its brief named and the task's facts restated; every other report is answered empty.
+- **Two hooks are answered, each declared**: `gate=PreToolUse`, scoped to the shell tool, and `turn-end=Stop`,
+  refusing once a turn that leaves the agent's move unreported (`Move.endsUnreported`). Unreachable, both refuse
+  nothing. **Not git hooks**; the ban does not reach them.
 
 - Each sub-agent spawns its **own** language server (jdtls ~1–2 GB per Java worktree), unshareable and never released,
   so jagt **reaps** each worktree's on `done` / `remove_task` (`reapWorktreeProcesses`: `lsof` by

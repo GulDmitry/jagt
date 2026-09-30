@@ -196,8 +196,36 @@ class ClaudeAgentRuntimeTest {
 
         String command = new JsonMapper()
                 .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
+                .path("hooks").path("SessionEnd").path(0).path("hooks").path(0).path("command").asString("");
+        assertThat(command).contains("/api/agent/session/gone", worktree.toString());
+    }
+
+    @Test
+    void asksJagtAtTheEndOfEveryTurnWhetherTheTurnMayEnd(@TempDir Path root) throws Exception {
+        Path worktree = root.resolve("ABC-1-proj");
+        worktree.toFile().mkdirs();
+
+        new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+
+        String command = new JsonMapper()
+                .readTree(Files.readString(worktree.resolve(".claude").resolve("settings.local.json")))
                 .path("hooks").path("Stop").path(0).path("hooks").path(0).path("command").asString("");
-        assertThat(command).contains("/api/agent/session/idle", worktree.toString());
+        assertThat(command).contains("/api/agent/session/turn-end", worktree.toString());
+    }
+
+    @Test
+    void refusesATurnEndInTheShapeClaudeReadsAsKeepGoing() {
+        String refusal = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                .refusedTurnEnd("report \"first\"");
+
+        var answer = new JsonMapper().readTree(refusal);
+        assertThat(answer.path("decision").asString("")).isEqualTo("block");
+        assertThat(answer.path("reason").asString("")).isEqualTo("report \"first\"");
     }
 
     @Test

@@ -132,6 +132,12 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         return round.report() == AgentReport.QUESTION && status != TaskStatus.DONE;
     }
 
+    /** A turn ending on a move still the agent's, with no question put, is a session stopping unannounced. */
+    public static boolean endsUnreported(TaskStatus status, String message) {
+        return ownerOf(status) == Owner.AGENT && !status.heldByJagt()
+                && AgentReport.of(message) != AgentReport.QUESTION;
+    }
+
     /** Whose turn a status ALONE means. */
     public static Owner ownerOf(TaskStatus status) {
         return switch (status) {

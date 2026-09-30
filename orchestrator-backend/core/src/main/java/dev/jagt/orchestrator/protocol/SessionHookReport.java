@@ -16,17 +16,34 @@ import java.util.Optional;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SessionHookReport(@JsonProperty("transcript_path") String transcriptPath,
                                 @JsonProperty("source") String source,
-                                @JsonProperty("message") String message) implements Message {
+                                @JsonProperty("message") String message,
+                                @JsonProperty("stop_hook_active") Boolean continuing,
+                                @JsonProperty("background_tasks") List<Object> backgroundTasks) implements Message {
 
     public SessionHookReport {
         transcriptPath = absent(transcriptPath);
         source = absent(source);
         message = absent(message);
+        backgroundTasks = backgroundTasks == null ? List.of() : backgroundTasks;
+    }
+
+    public SessionHookReport(String transcriptPath, String source, String message) {
+        this(transcriptPath, source, message, null, null);
     }
 
     /** Nothing was posted at all, which is a state the address alone still reports. */
     public static SessionHookReport none() {
         return new SessionHookReport(null, null, null);
+    }
+
+    /** The turn ending was itself sent on by a refusal, so refusing again could never resolve. */
+    public boolean sentOn() {
+        return Boolean.TRUE.equals(continuing);
+    }
+
+    /** Work still in flight wakes the session back up: a pause, not a stop. */
+    public boolean pausedOnBackgroundWork() {
+        return !backgroundTasks.isEmpty();
     }
 
     /**

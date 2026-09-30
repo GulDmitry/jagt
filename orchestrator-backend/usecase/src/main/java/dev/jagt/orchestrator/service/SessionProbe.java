@@ -96,6 +96,11 @@ public class SessionProbe {
         halted.put(taskId, new Halt(at, state));
     }
 
+    /** When the session last reported itself moving, which is when its current turn began; 0 where it never did. */
+    public long turnStartedAt(String taskId) {
+        return movingSince.getOrDefault(taskId, 0L);
+    }
+
     /** A session that names the file it appends to takes the guessing out of finding it. */
     public void logAt(String taskId, Path log) {
         reportedLog.put(taskId, log);

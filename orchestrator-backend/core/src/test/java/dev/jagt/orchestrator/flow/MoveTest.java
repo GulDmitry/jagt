@@ -36,6 +36,20 @@ class MoveTest {
         assertThat(actions).endsWith(TaskAction.FOCUS, TaskAction.IDE, TaskAction.DIFF, TaskAction.RESPAWN);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "NEW, started, true",
+            "IN_PROGRESS, wiring the parser, true",
+            "SHIPPING, pushing, true",
+            "IN_PROGRESS, outcome=question — keep v2?, false",
+            "VERIFYING, running tests, false",
+            "REVIEW_PENDING, done, false",
+            "CI_POLLING, out, false"})
+    void callsATurnEndUnreportedOnlyWhileTheMoveIsStillTheAgents(TaskStatus status, String message,
+                                                                  boolean unreported) {
+        assertThat(Move.endsUnreported(status, message)).isEqualTo(unreported);
+    }
+
     @Test
     void doesNotAdviseAShipForAReviewRoundThatChangedNothing() {
         Move move = Move.forTask(TaskStatus.REVIEW_PENDING, true,

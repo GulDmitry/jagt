@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +66,23 @@ public class SessionReports {
             Thread.startVirtualThread(() -> agentSpend.charge(taskId, sessionLog));
         }
         return brief(taskId, startedBy, report.task());
+    }
+
+    /**
+     * A turn end, answered with the CLI's refusal where the move is still the agent's and nothing was reported
+     * since the turn began. One refusal per turn: a turn the refusal itself sent on always ends.
+     */
+    public String turnEnded(String taskId, Report report, boolean sentOn, boolean pausedOnBackgroundWork) {
+        record(taskId, SessionProbe.State.IDLE, report);
+        TaskState task = report.task();
+        long turnStarted = probe.turnStartedAt(taskId);
+        if (sentOn || pausedOnBackgroundWork || task == null || turnStarted == 0
+                || task.lastActiveTimestamp() >= turnStarted || !Move.endsUnreported(task.status(), task.message())) {
+            return "";
+        }
+        return runtime.refusedTurnEnd("Your turn is ending with " + taskId + " at " + task.status()
+                + " on the board and nothing reported this turn. Call update_agent_status first: REVIEW_PENDING"
+                + " if the work is done, outcome=question if you need the human, IN_PROGRESS if you go on.");
     }
 
     /**

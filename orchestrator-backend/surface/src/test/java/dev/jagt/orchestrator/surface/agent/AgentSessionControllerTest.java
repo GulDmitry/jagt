@@ -79,6 +79,19 @@ class AgentSessionControllerTest {
     }
 
     @Test
+    void tellsTheTurnEndWhetherARefusalAlreadySentItOn() {
+        StateService state = mock(StateService.class);
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+        when(state.findByWorktree("/wt/ABC-1-proj")).thenReturn(Optional.of(Map.entry("ABC-1", task)));
+        SessionReports reports = mock(SessionReports.class);
+
+        new AgentSessionController(state, reports).turnEnd("/wt/ABC-1-proj",
+                new SessionHookReport(null, null, null, true, java.util.List.of(Map.of("id", "b1"))));
+
+        verify(reports).turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), true, true);
+    }
+
+    @Test
     void refusesAReportFromADirectoryNoTaskRunsIn() {
         StateService state = mock(StateService.class);
         when(state.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
