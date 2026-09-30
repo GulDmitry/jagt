@@ -86,21 +86,20 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void putsTheReviewersQuestionToTheHumanInsteadOfShipping(@TempDir Path worktree) {
+    void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path worktree) {
+        when(sessions.relayIfChanged(eq("ABC-1"), contains("Add v3 beside v2, or replace it?"))).thenReturn(true);
+
         verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.QUESTION,
                 List.of("Foo.java drops v2", "Add v3 beside v2, or replace it?"), 1), acting());
 
-        verify(reports).report("ABC-1", TaskStatus.REVIEW_PENDING,
+        verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS,
                 "outcome=question — reviewer: Add v3 beside v2, or replace it?");
         verify(commands, never()).execute(anyString(), any());
     }
 
     @Test
     void asksTheSameQuestionOnce(@TempDir Path worktree) {
-        TaskState asked = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1")
-                .message("outcome=question — reviewer: Add v3 beside v2, or replace it?").build();
-
-        boolean moved = verdicts.act("ABC-1", asked, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
+        boolean moved = verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.QUESTION,
                 List.of("Add v3 beside v2, or replace it?"), 1), acting());
 
         assertThat(moved).isFalse();

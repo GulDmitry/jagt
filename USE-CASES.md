@@ -189,7 +189,7 @@ What the agent does with a comment:
 | The Master is reading a round | — | The chip says `master review`, nothing asks you; the session was told to end its turn |
 | A round is not ready | — | Its findings go back to the session that wrote the code, in any mode, and the task to `IN_PROGRESS`: the fix is a new round |
 | It writes `ready` but its file still lists findings | — | Counted as not ready: the findings go back to the session |
-| It is unsure what the ticket asks ("switch" or "add beside") | — | `VERDICT: question`: NEEDS INPUT with its question; nothing ships, whatever the mode |
+| It is unsure what the ticket asks ("switch" or "add beside") | — | `VERDICT: question`: NEEDS INPUT, the question relayed to the session you answer in; nothing ships, whatever the mode |
 | A round removes something that exists (an endpoint, a version) and no ticket line asks for it | — | A question, not a verdict |
 | The ticket's acceptance check was never run | — | Not ready, or a question where it cannot be run |
 | What it reads | — | The ticket and the diff; a premise its verdict rests on is proven by a run, never taken from the author |

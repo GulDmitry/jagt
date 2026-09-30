@@ -35,7 +35,7 @@ public class MasterVerdicts {
                 return reports.report(taskId, TaskStatus.IN_PROGRESS, "reviewer: not ready; relayed");
             }
             case QUESTION -> {
-                return ask(taskId, task, verdict.question());
+                return ask(taskId, verdict.question());
             }
             case READY -> {
                 if (!config.may(MasterRight.SHIP)) {
@@ -51,14 +51,17 @@ public class MasterVerdicts {
         return false;
     }
 
-    /** The same report an agent makes when it stops rather than guess, so the board already knows whose it is. */
-    private boolean ask(String taskId, TaskState task, String question) {
-        String message = "outcome=question — reviewer: " + question;
-        if (message.equals(task.message())) {
+    /**
+     * The session waits on the answer, so it is told the question, and back at work a hand-back after it is a new
+     * round. The report is the one an agent makes when it stops rather than guess.
+     */
+    private boolean ask(String taskId, String question) {
+        if (!sessions.relayIfChanged(taskId, "The reviewer asked the human: " + question
+                + "\n\nWait for the answer in this window, apply it uncommitted, and report REVIEW_PENDING again.")) {
             return false;
         }
         log.atInfo().setMessage("master asks").addKeyValue("task", taskId).log();
-        return reports.report(taskId, TaskStatus.REVIEW_PENDING, message);
+        return reports.report(taskId, TaskStatus.IN_PROGRESS, "outcome=question — reviewer: " + question);
     }
 
     /** The reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
