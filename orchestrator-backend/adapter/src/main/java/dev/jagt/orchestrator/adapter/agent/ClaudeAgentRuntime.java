@@ -184,6 +184,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         return "{\"decision\": \"block\", \"reason\": " + quoted(reason) + "}";
     }
 
+    @Override
+    public String toldTheHuman(String line) {
+        return "{\"systemMessage\": " + quoted(line) + "}";
+    }
+
     /** Which of Claude's events mean what is declared in {@code hooks/claude.properties}, not here. */
     private String hooksJson(Path worktree) {
         String events = Stream.of(

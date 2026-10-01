@@ -52,8 +52,9 @@
 - **What jagt ANSWERS a hook, the harness reads** (`curl -sf` prints the body): a start after a COMPACTION gets
   its brief named and the task's facts restated; every other report is answered empty.
 - **Two hooks are answered, each declared**: `gate=PreToolUse`, scoped to the shell tool, and `turn-end=Stop`,
-  refusing once a turn that leaves the agent's move unreported (`Move.endsUnreported`). Unreachable, both refuse
-  nothing. **Not git hooks**; the ban does not reach them.
+  refusing once a turn that leaves the agent's move unreported (`Move.endsUnreported`), and showing the human
+  alone a round handed to the Master (`AgentRuntime.toldTheHuman`). Unreachable, both refuse nothing.
+  **Not git hooks**; the ban does not reach them.
 
 - Each sub-agent spawns its **own** language server (jdtls ~1–2 GB per Java worktree), unshareable and never released,
   so jagt **reaps** each worktree's on `done` / `remove_task` (`reapWorktreeProcesses`: `lsof` by

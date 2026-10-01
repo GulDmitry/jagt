@@ -229,6 +229,17 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void showsTheHumanALineInTheFieldClaudeKeepsFromTheModel() {
+        String line = new ClaudeAgentRuntime(OrchestratorProperties.defaults().withAgentPrompt("go"),
+                new ClaudeProperties("claude"), new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"))
+                .toldTheHuman("with the \"Master\"");
+
+        var answer = new JsonMapper().readTree(line);
+        assertThat(answer.path("systemMessage").asString("")).isEqualTo("with the \"Master\"");
+    }
+
+    @Test
     void writesTheGateAsAHookOnTheShellToolAlone(@TempDir Path root) throws Exception {
         Path worktree = root.resolve("ABC-1-proj");
         worktree.toFile().mkdirs();

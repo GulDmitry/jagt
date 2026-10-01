@@ -23,10 +23,11 @@ class SessionReportsTest {
     private final WatchdogService watchdog = mock(WatchdogService.class);
     private final AgentSpendReader agentSpend = mock(AgentSpendReader.class);
     private final AgentRuntime runtime = mock(AgentRuntime.class);
+    private final ConfigService config = mock(ConfigService.class);
 
     @Test
     void hasTheTaskJudgedAtOnceRatherThanOnTheNextSweep() {
-        new SessionReports(probe, watchdog, agentSpend, runtime)
+        new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .record("ABC-1", SessionProbe.State.WORKING, SessionReports.Report.defaults());
 
         verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WORKING), anyLong());
@@ -35,7 +36,7 @@ class SessionReportsTest {
 
     @Test
     void believesTheLogFileTheSessionNamedAndCountsWhatItSpent() {
-        new SessionReports(probe, watchdog, agentSpend, runtime)
+        new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .record("ABC-1", SessionProbe.State.WAITING,
                         SessionReports.Report.defaults().withSessionLog(Path.of("/logs/session.jsonl")));
 
@@ -47,7 +48,7 @@ class SessionReportsTest {
     void callsASessionBlockedWhenItsNotificationNamesWhatThisCliSaysWhileBlocked() {
         when(runtime.blockingNotification()).thenReturn("needs your permission");
 
-        new SessionReports(probe, watchdog, agentSpend, runtime).record("ABC-1", SessionProbe.State.IDLE,
+        new SessionReports(probe, watchdog, agentSpend, runtime, config).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude needs your permission to use Bash"));
 
         verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.WAITING), anyLong());
@@ -57,7 +58,7 @@ class SessionReportsTest {
     void leavesANotificationThisCliDoesNotUseWhileBlockedToTheThreshold() {
         when(runtime.blockingNotification()).thenReturn("needs your permission");
 
-        new SessionReports(probe, watchdog, agentSpend, runtime).record("ABC-1", SessionProbe.State.IDLE,
+        new SessionReports(probe, watchdog, agentSpend, runtime, config).record("ABC-1", SessionProbe.State.IDLE,
                 SessionReports.Report.defaults().withSaid("Claude is waiting for your input"));
 
         verify(probe).report(eq("ABC-1"), eq(SessionProbe.State.IDLE), anyLong());
@@ -67,7 +68,7 @@ class SessionReportsTest {
     void handsACompactedSessionItsBriefBack() {
         when(runtime.compactedStart()).thenReturn("compact");
 
-        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .record("ABC-1", SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("compact"));
 
         assertThat(answered).contains("sub-agent for ABC-1", "task_context.md");
@@ -80,7 +81,7 @@ class SessionReportsTest {
                 .title("Add v3 beside v2").ticketUrl("https://tracker.example/ABC-1")
                 .message("outcome=question — keep v2?").build();
 
-        String answered = new SessionReports(probe, watchdog, agentSpend, runtime).record("ABC-1",
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config).record("ABC-1",
                 SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("compact").withTask(task));
 
         assertThat(answered).contains("Add v3 beside v2", "https://tracker.example/ABC-1", "IN_PROGRESS",
@@ -95,7 +96,7 @@ class SessionReportsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .lastActiveTimestamp(1_000L).build();
 
-        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
 
         assertThat(answered).isEqualTo("{\"decision\": \"block\"}");
@@ -107,7 +108,36 @@ class SessionReportsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .lastActiveTimestamp(3_000L).build();
 
-        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
+                .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
+
+        assertThat(answered).isEmpty();
+    }
+
+    @Test
+    void tellsTheHumanARoundHandedBackIsWithTheMaster() {
+        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(runtime.toldTheHuman("→ with the Master for review · its verdict arrives here"))
+                .thenReturn("{\"systemMessage\": \"with the Master\"}");
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
+                .lastActiveTimestamp(3_000L).build();
+
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
+                .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
+
+        assertThat(answered).isEqualTo("{\"systemMessage\": \"with the Master\"}");
+    }
+
+    @Test
+    void saysNothingAtAHandedBackRoundNoMasterReads() {
+        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
+                .lastActiveTimestamp(3_000L).build();
+
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
 
         assertThat(answered).isEmpty();
@@ -120,7 +150,7 @@ class SessionReportsTest {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .lastActiveTimestamp(1_000L).build();
 
-        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), sentOn, paused);
 
         assertThat(answered).isEmpty();
@@ -130,7 +160,7 @@ class SessionReportsTest {
     void answersAnOrdinaryStartWithNothingAtAll() {
         when(runtime.compactedStart()).thenReturn("compact");
 
-        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .record("ABC-1", SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("startup"));
 
         assertThat(answered).isEmpty();
@@ -140,7 +170,7 @@ class SessionReportsTest {
     void briefsNothingWhenTheCliSaysNothingAboutWhyASessionStarted() {
         when(runtime.compactedStart()).thenReturn("");
 
-        String answered = new SessionReports(probe, watchdog, agentSpend, runtime)
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .record("ABC-1", SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("compact"));
 
         assertThat(answered).isEmpty();

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.Move;
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ public class SessionReports {
     private final WatchdogService watchdog;
     private final AgentSpendReader agentSpend;
     private final AgentRuntime runtime;
+    private final ConfigService configService;
 
     /**
      * Everything a harness hands a hook that jagt can use, which is not the state. {@code sessionLog} is the file
@@ -78,11 +80,16 @@ public class SessionReports {
         long turnStarted = probe.turnStartedAt(taskId);
         if (sentOn || pausedOnBackgroundWork || task == null || turnStarted == 0
                 || task.lastActiveTimestamp() >= turnStarted || !Move.endsUnreported(task.status(), task.message())) {
-            return "";
+            return withTheMaster(task) ? runtime.toldTheHuman("→ with the Master for review · its verdict arrives"
+                    + " here") : "";
         }
         return runtime.refusedTurnEnd("Your turn is ending with " + taskId + " at " + task.status()
                 + " on the board and nothing reported this turn. Call update_agent_status first: REVIEW_PENDING"
                 + " if the work is done, outcome=question if you need the human, IN_PROGRESS if you go on.");
+    }
+
+    private boolean withTheMaster(TaskState task) {
+        return task != null && task.status() == TaskStatus.REVIEW_PENDING && configService.load().master().running();
     }
 
     /**

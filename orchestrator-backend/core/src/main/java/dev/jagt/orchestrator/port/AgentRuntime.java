@@ -87,4 +87,9 @@ public interface AgentRuntime {
     default String refusedTurnEnd(String reason) {
         return "";
     }
+
+    /** The answer that shows {@code line} to the human and not to the model; blank where this CLI cannot. */
+    default String toldTheHuman(String line) {
+        return "";
+    }
 }
