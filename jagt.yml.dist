@@ -107,6 +107,7 @@ orchestrator:
     workflow: none        # none | jira. Read at startup, unlike everything beside it here
     assignee: ""          # `take`: the item is yours, spelled exactly as your tracker reports it, case aside
     startStatus: ""       # `take`: the stage an item must stand in before a machine may start it
+    projects: []          # `take`: the tracker projects (boards) work is taken from, by key; empty takes from all
     doneStatus: ""        # `close`: the stage that says the work landed; reaching it closes the task
     everyMinutes: 10      # a task the tracker has not moved is then asked about ever less often,
                           # doubling to twice a day, so a deploy nobody finishes stops costing reads

@@ -238,10 +238,21 @@ public class ConfigService {
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
         public record TrackerConfig(String mode, String workflow, String assignee, String startStatus,
-                                    String doneStatus, Integer everyMinutes) {
+                                    String doneStatus, Integer everyMinutes, List<String> projects) {
+
+            public TrackerConfig(String mode, String workflow, String assignee, String startStatus,
+                                 String doneStatus, Integer everyMinutes) {
+                this(mode, workflow, assignee, startStatus, doneStatus, everyMinutes, null);
+            }
 
             public static TrackerConfig defaults() {
                 return new TrackerConfig(null, null, null, null, null, null);
+            }
+
+            /** The tracker projects work is taken from; empty takes from every one. */
+            public List<String> projectsOrAll() {
+                return projects == null ? List.of() : projects.stream().filter(p -> p != null && !p.isBlank())
+                        .map(String::strip).toList();
             }
 
             public TrackerMode modeOrOff() {

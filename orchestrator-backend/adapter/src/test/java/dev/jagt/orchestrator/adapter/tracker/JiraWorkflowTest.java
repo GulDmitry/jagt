@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,6 +33,25 @@ class JiraWorkflowTest {
                 .withTrackerStatus(stage).withAssignee(assignee);
 
         assertThat(workflow.startsWork(item)).isEqualTo(starts);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"ABC,true", "abc,true", "XYZ,false", "'',false"})
+    void startsWorkOnlyOnAnItemOfABoardTheInstallNamed(String board, boolean starts) {
+        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("take", "jira",
+                "dzmitry", "In Progress", null, null, List.of("ABC"))));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
+                .withTrackerStatus("In Progress").withAssignee("dzmitry").withTrackerProject(board);
+
+        assertThat(workflow.startsWork(item)).isEqualTo(starts);
+    }
+
+    @Test
+    void asksOnlyForTheBoardsTheInstallNamed() {
+        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("take", "jira",
+                "dzmitry", "In Progress", null, null, List.of("ABC", "XYZ"))));
+
+        assertThat(workflow.candidateQuery()).endsWith(" AND project in (\"ABC\", \"XYZ\")");
     }
 
     @Test
