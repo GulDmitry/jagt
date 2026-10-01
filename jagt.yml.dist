@@ -18,6 +18,8 @@ orchestrator:
       #                             # placing an item no label places; its path is used where you write none
       # verifyCommand: ["./gradlew", "test"]   # jagt runs it in the worktree before a hand-back reaches you;
                                                # a failing run goes back to the agent, never to your IDE
+      # deployCheck: "open the broker dashboard on dev"   # after each deploy the agent is asked to check it there,
+                                               # once; what fails it fixes, and the round goes round again
 
   # ── Platform ───────────────────────────────────────────────────────────────────────────────────────────────
   platform: macos          # macos | linux. Not detected: refused when it is not what the machine reports
