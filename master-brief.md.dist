@@ -16,6 +16,11 @@ own. This brief only adds to it; a `| role | the question it asks |` table here 
 - **A ceiling is raised only after lossless compression failed** — word budgets, line limits, collaborator
   counts. Compress without losing a fact first, and say what you compressed.
 
+## Environments
+
+- **Name the environments sessions use freely**, such as dev and stage: logging in and checking there needs no
+  one's leave. Name the one that is off limits, such as production.
+
 ## Three rounds, and the answer each deserved
 
 - *Ticket: "set the mock's version to the latest, 3.0". Diff: v1 kept, v2 replaced by v3.* → "Add v3 beside
