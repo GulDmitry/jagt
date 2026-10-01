@@ -29,11 +29,11 @@ class DeployCheckJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
                 .withDeployCommit("proj", "0123456789abcdef")));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of()).withDeployCheck("open the broker page"))));
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()).withDeployCheck("open the changed page"))));
 
         job.run();
 
-        verify(sessions).relayIfChanged(eq("ABC-42"), contains("- proj: 01234567 on dev — open the broker page"));
+        verify(sessions).relayIfChanged(eq("ABC-42"), contains("- proj: 01234567 on dev — open the changed page"));
     }
 
     @Test
@@ -41,7 +41,7 @@ class DeployCheckJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build()
                 .withDeployCommit("proj", "0123456789abcdef")));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
-                new ProjectConfig("/repo", "origin/main", "dev", List.of()).withDeployCheck("open the broker page"))));
+                new ProjectConfig("/repo", "origin/main", "dev", List.of()).withDeployCheck("open the changed page"))));
         when(sessions.relayIfChanged(eq("ABC-42"), anyString())).thenReturn(true);
 
         job.run();
