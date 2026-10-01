@@ -62,7 +62,7 @@ class IntakeJobTest {
                         List.of("backend")))));
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
                 new IntakeCandidates.Ready(item, TokenUsage.NONE))));
-        when(routing.projectFor(item)).thenReturn(Optional.of("api"));
+        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Placed("api"));
         when(launcher.launch(any(), any())).thenReturn(Launched.created("ABC-42", "started"));
 
         job.run();
@@ -82,7 +82,7 @@ class IntakeJobTest {
                         List.of("backend")))));
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
                 new IntakeCandidates.Ready(item, TokenUsage.NONE))));
-        when(routing.projectFor(item)).thenReturn(Optional.empty());
+        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
 
         job.run();
 
@@ -105,8 +105,8 @@ class IntakeJobTest {
         when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
                 new IntakeCandidates.Ready(first, TokenUsage.NONE),
                 new IntakeCandidates.Ready(second, TokenUsage.NONE))));
-        when(routing.projectFor(first)).thenReturn(Optional.of("api"));
-        when(routing.projectFor(second)).thenReturn(Optional.of("api"));
+        when(routing.projectFor(first)).thenReturn(new ProjectRouting.Placed("api"));
+        when(routing.projectFor(second)).thenReturn(new ProjectRouting.Placed("api"));
         when(launcher.launch(any(), any()))
                 .thenThrow(new IllegalArgumentException("24 tasks are already open, which is the limit"));
 
@@ -116,5 +116,23 @@ class IntakeJobTest {
                 new Answer<>(Optional.of(first), TokenUsage.NONE));
         verify(launcher, never()).launch(new LaunchRequest("ABC-2", "api", null, null, null, null),
                 new Answer<>(Optional.of(second), TokenUsage.NONE));
+    }
+
+    @Test
+    void leavesAnItemTheRouterCouldNotAnswerForTheNextPollInsteadOfTurningItAway() {
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
+                .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42")
+                .withTrackerStatus("In Progress");
+        when(configService.load()).thenReturn(ConfigFile.defaults()
+                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", "Ready for Stage", null))
+                .withProjects(Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
+        when(candidates.waiting(any())).thenReturn(Optional.of(List.of(
+                new IntakeCandidates.Ready(item, TokenUsage.NONE))));
+        when(routing.projectFor(item)).thenReturn(new ProjectRouting.Unreadable("the router answered nothing"));
+
+        job.run();
+
+        verify(history, never()).turnAway(anyString(), anyString());
+        verify(launcher, never()).launch(any(), any());
     }
 }

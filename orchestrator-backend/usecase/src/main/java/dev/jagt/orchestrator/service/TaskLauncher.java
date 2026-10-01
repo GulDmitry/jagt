@@ -110,10 +110,11 @@ public class TaskLauncher {
         }
         String taskId = f.key();
         // A human who named a project has settled it; only an unplaced one is worth asking about.
-        List<String> resolved = chosen != null ? chosen : routing.projectFor(f).map(List::of).orElse(null);
+        ProjectRouting.Placement placement = chosen != null ? null : routing.projectFor(f);
+        List<String> resolved = chosen != null ? chosen : placement.project().map(List::of).orElse(null);
         if (resolved == null) {
-            return Launched.refused("error: nothing places " + taskId + " in a configured project — say which:"
-                    + " do " + taskId + " <project>");
+            return Launched.refused("error: " + taskId + " not placed in a configured project: "
+                    + placement.reason() + " — say which: do " + taskId + " <project>");
         }
         String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
                 + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());

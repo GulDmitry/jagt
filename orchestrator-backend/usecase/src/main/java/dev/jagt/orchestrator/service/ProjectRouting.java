@@ -20,9 +20,8 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Which repository an item's work belongs in. A board carries items for every repository at once and a label
- * naming a layer places none of them, so what decides is a read of the item itself — against what each
- * repository is, and against where items like it were actually done.
+ * Which repository an item's work belongs in: the one project its labels name, else a read of the item itself —
+ * against what each repository is, and against where items like it were actually done.
  */
 @Component
 @RequiredArgsConstructor
@@ -37,14 +36,41 @@ public class ProjectRouting {
     private final FinishedTasks finished;
     private final RoutingMemory memory;
 
-    /** Empty where nothing could place it, which is a human's to settle rather than anything's to guess. */
-    public Optional<String> projectFor(TicketFacts item) {
+    /** A router that answered nothing has not said the item fits nowhere: only {@link Undecided} has. */
+    public sealed interface Placement {
+
+        default Optional<String> project() {
+            return this instanceof Placed placed ? Optional.of(placed.key()) : Optional.empty();
+        }
+
+        default String reason() {
+            return switch (this) {
+                case Placed placed -> "placed in " + placed.key();
+                case Undecided undecided -> undecided.why();
+                case Unreadable unreadable -> unreadable.cause();
+            };
+        }
+    }
+
+    public record Placed(String key) implements Placement {
+    }
+
+    public record Undecided(String why) implements Placement {
+    }
+
+    public record Unreadable(String cause) implements Placement {
+    }
+
+    public Placement projectFor(TicketFacts item) {
         Map<String, ProjectConfig> projects = configService.load().projects();
         // Nothing to confirm where there is nothing to choose between.
         if (projects.size() == 1) {
-            return Optional.of(projects.keySet().iterator().next());
+            return new Placed(projects.keySet().iterator().next());
         }
         List<String> suggested = projectsMatching(item, labelsOf(projects));
+        if (suggested.size() == 1) {
+            return new Placed(suggested.get(0));
+        }
         return asked(item, projects, suggested, RoutingQuestion.defaults()
                 .withItem(item)
                 .withProjects(aboutEach(projects))
@@ -53,15 +79,15 @@ public class ProjectRouting {
                 .withRules(memory.rules()));
     }
 
-    private Optional<String> asked(TicketFacts item, Map<String, ProjectConfig> projects,
-                                   List<String> suggested, RoutingQuestion question) {
+    private Placement asked(TicketFacts item, Map<String, ProjectConfig> projects,
+                            List<String> suggested, RoutingQuestion question) {
         Answer<RoutingAnswer> answer = assistant.routeProject(question);
         if (answer.facts().isEmpty()) {
             log.atError().setMessage("project routing unreadable")
                     .addKeyValue("ref", item.key())
-                    .addKeyValue("cause", "the router answered nothing, so the item was left for a human")
+                    .addKeyValue("cause", "the router answered nothing")
                     .log();
-            return Optional.empty();
+            return new Unreadable("the router answered nothing");
         }
         RoutingAnswer routed = answer.facts().get();
         String chosen = routed.project();
@@ -72,7 +98,8 @@ public class ProjectRouting {
                     .addKeyValue("answered", chosen)
                     .addKeyValue("suggested", String.join(",", suggested))
                     .log();
-            return Optional.empty();
+            return new Undecided("the router read it and placed it in no configured project (answered '"
+                    + chosen + "')");
         }
         if (!suggested.isEmpty() && !suggested.contains(chosen)) {
             log.atInfo().setMessage("project routing overruled the labels")
@@ -82,7 +109,7 @@ public class ProjectRouting {
                     .log();
         }
         learn(item, suggested, routed);
-        return Optional.of(chosen);
+        return new Placed(chosen);
     }
 
     /**

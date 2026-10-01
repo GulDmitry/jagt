@@ -96,11 +96,11 @@ orchestrator:
   # `take` turns items at your starting stage into tasks; `close` ends a task whose item reached the stage that
   # says the work landed. Each end asks only for the stage IT reads. Every stage name is YOUR workflow's:
   # nothing here has a default, because a guessed stage starts work nobody asked for.
-  # Per poll: one search, then one read and one routing call per item it has not seen. The routing call OPENS
-  # the item and reads it — labels are a suggestion it confirms, never the answer, because a board carries
-  # items for every repository and a label naming a layer places none of them. It is also shown where items
-  # like it were finished before — only the ones you placed yourself or a deploy confirmed, read off
-  # `finished.jsonl`, so it never learns from a guess of its own. With one repository configured there is
+  # Per poll: one search, then one read per item it has not seen. Labels naming exactly one project place the
+  # item; otherwise a routing call OPENS the item and reads it against each project's `about`. A routing call
+  # that fails is asked again next poll; only one that read the item and placed it nowhere turns it away.
+  # It is also shown where items like it were finished before — only the ones you placed yourself or a deploy
+  # confirmed, read off `finished.jsonl`, so it never learns from a guess of its own. With one repository configured there is
   # nothing to choose and nothing is asked.
   tracker:
     mode: off             # off | take | close | both

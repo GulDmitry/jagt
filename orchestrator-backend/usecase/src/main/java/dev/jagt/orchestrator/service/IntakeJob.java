@@ -54,8 +54,8 @@ public class IntakeJob implements Job {
         // Stamped as the tracker's so the record says who chose each repository, which is what a later
         // routing may learn from and what it must not.
         for (IntakeCandidates.Ready ready : candidates.waiting(history.held()).orElse(List.of())) {
-            // One refusal stops the poll: what refuses a launch is the board rather than the item, and the
-            // rest of the list would buy the same answer once per candidate.
+            // One refusal stops the poll: the board, or a router that answered nothing, would give the rest of
+            // the list the same answer once per candidate.
             if (!OriginContext.as(ActionOrigin.TRACKER, () -> start(ready))) {
                 return;
             }
@@ -64,10 +64,14 @@ public class IntakeJob implements Job {
 
     private boolean start(IntakeCandidates.Ready ready) {
         TicketFacts item = ready.item();
-        Optional<String> project = routing.projectFor(item);
+        ProjectRouting.Placement placement = routing.projectFor(item);
+        // Not turned away: the next poll asks again, where a turned-away key would wait for a restart.
+        if (placement instanceof ProjectRouting.Unreadable) {
+            return false;
+        }
+        Optional<String> project = placement.project();
         if (project.isEmpty()) {
-            history.turnAway(item.key(), "nothing places its labels " + item.labels()
-                    + " or its tracker project '" + item.trackerProject() + "' in a configured project");
+            history.turnAway(item.key(), placement.reason());
             return true;
         }
         try {

@@ -40,35 +40,32 @@ class ProjectRoutingTest {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(
                 Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
 
-        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).contains("api");
+        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")))
+                .isEqualTo(new ProjectRouting.Placed("api"));
         verify(assistant, never()).routeProject(any());
     }
 
     @Test
-    void confirmsTheLabelsRatherThanTakingThemEvenWhenTheyNameOneRepository() {
+    void placesAnItemWhoseLabelsNameOneRepositoryWithoutAskingTheRouter() {
         TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(finished.all()).thenReturn(List.of());
-        when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("api", "")), TokenUsage.NONE));
-        ArgumentCaptor<RoutingQuestion> asked = ArgumentCaptor.captor();
 
-        assertThat(routing.projectFor(item)).contains("api");
-        verify(assistant).routeProject(asked.capture());
-        assertThat(asked.getValue().suggested()).containsExactly("api");
+        assertThat(routing.projectFor(item)).isEqualTo(new ProjectRouting.Placed("api"));
+        verify(assistant, never()).routeProject(any());
     }
 
     @Test
-    void takesARepositoryTheLabelsDidNotSuggestWhenTheItemItselfSaysSo() {
-        TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
+    void asksTheRouterWhereTheLabelsNameMoreThanOneRepository() {
+        TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend", "frontend"));
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
         when(finished.all()).thenReturn(List.of());
         when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("web", "")), TokenUsage.NONE));
 
-        assertThat(routing.projectFor(item)).contains("web");
+        assertThat(routing.projectFor(item)).isEqualTo(new ProjectRouting.Placed("web"));
     }
 
     @Test
@@ -103,21 +100,6 @@ class ProjectRoutingTest {
         routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
         verify(memory).remember("PAN items about quote import", "api");
-    }
-
-    @Test
-    void writesDownNothingWhereTheLabelsHadAlreadyPlacedIt() {
-        TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
-        when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
-                "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
-                "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
-        when(finished.all()).thenReturn(List.of());
-        when(assistant.routeProject(any())).thenReturn(new Answer<>(
-                Optional.of(new RoutingAnswer("api", "anything at all")), TokenUsage.NONE));
-
-        routing.projectFor(item);
-
-        verify(memory, never()).remember(any(), any());
     }
 
     @Test
@@ -157,17 +139,19 @@ class ProjectRoutingTest {
         when(finished.all()).thenReturn(List.of());
         when(assistant.routeProject(any())).thenReturn(new Answer<>(Optional.of(new RoutingAnswer("mobile", "")), TokenUsage.NONE));
 
-        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).isEmpty();
+        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")))
+                .isInstanceOf(ProjectRouting.Undecided.class);
     }
 
     @Test
-    void leavesTheItemForAHumanWhenNothingCouldBeAskedAtAll() {
+    void reportsARouterThatAnsweredNothingAsUnreadableRatherThanUndecided() {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
         when(finished.all()).thenReturn(List.of());
         when(assistant.routeProject(any())).thenReturn(Answer.unavailable());
 
-        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42"))).isEmpty();
+        assertThat(routing.projectFor(TicketFacts.defaults().withKey("ABC-42")))
+                .isInstanceOf(ProjectRouting.Unreadable.class);
     }
 }

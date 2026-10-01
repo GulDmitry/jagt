@@ -80,11 +80,11 @@ class TaskLauncherTest {
         when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()
                 .withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
                 .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
-        when(routing.projectFor(any())).thenReturn(Optional.empty());
+        when(routing.projectFor(any())).thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
 
         String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
 
-        assertThat(out).contains("nothing places ABC-42");
+        assertThat(out).contains("ABC-42 not placed in a configured project: placed in no configured project");
         verify(provisioning, never()).initializeTask(any());
     }
 
@@ -94,7 +94,7 @@ class TaskLauncherTest {
         when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()
                 .withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
                 .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
-        when(routing.projectFor(any())).thenReturn(Optional.of("group-a"));
+        when(routing.projectFor(any())).thenReturn(new ProjectRouting.Placed("group-a"));
 
         launcher.launch(LaunchRequest.of("ABC-42"));
 
