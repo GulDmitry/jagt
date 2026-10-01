@@ -31,6 +31,10 @@ public class MeteredAssistant {
         return metered(AssistantCallKind.TICKET_READ, assistant.readTicket(ticketRef, corrections));
     }
 
+    public Answer<String> readTicketText(String ticketRef) {
+        return metered(AssistantCallKind.MASTER_REVIEW, assistant.readTicketText(ticketRef));
+    }
+
     public Answer<List<String>> findCandidates(String query) {
         return metered(AssistantCallKind.INTAKE, assistant.findCandidates(query));
     }

@@ -1,7 +1,5 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
@@ -36,28 +34,29 @@ public class MasterPanel {
 
     private final RoundReviewer reviewer;
     private final UsageTracker usage;
-    private final OrchestratorPaths paths;
-    private final PromptTemplates prompts;
+    private final MasterBriefs briefs;
     private final MasterDecisions decisions;
+    private final TicketTexts tickets;
 
     public record Role(String name, String question) {
     }
 
     /** Writes the round's review file; false where the brief could not be read, and nothing was asked. */
     public boolean review(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-        Optional<String> read = brief(taskId, config);
+        Optional<String> read = briefs.master(taskId, config);
         if (read.isEmpty()) {
             return false;
         }
         String brief = read.get();
         List<Path> worktrees = worktrees(task);
-        List<Role> roles = roles(brief, prompts.subAgentContext());
+        List<Role> roles = roles(brief, briefs.author());
+        String shared = shared(brief, briefs.author(), config.may(MasterRight.ANSWER));
+        String ticket = tickets.of(taskId).orElse("");
         List<Judgement> judgements = new ArrayList<>();
         try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<Answer<Judgement>>> asked = roles.stream()
-                    .map(role -> new RoundReviewer.Round(prompt(taskId, task, brief, prompts.subAgentContext(), role,
-                            config.may(MasterRight.ANSWER), decisions.of(task)), worktrees,
-                            config.modelOrInherited()))
+                    .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, ticket,
+                            decisions.of(task)), worktrees, config.modelOrInherited()))
                     .map(round -> threads.submit(() -> reviewer.review(round))).toList();
             for (Future<Answer<Judgement>> answer : asked) {
                 judgements.add(read(taskId, answer));
@@ -81,30 +80,18 @@ public class MasterPanel {
     /** The session's question decided as the human would; empty where no decision came back. */
     public Optional<String> answer(String taskId, TaskState task, String question,
                                    ConfigService.ConfigFile.MasterConfig config) {
-        Optional<String> brief = brief(taskId, config);
+        Optional<String> brief = briefs.master(taskId, config);
         if (brief.isEmpty()) {
             return Optional.empty();
         }
-        Answer<Judgement> read = reviewer.review(new RoundReviewer.Round(
-                answerPrompt(taskId, task, brief.get(), prompts.subAgentContext(), question, decisions.of(task)),
+        Answer<Judgement> read = reviewer.review(new RoundReviewer.Round("",
+                answerPrompt(taskId, task, brief.get(), briefs.author(), question, decisions.of(task)),
                 worktrees(task),
                 config.modelOrInherited()));
         usage.record(AssistantCallKind.MASTER_REVIEW, read.usage());
         usage.chargeTask(taskId, read.usage());
         return read.facts().filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
                 .map(said -> said.findings().stream().map(f -> oneLine(f.issue())).collect(Collectors.joining("\n")));
-    }
-
-    private Optional<String> brief(String taskId, ConfigService.ConfigFile.MasterConfig config) {
-        try {
-            return Optional.of(Files.readString(paths.root().resolve(config.briefOrDefault())));
-        } catch (IOException unreadable) {
-            log.atError().setMessage("master brief unreadable").addKeyValue("task", taskId)
-                    .addKeyValue("file", config.briefOrDefault())
-                    .addKeyValue("cause", unreadable.toString())
-                    .log();
-            return Optional.empty();
-        }
     }
 
     private static List<Path> worktrees(TaskState task) {
@@ -212,20 +199,15 @@ public class MasterPanel {
                 + " test.\n";
     }
 
-    static String prompt(String taskId, TaskState task, String brief, String authorBrief, Role role,
-                         boolean decides, String decided) {
-        String ticket = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
-        return "You are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
-                + role.question() + ". The other roles read this round separately; say nothing outside yours.\n\n"
-                + "The brief you judge by:\n" + brief + "\n\n"
+    /** Names no role and no task, so every reader of every round sends it alike and finds it cached. */
+    static String shared(String brief, String authorBrief, boolean decides) {
+        return "The brief you judge by:\n" + brief + "\n\n"
                 + "The brief the author worked to, its %s filled per task; yours extends it:\n"
                 + authorBrief + "\n\n"
-                + "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
-                        .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + ticket + ".\n"
-                + "Read the ticket with your tracker tools, then everything the task changed against its base,"
-                + " committed and not. Judge from the ticket and the diff: the author's own account is not"
-                + " evidence. Run no build and no test: they ran before the round reached you.\n"
-                + settled(decided)
+                + "Read the ticket, quoted in the round where jagt read it and with your tracker tools where it is"
+                + " not, then everything the task changed against its base, committed and not. Judge from the"
+                + " ticket and the diff: the author's own account is not evidence. Run no build and no test: they"
+                + " ran before the round reached you.\n"
                 + "The best is the enemy of the good: ready means nothing is broken and nothing misses the ticket.\n"
                 + "verdict: ready, not ready, or question. findings: one per problem — file, what is wrong and the"
                 + " one clause of why, pattern: two to four words naming the kind of problem, and severity:"
@@ -238,5 +220,16 @@ public class MasterPanel {
                 + " premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
                 + " command and what it printed, that shows it; blank where you only reasoned it. failure: blank"
                 + " unless something stopped you reading the round, then what.";
+    }
+
+    static String prompt(String taskId, TaskState task, Role role, String ticket, String decided) {
+        String link = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
+        return "You are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
+                + role.question() + ". The other roles read this round separately; say nothing outside yours.\n\n"
+                + "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
+                        .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + link + ".\n"
+                + (ticket.isBlank() ? "" : "The ticket, read for this round:\n<ticket>\n" + ticket
+                        + "\n</ticket>\n")
+                + settled(decided);
     }
 }

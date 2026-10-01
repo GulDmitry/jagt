@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.protocol.ProjectRead;
 import dev.jagt.orchestrator.protocol.RuleRead;
 import dev.jagt.orchestrator.protocol.ReviewRead;
 import dev.jagt.orchestrator.protocol.TicketRead;
+import dev.jagt.orchestrator.protocol.TicketText;
 import dev.jagt.orchestrator.protocol.TicketSearch;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
@@ -99,6 +100,23 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     .withTrackerStatus(n.path("trackerStatus").asString(""))
                     .withAssignee(n.path("assignee").asString(""));
         });
+    }
+
+    @Override
+    public Answer<String> readTicketText(String ticketRef) {
+        if (ticketRef == null || ticketRef.isBlank()) {
+            return Answer.unavailable();
+        }
+        String prompt = "<role>You copy one work item out of whichever tracker holds it.</role>\n"
+                + "<task>Read the work item \"" + ticketRef + "\" with the matching MCP tool; if it is a URL,"
+                + " follow it.</task>\n"
+                + "<rules>Answer text with its summary, description, acceptance criteria and every comment, each"
+                + " under its own heading, VERBATIM: never summarise, shorten or add." + FAILURE_RULE
+                + "</rules>\n"
+                + "Respond directly, no preamble.";
+        Answer<String> read = readable(ask(prompt, TicketText.SCHEMA.json(), ticketRef,
+                AssistantCallKind.MASTER_REVIEW), ticketRef).map(n -> n.path("text").asString("").strip());
+        return new Answer<>(read.facts().filter(text -> !text.isEmpty()), read.usage());
     }
 
     @Override

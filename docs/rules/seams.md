@@ -39,7 +39,7 @@ implementation plus a config value, never `if claude` or `if macos`. The flow st
 
 ## Master assistant
 
-The **only** way jagt reads outside itself, headless and one-shot: `service/TicketReader`,
+The **only** way jagt reads outside itself, headless and one-shot: `service/TicketReader`, `service/TicketTexts`,
 `service/ReviewReader`, the ⌘K palette.
 
 - It can **follow a URL** into a tracker or code host jagt was never told about; it cannot reach a server

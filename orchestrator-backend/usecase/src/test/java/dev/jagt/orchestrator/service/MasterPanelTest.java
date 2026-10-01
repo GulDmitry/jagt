@@ -18,22 +18,26 @@ class MasterPanelTest {
 
     @Test
     void showsEachReviewerTheBriefTheAuthorWorkedTo() {
-        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+        String shared = MasterPanel.shared("judge hard", "never commit unasked", false);
 
-        String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
-                new MasterPanel.Role("QA", "is it tested right"), false, "");
-
-        assertThat(prompt).contains("never commit unasked");
+        assertThat(shared).contains("never commit unasked");
     }
 
     @Test
     void letsAReviewerStandingInForTheHumanDecideWhatItWouldHaveAsked() {
+        String shared = MasterPanel.shared("judge hard", "never commit unasked", true);
+
+        assertThat(shared).contains("never answer question");
+    }
+
+    @Test
+    void quotesTheTicketReadForTheRoundToEachReviewer() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
-                new MasterPanel.Role("QA", "is it tested right"), true, "");
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right"),
+                "Summary: accept v3 calls", "");
 
-        assertThat(prompt).contains("never answer question");
+        assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>");
     }
 
     @Test
@@ -50,8 +54,8 @@ class MasterPanelTest {
     void holdsEveryReviewerToWhatEarlierRoundsSettled() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, "judge hard", "never commit unasked",
-                new MasterPanel.Role("QA", "is it tested right"), true, "- keep the extraction per the human");
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right"), "",
+                "- keep the extraction per the human");
 
         assertThat(prompt).contains("binding").contains("- keep the extraction per the human");
     }

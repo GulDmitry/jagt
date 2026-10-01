@@ -29,7 +29,7 @@ class HeadlessRoundReviewerTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
-        reviewer.review(new RoundReviewer.Round("review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
@@ -42,11 +42,23 @@ class HeadlessRoundReviewerTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
-        reviewer.review(new RoundReviewer.Round("review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
         assertThat(command.getValue()).contains("Bash(./gradlew:*)", "Bash(mvn:*)", "Bash(npm:*)", "Bash(timeout:*)");
+    }
+
+    @Test
+    void sendsWhatEveryRoundSharesAsTheSystemPromptSoTheNextReaderFindsItCached() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("judge hard", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSubsequence("--append-system-prompt", "judge hard");
     }
 
     @Test
@@ -56,7 +68,7 @@ class HeadlessRoundReviewerTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
-        pinned.review(new RoundReviewer.Round("review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+        pinned.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
@@ -68,7 +80,7 @@ class HeadlessRoundReviewerTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(1, "", "session limit reached"));
 
-        var answer = reviewer.review(new RoundReviewer.Round("review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+        var answer = reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
 
         assertThat(answer.facts()).get().satisfies(judgement -> assertThat(judgement.failure()).isNotBlank());
     }

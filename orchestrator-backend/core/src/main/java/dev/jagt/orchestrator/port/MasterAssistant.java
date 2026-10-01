@@ -52,6 +52,9 @@ public interface MasterAssistant {
      */
     Answer<TicketFacts> readTicket(String ticketRef, List<String> corrections);
 
+    /** The item's summary, description, acceptance criteria and comments, verbatim. */
+    Answer<String> readTicketText(String ticketRef);
+
     /**
      * Lists the keys of the work items matching {@code query}, phrased by the tracker's own workflow. An empty
      * LIST means the tracker answered and nothing matched; an empty {@code Optional} means nobody got to ask.

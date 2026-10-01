@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +46,9 @@ public class HeadlessRoundReviewer implements RoundReviewer {
         List<String> cmd = new ArrayList<>(List.of(claude.command(), round.prompt(), "-p",
                 "--json-schema", RoundRead.SCHEMA.json(), "--output-format", "json",
                 "--setting-sources", assistant.settingSources()));
+        if (!round.shared().isBlank()) {
+            cmd.addAll(List.of("--append-system-prompt", round.shared()));
+        }
         String pinned = assistant.mcpConfigFor(AssistantCallKind.MASTER_REVIEW);
         if (!pinned.isBlank()) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", pinned));
