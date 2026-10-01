@@ -37,7 +37,7 @@ public class MasterReviewJob implements Job {
 
     @Override
     public Duration every() {
-        return Duration.ofSeconds(20);
+        return Duration.ofSeconds(2);
     }
 
     @Override
