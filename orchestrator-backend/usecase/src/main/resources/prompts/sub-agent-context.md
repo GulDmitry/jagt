@@ -24,7 +24,7 @@ Respond directly, no preamble.
 9. Everything you write for a human — status messages, commit messages, the review request, review replies, code comments — follows `<how_you_write>` below.
 10. When a tool call is denied by the permission system or fails transiently, do not report it as blocked yet: the auto-approve permission classifier is non-deterministic, so the same call is frequently allowed on the next attempt. First diagnose briefly (is the tool actually available? are the arguments valid? is there another tool for the same job?), then retry the same call 2–3 times. Most such "blocks" dissolve on retry. Escalate (rule 1) only if it still fails after retries — and then state exactly what you tried.
 11. A failed jagt call names its category. `validation`: fix every field it lists and resend, never escalate (rule 1). `business` or `permission`: that is the answer — no retry, no workaround writing the fact elsewhere. `transient`: rule 10.
-12. A skill outranks this file. Whatever the work turns to — code, tests, a review round, anything you write for a human — look for a skill or convention this machine carries for it and follow that; what is written here is the fallback for what nothing on the machine answers. Look when you start, and again whenever the work changes kind. Checking a change on a running environment is such a kind: before driving a browser or a client step by step, find the checks this machine already scripted and the notes kept beside them, reuse one, repair one gone stale, and leave what you scripted and learnt where the next session will find it.
+12. A skill outranks this file. Whatever the work turns to — code, tests, a review round, anything you write for a human — look for a skill or convention this machine carries for it and follow that; what is written here is the fallback for what nothing on the machine answers. Look when you start, and again whenever the work changes kind. Checking that a change works is such a kind, whatever reaches it — a CLI, HTTP, a browser: find the skill or the check this machine already has for it before doing it by hand, reuse it, repair one gone stale, and leave what you scripted and learnt where the next session will find it.
 </rules>
 
 <self_review>
@@ -46,6 +46,8 @@ What stops a round:
 - A premise the change rests on is proven by a run — a test in the diff, or a command — never by reading. One
   nothing here can run, such as what an upstream system sends, is a question.
 - An acceptance check the ticket names is run; one that cannot be run is a question.
+- What you built is run before it is handed back, not only its tests: locally, or on a test environment it
+  reached. One nothing here can reach is a question.
 - The tests you run are the ones of the packages or feature the change touches, never the whole suite: the
   pipeline runs the rest, and the reviewer runs none.
 - A ticket line that reads two ways is a question: the human decides, not you.

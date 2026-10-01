@@ -13,28 +13,17 @@ public record ProjectConfig(
         // What jagt runs in the worktree before a hand-back reaches a human. Null or empty = nothing is run.
         List<String> verifyCommand,
         // One line saying what this repository IS, for placing an item no label places. Blank = its path.
-        String about,
-        // How the agent checks a deploy where it landed, in the human's words. Blank = nobody is asked to.
-        String deployCheck
+        String about
 ) {
 
     /** A project declaring no command of its own: the four keys every install has always had. */
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
-        this(path, baseBranch, deployBranch, labels, List.of(), null, null);
+        this(path, baseBranch, deployBranch, labels, List.of(), null);
     }
 
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels,
                          List<String> verifyCommand) {
         this(path, baseBranch, deployBranch, labels, verifyCommand, null);
-    }
-
-    public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels,
-                         List<String> verifyCommand, String about) {
-        this(path, baseBranch, deployBranch, labels, verifyCommand, about, null);
-    }
-
-    public ProjectConfig withDeployCheck(String deployCheck) {
-        return new ProjectConfig(path, baseBranch, deployBranch, labels, verifyCommand, about, deployCheck);
     }
 
     /** What a router is told this repository is; its path where nobody wrote a line, the name carrying most. */

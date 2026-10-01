@@ -15,8 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Asks a deployed task's session to check the change where it landed, once per deploy. A check that fails is the
- * session's IN_PROGRESS, and the round goes round again: reviewed, deployed, checked.
+ * Asks every deployed task's session to check the change where it landed, once per deploy. A check that fails is
+ * the session's IN_PROGRESS, and the round goes round again: reviewed, deployed, checked.
  */
 @Service
 @RequiredArgsConstructor
@@ -35,7 +35,7 @@ public class DeployCheckJob implements Job {
 
     @Override
     public String describe() {
-        return "ask each deployed task's session to check it where it landed, where its project says how";
+        return "ask each deployed task's session to check the change where it landed";
     }
 
     @Override
@@ -58,25 +58,25 @@ public class DeployCheckJob implements Job {
 
     private Optional<String> brief(String taskId, TaskState task) {
         Map<String, ProjectConfig> projects = configService.load().projects();
-        String checks = task.repos().stream()
+        String landed = task.repos().stream()
                 .filter(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank())
-                .map(repo -> check(repo, projects.get(repo.project()))).flatMap(Optional::stream)
+                .map(repo -> landed(repo, projects.get(repo.project())))
                 .collect(Collectors.joining("\n"));
-        if (checks.isEmpty()) {
+        if (landed.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(taskId + " is deployed. Check that it works where it landed:\n" + checks + "\n\n"
-                + "If it works, report nothing: end your turn with one line naming what you checked. If it does"
-                + " not, report IN_PROGRESS saying what broke, fix it, and hand the round back as usual — it is"
-                + " reviewed, deployed and checked again.");
+        return Optional.of(taskId + " is deployed:\n" + landed + "\n\n"
+                + "Check that it works where it landed, through whatever reaches it — a CLI, HTTP, a browser — with"
+                + " the skill or check this machine has for it. If it works, report nothing: end your turn with one"
+                + " line naming what you checked, or what kept you from reaching it. If it does not, report"
+                + " IN_PROGRESS saying what broke, fix it, and hand the round back as usual — it is reviewed,"
+                + " deployed and checked again.");
     }
 
-    private static Optional<String> check(TaskRepo repo, ProjectConfig project) {
-        if (project == null || project.deployCheck() == null || project.deployCheck().isBlank()) {
-            return Optional.empty();
-        }
+    private static String landed(TaskRepo repo, ProjectConfig project) {
         String sha = repo.deployCommit().length() > 8 ? repo.deployCommit().substring(0, 8) : repo.deployCommit();
-        return Optional.of("- " + repo.project() + ": " + sha + " on " + project.deployBranch() + " — "
-                + project.deployCheck().strip());
+        String branch = project == null || project.deployBranch() == null ? "its deploy branch"
+                : project.deployBranch();
+        return "- " + repo.project() + ": " + sha + " on " + branch;
     }
 }

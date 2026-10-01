@@ -30,9 +30,8 @@ it to — no action leads there and no agent may report it. `VerifyJob` runs the
 green reaches the human, red goes back to the session with the output. `TaskStatus.heldByJagt` is why the
 watchdog leaves that silence alone.
 
-**A deploy a project says how to check is checked where it landed**: `DeployCheckJob` relays the project's
-`deployCheck` once per deploy commit, keyed off what it asked rather than the context file every other relay
-overwrites. A green check reports nothing and the task stays DEPLOYED; a red one is the session's IN_PROGRESS,
+**Every deploy is checked where it landed**: `DeployCheckJob` asks the session once per deploy commit, keyed
+off what it asked rather than the context file every other relay overwrites; how to reach it is the session's. A green check reports nothing and the task stays DEPLOYED; a red one is the session's IN_PROGRESS,
 and the same round runs again — reviewed, deployed, checked.
 
 A status a **human** owns is not refused but **held**: `FlowRules.reported` keeps a REVERTED task where it is

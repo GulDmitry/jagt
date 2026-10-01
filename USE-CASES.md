@@ -90,7 +90,7 @@
 | An agent stops and never says so | — | The card turns over: NEEDS YOU, Focus highlighted |
 | A session sits at a permission prompt | — | Reported within seconds |
 | A turn ends and the card says nothing | — | Correct: a turn end is silent until nothing has moved for a while |
-| A deployed change is checked on the environment it reached | — | its project's `deployCheck` is relayed once per deploy; a failure goes back to the session as a new round |
+| A deployed change is checked on the environment it reached | — | the session is asked once per deploy; a failure is its new round |
 | A card sits at `verifying` | — | jagt runs the project's `verifyCommand`; a red run goes back to the session, not to you |
 | The agent CLI never came up | `focus <task>` | The card says so: at NEW the launch is what to look at |
 | You want to talk to the agent | `focus <task>` | Its window is selected and the viewer raised; if it cannot be, `focus` says why |
