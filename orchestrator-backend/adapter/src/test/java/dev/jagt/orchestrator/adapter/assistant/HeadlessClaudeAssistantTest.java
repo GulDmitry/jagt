@@ -327,6 +327,20 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void readsTheSchemasObjectAModelFencedInsideItsProse() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                """
+                {"type":"result","is_error":false,
+                 "result":"The search returned no matching issues.\\n\\n```json\\n{\\"failure\\": \\"\\", \\"keys\\": []}\\n```"}""", ""));
+
+        var facts = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty()).findCandidates("assignee = me").facts();
+
+        assertThat(facts).contains(List.of());
+    }
+
+    @Test
     @ResourceLock(Resources.GLOBAL)
     void namesTheModelsOwnWordsWhenItAnsweredPastTheSchema() {
         ListAppender<ILoggingEvent> log = new ListAppender<>();

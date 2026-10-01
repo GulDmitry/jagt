@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Hardcodes no MCP server or path: {@code --setting-sources} makes the child inherit the human's own MCP
@@ -60,6 +62,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
     private static final int MAX_RELAYED = 2000;
     /** Mapping text to a command reads nothing and must feel like typing. */
     private static final Duration MAP_TIMEOUT = Duration.ofSeconds(90);
+    private static final Pattern FENCE = Pattern.compile("```(?:json)?\\s*(\\{.*?})\\s*```", Pattern.DOTALL);
 
     private final ProcessRunner processRunner;
     private final ClaudeProperties claude;
@@ -453,13 +456,23 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             return Optional.empty();
         }
         try {
-            JsonNode answer = mapper.readTree(raw);
+            JsonNode answer = mapper.readTree(fenced(raw));
             return answer.isObject() && carriesSchema(answer, schema)
                     ? Optional.of(answer)
                     : outsideSchema(label, "not the schema's object", raw);
         } catch (RuntimeException e) {
             return outsideSchema(label, e.getMessage(), raw);
         }
+    }
+
+    /** A model that skipped the schema tool often still writes the object, fenced inside its prose: the last fence. */
+    private static String fenced(String raw) {
+        Matcher fence = FENCE.matcher(raw);
+        String last = raw;
+        while (fence.find()) {
+            last = fence.group(1);
+        }
+        return last;
     }
 
     /**
