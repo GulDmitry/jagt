@@ -66,11 +66,11 @@ public class DeployCheckJob implements Job {
             return Optional.empty();
         }
         return Optional.of(taskId + " is deployed:\n" + landed + "\n\n"
-                + "Check that it works where it landed, through whatever reaches it — a CLI, HTTP, a browser — with"
-                + " the skill or check this machine has for it. If it works, report nothing: end your turn with one"
-                + " line naming what you checked, or what kept you from reaching it. If it does not, report"
-                + " IN_PROGRESS saying what broke, fix it, and hand the round back as usual — it is reviewed,"
-                + " deployed and checked again.");
+                + "Where this machine has the tools to reach it — a skill, a CLI, HTTP, a browser — make sure it"
+                + " is deployed and works there: the feature does what the ticket and its acceptance criteria ask."
+                + " If it does, or nothing here reaches it, report nothing: end your turn with one line naming"
+                + " what you checked, or that nothing could. If it does not, report IN_PROGRESS saying what broke,"
+                + " fix it, and hand the round back as usual — it is reviewed, deployed and checked again.");
     }
 
     private static String landed(TaskRepo repo, ProjectConfig project) {

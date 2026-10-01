@@ -31,7 +31,7 @@ green reaches the human, red goes back to the session with the output. `TaskStat
 watchdog leaves that silence alone.
 
 **Every deploy is checked where it landed**: `DeployCheckJob` asks the session once per deploy commit, keyed
-off what it asked rather than the context file every other relay overwrites; how to reach it is the session's. A green check reports nothing and the task stays DEPLOYED; a red one is the session's IN_PROGRESS,
+off what it asked rather than the context file every other relay overwrites; whether anything here reaches it, and how, is the session's. A green check reports nothing and the task stays DEPLOYED; a red one is the session's IN_PROGRESS,
 and the same round runs again — reviewed, deployed, checked.
 
 A status a **human** owns is not refused but **held**: `FlowRules.reported` keeps a REVERTED task where it is

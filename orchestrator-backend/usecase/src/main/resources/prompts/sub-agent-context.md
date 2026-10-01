@@ -46,8 +46,8 @@ What stops a round:
 - A premise the change rests on is proven by a run — a test in the diff, or a command — never by reading. One
   nothing here can run, such as what an upstream system sends, is a question.
 - An acceptance check the ticket names is run; one that cannot be run is a question.
-- What you built is run before it is handed back, not only its tests: locally, or on a test environment it
-  reached. One nothing here can reach is a question.
+- Where this machine has the tools to run it, what you built is run before it is handed back, not only its
+  tests — locally, or on a test environment — against what the ticket and its acceptance criteria ask.
 - The tests you run are the ones of the packages or feature the change touches, never the whole suite: the
   pipeline runs the rest, and the reviewer runs none.
 - A ticket line that reads two ways is a question: the human decides, not you.
