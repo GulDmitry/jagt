@@ -14,6 +14,9 @@ import dev.jagt.orchestrator.surface.mcp.MessageHandler;
 import dev.jagt.orchestrator.surface.mcp.MessageTool;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
+import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.capability.done.TaskRetirement;
@@ -24,9 +27,11 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -75,7 +80,7 @@ class McpToolScopeTest {
     @Test
     void refusesASubAgentRetiringATask() {
         ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class), retirement,
-                stateService)).get("remove_task");
+                stateService, mock(ConfigService.class))).get("remove_task");
 
         assertThatThrownBy(() -> handler.call(args("{\"taskId\":\"ABC-1\"}"), "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -116,13 +121,27 @@ class McpToolScopeTest {
     @Test
     void refusesASubAgentCreatingATask() {
         TaskProvisioning provisioning = mock(TaskProvisioning.class);
-        ToolHandler handler = declared(new TaskLifecycleTools(provisioning, retirement, stateService))
+        ToolHandler handler = declared(new TaskLifecycleTools(provisioning, retirement, stateService,
+                mock(ConfigService.class)))
                 .get("initialize_task");
 
         assertThatThrownBy(() -> handler.call(args("{\"taskId\":\"ABC-2\",\"projectKey\":\"demo\"}"), "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("initialize_task is Master-only");
         verifyNoInteractions(provisioning);
+    }
+
+    @Test
+    void tellsTheMasterWhatEachConfiguredProjectIsAndWhichLabelsPlaceAnItemInIt() {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig("/api",
+                "origin/main", "dev", List.of("backend"), List.of(), "the order API"))));
+        ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class), retirement,
+                stateService, config)).get("list_projects");
+
+        Object listed = handler.call(args("{}"), null);
+
+        assertThat(listed.toString()).contains("api: the order API — labels [backend]");
     }
 
     @ParameterizedTest
