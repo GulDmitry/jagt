@@ -71,7 +71,7 @@ class SessionReportsTest {
         String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
                 .record("ABC-1", SessionProbe.State.WORKING, SessionReports.Report.defaults().withStartedBy("compact"));
 
-        assertThat(answered).contains("sub-agent for ABC-1", "task_context.md");
+        assertThat(answered).contains("sub-agent for ABC-1", "task_request.md", "task_context.md");
     }
 
     @Test

@@ -43,6 +43,7 @@ public class WorktreeSetup {
         // The instructions live where the session reads them, and a relay writes to that same one worktree.
         if (repo.primary() && request.instructions() != null && !request.instructions().isBlank()) {
             WorktreeFiles.write(worktreePath.resolve(Artifact.CONTEXT.fileName()), request.instructions());
+            WorktreeFiles.write(worktreePath.resolve(Artifact.REQUEST.fileName()), request.instructions());
         }
     }
 }

@@ -114,8 +114,9 @@ public class SessionReports {
                 || !compacted.equalsIgnoreCase(startedBy.strip())) {
             return "";
         }
-        return "You are jagt's sub-agent for " + taskId + facts(task) + ". Your brief is task_context.md in this"
-                + " worktree: re-read it, and the repository's own agent instructions, before doing anything else.\n";
+        return "You are jagt's sub-agent for " + taskId + facts(task) + ". In this worktree task_request.md is what"
+                + " the task was opened with and task_context.md the instruction standing now: re-read both, and the"
+                + " repository's own agent instructions, before doing anything else.\n";
     }
 
     private static String facts(TaskState task) {

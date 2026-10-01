@@ -34,6 +34,7 @@
 - Every sub-agent worktree (generated `.claude/settings.local.json`) needs `enableAllProjectMcpServers: true`
   plus `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]`: without the first, `ship` / `feedback`
   stall on an invisible prompt; without the second, `git commit` freezes.
+- It compacts at 300k tokens (`ClaudeAgentRuntime.COMPACT_AT_TOKENS`): every turn rereads the context.
 - That allow-list is dead text until the worktree is **trusted**, so `wireAgent` writes
   `projects["<worktree>"].hasTrustDialogAccepted` in `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where
   set): that one flag replaced, an unparsable file left alone, the entry dropped with the task.

@@ -14,6 +14,8 @@ public enum Artifact {
 
     /** The one instruction standing right now, and no older one. */
     CONTEXT("task_context.md"),
+    /** What the task was opened with, which no relay overwrites. */
+    REQUEST("task_request.md"),
     /** What the agent means to do, before it writes anything. */
     PLAN("plan.md"),
     /** What the agent means to answer, before anything is posted. */

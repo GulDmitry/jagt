@@ -141,6 +141,9 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
      * worktree is an untrusted project, where the human's global output style may not apply; disabling plugins
      * keeps a ~1-2GB language server from spawning per worktree.
      */
+    /** Every turn rereads the whole context, so a task session left to grow to its 1M window pays for it each time. */
+    static final int COMPACT_AT_TOKENS = 300_000;
+
     static String settingsJson(String outputStyle, List<String> disabledPlugins, String hooksLine) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
                 : "\n  \"outputStyle\": " + quoted(outputStyle) + ",";
@@ -156,12 +159,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
         }
         return """
                 {%s%s%s
+                  "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "%d"},
                   "enableAllProjectMcpServers": true,
                   "permissions": {
                     "allow": ["mcp__jagt-orchestrator", "Bash(git:*)"]
                   }
                 }
-                """.formatted(styleLine, pluginsLine, hooksLine == null ? "" : hooksLine);
+                """.formatted(styleLine, pluginsLine, hooksLine == null ? "" : hooksLine, COMPACT_AT_TOKENS);
     }
 
     @Override

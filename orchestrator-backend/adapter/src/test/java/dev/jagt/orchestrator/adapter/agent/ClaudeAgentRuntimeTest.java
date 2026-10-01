@@ -165,6 +165,15 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void compactsATaskSessionLongBeforeItsContextWindowIsFull() {
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null);
+
+        String window = new JsonMapper().readTree(json).path("env").path("CLAUDE_CODE_AUTO_COMPACT_WINDOW").asString("");
+
+        assertThat(window).isEqualTo("300000");
+    }
+
+    @Test
     void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
         String json = ClaudeAgentRuntime.settingsJson(null, null, null);
 
