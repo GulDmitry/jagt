@@ -70,6 +70,10 @@ public record LaunchRequest(String ref, String project, String mode, String stra
         return !named.isEmpty() && known.containsAll(named);
     }
 
+    public LaunchRequest withStrategy(String strategy) {
+        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
+    }
+
     /** Blanks become nulls: a surface that posts "" and one that omits the token must look the same. */
     public LaunchRequest normalized() {
         return new LaunchRequest(blankToNull(ref), blankToNull(project), blankToNull(mode),

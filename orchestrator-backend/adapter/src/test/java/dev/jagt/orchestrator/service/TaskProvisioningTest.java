@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -310,5 +311,17 @@ class TaskProvisioningTest {
                 .hasMessageContaining("does not exist on web's origin");
 
         verify(git, never()).createWorktree(any(), any(), any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"false, false, FRESH", "true, false, RECREATE", "true, true, RESUME"})
+    void intakeRecreatesOnlyALeftoverBranchHoldingNoWorkOfItsOwn(boolean exists, boolean holdsWork,
+                                                                 BranchStrategy expected) {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
+        when(git.branchExists(Path.of("/api"), "ABC-1")).thenReturn(exists);
+        when(git.holdsOwnCommits(Path.of("/api"), "ABC-1", "origin/main")).thenReturn(holdsWork);
+
+        assertThat(provisioning().strategyForExisting("ABC-1", "api")).isEqualTo(expected);
     }
 }

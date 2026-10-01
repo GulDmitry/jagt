@@ -48,6 +48,17 @@ public class TaskProvisioning {
                 .findFirst().orElse(null);
     }
 
+    /** Nobody stands at intake to choose, and neither answer here loses work: the branch's own commits resume. */
+    public BranchStrategy strategyForExisting(String taskId, String projectKey) {
+        ProjectConfig project = configService.load().projects().get(projectKey);
+        Path path = Path.of(project.path()).toAbsolutePath().normalize();
+        if (!gitService.branchExists(path, taskId)) {
+            return BranchStrategy.FRESH;
+        }
+        return gitService.holdsOwnCommits(path, taskId, project.baseBranch())
+                ? BranchStrategy.RESUME : BranchStrategy.RECREATE;
+    }
+
     /**
      * {@code base}, or the first {@code base-2}, {@code base-3}… no task and no branch has taken. The human did
      * not choose this name, so a collision is stepped over rather than refused back at them.

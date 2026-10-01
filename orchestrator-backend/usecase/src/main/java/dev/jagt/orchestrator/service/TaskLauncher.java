@@ -70,8 +70,10 @@ public class TaskLauncher {
      * be started at all, and paying a second time for the one answer is a cost jagt need not carry.
      */
     public Launched launch(LaunchRequest request, Answer<TicketFacts> read) {
-        return refusedForExistingBranch(request).orElseGet(() -> launched(request, read,
-                request.project() != null ? resolveProjects(request.project()) : null));
+        LaunchRequest settled = request.strategy() != null || request.project() == null ? request
+                : request.withStrategy(provisioning.strategyForExisting(request.ref(), request.project()).id());
+        return refusedForExistingBranch(settled).orElseGet(() -> launched(settled, read,
+                settled.project() != null ? resolveProjects(settled.project()) : null));
     }
 
     /** Warns before a task is started that would only collide later; empty where nothing is in the way. */

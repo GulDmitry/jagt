@@ -39,6 +39,7 @@
 | You want the plan before the code | `plan first` | The card reads `plan waiting`; your next instruction to the session approves it |
 | Work must start from another branch | `do ABC-42 from <branch>` | Cut from it, and the request targets it; deploy still goes to `deployBranch` |
 | The branch already exists | `recreate` or `resume` | Nothing is freed or moved until you pick one |
+| Intake meets a leftover branch | `resume` if it or its origin copy holds commits the base lacks, else `recreate` | Neither loses work |
 | The base repository has the branch checked out | nothing | Freed and detached in place, with a warning naming the branch |
 | Uncommitted tracked changes there, or another worktree holds the branch | commit, stash, or free it | Refused naming the directory; untracked files block nothing |
 | The app needs a gitignored `.env`, key or cert | `worktree.copyGlobs` | Copied into every new worktree at the same path |

@@ -14,6 +14,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -369,6 +370,20 @@ public class GitService {
     public boolean branchExists(Path projectPath, String branch) {
         return withRepoLock(projectPath, () -> processRunner.run(projectPath, GIT_TIMEOUT,
                 List.of("git", "rev-parse", "--verify", "--quiet", "refs/heads/" + branch)).exitCode() == 0);
+    }
+
+    /** Commits on the branch, or on its copy at origin, that the base does not hold: work a recreate would lose. */
+    public boolean holdsOwnCommits(Path projectPath, String branch, String baseBranch) {
+        String base = "origin/" + baseBranch.replaceFirst("^origin/", "");
+        return withRepoLock(projectPath, () -> {
+            List<String> command = new ArrayList<>(List.of("git", "rev-list", "--count", "^" + base,
+                    "refs/heads/" + branch));
+            if (remoteRefExists(projectPath, branch)) {
+                command.add("refs/remotes/origin/" + branch);
+            }
+            return !processRunner.run(projectPath, GIT_TIMEOUT, command)
+                    .expectSuccess("git rev-list --count " + branch).stdout().strip().equals("0");
+        });
     }
 
     /** Asked over the network, not of {@code refs/remotes}: a just-pushed branch is absent until the next fetch. */

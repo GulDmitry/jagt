@@ -49,6 +49,59 @@ class GitServiceTest {
     }
 
     @Test
+    void readsALeftoverBranchAsHoldingWorkOnlyOnceItCarriesACommitTheBaseLacks(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "branch", "ABC-1"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.holdsOwnCommits(repo, "ABC-1", "origin/main")).isFalse();
+
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "ABC-1"));
+        Files.writeString(repo.resolve("f.txt"), "changed");
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qam", "ABC-1 Widen the column"));
+
+        assertThat(git.holdsOwnCommits(repo, "ABC-1", "origin/main")).isTrue();
+    }
+
+    @Test
+    void readsALeftoverBranchAsHoldingWorkWhenOnlyItsCopyAtOriginCarriesACommit(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        Files.writeString(repo.resolve("f.txt"), "changed");
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qam", "ABC-1 Widen the column"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        runner.run(repo, timeout, List.of("git", "branch", "-qf", "ABC-1", "main"));
+        runner.run(repo, timeout, List.of("git", "fetch", "-q", "origin"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        assertThat(git.holdsOwnCommits(repo, "ABC-1", "origin/main")).isTrue();
+    }
+
+    @Test
     void readsTheWorkAWorktreeHoldsUncommittedAndIgnoresJagtsOwnFiles(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -104,6 +105,7 @@ class TaskLauncherTest {
     @Test
     void buysNoSecondReadOfFactsTheCallerAlreadyPaidFor() {
         oneProject("group-a");
+        when(provisioning.strategyForExisting("ABC-42", "group-a")).thenReturn(BranchStrategy.FRESH);
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42");
 
@@ -157,6 +159,21 @@ class TaskLauncherTest {
         assertThat(out).contains("already exists in group-a", "recreate", "resume");
         verifyNoInteractions(tickets);
         verify(provisioning, never()).initializeTask(any());
+    }
+
+    @Test
+    void intakeContinuesALeftoverBranchHoldingWorkInsteadOfRefusingIt() {
+        oneProject("group-a");
+        when(provisioning.strategyForExisting("ABC-9", "group-a")).thenReturn(BranchStrategy.RESUME);
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-9").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-9");
+
+        launcher.launch(new LaunchRequest("ABC-9", "group-a", null, null, null, null),
+                new Answer<>(Optional.of(item), TokenUsage.NONE));
+
+        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
+        verify(provisioning).initializeTask(created.capture());
+        assertThat(created.getValue().branchStrategy()).isEqualTo("resume");
     }
 
     @Test
