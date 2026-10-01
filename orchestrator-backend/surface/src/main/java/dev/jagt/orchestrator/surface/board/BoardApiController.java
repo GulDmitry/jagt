@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.service.TaskViews;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,16 @@ public class BoardApiController {
         return globals.byId(id).filter(GlobalCommand::report)
                 .orElseThrow(() -> new IllegalArgumentException("No report '" + id + "'"))
                 .run(about == null ? "" : about);
+    }
+
+    public record Ran(String message) {
+    }
+
+    @PostMapping("/commands/{id}")
+    public Ran execute(@PathVariable String id, @RequestParam(required = false) String about) {
+        return new Ran(globals.byId(id).filter(command -> !command.report())
+                .orElseThrow(() -> new IllegalArgumentException("No command '" + id + "' to run"))
+                .run(about == null ? "" : about));
     }
 
     @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

@@ -147,7 +147,10 @@ async function runParsed(parsed) {
     toast(result.message);
     return result.created ? HANDLED : KEPT;
   }
-  return null;
+  const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : '';
+  const result = await api(`/api/commands/${encodeURIComponent(verb.id)}${narrowed}`, {method: 'POST'});
+  toast(result.message);
+  return HANDLED;
 }
 
 ask.addEventListener('input', judge);

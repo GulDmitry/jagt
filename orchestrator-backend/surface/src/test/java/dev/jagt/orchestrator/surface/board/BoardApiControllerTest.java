@@ -71,6 +71,17 @@ class BoardApiControllerTest {
     }
 
     @Test
+    void runsACommandThatIsNotAReportWithWhatWasTypedAfterIt() {
+        assertThat(api.execute("do", "a1").message()).isEqualTo("do report about a1");
+    }
+
+    @Test
+    void refusesToRunAReportAsACommand() {
+        assertThatThrownBy(() -> api.execute("stats", null)).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No command 'stats' to run");
+    }
+
+    @Test
     void reportsTheProjectsAlongsideTheTasks() {
         when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(),
                 new AutoReviewCadence(false, Duration.ofHours(24), 10, 60),

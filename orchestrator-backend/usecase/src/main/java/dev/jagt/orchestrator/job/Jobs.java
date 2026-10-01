@@ -90,6 +90,18 @@ public class Jobs {
                 (int) all.stream().filter(status -> status.lastError() != null).count());
     }
 
+    public void runNow(String id) {
+        Run run = runs.get(id);
+        if (run == null) {
+            throw new IllegalArgumentException("No job '" + id + "' — `jobs` lists them: " + String.join(", ",
+                    runs.keySet()));
+        }
+        if (run.running.get()) {
+            throw new IllegalStateException("'" + id + "' is running now");
+        }
+        run.nextAt = 0;
+    }
+
     @Scheduled(fixedDelay = 1000)
     public void tick() {
         tick(System.currentTimeMillis());

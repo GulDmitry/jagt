@@ -33,8 +33,8 @@ A second surface must add no second answer to a question the board answers — t
 A verb a task owns is a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
 `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`: id, hint, usage, report or not, about
 one task or not) running itself. `CommandReference` renders both — `help`'s text and the palette's verb
-list — and `GET /api/commands/{id}` serves any report, so another needs no endpoint; it refuses anything that
-is not a report, since a GET must not start a task. A report **about one task** (`aboutOneTask`) gets no button
+list — and `GET /api/commands/{id}` serves any report, `POST` runs any other, so neither needs its own endpoint; a GET
+must not start a task. A report **about one task** (`aboutOneTask`) gets no button
 in the bar, and tier 2 offers none.
 
 ## Dispatch, verbs and execution

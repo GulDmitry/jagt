@@ -170,4 +170,42 @@ class JobsTest {
         assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id, Jobs.Status::every)
                 .containsExactly(tuple("poll-reviews", null), tuple("clean-recents", Duration.ofHours(1)));
     }
+
+    @Test
+    void runsAJobAskedForNowAtTheNextTickInsteadOfAtItsInterval() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        when(job.every()).thenReturn(Duration.ofMinutes(10));
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+        jobs.tick(1_000);
+
+        jobs.runNow("poll-reviews");
+        jobs.tick(2_000);
+
+        verify(job, times(2)).run();
+    }
+
+    @Test
+    void refusesToRunNowAJobNobodyDeclared() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        Jobs jobs = new Jobs(List.of(job), Runnable::run);
+
+        assertThatThrownBy(() -> jobs.runNow("archive-logs"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No job 'archive-logs'")
+                .hasMessageContaining("poll-reviews");
+    }
+
+    @Test
+    void refusesToRunNowAJobThatIsAlreadyRunning() {
+        Job job = mock(Job.class);
+        when(job.id()).thenReturn("poll-reviews");
+        Jobs jobs = new Jobs(List.of(job), work -> { });
+        jobs.tick(1_000);
+
+        assertThatThrownBy(() -> jobs.runNow("poll-reviews"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("'poll-reviews' is running now");
+    }
 }
