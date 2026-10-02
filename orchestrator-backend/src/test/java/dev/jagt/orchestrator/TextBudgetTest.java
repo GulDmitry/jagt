@@ -34,6 +34,12 @@ class TextBudgetTest {
                 assertThat(words(guide)).describedAs("%s", guide).isLessThanOrEqualTo(1200));
     }
 
+    @Test
+    void aDecisionIsRecordedInFourHundredWordsOrItIsTwo() {
+        assertThat(markdownIn(Path.of("../docs/decisions"))).allSatisfy(decision ->
+                assertThat(words(decision)).describedAs("%s", decision).isLessThanOrEqualTo(400));
+    }
+
     @ParameterizedTest
     @CsvSource({"../README.md", "../AGENTS.md", "../ARCHITECTURE.md", "../USE-CASES.md", "../TODO.md"})
     void noParagraphHidesInATableCell(Path document) {
@@ -63,6 +69,7 @@ class TextBudgetTest {
     void readsEveryFileItClaimsToCheck() {
         assertThat(markdownIn(Path.of("../docs/rules"))).hasSizeGreaterThan(5);
         assertThat(markdownIn(Path.of("../docs"))).hasSizeGreaterThan(3);
+        assertThat(markdownIn(Path.of("../docs/decisions"))).hasSizeGreaterThan(1);
         assertThat(mainSources().count()).isGreaterThan(100);
     }
 

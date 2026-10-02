@@ -12,14 +12,15 @@ through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-
 |------|-------|
 | `AGENTS.md` (this) | the rules you must not break, and where to read the rest |
 | `docs/rules/*.md` | each rule in full, with why. **Read the one that covers what you are about to change.** |
-| `.claude/rules/` | the same table as path-scoped pointers, and no rule of its own |
+| `.claude/rules/` | the same table as path-scoped pointers, no rule of its own |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | the map: what kinds of thing jagt has, and where a new one goes |
 | [`USE-CASES.md`](USE-CASES.md) | one line per situation, already decided |
 | [`README.md`](README.md) + `docs/` | what a human installing jagt needs |
-| [`TODO.md`](TODO.md) | only what is still open. Holding nothing is its normal state |
-| [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what each step must not break |
+| [`TODO.md`](TODO.md) | only what is still open; empty is normal |
+| [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
+| [`docs/decisions/`](docs/decisions/README.md) | why a fundamental decision holds: its evidence, what reopens it |
 
-A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/`, the road to it in git history.
+A decided decision is not a TODO: it lives in the code, the files above and git history.
 
 ## Read before you change
 
@@ -57,7 +58,7 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
 
 ## Code
 
-- Gradle, **Groovy DSL only**. Never Maven, never Kotlin — including `.kts`.
+- Gradle, **Groovy DSL only**. Never Maven, never Kotlin, `.kts` included.
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
 - **Three collaborators per class is the target, five the ceiling**, delegates included: group them into a component, never add a field.
 - **A test needing more than ~3 mocks means the class does too much.** Fix the class, never the fixture.
@@ -103,7 +104,7 @@ A decided decision is not a TODO: it lives in the code, the rule in `docs/rules/
   same paragraph. Over budget means cut text; raising a number is the owner's call.
 - **Every log line is structured**: constant event message, values as fields, `cause` on every failure. Never
   `{}` in a message, never `+` into one. Keys: [`docs/rules/style.md`](docs/rules/style.md).
-- **English only.** The one exception is kitty's ЙЦУКЕН keymap, where the symbols are the key events.
+- **English only.** The one exception: kitty's ЙЦУКЕН keymap, where the symbols are the key events.
 - **Never a real ticket key, project name or issue title**, tests and fixtures included. Invent `ABC-42`.
 - Markdown ~120 columns, hard max 150. A non-obvious case earns a one-line `USE-CASES.md` row, not a paragraph.
 
