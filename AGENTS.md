@@ -11,7 +11,7 @@ through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-
 | file | holds |
 |------|-------|
 | `AGENTS.md` (this) | the rules you must not break, and where to read the rest |
-| `docs/rules/*.md` | each rule in full, with why. **Read the one that covers what you are about to change.** |
+| `docs/rules/*.md` | each rule in full, with why |
 | `.claude/rules/` | the same table as path-scoped pointers, no rule of its own |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | the map: what kinds of thing jagt has, and where a new one goes |
 | [`USE-CASES.md`](USE-CASES.md) | one line per situation, already decided |
@@ -20,7 +20,8 @@ through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-
 | [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
 | [`docs/decisions/`](docs/decisions/README.md) | why a fundamental decision holds: its evidence, what reopens it |
 
-A decided decision is not a TODO: it lives in the code, the files above and git history.
+A decided decision is not a TODO: it lives in the code, the files above and git history. **A fundamental one gets its
+`docs/decisions/` record in the commit taking it.**
 
 ## Read before you change
 
@@ -80,7 +81,7 @@ A decided decision is not a TODO: it lives in the code, the files above and git 
 - **A colour means one thing, board-wide** — the meanings live in `docs/rules/design.md` and nowhere else.
 - **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
 - **Every mark has one row in the legend**, rendered as the page's own element rather than named in words.
-- **Getting started stays one copied file and one command.** Every option lives in `jagt.yml` and nowhere else, described in `jagt.yml.dist`.
+- **Getting started stays one copied file and one command.** Every option lives in `jagt.yml` alone, described in `jagt.yml.dist`.
 
 ## Tests
 
@@ -94,7 +95,7 @@ A decided decision is not a TODO: it lives in the code, the files above and git 
 ## Writing
 
 - **Write less than feels complete.** Delete every sentence that explains, argues, reassures or names the
-  option you rejected. Load `sob-ai:commenting` before writing a comment.
+  option you rejected — `docs/decisions/` alone keeps it. Load `sob-ai:commenting` before writing a comment.
 - **One fact per line**: a decision plus one clause of why, never the road to it nor what it used to be — in
   comments, docs, prompts, output and commit messages alike.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
@@ -102,8 +103,8 @@ A decided decision is not a TODO: it lives in the code, the files above and git 
 - **Budgets, asserted by `TextBudgetTest`**: a `docs/rules/` file ≤ 700 words, a guide ≤ 1200, no line over 220
   characters, comments ≤ 15% of main sources. Counted in WORDS — a paragraph folded into a table cell is the
   same paragraph. Over budget means cut text; raising a number is the owner's call.
-- **Every log line is structured**: constant event message, values as fields, `cause` on every failure. Never
-  `{}` in a message, never `+` into one. Keys: [`docs/rules/style.md`](docs/rules/style.md).
+- **Every log line is structured**: constant event, values as fields, `cause` on every failure, never `{}` or `+`
+  in a message. Keys: [`docs/rules/style.md`](docs/rules/style.md).
 - **English only.** The one exception: kitty's ЙЦУКЕН keymap, where the symbols are the key events.
 - **Never a real ticket key, project name or issue title**, tests and fixtures included. Invent `ABC-42`.
 - Markdown ~120 columns, hard max 150. A non-obvious case earns a one-line `USE-CASES.md` row, not a paragraph.
