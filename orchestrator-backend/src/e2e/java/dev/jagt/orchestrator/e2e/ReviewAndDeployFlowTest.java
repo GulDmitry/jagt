@@ -157,7 +157,7 @@ class ReviewAndDeployFlowTest {
 
         Files.writeString(worktree().resolve("widget.txt"), "tightened\n");
         Files.writeString(worktree().resolve("review_replies.md"), "> tighten this\n\nDone.\n");
-        agentReports("REVIEW_PENDING", "comment addressed");
+        agentHandsBack("comment addressed");
 
         assertThat(act("ship")).contains("relayed to the agent");
         assertThat(Files.readString(worktree().resolve("task_context.md")))
@@ -204,7 +204,7 @@ class ReviewAndDeployFlowTest {
                 .instructions("Move both sides of the contract").title(TITLE).build());
         Files.writeString(worktree().resolve("widget.txt"), "api side\n");
         Files.writeString(webWorktree().resolve("widget.txt"), "web side\n");
-        agentReports("REVIEW_PENDING", "both sides done");
+        agentHandsBack("both sides done");
         act("ship");
         agentCommitsAndPushes(worktree(), TASK + " " + TITLE);
         agentCommitsAndPushes(webWorktree(), TASK + " " + TITLE);
@@ -241,7 +241,7 @@ class ReviewAndDeployFlowTest {
         provisioning.initializeTask(NewTask.builder(TASK, "proj").alsoIn(List.of("web"))
                 .instructions("Move the api side").title(TITLE).build());
         Files.writeString(worktree().resolve("widget.txt"), "api side\n");
-        agentReports("REVIEW_PENDING", "api side done");
+        agentHandsBack("api side done");
 
         String shipped = act("ship");
 
@@ -261,7 +261,7 @@ class ReviewAndDeployFlowTest {
                 .instructions("Move both sides of the contract").title(TITLE).build());
         Files.writeString(worktree().resolve("widget.txt"), "api side\n");
         Files.writeString(webWorktree().resolve("widget.txt"), "web side\n");
-        agentReports("REVIEW_PENDING", "both sides done");
+        agentHandsBack("both sides done");
 
         String shipped = act("ship");
 
@@ -321,7 +321,7 @@ class ReviewAndDeployFlowTest {
         provisioning.initializeTask(NewTask.builder(TASK, "proj")
                 .instructions("Fix the widget").title(TITLE).build());
         Files.writeString(worktree().resolve("widget.txt"), "fixed\n");
-        agentReports("REVIEW_PENDING", "widget fixed");
+        agentHandsBack("widget fixed");
         String shipped = act("ship");
         agentCommitsAndPushes(worktree(), TASK + " " + TITLE);
         agentReports("CI_POLLING", "review request: " + request(), request());
@@ -338,6 +338,11 @@ class ReviewAndDeployFlowTest {
         Answer<ReviewFacts> answer = new Answer<>(Optional.ofNullable(facts), TokenUsage.NONE);
         when(assistant.readReview(request())).thenReturn(answer);
         when(assistant.readReview(webRequest())).thenReturn(answer);
+    }
+
+    private void agentHandsBack(String message) throws Exception {
+        Files.writeString(worktree().resolve("task_notes.md"), message + "\n");
+        agentReports("REVIEW_PENDING", message);
     }
 
     private void agentReports(String status, String message) throws Exception {
