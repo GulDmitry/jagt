@@ -18,9 +18,9 @@ through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-
 | [`README.md`](README.md) + `docs/` | what a human installing jagt needs |
 | [`TODO.md`](TODO.md) | only what is still open; empty is normal |
 | [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
-| [`docs/decisions/`](docs/decisions/README.md) | why a fundamental decision holds: its evidence, what reopens it |
+| [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
 
-A decided decision is not a TODO: it lives in the code, the files above and git history. **A fundamental one gets its
+A decided decision is not a TODO: it lives in the code, the files above and git history. **An architectural one gets its
 `docs/decisions/` record in the commit taking it.**
 
 ## Read before you change

@@ -1,4 +1,4 @@
-# 0002 — The board is the only human surface
+# 0002 — The board is jagt's only UI
 
 [← decisions](README.md) · rule: [`surfaces.md`](../rules/surfaces.md)
 
@@ -24,7 +24,8 @@ the console was tested through two tmux smoke scripts nobody ran.
 
 ## Decision
 
-- The browser board is the one front-end over the core; MCP is the agent's seam, not a human surface.
+- The browser board is jagt's one front-end over the core. It is not a gate in front of the sessions: a human
+  still talks to any session directly in its own terminal. MCP is the agents' seam, not a UI.
 - `19ad0ec` removed `MasterShell` (763 lines), `GrammarDispatch`, `OperatorUi`, `DashboardRenderer`, the
   `status` verb, `GlobalCommand.consoleOnly`, `ActionOrigin.CONSOLE`, Lanterna and `orchestrator.ui`: 86 files,
   3338 lines deleted. `BoardBanner` is what is left — one line saying where to look.

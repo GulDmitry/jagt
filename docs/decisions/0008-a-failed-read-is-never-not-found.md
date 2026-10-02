@@ -1,4 +1,4 @@
-# 0009 — A failed read is never "not found"
+# 0008 — A failed read is never "not found"
 
 [← decisions](README.md) · rule: [`seams.md`](../rules/seams.md#a-read-that-failed-is-never-an-answer)
 
