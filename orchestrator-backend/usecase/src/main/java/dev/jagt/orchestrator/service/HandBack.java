@@ -5,6 +5,9 @@ import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Path;
+import java.util.Optional;
+
 /** What the worktree says about a round being handed back, which is what a report cannot be believed about. */
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,11 @@ public class HandBack {
     /** Whether this hand-back still owes jagt a verification run, which holds it at VERIFYING. */
     public boolean verificationOwed(TaskState task) {
         return verification.configured(task);
+    }
+
+    /** Why a session may not hand this round back yet, which only the worktree can say. */
+    public Optional<String> notesOwed(TaskState task) {
+        return TaskNotes.owed(Path.of(task.worktreePath()));
     }
 
     public boolean masterReads() {

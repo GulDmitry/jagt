@@ -7,11 +7,13 @@
   in a session host (`port/SessionHost`, tmux today), one kitty window attached.
 - **One name = one tmux window**: opening one kills same-named first; liveness there is the child
   processes of `#{pane_pid}`.
-- After the agent exits, its window shows the tail for 15s, then closes. **Never leave an interactive shell in
+- An exited agent's window shows the tail for 15s, then closes. **Never leave an interactive shell in
   an agent window.**
 - Closing the viewer only **detaches** it; killing is explicit — `done`, `remove`, `close_task_tab`.
 - **What jagt revives it re-enters** (`AgentRuntime.reviveCommand`, Claude `--continue`) — a lost tmux server
   costs the window, not the context; a human's `respawn` is fresh.
+- **A relay past the cache lifetime starts fresh** (`AgentRuntime.continuesWithin`, Claude 1h), from `task_notes.md`:
+  rewritten every hand-back, capped (`TaskNotes`).
 
 - **A detached launch gets its own session.** Ctrl-C reaches jagt's whole process
   **group**, which `ProcessBuilder.start()` never leaves, so `ProcessRunner.detachedFrom` runs it under
@@ -29,12 +31,12 @@
   (`--single-instance --instance-group --listen-on -o allow_remote_control=yes`), over tmux (the tab execs
   `tmux attach`). `closeViewerWindow` kills the instance by socket path.
 
-- Claude Code's auto-mode classifier silently blocks tool calls unless pre-approved. The backend makes
+- Claude Code's auto-mode classifier silently blocks calls not pre-approved. The backend makes
   none; the committed root `.claude/settings.json` covers sessions running there.
 - Every sub-agent worktree (generated `.claude/settings.local.json`) needs `enableAllProjectMcpServers: true`
   plus `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]`: without the first, `ship` / `feedback`
   stall on an invisible prompt; without the second, `git commit` freezes.
-- It compacts at 300k tokens (`ClaudeAgentRuntime.COMPACT_AT_TOKENS`): every turn rereads the context.
+- It compacts at 300k tokens (`ClaudeAgentRuntime.COMPACT_AT_TOKENS`), set on the command too: older settings lack it.
 - That allow-list is dead text until the worktree is **trusted**, so `wireAgent` writes
   `projects["<worktree>"].hasTrustDialogAccepted` in `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where
   set): that one flag replaced, an unparsable file left alone, the entry dropped with the task.
@@ -47,9 +49,8 @@
 - **Which of a CLI's events mean what is a resource, not code**:
   `adapter/src/main/resources/hooks/<runtime>.properties`, one line per event, each naming the state it means;
   a runtime with no resource writes none.
-- The payload buys two optional things: the file the session appends to (else derived from the
-  worktree path) and what STARTED it — **a missing payload costs a detail, never the report**. That log is read
-  twice: last sign of life, and spend (`AgentSpendReader`).
+- The payload adds the session's log (else derived from the worktree) and what STARTED it —
+  **a missing payload costs a detail, never the report**. That log gives last sign of life and spend (`AgentSpendReader`).
 - **What jagt ANSWERS a hook, the harness reads** (`curl -sf` prints the body): a start after a COMPACTION gets
   its brief named and the task's facts restated; every other report is answered empty.
 - **Two hooks are answered, each declared**: `gate=PreToolUse`, scoped to the shell tool, and `turn-end=Stop`,
@@ -57,10 +58,9 @@
   alone a round handed to the Master (`AgentRuntime.toldTheHuman`). Unreachable, both refuse nothing.
   **Not git hooks**; the ban does not reach them.
 
-- Each sub-agent spawns its **own** language server (jdtls ~1–2 GB per Java worktree), unshareable and never released,
-  so jagt **reaps** each worktree's on `done` / `remove_task` (`reapWorktreeProcesses`: `lsof` by
-  cwd, `kill -9`).
-- `orchestrator.agent-disabled-plugins` writes `enabledPlugins: {"<name>": false}` into the worktree settings,
+- Each sub-agent spawns its **own** language server (jdtls ~1–2 GB per Java worktree), never released, so jagt
+  **reaps** it on `done` / `remove_task` (`reapWorktreeProcesses`: `lsof` by cwd, `kill -9`).
+- `orchestrator.agent-disabled-plugins` writes `enabledPlugins: {"<name>": false}` into worktree settings,
   default **empty**.
 
 ## The Master is a headless run per role, not a window

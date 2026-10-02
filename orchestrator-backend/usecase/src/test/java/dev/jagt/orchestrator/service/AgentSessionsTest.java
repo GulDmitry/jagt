@@ -17,6 +17,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Optional;
+import java.util.OptionalLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -140,6 +143,35 @@ class AgentSessionsTest {
         assertThatThrownBy(() -> sessions().say("ABC-1", "no, answer 2 differently"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No Claude session is running for ABC-1");
+    }
+
+    @Test
+    void startsAFreshSessionForNewInstructionsWhenTheConversationIdledPastItsCacheLifetime() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
+        when(agentRuntime.lastSessionActivity(root))
+                .thenReturn(OptionalLong.of(System.currentTimeMillis() - Duration.ofHours(2).toMillis()));
+
+        sessions().writeTaskContext("ABC-1", "Review round for http://mr/1.");
+
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false);
+        verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void nudgesTheRunningConversationWhenItIsStillWithinItsCacheLifetime() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
+        when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
+        when(agentRuntime.lastSessionActivity(root))
+                .thenReturn(OptionalLong.of(System.currentTimeMillis() - Duration.ofMinutes(10).toMillis()));
+
+        sessions().writeTaskContext("ABC-1", "Review round for http://mr/1.");
+
+        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(), eq(false));
     }
 
     @Test

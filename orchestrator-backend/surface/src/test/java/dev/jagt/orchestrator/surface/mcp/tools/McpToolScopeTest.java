@@ -115,7 +115,7 @@ class McpToolScopeTest {
 
         handler.call(args("{\"status\":\"IN_PROGRESS\",\"message\":\"working\"}"), "MINE-1");
 
-        verify(statusReports).report(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1"));
+        verify(statusReports).reportOwn(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1"));
     }
 
     @Test

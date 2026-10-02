@@ -67,6 +67,17 @@ class AgentStatusReportsTest {
     }
 
     @Test
+    void refusesASessionsHandBackThatLeavesNoNotesForTheNextSession(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
+
+        assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("write task_notes.md before handing the round back");
+    }
+
+    @Test
     void tellsTheSessionTheMasterReadsItsHandBackNext(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());

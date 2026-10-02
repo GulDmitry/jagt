@@ -28,7 +28,9 @@ public class StatusTools implements McpTools {
     public void declare(McpToolRegistry tools) {
         tools.tool("update_agent_status", Audience.ANYONE, AgentStatusMessage.SCHEMA, AgentStatusMessage.class,
                 (said, caller) -> statusReports.contextFor(taskOf(said, caller)),
-                (said, caller) -> statusReports.report(said, taskOf(said, caller)));
+                (said, caller) -> caller == null
+                        ? statusReports.report(said, taskOf(said, caller))
+                        : statusReports.reportOwn(said, taskOf(said, caller)));
 
         tools.tool("notify_user", Audience.ANYONE, UserNotice.SCHEMA, UserNotice.class,
                 (said, caller) -> MessageContext.NONE,

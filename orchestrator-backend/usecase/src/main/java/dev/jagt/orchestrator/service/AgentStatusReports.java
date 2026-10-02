@@ -49,12 +49,27 @@ public class AgentStatusReports {
      * and a session's come through the same door and only one of them crossed a wire.
      */
     public String report(AgentStatusMessage said, String taskId) {
+        return report(accepted(said, taskId), taskId);
+    }
+
+    /** A session reporting on its own task, whose hand-back must leave the notes the next session starts from. */
+    public String reportOwn(AgentStatusMessage said, String taskId) {
+        Reported reported = accepted(said, taskId);
+        if (reported.status() == TaskStatus.REVIEW_PENDING) {
+            stateService.task(taskId).flatMap(handBack::notesOwed).ifPresent(owed -> {
+                throw new IllegalArgumentException(owed);
+            });
+        }
+        return report(reported, taskId);
+    }
+
+    private Reported accepted(AgentStatusMessage said, String taskId) {
         MessageContext context = contextFor(taskId);
         List<Violation> violations = said.violations(context);
         if (!violations.isEmpty()) {
             throw new IllegalArgumentException(Message.refusal(violations));
         }
-        return report(said.accepted(context).orElseThrow(), taskId);
+        return said.accepted(context).orElseThrow();
     }
 
     /** What the rules may ask about the task this message is about. */

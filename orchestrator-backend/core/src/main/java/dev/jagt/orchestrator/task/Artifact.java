@@ -18,6 +18,8 @@ public enum Artifact {
     REQUEST("task_request.md"),
     /** What the agent means to do, before it writes anything. */
     PLAN("plan.md"),
+    /** What the agent learnt that the code and the history do not say, which a fresh session starts from. */
+    NOTES("task_notes.md"),
     /** What the agent means to answer, before anything is posted. */
     REPLIES("review_replies.md"),
     /** What the unattended reviewer concluded about the round, and the verdict jagt reads back. */

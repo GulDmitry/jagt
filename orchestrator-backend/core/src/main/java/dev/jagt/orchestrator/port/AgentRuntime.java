@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.port;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -38,6 +39,14 @@ public interface AgentRuntime {
      */
     default String reviveCommand(Path worktree) {
         return launchCommand(worktree, false);
+    }
+
+    /**
+     * How long a conversation stays worth continuing: past it the CLI rereads the whole history uncached, so new
+     * work goes to a fresh session reading the task's files. EMPTY where a conversation is always continued.
+     */
+    default Optional<Duration> continuesWithin() {
+        return Optional.empty();
     }
 
     /** Whether this runtime can be told which model to run. */

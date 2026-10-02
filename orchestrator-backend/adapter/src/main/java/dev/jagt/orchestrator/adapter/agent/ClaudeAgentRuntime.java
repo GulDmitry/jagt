@@ -10,6 +10,8 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -50,7 +52,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     @Override
     public String launchCommand(Path worktree, boolean planMode, String model, String prompt) {
-        return claude.command()
+        return COMPACT_ENV + claude.command()
                 + (planMode ? " --permission-mode plan" : "")
                 + (model == null || model.isBlank() ? "" : " --model " + shellQuote(model.strip()))
                 + " " + shellQuote(prompt);
@@ -59,7 +61,13 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     /** `--continue` takes the newest conversation this worktree holds, and simply starts one where it holds none. */
     @Override
     public String reviveCommand(Path worktree) {
-        return claude.command() + " --continue " + shellQuote(properties.agentRevivePrompt());
+        return COMPACT_ENV + claude.command() + " --continue " + shellQuote(properties.agentRevivePrompt());
+    }
+
+    /** The prompt cache's lifetime: https://code.claude.com/docs/en/prompt-caching#cache-lifetime */
+    @Override
+    public Optional<Duration> continuesWithin() {
+        return Optional.of(CACHE_LIFETIME);
     }
 
     @Override
@@ -143,6 +151,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
      */
     /** Every turn rereads the whole context, so a task session left to grow to its 1M window pays for it each time. */
     static final int COMPACT_AT_TOKENS = 300_000;
+
+    /** On the command as well as in the settings, which a worktree provisioned before them does not carry. */
+    private static final String COMPACT_ENV = "CLAUDE_CODE_AUTO_COMPACT_WINDOW=" + COMPACT_AT_TOKENS + " ";
+
+    private static final Duration CACHE_LIFETIME = Duration.ofHours(1);
 
     static String settingsJson(String outputStyle, List<String> disabledPlugins, String hooksLine) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""

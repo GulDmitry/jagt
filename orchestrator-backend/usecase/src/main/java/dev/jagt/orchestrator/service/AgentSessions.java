@@ -176,6 +176,15 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         // A file on disk doesn't wake a running agent session — nudge it directly.
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
+        if (pastContinuing(Path.of(task.worktreePath()))) {
+            log.atInfo().setMessage("agent session started fresh").addKeyValue("task", taskId)
+                    .addKeyValue("alias", task.alias())
+                    .addKeyValue("cause", "conversation idle past its cache lifetime")
+                    .log();
+            openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false);
+            return "Instructions written to task_context.md; the session had been idle past its cache lifetime,"
+                    + " so a fresh one was started to read them with task_notes.md.";
+        }
         if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING
                 && sessions.nudgeTaskWindow(session, taskId,
                         "The Master updated task_context.md — re-read it now and follow the new instructions.")) {
@@ -190,6 +199,13 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 task.alias(), Path.of(task.worktreePath()));
         return "Instructions written to task_context.md; the agent session was down, so it was re-entered"
                 + " to read and follow them.";
+    }
+
+    private boolean pastContinuing(Path worktree) {
+        return agentRuntime.continuesWithin()
+                .filter(within -> System.currentTimeMillis()
+                        - agentRuntime.lastSessionActivity(worktree).orElse(0) > within.toMillis())
+                .isPresent();
     }
 
     /** One monitor per task id, so relays to one task serialise while different tasks never wait on each other. */

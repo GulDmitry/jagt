@@ -26,7 +26,7 @@ class ClaudeAgentRuntimeTest {
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
 
         assertThat(runtime.launchCommand(Path.of("/wt"), false))
-                .isEqualTo("claude 'Read AGENTS.md and work'");
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'Read AGENTS.md and work'");
     }
 
     @Test
@@ -36,7 +36,7 @@ class ClaudeAgentRuntimeTest {
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
 
         assertThat(runtime.launchCommand(Path.of("/wt"), true))
-                .isEqualTo("claude --permission-mode plan 'go'");
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --permission-mode plan 'go'");
     }
 
     @Test
@@ -47,7 +47,7 @@ class ClaudeAgentRuntimeTest {
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
 
         assertThat(runtime.reviveCommand(Path.of("/wt")))
-                .isEqualTo("claude --continue 'pick up where you left off'");
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude --continue 'pick up where you left off'");
     }
 
     @Test
@@ -57,7 +57,7 @@ class ClaudeAgentRuntimeTest {
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
 
         assertThat(runtime.launchCommand(Path.of("/wt"), false))
-                .isEqualTo("claude 'it'\\''s fine'");
+                .isEqualTo("CLAUDE_CODE_AUTO_COMPACT_WINDOW=300000 claude 'it'\\''s fine'");
     }
 
     @Test
