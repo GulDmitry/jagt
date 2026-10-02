@@ -25,6 +25,8 @@ import java.util.Optional;
 public class TmuxSessionHost implements SessionHost {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(20);
+    /** Only what is shown is cut: the full window name stays the task's identity. */
+    private static final String SHOWN_NAME = "#{=/10/…:window_name}";
 
     private final Processes processRunner;
     private final OrchestratorProperties properties;
@@ -228,10 +230,10 @@ public class TmuxSessionHost implements SessionHost {
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles", "on"));
         // "taskId (alias)" when the window carries an alias, else just the window name.
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string",
-                "#{?#{@jagt_alias},#W (#{@jagt_alias}),#W}"));
+                "#{?#{@jagt_alias}," + SHOWN_NAME + " (#{@jagt_alias})," + SHOWN_NAME + "}"));
         // The default is #I:#W#F. Keep the trailing #F: it renders the window flags (`*` current, `-` last,
         // `Z` zoomed), and dropping it loses the marker on the active window.
-        String windowFormat = "#I:#W#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";
+        String windowFormat = "#I:" + SHOWN_NAME + "#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-format", windowFormat));
         processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-current-format", windowFormat));
         // Two levels, both lost in tmux's black-on-green default: the bar reads as a bar and not as more

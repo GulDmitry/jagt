@@ -72,6 +72,18 @@ class TmuxSessionHostE2eTest {
         assertThat(host.taskWindowState(SESSION, "ABC-9")).isEqualTo(SessionHost.WindowState.MISSING);
     }
 
+    @Test
+    void showsALongTaskNameCutToTenCharactersWhileTheWindowKeepsItWhole(@TempDir Path root) {
+        SessionHost host = hostIn(root);
+        host.openTaskWindow(SESSION, "jagt", "abcservice-1234567890-xyz", "a1", root, false);
+
+        String shown = processes.run(null, Duration.ofSeconds(10), List.of("tmux", "display-message",
+                "-p", "-t", "=" + SESSION + ":", "#{E:window-status-current-format}")).stdout().strip();
+
+        assertThat(shown).contains("abcservice… (a1)").doesNotContain("1234567890");
+        assertThat(windowNames()).contains("abcservice-1234567890-xyz");
+    }
+
     private List<String> windowNames() {
         return processes.run(null, Duration.ofSeconds(10), List.of("tmux", "list-windows",
                         "-t", "=" + SESSION, "-F", "#{window_name}"))
