@@ -304,7 +304,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         if (failure.isEmpty()) {
             return answer;
         }
-        log.atError().setMessage("read failed")
+        log.atWarn().setMessage("read failed")
                 .addKeyValue("ref", label)
                 .addKeyValue("cause", failure)
                 .log();
@@ -377,7 +377,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
         } catch (RuntimeException e) {
             // A timeout kills the CLI: no envelope, so the tokens already burned are unknowable, not zero.
-            log.atError().setMessage("assistant call did not return")
+            log.atWarn().setMessage("assistant call did not return")
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", e.toString())
                     .addKeyValue("limit", timeout)
@@ -403,7 +403,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     .log();
         }
         if (result.exitCode() != 0 || envelope == null) {
-            log.atError().setMessage("assistant call failed")
+            log.atWarn().setMessage("assistant call failed")
                     .addKeyValue("ref", label)
                     .addKeyValue("exit", result.exitCode())
                     .addKeyValue("cause", oneLine(result.stderr().isBlank() ? result.stdout() : result.stderr()))
@@ -411,7 +411,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             return new Answer<>(Optional.empty(), usage);
         }
         if (envelope.path("is_error").asBoolean(false)) {
-            log.atError().setMessage("assistant call errored")
+            log.atWarn().setMessage("assistant call errored")
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", envelope.path("result").asString(""))
                     .log();
@@ -433,7 +433,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         try {
             return mapper.readTree(stdout);
         } catch (RuntimeException e) {
-            log.atError().setMessage("assistant json unparseable")
+            log.atWarn().setMessage("assistant json unparseable")
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", e.toString())
                     .log();
@@ -449,7 +449,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
         String raw = envelope.path("result").asString("");
         if (raw.isBlank()) {
-            log.atError().setMessage("assistant answer empty")
+            log.atWarn().setMessage("assistant answer empty")
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", "result blank")
                     .log();
@@ -487,7 +487,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
 
     /** An answer read as facts would report a read that never happened as the item not existing. */
     private Optional<JsonNode> outsideSchema(String label, String cause, String said) {
-        log.atError().setMessage("assistant answered outside the schema")
+        log.atWarn().setMessage("assistant answered outside the schema")
                 .addKeyValue("ref", label)
                 .addKeyValue("cause", oneLine(cause))
                 .addKeyValue("said", oneLine(said))

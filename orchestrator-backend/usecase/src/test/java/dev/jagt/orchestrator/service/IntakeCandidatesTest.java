@@ -1,10 +1,17 @@
 package dev.jagt.orchestrator.service;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +38,22 @@ class IntakeCandidatesTest {
         when(assistant.findCandidates("whatever is ready")).thenReturn(Answer.unavailable());
 
         assertThat(candidates.waiting(Set.of())).isEmpty();
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void warnsRatherThanErrsWhenAPollNeverReachedTheTracker() {
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger intakeLog = (Logger) LoggerFactory.getLogger(IntakeCandidates.class);
+        intakeLog.addAppender(log);
+        when(workflow.candidateQuery()).thenReturn("whatever is ready");
+        when(assistant.findCandidates("whatever is ready")).thenReturn(Answer.unavailable());
+
+        candidates.waiting(Set.of());
+
+        assertThat(log.list).extracting(ILoggingEvent::getLevel).containsExactly(Level.WARN);
+        intakeLog.detachAppender(log);
     }
 
     @Test

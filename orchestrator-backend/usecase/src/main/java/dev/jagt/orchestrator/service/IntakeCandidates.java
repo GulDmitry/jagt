@@ -39,9 +39,9 @@ public class IntakeCandidates {
     public Optional<List<Ready>> waiting(Set<String> held) {
         Answer<List<String>> found = assistant.findCandidates(workflow.candidateQuery());
         if (found.facts().isEmpty()) {
-            log.atError().setMessage("intake search unreadable")
+            log.atWarn().setMessage("intake search unreadable")
                     .addKeyValue("tracker", workflow.id())
-                    .addKeyValue("cause", "the assistant reached no tracker, so nothing was taken this poll")
+                    .addKeyValue("effect", "poll skipped")
                     .log();
             return Optional.empty();
         }
@@ -54,7 +54,7 @@ public class IntakeCandidates {
             if (!TaskName.isTicketKey(key)) {
                 log.atWarn().setMessage("intake search answered with a non-key")
                         .addKeyValue("ref", key)
-                        .addKeyValue("cause", "nothing that is not an issue key is read")
+                        .addKeyValue("effect", "key skipped")
                         .log();
                 continue;
             }
@@ -73,8 +73,8 @@ public class IntakeCandidates {
         if (facts.isEmpty()) {
             log.atWarn().setMessage("intake read unusable")
                     .addKeyValue("ref", key)
-                    .addKeyValue("cause", read.facts().isEmpty() ? "the read never reached the tracker"
-                            : "the item came back with no key, title or url")
+                    .addKeyValue("cause", read.facts().isEmpty() ? "no answer" : "key, title or url missing")
+                    .addKeyValue("effect", "key skipped")
                     .log();
             return Optional.empty();
         }
@@ -84,7 +84,8 @@ public class IntakeCandidates {
         if (item.trackerStatus().isBlank()) {
             log.atWarn().setMessage("intake stage unreadable")
                     .addKeyValue("ref", key)
-                    .addKeyValue("cause", "the item came back with no workflow status")
+                    .addKeyValue("cause", "status missing")
+                    .addKeyValue("effect", "key skipped")
                     .log();
             return Optional.empty();
         }

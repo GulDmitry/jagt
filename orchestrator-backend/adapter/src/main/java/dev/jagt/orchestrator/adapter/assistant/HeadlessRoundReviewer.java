@@ -70,7 +70,7 @@ public class HeadlessRoundReviewer implements RoundReviewer {
         try {
             result = processRunner.run(round.worktrees().getFirst(), TIMEOUT, cmd);
         } catch (RuntimeException e) {
-            log.atError().setMessage("master review did not return")
+            log.atWarn().setMessage("master review did not return")
                     .addKeyValue("path", round.worktrees().getFirst())
                     .addKeyValue("cause", e.toString())
                     .addKeyValue("effect", "token cost unmeasured")
@@ -83,7 +83,7 @@ public class HeadlessRoundReviewer implements RoundReviewer {
         JsonNode answer = envelope == null ? null : envelope.path("structured_output");
         if (result.exitCode() != 0 || answer == null || !answer.isObject()) {
             String cause = result.stderr().isBlank() ? result.stdout() : result.stderr();
-            log.atError().setMessage("master review failed")
+            log.atWarn().setMessage("master review failed")
                     .addKeyValue("path", round.worktrees().getFirst())
                     .addKeyValue("exit", result.exitCode())
                     .addKeyValue("cause", cause.strip())

@@ -83,9 +83,9 @@ public class ProjectRouting {
                             List<String> suggested, RoutingQuestion question) {
         Answer<RoutingAnswer> answer = assistant.routeProject(question);
         if (answer.facts().isEmpty()) {
-            log.atError().setMessage("project routing unreadable")
+            log.atWarn().setMessage("project routing unreadable")
                     .addKeyValue("ref", item.key())
-                    .addKeyValue("cause", "the router answered nothing")
+                    .addKeyValue("effect", "retried next poll")
                     .log();
             return new Unreadable("the router answered nothing");
         }
