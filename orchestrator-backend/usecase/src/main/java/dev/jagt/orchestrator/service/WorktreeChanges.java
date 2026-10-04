@@ -18,6 +18,8 @@ import java.util.Optional;
 @Slf4j
 public class WorktreeChanges {
 
+    private static final int MAX_QUOTED = 100_000;
+
     private final ConfigService configService;
     private final GitService gitService;
 
@@ -69,6 +71,22 @@ public class WorktreeChanges {
             warn(worktreePath, e);
             return true;
         }
+    }
+
+    /** Each repository's changes since its base, or why they could not be read; blank past what a prompt quotes. */
+    public String diff(TaskState task) {
+        StringBuilder diff = new StringBuilder();
+        for (TaskRepo repo : task.repos()) {
+            diff.append("# ").append(repo.project()).append('\n');
+            try {
+                String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
+                diff.append(gitService.changesSince(projectPath(repo.project()), Path.of(repo.worktreePath()), base));
+            } catch (RuntimeException e) {
+                warn(repo.worktreePath(), e);
+                diff.append("jagt could not read it: ").append(e.getMessage()).append('\n');
+            }
+        }
+        return diff.length() > MAX_QUOTED ? "" : diff.toString();
     }
 
     private Path projectPath(String project) {

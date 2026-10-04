@@ -10,6 +10,8 @@ import dev.jagt.orchestrator.port.Processes;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -120,6 +122,37 @@ class GitServiceTest {
 
         Files.writeString(repo.resolve("a file.java"), "class A { int x; }");
         assertThat(git.hasUncommittedChanges(repo, repo)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"main", "origin/main"})
+    void readsTheChangesSinceTheBaseCommittedAndNotNamingNewFilesButNotJagtsOwn(String baseBranch,
+                                                                              @TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("a.txt"), "base\n");
+        Files.writeString(repo.resolve("b.txt"), "base\n");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        Files.writeString(repo.resolve("a.txt"), "committed\n");
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qam", "ABC-42 Widen the column"));
+        Files.writeString(repo.resolve("b.txt"), "uncommitted\n");
+        Files.writeString(repo.resolve("new.txt"), "fresh\n");
+        Files.writeString(repo.resolve("task_context.md"), "the round brief");
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        String changes = git.changesSince(repo, repo, baseBranch);
+
+        assertThat(changes).contains("+committed", "+uncommitted")
+                .endsWith("New files, not in the diff: new.txt\n");
     }
 
     @Test

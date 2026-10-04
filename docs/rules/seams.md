@@ -76,3 +76,5 @@ The **only** way jagt reads outside itself, headless and one-shot: `service/Tick
 - Floor per call: ~25k input tokens of baseline, ~$0.41 on the inherited default model against ~$0.06 on
   haiku — hence `orchestrator.assistant.model` **ships as `haiku`** (blank to inherit). **The lever is fewer
   calls.**
+- **What jagt can read, it reads once and quotes**: `list_tasks` lists, never dumps; the panel's roles share one
+  diff ([0009](../decisions/0009-what-jagt-can-read-it-reads-once-and-quotes.md)).

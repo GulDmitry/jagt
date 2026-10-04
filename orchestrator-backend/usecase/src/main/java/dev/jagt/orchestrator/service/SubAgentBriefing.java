@@ -20,21 +20,12 @@ public class SubAgentBriefing {
     private final PromptTemplates prompts;
     private final OrchestratorProperties properties;
     private final OrchestratorPaths paths;
-    private final ConfigService configService;
-    private final StateService stateService;
 
     @Value("${server.port:8290}")
     private String boardPort = "8290";
 
     public String of(NewTask request, NewRepo repo, List<NewRepo> repos) {
         String taskId = request.taskId();
-        var projects = configService.load().projects();
-        String projectsTable = projects.entrySet().stream()
-                .map(e -> "| " + e.getKey() + " | " + e.getValue().path() + " | " + e.getValue().baseBranch() + " |")
-                .collect(Collectors.joining("\n"));
-        String activeTasks = stateService.tasks().entrySet().stream()
-                .map(e -> "- " + e.getKey() + " [" + e.getValue().status() + "] " + e.getValue().worktreePath())
-                .collect(Collectors.joining("\n"));
         return prompts.subAgentContext().formatted(
                 taskId,
                 taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
@@ -46,9 +37,7 @@ public class SubAgentBriefing {
                 paths.root(),
                 boardPort,
                 paths.stateFile(),
-                paths.configFile(),
-                projectsTable.isBlank() ? "| (none) | | |" : projectsTable,
-                activeTasks.isBlank() ? "- (none)" : activeTasks);
+                paths.configFile());
     }
 
     /** The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are none. */

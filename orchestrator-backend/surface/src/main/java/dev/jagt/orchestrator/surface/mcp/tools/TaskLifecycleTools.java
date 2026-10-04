@@ -47,10 +47,10 @@ public class TaskLifecycleTools implements McpTools {
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> retirement.retire(said.taskId()));
 
-        tools.tool("list_tasks", Audience.ANYONE, NoArguments.schema("Return the full orchestrator state (all tasks,"
-                        + " statuses, worktree paths) from state.json."),
+        tools.tool("list_tasks", Audience.ANYONE, NoArguments.schema("Every task, one per line: its id, status,"
+                        + " title, last message, and each worktree with its review request."),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> stateService.prettyJson());
+                (said, caller) -> stateService.listing());
 
         tools.tool("list_projects", Audience.MASTER, NoArguments.schema("Every project jagt works on, one per line:"
                         + " its key (what initialize_task's projectKey takes), what it is, and the labels placing an"

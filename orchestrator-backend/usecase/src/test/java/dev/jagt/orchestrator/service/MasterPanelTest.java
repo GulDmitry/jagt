@@ -35,9 +35,31 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
-                "Summary: accept v3 calls", "");
+                "Summary: accept v3 calls", "", "");
 
         assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>");
+    }
+
+    @Test
+    void quotesTheDiffReadForTheRoundToEachReviewer() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""), "",
+                "+int x;\n", "");
+
+        assertThat(prompt).contains("<diff>\n+int x;\n</diff>");
+    }
+
+    @Test
+    void opensEveryRolesPromptWithTheSameRoundSoItIsReadFromCache() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String qa = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+                "Summary: accept v3 calls", "+int x;\n", "");
+        String developer = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("developer", "is the code right",
+                ""), "Summary: accept v3 calls", "+int x;\n", "");
+
+        assertThat(qa.substring(0, qa.indexOf("</diff>"))).isEqualTo(developer.substring(0, developer.indexOf("</diff>")));
     }
 
     @Test
@@ -55,7 +77,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""), "",
-                "- keep the extraction per the human");
+                "", "- keep the extraction per the human");
 
         assertThat(prompt).contains("binding").contains("- keep the extraction per the human");
     }

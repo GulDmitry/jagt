@@ -356,6 +356,24 @@ public class GitService {
                 .expectSuccess("git rev-list count in " + worktree).stdout().trim()));
     }
 
+    /** Everything the worktree changed since it left its base at origin, committed and not; new files by name. */
+    public String changesSince(Path projectPath, Path worktree, String baseBranch) {
+        List<String> generated = WorktreeFiles.generated(agentRuntime);
+        return withRepoLock(projectPath, () -> {
+            String base = processRunner.run(worktree, GIT_TIMEOUT,
+                            List.of("git", "merge-base", "origin/" + baseBranch.replaceFirst("^origin/", ""), "HEAD"))
+                    .expectSuccess("git merge-base in " + worktree).stdout().strip();
+            String diff = processRunner.run(worktree, GIT_TIMEOUT,
+                            List.of("git", "diff", "--no-color", "--no-ext-diff", base))
+                    .expectSuccess("git diff in " + worktree).stdout();
+            List<String> added = branchNames(processRunner.run(worktree, GIT_TIMEOUT,
+                            List.of("git", "ls-files", "--others", "--exclude-standard"))
+                    .expectSuccess("git ls-files in " + worktree).stdout()).stream()
+                    .filter(path -> !generated.contains(path)).toList();
+            return added.isEmpty() ? diff : diff + "New files, not in the diff: " + String.join(", ", added) + "\n";
+        });
+    }
+
     /**
      * The path out of one {@code git status --porcelain} line. Split at the FIRST space of the stripped line rather
      * than a fixed offset: the status field is one or two letters wide, and a path may hold spaces of its own.

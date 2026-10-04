@@ -36,7 +36,7 @@ public class MasterPanel {
     private final UsageTracker usage;
     private final MasterBriefs briefs;
     private final MasterDecisions decisions;
-    private final TicketTexts tickets;
+    private final RoundFacts facts;
 
     /** {@code model} blank reads with the Master's own model. */
     public record Role(String name, String question, String model) {
@@ -56,11 +56,12 @@ public class MasterPanel {
         List<Path> worktrees = worktrees(task);
         List<Role> roles = roles(brief, briefs.author());
         String shared = shared(brief, briefs.author(), config.may(MasterRight.ANSWER));
-        String ticket = tickets.of(taskId).orElse("");
+        String ticket = facts.ticket(taskId);
+        String diff = facts.diff(task);
         List<Judgement> judgements = new ArrayList<>();
         try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<Answer<Judgement>>> asked = roles.stream()
-                    .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, ticket,
+                    .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, ticket, diff,
                             decisions.of(task)), worktrees, role.modelOr(config.modelOrInherited())))
                     .map(round -> threads.submit(() -> reviewer.review(round))).toList();
             for (Future<Answer<Judgement>> answer : asked) {
@@ -211,7 +212,8 @@ public class MasterPanel {
                 + "The brief the author worked to, its %s filled per task; yours extends it:\n"
                 + authorBrief + "\n\n"
                 + "Read the ticket, quoted in the round where jagt read it and with your tracker tools where it is"
-                + " not, then everything the task changed against its base, committed and not. Judge from the"
+                + " not, then everything the task changed against its base, committed and not: quoted in the round"
+                + " where jagt read it, with git where it is not. Judge from the"
                 + " ticket and the diff: the author's own account is not evidence. Run no build and no test: they"
                 + " ran before the round reached you.\n"
                 + "The best is the enemy of the good: ready means nothing is broken and nothing misses the ticket.\n"
@@ -228,14 +230,16 @@ public class MasterPanel {
                 + " unless something stopped you reading the round, then what.";
     }
 
-    static String prompt(String taskId, TaskState task, Role role, String ticket, String decided) {
+    /** The round before the role, so every role after the first finds it cached. */
+    static String prompt(String taskId, TaskState task, Role role, String ticket, String diff, String decided) {
         String link = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
-        return "You are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
-                + role.question() + ". The other roles read this round separately; say nothing outside yours.\n\n"
-                + "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
+        return "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
                         .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + link + ".\n"
                 + (ticket.isBlank() ? "" : "The ticket, read for this round:\n<ticket>\n" + ticket
                         + "\n</ticket>\n")
-                + settled(decided);
+                + (diff.isBlank() ? "" : "The diff, read for this round:\n<diff>\n" + diff + "</diff>\n")
+                + settled(decided)
+                + "\nYou are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
+                + role.question() + ". The other roles read this round separately; say nothing outside yours.\n";
     }
 }
