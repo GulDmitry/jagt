@@ -199,6 +199,7 @@ What the agent does with a comment:
 | A round removes something that exists (an endpoint, a version) and no ticket line asks for it | — | A question, not a verdict |
 | The ticket's acceptance check was never run | — | Not ready, or a question where it cannot be run |
 | What it reads | — | The ticket and the diff; a premise its verdict rests on is proven by a run, never taken from the author |
+| A role worth a lighter model | — | A `model` column in the brief's role table; blank keeps `master.model` |
 | What a round costs | — | One heavy read per role of the brief, charged to the task; `master` shows the total |
 
 ## Deploy and revert

@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MasterPanelTest {
 
-    private static final List<MasterPanel.Role> TWO = List.of(new MasterPanel.Role("chaplain", "should it exist"),
-            new MasterPanel.Role("developer", "is the code right"));
+    private static final List<MasterPanel.Role> TWO = List.of(new MasterPanel.Role("chaplain", "should it exist", ""),
+            new MasterPanel.Role("developer", "is the code right", ""));
 
     @Test
     void showsEachReviewerTheBriefTheAuthorWorkedTo() {
@@ -34,7 +34,7 @@ class MasterPanelTest {
     void quotesTheTicketReadForTheRoundToEachReviewer() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right"),
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
                 "Summary: accept v3 calls", "");
 
         assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>");
@@ -54,7 +54,7 @@ class MasterPanelTest {
     void holdsEveryReviewerToWhatEarlierRoundsSettled() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right"), "",
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""), "",
                 "- keep the extraction per the human");
 
         assertThat(prompt).contains("binding").contains("- keep the extraction per the human");
@@ -86,6 +86,19 @@ class MasterPanelTest {
                 """;
 
         assertThat(MasterPanel.roles(brief, "")).extracting(MasterPanel.Role::name).containsExactly("chaplain", "QA");
+    }
+
+    @Test
+    void readsARoleWithTheModelItsRowNames() {
+        String brief = """
+                | role | the question it asks | model |
+                |------|----------------------|-------|
+                | architect | is the architecture held | opus |
+                | QA | is it tested right | |
+                """;
+
+        assertThat(MasterPanel.roles(brief, "")).extracting(role -> role.modelOr("sonnet"))
+                .containsExactly("opus", "sonnet");
     }
 
     @Test

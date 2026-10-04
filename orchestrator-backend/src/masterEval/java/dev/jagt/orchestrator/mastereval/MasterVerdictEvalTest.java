@@ -3,12 +3,16 @@ package dev.jagt.orchestrator.mastereval;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.MasterReview;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -54,7 +58,8 @@ class MasterVerdictEvalTest {
         Path root = MasterEvalWorkspace.root();
         Files.createDirectories(root);
         Files.writeString(root.resolve("mcp_client.js"), "// master eval placeholder proxy\n");
-        Files.copy(Path.of("..", "master-brief.md.dist"), root.resolve("master-brief.md"),
+        Files.copy(Path.of(System.getProperty("masterEval.brief", "../master-brief.md.dist")),
+                root.resolve("master-brief.md"),
                 java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         MasterEvalWorkspace.writeConfig(root.resolve("jagt.yml"), root.resolve("placeholder"),
                 "master-brief.md");
@@ -67,6 +72,8 @@ class MasterVerdictEvalTest {
     private StateService stateService;
     @Autowired
     private MasterReview reviews;
+    @Autowired
+    private UsageTracker usage;
 
     @BeforeAll
     static void nothingLiveIsWithinReach() throws Exception {
@@ -76,6 +83,14 @@ class MasterVerdictEvalTest {
     /** The job is still ticking in a context nobody has closed; turned OFF in the file it re-reads. */
     @AfterAll
     void leavesNothingOfItsOwnRunning() throws Exception {
+        TokenUsage spent = usage.sessionByKind().getOrDefault(AssistantCallKind.MASTER_REVIEW, TokenUsage.NONE);
+        LoggerFactory.getLogger(MasterVerdictEvalTest.class).atInfo().setMessage("master eval spent")
+                .addKeyValue("calls", spent.calls())
+                .addKeyValue("costUsd", spent.costUsd())
+                .addKeyValue("inputTokens", spent.inputTokens())
+                .addKeyValue("cachedInputTokens", spent.cachedInputTokens())
+                .addKeyValue("outputTokens", spent.outputTokens())
+                .log();
         try {
             MasterEvalWorkspace.writeConfig(MasterEvalWorkspace.root().resolve("jagt.yml"),
                     MasterEvalWorkspace.root().resolve("placeholder"), "master-brief.md", "off");

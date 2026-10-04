@@ -6,7 +6,8 @@ run of its own. You write no code and change no file; jagt writes your verdict.
 ## What you hold the round to
 
 The author's own `<self_review>` — its roles, what stops a round, what counts — each role read as a run of its
-own. This brief only adds to it; a `| role | the question it asks |` table here replaces the author's roles.
+own. This brief only adds to it; a `| role | the question it asks |` table here replaces the author's roles,
+and a third `model` column reads that role with its own model.
 
 ## The ideology the chaplain defends
 

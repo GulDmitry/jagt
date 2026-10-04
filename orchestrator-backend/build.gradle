@@ -249,6 +249,12 @@ tasks.register('masterEval', Test) {
     testClassesDirs = sourceSets.masterEval.output.classesDirs
     classpath = sourceSets.masterEval.runtimeClasspath
     useJUnitPlatform()
+    // -PmasterBrief and -PmasterModel read another brief or model against the same rounds, to compare cost.
+    ['masterBrief': 'masterEval.brief', 'masterModel': 'masterEval.model'].each { property, key ->
+        if (project.hasProperty(property)) {
+            systemProperty key, project.property(property)
+        }
+    }
     // Gated on CAPABILITY, and it names what is missing rather than failing every round on it.
     onlyIf {
         List<String> missing = []

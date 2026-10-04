@@ -93,8 +93,8 @@ final class MasterEvalWorkspace {
                   projects:
                     proj: { path: "%s", baseBranch: main }
                   viewer: { tmuxSession: "%s" }
-                  master: { mode: %s, brief: "%s" }
-                """.formatted(projectPath, TMUX_SESSION, mode, brief));
+                  master: { mode: %s, brief: "%s", model: "%s" }
+                """.formatted(projectPath, TMUX_SESSION, mode, brief, System.getProperty("masterEval.model", "")));
     }
 
     private static void write(Path root, Map<String, String> files) throws IOException {

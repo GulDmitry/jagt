@@ -38,7 +38,12 @@ public class MasterPanel {
     private final MasterDecisions decisions;
     private final TicketTexts tickets;
 
-    public record Role(String name, String question) {
+    /** {@code model} blank reads with the Master's own model. */
+    public record Role(String name, String question, String model) {
+
+        String modelOr(String masters) {
+            return model.isBlank() ? masters : model;
+        }
     }
 
     /** Writes the round's review file; false where the brief could not be read, and nothing was asked. */
@@ -56,7 +61,7 @@ public class MasterPanel {
         try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<Answer<Judgement>>> asked = roles.stream()
                     .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, ticket,
-                            decisions.of(task)), worktrees, config.modelOrInherited()))
+                            decisions.of(task)), worktrees, role.modelOr(config.modelOrInherited())))
                     .map(round -> threads.submit(() -> reviewer.review(round))).toList();
             for (Future<Answer<Judgement>> answer : asked) {
                 judgements.add(read(taskId, answer));
@@ -113,7 +118,7 @@ public class MasterPanel {
     static List<Role> roles(String brief, String authorBrief) {
         List<Role> own = table(brief);
         List<Role> roles = own.isEmpty() ? table(authorBrief) : own;
-        return roles.isEmpty() ? List.of(new Role("reviewer", "every question your brief asks")) : roles;
+        return roles.isEmpty() ? List.of(new Role("reviewer", "every question your brief asks", "")) : roles;
     }
 
     private static List<Role> table(String brief) {
@@ -126,7 +131,8 @@ public class MasterPanel {
             } else if (cells.getFirst().strip().equalsIgnoreCase("role")) {
                 inTable = true;
             } else if (inTable && !cells.getFirst().strip().startsWith("-")) {
-                roles.add(new Role(cells.get(0).strip(), cells.get(1).strip()));
+                roles.add(new Role(cells.get(0).strip(), cells.get(1).strip(),
+                        cells.size() > 2 ? cells.get(2).strip() : ""));
             }
         }
         return roles;
