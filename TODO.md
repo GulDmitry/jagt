@@ -21,12 +21,12 @@ lines each.
 What to decide first: where a cut may fall (only a commit boundary stays buildable), how each targets the
 previous, and what happens to comments a later cut superseded.
 
-## A project remembers the cases it solved (idea)
+## A project's memory: solved cases and the service map (investigation)
 
-How a red run was diagnosed — the tool reaching the log, the Sonar key — is lost: CLI memory is per directory,
-each task a new worktree.
+Each task is a new worktree, so how a red run was diagnosed and which service talks to which is rediscovered.
+Research: [`docs/research/memory-layer.md`](docs/research/memory-layer.md).
 
-What to decide first: where it lives, who writes it, how a stale case dies.
+What to decide first: wiki.md, mem0 or a graph store, and behind which port.
 
 ## A flag for the tasks that matter, on the card (idea)
 
