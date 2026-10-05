@@ -179,4 +179,16 @@ class FlowRulesTest {
     void landsEveryOtherTasksReportOnTheStatusItReported(TaskStatus from) {
         assertThat(FlowRules.reported(from, TaskStatus.REVIEW_PENDING)).isEqualTo(TaskStatus.REVIEW_PENDING);
     }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED", "APPROVED"})
+    void stopsATaskWaitingOnTheHostWhenItsRunReadsRed(TaskStatus waiting) {
+        assertThat(FlowRules.readRed(waiting)).isEqualTo(TaskStatus.CI_FAILED);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "DEPLOYED"})
+    void leavesATaskSomeoneIsOnWhereItIsWhenItsRunReadsRed(TaskStatus busy) {
+        assertThat(FlowRules.readRed(busy)).isEqualTo(busy);
+    }
 }

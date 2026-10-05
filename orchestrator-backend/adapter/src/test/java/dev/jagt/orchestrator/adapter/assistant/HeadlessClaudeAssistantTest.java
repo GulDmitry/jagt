@@ -208,6 +208,22 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void readsTheJobThatFailedInsideATriggeredPipelineRatherThanTheTriggerItself() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        assistant.readReview("https://host/mr/9");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).anyMatch(argument -> argument.contains("A bridge or trigger job is never that job")
+                && argument.contains("read its verdict with that tool's own MCP"));
+    }
+
+    @Test
     void asksForEveryNoteOfAThreadSoAReplyToAReplyIsNotReadAsAnAnsweredComment() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))

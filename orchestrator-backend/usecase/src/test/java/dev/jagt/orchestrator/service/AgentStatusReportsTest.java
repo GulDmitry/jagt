@@ -458,4 +458,16 @@ class AgentStatusReportsTest {
                 .hasMessageContaining("already APPROVED");
         assertThat(state.task("ABC-1")).get().extracting(TaskState::status).isEqualTo(TaskStatus.APPROVED);
     }
+
+    @Test
+    void putsARedRoundOnTheBoardWithoutTappingTheHumanTwice(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .alias("a1").mrUrl("http://mr/1").build());
+
+        reports(state).markFailed("ABC-1");
+
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_FAILED);
+        verify(notifications, never()).send(any());
+    }
 }

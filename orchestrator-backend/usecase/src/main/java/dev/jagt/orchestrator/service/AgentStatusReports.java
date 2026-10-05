@@ -155,6 +155,15 @@ public class AgentStatusReports {
         markOutcome(taskId, TaskStatus.APPROVED, "approved — checks green, request approved");
     }
 
+    /** The red was tapped when the round read it; this puts the stop on the board. */
+    public void markFailed(String taskId) {
+        String id = stateService.canonicalTaskId(taskId);
+        TaskStatus previous = stateService.task(id).map(TaskState::status).orElse(null);
+        if (previous != null && FlowRules.readRed(previous) == TaskStatus.CI_FAILED) {
+            flow.report(id, TaskStatus.CI_FAILED, "checks failed — relayed to the session");
+        }
+    }
+
     public String notifyUser(String title, String message) {
         notifications.send(Notification.fromAgent(null, title, message));
         return "Notification sent";

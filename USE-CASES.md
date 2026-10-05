@@ -164,7 +164,8 @@ What the agent does with a comment:
 | The replies are too long, or an essay | The agent broke its brief; the brief is relayed every round, so a re-`sweep` re-briefs |
 | The round came back clean, nobody approved | REVIEWED, and nothing is asked of you |
 | An approval arrives | The one thing you are tapped for: it is yours to deploy |
-| The pipeline goes red | A red dot, and one notification the first time that run goes red |
+| The pipeline goes red | `checks failed` on the card, one notification; the session finds the cause and fixes it |
+| The red is not in the code, or nothing here reads it | The session changes nothing and asks you, naming the job |
 | You type `review <task>` | It runs the sweep |
 
 ## Auto-review

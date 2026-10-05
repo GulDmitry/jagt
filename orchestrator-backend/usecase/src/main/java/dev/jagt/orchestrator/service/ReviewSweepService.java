@@ -119,6 +119,9 @@ public class ReviewSweepService {
                     "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved yet, not approved — waiting");
         }
+        if (checks == Pipeline.RED) {
+            statusReports.markFailed(taskId);
+        }
         if (!sessions.relayIfChanged(taskId, brief(mrUrl, r, said))) {
             return new SweepResult(SweepResult.Kind.UNCHANGED, "sweep " + taskId + ": "
                     + r.threads().size() + " thread(s), checks " + said
@@ -215,10 +218,22 @@ public class ReviewSweepService {
     private static String brief(String mrUrl, ReviewFacts r, String said) {
         StringBuilder brief = new StringBuilder("Review round for ").append(mrUrl).append(".\n");
         if (Pipeline.of(said) == Pipeline.RED) {
-            brief.append("Checks: ").append(said).append(" — fix the failing build.\n");
+            brief.append("Checks: ").append(said).append(" — find out why and fix it.\n");
             if (!r.pipelineFailure().isBlank()) {
                 brief.append("<checks>\n").append(r.pipelineFailure()).append("\n</checks>\n");
             }
+            brief.append("""
+                    <how_to_fix_checks>
+                    <checks> is a clue read cheaply, not the diagnosis. Find the job that failed yourself: the
+                    request's newest pipeline, down into any pipeline it triggered. Read that job's whole log and its
+                    reports; a verdict it only links to, such as a quality gate, through that tool's own MCP, a
+                    browser only where it has none.
+                    Reproduce it with the command that job ran, fix it, and run that command again until it passes.
+                    A failure that is not in the code or does not reproduce — a runner, the network, a timeout, a
+                    flaky test — or one no tool here can read: change nothing, set status REVIEW_PENDING with
+                    outcome=question naming the job and why.
+                    </how_to_fix_checks>
+                    """);
         }
         if (!r.threads().isEmpty()) {
             brief.append("""

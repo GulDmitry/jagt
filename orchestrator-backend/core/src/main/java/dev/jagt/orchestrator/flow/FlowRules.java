@@ -173,6 +173,11 @@ public final class FlowRules {
         return A_VERDICT.contains(to) && PAST_THE_REVIEW.contains(from) ? from : to;
     }
 
+    /** A red round read for a task stops it only where the round waits on the host: a session on it keeps going. */
+    public static TaskStatus readRed(TaskStatus from) {
+        return WAITING_ON_THE_HOST.contains(from) ? TaskStatus.CI_FAILED : from;
+    }
+
     /** Whether the work has left the worktree, which is the only point a tracker's word can end the task. */
     public static boolean handedOver(TaskStatus status) {
         return HANDED_OVER.contains(status);
@@ -187,6 +192,9 @@ public final class FlowRules {
 
     /** What a read of the round alone concludes, as opposed to what the task itself is doing. */
     private static final Set<TaskStatus> A_VERDICT = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED);
+
+    private static final Set<TaskStatus> WAITING_ON_THE_HOST = EnumSet.of(TaskStatus.CI_POLLING,
+            TaskStatus.REVIEWED, TaskStatus.APPROVED);
 
     /** Statuses a round is BEHIND: the code went to the shared branch without waiting for what it says. */
     private static final Set<TaskStatus> PAST_THE_REVIEW = EnumSet.of(TaskStatus.DEPLOY_CONFLICT,

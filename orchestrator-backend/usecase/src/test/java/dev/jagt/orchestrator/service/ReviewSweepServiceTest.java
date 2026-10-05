@@ -257,6 +257,30 @@ class ReviewSweepServiceTest {
     }
 
     @Test
+    void stopsTheTaskOnTheBoardWhenItsChecksReadRed() {
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
+
+        sweep.sweep("ABC-1");
+
+        verify(statusReports).markFailed("ABC-1");
+    }
+
+    @Test
+    void briefsARedRoundToReproduceTheFailureAndAskWhereItIsNotTheCode() {
+        when(reviewReader.read("ABC-1", "http://mr/1"))
+                .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue())
+                .contains("Reproduce it with the command that job ran")
+                .contains("outcome=question naming the job and why");
+    }
+
+    @Test
     void reportsAnUnreadableReviewInsteadOfTreatingItAsClean() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.empty());
 
