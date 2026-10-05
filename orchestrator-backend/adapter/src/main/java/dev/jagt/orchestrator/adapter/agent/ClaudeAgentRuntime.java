@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -29,6 +30,9 @@ import java.util.stream.Stream;
 public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     private static final JsonMapper JSON = new JsonMapper();
+    private static final String PROMPT_MARK = "\u276f";
+    private static final Pattern ANSI = Pattern.compile("\u001b\\[[0-9;?]*[A-Za-z]");
+    private static final Pattern DIMMED = Pattern.compile("\u001b\\[2m.*?(?=\u001b\\[(?:0|22)?m|$)");
     private static final String CLAUDE_MEMORY_FILE = "CLAUDE.md";
     private static final String LOCAL_MEMORY_FILE = "CLAUDE.local.md";
 
@@ -80,6 +84,19 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     public java.util.Optional<Path> sessionLogOf(Path worktree) {
         return ClaudeTranscripts.newestLog(ClaudeTranscripts.projectsDir(), worktree);
+    }
+
+    /** The input line is the last one opening with the prompt mark; a dimmed remainder is a suggestion, not a draft. */
+    @Override
+    public boolean holdsDraft(String screen) {
+        String draft = "";
+        for (String line : screen.split("\n")) {
+            if (ANSI.matcher(line).replaceAll("").startsWith(PROMPT_MARK)) {
+                String typed = line.substring(line.indexOf(PROMPT_MARK) + PROMPT_MARK.length());
+                draft = ANSI.matcher(DIMMED.matcher(typed).replaceAll("")).replaceAll("");
+            }
+        }
+        return !draft.replace('\u00a0', ' ').isBlank();
     }
 
     @Override

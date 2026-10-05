@@ -68,6 +68,11 @@ public interface AgentRuntime {
         return Optional.empty();
     }
 
+    /** Whether {@code screen}, a session's window as shown, holds input the human has typed and not yet sent. */
+    default boolean holdsDraft(String screen) {
+        return false;
+    }
+
     /** Where this agent's system knowledge goes; a name the checkout already uses is the project's own, never taken. */
     Path systemKnowledgeFile(Path worktree);
 

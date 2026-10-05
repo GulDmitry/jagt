@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -24,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     /** The one line jagt types into a session; whatever else arrives there is the human's. */
+    private static final Duration DRAFT_POLL = Duration.ofSeconds(1);
+
     public static final String NUDGE = "The Master updated task_context.md — re-read it now and follow the new"
             + " instructions.";
 
@@ -33,6 +37,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     private final TerminalDriver terminalDriver;
     private final AgentRuntime agentRuntime;
     private final ConcurrentHashMap<String, Object> relayLocks = new ConcurrentHashMap<>();
+    private final Set<String> draftWaits = ConcurrentHashMap.newKeySet();
 
     public String startAgent(String taskId, String alias, Path worktreePath, boolean planMode) {
         return openTab(taskId, alias, worktreePath, configService.load(), planMode);
@@ -189,10 +194,15 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
             return "Instructions written to task_context.md; the session had been idle past its cache lifetime,"
                     + " so a fresh one was started to read them with task_notes.md.";
         }
-        if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING
-                && sessions.nudgeTaskWindow(session, taskId,
-                        NUDGE)) {
-            return "Instructions written to task_context.md and the agent was nudged to re-read them.";
+        if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING) {
+            if (composing(session, taskId)) {
+                nudgeOnceSent(session, taskId, task.alias());
+                return "Instructions written to task_context.md; the human is typing in the agent's window, so the"
+                        + " nudge waits until they send it.";
+            }
+            if (sessions.nudgeTaskWindow(session, taskId, NUDGE)) {
+                return "Instructions written to task_context.md and the agent was nudged to re-read them.";
+            }
         }
         log.atInfo().setMessage("agent session re-entered").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias())
@@ -203,6 +213,37 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 task.alias(), Path.of(task.worktreePath()));
         return "Instructions written to task_context.md; the agent session was down, so it was re-entered"
                 + " to read and follow them.";
+    }
+
+    private boolean running(String session, String taskId) {
+        return sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING;
+    }
+
+    private boolean composing(String session, String taskId) {
+        return sessions.screenOf(session, taskId).filter(agentRuntime::holdsDraft).isPresent();
+    }
+
+    /** A line typed over a draft is glued to it and sent as the human's, so the nudge waits for an empty prompt. */
+    private void nudgeOnceSent(String session, String taskId, String alias) {
+        if (!draftWaits.add(taskId)) {
+            return;
+        }
+        log.atInfo().setMessage("nudge waits").addKeyValue("task", taskId).addKeyValue("alias", alias)
+                .addKeyValue("cause", "the human is typing in the agent's window").log();
+        Thread.startVirtualThread(() -> {
+            try {
+                while (running(session, taskId) && composing(session, taskId)) {
+                    Thread.sleep(DRAFT_POLL);
+                }
+                if (running(session, taskId)) {
+                    sessions.nudgeTaskWindow(session, taskId, NUDGE);
+                }
+            } catch (InterruptedException stopped) {
+                Thread.currentThread().interrupt();
+            } finally {
+                draftWaits.remove(taskId);
+            }
+        });
     }
 
     private boolean pastContinuing(Path worktree) {

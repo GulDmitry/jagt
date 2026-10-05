@@ -28,6 +28,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -116,6 +118,32 @@ class AgentSessionsTest {
         when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
 
         assertThat(sessions().writeTaskContext("ABC-1", "new instructions")).contains("nudged");
+    }
+
+    @Test
+    void typesNoNudgeIntoADraftTheHumanIsComposing() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"));
+        when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
+
+        sessions().writeTaskContext("ABC-1", "new instructions");
+
+        verify(tmux, after(1500).never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void nudgesOnceTheHumanHasSentTheirDraft() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
+        when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
+
+        sessions().writeTaskContext("ABC-1", "new instructions");
+
+        verify(tmux, timeout(5000)).nudgeTaskWindow("jagt", "ABC-1", AgentSessions.NUDGE);
     }
 
     @Test

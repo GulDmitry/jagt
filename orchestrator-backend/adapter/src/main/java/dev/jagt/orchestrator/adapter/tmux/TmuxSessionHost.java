@@ -137,6 +137,19 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     @Override
+    public Optional<String> screenOf(String session, String taskId) {
+        synchronized (lock) {
+            var windowId = findWindowId(session, taskId);
+            if (windowId.isEmpty()) {
+                return Optional.empty();
+            }
+            var screen = processRunner.run(null, TIMEOUT, List.of(tmux(), "capture-pane", "-p", "-e", "-t",
+                    windowId.get()));
+            return screen.exitCode() == 0 ? Optional.of(screen.stdout()) : Optional.empty();
+        }
+    }
+
+    @Override
     public boolean nudgeTaskWindow(String session, String taskId, String message) {
         synchronized (lock) {
             var windowId = findWindowId(session, taskId);

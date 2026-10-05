@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.port.AgentWorktree;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -264,5 +266,18 @@ class ClaudeAgentRuntimeTest {
         assertThat(gate.path("matcher").asString("")).isEqualTo("Bash");
         assertThat(gate.path("hooks").path(0).path("command").asString(""))
                 .contains("/api/agent/tool", worktree.toString());
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+            "\u276f\u00a0where is the merge re|true",
+            "\u276f\u00a0\u001b[2mclose the task\u001b[0m|false",
+            "\u276f an earlier message\\n\u276f\u00a0|false"})
+    void tellsADraftTheHumanIsComposingFromTheSuggestionAndFromWhatTheyAlreadySent(String screen, boolean draft) {
+        var runtime = new ClaudeAgentRuntime(OrchestratorProperties.defaults(), new ClaudeProperties("claude"),
+                new McpEndpoint("http://localhost:8290/mcp"),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+
+        assertThat(runtime.holdsDraft(screen.translateEscapes())).isEqualTo(draft);
     }
 }

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.port;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * Where an agent's session LIVES: something keeping a process running after whoever started it walks away, and
@@ -46,6 +47,9 @@ public interface SessionHost {
     boolean focusTaskWindow(String session, String dedicatedTitle, String taskId);
 
     WindowState taskWindowState(String session, String taskId);
+
+    /** What the task's window shows, its styling kept; empty when it is gone. */
+    Optional<String> screenOf(String session, String taskId);
 
     /** Types a line into the session as if a human had, without touching focus; false when it is gone. */
     boolean nudgeTaskWindow(String session, String taskId, String message);
