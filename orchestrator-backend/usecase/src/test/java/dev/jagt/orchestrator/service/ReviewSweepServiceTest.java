@@ -277,6 +277,7 @@ class ReviewSweepServiceTest {
         verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
         assertThat(relayed.getValue())
                 .contains("Reproduce it with the command that job ran")
+                .contains("A gate fails on EVERY condition it lists: answer each.")
                 .contains("outcome=question naming the job and why");
     }
 
