@@ -71,6 +71,7 @@
 | No MCP server reaches the tracker | `do ABC-42 <project>` | The read fails naming what stopped it; the task carries no title |
 | The read says "does not exist" for a ticket that plainly does | — | Asked again, up to three times, each attempt told what the last got wrong |
 | The read answers about a different key, or with no key or link | — | No task, and the message says why |
+| A paid call answers in prose, not the schema's object | — | Asked once more at once, both calls billed; a failed call is not |
 | The item has no summary | — | A short title is written from the description; a link is never invented |
 | An item reaches your start stage | nothing | The task opens itself (`tracker`, off by default) |
 | An item reaches your landed stage | nothing | The task closes itself, its work having left the worktree |

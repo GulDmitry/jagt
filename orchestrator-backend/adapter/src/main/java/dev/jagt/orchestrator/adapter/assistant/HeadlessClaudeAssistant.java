@@ -340,9 +340,29 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         return ask(prompt, schema, label, kind, TIMEOUT);
     }
 
-    /** Which servers load, and whether any load at all, are the KIND's to answer — never a flag beside it. */
     private Answer<JsonNode> ask(String prompt, String schema, String label, AssistantCallKind kind,
                                  Duration timeout) {
+        Reply first = call(prompt, schema, label, kind, timeout);
+        Optional<JsonNode> answer = first.answered() ? answerOf(first.envelope(), label, schema) : Optional.empty();
+        if (!first.answered() || answer.isPresent()) {
+            return new Answer<>(answer, first.usage());
+        }
+        // The CLI at times hands back the model's prose without the object its schema tool validated.
+        Reply second = call(prompt, schema, label, kind, timeout);
+        return new Answer<>(second.answered() ? answerOf(second.envelope(), label, schema) : Optional.empty(),
+                first.usage().plus(second.usage()));
+    }
+
+    /** A failed call carries no envelope: asking again would not mend it. */
+    private record Reply(JsonNode envelope, TokenUsage usage) {
+
+        boolean answered() {
+            return envelope != null;
+        }
+    }
+
+    /** Which servers load, and whether any load at all, are the KIND's to answer — never a flag beside it. */
+    private Reply call(String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
         boolean withMcp = kind != AssistantCallKind.COMMAND_MAP;
         String pinned = assistant.mcpConfigFor(kind);
         List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
@@ -385,7 +405,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     .addKeyValue("limit", timeout)
                     .addKeyValue("effect", "token cost unmeasured")
                     .log();
-            return new Answer<>(Optional.empty(), TokenUsage.NONE);
+            return new Reply(null, TokenUsage.NONE);
         }
         JsonNode envelope = parseEnvelope(result.stdout(), label);
         // Reported whatever the outcome: a call that errored or came back unusable was still paid for.
@@ -410,16 +430,16 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                     .addKeyValue("exit", result.exitCode())
                     .addKeyValue("cause", oneLine(result.stderr().isBlank() ? result.stdout() : result.stderr()))
                     .log();
-            return new Answer<>(Optional.empty(), usage);
+            return new Reply(null, usage);
         }
         if (envelope.path("is_error").asBoolean(false)) {
             log.atWarn().setMessage("assistant call errored")
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", envelope.path("result").asString(""))
                     .log();
-            return new Answer<>(Optional.empty(), usage);
+            return new Reply(null, usage);
         }
-        return new Answer<>(answerOf(envelope, label, schema), usage);
+        return new Reply(envelope, usage);
     }
 
     /** `%kvp` quotes a value but escapes nothing, so a multi-line stderr would break the console line apart. */

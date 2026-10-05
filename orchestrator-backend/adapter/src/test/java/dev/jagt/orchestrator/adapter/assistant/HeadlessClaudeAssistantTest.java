@@ -9,6 +9,9 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.task.RoutingAnswer;
+import dev.jagt.orchestrator.task.RoutingQuestion;
+import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
@@ -20,6 +23,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -378,6 +382,24 @@ class HeadlessClaudeAssistantTest {
                 .extracting(pair -> pair.key + "=" + pair.value)
                 .contains("said=I need the GitLab MCP server logged in before I can read this request.");
         assistantLog.detachAppender(log);
+    }
+
+    @Test
+    void asksOnceMoreWhenTheModelClaimedTheSchemaToolButTheEnvelopeCarriesNoObject() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(
+                new Processes.Result(0, """
+                        {"type":"result","is_error":false,
+                         "result":"I have already called the StructuredOutput tool with project abc."}""", ""),
+                new Processes.Result(0, """
+                        {"structured_output":{"failure":"","project":"abc","reason":"named","rule":""}}""", ""));
+
+        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty()).routeProject(RoutingQuestion.defaults()
+                .withItem(TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Sync a flag"))
+                .withProjects(Map.of("abc", "the abc service", "xyz", "the xyz service")));
+
+        assertThat(answer.facts()).map(RoutingAnswer::project).contains("abc");
     }
 
     @Test

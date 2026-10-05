@@ -85,6 +85,7 @@ public class ProjectRouting {
         if (answer.facts().isEmpty()) {
             log.atWarn().setMessage("project routing unreadable")
                     .addKeyValue("ref", item.key())
+                    .addKeyValue("cause", "the router answered nothing")
                     .addKeyValue("effect", "retried next poll")
                     .log();
             return new Unreadable("the router answered nothing");
