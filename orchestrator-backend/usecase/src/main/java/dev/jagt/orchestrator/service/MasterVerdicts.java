@@ -1,9 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +17,12 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MasterVerdicts {
 
+    /** Fixed, so the relay of it is made once and a round handed back unchanged is not asked about again. */
+    static final String NOTHING_TO_SHIP = "nothing to ship: no repository of this task holds work."
+            + " Close the task, or say what it still needs?";
+
     private final AgentSessions sessions;
-    private final CommandService commands;
+    private final MasterShip ship;
     private final FlowReports reports;
     private final MasterDecisions decisions;
 
@@ -43,11 +45,7 @@ public class MasterVerdicts {
                 if (!config.may(MasterRight.SHIP)) {
                     return false;
                 }
-                log.atInfo().setMessage("master ships").addKeyValue("task", taskId).log();
-                // Through the same door a human's press uses, so an illegal move is refused rather than taken, and
-                // stamped as the Master's so what a ship does on its behalf can differ from what it does on yours.
-                OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, TaskAction.SHIP));
-                return true;
+                return ship.ship(taskId, task) || ask(taskId, NOTHING_TO_SHIP);
             }
         }
         return false;

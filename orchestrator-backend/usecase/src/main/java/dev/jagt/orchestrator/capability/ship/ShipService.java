@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.ReviewRequestTitle;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -80,15 +79,10 @@ public class ShipService {
 
     private List<Target> targets(TaskState task) {
         return task.repos().stream()
-                .map(repo -> new Target(repo.project(), repo.worktreePath(), targetOf(task, repo),
+                .map(repo -> new Target(repo.project(), repo.worktreePath(),
+                        WorktreeChanges.targetBranch(task, configService.project(repo.project()).baseBranch()),
                         repo.hasReviewRequest()))
                 .toList();
-    }
-
-    /** A task cut from a parent feature branch merges back into it, not into that repository's configured base. */
-    private String targetOf(TaskState task, TaskRepo repo) {
-        String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
-        return base == null ? "" : base.replaceFirst("^origin/", "");
     }
 
     static String repliesStep(ConfigService.ConfigFile config) {

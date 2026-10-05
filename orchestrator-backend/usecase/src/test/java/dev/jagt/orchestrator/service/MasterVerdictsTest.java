@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
@@ -23,10 +22,10 @@ import static org.mockito.Mockito.when;
 class MasterVerdictsTest {
 
     private final AgentSessions sessions = mock(AgentSessions.class);
-    private final CommandService commands = mock(CommandService.class);
+    private final MasterShip ship = mock(MasterShip.class);
     private final FlowReports reports = mock(FlowReports.class);
     private final MasterDecisions decisions = mock(MasterDecisions.class);
-    private final MasterVerdicts verdicts = new MasterVerdicts(sessions, commands, reports, decisions);
+    private final MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, reports, decisions);
 
     private static ConfigService.ConfigFile.MasterConfig acting() {
         return new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
@@ -46,7 +45,7 @@ class MasterVerdictsTest {
                 List.of("Foo.java:12 the guard is inverted"), 1), acting());
 
         verify(sessions).relayIfChanged(eq("ABC-1"), contains("the guard is inverted"));
-        verify(commands, never()).execute(anyString(), any());
+        verify(ship, never()).ship(anyString(), any());
     }
 
     @Test
@@ -81,9 +80,24 @@ class MasterVerdictsTest {
 
     @Test
     void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path worktree) {
-        verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
+        TaskState task = in(worktree);
+        when(ship.ship("ABC-1", task)).thenReturn(true);
 
-        verify(commands).execute("ABC-1", TaskAction.SHIP);
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
+
+        verify(ship).ship("ABC-1", task);
+        verify(reports, never()).report(anyString(), any(), anyString());
+    }
+
+    @Test
+    void asksTheHumanWhatToDoWithAReadyRoundThatHoldsNothingToShip(@TempDir Path worktree) {
+        TaskState task = in(worktree);
+        when(sessions.relayIfChanged(eq("ABC-1"), contains("nothing to ship"))).thenReturn(true);
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
+
+        verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "outcome=question — reviewer: nothing to ship: no"
+                + " repository of this task holds work. Close the task, or say what it still needs?");
     }
 
     @Test
@@ -94,7 +108,7 @@ class MasterVerdictsTest {
                 kept);
 
         assertThat(moved).isFalse();
-        verify(commands, never()).execute(anyString(), any());
+        verify(ship, never()).ship(anyString(), any());
     }
 
     @Test
@@ -103,7 +117,7 @@ class MasterVerdictsTest {
                 judging());
 
         assertThat(moved).isFalse();
-        verify(commands, never()).execute(anyString(), any());
+        verify(ship, never()).ship(anyString(), any());
     }
 
     @Test
@@ -115,7 +129,7 @@ class MasterVerdictsTest {
 
         verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS,
                 "outcome=question — reviewer: Add v3 beside v2, or replace it?");
-        verify(commands, never()).execute(anyString(), any());
+        verify(ship, never()).ship(anyString(), any());
     }
 
     @Test

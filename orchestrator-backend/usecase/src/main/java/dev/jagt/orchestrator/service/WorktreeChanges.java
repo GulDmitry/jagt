@@ -73,6 +73,19 @@ public class WorktreeChanges {
         }
     }
 
+    /** Whether a ship would carry anything: a request already open, or work some repository holds. */
+    public boolean anyToShip(TaskState task) {
+        return task.repos().stream().anyMatch(repo -> repo.hasReviewRequest()
+                || holdsWork(repo.project(), repo.worktreePath(),
+                        targetBranch(task, configService.project(repo.project()).baseBranch())));
+    }
+
+    /** A task cut from a parent feature branch merges back into it, not into that repository's configured base. */
+    public static String targetBranch(TaskState task, String configuredBase) {
+        String base = task.baseBranchOr(configuredBase);
+        return base == null ? "" : base.replaceFirst("^origin/", "");
+    }
+
     /** Each repository's changes since its base, or why they could not be read; blank past what a prompt quotes. */
     public String diff(TaskState task) {
         StringBuilder diff = new StringBuilder();

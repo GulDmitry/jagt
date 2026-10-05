@@ -30,6 +30,16 @@ class WorktreeChangesTest {
     }
 
     @Test
+    void findsNothingToShipWhereNoRepositoryHoldsWorkAndNoneIsInReview() {
+        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+
+        boolean anyToShip = new WorktreeChanges(configService, gitService)
+                .anyToShip(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
+
+        assertThat(anyToShip).isFalse();
+    }
+
+    @Test
     void namesWhyARepositorysDiffCouldNotBeReadRatherThanQuotingNothing() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
         when(gitService.changesSince(any(Path.class), any(Path.class), any(String.class)))
