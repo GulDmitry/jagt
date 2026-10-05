@@ -55,7 +55,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             + " with an answer, or with a no such item — that one is exists=false and empty fields. If ANYTHING"
             + " stopped you from reading it instead — no MCP tool for that host, a tool that errored, an"
             + " authentication or network failure, a denied permission — then failure=<one line naming exactly"
-            + " what stopped you, and which tool or server it was>, and NEVER report that as not existing.";
+            + " what stopped you, and which tool or server it was>, and NEVER report that as not existing."
+            + " A tool asking for a site or cloud id gets one the host's own listing of reachable sites"
+            + " answered, never one recalled or guessed.";
     /** The sweep makes several code-host calls, not one lookup. */
     private static final Duration REVIEW_TIMEOUT = Duration.ofMinutes(6);
     private static final int MAX_CAUSE = 400;

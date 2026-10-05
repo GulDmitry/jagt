@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.event.Level;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -141,7 +142,8 @@ public class McpProtocolService implements McpToolRegistry {
             return toolResult(spec.handler().call(args, callerTaskId));
         } catch (Exception e) {
             ToolFailure failure = ToolFailure.of(e);
-            log.atWarn().setMessage("mcp tool failed")
+            // A refused message is the caller's mistake, already answered on the wire, not a fault of jagt's.
+            log.atLevel(failure == ToolFailure.VALIDATION ? Level.INFO : Level.WARN).setMessage("mcp tool failed")
                     .addKeyValue("tool", name)
                     .addKeyValue("note", failure.wire())
                     .addKeyValue("cause", e.toString())

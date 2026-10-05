@@ -13,7 +13,14 @@ import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.NoArguments;
 import dev.jagt.orchestrator.service.StateService;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -115,6 +122,31 @@ class McpProtocolServiceTest {
 
         assertThat(response.path("result").path("content").get(0).path("text").asText())
                 .endsWith(": IllegalStateException");
+    }
+
+    @Test
+    @ResourceLock(Resources.GLOBAL)
+    void logsARefusedMessageAsInfoBecauseTheCallerAlreadyHasTheAnswer(@TempDir Path root) {
+        ListAppender<ILoggingEvent> log = new ListAppender<>();
+        log.start();
+        Logger protocolLog = (Logger) LoggerFactory.getLogger(McpProtocolService.class);
+        protocolLog.addAppender(log);
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        McpTools refusing = tools -> tools.tool("boom", Audience.ANYONE, NoArguments.schema("throws"),
+                NoArguments.class, (said, caller) -> MessageContext.NONE,
+                (said, caller) -> { throw new IllegalArgumentException("CI_POLLING cannot be reported"); });
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of(refusing));
+
+        protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null);
+
+        assertThat(List.copyOf(log.list))
+                .filteredOn(event -> "mcp tool failed".equals(event.getMessage()))
+                .extracting(ILoggingEvent::getLevel)
+                .containsExactly(Level.INFO);
+        protocolLog.detachAppender(log);
     }
 
     @Test

@@ -155,6 +155,22 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void takesTheSiteIdFromTheHostsOwnListingSoASearchIsNotSentToASiteNobodyGranted() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"keys\":[]}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        assistant.findCandidates("assignee = currentUser()");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).anyMatch(argument -> argument.contains(
+                "gets one the host's own listing of reachable sites answered, never one recalled or guessed"));
+    }
+
+    @Test
     void constrainsThePipelineToFiveWordsSoAMergeableRequestCannotComeBackFailed() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
