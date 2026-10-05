@@ -11,6 +11,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -45,7 +46,7 @@ class MasterVerdictsTest {
                 List.of("Foo.java:12 the guard is inverted"), 1), acting());
 
         verify(sessions).relayIfChanged(eq("ABC-1"), contains("the guard is inverted"));
-        verify(ship, never()).ship(anyString(), any());
+        verify(ship, never()).ship(anyString(), any(), anyBoolean());
     }
 
     @Test
@@ -81,23 +82,22 @@ class MasterVerdictsTest {
     @Test
     void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path worktree) {
         TaskState task = in(worktree);
-        when(ship.ship("ABC-1", task)).thenReturn(true);
+        when(ship.ship("ABC-1", task, true)).thenReturn(true);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
 
-        verify(ship).ship("ABC-1", task);
+        verify(ship).ship("ABC-1", task, true);
         verify(reports, never()).report(anyString(), any(), anyString());
     }
 
     @Test
-    void asksTheHumanWhatToDoWithAReadyRoundThatHoldsNothingToShip(@TempDir Path worktree) {
+    void leavesClosingToTheHumanWhoKeptThatStep(@TempDir Path worktree) {
         TaskState task = in(worktree);
-        when(sessions.relayIfChanged(eq("ABC-1"), contains("nothing to ship"))).thenReturn(true);
+        var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("done"), null);
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), kept);
 
-        verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "outcome=question — reviewer: nothing to ship: no"
-                + " repository of this task holds work. Close the task, or say what it still needs?");
+        verify(ship).ship("ABC-1", task, false);
     }
 
     @Test
@@ -108,7 +108,7 @@ class MasterVerdictsTest {
                 kept);
 
         assertThat(moved).isFalse();
-        verify(ship, never()).ship(anyString(), any());
+        verify(ship, never()).ship(anyString(), any(), anyBoolean());
     }
 
     @Test
@@ -117,7 +117,7 @@ class MasterVerdictsTest {
                 judging());
 
         assertThat(moved).isFalse();
-        verify(ship, never()).ship(anyString(), any());
+        verify(ship, never()).ship(anyString(), any(), anyBoolean());
     }
 
     @Test
@@ -129,7 +129,7 @@ class MasterVerdictsTest {
 
         verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS,
                 "outcome=question — reviewer: Add v3 beside v2, or replace it?");
-        verify(ship, never()).ship(anyString(), any());
+        verify(ship, never()).ship(anyString(), any(), anyBoolean());
     }
 
     @Test

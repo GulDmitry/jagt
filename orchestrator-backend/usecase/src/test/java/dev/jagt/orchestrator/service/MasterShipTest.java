@@ -23,19 +23,29 @@ class MasterShipTest {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
         when(changes.anyToShip(task)).thenReturn(true);
 
-        boolean shipped = new MasterShip(changes, commands).ship("ABC-1", task);
+        boolean shipped = new MasterShip(changes, commands).ship("ABC-1", task, false);
 
         assertThat(shipped).isTrue();
         verify(commands).execute("ABC-1", TaskAction.SHIP);
     }
 
     @Test
-    void asksNoShipOfATaskThatHoldsNothingSoTheVerdictIsNotShippedAgainEveryTick() {
+    void pressesNothingOnATaskThatHoldsNothingWhereTheHumanKeptClosingIt() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
 
-        boolean shipped = new MasterShip(changes, commands).ship("ABC-1", task);
+        boolean shipped = new MasterShip(changes, commands).ship("ABC-1", task, false);
 
         assertThat(shipped).isFalse();
         verify(commands, never()).execute(anyString(), any());
+    }
+
+    @Test
+    void closesATaskThatHoldsNothingToShipSoItsRoundIsNotHandedBackAgain() {
+        TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
+
+        boolean pressed = new MasterShip(changes, commands).ship("ABC-1", task, true);
+
+        assertThat(pressed).isTrue();
+        verify(commands).execute("ABC-1", TaskAction.DONE);
     }
 }

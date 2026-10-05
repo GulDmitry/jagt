@@ -17,10 +17,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MasterVerdicts {
 
-    /** Fixed, so the relay of it is made once and a round handed back unchanged is not asked about again. */
-    static final String NOTHING_TO_SHIP = "nothing to ship: no repository of this task holds work."
-            + " Close the task, or say what it still needs?";
-
     private final AgentSessions sessions;
     private final MasterShip ship;
     private final FlowReports reports;
@@ -45,7 +41,7 @@ public class MasterVerdicts {
                 if (!config.may(MasterRight.SHIP)) {
                     return false;
                 }
-                return ship.ship(taskId, task) || ask(taskId, NOTHING_TO_SHIP);
+                return ship.ship(taskId, task, config.may(MasterRight.DONE));
             }
         }
         return false;
