@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 
 /** One implementation per agent CLI, selected by {@code orchestrator.agent.cli}. */
 public interface AgentRuntime {
@@ -56,6 +57,14 @@ public interface AgentRuntime {
 
     /** The log a session in {@code worktree} is appending to, where this runtime keeps one jagt can find. */
     default Optional<Path> sessionLogOf(Path worktree) {
+        return Optional.empty();
+    }
+
+    /**
+     * What a human typed into the session in {@code worktree}, oldest first, with this runtime's own launch prompts
+     * and every {@code typedByJagt} cut out. Empty where the record could not be read, which is not "said nothing".
+     */
+    default Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
         return Optional.empty();
     }
 

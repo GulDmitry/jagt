@@ -2,10 +2,18 @@ package dev.jagt.orchestrator.adapter.agent;
 
 import lombok.extern.slf4j.Slf4j;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -17,6 +25,7 @@ import java.util.stream.Stream;
 final class ClaudeTranscripts {
 
     private static final String SUFFIX = ".jsonl";
+    private static final JsonMapper JSON = new JsonMapper();
 
     private ClaudeTranscripts() {
     }
@@ -37,7 +46,7 @@ final class ClaudeTranscripts {
         }
         try (Stream<Path> logs = Files.list(dir)) {
             return logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
-                    .max(java.util.Comparator.comparingLong(ClaudeTranscripts::modified));
+                    .max(Comparator.comparingLong(ClaudeTranscripts::modified));
         } catch (IOException | RuntimeException unreadable) {
             return Optional.empty();
         }
@@ -61,6 +70,61 @@ final class ClaudeTranscripts {
                     .log();
             return 0;
         }
+    }
+
+    /**
+     * Headless runs share the directory; only the interactive CLI's human-origin entries are the human's, and a line
+     * typed into the window while they composed arrives glued to their words, so it is cut out rather than dropped.
+     */
+    static Optional<List<String>> humanSaid(Path projectsDir, Path sessionDirectory, Set<String> typedByJagt) {
+        Path dir = projectsDir.resolve(slug(sessionDirectory));
+        try (Stream<Path> logs = Files.list(dir)) {
+            List<String> said = new ArrayList<>();
+            for (Path log : logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
+                    .sorted(Comparator.comparingLong(ClaudeTranscripts::modified)).toList()) {
+                for (String line : Files.readAllLines(log)) {
+                    typed(line).map(text -> cut(text, typedByJagt)).filter(text -> !text.isEmpty())
+                            .ifPresent(said::add);
+                }
+            }
+            return Optional.of(said);
+        } catch (IOException | RuntimeException unreadable) {
+            log.atError().setMessage("human words unreadable").addKeyValue("dir", dir)
+                    .addKeyValue("cause", unreadable.toString())
+                    .log();
+            return Optional.empty();
+        }
+    }
+
+    private static Optional<String> typed(String line) {
+        if (!line.contains("\"human\"")) {
+            return Optional.empty();
+        }
+        JsonNode entry;
+        try {
+            entry = JSON.readTree(line);
+        } catch (JacksonException partial) {
+            return Optional.empty();
+        }
+        if (!"user".equals(entry.path("type").asString("")) || !"cli".equals(entry.path("entrypoint").asString(""))
+                || !"human".equals(entry.path("origin").path("kind").asString(""))) {
+            return Optional.empty();
+        }
+        JsonNode content = entry.path("message").path("content");
+        if (content.isString()) {
+            return Optional.of(content.asString());
+        }
+        StringBuilder text = new StringBuilder();
+        content.forEach(block -> text.append(block.path("text").asString("")));
+        return Optional.of(text.toString());
+    }
+
+    private static String cut(String text, Set<String> typedByJagt) {
+        String left = text;
+        for (String line : typedByJagt) {
+            left = line == null || line.isEmpty() ? left : left.replace(line, "");
+        }
+        return left.strip();
     }
 
     private static long modified(Path log) {

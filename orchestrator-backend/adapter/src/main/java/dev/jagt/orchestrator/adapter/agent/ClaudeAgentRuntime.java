@@ -11,9 +11,11 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -78,6 +80,14 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     @Override
     public java.util.Optional<Path> sessionLogOf(Path worktree) {
         return ClaudeTranscripts.newestLog(ClaudeTranscripts.projectsDir(), worktree);
+    }
+
+    @Override
+    public Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
+        Set<String> cut = new HashSet<>(typedByJagt);
+        cut.add(properties.agentPrompt());
+        cut.add(properties.agentRevivePrompt());
+        return ClaudeTranscripts.humanSaid(ClaudeTranscripts.projectsDir(), worktree, cut);
     }
 
     @Override

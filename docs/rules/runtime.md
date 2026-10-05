@@ -7,9 +7,9 @@
   in a session host (`port/SessionHost`, tmux today), one kitty window attached.
 - **One name = one tmux window**: opening one kills same-named first; liveness there is the child
   processes of `#{pane_pid}`.
-- An exited agent's window shows the tail for 15s, then closes. **Never leave an interactive shell in
+- An exited agent's window closes after showing its tail 15s. **Never leave an interactive shell in
   an agent window.**
-- Closing the viewer only **detaches** it; killing is explicit — `done`, `remove`, `close_task_tab`.
+- Closing the viewer only **detaches**; killing is explicit — `done`, `remove`, `close_task_tab`.
 - **What jagt revives it re-enters** (`AgentRuntime.reviveCommand`, Claude `--continue`) — a lost tmux server
   costs the window, not the context; a human's `respawn` is fresh.
 - **A relay past the cache lifetime starts fresh** (`AgentRuntime.continuesWithin`, Claude 1h), from `task_notes.md`:
@@ -19,20 +19,18 @@
   **group**, which `ProcessBuilder.start()` never leaves, so `ProcessRunner.detachedFrom` runs it under
   `setsid`, or `perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV'` where there is none. Trapping the signals is
   **wrong**: every descendant inherits the disposition.
-- Both wrappers `exec`, so the returned `Process` is still the app and `destroy()` reaches it; only the
-  editor's `runDetached` needs it. A missing binary exits non-zero rather than throwing, so `runDetached`
-  **fails** the launch.
+- Both wrappers `exec`, so `destroy()` on the returned `Process` reaches the app (only the editor's
+  `runDetached` needs it); a missing binary exits non-zero, so `runDetached` **fails** the launch.
 
 - **kitty is one driver, not one per OS**: `AbstractKittyTerminalDriver` holds remote control, the per-session
-  socket, tabs, reveal and close; a platform subclass supplies `bringToFront()` and `platformOptions()` — macOS
-  an AppleScript raise and the Cyrillic `cmd+` keymap, Linux **neither**, so `LinuxKittyTerminalDriver`
-  overrides both with nothing.
+  socket, tabs, reveal and close; a platform subclass supplies `bringToFront()` and `platformOptions()`: macOS
+  an AppleScript raise and the Cyrillic `cmd+` keymap, `LinuxKittyTerminalDriver` **nothing**.
 - `KittyTerminalDriver` drives `kitty @ --to unix:<per-session socket>` against one dedicated instance
   (`--single-instance --instance-group --listen-on -o allow_remote_control=yes`), over tmux (the tab execs
   `tmux attach`). `closeViewerWindow` kills the instance by socket path.
 
-- Claude Code's auto-mode classifier silently blocks calls not pre-approved. The backend makes
-  none; the committed root `.claude/settings.json` covers sessions running there.
+- Claude Code's auto-mode classifier silently blocks calls not pre-approved: the backend makes none, the
+  committed root `.claude/settings.json` covers sessions there.
 - Every sub-agent worktree (generated `.claude/settings.local.json`) needs `enableAllProjectMcpServers: true`
   plus `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]`: without the first, `ship` / `feedback`
   stall on an invisible prompt; without the second, `git commit` freezes.
@@ -40,15 +38,14 @@
 - That allow-list is dead text until the worktree is **trusted**, so `wireAgent` writes
   `projects["<worktree>"].hasTrustDialogAccepted` in `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where
   set): that one flag replaced, an unparsable file left alone, the entry dropped with the task.
-- Safety on shared branches is **not** this allow-list but the detached upstream plus prompt rules. Only
-  `initialize_task` writes the file, so an **existing** worktree keeps its old one: patch it, or re-create
-  the task.
+- Shared branches are guarded by the detached upstream and prompt rules, **not** this allow-list. Only
+  `initialize_task` writes the file: an **existing** worktree keeps its old one until patched or re-created.
 
 - **A session reports itself through its CLI's own hooks, never through the model**: `HookEndpoint` writes each
   line, a POST to `/api/agent/session/<state>` carrying the worktree as `X-Working-Directory`.
 - **Which of a CLI's events mean what is a resource, not code**:
-  `adapter/src/main/resources/hooks/<runtime>.properties`, one line per event, each naming the state it means;
-  a runtime with no resource writes none.
+  `adapter/src/main/resources/hooks/<runtime>.properties`, one line per event naming its state; a runtime
+  with no resource writes none.
 - The payload adds the session's log (else derived from the worktree) and what STARTED it —
   **a missing payload costs a detail, never the report**. That log gives last sign of life and spend (`AgentSpendReader`).
 - **What jagt ANSWERS a hook, the harness reads** (`curl -sf` prints the body): a start after a COMPACTION gets
@@ -67,3 +64,5 @@
 
 EXPERIMENTAL (`master.mode`): one headless run per role of the brief reads each round in the task's worktrees,
 refused every write, commit and push (`HeadlessRoundReviewer`); jagt writes the verdict (`MasterPanel`).
+**Every read quotes the human's own words to the session** (`AgentRuntime.humanSaid`), overruling any decision
+taken for them; unreadable, they stop the round ([0010](../decisions/0010-the-humans-own-word-stands-over-the-master.md)).

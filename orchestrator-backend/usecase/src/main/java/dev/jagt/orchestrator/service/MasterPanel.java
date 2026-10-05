@@ -38,6 +38,8 @@ public class MasterPanel {
     private final MasterDecisions decisions;
     private final RoundFacts facts;
 
+    static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
+
     /** {@code model} blank reads with the Master's own model. */
     public record Role(String name, String question, String model) {
 
@@ -56,20 +58,25 @@ public class MasterPanel {
         List<Path> worktrees = worktrees(task);
         List<Role> roles = roles(brief, briefs.author());
         String shared = shared(brief, briefs.author(), config.may(MasterRight.ANSWER));
-        String ticket = facts.ticket(taskId);
-        String diff = facts.diff(task);
+        Optional<List<String>> said = facts.humanSaid(task);
         List<Judgement> judgements = new ArrayList<>();
-        try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
-            List<Future<Answer<Judgement>>> asked = roles.stream()
-                    .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, ticket, diff,
-                            decisions.of(task)), worktrees, role.modelOr(config.modelOrInherited())))
-                    .map(round -> threads.submit(() -> reviewer.review(round))).toList();
-            for (Future<Answer<Judgement>> answer : asked) {
-                judgements.add(read(taskId, answer));
+        if (said.isEmpty()) {
+            roles.forEach(role -> judgements.add(Judgement.failed(HUMAN_UNREAD)));
+        } else {
+            String ticket = facts.ticket(taskId);
+            String diff = facts.diff(task);
+            try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
+                List<Future<Answer<Judgement>>> asked = roles.stream()
+                        .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, ticket, diff,
+                                decisions.of(task), said.get()), worktrees, role.modelOr(config.modelOrInherited())))
+                        .map(round -> threads.submit(() -> reviewer.review(round))).toList();
+                for (Future<Answer<Judgement>> answer : asked) {
+                    judgements.add(read(taskId, answer));
+                }
+            } catch (InterruptedException stopped) {
+                Thread.currentThread().interrupt();
+                return false;
             }
-        } catch (InterruptedException stopped) {
-            Thread.currentThread().interrupt();
-            return false;
         }
         String file = verdictFile(taskId, roles, judgements);
         try {
@@ -87,17 +94,18 @@ public class MasterPanel {
     public Optional<String> answer(String taskId, TaskState task, String question,
                                    ConfigService.ConfigFile.MasterConfig config) {
         Optional<String> brief = briefs.master(taskId, config);
-        if (brief.isEmpty()) {
+        Optional<List<String>> said = facts.humanSaid(task);
+        if (brief.isEmpty() || said.isEmpty()) {
             return Optional.empty();
         }
         Answer<Judgement> read = reviewer.review(new RoundReviewer.Round("",
-                answerPrompt(taskId, task, brief.get(), briefs.author(), question, decisions.of(task)),
+                answerPrompt(taskId, task, brief.get(), briefs.author(), question, decisions.of(task), said.get()),
                 worktrees(task),
                 config.modelOrInherited()));
         usage.record(AssistantCallKind.MASTER_REVIEW, read.usage());
         usage.chargeTask(taskId, read.usage());
-        return read.facts().filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
-                .map(said -> said.findings().stream().map(f -> oneLine(f.issue())).collect(Collectors.joining("\n")));
+        return read.facts().filter(judged -> judged.failure().isBlank() && !judged.findings().isEmpty())
+                .map(judged -> judged.findings().stream().map(f -> oneLine(f.issue())).collect(Collectors.joining("\n")));
     }
 
     private static List<Path> worktrees(TaskState task) {
@@ -182,11 +190,11 @@ public class MasterPanel {
     }
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
-                               String decided) {
+                               String decided, List<String> said) {
         return "You stand in for the human on task " + taskId + ". The session working it stopped to ask: "
                 + question + "\n\nThe brief you judge by:\n" + brief + "\n\n"
                 + "The brief the session works to, its %s filled per task:\n" + authorBrief + "\n\n"
-                + round(taskId, task) + settled(decided)
+                + round(taskId, task) + settled(decided) + humanSaid(said)
                 + "Read the ticket and the code, then decide as the human would, by both briefs and the codebase."
                 + " Never answer question and never defer: the decision is the answer. verdict: ready. findings:"
                 + " the decision, one per line — what the session does, and the one clause of why. premises: what"
@@ -195,8 +203,13 @@ public class MasterPanel {
     }
 
     private static String settled(String decided) {
-        return decided.isBlank() ? "" : "Settled in earlier rounds, and binding: reopen one only for a blocking"
-                + " reason.\n" + decided + "\n";
+        return decided.isBlank() ? "" : "Settled in earlier rounds, and binding unless the human's own words below"
+                + " say otherwise: reopen one only for a blocking reason.\n" + decided + "\n";
+    }
+
+    private static String humanSaid(List<String> said) {
+        return said.isEmpty() ? "" : "What the human typed to the session, oldest first. Their word stands over"
+                + " anything decided in their stead:\n<human_said>\n" + String.join("\n", said) + "\n</human_said>\n";
     }
 
     private static String round(String taskId, TaskState task) {
@@ -231,14 +244,15 @@ public class MasterPanel {
     }
 
     /** The round before the role, so every role after the first finds it cached. */
-    static String prompt(String taskId, TaskState task, Role role, String ticket, String diff, String decided) {
+    static String prompt(String taskId, TaskState task, Role role, String ticket, String diff, String decided,
+                         List<String> said) {
         String link = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
         return "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
                         .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + link + ".\n"
                 + (ticket.isBlank() ? "" : "The ticket, read for this round:\n<ticket>\n" + ticket
                         + "\n</ticket>\n")
                 + (diff.isBlank() ? "" : "The diff, read for this round:\n<diff>\n" + diff + "</diff>\n")
-                + settled(decided)
+                + settled(decided) + humanSaid(said)
                 + "\nYou are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
                 + role.question() + ". The other roles read this round separately; say nothing outside yours.\n";
     }

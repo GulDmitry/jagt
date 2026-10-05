@@ -23,6 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
+    /** The one line jagt types into a session; whatever else arrives there is the human's. */
+    public static final String NUDGE = "The Master updated task_context.md — re-read it now and follow the new"
+            + " instructions.";
+
     private final ConfigService configService;
     private final StateService stateService;
     private final SessionHost sessions;
@@ -187,7 +191,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         }
         if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING
                 && sessions.nudgeTaskWindow(session, taskId,
-                        "The Master updated task_context.md — re-read it now and follow the new instructions.")) {
+                        NUDGE)) {
             return "Instructions written to task_context.md and the agent was nudged to re-read them.";
         }
         log.atInfo().setMessage("agent session re-entered").addKeyValue("task", taskId)

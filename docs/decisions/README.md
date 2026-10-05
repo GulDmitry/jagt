@@ -29,3 +29,4 @@ alternatives — so a later reader can tell a decision from a habit.
 - [0007 — Only adapter names a vendor or an OS](0007-only-adapter-names-a-vendor-or-an-os.md)
 - [0008 — A failed read is never "not found"](0008-a-failed-read-is-never-not-found.md)
 - [0009 — What jagt can read, it reads once and quotes](0009-what-jagt-can-read-it-reads-once-and-quotes.md)
+- [0010 — The human's own word stands over the Master](0010-the-humans-own-word-stands-over-the-master.md)
