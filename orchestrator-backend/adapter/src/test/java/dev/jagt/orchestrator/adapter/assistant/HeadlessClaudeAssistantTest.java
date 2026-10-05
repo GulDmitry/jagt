@@ -224,6 +224,22 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
+    void keepsARedRunReadableWhenTheFailingJobsLogIsNot() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+                AssistantProperties.empty());
+
+        assistant.readReview("https://host/mr/9");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).anyMatch(argument -> argument.contains("A log or verdict you could not read"
+                + " fails nothing") && argument.contains("behind a discovery or category tool"));
+    }
+
+    @Test
     void asksForEveryNoteOfAThreadSoAReplyToAReplyIsNotReadAsAnAnsweredComment() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
