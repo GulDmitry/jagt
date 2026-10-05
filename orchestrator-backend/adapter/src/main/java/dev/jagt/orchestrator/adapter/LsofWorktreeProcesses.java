@@ -49,14 +49,17 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
         } catch (IOException e) {
             target = worktree.toAbsolutePath().normalize().toString();
         }
-        for (Reapable r : reapable(lsof.stdout(), target)) {
-            processRunner.run(null, TIMEOUT, List.of("kill", "-9", r.pid()));
-            log.atInfo().setMessage("worktree process reaped")
-                    .addKeyValue("pid", r.pid())
-                    .addKeyValue("cmd", r.command())
-                    .addKeyValue("path", r.cwd())
-                    .log();
+        List<Reapable> reaped = reapable(lsof.stdout(), target);
+        if (reaped.isEmpty()) {
+            return;
         }
+        for (Reapable r : reaped) {
+            processRunner.run(null, TIMEOUT, List.of("kill", "-9", r.pid()));
+        }
+        log.atInfo().setMessage("worktree processes reaped")
+                .addKeyValue("path", worktree)
+                .addKeyValue("cmd", String.join(",", reaped.stream().map(Reapable::command).toList()))
+                .log();
     }
 
     /** Command NEVER reaped: see {@link #reapable}. */
