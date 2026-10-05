@@ -236,7 +236,8 @@ class HeadlessClaudeAssistantTest {
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
         assertThat(command.getValue()).anyMatch(argument -> argument.contains("A log or verdict you could not read"
-                + " fails nothing") && argument.contains("behind a discovery or category tool"));
+                + " fails nothing") && argument.contains("behind a discovery or category tool")
+                && argument.contains("never a word of your own about what you could not"));
     }
 
     @Test
