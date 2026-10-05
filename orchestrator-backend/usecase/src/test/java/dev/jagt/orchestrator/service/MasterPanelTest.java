@@ -46,7 +46,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
-                "Summary: accept v3 calls", "", "", List.of());
+                new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""));
 
         assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>");
     }
@@ -55,8 +55,8 @@ class MasterPanelTest {
     void quotesTheDiffReadForTheRoundToEachReviewer() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""), "",
-                "+int x;\n", "", List.of());
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+                new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), ""));
 
         assertThat(prompt).contains("<diff>\n+int x;\n</diff>");
     }
@@ -66,9 +66,9 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String qa = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
-                "Summary: accept v3 calls", "+int x;\n", "", List.of());
+                new MasterPanel.RoundRead("Summary: accept v3 calls", "+int x;\n", "", List.of(), ""));
         String developer = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("developer", "is the code right",
-                ""), "Summary: accept v3 calls", "+int x;\n", "", List.of());
+                ""), new MasterPanel.RoundRead("Summary: accept v3 calls", "+int x;\n", "", List.of(), ""));
 
         assertThat(qa.substring(0, qa.indexOf("</diff>"))).isEqualTo(developer.substring(0, developer.indexOf("</diff>")));
     }
@@ -87,8 +87,8 @@ class MasterPanelTest {
     void holdsEveryReviewerToWhatEarlierRoundsSettled() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""), "",
-                "", "- keep the extraction per the human", List.of());
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+                new MasterPanel.RoundRead("", "", "- keep the extraction per the human", List.of(), ""));
 
         assertThat(prompt).contains("binding").contains("- keep the extraction per the human");
     }
@@ -97,10 +97,30 @@ class MasterPanelTest {
     void quotesWhatTheHumanTypedToTheSessionToEachReviewer() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""), "",
-                "", "- keep the old field name", List.of("rename it everywhere"));
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+                new MasterPanel.RoundRead("", "", "- keep the old field name", List.of("rename it everywhere"), ""));
 
         assertThat(prompt).contains("<human_said>\nrename it everywhere\n</human_said>");
+    }
+
+    @Test
+    void quotesTheSessionsNotesSoAReviewerCanCheckWhatItDisputed() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+                new MasterPanel.RoundRead("", "", "", List.of(), "disputed: drop v2 — Api.java:12 has no caller"));
+
+        assertThat(prompt).contains("<session_notes>\ndisputed: drop v2 — Api.java:12 has no caller\n</session_notes>");
+    }
+
+    @Test
+    void asksTheSessionForEvidenceWhereARoleCouldNotProveItsFinding() {
+        String file = MasterPanel.verdictFile("ABC-42", TWO, List.of(
+                new Judgement("", "not ready", List.of(new Finding("Api.java", "which caller still reads v2",
+                        "evidence needed", "unproven")), "", List.of()),
+                new Judgement("", "ready", List.of(), "", List.of())));
+
+        assertThat(file).contains("- [chaplain] Api.java — show: which caller still reads v2 (evidence needed)");
     }
 
     @Test

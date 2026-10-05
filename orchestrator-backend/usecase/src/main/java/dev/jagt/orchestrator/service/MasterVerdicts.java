@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.stream.Collectors;
+
 /**
  * What a verdict does. Not ready goes back to the session that wrote the code and a question to the human,
  * whatever the mode; ready moves the task on only where a human said the reviewer stands in for them.
@@ -30,7 +32,11 @@ public class MasterVerdicts {
                 if (!sessions.relayIfChanged(taskId, findings(verdict))) {
                     return false;
                 }
-                decisions.record(task, String.join("\n", verdict.findings()));
+                String ruled = verdict.findings().stream().filter(f -> !f.contains(" — " + MasterPanel.SHOW))
+                        .collect(Collectors.joining("\n"));
+                if (!ruled.isEmpty()) {
+                    decisions.record(task, ruled);
+                }
                 // Back to work, or the session's REVIEW_PENDING is no transition and the verdict reads as this round's.
                 return reports.report(taskId, TaskStatus.IN_PROGRESS, "reviewer: not ready; relayed");
             }
@@ -75,7 +81,10 @@ public class MasterVerdicts {
     /** The reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
     private static String findings(MasterReview.Verdict verdict) {
         return "The review of your round came back NOT READY. Each line below is a review comment: fix it, or"
-                + " where you believe it wrong, ask (rule 1), because the reviewer cannot read your reasons. Leave"
-                + " the fix uncommitted and report REVIEW_PENDING again.\n\n" + String.join("\n", verdict.findings());
+                + " where you believe it wrong, change nothing for it and write in task_notes.md `disputed: <the"
+                + " comment> — <evidence>`. A `show:` comment asks for evidence: answer it the same way. Evidence is"
+                + " a ticket line, a file:line, or a command and what it printed: the reviewer checks evidence and"
+                + " cannot read your reasons. Ask (rule 1) only for a decision nobody gave you. Leave the fix"
+                + " uncommitted and report REVIEW_PENDING again.\n\n" + String.join("\n", verdict.findings());
     }
 }

@@ -31,7 +31,8 @@ Respond directly, no preamble.
 `task_notes.md` is all the next session knows of you: a round may start in a fresh session that reads it, the task's
 files and git, and nothing of this conversation. Rewrite it whole at every REVIEW_PENDING — jagt refuses one whose notes
 predate the round or run past their cap. One line each: a decision and its reason, a path tried and dropped and
-why, a fact about the code nobody wrote down. Never what the diff, the commits, the ticket or `task_context.md` say.
+why, a fact about the code nobody wrote down, and `disputed: <review comment> — <evidence>` for each comment you
+answered rather than fixed. Never what the diff, the commits, the ticket or `task_context.md` say.
 When you compact, keep the files you changed, the test command and what is still open; the rest is in the notes.
 </task_notes>
 

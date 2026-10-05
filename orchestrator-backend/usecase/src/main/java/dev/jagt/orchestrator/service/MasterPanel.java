@@ -39,6 +39,12 @@ public class MasterPanel {
     private final RoundFacts facts;
 
     static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
+    /** Opens a finding asking the session for evidence: it decides nothing, so no later round is bound by it. */
+    static final String SHOW = "show: ";
+
+    /** What jagt read for a round once, quoted to every role. */
+    record RoundRead(String ticket, String diff, String decided, List<String> said, String notes) {
+    }
 
     /** {@code model} blank reads with the Master's own model. */
     public record Role(String name, String question, String model) {
@@ -63,12 +69,12 @@ public class MasterPanel {
         if (said.isEmpty()) {
             roles.forEach(role -> judgements.add(Judgement.failed(HUMAN_UNREAD)));
         } else {
-            String ticket = facts.ticket(taskId);
-            String diff = facts.diff(task);
+            RoundRead quoted = new RoundRead(facts.ticket(taskId), facts.diff(task), decisions.of(task), said.get(),
+                    facts.notes(task));
             try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
                 List<Future<Answer<Judgement>>> asked = roles.stream()
-                        .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, ticket, diff,
-                                decisions.of(task), said.get()), worktrees, role.modelOr(config.modelOrInherited())))
+                        .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, quoted), worktrees,
+                                role.modelOr(config.modelOrInherited())))
                         .map(round -> threads.submit(() -> reviewer.review(round))).toList();
                 for (Future<Answer<Judgement>> answer : asked) {
                     judgements.add(read(taskId, answer));
@@ -160,7 +166,8 @@ public class MasterPanel {
             }
             // Only what breaks something or misses the ticket stops a round; the rest is advice, a `#` line jagt skips.
             said.findings().forEach(f -> (f.stops() ? lines : advice).add((f.stops() ? "- [" : "# advice [") + role
-                    + "] " + oneLine(f.file()) + " — " + oneLine(f.issue())
+                    + "] " + oneLine(f.file()) + " — " + (f.severity().equals("unproven") ? SHOW : "")
+                    + oneLine(f.issue())
                     + (f.pattern().isBlank() ? "" : " (" + oneLine(f.pattern()) + ")")));
             said.premises().stream().filter(p -> p.provenBy().isBlank())
                     .forEach(p -> advice.add("# unproven [" + role + "] " + oneLine(p.claim())));
@@ -196,6 +203,8 @@ public class MasterPanel {
                 + "The brief the session works to, its %s filled per task:\n" + authorBrief + "\n\n"
                 + round(taskId, task) + settled(decided) + humanSaid(said)
                 + "Read the ticket and the code, then decide as the human would, by both briefs and the codebase."
+                + " Decide only what you can prove; where the decision rests on a fact only the session can show,"
+                + " the decision is to show it first: name exactly what, and what you decide on each answer."
                 + " Never answer question and never defer: the decision is the answer. verdict: ready. findings:"
                 + " the decision, one per line — what the session does, and the one clause of why. premises: what"
                 + " it rests on, each with provenBy — the file:line or read-only command that shows it. failure:"
@@ -204,7 +213,8 @@ public class MasterPanel {
 
     private static String settled(String decided) {
         return decided.isBlank() ? "" : "Settled in earlier rounds, and binding unless the human's own words below"
-                + " say otherwise: reopen one only for a blocking reason.\n" + decided + "\n";
+                + " say otherwise or the session proves one wrong: reopen one only for a blocking reason or that"
+                + " proof.\n" + decided + "\n";
     }
 
     private static String humanSaid(List<String> said) {
@@ -227,14 +237,18 @@ public class MasterPanel {
                 + "Read the ticket, quoted in the round where jagt read it and with your tracker tools where it is"
                 + " not, then everything the task changed against its base, committed and not: quoted in the round"
                 + " where jagt read it, with git where it is not. Judge from the"
-                + " ticket and the diff: the author's own account is not evidence. Run no build and no test: they"
-                + " ran before the round reached you.\n"
+                + " ticket and the diff: the author's own account is not evidence, what it points at is. A"
+                + " `disputed:` line in the session's notes names a ticket line, a file:line or a command and what it"
+                + " printed: check it, and proven, it stands over your own earlier finding. Rule only on what you can"
+                + " prove from what you read; a decision resting on a fact you cannot read is unproven, never a"
+                + " guess. Run no build and no test: they ran before the round reached you.\n"
                 + "The best is the enemy of the good: ready means nothing is broken and nothing misses the ticket.\n"
                 + "verdict: ready, not ready, or question. findings: one per problem — file, what is wrong and the"
                 + " one clause of why, pattern: two to four words naming the kind of problem, and severity:"
                 + " blocking (someone relying on it today breaks), wrong (not what the ticket asks), unguarded"
-                + " (right, but nothing fails when it breaks) or noise (style or taste); only blocking and wrong stop"
-                + " the round. question: only with verdict question, the one thing the human must decide."
+                + " (right, but nothing fails when it breaks), unproven (you would decide it, but nothing you can"
+                + " read proves it: the issue names exactly what the session must show) or noise (style or taste);"
+                + " only blocking, wrong and unproven stop the round. question: only with verdict question, the one thing the human must decide."
                 + (decides ? " You stand in for the human: never answer question. Where the ticket or the code"
                         + " leaves something open, decide it as they would, by both briefs and the codebase, and"
                         + " write the decision as a finding." : "")
@@ -244,15 +258,16 @@ public class MasterPanel {
     }
 
     /** The round before the role, so every role after the first finds it cached. */
-    static String prompt(String taskId, TaskState task, Role role, String ticket, String diff, String decided,
-                         List<String> said) {
+    static String prompt(String taskId, TaskState task, Role role, RoundRead read) {
         String link = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
         return "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
                         .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + link + ".\n"
-                + (ticket.isBlank() ? "" : "The ticket, read for this round:\n<ticket>\n" + ticket
+                + (read.ticket().isBlank() ? "" : "The ticket, read for this round:\n<ticket>\n" + read.ticket()
                         + "\n</ticket>\n")
-                + (diff.isBlank() ? "" : "The diff, read for this round:\n<diff>\n" + diff + "</diff>\n")
-                + settled(decided) + humanSaid(said)
+                + (read.diff().isBlank() ? "" : "The diff, read for this round:\n<diff>\n" + read.diff() + "</diff>\n")
+                + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
+                        + "\n</session_notes>\n")
+                + settled(read.decided()) + humanSaid(read.said())
                 + "\nYou are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
                 + role.question() + ". The other roles read this round separately; say nothing outside yours.\n";
     }

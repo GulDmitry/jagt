@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,11 @@ public class RoundFacts {
 
     public String diff(TaskState task) {
         return changes.diff(task);
+    }
+
+    /** Blank where the session left none. */
+    public String notes(TaskState task) {
+        return WorktreeFiles.read(Path.of(task.worktreePath()).resolve(Artifact.NOTES.fileName())).orElse("").strip();
     }
 
     /** Empty where the session's record could not be read. */

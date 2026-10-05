@@ -80,6 +80,18 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path worktree) {
+        TaskState task = in(worktree);
+        when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("[chaplain] Api.java — show: which caller still reads v2",
+                        "[developer] Foo.java:12 — the guard is inverted"), 1), acting());
+
+        verify(decisions).record(task, "[developer] Foo.java:12 — the guard is inverted");
+    }
+
+    @Test
     void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path worktree) {
         TaskState task = in(worktree);
         when(ship.ship("ABC-1", task, true)).thenReturn(true);

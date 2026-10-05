@@ -190,6 +190,8 @@ What the agent does with a comment:
 | You want it to act for you | `master.mode: act` | A `ready` round is shipped for you; `master.mine` keeps steps yours |
 | A `ready` round holds nothing to ship | `master.mode: act` | It closes the task; `master.mine: [done]` leaves that to you |
 | You are typing in the agent's window when instructions arrive | — | The nudge waits until you send your line; it never lands inside it |
+| The reviewer cannot prove a finding | `master.mode` | It asks the session to `show:` it, settling nothing |
+| The session thinks a finding wrong | — | It writes `disputed:` with evidence in `task_notes.md`; proven, it reopens even a settled decision |
 | No brief configured | start jagt | Refused: it judges by `master.brief`, copied from `master-brief.md.dist` |
 | The Master is reading a round | — | The chip says `master review`, nothing asks you; the session was told to end its turn |
 | Whose roles a round is read by | — | The session's own `<self_review>`, before it hands back; the Master reads by the same, unless its brief names its own table |
