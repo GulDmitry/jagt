@@ -45,7 +45,9 @@ public class HeadlessRoundReviewer implements RoundReviewer {
     public Answer<Judgement> review(Round round) {
         List<String> cmd = new ArrayList<>(List.of(claude.command(), round.prompt(), "-p",
                 "--json-schema", RoundRead.SCHEMA.json(), "--output-format", "json",
-                "--setting-sources", assistant.settingSources()));
+                "--setting-sources", assistant.settingSources(),
+                // Off the system prompt, cwd and git status stop making every worktree write its own cache.
+                "--exclude-dynamic-system-prompt-sections"));
         if (!round.shared().isBlank()) {
             cmd.addAll(List.of("--append-system-prompt", round.shared()));
         }

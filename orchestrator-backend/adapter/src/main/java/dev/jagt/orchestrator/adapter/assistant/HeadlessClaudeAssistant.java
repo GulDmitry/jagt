@@ -375,7 +375,9 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
                 "--json-schema", schema,
                 // The envelope carries the call's token usage and cost alongside the answer.
-                "--output-format", "json"));
+                "--output-format", "json",
+                // Off the system prompt, cwd and git status stop making every worktree write its own cache.
+                "--exclude-dynamic-system-prompt-sections"));
         if (!withMcp) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
         } else if (!pinned.isBlank()) {
