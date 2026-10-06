@@ -21,6 +21,16 @@ lines each.
 What to decide first: where a cut may fall (only a commit boundary stays buildable), how each targets the
 previous, and what happens to comments a later cut superseded.
 
+## The shared debug Chrome raised over the human's work (watching)
+
+Sessions drive one signed-in Chrome over CDP, and a foreground tab raises its window over whatever the human is in.
+Closed twice: a user-level tool hook rewrites the browser MCP's `new_page` and `select_page` to background, and the QA
+flow scripts open their Playwright tabs with CDP's `background` (2026-10-06; the frontmost app stayed put, and the
+old `newPage` raised Chrome).
+
+What reopens it: Chrome raised again — the call that did it opened a foreground tab or sent `Page.bringToFront` by a
+path neither covers, most likely a new script attaching with `--cdp`.
+
 ## A project's memory: solved cases and the service map (waiting)
 
 Measured, not built: a gap goes in that project's agent file
