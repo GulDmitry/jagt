@@ -68,19 +68,22 @@ public class MasterVerdicts {
     }
 
     /** The Master's answer to the session's own question, and the task back at work on it. */
-    public boolean answered(String taskId, TaskState task, String question, String decision) {
+    public boolean answered(String taskId, TaskState task, String question, String decision, boolean freshSession) {
         if (!sessions.relayIfChanged(taskId, "The Master answered your question, standing in for the human:\n"
                 + decision + "\n\nReport IN_PROGRESS, apply it, and hand the round back as usual.")) {
             return false;
         }
         decisions.record(task, "- asked: " + question + " — decided: " + decision.replace('\n', ' '));
         decisions.answered(task);
+        if (freshSession) {
+            sessions.openTaskTab(taskId, null);
+        }
         log.atInfo().setMessage("master answered").addKeyValue("task", taskId).log();
         return reports.report(taskId, TaskStatus.IN_PROGRESS, "master answered the question");
     }
 
-    public boolean answersSpentOnThisTree(TaskState task) {
-        return decisions.answersSpentOnThisTree(task);
+    public int answersOverThisTree(TaskState task) {
+        return decisions.answersOverThisTree(task);
     }
 
     /** The reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */

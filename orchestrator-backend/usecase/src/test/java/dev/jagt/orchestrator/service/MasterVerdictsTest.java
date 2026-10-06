@@ -63,9 +63,18 @@ class MasterVerdictsTest {
     void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path worktree) {
         when(sessions.relayIfChanged(eq("ABC-1"), contains("keep v2 beside v3"))).thenReturn(true);
 
-        verdicts.answered("ABC-1", in(worktree), "keep v2?", "keep v2 beside v3");
+        verdicts.answered("ABC-1", in(worktree), "keep v2?", "keep v2 beside v3", false);
 
         verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "master answered the question");
+    }
+
+    @Test
+    void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path worktree) {
+        when(sessions.relayIfChanged(eq("ABC-1"), contains("refactor the shared block"))).thenReturn(true);
+
+        verdicts.answered("ABC-1", in(worktree), "override the gate?", "refactor the shared block", true);
+
+        verify(sessions).openTaskTab("ABC-1", null);
     }
 
     @Test

@@ -13,19 +13,7 @@ import static org.mockito.Mockito.when;
 class MasterDecisionsTest {
 
     @Test
-    void stillAnswersANewQuestionOverATreeOnlyAnsweredOnceBefore() {
-        WorktreeChanges changes = mock(WorktreeChanges.class);
-        MasterDecisions decisions = new MasterDecisions(changes);
-        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
-        when(changes.state(task)).thenReturn(Optional.of("abc:1;"));
-
-        decisions.answered(task);
-
-        assertThat(decisions.answersSpentOnThisTree(task)).isFalse();
-    }
-
-    @Test
-    void leavesTheNextQuestionToTheHumanAfterThreeAnswersChangedNothingInTheTree() {
+    void countsTheAnswersGivenOverATreeNothingChangedIn() {
         WorktreeChanges changes = mock(WorktreeChanges.class);
         MasterDecisions decisions = new MasterDecisions(changes);
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
@@ -35,21 +23,19 @@ class MasterDecisionsTest {
         decisions.answered(task);
         decisions.answered(task);
 
-        assertThat(decisions.answersSpentOnThisTree(task)).isTrue();
+        assertThat(decisions.answersOverThisTree(task)).isEqualTo(3);
     }
 
     @Test
-    void answersAgainOnceTheTreeChanged() {
+    void countsNoneOnceTheTreeChanged() {
         WorktreeChanges changes = mock(WorktreeChanges.class);
         MasterDecisions decisions = new MasterDecisions(changes);
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build();
-        when(changes.state(task)).thenReturn(Optional.of("abc:1;"), Optional.of("abc:1;"), Optional.of("abc:1;"),
-                Optional.of("abc:2;"));
+        when(changes.state(task)).thenReturn(Optional.of("abc:1;"), Optional.of("abc:1;"), Optional.of("abc:2;"));
 
         decisions.answered(task);
         decisions.answered(task);
-        decisions.answered(task);
 
-        assertThat(decisions.answersSpentOnThisTree(task)).isFalse();
+        assertThat(decisions.answersOverThisTree(task)).isZero();
     }
 }

@@ -3,13 +3,13 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.job.Job;
+import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.function.Predicate;
 
 /**
  * Asks the Master's panel to read a round that has been handed back and not yet judged. The trigger is
@@ -63,13 +63,14 @@ public class MasterReviewJob implements Job {
     }
 
     private boolean waiting(TaskState task) {
-        return reviewable(task, reviews.readsTheRoundInFront(task), verdicts::answersSpentOnThisTree);
+        return reviewable(task, reviews.readsTheRoundInFront(task),
+                configService.load().master().may(MasterRight.ANSWER));
     }
 
-    /** A question the Master left to the human is the human's round: reviewing it ships around the question. */
-    static boolean reviewable(TaskState task, boolean judged, Predicate<TaskState> answersSpent) {
+    /** A question the Master answers is the answer job's: reviewing its round ships around the question. */
+    static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
         return task.status() == TaskStatus.REVIEW_PENDING && !judged
-                && !(AgentReport.of(task.message()) == AgentReport.QUESTION && answersSpent.test(task));
+                && !(questionsAnswered && AgentReport.of(task.message()) == AgentReport.QUESTION);
     }
 
     private void ask(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {

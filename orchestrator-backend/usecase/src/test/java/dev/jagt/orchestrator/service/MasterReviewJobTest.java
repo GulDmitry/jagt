@@ -9,11 +9,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MasterReviewJobTest {
 
     @Test
-    void leavesARoundAloneWhoseQuestionTheMasterAlreadyLeftToTheHuman() {
+    void leavesARoundWhoseQuestionTheMasterAnswersToTheAnswerNotTheReview() {
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("outcome=question — override the gate?").build();
 
-        boolean reviewable = MasterReviewJob.reviewable(asking, false, task -> true);
+        boolean reviewable = MasterReviewJob.reviewable(asking, false, true);
 
         assertThat(reviewable).isFalse();
     }

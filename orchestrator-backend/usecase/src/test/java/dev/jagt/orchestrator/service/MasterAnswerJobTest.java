@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -31,11 +32,11 @@ class MasterAnswerJobTest {
         when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-        when(panel.answer(eq("ABC-1"), any(), anyString(), any())).thenReturn(Optional.of("keep v2 beside v3"));
+        when(panel.answer(eq("ABC-1"), any(), anyString(), any(), anyBoolean())).thenReturn(Optional.of("keep v2 beside v3"));
 
         job.run();
 
-        verify(verdicts).answered("ABC-1", asking, "outcome=question — keep v2?", "keep v2 beside v3");
+        verify(verdicts).answered("ABC-1", asking, "outcome=question — keep v2?", "keep v2 beside v3", false);
     }
 
     @Test
@@ -49,20 +50,35 @@ class MasterAnswerJobTest {
 
         job.run();
 
-        verify(panel, never()).answer(anyString(), any(), anyString(), any());
+        verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
 
     @Test
-    void leavesAQuestionToTheHumanOnceTheAnswersGivenOverATreeChangedNothingInIt() {
+    void changesTheApproachOnceThreeAnswersChangedNothingInTheTree() {
         TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
-                .message("outcome=question — reconnect the tool?").build();
+                .message("outcome=question — override the gate?").build();
         when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
-        when(verdicts.answersSpentOnThisTree(asking)).thenReturn(true);
+        when(verdicts.answersOverThisTree(asking)).thenReturn(3);
 
         job.run();
 
-        verify(panel, never()).answer(anyString(), any(), anyString(), any());
+        verify(panel).answer("ABC-1", asking, "outcome=question — override the gate?",
+                config.load().master(), true);
+    }
+
+    @Test
+    void stopsARunawayLoopAtTheNinthAnswerOverAnUnchangedTree() {
+        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .message("outcome=question — override the gate?").build();
+        when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(verdicts.answersOverThisTree(asking)).thenReturn(9);
+
+        job.run();
+
+        verify(panel, never()).answer(anyString(), any(), anyString(), any(), anyBoolean());
     }
 }

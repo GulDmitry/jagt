@@ -78,7 +78,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — keep v2?", "", List.of());
+                "outcome=question — keep v2?", "", List.of(), false);
 
         assertThat(prompt).contains("outcome=question — keep v2?").contains("Never answer question");
     }
@@ -88,10 +88,20 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — refactor, or override the gate?", "", List.of());
+                "outcome=question — refactor, or override the gate?", "", List.of(), false);
 
         assertThat(prompt).contains("an override, an exception or a human's action is no answer while a change in"
                 + " the worktrees can pass it");
+    }
+
+    @Test
+    void asksTheMasterToTakeTheBestOptionOnceItsAnswersChangedNothing() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
+                "outcome=question — override the gate?", "", List.of(), true);
+
+        assertThat(prompt).contains("where options remain, recommend the best and take it");
     }
 
     @Test
@@ -139,7 +149,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — rename the field?", "", List.of("rename it everywhere"));
+                "outcome=question — rename the field?", "", List.of("rename it everywhere"), false);
 
         assertThat(prompt).contains("<human_said>\nrename it everywhere\n</human_said>");
     }

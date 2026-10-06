@@ -20,8 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class MasterDecisions {
 
-    /** Answers a session may get over one unchanged tree: asking past them, it could not act on any. */
+    /** Answers over one unchanged tree after which the session could act on none: the approach changes. */
     static final int ANSWERS_PER_TREE = 3;
+    /** Answers over one unchanged tree past which the loop is a runaway, the one stop that reaches the human. */
+    static final int RUNAWAY = 9;
 
     private final WorktreeChanges changes;
     private final Map<String, Answered> answeredOver = new ConcurrentHashMap<>();
@@ -34,10 +36,10 @@ public class MasterDecisions {
                 (then, now) -> then.tree().equals(tree) ? new Answered(tree, then.times() + 1) : now));
     }
 
-    public boolean answersSpentOnThisTree(TaskState task) {
+    /** How many answers this tree has already had, none where it changed since the last. */
+    public int answersOverThisTree(TaskState task) {
         Answered then = answeredOver.get(task.worktreePath());
-        return then != null && then.times() >= ANSWERS_PER_TREE
-                && changes.state(task).map(then.tree()::equals).orElse(false);
+        return then != null && changes.state(task).map(then.tree()::equals).orElse(false) ? then.times() : 0;
     }
 
     public void record(TaskState task, String decided) {

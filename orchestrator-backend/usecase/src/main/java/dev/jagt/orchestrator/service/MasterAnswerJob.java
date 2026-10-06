@@ -60,18 +60,22 @@ public class MasterAnswerJob implements Job {
     }
 
     private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-        if (verdicts.answersSpentOnThisTree(task)) {
-            log.atWarn().setMessage("master answer repeats").addKeyValue("task", taskId)
-                    .addKeyValue("cause", "asked again over a tree its last answers changed nothing in")
+        int given = verdicts.answersOverThisTree(task);
+        if (given >= MasterDecisions.RUNAWAY) {
+            log.atWarn().setMessage("master answer runaway").addKeyValue("task", taskId)
+                    .addKeyValue("answers", given)
+                    .addKeyValue("cause", "answers over a tree nothing changed in")
                     .addKeyValue("effect", "the question waits for the human")
                     .log();
             unanswered.put(taskId, task.message());
             return;
         }
+        // Answers nothing acted on change the approach: a session with fresh tools, a change in the worktrees.
+        boolean stuck = given >= MasterDecisions.ANSWERS_PER_TREE;
         log.atInfo().setMessage("master answers").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
                 .log();
-        Optional<String> decision = panel.answer(taskId, task, task.message(), config);
-        if (decision.isEmpty() || !verdicts.answered(taskId, task, task.message(), decision.get())) {
+        Optional<String> decision = panel.answer(taskId, task, task.message(), config, stuck);
+        if (decision.isEmpty() || !verdicts.answered(taskId, task, task.message(), decision.get(), stuck)) {
             log.atWarn().setMessage("master answer unusable").addKeyValue("task", taskId)
                     .addKeyValue("effect", "the question waits for the human")
                     .log();

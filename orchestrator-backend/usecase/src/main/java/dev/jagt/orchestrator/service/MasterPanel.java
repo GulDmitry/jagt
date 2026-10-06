@@ -98,14 +98,14 @@ public class MasterPanel {
 
     /** The session's question decided as the human would; empty where no decision came back. */
     public Optional<String> answer(String taskId, TaskState task, String question,
-                                   ConfigService.ConfigFile.MasterConfig config) {
+                                   ConfigService.ConfigFile.MasterConfig config, boolean stuck) {
         Optional<String> brief = briefs.master(taskId, config);
         Optional<List<String>> said = facts.humanSaid(task);
         if (brief.isEmpty() || said.isEmpty()) {
             return Optional.empty();
         }
         Answer<Judgement> read = reviewer.review(new RoundReviewer.Round("",
-                answerPrompt(taskId, task, brief.get(), briefs.author(), question, decisions.of(task), said.get()),
+                answerPrompt(taskId, task, brief.get(), briefs.author(), question, decisions.of(task), said.get(), stuck),
                 worktrees(task),
                 config.modelOrInherited()));
         usage.record(AssistantCallKind.MASTER_REVIEW, read.usage());
@@ -197,11 +197,11 @@ public class MasterPanel {
     }
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
-                               String decided, List<String> said) {
+                               String decided, List<String> said, boolean stuck) {
         return "You stand in for the human on task " + taskId + ". The session working it stopped to ask: "
                 + question + "\n\nThe brief you judge by:\n" + brief + "\n\n"
                 + "The brief the session works to, its %s filled per task:\n" + authorBrief + "\n\n"
-                + round(taskId, task) + settled(decided) + humanSaid(said)
+                + round(taskId, task) + settled(decided) + humanSaid(said) + (stuck ? STUCK : "")
                 + "Read the ticket and the code, then decide as the human would, by both briefs and the codebase."
                 + " Decide only what you can prove; where the decision rests on a fact only the session can show,"
                 + " the decision is to show it first: name exactly what, and what you decide on each answer."
@@ -214,10 +214,14 @@ public class MasterPanel {
                 + " blank unless something stopped you reading, then what.";
     }
 
+    private static final String STUCK = "Your last answers over this tree changed nothing in it: the session"
+            + " could act on none, and it restarts with fresh tools. Decide the change in the worktrees that brings"
+            + " the task to ready-to-merge; where options remain, recommend the best and take it.\n";
+
     private static String settled(String decided) {
         return decided.isBlank() ? "" : "Settled in earlier rounds, and binding unless the human's own words below"
                 + " say otherwise or the session proves one wrong: reopen one only for a blocking reason or that"
-                + " proof.\n" + decided + "\n";
+                + " proof. A decision after which the task did not move is no settlement.\n" + decided + "\n";
     }
 
     private static String humanSaid(List<String> said) {
