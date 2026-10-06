@@ -233,6 +233,8 @@ public class ReviewSweepService {
                     A gate fails on EVERY condition it lists: answer each. One no local command computes, such as
                     duplication, is checked against that tool's own findings (the duplicated blocks, the uncovered
                     lines) until none of them is in what you changed.
+                    A red check is this task's to turn green, code that predates it included: an override, an
+                    exception or a human's action is no answer while a change here can pass it.
                     A failure that is not in the code or does not reproduce — a runner, the network, a timeout, a
                     flaky test — or one no tool here can read: change nothing, set status REVIEW_PENDING with
                     outcome=question naming the job and why.

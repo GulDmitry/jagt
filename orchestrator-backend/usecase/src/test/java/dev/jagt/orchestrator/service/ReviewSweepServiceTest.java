@@ -278,6 +278,7 @@ class ReviewSweepServiceTest {
         assertThat(relayed.getValue())
                 .contains("Reproduce it with the command that job ran")
                 .contains("A gate fails on EVERY condition it lists: answer each.")
+                .contains("A red check is this task's to turn green, code that predates it included")
                 .contains("outcome=question naming the job and why");
     }
 

@@ -84,6 +84,17 @@ class MasterPanelTest {
     }
 
     @Test
+    void asksTheMasterForTheChangeThatTurnsARedCheckGreenRatherThanAnOverride() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
+                "outcome=question — refactor, or override the gate?", "", List.of());
+
+        assertThat(prompt).contains("an override, an exception or a human's action is no answer while a change in"
+                + " the worktrees can pass it");
+    }
+
+    @Test
     void holdsEveryReviewerToWhatEarlierRoundsSettled() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
