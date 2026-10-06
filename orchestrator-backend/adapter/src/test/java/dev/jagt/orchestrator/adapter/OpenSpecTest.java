@@ -9,12 +9,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -83,6 +83,21 @@ class OpenSpecTest {
 
         new OpenSpec(processes, "/bin/openspec").fold(worktree, "ABC-42");
 
-        verify(processes).run(eq(worktree), any(Duration.class), eq(Map.of("OPENSPEC_TELEMETRY", "0")), eq(ARCHIVE));
+        verify(processes).run(eq(worktree), any(Duration.class),
+                argThat(env -> "0".equals(env.get("OPENSPEC_TELEMETRY"))), eq(ARCHIVE));
+    }
+
+    @Test
+    void findsNodeBesideTheCliWhenJagtsPathLacksIt(@TempDir Path worktree) throws IOException {
+        Files.createDirectories(worktree.resolve("openspec/changes/abc-42"));
+        Processes processes = mock(Processes.class);
+        when(processes.run(eq(worktree), any(Duration.class), anyMap(), any()))
+                .thenReturn(new Processes.Result(0, "", ""));
+
+        new OpenSpec(processes, "/opt/homebrew/bin/openspec").fold(worktree, "ABC-42");
+
+        verify(processes).run(eq(worktree), any(Duration.class),
+                argThat(env -> env.get("PATH").startsWith("/opt/homebrew/bin")),
+                eq(List.of("/opt/homebrew/bin/openspec", "archive", "abc-42", "-y")));
     }
 }

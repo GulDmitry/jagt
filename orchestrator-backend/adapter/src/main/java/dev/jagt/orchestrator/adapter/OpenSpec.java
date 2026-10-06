@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.Specs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -24,7 +25,6 @@ public class OpenSpec implements Specs {
     private static final String BINARY = "openspec";
     private static final String HOME = "openspec";
     private static final Duration LIMIT = Duration.ofMinutes(2);
-    private static final Map<String, String> ENV = Map.of("OPENSPEC_TELEMETRY", "0");
     /** An archived change is named `YYYY-MM-DD-<change>`. */
     private static final int ARCHIVE_DATE = "2026-01-01-".length();
 
@@ -97,7 +97,15 @@ public class OpenSpec implements Specs {
             throw new IllegalStateException("this repository keeps openspec/ and jagt finds no `openspec` CLI:"
                     + " install it (npm i -g @fission-ai/openspec) — ask the human, this is not yours to fix");
         }
-        return processes.run(worktree, LIMIT, ENV, Stream.concat(Stream.of(binary), arguments.stream()).toList());
+        return processes.run(worktree, LIMIT, environment(),
+                Stream.concat(Stream.of(binary), arguments.stream()).toList());
+    }
+
+    /** The CLI is a `#!/usr/bin/env node` script, and an install puts node beside it rather than on jagt's PATH. */
+    private Map<String, String> environment() {
+        String inherited = System.getenv("PATH");
+        String path = Path.of(binary).getParent() + (inherited == null ? "" : File.pathSeparator + inherited);
+        return Map.of("OPENSPEC_TELEMETRY", "0", "PATH", path);
     }
 
     private static List<String> open(Path worktree, String change) {
