@@ -21,22 +21,19 @@ lines each.
 What to decide first: where a cut may fall (only a commit boundary stays buildable), how each targets the
 previous, and what happens to comments a later cut superseded.
 
-## The shared debug Chrome raised over the human's work (watching)
+## A project's memory lives in the project's own agent file (open)
 
-Sessions drive one signed-in Chrome over CDP, and a foreground tab raises its window over whatever the human is in.
-Closed twice: a user-level tool hook rewrites the browser MCP's `new_page` and `select_page` to background, and the QA
-flow scripts open their Playwright tabs with CDP's `background` (2026-10-06; the frontmost app stayed put, and the
-old `newPage` raised Chrome).
+Measured, no memory layer ([§8](docs/research/memory-layer.md#8-measured-on-our-own-tasks-2026-10-06)): Claude's auto
+memory, loaded in every worktree, rotted into ticket notes, skill duplicates and "never commit" rules.
 
-What reopens it: Chrome raised again — the call that did it opened a foreground tab or sent `Page.bringToFront` by a
-path neither covers, most likely a new script attaching with `--cdp`.
+- Triage the accumulated auto memory: a still-true fact about a project goes to its agent file, the rest is deleted.
+- Workers stop writing auto memory: `autoMemoryEnabled: false` in the worktree's generated settings.
+- A worker that hit a gap adds a line to the project's `AGENTS.md`/`CLAUDE.md` in its own branch, reviewed in the MR.
 
-## A project's memory: solved cases and the service map (waiting)
+What to decide first: the guard at hand-back, beside `TaskNotes.owed` — how many lines, and which justification
+field the report must carry.
 
-Measured, not built: a gap goes in that project's agent file
-([§8](docs/research/memory-layer.md#8-measured-on-our-own-tasks-2026-10-06)).
-
-What reopens it: one correction recurring in 3+ tasks after that, or rediscovery past 10% of tool calls.
+What reopens a memory layer: one correction recurring in 3+ tasks after that, or rediscovery past 10% of tool calls.
 
 ## A flag for the tasks that matter, on the card (idea)
 
