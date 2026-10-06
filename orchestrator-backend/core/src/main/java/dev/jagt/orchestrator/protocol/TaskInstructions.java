@@ -12,7 +12,7 @@ public record TaskInstructions(String taskId, String instructions) implements Me
     public static final Schema SCHEMA = Schema
             .of("Write instructions to <worktree>/task_context.md of a task. Used by the Master's automated"
                     + " ship/review steps; not for ad-hoc human notes (the human talks to the agent directly in"
-                    + " its tmux window).")
+                    + " its terminal window).")
             .required("taskId", "string", "Task id or its short alias.")
             .required("instructions", "string", "What the session is to do now. It REPLACES whatever stood"
                     + " there, so it says everything that still applies.");

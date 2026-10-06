@@ -27,7 +27,7 @@ Accepted 2026-07-25 (`5ab120b`), recorded retroactively 2026-10-02.
 
 - Every OS- and agent-specific piece is a strategy behind a `core/port` interface, chosen by a config value —
   never `if claude` or `if macos`.
-- Only `adapter/` names an OS or a vendor; `core/` imports no Spring and no Lombok.
+- Only `adapter/` names an OS or a vendor (`VendorNamesTest`, in code); `core/` imports no Spring and no Lombok.
 - A new vendor or OS is one implementation plus a config value; a seam selected for the wrong OS is refused at
   startup.
 - The shared knowledge file is `AGENTS.md`; nothing is named after one vendor.

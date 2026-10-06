@@ -26,6 +26,11 @@ public interface SessionHost {
     /** The session name to use, given whatever the human configured (blank included). */
     String sessionName(String configured);
 
+    /** Why the host cannot address a session by this name, empty where it can. */
+    default Optional<String> unaddressable(String name) {
+        return Optional.empty();
+    }
+
     /** Starts a task's agent in its own window, replacing any window of the same name. */
     void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias, Path worktreePath,
                         boolean planMode);

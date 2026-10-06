@@ -59,12 +59,12 @@ class AgentSessionsTest {
     }
 
     @Test
-    void closesTheTmuxWindowOfTheTaskItWasGiven() {
+    void closesTheTerminalWindowOfTheTaskItWasGiven() {
         state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.killTaskWindows("jagt", "TEST-1")).thenReturn(1);
 
-        assertThat(sessions().closeTaskTab("TEST-1")).contains("Closed 1 tmux window(s) for TEST-1");
+        assertThat(sessions().closeTaskTab("TEST-1")).contains("Closed 1 terminal window(s) for TEST-1");
     }
 
     @Test

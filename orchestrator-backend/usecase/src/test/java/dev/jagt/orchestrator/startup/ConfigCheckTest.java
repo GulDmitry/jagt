@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.service.ConfigService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -15,6 +16,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
+import static org.mockito.Mockito.mock;
 
 class ConfigCheckTest {
 
@@ -32,7 +34,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties)),
-                new OrchestratorPaths(properties)).problems()).isEmpty();
+                new OrchestratorPaths(properties), mock(SessionHost.class)).problems()).isEmpty();
     }
 
     @Test
@@ -42,7 +44,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties)),
-                new OrchestratorPaths(properties)).problems())
+                new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
                 .singleElement(STRING)
                 .contains("jagt.yml.dist");
     }
@@ -63,7 +65,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties)),
-                new OrchestratorPaths(properties)).problems())
+                new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
                 .singleElement(STRING)
                 .contains(expected);
     }
@@ -89,7 +91,7 @@ class ConfigCheckTest {
                 .withStateFile(root.resolve("state.json").toString());
 
         assertThat(new ConfigCheck(new ConfigService(new OrchestratorPaths(properties)),
-                new OrchestratorPaths(properties)).problems())
+                new OrchestratorPaths(properties), mock(SessionHost.class)).problems())
                 .singleElement(STRING)
                 .contains(expected);
     }
@@ -121,11 +123,6 @@ class ConfigCheckTest {
                           projects:
                             demo: { path: $ROOT/repo, baseBranch: origin/main, deployBranch: main }
                         """, "equals the base branch 'main'"),
-                Arguments.of("""
-                        orchestrator:
-                          viewer: { tmuxSession: "jagt:agents" }
-                          projects: { demo: { path: $ROOT/repo, baseBranch: origin/main } }
-                        """, "contains ':' or '.', which tmux reserves"),
                 Arguments.of("""
                         orchestrator:
                           viewer: { viewMode: one-per-task }

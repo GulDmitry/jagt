@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -22,14 +23,12 @@ public class ConfigCheck implements StartupCheck {
     private static final Map<String, String> RETIRED_KEYS = Map.of(
             "ui", "the board is the only surface",
             "terminal", "the driver comes from `platform`",
-            "webTerminal", "`focus` raises the kitty window",
+            "webTerminal", "`focus` raises the terminal window",
             "dashboard", "nothing renders a console table",
             "openWarpWindow", "renamed to `openTerminalWindow`; set it again");
-    /** tmux addresses a window as {@code session:window.pane}, so a name carrying either is unaddressable. */
-    private static final String RESERVED_IN_SESSION_NAME = ":.";
-
     private final ConfigService configService;
     private final OrchestratorPaths paths;
+    private final SessionHost sessions;
 
     @Override
     public List<String> problems() {
@@ -96,13 +95,12 @@ public class ConfigCheck implements StartupCheck {
                 + " Move what it holds into jagt.yml and delete it.");
     }
 
-    private static List<String> viewerProblems(ConfigService.ConfigFile config) {
+    private List<String> viewerProblems(ConfigService.ConfigFile config) {
         List<String> problems = new ArrayList<>();
         String session = config.viewer().tmuxSession();
-        if (session != null && !session.isBlank()
-                && session.chars().anyMatch(c -> RESERVED_IN_SESSION_NAME.indexOf(c) >= 0)) {
-            problems.add("viewer.tmuxSession '" + session + "' contains ':' or '.', which tmux reserves."
-                    + " Pick a name without them.");
+        if (session != null && !session.isBlank()) {
+            sessions.unaddressable(session).ifPresent(why -> problems.add("viewer.tmuxSession '" + session + "' "
+                    + why + ". Pick another name."));
         }
         String viewMode = config.viewer().viewMode();
         if (viewMode != null && !viewMode.isBlank()

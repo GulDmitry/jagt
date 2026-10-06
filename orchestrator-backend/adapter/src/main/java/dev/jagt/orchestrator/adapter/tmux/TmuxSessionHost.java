@@ -36,6 +36,17 @@ public class TmuxSessionHost implements SessionHost {
     private final Object lock = new Object();
 
     @Override
+    public Optional<String> unaddressable(String name) {
+        return reserved(name);
+    }
+
+    /** tmux addresses a window as {@code session:window.pane}, so a name carrying either is unaddressable. */
+    static Optional<String> reserved(String name) {
+        return name.chars().anyMatch(c -> c == ':' || c == '.')
+                ? Optional.of("contains ':' or '.', which tmux reserves") : Optional.empty();
+    }
+
+    @Override
     public String sessionName(String configured) {
         return configured == null || configured.isBlank() ? "jagt" : configured;
     }
