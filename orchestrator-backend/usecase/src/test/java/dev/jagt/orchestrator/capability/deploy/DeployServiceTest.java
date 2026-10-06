@@ -217,6 +217,25 @@ class DeployServiceTest {
     }
 
     @Test
+    void findsAConflictInTheRepositoryWhoseDeployWorktreeHoldsIt(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/src/web", "origin/main", "dev", null));
+        GitService git = mock(GitService.class);
+        when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
+        when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
+        DeployService deploys = new DeployService(state, config, git, editor);
+
+        var conflicts = deploys.conflicts();
+
+        assertThat(conflicts).containsExactly(java.util.Map.entry("ABC-1",
+                new DeployService.WaitingConflict(Path.of("/src/ABC-1-deploy"), true)));
+    }
+
+    @Test
     void namesWhatIsLiveAndWhatIsNotWhenARepositoryConflictsAfterAnotherHasLanded(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),

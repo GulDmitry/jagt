@@ -217,6 +217,7 @@ What the agent does with a comment:
 | "What exactly will this push?" | the Deploy button | One `project → branch` line per repository, and nothing else |
 | "What will revert take out?" | the Revert button | The branches it pushes to; the last deploy only |
 | A conflict | resolve it there (`git add`), then `deploy` | DEPLOY_CONFLICT until you do |
+| A conflict where the Master acts | — | The session resolves it there; once all is staged, jagt finishes the deploy |
 | Take a deploy back out | `revert <task>` | Reverts the last deploy's merge; refused, with a by-hand recipe, where it would have to guess |
 | It was deployed more than once | `revert <task>` | Only the last comes out; earlier ones by hand: `git log --merges --grep ABC-42`, `git revert -m 1 <sha>` |
 | A task at REVERTED | `focus`, then `ship` or `done` | `deploy` is not offered: re-merging the same branch brings nothing; the agent's reports move nothing |

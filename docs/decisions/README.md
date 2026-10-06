@@ -32,3 +32,4 @@ alternatives — so a later reader can tell a decision from a habit.
 - [0010 — The human's own word stands over the Master](0010-the-humans-own-word-stands-over-the-master.md)
 - [0011 — A red run is the session's to diagnose](0011-a-red-run-is-the-sessions-to-diagnose.md)
 - [0012 — The Master finishes the task](0012-the-master-finishes-the-task.md)
+- [0013 — A deploy conflict is the session's in `act`](0013-a-deploy-conflict-is-the-sessions-in-act.md)

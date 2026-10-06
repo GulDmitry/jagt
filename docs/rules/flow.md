@@ -11,7 +11,7 @@ The fourteen statuses: `NEW` nothing reported yet · `PLAN_PENDING` a plan is wa
 running the project's own command · `REVIEW_PENDING` back with the human · `SHIPPING` a push in flight ·
 `CI_POLLING` a round is open · `CI_FAILED` checks red ·
 `REVIEWED` nothing unresolved and CI green, not approved · `APPROVED` a human approved the request ·
-`DEPLOY_CONFLICT` a human resolves it in the deploy worktree · `DEPLOYED` live on the deploy branch ·
+`DEPLOY_CONFLICT` resolved in the deploy worktree · `DEPLOYED` live on the deploy branch ·
 `REVERTED` the deploy is out, branch and commits surviving · `DONE` closed.
 
 **A verb a human keeps is named in the table**, not in prose: `TaskAction.humanOnly` — `done` alone. A task is
@@ -34,6 +34,9 @@ watchdog leaves that silence alone.
 off what it asked rather than the context file every other relay overwrites; whether anything here reaches it,
 and how, is the session's. A green check reports nothing and the task stays DEPLOYED; a red one is the session's
 IN_PROGRESS, and the same round runs again — reviewed, deployed, checked.
+
+**In `act` a deploy conflict is the session's**: `DeployConflictJob` hands it the deploy worktree once per
+conflict, and a resolution staged in full finishes the press the human already made ([0013](../decisions/0013-a-deploy-conflict-is-the-sessions-in-act.md)).
 
 A status a **human** owns is not refused but **held**: `FlowRules.reported` keeps a REVERTED task where it is
 and records the line. Refusing it instead makes every call of that session error; letting the *following*

@@ -540,6 +540,17 @@ public class GitService {
         return mergeInProgress(deployWorktree) || resolutionCommitted(deployWorktree, targetBranch);
     }
 
+    /**
+     * Whether the conflict left in this task's deploy worktree is resolved in full: nothing unmerged, nothing
+     * edited past what was staged, and the merge still standing or committed.
+     */
+    public boolean deployResolved(Path projectPath, String sourceBranch, String targetBranch) {
+        Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+        return hasDeployWorktree(projectPath, sourceBranch) && unmergedPaths(deployWorktree).isBlank()
+                && processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "diff", "--quiet")).exitCode() == 0
+                && (mergeInProgress(deployWorktree) || resolutionCommitted(deployWorktree, targetBranch));
+    }
+
     /** A conflicted path already added is the human's work, and no press of theirs throws it away. */
     private boolean partlyResolved(Path deployWorktree) {
         return processRunner.run(deployWorktree, GIT_TIMEOUT, List.of("git", "status", "--porcelain"))

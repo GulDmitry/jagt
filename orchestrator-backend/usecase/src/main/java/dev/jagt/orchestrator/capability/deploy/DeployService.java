@@ -84,6 +84,25 @@ public class DeployService {
         return deployed(taskId, targets, from, merged, nothingToDo);
     }
 
+    /** Every task handed back from a deploy conflict, with the worktree it waits in. */
+    public Map<String, WaitingConflict> conflicts() {
+        Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
+        stateService.tasks().forEach((taskId, task) -> {
+            if (task.status() != TaskStatus.DEPLOY_CONFLICT) {
+                return;
+            }
+            deployTargets(task).stream().filter(target -> gitService.hasDeployWorktree(target.path(), taskId))
+                    .findFirst()
+                    .ifPresent(target -> waiting.put(taskId, new WaitingConflict(
+                            GitService.deployWorktreePath(target.path(), taskId),
+                            gitService.deployResolved(target.path(), taskId, target.deployBranch()))));
+        });
+        return waiting;
+    }
+
+    public record WaitingConflict(Path worktree, boolean resolved) {
+    }
+
     /**
      * At least one repository never started, so the task is NOT deployed. A repeat is advised only where something
      * DID land: the holder of the shared path is then a sibling that has just released it. With nothing landed
