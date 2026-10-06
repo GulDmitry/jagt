@@ -21,12 +21,12 @@ lines each.
 What to decide first: where a cut may fall (only a commit boundary stays buildable), how each targets the
 previous, and what happens to comments a later cut superseded.
 
-## A project's memory: solved cases and the service map (investigation)
+## A project's memory: solved cases and the service map (waiting)
 
-Each task is a new worktree, so how a red run was diagnosed and which service talks to which is rediscovered.
-Research: [`docs/research/memory-layer.md`](docs/research/memory-layer.md).
+Measured, not built: a gap goes in that project's agent file
+([§8](docs/research/memory-layer.md#8-measured-on-our-own-tasks-2026-10-06)).
 
-What to decide first: wiki.md, mem0 or a graph store, and behind which port.
+What reopens it: one correction recurring in 3+ tasks after that, or rediscovery past 10% of tool calls.
 
 ## A flag for the tasks that matter, on the card (idea)
 

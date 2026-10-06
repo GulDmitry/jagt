@@ -1,7 +1,11 @@
 # A memory layer for jagt — research, 2026-10-05
 
-Every claim about a tool carries a source in [Sources](#8-sources); `[sN]` points there. Facts were checked on
+Every claim about a tool carries a source in [Sources](#9-sources); `[sN]` points there. Facts were checked on
 2026-10-05; anything without a source is this document's own estimate and says so.
+
+> [!IMPORTANT]
+> **Verdict 2026-10-06: not built.** Measured on our own tasks, [§8](#8-measured-on-our-own-tasks-2026-10-06) overrules
+> the design below; it stays as the plan if the layer is reopened.
 
 ## 1. TL;DR
 
@@ -266,7 +270,53 @@ Seed the fixtures with invented names only; the existing `promptEval` / `masterE
 9. Does the Master's spend meter count memory reads and the distill job, under which report row?
 10. Does this need a `docs/decisions/` record now (a new port is architectural), or after the eval picks?
 
-## 8. Sources
+## 8. Measured on our own tasks, 2026-10-06
+
+Read: 15 finished tasks (`finished.jsonl`, their artifacts), ~35 working sessions with ~14k tool calls, and every
+Claude auto-memory directory of their repositories. Call counts are measured; which calls form an episode is judged.
+
+### What sessions rediscovered
+
+- **3–7% of tool calls, 2–3% of new tokens** went to answers an earlier task had already found; 20–40% in a short task.
+- The costliest tasks (~1B tokens each) stalled on code and design; the longest loop was jagt's own — the Master
+  re-answering one question ~20 times. No memory saves either.
+- 9 of 15 tasks produced a fact the code does not hold; one of an earlier task would plausibly have helped 3–5.
+- **About half is setup and access**: dependencies missing in a fresh worktree, build credentials, an
+  unauthenticated code-host CLI, a cluster login, a stale artifact cache. Text does not fix these; setup does.
+- **The rest is workflow and neighbours, each corrected by a human in 3–5 tasks**: deploying to dev is a push to the
+  dev branch; a request targets the release branch; the review bot's threads are answered; infra and secrets live
+  in the infra repository; the workflow engine is another team's; which environment allows what, prod none.
+
+### Session-written memory already exists, and rotted
+
+- Claude's auto memory is keyed by the git repository, so every worktree loads it: the main backend's index sits
+  in every transcript of one task.
+- Its 61 files there: ~20 notes on single tickets that outlived them, ~30 style rules duplicating shared skills,
+  "never commit" notes contradicting jagt's flow, one file of self-contradicting updates — read, then 86 calls spent
+  re-investigating anyway. A rule it held was still broken and corrected by the human. Nothing written since 2026-09-16.
+
+### What worked was deterministic
+
+| fix | effect |
+|---|---|
+| a DB script named in the global `CLAUDE.md` | zero rediscovery of DB access in any task |
+| a quality-gate MCP and a skill over it | the task blocked on it was followed by one using it the next day |
+| a shared QA wiki in git | read and extended by three tasks |
+
+### Verdict
+
+- **Not built**: no port, no store, no distill job. A model choosing what to remember is the garbage this design
+  feared, and the measured saving is small.
+- **A gap a session hit becomes a line in that project's versioned agent file** (`AGENTS.md`/`CLAUDE.md`),
+  reviewed like code: its build, its neighbours — what it calls, what it consumes, who owns them — its workflow.
+  `CLAUDE.local.md` does not do: gitignored, it never reaches a worktree, and jagt writes its brief there.
+- Setup and access gaps close in worktree setup or a tool, not in text.
+- Transcripts hold plaintext credentials: any distill over them needs a scrubber first.
+- Open: switching off workers' auto memory, and triaging the files already there.
+- **Reopens when** one correction still recurs in 3+ tasks after the project files carry it, or rediscovery passes
+  10% of tool calls.
+
+## 9. Sources
 
 | id | source |
 |---|---|
