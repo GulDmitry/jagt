@@ -1,6 +1,6 @@
 # 0005 — The base branch is read-only
 
-[← decisions](README.md) · rule: [`git.md`](../rules/git.md)
+[← decisions](README.md) · rule: [`git`](../../openspec/specs/git/spec.md)
 
 ## Status
 

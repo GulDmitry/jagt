@@ -1,6 +1,6 @@
 # 0006 — The machine owns every move; a model only judges
 
-[← decisions](README.md) · rule: [`flow.md`](../rules/flow.md)
+[← decisions](README.md) · rule: [`task-flow`](../../openspec/specs/task-flow/spec.md)
 
 ## Status
 

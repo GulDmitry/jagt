@@ -11,31 +11,32 @@ through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-
 | file | holds |
 |------|-------|
 | `AGENTS.md` (this) | the rules you must not break, and where to read the rest |
-| `docs/rules/*.md` | each rule in full, with why |
+| [`openspec/specs/`](openspec/specs/) | what jagt does, as requirements and scenarios |
+| `docs/rules/*.md` | each code convention in full, with why |
 | `.claude/rules/` | the same table as path-scoped pointers, no rule of its own |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | the map: what kinds of thing jagt has, and where a new one goes |
-| [`USE-CASES.md`](USE-CASES.md) | one line per situation, already decided |
 | [`README.md`](README.md) + `docs/` | what a human installing jagt needs |
 | [`TODO.md`](TODO.md) | only what is still open; empty is normal |
 | [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
 | [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
 
-A decided decision is not a TODO: it lives in the code, the files above and git history. **An architectural one gets its
-`docs/decisions/` record in the commit taking it.**
+A decided decision is no TODO: it lives in the code, these files and git history. **An architectural one gets its
+`docs/decisions/` record in the commit taking it.** **A behaviour change carries its
+`openspec/changes/<task>/`** ([`spec-changes`](openspec/specs/spec-changes/spec.md)).
 
 ## Read before you change
 
 | about to touch | read first |
 |----------------|------------|
-| `flow/`, a status, a capability, an outcome | [`docs/rules/flow.md`](docs/rules/flow.md) |
-| the board, a card, a verb, a report | [`docs/rules/surfaces.md`](docs/rules/surfaces.md) |
+| `flow/`, a status, a capability, an outcome | [`task-flow`](openspec/specs/task-flow/spec.md) |
+| the board, a card, a verb, a report | [`board`](openspec/specs/board/spec.md) |
 | a colour, a mark, the colour palette, the legend | [`docs/rules/design.md`](docs/rules/design.md) |
-| whose move it is, a badge, an owner, a clock | [`docs/rules/attention.md`](docs/rules/attention.md) |
-| git, `ship`, `deploy`, `revert`, worktrees, multi-repo | [`docs/rules/git.md`](docs/rules/git.md) |
-| a review round, drafted replies, auto-review, jobs | [`docs/rules/review.md`](docs/rules/review.md) |
-| a terminal, tmux, a spawned process | [`docs/rules/runtime.md`](docs/rules/runtime.md) |
+| whose move it is, a badge, an owner, a clock | [`attention`](openspec/specs/attention/spec.md) |
+| git, `ship`, `deploy`, `revert`, worktrees, multi-repo | [`git`](openspec/specs/git/spec.md) |
+| a review round, auto-review, jobs | [`review`](openspec/specs/review/spec.md), [`unattended-work`](openspec/specs/unattended-work/spec.md) |
+| a terminal, tmux, a spawned process | [`runtime`](openspec/specs/runtime/spec.md), [`master`](openspec/specs/master/spec.md) |
 | a seam (agent, terminal, editor, OS), the assistant | [`docs/rules/seams.md`](docs/rules/seams.md) |
-| a message from a session or a read, a schema, a validation | [`docs/rules/protocol.md`](docs/rules/protocol.md) |
+| a message from a session or a read, a schema, a validation | [`protocol`](openspec/specs/protocol/spec.md) |
 | `state.json`, task creation, MCP scoping, startup checks | [`docs/rules/components.md`](docs/rules/components.md) |
 | a test, a suite, CI | [`docs/rules/testing.md`](docs/rules/testing.md) |
 | a comment, a doc, a prompt, the shape of a class | [`docs/rules/style.md`](docs/rules/style.md) |
@@ -46,12 +47,12 @@ A decided decision is not a TODO: it lives in the code, the files above and git 
 - **The base branch is read-only.** Nothing pushes or merges to it, ever.
 - **Only `deploy` and its undo `revert` write a shared branch**: `ship` only opens or updates a request; `revert` adds a commit — no force-push.
 - A sub-agent pushes **its own task branch** and nothing else.
-- **Never `git add -A`** — several sessions share this tree; stage the explicit paths you touched.
+- **Never `git add -A`** — several sessions share this tree; stage explicit paths only.
 - **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
 - **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, reached by that session alone,
   refusing exactly one thing — a push to anything but the task's own branch — with the project's hooks still
   running underneath; an agent CLI's hooks answer that refusal and report session state, and nothing else is gated.
-- Never add a warning, a badge or a gate to the deploy confirm. It names the writes and gets out of the way.
+- Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**; permission to commit is standing, to push is not.
 - **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)).
 - Where the review skill cannot run, read the diff yourself, say so in one line, and commit anyway.
@@ -74,11 +75,11 @@ A decided decision is not a TODO: it lives in the code, the files above and git 
 ## Interfaces
 
 - **Nothing is added to a surface without saying what it replaces** — what a mark costs,
-  [`docs/rules/surfaces.md`](docs/rules/surfaces.md); every mark and the `Help` legend rendering them, [`docs/rules/design.md`](docs/rules/design.md).
+  [`board`](openspec/specs/board/spec.md); every mark and the `Help` legend rendering them, [`docs/rules/design.md`](docs/rules/design.md).
 - **Never two controls for one question** — a report, a filter and a form included.
 - **A fact goes ON the thing it is about**: the verb's own button, the card's own edge.
 - **A row carrying four things does not want a fifth**, and **a card must not grow taller** — a fact earning neither goes in the hover.
-- **A colour means one thing, board-wide** — the meanings live in `docs/rules/design.md` and nowhere else.
+- **A colour means one thing, board-wide** — meanings in `docs/rules/design.md` alone.
 - **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
 - **Every mark has one row in the legend**, rendered as the page's own element rather than named in words.
 - **Getting started stays one copied file and one command.** Every option lives in `jagt.yml` alone, described in `jagt.yml.dist`.
@@ -90,7 +91,7 @@ A decided decision is not a TODO: it lives in the code, the files above and git 
 - **Every fixed bug gets a regression test, verified RED** by reverting the fix and running it.
 - Run `./gradlew boardTest` after any change to `static/`.
 - A suite that opens a window leaves no trace: `--orchestrator.open-terminal-window=false`, a throwaway tmux session, cleanup.
-- **No absolute paths in defaults**: an external binary is configured by bare name and resolved by `adapter/Executables`.
+- **No absolute paths in defaults**: an external binary is a bare name, resolved by `adapter/Executables`.
 
 ## Writing
 
@@ -100,14 +101,14 @@ A decided decision is not a TODO: it lives in the code, the files above and git 
   comments, docs, prompts, output and commit messages alike.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
 - **Never cite a line number or a line count** in a doc or a comment — it is wrong at the next edit; name the file, the symbol or the rule.
-- **Budgets, asserted by `TextBudgetTest`**: a `docs/rules/` file ≤ 700 words, a guide ≤ 1200, no line over 220
+- **Budgets, asserted by `TextBudgetTest`**: a `docs/rules/` file ≤ 700 words, a guide or spec ≤ 1200, no line over 220
   characters, comments ≤ 15% of main sources. Counted in WORDS — a paragraph folded into a table cell is the
   same paragraph. Over budget means cut text; raising a number is the owner's call.
 - **Every log line is structured**: constant event, values as fields, `cause` on every failure, never `{}` or `+`
   in a message. Keys: [`docs/rules/style.md`](docs/rules/style.md).
 - **English only.** The one exception: kitty's ЙЦУКЕН keymap, where the symbols are the key events.
 - **Never a real ticket key, project name or issue title**, tests and fixtures included. Invent `ABC-42`.
-- Markdown ~120 columns, hard max 150. A non-obvious case earns a one-line `USE-CASES.md` row, not a paragraph.
+- Markdown ~120 columns, hard max 150. A non-obvious case earns a scenario in its spec, not a paragraph.
 
 ## The human in the loop
 
@@ -121,8 +122,8 @@ A decided decision is not a TODO: it lives in the code, the files above and git 
 - A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human, and a
   task contradicting what the code guarantees is such a question, asked before the code picks a side — never
   decided quietly and named in the closing report.
-- **What is still open is a list, not a paragraph**: one `OPEN QUESTIONS:` line ends the session's terminal
-  output with what the agent settled unasked. If the answer would have changed the code, it asks instead.
+- **What is still open is a list, not a paragraph**: one `OPEN QUESTIONS:` line ending the terminal output
+  names what the agent settled unasked. If the answer would have changed the code, it asks instead.
 - **Tasks are capped at 24, and no bulk branch cleanup** — never a queue, a slots indicator or a `prune` verb.
 
 ## Build & run

@@ -16,8 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TextBudgetTest {
 
     @ParameterizedTest
-    @CsvSource({"../README.md, 950", "../AGENTS.md, 1620", "../ARCHITECTURE.md, 2900",
-            "../USE-CASES.md, 4700", "../TODO.md, 600"})
+    @CsvSource({"../README.md, 950", "../AGENTS.md, 1620", "../ARCHITECTURE.md, 2900", "../TODO.md, 600"})
     void aDocumentStaysInsideItsWordBudget(Path document, int maxWords) {
         assertThat(words(document)).describedAs("%s", document).isLessThanOrEqualTo(maxWords);
     }
@@ -35,13 +34,24 @@ class TextBudgetTest {
     }
 
     @Test
+    void aSpecStaysUnderTwelveHundredWords() {
+        assertThat(specs()).allSatisfy(spec ->
+                assertThat(words(spec)).describedAs("%s", spec).isLessThanOrEqualTo(1200));
+    }
+
+    @Test
+    void noParagraphHidesInASpecLine() {
+        assertThat(specs().stream().flatMap(spec -> lines(spec).stream()).filter(line -> line.length() > 220)).isEmpty();
+    }
+
+    @Test
     void aDecisionIsRecordedInFourHundredWordsOrItIsTwo() {
         assertThat(markdownIn(Path.of("../docs/decisions"))).allSatisfy(decision ->
                 assertThat(words(decision)).describedAs("%s", decision).isLessThanOrEqualTo(400));
     }
 
     @ParameterizedTest
-    @CsvSource({"../README.md", "../AGENTS.md", "../ARCHITECTURE.md", "../USE-CASES.md", "../TODO.md"})
+    @CsvSource({"../README.md", "../AGENTS.md", "../ARCHITECTURE.md", "../TODO.md"})
     void noParagraphHidesInATableCell(Path document) {
         assertThat(lines(document)).describedAs("%s", document)
                 .allSatisfy(line -> assertThat(line.length()).describedAs("%s", line).isLessThanOrEqualTo(220));
@@ -67,9 +77,10 @@ class TextBudgetTest {
 
     @Test
     void readsEveryFileItClaimsToCheck() {
-        assertThat(markdownIn(Path.of("../docs/rules"))).hasSizeGreaterThan(5);
+        assertThat(markdownIn(Path.of("../docs/rules"))).hasSizeGreaterThan(3);
         assertThat(markdownIn(Path.of("../docs"))).hasSizeGreaterThan(3);
         assertThat(markdownIn(Path.of("../docs/decisions"))).hasSizeGreaterThan(1);
+        assertThat(specs()).hasSizeGreaterThan(5);
         assertThat(mainSources().count()).isGreaterThan(100);
     }
 
@@ -81,6 +92,14 @@ class TextBudgetTest {
     private static List<Path> markdownIn(Path directory) {
         try (Stream<Path> files = Files.list(directory)) {
             return files.filter(path -> path.toString().endsWith(".md")).toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    private static List<Path> specs() {
+        try (Stream<Path> capabilities = Files.list(Path.of("../openspec/specs"))) {
+            return capabilities.map(capability -> capability.resolve("spec.md")).filter(Files::isRegularFile).toList();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

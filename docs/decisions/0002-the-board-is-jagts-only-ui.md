@@ -1,6 +1,6 @@
 # 0002 — The board is jagt's only UI
 
-[← decisions](README.md) · rule: [`surfaces.md`](../rules/surfaces.md)
+[← decisions](README.md) · rule: [`board`](../../openspec/specs/board/spec.md)
 
 ## Status
 

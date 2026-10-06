@@ -1,6 +1,6 @@
 # 0010 — The human's own word stands over the Master
 
-[← decisions](README.md) · rule: [`runtime.md`](../rules/runtime.md#the-master-is-a-headless-run-per-role-not-a-window)
+[← decisions](README.md) · rule: [`master`](../../openspec/specs/master/spec.md)
 
 ## Status
 

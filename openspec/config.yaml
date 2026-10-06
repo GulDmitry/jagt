@@ -1,0 +1,15 @@
+schema: spec-driven
+
+context: |
+  English only. Write less than feels complete: one fact per line, at most one clause of why.
+  A requirement keeps the code anchor that enforces it, in backticks: it is how a reader finds the enforcer.
+  Why a decision holds lives in docs/decisions/, code conventions in docs/rules/; neither is restated here.
+  Never a real ticket key, project name or issue title: invent ABC-42.
+
+rules:
+  specs:
+    - A main spec stays within 1200 words and no line over 220 characters (TextBudgetTest)
+  proposal:
+    - At most 150 words
+  tasks:
+    - Only what the diff does not already say

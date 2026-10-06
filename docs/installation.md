@@ -25,6 +25,7 @@ The rest are optional, and what selects each is in `jagt.yml.dist`:
 | [terminal-notifier](https://github.com/julienXX/terminal-notifier) | macOS notifications you can click; without it, osascript banners you cannot |
 | [libnotify](https://gitlab.gnome.org/GNOME/libnotify) + a daemon such as [dunst](https://dunst-project.org/) | Linux notifications; GNOME and KDE bring the daemon, a bare WM does not |
 | [lsof](https://github.com/lsof-org/lsof) | reaping a worktree's leftover processes on `done`; skipped when absent |
+| [OpenSpec](https://github.com/Fission-AI/OpenSpec) | a repository holding `openspec/`: its hand-back is gated and `ship` folds the change; `npm i -g @fission-ai/openspec` |
 
 ## MCP access comes first
 

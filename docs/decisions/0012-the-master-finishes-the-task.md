@@ -1,6 +1,6 @@
 # 0012 — The Master finishes the task
 
-[← decisions](README.md) · rule: [`runtime.md`](../rules/runtime.md#the-master-is-a-headless-run-per-role-not-a-window)
+[← decisions](README.md) · rule: [`master`](../../openspec/specs/master/spec.md)
 
 ## Status
 

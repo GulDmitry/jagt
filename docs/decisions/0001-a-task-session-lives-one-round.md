@@ -1,6 +1,6 @@
 # 0001 — A task session lives one round
 
-[← decisions](README.md) · rule: [`runtime.md`](../rules/runtime.md)
+[← decisions](README.md) · rule: [`runtime`](../../openspec/specs/runtime/spec.md)
 
 ## Status
 

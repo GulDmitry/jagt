@@ -59,6 +59,9 @@ public class AgentStatusReports {
             stateService.task(taskId).flatMap(handBack::notesOwed).ifPresent(owed -> {
                 throw new IllegalArgumentException(owed);
             });
+            stateService.task(taskId).flatMap(task -> handBack.specsOwed(taskId, task)).ifPresent(owed -> {
+                throw new IllegalArgumentException(owed);
+            });
         }
         return report(reported, taskId);
     }

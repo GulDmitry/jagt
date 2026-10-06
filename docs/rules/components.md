@@ -32,7 +32,7 @@ Codex reads `AGENTS.md` and `.codex/config.toml`, and needs a **trusted** projec
 
 ## `state.json`
 
-SSOT for tasks, gitignored, auto-created. Its statuses are [flow.md](flow.md)'s.
+SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../openspec/specs/task-flow/spec.md)'s.
 
 - `history`: every status a task moved **to**, with when and **who asked**, oldest first, capped at 50, and
   copied whole into `finished.jsonl` on `done`.

@@ -1,7 +1,7 @@
 # Architecture
 
 The map of the code: **what kinds of thing jagt has, and where a new one goes.** The rules live in
-[`AGENTS.md`](AGENTS.md), the situations in [`USE-CASES.md`](USE-CASES.md).
+[`AGENTS.md`](AGENTS.md), the behaviour in [`openspec/specs/`](openspec/specs/).
 
 Every path below is a package under `dev.jagt.orchestrator`, inside `orchestrator-backend/` — where `gradlew` lives too,
 **not** the repository root. So `flow/` is `orchestrator-backend/core/src/main/java/dev/jagt/orchestrator/flow`.
@@ -96,7 +96,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | a plan | what the agent means to do, before it writes anything | `plan.md`, at PLAN_PENDING |
 | a relay | the one instruction standing right now, and no older one | `task_context.md` |
 | the agent works | the diff | the task branch |
-| `ship` | commits, a pushed branch, one review request per repository | the branch, and `reviewRequests` on the task |
+| `ship` | the change folded into the specs, commits, a pushed branch, a request per repository | the branch, `reviewRequests` |
 | a round | what the agent means to answer, before anything is posted | `review_replies.md` |
 | any report | the sentence, its stamp, whose move it is | `state.json` |
 | `deploy` | the merge commit `revert` walks back | the deploy branch, and `deployCommit` on the task |
@@ -115,7 +115,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TaskStore` | `service/StateService` |
 | `AgentPresence` | `service/AgentSessions` |
 | `TaskCapability` | one per verb under `capability/` |
-| `CapabilityInterceptor` | nothing yet — the seam is there for an install to add its own step |
+| `CapabilityInterceptor` | `capability/ship/SpecFold`; an install may add its own step |
+| `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`) |
 | `MasterAssistant` | `adapter/assistant/HeadlessClaudeAssistant` |
 | `Notifier` | `adapter/DesktopNotifier` — a channel; `notify/Notifications` fans out to every one it finds |
@@ -195,7 +196,7 @@ file it reads its instructions from.
   board. Which events a CLI reports is a resource (`adapter/…/resources/hooks/`), not Java.
 - **What a session may push is refused below the CLI as well**: `service/WorktreeHooks` writes a `pre-push` into the
   worktree's own `.jagt/hooks` and the launch command points that session's git at it, so a CLI with no hooks of its own
-  meets it too. Nothing goes into the repository ([`docs/rules/git.md`](docs/rules/git.md)).
+  meets it too. Nothing goes into the repository ([`git`](openspec/specs/git/spec.md)).
 - **The one-shot assistant is a separate port**: an install may run a local model for text-to-command and a vendor CLI
   for the sessions. It is the only place jagt spends money, so it is metered.
 

@@ -35,7 +35,7 @@ Two kinds of flexibility, and only one is wanted:
 ## Built, and where the rules for it live
 
 - A verdict before a round reaches a human — `verifyCommand` per project, the VERIFYING status and `VerifyJob`
-  ([`flow.md`](rules/flow.md)).
+  ([`task-flow`](../openspec/specs/task-flow/spec.md)).
 - The plan as an artifact with a gate — `plan.md` and PLAN_PENDING, whose move is yours.
 - One record per finished task — `finished.jsonl` beside `state.json`, the status log kept whole, read by the
   `finished` report ([`components.md`](rules/components.md)).
@@ -52,7 +52,7 @@ round to you, any finding back to the session, ready only where every role prove
 of the work, so it runs the heavier model.
 
 **Deterministic where it counts.** The trigger stays a cadence, a status or an open request
-([`review.md`](rules/review.md)) — only the judgement is the model's. And it cannot invent a move: the legal set
+([`review`](../openspec/specs/review/spec.md)) — only the judgement is the model's. And it cannot invent a move: the legal set
 is `FlowRules.allowed` and `FlowEngine` refuses anything else with a sentence. **The flow table is the guardrail,
 not the prompt.**
 

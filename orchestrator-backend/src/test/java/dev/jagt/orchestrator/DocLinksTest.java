@@ -18,8 +18,8 @@ class DocLinksTest {
 
     @Test
     void everyRelativeLinkReachesAFile() {
-        List<String> broken = Stream.of("..", "../docs", "../docs/rules", "../.claude/rules")
-                .flatMap(directory -> markdownIn(Path.of(directory)).stream())
+        List<String> broken = Stream.concat(Stream.of("..", "../docs", "../docs/rules", "../.claude/rules")
+                        .flatMap(directory -> markdownIn(Path.of(directory)).stream()), specs().stream())
                 .flatMap(document -> LINK.matcher(withoutCodeBlocks(document)).results()
                         .map(link -> link.group(1))
                         .filter(target -> !target.matches("[a-z]+:.*"))
@@ -32,8 +32,23 @@ class DocLinksTest {
 
     @Test
     void everyRuleHasAPathScopedPointer() {
-        assertThat(namesIn(Path.of("../.claude/rules")))
-                .containsExactlyInAnyOrderElementsOf(namesIn(Path.of("../docs/rules")));
+        assertThat(namesIn(Path.of("../.claude/rules"))).containsAll(namesIn(Path.of("../docs/rules")));
+    }
+
+    @Test
+    void everyPointerNamesARuleOrASpec() {
+        List<String> sources = Stream.concat(namesIn(Path.of("../docs/rules")).stream(),
+                specs().stream().map(spec -> spec.getParent().getFileName() + ".md")).toList();
+
+        assertThat(namesIn(Path.of("../.claude/rules"))).isSubsetOf(sources);
+    }
+
+    private static List<Path> specs() {
+        try (Stream<Path> capabilities = Files.list(Path.of("../openspec/specs"))) {
+            return capabilities.map(capability -> capability.resolve("spec.md")).filter(Files::isRegularFile).toList();
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static List<String> namesIn(Path directory) {

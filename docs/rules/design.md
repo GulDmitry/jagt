@@ -4,7 +4,7 @@
 
 **The storybook is the board's own `Help` report**: `static/ui/legend.js` renders every mark below as the
 page's own element, and every legend row is a mark — bar a **transient** one inside an open control
-(`#palette-state.ok`/`.bad`, a said line's wait). The COST of adding one: [`surfaces.md`](surfaces.md).
+(`#palette-state.ok`/`.bad`, a said line's wait). The COST of adding one: [`board`](../../openspec/specs/board/spec.md).
 
 Also marks: every sample `legend.js` renders. **`--ok` and `--you` on one card do not
 disagree**: APPROVED wears both — the approval landed, the deploy is yours.

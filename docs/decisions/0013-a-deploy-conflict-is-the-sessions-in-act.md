@@ -1,6 +1,6 @@
 # 0013 — A deploy conflict is the session's in `act`
 
-[← decisions](README.md) · rule: [`flow.md`](../rules/flow.md)
+[← decisions](README.md) · rule: [`task-flow`](../../openspec/specs/task-flow/spec.md)
 
 ## Status
 

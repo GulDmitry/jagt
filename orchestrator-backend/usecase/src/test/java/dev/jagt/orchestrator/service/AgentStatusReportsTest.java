@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.port.Specs;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
@@ -24,6 +25,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -40,6 +42,7 @@ class AgentStatusReportsTest {
     private final Notifications notifications = mock(Notifications.class);
     private final WorktreeChanges worktreeChanges = mock(WorktreeChanges.class);
     private final ConfigService configService = mock(ConfigService.class);
+    private final Specs specs = mock(Specs.class);
 
     private static StateService stateIn(Path root) {
         return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -51,7 +54,7 @@ class AgentStatusReportsTest {
         return new AgentStatusReports(state, notifications, new FlowReports(state),
                 new HandBack(worktreeChanges, new ReviewDrafts(configService),
                         new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
-                        configService));
+                        configService, specs));
     }
 
     @Test
@@ -75,6 +78,19 @@ class AgentStatusReportsTest {
         assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("write task_notes.md before handing the round back");
+    }
+
+    @Test
+    void refusesAHandBackWhoseChangeToTheSpecsDoesNotHold(@TempDir Path root) throws Exception {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        Files.writeString(root.resolve("task_notes.md"), "notes");
+        when(specs.owed(root, "ABC-1")).thenReturn(Optional.of("openspec/changes/abc-1 does not validate"));
+        AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
+
+        assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("[proj] openspec/changes/abc-1 does not validate");
     }
 
     @Test

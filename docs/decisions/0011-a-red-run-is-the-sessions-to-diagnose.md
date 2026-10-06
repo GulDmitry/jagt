@@ -1,6 +1,6 @@
 # 0011 — A red run is the session's to diagnose
 
-[← decisions](README.md) · rule: [`review.md`](../rules/review.md#a-round-reports-its-outcome-as-a-field-not-as-a-turn-of-phrase)
+[← decisions](README.md) · rule: [`review`](../../openspec/specs/review/spec.md)
 
 ## Status
 

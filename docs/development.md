@@ -67,5 +67,5 @@ Nothing else is published — jagt is on no package manager.
 ## Where things go
 
 [`ARCHITECTURE.md`](../ARCHITECTURE.md) is the map — what kinds of thing jagt has and where a new one belongs.
-[`AGENTS.md`](../AGENTS.md) plus `docs/rules/` hold the rules. [`USE-CASES.md`](../USE-CASES.md) holds the
-one-line answer to a situation somebody already worked out.
+[`AGENTS.md`](../AGENTS.md) plus `docs/rules/` hold the conventions. [`openspec/specs/`](../openspec/specs/) holds what jagt
+does: a rule a requirement, a situation somebody already worked out a scenario.

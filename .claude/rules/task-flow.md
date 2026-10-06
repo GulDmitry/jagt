@@ -7,5 +7,5 @@ paths:
 
 Nothing below `flow/` decides a status. `withStatus` lives in `flow/` and in the record, nowhere else.
 
-Full rules for the flow machine: **[`docs/rules/flow.md`](../../docs/rules/flow.md)** —
+Full rules for the flow machine: **[`openspec/specs/task-flow/spec.md`](../../openspec/specs/task-flow/spec.md)** —
 read it before changing behaviour here.
