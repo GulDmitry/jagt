@@ -124,6 +124,29 @@ class GitServiceTest {
         assertThat(git.hasUncommittedChanges(repo, repo)).isTrue();
     }
 
+    @Test
+    void readsTheTreeAsChangedByAnEditToItsWorkButNotByJagtsOwnFiles(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path repo = dir.resolve("repo");
+        Files.createDirectories(repo);
+        runner.run(dir, timeout, List.of("git", "init", "-q", "-b", "main", repo.toString()));
+        Files.writeString(repo.resolve("A.java"), "class A {}");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+        Files.writeString(repo.resolve("A.java"), "class A { int x; }");
+        String answered = git.treeState(repo, repo);
+
+        Files.writeString(repo.resolve("task_context.md"), "the next brief");
+        assertThat(git.treeState(repo, repo)).isEqualTo(answered);
+
+        Files.writeString(repo.resolve("A.java"), "class A { int y; }");
+        assertThat(git.treeState(repo, repo)).isNotEqualTo(answered);
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"main", "origin/main"})
     void readsTheChangesSinceTheBaseCommittedAndNotNamingNewFilesButNotJagtsOwn(String baseBranch,

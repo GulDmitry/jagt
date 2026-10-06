@@ -74,8 +74,13 @@ public class MasterVerdicts {
             return false;
         }
         decisions.record(task, "- asked: " + question + " — decided: " + decision.replace('\n', ' '));
+        decisions.answered(task);
         log.atInfo().setMessage("master answered").addKeyValue("task", taskId).log();
         return reports.report(taskId, TaskStatus.IN_PROGRESS, "master answered the question");
+    }
+
+    public boolean answeredOverThisTree(TaskState task) {
+        return decisions.answeredOverThisTree(task);
     }
 
     /** The reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */

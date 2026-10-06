@@ -51,4 +51,18 @@ class MasterAnswerJobTest {
 
         verify(panel, never()).answer(anyString(), any(), anyString(), any());
     }
+
+    @Test
+    void leavesAQuestionToTheHumanWhenItCameBackOverTheTreeTheLastAnswerWasGivenOn() {
+        TaskState asking = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .message("outcome=question — reconnect the tool?").build();
+        when(state.tasks()).thenReturn(Map.of("ABC-1", asking));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(verdicts.answeredOverThisTree(asking)).thenReturn(true);
+
+        job.run();
+
+        verify(panel, never()).answer(anyString(), any(), anyString(), any());
+    }
 }

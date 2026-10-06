@@ -346,6 +346,23 @@ public class GitService {
                 .anyMatch(path -> !generated.contains(path)));
     }
 
+    /** One string that changes with any edit to the worktree's work, and with none of jagt's own files. */
+    public String treeState(Path projectPath, Path worktree) {
+        List<String> generated = WorktreeFiles.generated(agentRuntime);
+        return withRepoLock(projectPath, () -> {
+            String head = processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "rev-parse", "HEAD"))
+                    .expectSuccess("git rev-parse in " + worktree).stdout().strip();
+            String diff = processRunner.run(worktree, GIT_TIMEOUT, List.of("git", "diff", "HEAD"))
+                    .expectSuccess("git diff in " + worktree).stdout();
+            String changed = branchNames(processRunner.run(worktree, GIT_TIMEOUT,
+                            List.of("git", "status", "--porcelain"))
+                    .expectSuccess("git status in " + worktree).stdout()).stream()
+                    .filter(line -> !generated.contains(changedPath(line)))
+                    .collect(java.util.stream.Collectors.joining("\n"));
+            return head + ":" + Integer.toHexString((diff + changed).hashCode());
+        });
+    }
+
     /**
      * Whether this worktree's branch carries commits its target does not hold. Read in the worktree against the
      * {@code origin/} ref the repository already has: a ship asks what is here, not what the host has since gained.

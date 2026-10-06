@@ -47,6 +47,21 @@ public class WorktreeChanges {
         return Optional.of(anyChanged);
     }
 
+    /** Every repository's {@link GitService#treeState}; EMPTY where git could not answer for one. */
+    public Optional<String> state(TaskState task) {
+        StringBuilder state = new StringBuilder();
+        for (TaskRepo repo : task.repos()) {
+            try {
+                state.append(gitService.treeState(projectPath(repo.project()), Path.of(repo.worktreePath())))
+                        .append(';');
+            } catch (RuntimeException e) {
+                warn(repo.worktreePath(), e);
+                return Optional.empty();
+            }
+        }
+        return Optional.of(state.toString());
+    }
+
     private Optional<Boolean> uncommitted(TaskRepo repo) {
         try {
             return Optional.of(gitService.hasUncommittedChanges(projectPath(repo.project()),

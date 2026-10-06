@@ -197,6 +197,7 @@ What the agent does with a comment:
 | The Master is reading a round | — | The chip says `master review`, nothing asks you; the session was told to end its turn |
 | Whose roles a round is read by | — | The session's own `<self_review>`, before it hands back; the Master reads by the same, unless its brief names its own table |
 | A session stops to ask | `master.mode: act` | The Master answers it in the session's window and the task goes back to work; `mine: [answer]` keeps it yours |
+| The same question comes back over an unchanged tree | `master.mode: act` | It is yours: the Master answers once per tree, an answer nothing acted on being one it cannot give |
 | Reviewers find only advice (unguarded, noise, an unproven premise) | — | Ready: only blocking and wrong stop a round; advice is a `#` line in `master-review.md` |
 | An earlier round settled something | — | `master-decisions.md` in the worktree holds it; a later reviewer reopens it only for a blocking reason |
 | A round is not ready | — | Its findings go back to the session that wrote the code, in any mode, and the task to `IN_PROGRESS`: the fix is a new round |
