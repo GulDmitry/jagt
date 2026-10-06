@@ -22,7 +22,7 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-class McpHealthProbe {
+class ClaudeMcpHealthProbe {
 
     /** A human waits behind this on a refusal, and the probe measured ~9s here. */
     private static final Duration TIMEOUT = Duration.ofSeconds(25);
@@ -88,7 +88,7 @@ class McpHealthProbe {
             return Optional.empty();
         }
         List<String> servers = result.stdout().lines()
-                .map(McpHealthProbe::serverAndStatus)
+                .map(ClaudeMcpHealthProbe::serverAndStatus)
                 .flatMap(Optional::stream)
                 .toList();
         // No server line at all: answering "nothing is down" would clear the failure that was asked about.

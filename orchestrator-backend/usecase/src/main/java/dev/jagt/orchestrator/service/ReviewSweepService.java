@@ -227,7 +227,7 @@ public class ReviewSweepService {
                     <checks> is a clue read cheaply, not the diagnosis. Find the job that failed yourself: the
                     request's newest pipeline, down into any pipeline it triggered. Read that job's whole log and its
                     reports, and a verdict it only links to, such as a quality gate. Climb the tools this machine
-                    carries, cheapest first: an MCP, then a CLI (the host's, kubectl, a database client), then a
+                    carries, cheapest first: an MCP, then a CLI (the code host's, the cluster's, the database's), then a
                     browser as the last try.
                     Reproduce it with the command that job ran, fix it, and run that command again until it passes.
                     A gate fails on EVERY condition it lists: answer each. One no local command computes, such as

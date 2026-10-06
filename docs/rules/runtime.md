@@ -63,6 +63,6 @@
 ## The Master is a headless run per role, not a window
 
 EXPERIMENTAL (`master.mode`): one headless run per role of the brief reads each round in the task's worktrees,
-refused every write, commit and push (`HeadlessRoundReviewer`); jagt writes the verdict (`MasterPanel`).
+refused every write, commit and push (`HeadlessClaudeRoundReviewer`); jagt writes the verdict (`MasterPanel`).
 **Every read quotes the human's own words to the session** (`AgentRuntime.humanSaid`), overruling any decision
 taken for them; unreadable, they stop the round ([0010](../decisions/0010-the-humans-own-word-stands-over-the-master.md)).

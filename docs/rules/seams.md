@@ -62,7 +62,7 @@ The **only** way jagt reads outside itself, headless and one-shot: `service/Tick
   stopped the read goes there, naming the tool or server.
 - A non-empty `failure` comes back as **empty facts** (unreadable), logged at ERROR; it never becomes
   `exists=false`.
-- On an unreadable read the callers ask `brokenMcpServers()` (`adapter/assistant/McpHealthProbe`,
+- On an unreadable read the callers ask `brokenMcpServers()` (`adapter/assistant/ClaudeMcpHealthProbe`,
   `claude mcp list`): **three** values — down / nothing down / **could not be established** — and collapsing
   the last two is the same bug one layer down.
 - The surfaces say which happened: **never "could not read (or not found)"**.

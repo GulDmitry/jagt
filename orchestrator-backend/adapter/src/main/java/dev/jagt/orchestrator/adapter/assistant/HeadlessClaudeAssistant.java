@@ -68,7 +68,7 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
 
     private final ProcessRunner processRunner;
     private final ClaudeProperties claude;
-    private final McpHealthProbe mcpHealth;
+    private final ClaudeMcpHealthProbe mcpHealth;
     private final AssistantProperties assistant;
     private final JsonMapper mapper = new JsonMapper();
 

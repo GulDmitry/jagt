@@ -41,7 +41,7 @@ class HeadlessClaudeAssistantTest {
                 {"structured_output":{"exists":false,"failure":"no GitLab MCP tool in this session",\
                 "sourceBranch":"","targetBranch":"","title":""}}""", ""));
 
-        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty()).readMergeRequest("https://git.example.com/g/p/-/merge_requests/7");
 
         assertThat(answer.facts()).isEmpty();
@@ -52,7 +52,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty().withPermissionMode("bypassPermissions"));
 
         assistant.readTicket("ABC-42");
@@ -67,7 +67,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty().withPermissionMode("bypassPermissions")
                         .withAllowedTools(List.of("mcp__acme_jira", "mcp__acme_gitlab")));
 
@@ -84,7 +84,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty()
                         .withMcpConfig("{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"));
 
@@ -103,7 +103,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class), AssistantProperties.empty());
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class), AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
 
@@ -118,7 +118,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty().withModel("haiku"));
 
         assistant.readTicket("ABC-42");
@@ -133,7 +133,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty().withModel(""));
 
         assistant.readTicket("ABC-42");
@@ -148,7 +148,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readTicket("ABC-42");
@@ -163,7 +163,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"keys\":[]}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.findCandidates("assignee = currentUser()");
@@ -179,7 +179,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readReview("https://host/mr/9");
@@ -196,7 +196,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readReview("https://host/mr/9");
@@ -212,7 +212,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readReview("https://host/mr/9");
@@ -228,7 +228,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readReview("https://host/mr/9");
@@ -245,7 +245,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readReview("https://host/mr/9");
@@ -260,7 +260,7 @@ class HeadlessClaudeAssistantTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         assistant.readReview("https://host/mr/9");
@@ -280,7 +280,7 @@ class HeadlessClaudeAssistantTest {
                 "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
                         + "\"openedAt\":\"\",\"threads\":[\"https://host/mr/9#note_1\\nbot: quote the pattern"
                         + "\\ndev: the rule IS a pattern\\nbot: then bound the input\"]}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -297,7 +297,7 @@ class HeadlessClaudeAssistantTest {
                 "{\"structured_output\":{\"exists\":true,\"approved\":false,\"pipelineStatus\":\"success\","
                         + "\"openedAt\":\"\",\"threads\":[\"bot: " + "x".repeat(3000)
                         + "\\ndev: it is bound\\nbot: then bound the input\"]}}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -313,7 +313,7 @@ class HeadlessClaudeAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 "{\"type\":\"result\",\"is_error\":false,"
                         + "\"result\":\"{\\\"title\\\":\\\"Late invoice mail\\\",\\\"url\\\":\\\"\\\"}\"}", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         var answer = assistant.readTicket("ABC-7");
@@ -331,7 +331,7 @@ class HeadlessClaudeAssistantTest {
                 "cache_read_input_tokens":0,"output_tokens":170},
                  "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
                 "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-42").facts();
@@ -350,7 +350,7 @@ class HeadlessClaudeAssistantTest {
                 {"type":"result","is_error":false,
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success",\
                 "openedAt":"2026-08-01T09:15:00Z","threads":[]}}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -367,7 +367,7 @@ class HeadlessClaudeAssistantTest {
                 {"type":"result","is_error":false,
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
                 "pipelineFailure":"LOG","openedAt":"","threads":[]}}""".replace("LOG", "x".repeat(5000)), ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readReview("https://host/mr/9").facts();
@@ -384,7 +384,7 @@ class HeadlessClaudeAssistantTest {
                 {"type":"result","is_error":false,
                  "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
                 \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         var facts = assistant.readTicket("ABC-7").facts();
@@ -402,7 +402,7 @@ class HeadlessClaudeAssistantTest {
                 {"type":"result","is_error":false,
                  "result":"The search returned no matching issues.\\n\\n```json\\n{\\"failure\\": \\"\\", \\"keys\\": []}\\n```"}""", ""));
 
-        var facts = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var facts = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty()).findCandidates("assignee = me").facts();
 
         assertThat(facts).contains(List.of());
@@ -421,7 +421,7 @@ class HeadlessClaudeAssistantTest {
                 {"type":"result","is_error":false,
                  "result":"I need the GitLab MCP server logged in before I can read this request."}""", ""));
 
-        new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty()).readReview("https://host/mr/9");
 
         assertThat(List.copyOf(log.list))
@@ -442,7 +442,7 @@ class HeadlessClaudeAssistantTest {
                 new Processes.Result(0, """
                         {"structured_output":{"failure":"","project":"abc","reason":"named","rule":""}}""", ""));
 
-        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty()).routeProject(RoutingQuestion.defaults()
                 .withItem(TicketFacts.defaults().withExists(true).withKey("ABC-42").withTitle("Sync a flag"))
                 .withProjects(Map.of("abc", "the abc service", "xyz", "the xyz service")));
@@ -458,7 +458,7 @@ class HeadlessClaudeAssistantTest {
                 {"type":"result","is_error":false,
                  "result":"{\\"error\\":\\"the GitLab MCP server is not authenticated\\"}"}""", ""));
 
-        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty()).readMergeRequest("https://host/mr/9");
 
         assertThat(answer.facts()).isEmpty();
@@ -471,7 +471,7 @@ class HeadlessClaudeAssistantTest {
                 """
                 {"type":"result","is_error":false,"result":"\\"no such merge request\\""}""", ""));
 
-        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var answer = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty()).readMergeRequest("https://host/mr/9");
 
         assertThat(answer.facts()).isEmpty();
@@ -486,7 +486,7 @@ class HeadlessClaudeAssistantTest {
                  "usage":{"input_tokens":5,"cache_creation_input_tokens":25000,\
                 "cache_read_input_tokens":0,"output_tokens":40},
                  "result":"the tracker MCP is not available"}""", ""));
-        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(McpHealthProbe.class),
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
                 AssistantProperties.empty());
 
         var answer = assistant.readReview("https://host/mr/9");

@@ -130,7 +130,7 @@ only with the default system prompt (`claude --help`). The CLI wrote with the 1-
 
 The 52% cache-write share does not come from prose or concatenation: it is the prefix diverging per worktree and per
 call kind. Structure belongs where **code** reads the string, not where a model does. The headless reads are
-`HeadlessRoundReviewer` and the assistant; the parsed strings are `outcome=question — …` and the status messages;
+`HeadlessClaudeRoundReviewer` and the assistant; the parsed strings are `outcome=question — …` and the status messages;
 the briefs are `sub-agent-context.md` and `task_context.md`.
 
 | where | change | why |
@@ -158,7 +158,7 @@ Rule proposal:
 |-------------------|----------------------|
 | one light model, 190 calls, near-ceiling accuracy: shows "no harm", not "a gain" | harder inputs (5+ tasks per message), the Master's model |
 | §3.2 prompts were below the cache minimum | a 20-call run per jagt read kind with the real command line |
-| §3.3 is n = 1 per row | repeat in two real worktrees with the `HeadlessRoundReviewer` flags |
+| §3.3 is n = 1 per row | repeat in two real worktrees with the `HeadlessClaudeRoundReviewer` flags |
 | how much of the 52% writes is TTL expiry vs divergence | log cache write/read per call kind with the gap since the last call |
 | does `--append-system-prompt round.shared()` vary per task | if it does, move its values into the user message |
 | thinking-token swing by form (+71 / −22) | larger n per task; the only effect seen, and its sign flips |

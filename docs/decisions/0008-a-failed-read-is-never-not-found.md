@@ -19,7 +19,7 @@ a deleted request, and no layer below treated it as a failure.
   prompt.
 - Every model-backed read carries a `failure` field, empty only when the host itself answered.
 - A stated failure returns no facts at all, logged at ERROR, never `exists=false`.
-- On an unreadable read jagt asks the CLI which MCP servers are down (`McpHealthProbe`, `claude mcp list`, cached
+- On an unreadable read jagt asks the CLI which MCP servers are down (`ClaudeMcpHealthProbe`, `claude mcp list`, cached
   two minutes) and logs one of three answers: down / none down / not established.
 - `resume`, `do` and the review sweep each say which of the two happened, in those words.
 

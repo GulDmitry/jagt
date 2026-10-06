@@ -23,7 +23,7 @@ import java.util.Optional;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class HeadlessRoundReviewer implements RoundReviewer {
+public class HeadlessClaudeRoundReviewer implements RoundReviewer {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(15);
     private static final List<String> READS = List.of("Read", "Grep", "Glob", "Bash");

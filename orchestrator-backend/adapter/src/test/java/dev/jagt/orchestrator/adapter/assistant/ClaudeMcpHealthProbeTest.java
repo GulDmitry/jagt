@@ -22,7 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-class McpHealthProbeTest {
+class ClaudeMcpHealthProbeTest {
 
     @Test
     void namesEveryServerAReadCannotUseAndNoneItCan() {
@@ -35,7 +35,7 @@ class McpHealthProbeTest {
                 acme tracker: https://mcp.example.com/mcp (HTTP) - ! Needs authentication
                 """, ""));
 
-        var broken = new McpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
                 .brokenServers();
 
         assertThat(broken).contains(List.of("plugin:acme:gitlab (Failed to connect)",
@@ -48,7 +48,7 @@ class McpHealthProbeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(1, "", "claude: command not found"));
 
-        var broken = new McpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
                 .brokenServers();
 
         assertThat(broken).isEmpty();
@@ -60,7 +60,7 @@ class McpHealthProbeTest {
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
                 "No MCP servers configured. Use `claude mcp add` to add one.", ""));
 
-        var broken = new McpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
+        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty())
                 .brokenServers();
 
         assertThat(broken).isEmpty();
@@ -71,10 +71,10 @@ class McpHealthProbeTest {
     void namesTheLoginADeclaredServerNeedsWhereItCannotJudgeOne() {
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
-        Logger probeLog = (Logger) LoggerFactory.getLogger(McpHealthProbe.class);
+        Logger probeLog = (Logger) LoggerFactory.getLogger(ClaudeMcpHealthProbe.class);
         probeLog.addAppender(log);
 
-        new McpHealthProbe(mock(ProcessRunner.class), ClaudeProperties.defaults(),
+        new ClaudeMcpHealthProbe(mock(ProcessRunner.class), ClaudeProperties.defaults(),
                 AssistantProperties.empty().withMcpConfig("/opt/acme/servers.json")).brokenServers();
 
         assertThat(List.copyOf(log.list)).filteredOn(event -> "mcp probe skipped".equals(event.getMessage()))
@@ -90,7 +90,7 @@ class McpHealthProbeTest {
     void refusesToJudgeServersThatAreDeclaredRatherThanResolvedByTheCli() {
         ProcessRunner runner = mock(ProcessRunner.class);
 
-        var broken = new McpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty()
+        var broken = new ClaudeMcpHealthProbe(runner, ClaudeProperties.defaults(), AssistantProperties.empty()
                 .withMcpConfig("{\"mcpServers\":{\"acme\":{\"command\":\"x\"}}}")).brokenServers();
 
         assertThat(broken).isEmpty();

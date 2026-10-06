@@ -18,10 +18,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class HeadlessRoundReviewerTest {
+class HeadlessClaudeRoundReviewerTest {
 
     private final ProcessRunner runner = mock(ProcessRunner.class);
-    private final HeadlessRoundReviewer reviewer = new HeadlessRoundReviewer(runner, ClaudeProperties.defaults(),
+    private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
             AssistantProperties.empty());
 
     @Test
@@ -75,7 +75,7 @@ class HeadlessRoundReviewerTest {
 
     @Test
     void loadsOnlyTheServersPinnedForAReview() {
-        HeadlessRoundReviewer pinned = new HeadlessRoundReviewer(runner, ClaudeProperties.defaults(),
+        HeadlessClaudeRoundReviewer pinned = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
                 AssistantProperties.empty().withMcpConfig("/cfg/mcp.json"));
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
