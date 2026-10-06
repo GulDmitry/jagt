@@ -9,8 +9,8 @@ relayed, the agent fixes locally into `review_replies.md`, nothing is posted wit
 round leaves the diff and the drafts for `ide <alias>`.
 
 - Detection is deterministic — a cadence, a status, an open request; a new trigger must be too.
-- `ReviewSweepService.brief` opens with three routes per thread: fix, change **nothing** and say why, or ask
-  via `outcome=question`.
+- `ReviewSweepService.brief` routes each thread: fix, change **nothing** and say why — beyond the ticket is a
+  task of its own — or ask via `outcome=question`.
 - A question **ends** the round (REVIEW_PENDING, `outcome=question`), never parks in CI_POLLING.
 - `AgentSessions.relayIfChanged`: no re-brief on threads a session was told to hold.
 
@@ -47,13 +47,13 @@ round leaves the diff and the drafts for `ide <alias>`.
 - Who posts them decides when they are spent (`CodeReviewConfig.shipPostsEveryDraft`): under
   `postReviewReplies=false` or a partial `reviewReplyAuthors` filter nothing is, and the announcement stands
   until the human ends it.
-- **jagt does not delete the file**: the agent is asked to, never the mechanism.
+- **jagt never deletes the file**; the agent is asked to.
 - **One review sweep per task at a time**: the guard is `ReviewSweepService`'s, ticks queueing in `Jobs`.
 
 ## Unattended work
 
 - **An open request is what the poller watches, never a status** (`AutoReviewCadence.polls`): a request
-  exists and the task is alive (DONE alone ends it).
+  exists, the task not DONE.
 - Polling's window is per round, from `mrCreatedAt`, restamped on every **entry** into CI_POLLING and kept
   by a repeat, `requestOpenedAt` the fallback.
 - `AutoReviewCadence` is the **whole** policy: enabled, the interval ramp, `watch(task, now)` →

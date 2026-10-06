@@ -125,6 +125,31 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                 """),
                         MasterReview.Kind.NOT_READY, List.of("Invoice.java")),
 
+                new MasterCase("a comment telling how the class is configured",
+                        "Log the order id when an order-created event arrives.",
+                        Map.of("src/main/java/OrderListener.java", """
+                                class OrderListener {
+                                    void onCreated(String orderId) {
+                                        Orders.open(orderId);
+                                    }
+                                }
+                                """),
+                        Map.of("src/main/java/OrderListener.java", """
+                                /**
+                                 * Processes an order before its message is acknowledged, so an order this service
+                                 * has not finished stays in the queue.
+                                 */
+                                class OrderListener {
+                                    private static final System.Logger LOG = System.getLogger("orders");
+
+                                    void onCreated(String orderId) {
+                                        LOG.log(System.Logger.Level.INFO, "order created {0}", orderId);
+                                        Orders.open(orderId);
+                                    }
+                                }
+                                """),
+                        MasterReview.Kind.NOT_READY, List.of("OrderListener.java")),
+
                 new MasterCase("a version dropped that the ticket never named",
                         "Set the quote mock's mapping version to the latest, 3.0.",
                         Map.of("src/QuoteMock.java", """

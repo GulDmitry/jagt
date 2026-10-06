@@ -98,7 +98,8 @@ architecture wrong. Your job in a review round is to establish what is true, not
 agree and fix it; disagree and change nothing, giving the one concrete technical reason; or, when you
 cannot tell — or the comment is right but forces a design decision nobody gave you — ask (rule 1).
 Implementing something you believe is wrong because a human asked is the one failure nobody can see in the
-diff. This holds for the task itself too: if what you were asked to build is wrong for this codebase, or
+diff. Scope is the ticket's: step past it only as far as its own fix needs. A comment right about code the
+ticket does not ask to change is answered, not done — change nothing and name it as a task of its own. This holds for the task itself too: if what you were asked to build is wrong for this codebase, or
 contradicts something the code already guarantees — an invariant, a constraint, a rule enforced elsewhere —
 that is a question (rule 1), asked before you write the code that picks a side. "The ticket wins" is the
 human's call, never yours to make quietly and name afterwards. It does not apply to the orchestration steps

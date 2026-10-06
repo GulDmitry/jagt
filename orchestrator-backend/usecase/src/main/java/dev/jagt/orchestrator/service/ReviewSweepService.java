@@ -254,6 +254,8 @@ public class ReviewSweepService {
                     Weigh every other thread, then take exactly ONE route per thread:
                     - Right: fix it LOCALLY (no commit, no push).
                     - Wrong: change NOTHING and reply with the one concrete technical reason it is wrong.
+                    - Right, but beyond the ticket: change NOTHING and reply that it is a task of its own, named
+                      in a few words. Step past the ticket only as far as a fix it asks for needs.
                     - You cannot tell, or it is right but forces a design decision nobody gave you: do not guess
                       and do not half-implement it. Leave that comment's code alone, put the question in its
                       review_replies.md block, and hand the round back — notify_user, then set REVIEW_PENDING

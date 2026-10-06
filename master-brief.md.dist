@@ -22,6 +22,16 @@ and a third `model` column reads that role with its own model.
 - **Name the environments sessions use freely**, such as dev and stage: logging in and checking there needs no
   one's leave. Name the one that is off limits, such as production.
 
+## Patterns that stop a round
+
+Each is wrong wherever it appears, whatever the author's own rules say; the pattern is its name.
+
+- **`leaked abstraction`** — a unit knows nothing of who calls it, how it is wired or configured, or what runs
+  above or below it. A comment, a name, a parameter or a branch that does is false the day that other place
+  changes, and often false already.
+- **`unasked scope`** — the diff goes past the ticket further than its own fix needs. A reviewer's suggestion is
+  no ticket: what lies beyond is named as a task of its own, not done.
+
 ## Three rounds, and the answer each deserved
 
 - *Ticket: "set the mock's version to the latest, 3.0". Diff: v1 kept, v2 replaced by v3.* → "Add v3 beside

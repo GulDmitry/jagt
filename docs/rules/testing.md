@@ -52,7 +52,7 @@ then removes the worktrees and branches.
   the mapping prompt, each `TaskAction`'s hint and the task-list shape — run it on a change to any, or to the
   model.
 - `masterEval` hands the real session a round whose verdict is known (`MasterCase`), judged by the shipped
-  `master-brief.md.dist` — so it measures that document. Run it when either changes.
+  `master-brief.md.dist`. Run it when either changes; a defect it passed: `master-lesson`.
 
 ### Linux from a Mac, and one set of steps for every host
 

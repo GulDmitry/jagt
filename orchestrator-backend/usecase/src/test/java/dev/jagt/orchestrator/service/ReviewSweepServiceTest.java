@@ -173,6 +173,18 @@ class ReviewSweepServiceTest {
     }
 
     @Test
+    void relaysAReviewRoundThatLeavesARightCommentBeyondTheTicketToATaskOfItsOwn() {
+        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
+                "success", List.of("bot (a.java:3): also migrate the other listeners"))));
+        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
+
+        sweep.sweep("ABC-1");
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
+        assertThat(relayed.getValue()).contains("Right, but beyond the ticket: change NOTHING");
+    }
+
+    @Test
     void relaysAThreadWholeSoTheAgentAnswersTheReviewersLastWord() {
         when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
                 "success", List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern\n"
