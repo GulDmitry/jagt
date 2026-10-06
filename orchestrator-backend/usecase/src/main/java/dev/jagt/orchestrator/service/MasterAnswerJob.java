@@ -60,9 +60,9 @@ public class MasterAnswerJob implements Job {
     }
 
     private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-        if (verdicts.answeredOverThisTree(task)) {
+        if (verdicts.answersSpentOnThisTree(task)) {
             log.atWarn().setMessage("master answer repeats").addKeyValue("task", taskId)
-                    .addKeyValue("cause", "asked again over the tree its last answer was given on")
+                    .addKeyValue("cause", "asked again over a tree its last answers changed nothing in")
                     .addKeyValue("effect", "the question waits for the human")
                     .log();
             unanswered.put(taskId, task.message());

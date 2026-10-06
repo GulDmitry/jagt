@@ -20,18 +20,24 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class MasterDecisions {
 
-    private final WorktreeChanges changes;
-    /** The tree each worktree's last answer was given over. */
-    private final Map<String, String> answeredOver = new ConcurrentHashMap<>();
+    /** Answers a session may get over one unchanged tree: asking past them, it could not act on any. */
+    static final int ANSWERS_PER_TREE = 3;
 
-    public void answered(TaskState task) {
-        changes.state(task).ifPresent(state -> answeredOver.put(task.worktreePath(), state));
+    private final WorktreeChanges changes;
+    private final Map<String, Answered> answeredOver = new ConcurrentHashMap<>();
+
+    private record Answered(String tree, int times) {
     }
 
-    /** Asked again over the tree its last answer was given on, the answer was not one a session could act on. */
-    public boolean answeredOverThisTree(TaskState task) {
-        String then = answeredOver.get(task.worktreePath());
-        return then != null && changes.state(task).map(then::equals).orElse(false);
+    public void answered(TaskState task) {
+        changes.state(task).ifPresent(tree -> answeredOver.merge(task.worktreePath(), new Answered(tree, 1),
+                (then, now) -> then.tree().equals(tree) ? new Answered(tree, then.times() + 1) : now));
+    }
+
+    public boolean answersSpentOnThisTree(TaskState task) {
+        Answered then = answeredOver.get(task.worktreePath());
+        return then != null && then.times() >= ANSWERS_PER_TREE
+                && changes.state(task).map(then.tree()::equals).orElse(false);
     }
 
     public void record(TaskState task, String decided) {

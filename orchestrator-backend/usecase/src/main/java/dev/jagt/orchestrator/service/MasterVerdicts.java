@@ -79,8 +79,8 @@ public class MasterVerdicts {
         return reports.report(taskId, TaskStatus.IN_PROGRESS, "master answered the question");
     }
 
-    public boolean answeredOverThisTree(TaskState task) {
-        return decisions.answeredOverThisTree(task);
+    public boolean answersSpentOnThisTree(TaskState task) {
+        return decisions.answersSpentOnThisTree(task);
     }
 
     /** The reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
