@@ -31,3 +31,4 @@ alternatives — so a later reader can tell a decision from a habit.
 - [0009 — What jagt can read, it reads once and quotes](0009-what-jagt-can-read-it-reads-once-and-quotes.md)
 - [0010 — The human's own word stands over the Master](0010-the-humans-own-word-stands-over-the-master.md)
 - [0011 — A red run is the session's to diagnose](0011-a-red-run-is-the-sessions-to-diagnose.md)
+- [0012 — The Master finishes the task](0012-the-master-finishes-the-task.md)

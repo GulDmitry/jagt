@@ -198,7 +198,7 @@ public class MasterPanel {
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
                                String decided, List<String> said, boolean stuck) {
-        return "You stand in for the human on task " + taskId + ". The session working it stopped to ask: "
+        return GOAL + "You stand in for the human on task " + taskId + ". The session working it stopped to ask: "
                 + question + "\n\nThe brief you judge by:\n" + brief + "\n\n"
                 + "The brief the session works to, its %s filled per task:\n" + authorBrief + "\n\n"
                 + round(taskId, task) + settled(decided) + humanSaid(said) + (stuck ? STUCK : "")
@@ -213,6 +213,12 @@ public class MasterPanel {
                 + " it rests on, each with provenBy — the file:line or read-only command that shows it. failure:"
                 + " blank unless something stopped you reading, then what.";
     }
+
+    /** The Master's reason to exist, ahead of every read so no rule below it is taken for the goal. */
+    static final String GOAL = "Your goal is the task finished: ready to merge, its request's checks green, the ticket"
+            + " met, the codebase's architecture and naming kept. You are the strongest reader in this loop: where"
+            + " the session stalls or a check stays red, find the cause, decide the change that clears it and insist"
+            + " on it until it holds. Never hold the task, defer it or settle for red.\n\n";
 
     private static final String STUCK = "Your last answers over this tree changed nothing in it: the session"
             + " could act on none, and it restarts with fresh tools. Decide the change in the worktrees that brings"
@@ -238,7 +244,7 @@ public class MasterPanel {
 
     /** Names no role and no task, so every reader of every round sends it alike and finds it cached. */
     static String shared(String brief, String authorBrief, boolean decides) {
-        return "The brief you judge by:\n" + brief + "\n\n"
+        return GOAL + "The brief you judge by:\n" + brief + "\n\n"
                 + "The brief the author worked to, its %s filled per task; yours extends it:\n"
                 + authorBrief + "\n\n"
                 + "Read the ticket, quoted in the round where jagt read it and with your tracker tools where it is"

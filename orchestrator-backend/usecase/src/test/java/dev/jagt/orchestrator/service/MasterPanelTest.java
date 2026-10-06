@@ -105,6 +105,18 @@ class MasterPanelTest {
     }
 
     @Test
+    void opensEveryMasterReadOnTheTaskFinishedGreenRatherThanOnJudging() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+
+        String answer = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
+                "outcome=question — keep v2?", "", List.of(), false);
+        String review = MasterPanel.shared("judge hard", "never commit unasked", true);
+
+        assertThat(answer).startsWith("Your goal is the task finished: ready to merge, its request's checks green");
+        assertThat(review).startsWith("Your goal is the task finished: ready to merge, its request's checks green");
+    }
+
+    @Test
     void holdsEveryReviewerToWhatEarlierRoundsSettled() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
