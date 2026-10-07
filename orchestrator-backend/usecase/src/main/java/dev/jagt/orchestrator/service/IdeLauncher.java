@@ -19,7 +19,8 @@ public class IdeLauncher {
 
     private final StateService stateService;
     private final ConfigService configService;
-    private final GitService gitService;
+    private final GitDeploy gitDeploy;
+    private final DiffCheckouts diffCheckouts;
     private final EditorDriver editorDriver;
 
     public String open(String taskIdOrAlias, String mode) {
@@ -56,10 +57,10 @@ public class IdeLauncher {
         var projects = configService.load().projects();
         for (TaskRepo repo : task.repos()) {
             ProjectConfig conflicted = projects.get(repo.project());
-            if (conflicted == null || !gitService.hasDeployWorktree(Path.of(conflicted.path()), taskId)) {
+            if (conflicted == null || !gitDeploy.hasDeployWorktree(Path.of(conflicted.path()), taskId)) {
                 continue;
             }
-            Path deployWorktree = GitService.deployWorktreePath(Path.of(conflicted.path()), taskId);
+            Path deployWorktree = GitDeploy.deployWorktreePath(Path.of(conflicted.path()), taskId);
             editorDriver.open(deployWorktree);
             return Optional.of("Opened the deploy worktree " + deployWorktree + " — resolve there (`git add`),"
                     + " then `deploy " + taskId + "` again.");
@@ -89,8 +90,8 @@ public class IdeLauncher {
                     + " so a diff of " + taskId + " has nothing to read against");
         }
         String diffBase = "origin/" + configured.replaceFirst("^origin/", "");
-        Path base = gitService.checkoutBaseForDiff(projectPath, diffBase, taskId, repo.project());
-        Path clean = gitService.checkoutWorktreeCleanForDiff(Path.of(repo.worktreePath()), projectPath,
+        Path base = diffCheckouts.checkoutBaseForDiff(projectPath, diffBase, taskId, repo.project());
+        Path clean = diffCheckouts.checkoutWorktreeCleanForDiff(Path.of(repo.worktreePath()), projectPath,
                 diffBase, taskId, repo.project());
         editorDriver.openDiff(base, clean);
         return diffBase;

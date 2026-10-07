@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.capability.deploy;
 
-import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -48,7 +48,7 @@ class DeployServiceTest {
                 .message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        DeployService deploys = new DeployService(state, config, mock(GitService.class), editor);
+        DeployService deploys = new DeployService(state, config, mock(GitDeploy.class), editor);
 
         Outcome outcome = deploys.deploy("a1");
 
@@ -62,9 +62,9 @@ class DeployServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenThrow(
-                new GitService.ForeignDeployWorktreeException(Path.of("/repos/ABC-1-deploy"), Path.of("/repos/x")));
+                new GitDeploy.ForeignDeployWorktreeException(Path.of("/repos/ABC-1-deploy"), Path.of("/repos/x")));
         DeployService deploys = new DeployService(state, config, git, editor);
 
         Outcome outcome = deploys.deploy("a1");
@@ -79,7 +79,7 @@ class DeployServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("cafebabe1234");
         DeployService deploys = new DeployService(state, config, git, editor);
 
@@ -96,7 +96,7 @@ class DeployServiceTest {
                 .deployCommit("cafebabe1234").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234")))
                 .thenReturn("f00dfeed5678");
         DeployService deploys = new DeployService(state, config, git, editor);
@@ -114,7 +114,7 @@ class DeployServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         DeployService deploys = new DeployService(state, config, git, editor);
 
         assertThatThrownBy(() -> deploys.revert("a1"))
@@ -132,7 +132,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "staging", null));
-        DeployService deploys = new DeployService(state, config, mock(GitService.class), editor);
+        DeployService deploys = new DeployService(state, config, mock(GitDeploy.class), editor);
 
         assertThatThrownBy(() -> deploys.revert("a1"))
                 .isInstanceOf(IllegalStateException.class)
@@ -150,9 +150,9 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         Path deployWorktree = root.resolve("ABC-1-deploy");
-        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict in schema.yaml", deployWorktree))
+        doThrow(new GitDeploy.MergeConflictException("ABC-1", "dev", "conflict in schema.yaml", deployWorktree))
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
         DeployService deploys = new DeployService(state, config, git, editor);
 
@@ -173,7 +173,7 @@ class DeployServiceTest {
                 .message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release", "release", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         DeployService deploys = new DeployService(state, config, git, editor);
 
         assertThatThrownBy(() -> deploys.deploy("a1"))
@@ -188,7 +188,7 @@ class DeployServiceTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", null, null));
-        DeployService deploys = new DeployService(state, config, mock(GitService.class), editor);
+        DeployService deploys = new DeployService(state, config, mock(GitDeploy.class), editor);
 
         assertThatThrownBy(() -> deploys.deploy("ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -203,7 +203,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
         DeployService deploys = new DeployService(state, config, git, editor);
@@ -224,7 +224,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/src/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
         when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
         DeployService deploys = new DeployService(state, config, git, editor);
@@ -243,10 +243,10 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
         Path deployWorktree = root.resolve("ABC-1-deploy");
-        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict in Widget.java", deployWorktree))
+        doThrow(new GitDeploy.MergeConflictException("ABC-1", "dev", "conflict in Widget.java", deployWorktree))
                 .when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
         DeployService deploys = new DeployService(state, config, git, editor);
 
@@ -270,8 +270,8 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
-        doThrow(new GitService.MergeConflictException("ABC-1", "dev", "conflict", root.resolve("ABC-1-deploy")))
+        GitDeploy git = mock(GitDeploy.class);
+        doThrow(new GitDeploy.MergeConflictException("ABC-1", "dev", "conflict", root.resolve("ABC-1-deploy")))
                 .when(git).mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
         DeployService deploys = new DeployService(state, config, git, editor);
 
@@ -288,7 +288,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
         when(git.mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"))).thenReturn("cafebabe1234");
         DeployService deploys = new DeployService(state, config, git, editor);
@@ -308,7 +308,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
         DeployService deploys = new DeployService(state, config, git, editor);
@@ -327,8 +327,8 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
-        doThrow(new GitService.NothingToDeployException("ABC-1", "dev"))
+        GitDeploy git = mock(GitDeploy.class);
+        doThrow(new GitDeploy.NothingToDeployException("ABC-1", "dev"))
                 .when(git).mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev");
         when(git.mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev")).thenReturn("f00dfeed5678");
         DeployService deploys = new DeployService(state, config, git, editor);
@@ -347,13 +347,13 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
-        doThrow(new GitService.NothingToDeployException("ABC-1", "dev"))
+        GitDeploy git = mock(GitDeploy.class);
+        doThrow(new GitDeploy.NothingToDeployException("ABC-1", "dev"))
                 .when(git).mergeIntoAndPush(any(), eq("ABC-1"), eq("dev"));
         DeployService deploys = new DeployService(state, config, git, editor);
 
         assertThatThrownBy(() -> deploys.deploy("a1"))
-                .isInstanceOf(GitService.NothingToDeployException.class)
+                .isInstanceOf(GitDeploy.NothingToDeployException.class)
                 .hasMessageContaining("Nothing to deploy");
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
     }
@@ -366,7 +366,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
         doThrow(new IllegalStateException("Deploy push to dev was rejected"))
                 .when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
@@ -389,7 +389,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.mergeIntoAndPush(Path.of("/repo/api"), "ABC-1", "dev")).thenReturn("cafebabe1234");
         doThrow(new NullPointerException()).when(git).mergeIntoAndPush(Path.of("/repo/web"), "ABC-1", "dev");
         DeployService deploys = new DeployService(state, config, git, editor);
@@ -408,7 +408,7 @@ class DeployServiceTest {
         state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234"));
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234"))
                 .thenReturn("beef00991122");
         DeployService deploys = new DeployService(state, config, git, editor);
@@ -427,7 +427,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", null, null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         DeployService deploys = new DeployService(state, config, git, editor);
 
         assertThatThrownBy(() -> deploys.deploy("a1"))
@@ -447,7 +447,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.revertMergeAndPush(any(), anyString(), anyString(), anyString())).thenReturn("beef00991122");
         DeployService deploys = new DeployService(state, config, git, editor);
 
@@ -472,7 +472,7 @@ class DeployServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
-        GitService git = mock(GitService.class);
+        GitDeploy git = mock(GitDeploy.class);
         when(git.revertMergeAndPush(Path.of("/repo/web"), "ABC-1", "dev", "f00dfeed5678"))
                 .thenReturn("beef00991122");
         doThrow(new IllegalStateException("the revert conflicts with work done there since the deploy"))

@@ -32,7 +32,7 @@ public class TaskProvisioning {
 
     private final ConfigService configService;
     private final StateService stateService;
-    private final GitService gitService;
+    private final GitWorktrees gitWorktrees;
     private final AgentSessions agentSessions;
     private final WorktreeSetup worktreeSetup;
 
@@ -43,7 +43,7 @@ public class TaskProvisioning {
                 ? config.projects().keySet() : projectKeys;
         return keys.stream()
                 .filter(config.projects()::containsKey)
-                .filter(k -> gitService.branchExists(
+                .filter(k -> gitWorktrees.branchExists(
                         Path.of(config.projects().get(k).path()).toAbsolutePath().normalize(), taskId))
                 .findFirst().orElse(null);
     }
@@ -52,10 +52,10 @@ public class TaskProvisioning {
     public BranchStrategy strategyForExisting(String taskId, String projectKey) {
         ProjectConfig project = configService.load().projects().get(projectKey);
         Path path = Path.of(project.path()).toAbsolutePath().normalize();
-        if (!gitService.branchExists(path, taskId)) {
+        if (!gitWorktrees.branchExists(path, taskId)) {
             return BranchStrategy.FRESH;
         }
-        return gitService.holdsOwnCommits(path, taskId, project.baseBranch())
+        return gitWorktrees.holdsOwnCommits(path, taskId, project.baseBranch())
                 ? BranchStrategy.RESUME : BranchStrategy.RECREATE;
     }
 
@@ -154,9 +154,9 @@ public class TaskProvisioning {
             }
             repos.add(new NewRepo(projectKey, project, projectPath,
                     projectPath.getParent().resolve(TaskName.slug(request.taskId()) + "-" + projectKey),
-                    gitService.gitCommonDir(projectPath),
+                    gitWorktrees.gitCommonDir(projectPath),
                     override != null ? override : project.baseBranch(),
-                    gitService.remoteUrl(projectPath), repos.isEmpty()));
+                    gitWorktrees.remoteUrl(projectPath), repos.isEmpty()));
         }
         if (repos.isEmpty()) {
             throw new IllegalArgumentException("A task needs at least one project");
@@ -172,7 +172,7 @@ public class TaskProvisioning {
         List<NewRepo> cut = new ArrayList<>();
         try {
             for (NewRepo repo : repos) {
-                gitService.createWorktree(repo.projectPath(), repo.worktreePath(), request.taskId(),
+                gitWorktrees.createWorktree(repo.projectPath(), repo.worktreePath(), request.taskId(),
                         repo.baseBranch(), strategy);
                 cut.add(repo);
                 worktreeSetup.fill(request, repo, repos);
@@ -181,11 +181,11 @@ public class TaskProvisioning {
             // The branch goes with the worktree only where THIS call created it: a resumed task's branch was
             // already there with the human's commits.
             String branchToDelete = strategy == BranchStrategy.RESUME ? null : request.taskId();
-            cut.forEach(repo -> gitService.removeWorktree(repo.projectPath(), repo.worktreePath(),
+            cut.forEach(repo -> gitWorktrees.removeWorktree(repo.projectPath(), repo.worktreePath(),
                     branchToDelete));
             // A resumed branch survives, so the repository jagt detached to free it must go back.
             if (branchToDelete == null) {
-                repos.forEach(repo -> gitService.reattach(repo.projectPath(), request.taskId()));
+                repos.forEach(repo -> gitWorktrees.reattach(repo.projectPath(), request.taskId()));
             }
             throw e;
         }
@@ -209,7 +209,7 @@ public class TaskProvisioning {
     private void requireOnOrigin(String branch, String projectKey, Path projectPath,
                                  BranchStrategy strategy) {
         // A RESUMED task is not cut from anything: the branch is only remembered as its review target.
-        if (strategy != BranchStrategy.RESUME && !gitService.remoteBranchExists(projectPath, branch)) {
+        if (strategy != BranchStrategy.RESUME && !gitWorktrees.remoteBranchExists(projectPath, branch)) {
             throw new IllegalArgumentException("Base branch '" + branch + "' does not exist on "
                     + projectKey + "'s origin — the worktree is cut from origin/" + branch + ", so check the"
                     + " name (or push it there first).");

@@ -15,16 +15,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /** The files a fresh worktree needs that git does not carry, and jagt's own plumbing kept out of git status. */
 @Slf4j
 public final class WorktreeFiles {
-
-    /** Directories never worth scanning for local files (huge and/or generated). */
-    private static final Set<String> COPY_SCAN_SKIP =
-            Set.of(".git", "node_modules", "build", "target", "out", "dist", ".gradle", ".idea");
 
     /** Written into every worktree jagt cuts, whatever the runtime: a checkout carrying none is not jagt's. */
     public static final List<String> OWN_FILES =
@@ -92,7 +87,7 @@ public final class WorktreeFiles {
             Files.walkFileTree(projectPath, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return COPY_SCAN_SKIP.contains(dir.getFileName().toString())
+                    return WorktreeNoise.UNWALKED.contains(dir.getFileName().toString())
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 

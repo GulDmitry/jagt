@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.capability.done;
 
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.GitDeploy;
+import dev.jagt.orchestrator.service.GitWorktrees;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -22,7 +23,7 @@ public class TaskRetirement {
 
     private final StateService stateService;
     private final ConfigService configService;
-    private final GitService gitService;
+    private final GitWorktrees gitWorktrees;
     private final EditorDriver editorDriver;
     private final AgentSessions sessions;
 
@@ -52,12 +53,12 @@ public class TaskRetirement {
             Path projectPath = Path.of(project.path());
             // The agent's record of the worktree goes too, or the next session there stops at the prompt it answers.
             sessions.forgetWorktree(Path.of(repo.worktreePath()));
-            gitService.removeWorktree(projectPath, Path.of(repo.worktreePath()), null);
+            gitWorktrees.removeWorktree(projectPath, Path.of(repo.worktreePath()), null);
             // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.
-            gitService.removeDeployWorktreeIfPresent(projectPath, taskId);
+            gitWorktrees.removeDeployWorktreeIfPresent(projectPath, taskId);
             // A diff opened from the board cuts throwaway checkouts in the temp directory; nothing else ends them.
-            gitService.removeDiffWorktrees(projectPath, taskId, repo.project());
-            editorDriver.forgetProject(GitService.deployWorktreePath(projectPath, taskId));
+            gitWorktrees.removeDiffWorktrees(projectPath, taskId, repo.project());
+            editorDriver.forgetProject(GitDeploy.deployWorktreePath(projectPath, taskId));
         }
         stateService.removeTask(taskId);
         boolean closedViewer = sessions.closeViewerIfNoTasksLeft();

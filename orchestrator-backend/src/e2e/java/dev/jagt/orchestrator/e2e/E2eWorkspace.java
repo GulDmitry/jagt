@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.adapter.Executables;
 import dev.jagt.orchestrator.task.GitRemote;
-import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.GitDeploy;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -99,9 +99,9 @@ final class E2eWorkspace {
     static void forgetTask(Path repo, Path worktree, String branch) {
         gitQuietly(repo, "worktree", "remove", "--force", worktree.toString());
         gitQuietly(repo, "worktree", "remove", "--force",
-                GitService.deployWorktreePath(repo, branch).toString());
+                GitDeploy.deployWorktreePath(repo, branch).toString());
         gitQuietly(repo, "worktree", "remove", "--force",
-                GitService.revertWorktreePath(repo, branch).toString());
+                GitDeploy.revertWorktreePath(repo, branch).toString());
         gitQuietly(repo, "worktree", "prune");
         gitQuietly(repo, "branch", "-D", branch);
         gitQuietly(repo, "branch", "-D", "jagt-deploy-" + branch);

@@ -17,15 +17,15 @@ import static org.mockito.Mockito.when;
 class WorktreeChangesTest {
 
     private final ConfigService configService = mock(ConfigService.class);
-    private final GitService gitService = mock(GitService.class);
+    private final WorktreeInspection inspection = mock(WorktreeInspection.class);
 
     @Test
     void readsARepositoryGitCannotAnswerForAsHoldingWorkSoNoShipPassesItOver() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
-        when(gitService.hasUncommittedChanges(any(Path.class), any(Path.class)))
+        when(inspection.hasUncommittedChanges(any(Path.class), any(Path.class)))
                 .thenThrow(new IllegalStateException("git status in /wt failed (exit 128): not a git repository"));
 
-        boolean holdsWork = new WorktreeChanges(configService, gitService).holdsWork("demo", "/wt", "main");
+        boolean holdsWork = new WorktreeChanges(configService, inspection).holdsWork("demo", "/wt", "main");
 
         assertThat(holdsWork).isTrue();
     }
@@ -34,7 +34,7 @@ class WorktreeChangesTest {
     void findsNothingToShipWhereNoRepositoryHoldsWorkAndNoneIsInReview() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
 
-        boolean anyToShip = new WorktreeChanges(configService, gitService)
+        boolean anyToShip = new WorktreeChanges(configService, inspection)
                 .anyToShip(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
 
         assertThat(anyToShip).isFalse();
@@ -43,10 +43,10 @@ class WorktreeChangesTest {
     @Test
     void namesWhyARepositorysDiffCouldNotBeReadRatherThanQuotingNothing() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
-        when(gitService.changesSince(any(Path.class), any(Path.class), any(String.class)))
+        when(inspection.changesSince(any(Path.class), any(Path.class), any(String.class)))
                 .thenThrow(new IllegalStateException("git merge-base in /wt failed (exit 1)"));
 
-        String diff = new WorktreeChanges(configService, gitService)
+        String diff = new WorktreeChanges(configService, inspection)
                 .diff(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
 
         assertThat(diff).isEqualTo("# demo\njagt could not read it: git merge-base in /wt failed (exit 1)\n");
@@ -55,10 +55,10 @@ class WorktreeChangesTest {
     @Test
     void quotesNoDiffTooLargeForAPromptSoEachRoleReadsItItself() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
-        when(gitService.changesSince(any(Path.class), any(Path.class), any(String.class)))
+        when(inspection.changesSince(any(Path.class), any(Path.class), any(String.class)))
                 .thenReturn("+x".repeat(50_001));
 
-        String diff = new WorktreeChanges(configService, gitService)
+        String diff = new WorktreeChanges(configService, inspection)
                 .diff(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
 
         assertThat(diff).isEmpty();
@@ -67,10 +67,10 @@ class WorktreeChangesTest {
     @Test
     void readsAgentFileLinesGitCannotCountAsUnknownRatherThanNone() {
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
-        when(gitService.agentFileLinesAdded(any(Path.class), any(Path.class), any(String.class)))
+        when(inspection.agentFileLinesAdded(any(Path.class), any(Path.class), any(String.class)))
                 .thenThrow(new IllegalStateException("git merge-base in /wt failed (exit 1)"));
 
-        Optional<Integer> added = new WorktreeChanges(configService, gitService)
+        Optional<Integer> added = new WorktreeChanges(configService, inspection)
                 .agentFileLinesAdded(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
 
         assertThat(added).isEmpty();

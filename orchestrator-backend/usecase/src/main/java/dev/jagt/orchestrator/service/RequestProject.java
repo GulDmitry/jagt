@@ -12,11 +12,11 @@ import java.nio.file.Path;
 public class RequestProject {
 
     private final ConfigService configService;
-    private final GitService gitService;
+    private final GitWorktrees gitWorktrees;
 
     public String of(String mrUrl) {
         for (var project : configService.load().projects().entrySet()) {
-            String path = GitRemote.projectPath(gitService.remoteUrl(Path.of(project.getValue().path())));
+            String path = GitRemote.projectPath(gitWorktrees.remoteUrl(Path.of(project.getValue().path())));
             if (path != null && mrUrl.contains(path)) {
                 return project.getKey();
             }

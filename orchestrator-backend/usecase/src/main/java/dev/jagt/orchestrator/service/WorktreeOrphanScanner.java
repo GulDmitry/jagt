@@ -51,12 +51,6 @@ public class WorktreeOrphanScanner implements Job {
     }
 
 
-    /** Directories never worth walking for secret copies (huge and/or generated). */
-    private static final Set<String> SKIP = Set.of(".git", "node_modules", "build", "target", "out", "dist",
-            ".gradle", ".idea");
-
-    /** What an IDE writes into a worktree by itself, so finding it says nothing about whose the directory is. */
-    private static final Set<String> IDE_FILES = Set.of(".idea", ".run");
 
     public record Orphan(Path path, String projectKey, int secretFiles) {
     }
@@ -130,7 +124,7 @@ public class WorktreeOrphanScanner implements Job {
             Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return IDE_FILES.contains(dir.getFileName().toString())
+                    return WorktreeNoise.IDE_FILES.contains(dir.getFileName().toString())
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 
@@ -257,7 +251,7 @@ public class WorktreeOrphanScanner implements Job {
             Files.walkFileTree(worktree, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return SKIP.contains(dir.getFileName().toString())
+                    return WorktreeNoise.UNWALKED.contains(dir.getFileName().toString())
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 

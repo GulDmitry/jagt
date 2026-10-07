@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.capability.deploy;
 
-import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -32,7 +32,7 @@ public class DeployService {
 
     private final StateService stateService;
     private final ConfigService configService;
-    private final GitService gitService;
+    private final GitDeploy gitDeploy;
     private final EditorDriver editorDriver;
 
     private TaskState requireTask(String taskId) {
@@ -48,31 +48,31 @@ public class DeployService {
         Map<String, String> merged = new LinkedHashMap<>();
         List<String> nothingToDo = new ArrayList<>();
         List<String> blocked = new ArrayList<>();
-        GitService.NothingToDeployException idle = null;
-        GitService.ForeignDeployWorktreeException obstacle = null;
+        GitDeploy.NothingToDeployException idle = null;
+        GitDeploy.ForeignDeployWorktreeException obstacle = null;
         int from = resumeFrom(task, taskId, targets);
         for (int i = from; i < targets.size(); i++) {
             Target target = targets.get(i);
             try {
-                String commit = gitService.mergeIntoAndPush(target.path(), taskId, target.deployBranch());
+                String commit = gitDeploy.mergeIntoAndPush(target.path(), taskId, target.deployBranch());
                 merged.put(target.project(), commit);
                 stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), commit));
-            } catch (GitService.NothingToDeployException e) {
+            } catch (GitDeploy.NothingToDeployException e) {
                 nothingToDo.add(target.project());
                 idle = idle == null ? e : idle;
                 continue;
-            } catch (GitService.ForeignDeployWorktreeException e) {
+            } catch (GitDeploy.ForeignDeployWorktreeException e) {
                 // The sibling holding the shared path is in this very list, so coming back beats refusing.
                 blocked.add(target.project());
                 obstacle = obstacle == null ? e : obstacle;
                 continue;
-            } catch (GitService.MergeConflictException e) {
+            } catch (GitDeploy.MergeConflictException e) {
                 return handBackConflict(taskId, targets, i, e);
             } catch (RuntimeException e) {
                 return stoppedPartWay(taskId, targets, i, e);
             }
             // A human who opened the worktree to resolve a conflict is left with a dead editor entry otherwise.
-            editorDriver.forgetProject(GitService.deployWorktreePath(target.path(), taskId));
+            editorDriver.forgetProject(GitDeploy.deployWorktreePath(target.path(), taskId));
         }
         if (!blocked.isEmpty()) {
             return notFinished(taskId, merged, blocked, obstacle);
@@ -91,11 +91,11 @@ public class DeployService {
             if (task.status() != TaskStatus.DEPLOY_CONFLICT) {
                 return;
             }
-            deployTargets(task).stream().filter(target -> gitService.hasDeployWorktree(target.path(), taskId))
+            deployTargets(task).stream().filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
                     .findFirst()
                     .ifPresent(target -> waiting.put(taskId, new WaitingConflict(
-                            GitService.deployWorktreePath(target.path(), taskId),
-                            gitService.deployResolved(target.path(), taskId, target.deployBranch()))));
+                            GitDeploy.deployWorktreePath(target.path(), taskId),
+                            gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()))));
         });
         return waiting;
     }
@@ -109,7 +109,7 @@ public class DeployService {
      * nothing was released either, so the obstacle itself is what the human is told.
      */
     private Outcome notFinished(String taskId, Map<String, String> merged, List<String> blocked,
-                                GitService.ForeignDeployWorktreeException obstacle) {
+                                GitDeploy.ForeignDeployWorktreeException obstacle) {
         List<String> landed = List.copyOf(merged.keySet());
         String next = landed.isEmpty()
                 ? " never started: " + obstacle.getMessage()
@@ -129,7 +129,7 @@ public class DeployService {
             return 0;
         }
         for (int i = 0; i < targets.size(); i++) {
-            if (gitService.hasDeployWorktree(targets.get(i).path(), taskId)) {
+            if (gitDeploy.hasDeployWorktree(targets.get(i).path(), taskId)) {
                 return i;
             }
         }
@@ -141,7 +141,7 @@ public class DeployService {
      * deploy branch into the task branch would balloon its diff with everything the deploy branch carries.
      */
     private Outcome handBackConflict(String taskId, List<Target> targets, int at,
-                                    GitService.MergeConflictException e) {
+                                    GitDeploy.MergeConflictException e) {
         Target conflicted = targets.get(at);
         String half = targets.size() > 1 ? halfState(targets, at) : "";
         String note = half.isEmpty() ? "" : " — " + half;
@@ -170,14 +170,14 @@ public class DeployService {
         if (targets.size() == 1) {
             Target only = targets.getFirst();
             return Outcome.ok("Merged " + taskId + " into " + only.deployBranch() + " ("
-                    + shortSha(merged.get(only.project())) + "); DEPLOYED", stamp);
+                    + GitDeploy.shortSha(merged.get(only.project())) + "); DEPLOYED", stamp);
         }
         List<String> landed = targets.stream().filter(target -> merged.containsKey(target.project()))
                 .map(target -> target.project() + " into " + target.deployBranch()
-                        + " (" + shortSha(merged.get(target.project())) + ")").toList();
+                        + " (" + GitDeploy.shortSha(merged.get(target.project())) + ")").toList();
         // A resumed sequence merged only its tail; the whole picture is what the human is owed.
         List<String> earlier = targets.subList(0, from).stream()
-                .map(target -> target.project() + " (" + shortSha(mergeCommit(task, target)) + ")").toList();
+                .map(target -> target.project() + " (" + GitDeploy.shortSha(mergeCommit(task, target)) + ")").toList();
         String already = earlier.isEmpty() ? "" : ", already on the deploy branch: " + names(earlier);
         String idle = nothingToDo.isEmpty() ? "" : ", nothing to deploy in " + names(nothingToDo);
         return Outcome.ok("deploy " + taskId + ": merged " + names(landed) + already + idle + "; DEPLOYED",
@@ -219,14 +219,14 @@ public class DeployService {
         String lastRevertCommit = null;
         for (Target target : landed.reversed()) {
             try {
-                lastRevertCommit = gitService.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
+                lastRevertCommit = gitDeploy.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
                         mergeCommit(task, target));
             } catch (RuntimeException e) {
                 return stillLive(taskId, target, reverted, e);
             }
             stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), null));
             reverted.add(target.project() + " on " + target.deployBranch() + " ("
-                    + shortSha(lastRevertCommit) + ")");
+                    + GitDeploy.shortSha(lastRevertCommit) + ")");
         }
         return allReverted(taskId, task.repos().size() == 1, landed, reverted, lastRevertCommit);
     }
@@ -235,7 +235,7 @@ public class DeployService {
                                String revertCommit) {
         String tail = "; REVERTED — fix and ship again, or `done`.";
         if (singleRepo) {
-            String on = "on " + landed.getFirst().deployBranch() + " (" + shortSha(revertCommit) + ")";
+            String on = "on " + landed.getFirst().deployBranch() + " (" + GitDeploy.shortSha(revertCommit) + ")";
             return Outcome.ok("Reverted " + taskId + " " + on + tail, "reverted " + on);
         }
         return Outcome.ok("revert " + taskId + ": reverted " + names(reverted) + tail,
@@ -322,10 +322,6 @@ public class DeployService {
 
     private static String names(List<String> names) {
         return names.isEmpty() ? "none" : String.join(", ", names);
-    }
-
-    private static String shortSha(String sha) {
-        return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
     }
 
     private record Target(String project, ProjectConfig config) {

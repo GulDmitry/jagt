@@ -21,7 +21,7 @@ public class WorktreeChanges {
     private static final int MAX_QUOTED = 100_000;
 
     private final ConfigService configService;
-    private final GitService gitService;
+    private final WorktreeInspection inspection;
 
     /**
      * ANY repository of the task, since one changed file anywhere is a diff for the human to read. A worktree
@@ -47,12 +47,12 @@ public class WorktreeChanges {
         return Optional.of(anyChanged);
     }
 
-    /** Every repository's {@link GitService#treeState}; EMPTY where git could not answer for one. */
+    /** Every repository's {@link WorktreeInspection#treeState}; EMPTY where git could not answer for one. */
     public Optional<String> state(TaskState task) {
         StringBuilder state = new StringBuilder();
         for (TaskRepo repo : task.repos()) {
             try {
-                state.append(gitService.treeState(projectPath(repo.project()), Path.of(repo.worktreePath())))
+                state.append(inspection.treeState(projectPath(repo.project()), Path.of(repo.worktreePath())))
                         .append(';');
             } catch (RuntimeException e) {
                 warn(repo.worktreePath(), e);
@@ -64,7 +64,7 @@ public class WorktreeChanges {
 
     private Optional<Boolean> uncommitted(TaskRepo repo) {
         try {
-            return Optional.of(gitService.hasUncommittedChanges(projectPath(repo.project()),
+            return Optional.of(inspection.hasUncommittedChanges(projectPath(repo.project()),
                     Path.of(repo.worktreePath())));
         } catch (RuntimeException e) {
             warn(repo.worktreePath(), e);
@@ -80,8 +80,8 @@ public class WorktreeChanges {
     public boolean holdsWork(String project, String worktreePath, String targetBranch) {
         Path worktree = Path.of(worktreePath);
         try {
-            return gitService.hasUncommittedChanges(projectPath(project), worktree)
-                    || gitService.aheadOfTarget(projectPath(project), worktree, targetBranch);
+            return inspection.hasUncommittedChanges(projectPath(project), worktree)
+                    || inspection.aheadOfTarget(projectPath(project), worktree, targetBranch);
         } catch (RuntimeException e) {
             warn(worktreePath, e);
             return true;
@@ -108,7 +108,7 @@ public class WorktreeChanges {
             diff.append("# ").append(repo.project()).append('\n');
             try {
                 String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
-                diff.append(gitService.changesSince(projectPath(repo.project()), Path.of(repo.worktreePath()), base));
+                diff.append(inspection.changesSince(projectPath(repo.project()), Path.of(repo.worktreePath()), base));
             } catch (RuntimeException e) {
                 warn(repo.worktreePath(), e);
                 diff.append("jagt could not read it: ").append(e.getMessage()).append('\n');
@@ -123,7 +123,7 @@ public class WorktreeChanges {
         for (TaskRepo repo : task.repos()) {
             try {
                 String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
-                added += gitService.agentFileLinesAdded(projectPath(repo.project()), Path.of(repo.worktreePath()), base);
+                added += inspection.agentFileLinesAdded(projectPath(repo.project()), Path.of(repo.worktreePath()), base);
             } catch (RuntimeException e) {
                 warn(repo.worktreePath(), e);
                 return Optional.empty();

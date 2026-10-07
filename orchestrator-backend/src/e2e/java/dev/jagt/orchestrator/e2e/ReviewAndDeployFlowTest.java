@@ -16,7 +16,7 @@ import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
-import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -223,7 +223,7 @@ class ReviewAndDeployFlowTest {
         assertThat(E2eWorkspace.git(webOrigin(), "log", "-1", "--format=%s", "dev"))
                 .doesNotContain("Merge branch '" + TASK + "' into dev");
 
-        Path resolveIn = GitService.deployWorktreePath(webRepo(), TASK);
+        Path resolveIn = GitDeploy.deployWorktreePath(webRepo(), TASK);
         Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
         E2eWorkspace.git(resolveIn, "add", "widget.txt");
 

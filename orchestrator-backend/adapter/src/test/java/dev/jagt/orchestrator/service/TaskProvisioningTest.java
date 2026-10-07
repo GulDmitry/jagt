@@ -50,7 +50,7 @@ class TaskProvisioningTest {
     private OrchestratorProperties properties;
     private StateService state;
     private ConfigService config;
-    private final GitService git = mock(GitService.class);
+    private final GitWorktrees git = mock(GitWorktrees.class);
 
     @BeforeEach
     void setUp() {

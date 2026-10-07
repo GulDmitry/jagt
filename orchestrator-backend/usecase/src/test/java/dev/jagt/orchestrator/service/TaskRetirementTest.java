@@ -28,7 +28,7 @@ class TaskRetirementTest {
 
     private final ConfigService config = mock(ConfigService.class);
     private final AgentSessions sessions = mock(AgentSessions.class);
-    private final GitService git = mock(GitService.class);
+    private final GitWorktrees git = mock(GitWorktrees.class);
     private final EditorDriver editor = mock(EditorDriver.class);
 
     private TaskRetirement retirement(StateService state) {

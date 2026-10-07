@@ -30,7 +30,8 @@ class IdeLauncherTest {
 
     private final EditorDriver editor = mock(EditorDriver.class);
     private final ConfigService config = mock(ConfigService.class);
-    private final GitService git = mock(GitService.class);
+    private final GitDeploy deploys = mock(GitDeploy.class);
+    private final DiffCheckouts diffs = mock(DiffCheckouts.class);
 
     private static StateService stateIn(Path root) {
         return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
@@ -38,7 +39,7 @@ class IdeLauncherTest {
     }
 
     private IdeLauncher launcher(StateService state) {
-        return new IdeLauncher(state, config, git, editor);
+        return new IdeLauncher(state, config, deploys, diffs, editor);
     }
 
     @Test
@@ -53,13 +54,13 @@ class IdeLauncherTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig(api.toString(), "origin/main", "dev", List.of()),
                 "web", new ProjectConfig(web.toString(), "origin/main", "dev", List.of()))));
-        when(git.hasDeployWorktree(api, "ABC-1")).thenReturn(false);
-        when(git.hasDeployWorktree(web, "ABC-1")).thenReturn(true);
+        when(deploys.hasDeployWorktree(api, "ABC-1")).thenReturn(false);
+        when(deploys.hasDeployWorktree(web, "ABC-1")).thenReturn(true);
 
         launcher(state).open("a1", null);
 
-        verify(editor).open(GitService.deployWorktreePath(web, "ABC-1"));
-        verify(editor, never()).open(GitService.deployWorktreePath(api, "ABC-1"));
+        verify(editor).open(GitDeploy.deployWorktreePath(web, "ABC-1"));
+        verify(editor, never()).open(GitDeploy.deployWorktreePath(api, "ABC-1"));
     }
 
     @Test
@@ -70,7 +71,7 @@ class IdeLauncherTest {
                 TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
-        when(git.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
+        when(deploys.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
 
         assertThat(launcher(state).open("a1", null)).contains("deploy worktree");
     }
@@ -94,8 +95,8 @@ class IdeLauncherTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
-        when(git.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
-        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
+        when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+        when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
         launcher(state).open("a1", "diff");
 
@@ -107,12 +108,12 @@ class IdeLauncherTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/release/stage", "dev", null));
-        when(git.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
-        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
+        when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+        when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
         launcher(state).open("a1", "diff");
 
-        verify(git).checkoutBaseForDiff(Path.of("/repo"), "origin/release/stage", "ABC-1", "proj");
+        verify(diffs).checkoutBaseForDiff(Path.of("/repo"), "origin/release/stage", "ABC-1", "proj");
     }
 
     @ParameterizedTest
@@ -148,12 +149,12 @@ class IdeLauncherTest {
                 TaskStatus.REVIEW_PENDING).alias("a1").build());
         when(config.project("api")).thenReturn(new ProjectConfig("/api-repo", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/web-repo", "origin/next", "dev", null));
-        when(git.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
-        when(git.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
+        when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
+        when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
         launcher(state).open("a1", "diff");
 
-        verify(git).checkoutBaseForDiff(Path.of("/api-repo"), "origin/main", "ABC-1", "api");
-        verify(git).checkoutBaseForDiff(Path.of("/web-repo"), "origin/next", "ABC-1", "web");
+        verify(diffs).checkoutBaseForDiff(Path.of("/api-repo"), "origin/main", "ABC-1", "api");
+        verify(diffs).checkoutBaseForDiff(Path.of("/web-repo"), "origin/next", "ABC-1", "web");
     }
 }

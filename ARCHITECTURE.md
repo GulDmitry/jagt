@@ -239,7 +239,7 @@ that points outward does not compile. Two folders inside one module it cannot se
 
 - Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git, real
   `lsof`, real binaries), `:surface:test`, and the root's own few that assert what the install ships.
-- The exception is a `:usecase` class a real binary is the only honest test of — `GitServiceTest`,
+- The exception is a `:usecase` class a real binary is the only honest test of — the git components' tests,
   `TaskProvisioningTest` and `WorktreeHooksTest` live in `:adapter:test`, where git is.
 - Four suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `boardTest` (the page in a real browser),
   `linuxDriverTest` (Linux binaries, container) and `promptEval` (the assistant's CLI, and tokens).
