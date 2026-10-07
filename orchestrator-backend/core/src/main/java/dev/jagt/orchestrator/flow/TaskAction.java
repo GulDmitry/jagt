@@ -86,6 +86,22 @@ public enum TaskAction {
         return HUMAN_ONLY.contains(this);
     }
 
+    /**
+     * What a surface asks before sending this press, or empty: only a press that cannot be taken back is asked.
+     * {@code targets} names, one line per repository, the branch the press writes.
+     */
+    public Optional<String> confirmation(String taskId, List<String> targets) {
+        String lines = String.join("\n", targets);
+        return switch (this) {
+            case DEPLOY -> Optional.of("Deploy " + taskId + "?\n\nThis merges and pushes:\n" + lines);
+            case REVERT -> Optional.of("Revert " + taskId + "?\n\nThis pushes a revert commit to:\n" + lines
+                    + "\n\nOnly the LAST deploy comes out; earlier rounds stay live and need reverting by hand."
+                    + " The task branch keeps every commit.");
+            case DONE -> Optional.of(label + " " + taskId + "?\n\n" + hint);
+            default -> Optional.empty();
+        };
+    }
+
     /** Whether this action changes nothing, so nothing else being in flight is a reason to refuse it. */
     public boolean readOnly() {
         return READ_ONLY.contains(this);

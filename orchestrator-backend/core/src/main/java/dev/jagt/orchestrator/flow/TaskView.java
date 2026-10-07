@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 
-
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +28,8 @@ public record TaskView(
         String ask,
         String hint,
         List<ActionView> actions,
+        // Keyed by action id for every verb asked before it is sent, offered on this card or not.
+        Map<String, String> confirmations,
         String detail,
         String ticketUrl,
         String reviewRequestUrl,
@@ -84,6 +86,7 @@ public record TaskView(
                 round.masterReading() ? "master review"
                         : task.status().label(), move.phase(),
                 move.owner(), move.attention(), move.ask(), move.hint(), actions,
+                confirmations(id, task, deployBranches),
                 DashboardLine.forTask(task, webLink(task.mrUrl())), webLink(task.ticketUrl()),
                 webLink(task.mrUrl()),
                 task.repos().stream()
@@ -95,6 +98,21 @@ public record TaskView(
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(), task.pipelineUnread(),
                 task.hasReviewRequest() ? task.approved() : null,
                 task.totalUsage().total());
+    }
+
+    private static Map<String, String> confirmations(String id, TaskState task, Map<String, String> deployBranches) {
+        List<String> targets = task.repos().stream()
+                .map(repo -> {
+                    String branch = deployBranches.get(repo.project());
+                    return repo.project() + " → "
+                            + (branch == null || branch.isBlank() ? "no deployBranch in jagt.yml" : branch);
+                })
+                .toList();
+        Map<String, String> confirmations = new LinkedHashMap<>();
+        for (TaskAction action : TaskAction.values()) {
+            action.confirmation(id, targets).ifPresent(question -> confirmations.put(action.id(), question));
+        }
+        return confirmations;
     }
 
     /** The merge commit each repository still holds IS the answer: a revert forgets it as it takes the work out. */

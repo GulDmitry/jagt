@@ -2,7 +2,6 @@
 
 import {api, refusal} from '../core/api.js';
 import * as store from '../core/store.js';
-import {confirmation} from './confirm.js';
 import {blocked, hold, release, waitingFor} from './inflight.js';
 import {refresh} from './refresh.js';
 import {render} from './render.js';
@@ -24,7 +23,7 @@ export async function run(taskId, actionId) {
     toast(`${task.id} is already running ${waitingFor(task, action)}`, true);
     return;
   }
-  const question = confirmation(task, action);
+  const question = (task.confirmations || {})[action.id];
   if (question && !confirm(question)) {
     return;
   }
