@@ -90,9 +90,9 @@ A reader between the session and you; it judges unless turned off.
 | `judge` | reads each plan, then each round by its brief's roles; writes `master-review.md`, presses nothing | one heavy read per plan; per role per round |
 | `act` | also starts a holding plan, ships a ready round, answers a question, opens split-off work, deploys a `REVIEWED` task; closing stays yours | the same |
 
-To turn it on: `cp master-brief.md.dist master-brief.md`, then set `master.mode` and `master.brief` in `jagt.yml`.
+It judges by the shipped brief; to edit one, `cp master-brief.md.dist master-brief.md` and set `master.brief`.
 `master.mine` keeps named steps yours in `act`; what you type to a session overrules it.
-`deploy`, `revert` and `sweep` stay yours in every mode.
+`revert` and `sweep` stay yours in every mode.
 Each step is one line in the `master` tmux window.
 
 ## Notes on the tricky ones
