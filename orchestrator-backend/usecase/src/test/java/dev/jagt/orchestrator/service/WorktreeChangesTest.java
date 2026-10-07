@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,5 +62,17 @@ class WorktreeChangesTest {
                 .diff(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
 
         assertThat(diff).isEmpty();
+    }
+
+    @Test
+    void readsAgentFileLinesGitCannotCountAsUnknownRatherThanNone() {
+        when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
+        when(gitService.agentFileLinesAdded(any(Path.class), any(Path.class), any(String.class)))
+                .thenThrow(new IllegalStateException("git merge-base in /wt failed (exit 1)"));
+
+        Optional<Integer> added = new WorktreeChanges(configService, gitService)
+                .agentFileLinesAdded(TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build());
+
+        assertThat(added).isEmpty();
     }
 }

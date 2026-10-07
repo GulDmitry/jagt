@@ -20,16 +20,10 @@ A large ticket lands as one unreviewable request; a splitter would cut it into 3
 Decide first: where a cut may fall (only a commit boundary stays buildable), how each targets the
 previous, and the fate of comments a later cut superseded.
 
-## A project's memory lives in its own agent file (open)
+## Triage the auto memory left in project repositories (open)
 
-Measured, no memory layer ([§8](docs/research/memory-layer.md#8-measured-on-our-own-tasks-2026-10-06)): Claude's auto
-memory, loaded in every worktree, rotted into ticket notes, skill duplicates and "never commit" rules.
-
-- Triage it: a still-true project fact moves to its agent file, the rest goes.
-- A worker that hit a gap adds a line to the project's agent file in its branch, reviewed in the MR.
-
-Decide first: the guard at hand-back, beside `TaskNotes.owed` — how many lines, which justification field
-the report carries.
+Workers neither read nor write it now, and a line they add to the agent file is capped and named. Left: the files
+already there — a still-true project fact moves to its agent file, the rest goes.
 
 A memory layer reopens on one correction recurring in 3+ tasks, or rediscovery past 10% of tool calls.
 

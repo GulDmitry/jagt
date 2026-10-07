@@ -377,11 +377,8 @@ public class GitService {
     public String changesSince(Path projectPath, Path worktree, String baseBranch) {
         List<String> generated = WorktreeFiles.generated(agentRuntime);
         return withRepoLock(projectPath, () -> {
-            String base = processRunner.run(worktree, GIT_TIMEOUT,
-                            List.of("git", "merge-base", "origin/" + baseBranch.replaceFirst("^origin/", ""), "HEAD"))
-                    .expectSuccess("git merge-base in " + worktree).stdout().strip();
             String diff = processRunner.run(worktree, GIT_TIMEOUT,
-                            List.of("git", "diff", "--no-color", "--no-ext-diff", base))
+                            List.of("git", "diff", "--no-color", "--no-ext-diff", mergeBase(worktree, baseBranch)))
                     .expectSuccess("git diff in " + worktree).stdout();
             List<String> added = branchNames(processRunner.run(worktree, GIT_TIMEOUT,
                             List.of("git", "ls-files", "--others", "--exclude-standard"))
@@ -389,6 +386,26 @@ public class GitService {
                     .filter(path -> !generated.contains(path)).toList();
             return added.isEmpty() ? diff : diff + "New files, not in the diff: " + String.join(", ", added) + "\n";
         });
+    }
+
+    /** Lines the worktree added to the repository's agent files since it left its base, committed and not. */
+    public int agentFileLinesAdded(Path projectPath, Path worktree, String baseBranch) {
+        return withRepoLock(projectPath, () -> {
+            List<String> command = new ArrayList<>(List.of("git", "diff", "--numstat",
+                    mergeBase(worktree, baseBranch), "--"));
+            command.addAll(agentRuntime.projectAgentFiles());
+            return processRunner.run(worktree, GIT_TIMEOUT, command)
+                    .expectSuccess("git diff --numstat in " + worktree).stdout().lines()
+                    .map(line -> line.split("\t")[0])
+                    .filter(added -> added.matches("\\d+"))
+                    .mapToInt(Integer::parseInt).sum();
+        });
+    }
+
+    private String mergeBase(Path worktree, String baseBranch) {
+        return processRunner.run(worktree, GIT_TIMEOUT,
+                        List.of("git", "merge-base", "origin/" + baseBranch.replaceFirst("^origin/", ""), "HEAD"))
+                .expectSuccess("git merge-base in " + worktree).stdout().strip();
     }
 
     /**

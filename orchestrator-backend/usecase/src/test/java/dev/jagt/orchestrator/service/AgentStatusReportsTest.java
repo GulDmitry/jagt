@@ -85,12 +85,25 @@ class AgentStatusReportsTest {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         Files.writeString(root.resolve("task_notes.md"), "notes");
+        when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
         when(specs.owed(root, "ABC-1")).thenReturn(Optional.of("openspec/changes/abc-1 does not validate"));
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
 
         assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("[proj] openspec/changes/abc-1 does not validate");
+    }
+
+    @Test
+    void refusesAHandBackWhoseAgentFileLinesGitCannotCount(@TempDir Path root) throws Exception {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
+        Files.writeString(root.resolve("task_notes.md"), "notes");
+        AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
+
+        assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("jagt could not count the lines this task added to the project's agent file");
     }
 
     @Test

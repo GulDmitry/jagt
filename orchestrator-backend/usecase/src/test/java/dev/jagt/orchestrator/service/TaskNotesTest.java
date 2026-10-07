@@ -40,4 +40,20 @@ class TaskNotesTest {
         assertThat(TaskNotes.owed(worktree))
                 .contains("task_notes.md is 16001 characters, at most 16000: compress it, keeping every fact");
     }
+
+    @Test
+    void owesAJustificationForEachLineTheTaskAddedToTheProjectsAgentFile(@TempDir Path worktree) throws Exception {
+        Files.writeString(worktree.resolve("task_notes.md"), "agent-file: the build needs the local registry\n");
+
+        assertThat(TaskNotes.agentFileOwed(worktree, 2)).contains("task_notes.md names the gap for 1 of the 2 lines"
+                + " this task added to the project's agent file: one `agent-file:` line each");
+    }
+
+    @Test
+    void owesACutWhenTheTaskAddedMoreThanThreeLinesToTheProjectsAgentFile(@TempDir Path worktree) throws Exception {
+        Files.writeString(worktree.resolve("task_notes.md"), "agent-file: a\nagent-file: b\nagent-file: c\nagent-file: d\n");
+
+        assertThat(TaskNotes.agentFileOwed(worktree, 4)).contains("this task adds 4 lines to the project's agent file,"
+                + " at most 3: keep the gaps the next task would hit");
+    }
 }

@@ -33,6 +33,8 @@ files and git, and nothing of this conversation. Rewrite it whole at every REVIE
 predate the round or run past their cap. One line each, of four kinds: a decision and its reason; a path tried and
 dropped, and why; a fact about the code nobody wrote down; `disputed: <review comment> — <evidence>` for each
 comment you answered rather than fixed. Never what the diff, the commits, the ticket or `task_context.md` say.
+A gap the next task would hit too goes in the repository's own agent file, where it ships one: the build, a
+neighbour, the workflow. One line each, at most 3 per task, each named here by an `agent-file: <gap>` line.
 When you compact, keep the files you changed, the test command and what is still open; the rest is in the notes.
 </task_notes>
 

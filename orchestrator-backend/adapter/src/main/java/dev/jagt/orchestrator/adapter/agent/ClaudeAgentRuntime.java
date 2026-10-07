@@ -137,6 +137,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public List<String> projectAgentFiles() {
+        return List.of(SYSTEM_KNOWLEDGE_FILE, CLAUDE_MEMORY_FILE);
+    }
+
+    @Override
     public List<String> statusExclusions() {
         return List.of(".mcp.json", ".claude/", CLAUDE_MEMORY_FILE, LOCAL_MEMORY_FILE);
     }

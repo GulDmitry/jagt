@@ -75,14 +75,13 @@ tmux (the tab execs `tmux attach`).
 - **THEN** the kitty instance is killed by its socket path
 
 ### Requirement: Every call a session needs is pre-approved
-Claude Code's auto-mode classifier silently blocks calls not pre-approved: the backend SHALL make none, and the
+Claude Code's auto-mode classifier silently blocks calls not pre-approved: the backend SHALL make none; the
 committed root `.claude/settings.json` covers sessions there. Every sub-agent worktree's generated
 `.claude/settings.local.json` MUST carry `enableAllProjectMcpServers: true` plus
-`permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` and every tool in `agentAllowedTools`. Shared
-branches are guarded by the detached upstream and prompt rules, not this allow-list.
+`permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` and every tool in `agentAllowedTools`.
 
 #### Scenario: A worktree setting is missing
-- **WHEN** a worktree lacks `enableAllProjectMcpServers`, or lacks the allow-list
+- **WHEN** a worktree lacks either
 - **THEN** `ship` / `feedback` stall on an invisible prompt, or `git commit` freezes
 
 #### Scenario: The generated settings change
@@ -94,10 +93,11 @@ branches are guarded by the detached upstream and prompt rules, not this allow-l
 - **THEN** the classifier may refuse it; listed, it is pre-approved
 
 ### Requirement: The session compacts at 300k tokens
-A Claude session SHALL compact at 300k tokens (`ClaudeAgentRuntime.COMPACT_AT_TOKENS`), set on the command too.
+A Claude session SHALL compact at 300k tokens (`ClaudeAgentRuntime.COMPACT_AT_TOKENS`), set on the command too. Its
+settings SHALL carry `autoMemoryEnabled: false`: keyed by the repository, auto memory reaches every worktree.
 
 #### Scenario: Worktree settings predate the limit
-- **WHEN** a session starts with older settings lacking the limit
+- **WHEN** older settings lack the limit
 - **THEN** the command still sets it
 
 ### Requirement: The worktree is trusted
@@ -149,10 +149,10 @@ default empty.
 - **WHEN** `done` or `remove_task` runs
 - **THEN** every process whose cwd is in the worktree is killed
 
-### Requirement: A task session keeps no auto memory
-Every sub-agent worktree's generated `.claude/settings.local.json` SHALL carry `autoMemoryEnabled: false`: it is keyed
-by the repository, so every worktree would read what one task wrote.
+### Requirement: A line in the agent file names its gap
+A REVIEW_PENDING SHALL be refused past 3 lines the task added to the repository's agent files
+(`AgentRuntime.projectAgentFiles`). It SHALL be refused while `task_notes.md` holds fewer `agent-file:` lines.
 
-#### Scenario: A worker learns something about the project
-- **WHEN** a task session would remember a fact
-- **THEN** nothing reaches the repository's auto memory
+#### Scenario: Two lines added, one named
+- **WHEN** a hand-back follows two added lines and one `agent-file:` line
+- **THEN** it is refused, as when git cannot count

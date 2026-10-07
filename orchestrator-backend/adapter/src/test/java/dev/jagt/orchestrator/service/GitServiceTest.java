@@ -179,6 +179,32 @@ class GitServiceTest {
     }
 
     @Test
+    void countsTheLinesTheTaskAddedToTheAgentFileCommittedAndNot(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\n");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\nregistry: local\n");
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
+                "commit", "-qam", "ABC-42 Name the registry"));
+        Files.writeString(repo.resolve("AGENTS.md"), "build: ./gradlew test\nregistry: local\ninfra: its own repo\n");
+        Files.writeString(repo.resolve("other.md"), "not the agent file\n");
+        GitService git = new GitService(runner, new LsofWorktreeProcesses(runner),
+                new StubAgentRuntime(StubAgentProperties.defaults()));
+
+        int added = git.agentFileLinesAdded(repo, repo, "main");
+
+        assertThat(added).isEqualTo(2);
+    }
+
+    @Test
     void readsABranchAsAheadOfItsTargetOnlyOnceItCarriesACommitTheTargetLacks(@TempDir Path dir)
             throws Exception {
         Processes runner = new ProcessRunner();

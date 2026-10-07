@@ -93,6 +93,11 @@ public interface AgentRuntime {
         return List.of();
     }
 
+    /** The files a repository keeps for this agent to read, where a task records a gap the next one would hit. */
+    default List<String> projectAgentFiles() {
+        return List.of(SYSTEM_KNOWLEDGE_FILE);
+    }
+
     /** Worktree-relative paths of this agent's own files, in git exclude syntax: a directory ends with {@code /}. */
     default List<String> statusExclusions() {
         return List.of();

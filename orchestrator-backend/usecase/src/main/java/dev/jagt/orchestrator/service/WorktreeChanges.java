@@ -117,6 +117,21 @@ public class WorktreeChanges {
         return diff.length() > MAX_QUOTED ? "" : diff.toString();
     }
 
+    /** Lines the task added to every repository's agent files; EMPTY where git could not count them for one. */
+    public Optional<Integer> agentFileLinesAdded(TaskState task) {
+        int added = 0;
+        for (TaskRepo repo : task.repos()) {
+            try {
+                String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
+                added += gitService.agentFileLinesAdded(projectPath(repo.project()), Path.of(repo.worktreePath()), base);
+            } catch (RuntimeException e) {
+                warn(repo.worktreePath(), e);
+                return Optional.empty();
+            }
+        }
+        return Optional.of(added);
+    }
+
     private Path projectPath(String project) {
         return Path.of(configService.project(project).path()).toAbsolutePath().normalize();
     }

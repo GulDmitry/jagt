@@ -35,7 +35,10 @@ public class HandBack {
 
     /** Why a session may not hand this round back yet, which only the worktree can say. */
     public Optional<String> notesOwed(TaskState task) {
-        return TaskNotes.owed(Path.of(task.worktreePath()));
+        Path worktree = Path.of(task.worktreePath());
+        return TaskNotes.owed(worktree).or(() -> worktreeChanges.agentFileLinesAdded(task)
+                .map(added -> TaskNotes.agentFileOwed(worktree, added))
+                .orElse(Optional.of("jagt could not count the lines this task added to the project's agent file")));
     }
 
     /** Why the change this round makes to the specs a repository keeps may not be handed back yet. */
