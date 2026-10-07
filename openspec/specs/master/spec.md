@@ -10,7 +10,7 @@ where the human stands.
 ### Requirement: The Master is a headless run per role, not a window
 EXPERIMENTAL (`master.mode`): one headless run per role of the brief SHALL read each round in the task's worktrees,
 refused every write, commit and push (`HeadlessClaudeRoundReviewer`); jagt SHALL write the verdict (`MasterPanel`).
-Each round SHALL cost one heavy read per role, charged to the task.
+Each round SHALL cost one heavy read per role, charged to the task as `master`.
 
 #### Scenario: You want a round read before you look
 - **WHEN** `master.mode: judge` is set
@@ -27,10 +27,6 @@ Each round SHALL cost one heavy read per role, charged to the task.
 #### Scenario: Whose roles a round is read by
 - **WHEN** a session hands back a round
 - **THEN** its own `<self_review>` read it first; the Master reads by the same roles, unless its brief names its own table
-
-#### Scenario: What a round costs
-- **WHEN** you look at a task's Master spend
-- **THEN** `master` shows the total of one heavy read per role
 
 ### Requirement: The Master judges by a brief
 The Master SHALL judge by `master.brief`, copied from `master-brief.md.dist`; without it jagt SHALL refuse to start.
@@ -125,12 +121,17 @@ from the author.
 - **THEN** it reopens it only for a blocking reason
 
 ### Requirement: Another branch is another task
-In `act` the Master SHALL open work needing a branch other than the task's as a task of its own, by a decision line
-`do <project> <what to do…> from <branch>` that jagt runs as the human's own `do` (`MasterShip.open`).
+In `act` work needing another branch SHALL be a task of its own, opened by the Master's decision line
+`do <project> <what to do…> from <branch>` run as the human's `do` (`MasterShip.open`). A line naming the deploy
+branch SHALL open nothing: that merge is the task's own `deploy`.
 
 #### Scenario: A session needs a second request
 - **WHEN** a session asks for a branch of its own in `master.mode: act`
 - **THEN** the Master's `do` line opens that task, and the session is told what was opened
+
+#### Scenario: A session asks for its work on the deploy branch
+- **WHEN** the Master's `do` line names the deploy branch
+- **THEN** nothing opens; the task waits for its request to go green, then `deploy`
 
 ### Requirement: Every Master step is seen in one window
 While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following
