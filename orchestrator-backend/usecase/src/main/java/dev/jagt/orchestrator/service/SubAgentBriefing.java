@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
-import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
@@ -18,7 +17,6 @@ import java.util.stream.Collectors;
 public class SubAgentBriefing {
 
     private final PromptTemplates prompts;
-    private final OrchestratorProperties properties;
     private final OrchestratorPaths paths;
 
     @Value("${server.port:8290}")
@@ -31,7 +29,6 @@ public class SubAgentBriefing {
                 taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
                 repo.worktreePath(),
                 alsoYours(repo, repos),
-                properties.watchdog().staleAfter().toMinutes() + " minutes",
                 taskId,
                 taskId, repo.baseBranch(),
                 paths.root(),

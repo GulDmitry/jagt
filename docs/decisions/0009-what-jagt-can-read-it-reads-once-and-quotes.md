@@ -26,9 +26,13 @@ Three of its five questions hit jagt:
   role's prompt quotes it, the round before the role, so the roles after the first read it from cache.
 - A diff over 100,000 characters is not quoted; a repository git cannot read is named, never left silent.
 - The worker's brief names no other project and no other task.
+- A worker reports when its status changes, never as a keep-alive: `SessionProbe` reads liveness from hooks,
+  the transcript and the window. Measured 2026-10-07: 43% of 1230 status calls repeated the last status.
 
 ## Rejected
 
+- Trimming MCP results in `ToolHandler`: 220 KB in 30 days across every tool, measured 2026-10-07.
+- Review-only sections out of the worker's brief: ~530 tokens, cached after the first turn.
 - A model summarising tool output: the report's own finding — a parser is exact, a model guesses. jagt computes
   the projection itself (0006).
 - The diff in the cached system prompt: it names no task, so it stays cached across every round.

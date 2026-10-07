@@ -61,8 +61,3 @@ together.
 One read of `plan.md` against the brief before any code: verdict to the artifacts, context dropped.
 
 Decide first: a new gate, or PLAN_PENDING judged by the Master instead of you.
-
-## The rest of the token audit (open)
-
-Left by [0009](docs/decisions/0009-what-jagt-can-read-it-reads-once-and-quotes.md), measured first: MCP result bytes
-in `ToolHandler`; the worker heartbeat, now hooks feed `SessionProbe`; review sections only in a review round.
