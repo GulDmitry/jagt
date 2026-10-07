@@ -68,6 +68,11 @@ public interface AgentRuntime {
         return Optional.empty();
     }
 
+    /** Whether {@link #humanSaid} can answer at all: a Master reading without it would stop every round. */
+    default boolean readsWhatTheHumanTyped() {
+        return false;
+    }
+
     /** Whether {@code screen}, a session's window as shown, holds input the human has typed and not yet sent. */
     default boolean holdsDraft(String screen) {
         return false;

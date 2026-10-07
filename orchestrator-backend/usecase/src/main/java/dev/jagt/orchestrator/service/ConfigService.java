@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import lombok.With;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -343,14 +344,22 @@ public class ConfigService {
 
     private final JsonMapper mapper = new JsonMapper();
     private final OrchestratorPaths paths;
+    private final AgentRuntime agentRuntime;
 
     public ConfigFile load() {
         Object section = section();
         if (section == null) {
-            return ConfigFile.defaults();
+            return masterByDefault(ConfigFile.defaults());
         }
         ConfigFile config = mapper.convertValue(section, ConfigFile.class);
-        return config.projects() == null ? config.withProjects(Map.of()) : config;
+        return masterByDefault(config.projects() == null ? config.withProjects(Map.of()) : config);
+    }
+
+    /** Unset, the Master judges where the runtime can read the human's words, and is off where it cannot. */
+    private ConfigFile masterByDefault(ConfigFile config) {
+        ConfigFile.MasterConfig master = config.master();
+        return master.mode() != null ? config : config.withMaster(master.withMode(
+                (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.JUDGE : MasterMode.OFF).id()));
     }
 
     /** The names the human wrote under {@code orchestrator}, INCLUDING ones nothing binds — both readers drop those. */

@@ -8,12 +8,12 @@ where the human stands.
 ## Requirements
 
 ### Requirement: The Master is a headless run per role, not a window
-By default (`master.mode: judge`) one headless run per role of the brief SHALL read each round in the task's worktrees.
-It is refused every write, commit and push (`HeadlessClaudeRoundReviewer`); jagt SHALL write the verdict (`MasterPanel`).
+One headless run per role of the brief SHALL read each round in the task's worktrees.
+It may not write, commit or push (`HeadlessClaudeRoundReviewer`); jagt SHALL write the verdict (`MasterPanel`).
 Each round SHALL cost one heavy read per role, charged to the task as `master`.
 
 #### Scenario: You want a round read before you look
-- **WHEN** `master.mode` is `judge` or unset
+- **WHEN** `master.mode` is `judge`, or unset where the human's words are readable
 - **THEN** the Master reads each handed-back round and writes `master-review.md` in the worktree; it presses nothing
 
 #### Scenario: The Master is reading a round

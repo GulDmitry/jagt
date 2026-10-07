@@ -108,6 +108,11 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
+    public boolean readsWhatTheHumanTyped() {
+        return true;
+    }
+
+    @Override
     public OptionalLong lastSessionActivity(Path worktree) {
         return OptionalLong.of(ClaudeTranscripts.lastEntryMillis(ClaudeTranscripts.projectsDir(), worktree));
     }

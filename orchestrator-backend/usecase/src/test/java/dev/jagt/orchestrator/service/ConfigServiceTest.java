@@ -2,12 +2,14 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -16,6 +18,8 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ConfigServiceTest {
 
@@ -55,9 +59,25 @@ class ConfigServiceTest {
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
 
-        String mode = new ConfigService(new OrchestratorPaths(properties)).load().master().mode();
+        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
 
         assertThat(mode).isEqualTo("off");
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true, judge", "false, off"})
+    void leavesTheMasterJudgingByDefaultOnlyWhereTheRuntimeReadsWhatTheHumanTyped(boolean reads, String expected,
+                                                                                @TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  projects: {}\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+        AgentRuntime runtime = mock(AgentRuntime.class);
+        when(runtime.readsWhatTheHumanTyped()).thenReturn(reads);
+
+        String mode = new ConfigService(new OrchestratorPaths(properties), runtime).load().master().mode();
+
+        assertThat(mode).isEqualTo(expected);
     }
 
     @Test
@@ -72,7 +92,7 @@ class ConfigServiceTest {
                 """);
         OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
                 .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
-        ConfigService service = new ConfigService(new OrchestratorPaths(properties));
+        ConfigService service = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class));
 
         assertThat(service.load().worktree().copyGlobsOrDefault()).containsExactly("**/.env");
     }

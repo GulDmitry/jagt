@@ -6,6 +6,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /** Writes NO agent config: a scripted agent POSTs to {@code /mcp} itself. */
 @Component
@@ -28,6 +31,17 @@ public class StubAgentRuntime extends AbstractAgentRuntime {
             return "true";
         }
         return shellQuote(stub.script()) + " " + shellQuote(worktree.toString()) + (planMode ? " plan" : "");
+    }
+
+    /** A scripted session nobody types into. */
+    @Override
+    public Optional<List<String>> humanSaid(Path worktree, Set<String> typedByJagt) {
+        return Optional.of(List.of());
+    }
+
+    @Override
+    public boolean readsWhatTheHumanTyped() {
+        return true;
     }
 
     @Override

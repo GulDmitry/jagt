@@ -13,7 +13,8 @@ presses nothing, so it adds a reader without taking a step from the human.
 
 ## Decision
 
-- An unset `master.mode` is `judge`; `off` and `act` are written out.
+- An unset `master.mode` is `judge` where the runtime reads the human's words
+  (`AgentRuntime.readsWhatTheHumanTyped`), else `off`: without them every round would stop as a question.
 - With no brief named or copied, it judges by the shipped `master-brief.md.dist` (`MasterBriefs.file`), so getting
   started stays one copied file.
 - `act` stays opt-in.
