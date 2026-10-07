@@ -54,7 +54,7 @@ record MasterModeCase(String name, String mode, List<String> mine, String verdic
         return Stream.of(
                 new MasterModeCase("act deploys a green request", "act", List.of(), "ready", TaskStatus.DEPLOYED, true,
                         ""),
-                new MasterModeCase("act with mine: [deploy] leaves the press yours", "act", List.of("deploy"), "ready",
-                        TaskStatus.REVIEWED, true, ""));
+                new MasterModeCase("act with mine: [deploy, revert] leaves the press yours", "act",
+                        List.of("deploy", "revert"), "ready", TaskStatus.REVIEWED, true, ""));
     }
 }

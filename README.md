@@ -47,7 +47,7 @@ The Master: a model reading every round before you, by the roles in its brief.
 | a round handed back | you read it | read first; not ready goes back to the session | the same, and a ready one is shipped |
 | a session's question | waits for you | waits for you | answered as you would |
 | split-off work | yours to open | yours | opened |
-| `deploy` | yours | yours | once `REVIEWED` |
+| `deploy` | yours | yours | once green |
 | costs | nothing | one heavy read per role, per round | the same |
 
 In `act` a task reaches you deployed; `master.mine` keeps any step yours, your
