@@ -127,9 +127,6 @@ orchestrator:
     mrTitlePattern: "{ticket} {title}"
     postReviewReplies: true    # false leaves every reply a draft for you to post by hand
     reviewReplyAuthors: []     # post a reply only where the note it answers is by these authors; empty = all
-    mergeRequestDefaults:
-      removeSourceBranch: true
-      squash: true
 
   # Unattended polling of open review requests: it only READS and DRAFTS, never ships, deploys or posts.
   # One model call per poll — 24h on one request is $3–$7.

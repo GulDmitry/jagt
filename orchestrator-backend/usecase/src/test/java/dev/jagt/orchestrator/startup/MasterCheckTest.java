@@ -51,7 +51,7 @@ class MasterCheckTest {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
         when(configService.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(new MasterConfig("act", null, null, null, null))
-                .withCodeReview(new CodeReviewConfig(null, false, null, null)));
+                .withCodeReview(new CodeReviewConfig(null, false, null)));
 
         assertThat(new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
@@ -89,7 +89,7 @@ class MasterCheckTest {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
 
         assertThat(checking(root, new MasterConfig("act", null, null,
-                List.of("ship", "sweep", "deploy", "revert", "reply", "answer", "plan"), null)).problems())
+                List.of("ship", "deploy", "revert", "reply", "answer", "plan"), null)).problems())
                 .singleElement().asString().contains("`judge` written long");
     }
 

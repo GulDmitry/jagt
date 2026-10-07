@@ -34,6 +34,7 @@ the appender opens it.
     <logger name="dev.jagt.orchestrator.service.MasterVerdicts"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.MasterShip"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.MasterDeployJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.DeployConflictJob"><appender-ref ref="MASTER"/></logger>
     <logger name="dev.jagt.orchestrator.service.MasterPanel"><appender-ref ref="MASTER"/></logger>
 
     <root level="INFO">

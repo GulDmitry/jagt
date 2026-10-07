@@ -67,33 +67,10 @@ public class ConfigService {
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
         public record CodeReviewConfig(String mrTitlePattern, Boolean postReviewReplies,
-                                       List<String> reviewReplyAuthors,
-                                       MergeRequestDefaults mergeRequestDefaults) {
-
-            /** Defaulted true: a task branch's intermediate commits are review noise, not history. */
-            @JsonIgnoreProperties(ignoreUnknown = true)
-            @With
-            public record MergeRequestDefaults(Boolean removeSourceBranch, Boolean squash) {
-
-                public static MergeRequestDefaults defaults() {
-                    return new MergeRequestDefaults(null, null);
-                }
-
-                public boolean removeSourceBranchOrDefault() {
-                    return removeSourceBranch == null || removeSourceBranch;
-                }
-
-                public boolean squashOrDefault() {
-                    return squash == null || squash;
-                }
-            }
+                                       List<String> reviewReplyAuthors) {
 
             public static CodeReviewConfig defaults() {
-                return new CodeReviewConfig(null, null, null, null);
-            }
-
-            public MergeRequestDefaults mergeRequestDefaultsOrDefault() {
-                return mergeRequestDefaults == null ? MergeRequestDefaults.defaults() : mergeRequestDefaults;
+                return new CodeReviewConfig(null, null, null);
             }
 
             public String mrTitlePatternOrDefault() {
@@ -358,7 +335,7 @@ public class ConfigService {
     /** Unset, the Master judges where the runtime can read the human's words, and is off where it cannot. */
     private ConfigFile masterByDefault(ConfigFile config) {
         ConfigFile.MasterConfig master = config.master();
-        return master.mode() != null ? config : config.withMaster(master.withMode(
+        return master.mode() != null && !master.mode().isBlank() ? config : config.withMaster(master.withMode(
                 (agentRuntime.readsWhatTheHumanTyped() ? MasterMode.JUDGE : MasterMode.OFF).id()));
     }
 

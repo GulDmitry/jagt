@@ -81,6 +81,18 @@ class ConfigServiceTest {
     }
 
     @Test
+    void leavesTheMasterOffForABlankModeWhereTheRuntimeCannotReadTheHuman(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  projects: {}\n  master:\n    mode: \"\"\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        String mode = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class)).load().master().mode();
+
+        assertThat(mode).isEqualTo("off");
+    }
+
+    @Test
     void loadsAConfigFileThatContainsComments(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, """

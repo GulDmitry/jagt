@@ -47,7 +47,7 @@ public class MasterCommand implements GlobalCommand {
                 + "\n  model:     " + (config.modelOrInherited().isEmpty()
                         ? "inherited from the agent CLI" : config.modelOrInherited())
                 + "\n  yours:     " + (config.mineOrNone().isEmpty()
-                        ? "nothing — it holds every right a human has but `done`"
+                        ? "nothing — every step but `sweep`, `revert` and `done`"
                         : String.join(", ", config.mineOrNone()))
                 + judged()
                 + spent();

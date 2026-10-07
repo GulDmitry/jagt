@@ -11,7 +11,7 @@ import java.util.Optional;
  */
 public enum MasterMode {
 
-    /** Nothing is started. The default, and what every suite runs with. */
+    /** Nothing is started; the default where the runtime cannot read what the human typed. */
     OFF,
     /** It reads what a task produced and writes what it found. It issues no verb. */
     JUDGE,

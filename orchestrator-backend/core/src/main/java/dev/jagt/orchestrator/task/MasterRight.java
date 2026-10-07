@@ -13,8 +13,6 @@ public enum MasterRight {
 
     /** Opening or updating a review request. */
     SHIP,
-    /** Reading a round back off the code host. */
-    SWEEP,
     /** Merging into the deploy branch. */
     DEPLOY,
     /** Taking a deploy back out. */
