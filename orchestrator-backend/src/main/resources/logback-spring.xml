@@ -25,7 +25,7 @@ the appender opens it.
     <!-- The human's: what the Master does, followed in the `master` window (`MasterFeedWindow`). -->
     <appender name="MASTER" class="ch.qos.logback.core.FileAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss} %msg %kvp%n</pattern>
+            <pattern>%gray(%d{HH:mm:ss}) %highlight(%msg) %kvp%n</pattern>
         </encoder>
         <file>jagt-master.log</file>
     </appender>
