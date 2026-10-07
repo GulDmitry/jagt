@@ -97,7 +97,7 @@ public class ConfigCheck implements StartupCheck {
 
     private List<String> viewerProblems(ConfigService.ConfigFile config) {
         List<String> problems = new ArrayList<>();
-        String session = config.viewer().tmuxSession();
+        String session = config.viewer().session();
         if (session != null && !session.isBlank()) {
             sessions.unaddressable(session).ifPresent(why -> problems.add("viewer.tmuxSession '" + session + "' "
                     + why + ". Pick another name."));

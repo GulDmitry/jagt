@@ -58,7 +58,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         if (!stateService.tasks().isEmpty() || config.viewer().keepViewerOrDefault()) {
             return false;
         }
-        terminalDriver.closeViewerWindow(sessions.sessionName(config.viewer().tmuxSession()));
+        terminalDriver.closeViewerWindow(sessions.sessionName(config.viewer().session()));
         return true;
     }
 
@@ -108,7 +108,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         TaskState task = requireTask(taskId);
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
-        String dedicatedTitle = sessions.sessionName(config.viewer().tmuxSession());
+        String dedicatedTitle = sessions.sessionName(config.viewer().session());
         boolean revived = sessions.taskWindowState(session, taskId) != SessionHost.WindowState.AGENT_RUNNING;
         if (revived) {
             sessions.reviveTaskWindow(session, dedicatedTitle, taskId, task.alias(),
@@ -209,7 +209,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 .addKeyValue("cause", "session was down when instructions were relayed")
                 .log();
         // A re-entered session reads task_context.md again, so a relay cannot dead-end against a dead agent.
-        sessions.reviveTaskWindow(session, sessions.sessionName(config.viewer().tmuxSession()), taskId,
+        sessions.reviveTaskWindow(session, sessions.sessionName(config.viewer().session()), taskId,
                 task.alias(), Path.of(task.worktreePath()));
         return "Instructions written to task_context.md; the agent session was down, so it was re-entered"
                 + " to read and follow them.";
@@ -261,13 +261,13 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     private String openTab(String taskId, String alias, Path worktreePath, ConfigService.ConfigFile config,
                            boolean planMode) {
         String session = agentSession(config, taskId);
-        sessions.openTaskWindow(session, sessions.sessionName(config.viewer().tmuxSession()), taskId,
+        sessions.openTaskWindow(session, sessions.sessionName(config.viewer().session()), taskId,
                 alias, worktreePath, planMode);
         return session;
     }
 
     private String agentSession(ConfigService.ConfigFile config, String taskId) {
-        String base = sessions.sessionName(config.viewer().tmuxSession());
+        String base = sessions.sessionName(config.viewer().session());
         return config.viewer().sharedView()
                 ? base
                 : base + "-" + TaskName.slug(taskId);

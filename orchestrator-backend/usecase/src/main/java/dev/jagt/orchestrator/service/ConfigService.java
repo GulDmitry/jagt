@@ -55,6 +55,11 @@ public class ConfigService {
                 return new ViewerConfig(null, null, null);
             }
 
+            /** The session the viewer attaches to, as written; the session host names a blank one. */
+            public String session() {
+                return tmuxSession;
+            }
+
             public boolean keepViewerOrDefault() {
                 return keepViewer == null || keepViewer;
             }

@@ -41,6 +41,6 @@ public class MasterFeedWindow implements Job {
         if (!config.master().running()) {
             return;
         }
-        sessions.keepFeedWindow(sessions.sessionName(config.viewer().tmuxSession()), WINDOW, FEED.toAbsolutePath());
+        sessions.keepFeedWindow(sessions.sessionName(config.viewer().session()), WINDOW, FEED.toAbsolutePath());
     }
 }

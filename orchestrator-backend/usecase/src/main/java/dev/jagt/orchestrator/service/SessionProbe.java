@@ -157,6 +157,6 @@ public class SessionProbe {
         return now - lastSign < staleMs
                 ? 0
                 : sessions.lastWindowActivityMillis(
-                        sessions.sessionName(config().viewer().tmuxSession()), taskId);
+                        sessions.sessionName(config().viewer().session()), taskId);
     }
 }
