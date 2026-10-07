@@ -770,7 +770,8 @@ public class GitService {
 
     /** The repository a checkout belongs to, empty when it is not a checkout at all. */
     private Optional<Path> worktreeOwner(Path worktree) {
-        if (!Files.isDirectory(worktree)) {
+        // Without its own `.git`, git would answer for whatever repository encloses the directory.
+        if (!Files.isDirectory(worktree) || !Files.exists(worktree.resolve(".git"))) {
             return Optional.empty();
         }
         var gitDir = processRunner.run(worktree, GIT_TIMEOUT,
