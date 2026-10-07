@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.service.GitService;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,13 @@ final class E2eWorkspace {
     static void writeConfig(Path configFile, Path projectPath, String viewMode, boolean autoReview)
             throws IOException {
         writeConfig(configFile, new LinkedHashMap<>(Map.of("proj", projectPath)), viewMode, autoReview);
+    }
+
+    static void writeConfig(Path configFile, Path projectPath, MasterModeCase master) throws IOException {
+        writeConfig(configFile, new LinkedHashMap<>(Map.of("proj", projectPath)), "shared", false);
+        Files.writeString(configFile, """
+                  master: { mode: "%s", mine: [%s] }
+                """.formatted(master.mode(), String.join(", ", master.mine())), StandardOpenOption.APPEND);
     }
 
     static void writeConfig(Path configFile, Map<String, Path> projects, String viewMode, boolean autoReview)
