@@ -138,7 +138,7 @@ public class ConfigService {
         }
 
         /**
-         * The Master session: EXPERIMENTAL, and off unless a human turned it on. {@code brief} is the file
+         * The Master session: judging unless a human turned it off or up to act. {@code brief} is the file
          * saying what it judges — the thing that outlives every session it runs.
          */
         @JsonIgnoreProperties(ignoreUnknown = true)
@@ -165,7 +165,7 @@ public class ConfigService {
 
             /** Whether the session may do this, which in any mode but `act` is never. */
             public boolean may(MasterRight right) {
-                return modeOrOff() == MasterMode.ACT
+                return modeOrDefault() == MasterMode.ACT
                         && mineOrNone().stream().noneMatch(named -> MasterRight.of(named)
                                 .filter(right::equals).isPresent());
             }
@@ -181,12 +181,12 @@ public class ConfigService {
             }
 
             /** OFF where the word is not one this machine has: an unreadable setting starts nothing. */
-            public MasterMode modeOrOff() {
+            public MasterMode modeOrDefault() {
                 return MasterMode.of(mode).orElse(MasterMode.OFF);
             }
 
             public boolean running() {
-                return modeOrOff() != MasterMode.OFF;
+                return modeOrDefault() != MasterMode.OFF;
             }
         }
 

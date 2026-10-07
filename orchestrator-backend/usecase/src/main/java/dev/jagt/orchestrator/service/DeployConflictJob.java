@@ -46,7 +46,7 @@ public class DeployConflictJob implements Job {
 
     @Override
     public void run() {
-        if (configService.load().master().modeOrOff() != MasterMode.ACT) {
+        if (configService.load().master().modeOrDefault() != MasterMode.ACT) {
             return;
         }
         deploys.conflicts().forEach((taskId, conflict) -> {

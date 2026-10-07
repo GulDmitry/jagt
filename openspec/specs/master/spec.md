@@ -8,12 +8,12 @@ where the human stands.
 ## Requirements
 
 ### Requirement: The Master is a headless run per role, not a window
-EXPERIMENTAL (`master.mode`): one headless run per role of the brief SHALL read each round in the task's worktrees,
+By default (`master.mode: judge`) one headless run per role of the brief SHALL read each round in the task's worktrees,
 refused every write, commit and push (`HeadlessClaudeRoundReviewer`); jagt SHALL write the verdict (`MasterPanel`).
 Each round SHALL cost one heavy read per role, charged to the task as `master`.
 
 #### Scenario: You want a round read before you look
-- **WHEN** `master.mode: judge` is set
+- **WHEN** `master.mode` is `judge` or unset
 - **THEN** the Master reads each handed-back round and writes `master-review.md` in the worktree; it presses nothing
 
 #### Scenario: The Master is reading a round
@@ -29,11 +29,12 @@ Each round SHALL cost one heavy read per role, charged to the task as `master`.
 - **THEN** its own `<self_review>` read it first; the Master reads by the same roles, unless its brief names its own table
 
 ### Requirement: The Master judges by a brief
-The Master SHALL judge by `master.brief`, copied from `master-brief.md.dist`; without it jagt SHALL refuse to start.
+The Master SHALL judge by `master.brief`, copied from `master-brief.md.dist`, or by that `.dist` where none is named
+or copied (`MasterBriefs.file`); a named brief missing SHALL refuse the start.
 
-#### Scenario: No brief configured
-- **WHEN** you start jagt with no brief configured
-- **THEN** it is refused
+#### Scenario: No brief copied
+- **WHEN** you start jagt without copying a brief
+- **THEN** the Master judges by the shipped one
 
 ### Requirement: The human's own word stands over the Master
 Every read SHALL quote the human's own words to the session (`AgentRuntime.humanSaid`), overruling any decision taken

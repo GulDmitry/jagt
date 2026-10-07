@@ -36,7 +36,7 @@ public class MasterCommand implements GlobalCommand {
     @Override
     public String run(String tail) {
         ConfigService.ConfigFile.MasterConfig config = configService.load().master();
-        MasterMode mode = config.modeOrOff();
+        MasterMode mode = config.modeOrDefault();
         if (mode == MasterMode.OFF) {
             return "master: off, and experimental. To try it: copy master-brief.md.dist to "
                     + config.briefOrDefault() + ", edit it until it reads like you, and set"

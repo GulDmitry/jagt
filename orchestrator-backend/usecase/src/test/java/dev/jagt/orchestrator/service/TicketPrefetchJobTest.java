@@ -56,7 +56,8 @@ class TicketPrefetchJobTest {
     void readsNothingWhereNoMasterWillReview() {
         when(state.tasks()).thenReturn(Map.of("ABC-42", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS)
                 .ticketUrl("https://tracker.example/ABC-42").build()));
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
         job.run();
 

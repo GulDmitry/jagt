@@ -84,12 +84,12 @@ orchestrator:
     #   REVIEW_SWEEP: /path/to/code-host-only.json  # kinds: TICKET_READ, MR_READ, REVIEW_SWEEP, COMMAND_MAP
 
   # ── The Master session (EXPERIMENTAL) ───────────────────────────────────────────────────────────────────────
-  # An unattended reviewer that reads what a task produced before you do. Off unless you turn it on; what each
-  # mode does and costs: docs/usage.md#the-master.
+  # An unattended reviewer that reads what a task produced before you do. It judges unless you turn it off; what
+  # each mode does and costs: docs/usage.md#the-master.
   master:
-    mode: off                # off | judge (reads and writes what it found) | act (also presses the button)
+    mode: judge              # off | judge (reads and writes what it found) | act (also presses the button)
     # brief: master-brief.md # what it judges by: copy master-brief.md.dist to this name and edit it. Relative
-                             # to this file. Required unless off, and refused at startup when it is not there
+                             # to this file. Unset and not copied, the shipped .dist; named and missing, refused
     # model: fable           # reading is the cheap half, so it can run a heavier model than the work does;
                              # blank inherits the agent CLI's. One run per role of the brief, per round;
                              # a `model` column in the brief's role table overrides it for that role

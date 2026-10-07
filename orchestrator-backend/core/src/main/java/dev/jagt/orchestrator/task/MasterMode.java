@@ -29,7 +29,7 @@ public enum MasterMode {
     /** Empty where the word is not one of these; a caller refuses rather than guessing which was meant. */
     public static Optional<MasterMode> of(String mode) {
         return mode == null || mode.isBlank()
-                ? Optional.of(OFF)
+                ? Optional.of(JUDGE)
                 : Arrays.stream(values()).filter(value -> value.id().equals(mode.strip().toLowerCase(Locale.ROOT)))
                         .findFirst();
     }

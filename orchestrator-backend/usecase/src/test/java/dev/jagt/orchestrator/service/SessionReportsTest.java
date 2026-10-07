@@ -133,7 +133,8 @@ class SessionReportsTest {
     @Test
     void saysNothingAtAHandedBackRoundNoMasterReads() {
         when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
                 .lastActiveTimestamp(3_000L).build();
 

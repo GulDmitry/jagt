@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.startup;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.MasterBriefs;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The Master session is EXPERIMENTAL and off unless a human turned it on. What it judges lives in a file rather
+ * The Master judges unless a human turned it off. What it judges lives in a file rather
  * than in a session, so a mode that names no readable one would run a reviewer with no standards.
  */
 @Component
@@ -23,7 +23,7 @@ import java.util.List;
 public class MasterCheck implements StartupCheck {
 
     private final ConfigService configService;
-    private final OrchestratorPaths paths;
+    private final MasterBriefs briefs;
     private final AgentRuntime agentRuntime;
 
     @Override
@@ -49,10 +49,10 @@ public class MasterCheck implements StartupCheck {
         master.mineOrNone().stream().filter(named -> MasterRight.of(named).isEmpty())
                 .forEach(named -> problems.add("orchestrator.master.mine: '" + named + "' is not one of "
                         + MasterRight.ids()));
-        if (master.modeOrOff() == MasterMode.ACT) {
+        if (master.modeOrDefault() == MasterMode.ACT) {
             refuseAHalfAutomatedLoop(config, master, problems);
         }
-        Path brief = brief(master.briefOrDefault());
+        Path brief = briefs.file(master);
         if (!Files.isRegularFile(brief)) {
             problems.add("orchestrator.master.brief: no file at " + brief
                     + " — copy master-brief.md.dist to it and edit it until it reads like you");
@@ -80,11 +80,5 @@ public class MasterCheck implements StartupCheck {
             problems.add("orchestrator.master.mine: keeping every step in act is `judge` written"
                     + " long — set orchestrator.master.mode to " + MasterMode.JUDGE.id());
         }
-    }
-
-    /** Relative to the orchestrator root, like everything else a human writes into `jagt.yml`. */
-    private Path brief(String declared) {
-        Path named = Path.of(declared);
-        return named.isAbsolute() ? named : paths.root().resolve(named);
     }
 }

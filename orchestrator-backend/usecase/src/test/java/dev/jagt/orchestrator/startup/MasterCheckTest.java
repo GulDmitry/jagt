@@ -3,10 +3,12 @@ package dev.jagt.orchestrator.startup;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.CodeReviewConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.service.MasterBriefs;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -25,12 +27,15 @@ class MasterCheckTest {
 
     private MasterCheck checking(Path root, MasterConfig master) {
         when(configService.load()).thenReturn(ConfigFile.defaults().withMaster(master));
-        return new MasterCheck(configService, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString())), agentRuntime);
+        return new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                agentRuntime);
     }
 
     @Test
-    void findsNothingWrongWithTheSettingEveryInstallShipsWith(@TempDir Path root) {
+    void findsNothingWrongWithTheSettingEveryInstallShipsWith(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md.dist"), "the shipped standards");
+
         assertThat(checking(root, MasterConfig.defaults()).problems()).isEmpty();
     }
 
@@ -48,8 +53,9 @@ class MasterCheckTest {
                 .withMaster(new MasterConfig("act", null, null, null, null))
                 .withCodeReview(new CodeReviewConfig(null, false, null, null)));
 
-        assertThat(new MasterCheck(configService, new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString())), agentRuntime).problems())
+        assertThat(new MasterCheck(configService, new MasterBriefs(new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())), mock(PromptTemplates.class)),
+                agentRuntime).problems())
                 .singleElement().asString().contains("postReviewReplies");
     }
 
@@ -91,6 +97,13 @@ class MasterCheckTest {
     void refusesToRunAReviewerWhoseBriefWasNeverCopiedFromTheShippedOne(@TempDir Path root) {
         assertThat(checking(root, new MasterConfig("judge", null, null, null, null)).problems())
                 .singleElement().asString().contains("copy master-brief.md.dist");
+    }
+
+    @Test
+    void judgesByTheShippedBriefWhereNoneWasCopied(@TempDir Path root) throws Exception {
+        Files.writeString(root.resolve("master-brief.md.dist"), "the shipped standards");
+
+        assertThat(checking(root, new MasterConfig("judge", null, null, null, null)).problems()).isEmpty();
     }
 
     @Test

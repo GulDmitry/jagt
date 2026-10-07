@@ -43,15 +43,15 @@ One session, one worktree, one branch, one request; the server, not a prompt, ke
 
 The Master: a model reading every round before you, by the roles in its brief.
 
-| | `off` — the default | `judge` | `act` |
+| | `off` | `judge` — the default | `act` |
 |---|---|---|---|
 | a round handed back | you read it | read first; not ready goes back to the session | the same, and a ready one is shipped |
 | a session's question | waits for you | waits for you | answered as you would |
-| split-off work, an empty task | yours to open, close | yours | opened, closed |
-| `deploy`, `revert`, `sweep` | yours | yours | yours |
+| split-off work | yours to open | yours | opened |
+| `deploy` | yours | yours | once `REVIEWED` |
 | costs | nothing | one heavy read per role, per round | the same |
 
-In `act` a task reaches you ready to deploy; `master.mine` keeps any step yours, your
+In `act` a task reaches you deployed; `master.mine` keeps any step yours, your
 words overrule it.
 
 ## Start
@@ -96,7 +96,8 @@ Every other key has a default, described in `jagt.yml.dist`.
 
 ### 3 — decide on the Master
 
-Keep `master.mode: off` at first — [what each mode gives](#with-the-master-and-without).
+It judges by `master-brief.md.dist` until you copy it to `master-brief.md` —
+[what each mode gives](#with-the-master-and-without).
 
 ### 4 — build, and run
 
