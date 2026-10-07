@@ -18,6 +18,7 @@ import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.RoutingAnswer;
+import dev.jagt.orchestrator.task.RulePair;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -215,6 +216,21 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 + "Respond directly, no preamble.";
         return readable(ask(prompt, RuleRead.schemaFor(rules).json(), ticketKey, AssistantCallKind.ROUTE),
                 ticketKey).map(n -> n.path("rule").asString(""));
+    }
+
+    @Override
+    public Answer<RulePair> sameRules(List<String> rules) {
+        if (rules == null || rules.size() < 2) {
+            return Answer.unavailable();
+        }
+        String prompt = "<role>You find two written routing rules that say the same thing.</role>\n"
+                + "<rules>These rules place work items in repositories:\n" + String.join("\n", rules) + "\n"
+                + "Answer kept and duplicate with two of them that would place the same items in the same"
+                + " repository, worded differently. kept is the clearer wording. Answer " + RuleRead.NONE
+                + " for both where no two do, which is the usual answer." + FAILURE_RULE + "</rules>\n"
+                + "Respond directly, no preamble.";
+        return readable(ask(prompt, RuleRead.pairSchemaFor(rules).json(), "routing memory", AssistantCallKind.ROUTE),
+                "routing memory").map(n -> new RulePair(n.path("kept").asString(""), n.path("duplicate").asString("")));
     }
 
     @Override

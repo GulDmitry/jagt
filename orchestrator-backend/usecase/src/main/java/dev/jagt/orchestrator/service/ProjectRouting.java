@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.RoutingAnswer;
 import dev.jagt.orchestrator.task.RoutingQuestion;
+import dev.jagt.orchestrator.task.RulePair;
 import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -165,6 +166,20 @@ public class ProjectRouting {
                     .addKeyValue("ref", item.key())
                     .addKeyValue("rule", routed.rule())
                     .addKeyValue("project", routed.project())
+                    .log();
+            if (memory.full()) {
+                mergeSecondWording();
+            }
+        }
+    }
+
+    /** At the ceiling a second wording would push out a rule that works; only a read of the whole file sees it. */
+    private void mergeSecondWording() {
+        Optional<RulePair> pair = assistant.sameRules(memory.rules()).facts();
+        if (pair.isPresent() && memory.merge(pair.get().kept(), pair.get().duplicate())) {
+            log.atInfo().setMessage("routing rules merged")
+                    .addKeyValue("rule", pair.get().kept())
+                    .addKeyValue("merged", pair.get().duplicate())
                     .log();
         }
     }

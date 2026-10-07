@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.RoutingAnswer;
+import dev.jagt.orchestrator.task.RulePair;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -45,6 +46,10 @@ public class MeteredAssistant {
 
     public Answer<String> staleRule(String ticketKey, String project, List<String> rules) {
         return metered(AssistantCallKind.ROUTE, assistant.staleRule(ticketKey, project, rules));
+    }
+
+    public Answer<RulePair> sameRules(List<String> rules) {
+        return metered(AssistantCallKind.ROUTE, assistant.sameRules(rules));
     }
 
     public Answer<MergeRequestFacts> readMergeRequest(String mrUrl) {

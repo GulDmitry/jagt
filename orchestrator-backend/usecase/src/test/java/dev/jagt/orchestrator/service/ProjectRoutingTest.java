@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.RoutingAnswer;
+import dev.jagt.orchestrator.task.RulePair;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
@@ -100,6 +101,25 @@ class ProjectRoutingTest {
         routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
         verify(memory).remember("PAN items about quote import", "api");
+    }
+
+    @Test
+    void mergesTheWordingsOneRuleWasWrittenInOnceTheMemoryIsFull() {
+        when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
+                "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
+        when(finished.all()).thenReturn(List.of());
+        when(assistant.routeProject(any())).thenReturn(new Answer<>(
+                Optional.of(new RoutingAnswer("api", "importing quotes")), TokenUsage.NONE));
+        when(memory.remember("importing quotes", "api")).thenReturn(true);
+        when(memory.full()).thenReturn(true);
+        when(memory.rules()).thenReturn(List.of("quote import -> api", "importing quotes -> api"));
+        when(assistant.sameRules(List.of("quote import -> api", "importing quotes -> api"))).thenReturn(new Answer<>(
+                Optional.of(new RulePair("quote import -> api", "importing quotes -> api")), TokenUsage.NONE));
+
+        routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
+
+        verify(memory).merge("quote import -> api", "importing quotes -> api");
     }
 
     @Test

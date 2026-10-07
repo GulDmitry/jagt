@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.port;
 
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.RoutingAnswer;
+import dev.jagt.orchestrator.task.RulePair;
 import dev.jagt.orchestrator.task.RoutingQuestion;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -73,6 +74,9 @@ public interface MasterAssistant {
      * {@code "none"}, which is the usual answer.
      */
     Answer<String> staleRule(String ticketKey, String project, List<String> rules);
+
+    /** Two of {@code rules} that place the same items in other words, or {@code "none"} for both. */
+    Answer<RulePair> sameRules(List<String> rules);
 
     /** Reads a review request by URL. */
     Answer<MergeRequestFacts> readMergeRequest(String mrUrl);

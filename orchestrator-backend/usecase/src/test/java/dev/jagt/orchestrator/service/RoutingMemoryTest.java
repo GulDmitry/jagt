@@ -119,4 +119,33 @@ class RoutingMemoryTest {
         assertThat(new RoutingMemory(paths, 60).rules())
                 .containsExactly("PAN items about quote import -> sc");
     }
+
+    @Test
+    void mergesASecondWordingIntoTheRuleItRepeatsKeepingBothCounts() throws IOException {
+        when(paths.root()).thenReturn(root);
+        Clock frozen = Clock.fixed(Instant.parse("2026-10-07T00:00:00Z"), ZoneOffset.UTC);
+        RoutingMemory memory = new RoutingMemory(paths, 60, frozen);
+        memory.remember("quote import", "api");
+        memory.remember("quote import", "api");
+        memory.remember("importing quotes", "api");
+        memory.remember("importing quotes", "api");
+
+        memory.merge("quote import -> api", "importing quotes -> api");
+
+        assertThat(Files.readString(root.resolve("memory/routing.md"))).contains("quote import -> api #2")
+                .contains("# until 2026-10-07: importing quotes -> api, merged into: quote import")
+                .doesNotContain("importing quotes -> api #");
+    }
+
+    @Test
+    void keepsTwoRulesThatPlaceInDifferentProjects() {
+        when(paths.root()).thenReturn(root);
+        RoutingMemory memory = new RoutingMemory(paths, 60);
+        memory.remember("quote import", "api");
+        memory.remember("importing quotes", "web");
+
+        boolean merged = memory.merge("quote import -> api", "importing quotes -> web");
+
+        assertThat(merged).isFalse();
+    }
 }

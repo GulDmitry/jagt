@@ -104,6 +104,37 @@ public class RoutingMemory {
         return true;
     }
 
+    public boolean full() {
+        return byKey().size() >= maxRules;
+    }
+
+    /**
+     * Folds {@code duplicate} into {@code kept}, both as {@link #rules()} renders them, adding up what each placed.
+     * Only two rules placing in one project merge: a model calling two others the same would move work.
+     */
+    public synchronized boolean merge(String kept, String duplicate) {
+        Map<String, Rule> rules = byKey();
+        String keptKey = keyOf(kept);
+        String duplicateKey = keyOf(duplicate);
+        Rule into = rules.get(keptKey);
+        Rule gone = rules.get(duplicateKey);
+        if (into == null || gone == null || keptKey.equals(duplicateKey) || !into.project().equals(gone.project())) {
+            return false;
+        }
+        rules.put(keptKey, new Rule(into.project(), into.uses() + gone.uses()));
+        rules.remove(duplicateKey);
+        List<String> retired = new ArrayList<>(retired());
+        retired.add("# until " + LocalDate.now(clock) + ": " + duplicateKey + SEPARATOR + gone.project()
+                + ", merged into: " + keptKey);
+        write(rules, retired);
+        return true;
+    }
+
+    private static String keyOf(String rendered) {
+        int split = rendered == null ? -1 : rendered.lastIndexOf(SEPARATOR);
+        return split < 0 ? "" : rendered.substring(0, split).strip();
+    }
+
     /** The dated lines of rules that stopped being true, oldest first. */
     private List<String> retired() {
         return lines().stream().map(String::strip).filter(line -> line.startsWith("# until ")).toList();

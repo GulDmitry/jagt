@@ -22,6 +22,13 @@ public final class RuleRead {
                 .required("reason", "string", null);
     }
 
+    public static Schema pairSchemaFor(Collection<String> rules) {
+        return Schema.answer()
+                .required("failure", "string", null)
+                .choiceRequired("kept", withNone(rules), null)
+                .choiceRequired("duplicate", withNone(rules), null);
+    }
+
     private static Collection<String> withNone(Collection<String> rules) {
         var allowed = new ArrayList<String>(rules);
         allowed.add(NONE);
