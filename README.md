@@ -40,7 +40,7 @@ One session, one worktree, one branch, one request; the server, not a prompt, ke
 
 ## Start
 
-Every tool it needs: **[Technologies](docs/installation.md)**.
+Tools: **[Technologies](docs/installation.md)**.
 
 ### 1 — check MCP access
 
@@ -80,7 +80,7 @@ Every other key has a default, described in `jagt.yml.dist`.
 
 ### 3 — decide on the Master
 
-Keep `master.mode: off` at first: every press stays yours. `judge` adds a model's review before
+Keep `master.mode: off` at first. `judge` adds a model's review before
 yours; `act` also presses for you — [Usage](docs/usage.md#the-master).
 
 ### 4 — build, and run
@@ -99,7 +99,7 @@ Anything missing, and jagt refuses to start with the **whole** list, each line n
 
 ### 5 — open the board
 
-**http://localhost:8290** — type a ticket key or URL in the first field, press **Start**.
+**http://localhost:8290** — type a ticket key or URL, or with no ticket `<project> <what to do>`, then **Start**.
 
 ## Commands
 
