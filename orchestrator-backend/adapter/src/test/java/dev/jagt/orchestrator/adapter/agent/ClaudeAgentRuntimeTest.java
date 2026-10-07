@@ -159,7 +159,7 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void pinsConfiguredOutputStyleInGeneratedAgentSettings() {
-        String json = ClaudeAgentRuntime.settingsJson("sob-ai:Engineer", null, null);
+        String json = ClaudeAgentRuntime.settingsJson("sob-ai:Engineer", null, null, null);
 
         String style = new JsonMapper().readTree(json).path("outputStyle").asString(null);
 
@@ -168,7 +168,7 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void compactsATaskSessionLongBeforeItsContextWindowIsFull() {
-        String json = ClaudeAgentRuntime.settingsJson(null, null, null);
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
 
         String window = new JsonMapper().readTree(json).path("env").path("CLAUDE_CODE_AUTO_COMPACT_WINDOW").asString("");
 
@@ -177,7 +177,7 @@ class ClaudeAgentRuntimeTest {
 
     @Test
     void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
-        String json = ClaudeAgentRuntime.settingsJson(null, null, null);
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
 
         List<String> allow = new ArrayList<>();
         new JsonMapper().readTree(json).path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
@@ -186,8 +186,18 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void preApprovesTheConfiguredToolsBesideJagtsOwnInGeneratedAgentSettings() {
+        String json = ClaudeAgentRuntime.settingsJson(null, null, List.of("mcp__host__open_request"), null);
+
+        List<String> allow = new ArrayList<>();
+        new JsonMapper().readTree(json).path("permissions").path("allow").forEach(n -> allow.add(n.asString("")));
+
+        assertThat(allow).containsExactly("mcp__jagt-orchestrator", "Bash(git:*)", "mcp__host__open_request");
+    }
+
+    @Test
     void disablesConfiguredPluginsInGeneratedAgentSettings() {
-        String json = ClaudeAgentRuntime.settingsJson(null, List.of("jdtls-lsp@claude-plugins-official"), null);
+        String json = ClaudeAgentRuntime.settingsJson(null, List.of("jdtls-lsp@claude-plugins-official"), null, null);
 
         boolean enabled = new JsonMapper().readTree(json)
                 .path("enabledPlugins").path("jdtls-lsp@claude-plugins-official").asBoolean(true);

@@ -26,6 +26,10 @@ public class WorktreeSetup {
     @Value("${orchestrator.agent-disabled-plugins:}")
     private List<String> agentDisabledPlugins;
 
+    /** A step a ship instruction asks for, such as opening the request, is not left to a classifier's guess. */
+    @Value("${orchestrator.agent-allowed-tools:}")
+    private List<String> agentAllowedTools;
+
     /** {@code repos} is every repository of the task, so the briefing can name the ones this agent may edit. */
     public void fill(NewTask request, NewRepo repo, List<NewRepo> repos) {
         Path worktreePath = repo.worktreePath();
@@ -35,7 +39,8 @@ public class WorktreeSetup {
         WorktreeHooks.install(worktreePath, request.taskId());
         // Which files exist and what is in them belongs to the runtime.
         agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
-                configService.load().agent().outputStyleOrNull(), agentDisabledPlugins));
+                configService.load().agent().outputStyleOrNull(), agentDisabledPlugins)
+                .withAllowedTools(agentAllowedTools));
         WorktreeFiles.copyIdeProjectFiles(repo.projectPath(), worktreePath);
         WorktreeFiles.copyLocalFiles(repo.projectPath(), worktreePath,
                 configService.load().worktree().copyGlobsOrDefault());

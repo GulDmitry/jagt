@@ -145,7 +145,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                     worktree.path().resolve(SYSTEM_KNOWLEDGE_FILE));
         }
         write(worktree.path().resolve(".claude").resolve("settings.local.json"),
-                settingsJson(worktree.outputStyle(), worktree.disabledPlugins(), hooksJson(worktree.path())));
+                settingsJson(worktree.outputStyle(), worktree.disabledPlugins(), worktree.allowedTools(),
+                        hooksJson(worktree.path())));
         ClaudeTrust.accept(ClaudeTrust.configFile(), worktree.path());
     }
 
@@ -184,7 +185,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     private static final Duration CACHE_LIFETIME = Duration.ofHours(1);
 
-    static String settingsJson(String outputStyle, List<String> disabledPlugins, String hooksLine) {
+    static String settingsJson(String outputStyle, List<String> disabledPlugins, List<String> allowedTools,
+                               String hooksLine) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
                 : "\n  \"outputStyle\": " + quoted(outputStyle) + ",";
         String pluginsLine = "";
@@ -202,10 +204,14 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                   "env": {"CLAUDE_CODE_AUTO_COMPACT_WINDOW": "%d"},
                   "enableAllProjectMcpServers": true,
                   "permissions": {
-                    "allow": ["mcp__jagt-orchestrator", "Bash(git:*)"]
+                    "allow": [%s]
                   }
                 }
-                """.formatted(styleLine, pluginsLine, hooksLine == null ? "" : hooksLine, COMPACT_AT_TOKENS);
+                """.formatted(styleLine, pluginsLine, hooksLine == null ? "" : hooksLine, COMPACT_AT_TOKENS,
+                Stream.concat(Stream.of("mcp__jagt-orchestrator", "Bash(git:*)"),
+                                allowedTools == null ? Stream.empty() : allowedTools.stream())
+                        .filter(tool -> tool != null && !tool.isBlank())
+                        .map(tool -> quoted(tool.strip())).collect(Collectors.joining(", ")));
     }
 
     @Override

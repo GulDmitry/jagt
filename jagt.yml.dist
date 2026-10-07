@@ -63,6 +63,10 @@ orchestrator:
   # agentDisabledPlugins:   # dropping an LSP plugin buys memory and costs the agent its code intelligence
   #   - jdtls-lsp@claude-plugins-official
 
+  # Pre-approved in every session: a ship's request and its replies write to the code host, which the auto-mode
+  # classifier may refuse otherwise. One comma-separated line; never a merge tool, the base branch is read-only.
+  # agentAllowedTools: mcp__your-gitlab-mcp__save_merge_request, mcp__your-gitlab-mcp__save_note
+
   worktree:
     copyGlobs: ["**/.env"]   # gitignored files carried from the base repository into every fresh worktree
 
