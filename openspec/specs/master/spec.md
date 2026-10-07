@@ -45,12 +45,16 @@ for them; unreadable, they SHALL stop the round
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
-With `master.mode: act` the Master SHALL ship a `ready` round and answer a question; `master.mine` SHALL keep named
-steps the human's. Closing a task SHALL stay the human's alone.
+With `master.mode: act` the Master SHALL ship a `ready` round, answer a question and deploy a `REVIEWED` task once
+(`MasterDeployJob`); `master.mine` SHALL keep named steps the human's. Closing a task SHALL stay the human's alone.
 
 #### Scenario: You want it to act for you
 - **WHEN** a round is `ready` in `master.mode: act`
 - **THEN** it is shipped for you; `master.mine` keeps steps yours
+
+#### Scenario: The request is green with every thread closed
+- **WHEN** a task reaches `REVIEWED` in `master.mode: act`
+- **THEN** the Master deploys it; `mine: [deploy]` leaves the press yours
 
 #### Scenario: A ready round holds nothing to ship
 - **WHEN** a `ready` round has nothing to ship in `master.mode: act`
@@ -121,17 +125,13 @@ from the author.
 - **THEN** it reopens it only for a blocking reason
 
 ### Requirement: Another branch is another task
-In `act` work needing another branch SHALL be a task of its own, opened by the Master's decision line
-`do <project> <what to do…> from <branch>` run as the human's `do` (`MasterShip.open`). A line naming the deploy
-branch SHALL open nothing: that merge is the task's own `deploy`.
-
-#### Scenario: A session needs a second request
-- **WHEN** a session asks for a branch of its own in `master.mode: act`
-- **THEN** the Master's `do` line opens that task, and the session is told what was opened
+In `act` work needing another branch SHALL be a task of its own, opened by the Master's line
+`do <project> <what to do…> from <branch>` (`MasterShip.open`), the session told what opened; one naming the deploy
+branch SHALL open nothing.
 
 #### Scenario: A session asks for its work on the deploy branch
 - **WHEN** the Master's `do` line names the deploy branch
-- **THEN** nothing opens; the task waits for its request to go green, then `deploy`
+- **THEN** nothing opens; that merge is the task's own `deploy`, once `REVIEWED`
 
 ### Requirement: Every Master step is seen in one window
 While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following

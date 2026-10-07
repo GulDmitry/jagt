@@ -167,6 +167,12 @@ class FlowRulesTest {
     }
 
     @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING", "CI_FAILED"})
+    void keepsADeployConflictUntilTheDeployFinishesWhateverItsAgentReports(TaskStatus said) {
+        assertThat(FlowRules.reported(TaskStatus.DEPLOY_CONFLICT, said)).isEqualTo(TaskStatus.DEPLOY_CONFLICT);
+    }
+
+    @ParameterizedTest
     @CsvSource({"DEPLOYED, REVIEWED", "DEPLOYED, APPROVED", "DEPLOY_CONFLICT, REVIEWED",
             "DEPLOY_CONFLICT, APPROVED", "DONE, REVIEWED", "DONE, APPROVED"})
     void keepsATaskWhoseCodeWentOutWhereItIsWhateverAReadOfTheRoundConcludes(TaskStatus from, TaskStatus verdict) {

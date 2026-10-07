@@ -150,8 +150,9 @@ public final class FlowRules {
 
     /**
      * The status a report actually lands on. A task at REVERTED KEEPS it: what came back out of a shared branch is
-     * a human's to move on from. The report is ACCEPTED rather than refused — an agent's protocol is to keep
-     * saying what it is doing, and a status it cannot report is a session whose every call errors.
+     * a human's to move on from; one at DEPLOY_CONFLICT keeps it until the deploy finishes. The report is ACCEPTED
+     * rather than refused — an agent's protocol is to keep saying what it is doing, and a status it cannot report
+     * is a session whose every call errors.
      */
     public static TaskStatus reported(TaskStatus from, TaskStatus to) {
         return reported(from, to, false);
@@ -162,7 +163,7 @@ public final class FlowRules {
      * jagt has run the project's own command, so a human never opens a red tree.
      */
     public static TaskStatus reported(TaskStatus from, TaskStatus to, boolean verificationOwed) {
-        if (STANDS_UNTIL_MOVED_BY_A_HUMAN.contains(from)) {
+        if (HELD_AGAINST_A_REPORT.contains(from)) {
             return from;
         }
         if (verificationOwed && to == TaskStatus.REVIEW_PENDING) {
@@ -188,7 +189,8 @@ public final class FlowRules {
         return EnumSet.of(TaskStatus.VERIFYING);
     }
 
-    private static final Set<TaskStatus> STANDS_UNTIL_MOVED_BY_A_HUMAN = EnumSet.of(TaskStatus.REVERTED);
+    private static final Set<TaskStatus> HELD_AGAINST_A_REPORT = EnumSet.of(TaskStatus.REVERTED,
+            TaskStatus.DEPLOY_CONFLICT);
 
     /** What a read of the round alone concludes, as opposed to what the task itself is doing. */
     private static final Set<TaskStatus> A_VERDICT = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED);
