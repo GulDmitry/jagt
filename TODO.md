@@ -40,13 +40,10 @@ An inbox flag, top-right, for the few tasks you must not lose among alike cards.
 Decide first: `card-top` ends in the attention badge, so a flag says what it replaces; no colour is free
 (`--danger` broken, `--you` your move). Likely a shape, sorted first, not tinted.
 
-## The Master on real work, one day from a pipeline (idea)
+## Read the Master's record back (open)
 
-Built: `masterEval` on known-verdict rounds, the `master` report counting where its verdicts and yours
-differed. Left: `judge` on live work, that count read back. A pipeline run needs an agent CLI, a trusted root,
-tokens and minutes; a varying verdict is an unreproducible red build.
-
-Decide first: what a trial run may touch — a file read and written, no verb issued.
+After ~10 finished tasks under the default `judge`, read the `master` report: where its verdicts and yours
+differed reopens [0018](docs/decisions/0018-the-master-judges-by-default.md) or the brief.
 
 ## Events with names, and routing past four buckets (concept)
 
