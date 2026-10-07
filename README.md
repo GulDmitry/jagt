@@ -14,8 +14,7 @@
 jagt hands a ticket to an autonomous AI coding agent in its own isolated Git worktree, so two agents cannot see
 or break each other's work. You drive all of them from one board in your browser.
 
-**Nothing leaves your machine without you** — no push, no request, no deploy — unless you hand the Master
-the first two. Deploy stays yours.
+**Nothing leaves your machine without you** — no push, no request, no deploy — unless you set the Master to `act`.
 
 ```mermaid
 flowchart LR

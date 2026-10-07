@@ -82,18 +82,18 @@ sense for the task's status, with a sentence rather than a git error.
 
 ## The Master
 
-A reader between the session and you; it judges unless turned off.
+A reader between the session and you, on by default.
 
 | `master.mode` | what it does | costs |
 |---------------|--------------|-------|
 | `off` | nothing: every plan, round and question waits for you | nothing |
-| `judge` | reads each plan, then each round by its brief's roles; writes `master-review.md`, presses nothing | one heavy read per plan; per role per round |
+| `judge` | reads each plan, then each round by its brief's roles; writes `master-review.md`, sends findings back, presses no verb | one heavy read per plan; per role per round |
 | `act` | also starts a holding plan, ships a ready round, answers a question, opens split-off work, deploys a `REVIEWED` task; closing stays yours | the same |
 
-It judges by the shipped brief; to edit one, `cp master-brief.md.dist master-brief.md` and set `master.brief`.
+It judges by the shipped brief; to edit one, copy `master-brief.md.dist` and set `master.brief`.
 `master.mine` keeps named steps yours in `act`; what you type to a session overrules it.
 `revert` and `sweep` stay yours in every mode.
-Each step is one line in the `master` tmux window.
+Each step is a line in the `master` window.
 
 ## Notes on the tricky ones
 

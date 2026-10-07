@@ -56,7 +56,7 @@ the human's alone.
 
 #### Scenario: The request is green with every thread closed
 - **WHEN** a task reaches `REVIEWED` in `master.mode: act`
-- **THEN** the Master deploys it; `mine: [deploy]` leaves the press yours
+- **THEN** the Master deploys it; `mine: [deploy, revert]` leaves the press yours
 
 #### Scenario: A ready round holds nothing to ship
 - **WHEN** a `ready` round has nothing to ship in `master.mode: act`
@@ -139,7 +139,7 @@ While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmu
 `jagt-master.log`, one line per Master step (`MasterFeedWindow`); closed, it SHALL come back.
 
 #### Scenario: You want to know why a window opened or closed
-- **WHEN** the Master answers, asks, returns a round, ships or opens a task
+- **WHEN** the Master answers, asks, returns, starts, ships, deploys or opens a task
 - **THEN** the `master` window shows it with the task and, for an answer, the question and the decision
 
 #### Scenario: You close the master window

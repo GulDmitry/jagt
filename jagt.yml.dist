@@ -81,7 +81,7 @@ orchestrator:
     # mcpConfig: /path/to/mcp-servers.json   # pin the servers instead of inheriting all of them
     # mcpConfigByKind:                       # one list per kind of read, so a cheap one loads only what it needs
     #   TICKET_READ: /path/to/tracker-only.json     # falls back to mcpConfig, then to your own configuration
-    #   REVIEW_SWEEP: /path/to/code-host-only.json  # kinds: TICKET_READ, MR_READ, REVIEW_SWEEP, COMMAND_MAP
+    #   REVIEW_SWEEP: /path/to/code-host-only.json  # kinds: TICKET_READ, MR_READ, REVIEW_SWEEP, COMMAND_MAP, INTAKE, ROUTE, MASTER_REVIEW
 
   # ── The Master session ──────────────────────────────────────────────────────────────────────────────────────
   # An unattended reviewer that reads what a task produced before you do. It judges unless you turn it off; what
@@ -94,7 +94,7 @@ orchestrator:
     # model: fable           # reading is the cheap half, so it can run a heavier model than the work does;
                              # blank inherits the agent CLI's. One run per role of the brief, per round;
                              # a `model` column in the brief's role table overrides it for that role
-    # mine: [reply]         # the steps that stay YOURS in `act`: ship, sweep, deploy, revert, reply, answer, plan.
+    # mine: [reply]         # the steps that stay YOURS in `act`: ship, deploy + revert (together), reply, answer, plan.
                              # Anything not listed the Master may do; closing a task is always yours
 
   # ── The two ends the tracker drives (EXPERIMENTAL) ─────────────────────────────────────────────────────────
