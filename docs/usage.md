@@ -92,6 +92,7 @@ An optional reader standing between the session and you, off until you turn it o
 
 To turn it on: `cp master-brief.md.dist master-brief.md`, then set `master.mode` and `master.brief` in `jagt.yml`.
 `master.mine` keeps named steps yours in `act`; what you type to a session overrules it.
+`deploy`, `revert` and `sweep` stay yours in every mode.
 
 ## Notes on the tricky ones
 

@@ -14,7 +14,8 @@
 jagt hands a ticket to an autonomous AI coding agent in its own isolated Git worktree, so two agents cannot see
 or break each other's work. You drive all of them from one board in your browser.
 
-**Nothing leaves your machine without you.** No push, no merge request, no deploy.
+**Nothing leaves your machine without you** — no push, no request, no deploy — unless you hand the Master
+the first two. Deploy stays yours.
 
 ```mermaid
 flowchart LR
@@ -37,6 +38,21 @@ flowchart LR
 | touches no shared branch and no other task | `deploy`, then `done` |
 
 One session, one worktree, one branch, one request; the server, not a prompt, keeps it out of other tasks.
+
+## With the Master, and without
+
+The Master: a model reading every round before you, by the roles in its brief.
+
+| | `off` — the default | `judge` | `act` |
+|---|---|---|---|
+| a round handed back | you read it | read first; not ready goes back to the session | the same, and a ready one is shipped |
+| a session's question | waits for you | waits for you | answered as you would |
+| split-off work, an empty task | yours to open, close | yours | opened, closed |
+| `deploy`, `revert`, `sweep` | yours | yours | yours |
+| costs | nothing | one heavy read per role, per round | the same |
+
+In `act` a task reaches you ready to deploy; `master.mine` keeps any step yours, your
+words overrule it.
 
 ## Start
 
@@ -80,8 +96,7 @@ Every other key has a default, described in `jagt.yml.dist`.
 
 ### 3 — decide on the Master
 
-Keep `master.mode: off` at first. `judge` adds a model's review before
-yours; `act` also presses for you — [Usage](docs/usage.md#the-master).
+Keep `master.mode: off` at first — [what each mode gives](#with-the-master-and-without).
 
 ### 4 — build, and run
 
@@ -103,20 +118,7 @@ Anything missing, and jagt refuses to start with the **whole** list, each line n
 
 ## Commands
 
-| command | what it does |
-|---------|--------------|
-| `do ABC-42` | read the ticket, cut a worktree, launch a session |
-| `ide ABC-42` | open the worktree in your editor — the live diff |
-| `focus ABC-42` | jump into the session and talk to it |
-| `ship ABC-42` | commit, push, open or update the review request |
-| `sweep ABC-42` | pull checks + comments; the agent fixes locally and drafts replies |
-| `replies ABC-42` | read those drafted replies before they go out |
-| `deploy ABC-42` | merge the task branch into the deploy branch |
-| `done ABC-42` | close the task and clean everything up |
-
-Each is a board button too; `Help` explains its marks. A `⌘K` sentence is mapped
-onto exactly one of them, through the same gate the button uses. `revert`, `respawn`, `resume`, `diff`,
-`stats`, `activity` and `jobs` are in [Usage](docs/usage.md).
+Every verb is a board button; each one, with `focus`, `sweep` and `revert`: [Usage](docs/usage.md#commands).
 
 ## What you keep
 
