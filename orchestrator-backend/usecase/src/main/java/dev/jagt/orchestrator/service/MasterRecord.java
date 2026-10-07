@@ -2,10 +2,12 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.FinishedTask;
+import dev.jagt.orchestrator.task.ProjectConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 
 /**
@@ -20,6 +22,7 @@ import java.util.function.Predicate;
 public class MasterRecord {
 
     private final FinishedTasks finished;
+    private final ConfigService configService;
 
     /** Zeroes where nothing has been judged yet, which reads the same as a reviewer nobody has turned on. */
     public record Seen(int judged, int passed, int asked, int passedNeverDeployed, int passedReverted,
@@ -39,9 +42,18 @@ public class MasterRecord {
         return new Seen(judged.size(),
                 count(judged, FinishedTask::passed),
                 count(judged, FinishedTask::asked),
-                count(judged, task -> task.passed() && !task.reached(TaskStatus.DEPLOYED)),
+                count(judged, task -> task.passed() && task.rounds() > 0 && !task.reached(TaskStatus.DEPLOYED)
+                        && deployable(task)),
                 count(judged, task -> task.passed() && task.reached(TaskStatus.REVERTED)),
-                count(judged, task -> !task.passed() && !task.asked() && task.reached(TaskStatus.DEPLOYED)));
+                count(judged, task -> !task.passed() && !task.asked() && task.judgedBefore(TaskStatus.DEPLOYED)));
+    }
+
+    /** A project jagt does not deploy, or no longer knows, owes no deploy: its work lands elsewhere. */
+    private boolean deployable(FinishedTask task) {
+        Map<String, ProjectConfig> projects = configService.load().projects();
+        return task.projects().stream().map(projects::get)
+                .allMatch(project -> project != null && project.deployBranch() != null
+                        && !project.deployBranch().isBlank());
     }
 
     private static int count(List<FinishedTask> tasks, Predicate<FinishedTask> which) {
