@@ -10,11 +10,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/** Writes NO agent config: a scripted agent POSTs to {@code /mcp} itself. */
+/**
+ * The one non-deterministic participant an end-to-end assertion has to replace. Writes NO agent config: a scripted
+ * agent POSTs to {@code /mcp} itself.
+ */
 @Component
 @ConditionalOnProperty(name = "orchestrator.agent.cli", havingValue = "stub")
 @RequiredArgsConstructor
-/** The one non-deterministic participant an end-to-end assertion has to replace. */
 public class StubAgentRuntime extends AbstractAgentRuntime {
 
     private final StubAgentProperties stub;

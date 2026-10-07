@@ -103,11 +103,6 @@ public final class Schema {
         return this;
     }
 
-    /** The fields a caller must send; the transport checks presence before anything else looks at the message. */
-    public List<String> requiredFields() {
-        return List.copyOf(required);
-    }
-
     public String json() {
         ObjectNode root = MAPPER.createObjectNode();
         if (description != null) {

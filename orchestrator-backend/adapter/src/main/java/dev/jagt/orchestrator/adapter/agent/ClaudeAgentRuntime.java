@@ -181,12 +181,6 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
                 """.formatted(quoted(url), quoted(McpEndpoint.CALLER_HEADER), quoted(worktreePath));
     }
 
-    /**
-     * Without {@code enableAllProjectMcpServers} a spawned session stops at a "New MCP server found" prompt, and
-     * without the allow-list the permission classifier gates individual calls — prompts nobody answers. A
-     * worktree is an untrusted project, where the human's global output style may not apply; disabling plugins
-     * keeps a ~1-2GB language server from spawning per worktree.
-     */
     /** Every turn rereads the whole context, so a task session left to grow to its 1M window pays for it each time. */
     static final int COMPACT_AT_TOKENS = 300_000;
 
@@ -195,6 +189,12 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
 
     private static final Duration CACHE_LIFETIME = Duration.ofHours(1);
 
+    /**
+     * Without {@code enableAllProjectMcpServers} a spawned session stops at a "New MCP server found" prompt, and
+     * without the allow-list the permission classifier gates individual calls — prompts nobody answers. A
+     * worktree is an untrusted project, where the human's global output style may not apply; disabling plugins
+     * keeps a ~1-2GB language server from spawning per worktree.
+     */
     static String settingsJson(String outputStyle, List<String> disabledPlugins, List<String> allowedTools,
                                String hooksLine) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""

@@ -65,7 +65,6 @@ public record FinishedTask(
         return history.isEmpty() ? null : history.get(0).origin();
     }
 
-    /** Whether the task ever stood in this status, which is how a claim about it is checked against what it did. */
     /** Whether the last round judged came back before the task first reached {@code status}. */
     public boolean judgedBefore(TaskStatus status) {
         int judged = -1;
@@ -82,6 +81,7 @@ public record FinishedTask(
         return reachedAt >= 0 && judged < reachedAt;
     }
 
+    /** Whether the task ever stood in this status, which is how a claim about it is checked against what it did. */
     public boolean reached(TaskStatus status) {
         return history.stream().anyMatch(step -> step.status() == status);
     }

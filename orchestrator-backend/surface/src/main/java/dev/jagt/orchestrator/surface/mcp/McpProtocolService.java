@@ -46,7 +46,7 @@ public class McpProtocolService implements McpToolRegistry {
     }
 
     public Optional<JsonNode> handle(JsonNode message, String callerCwd) {
-        String method = message.path("method").asText(null);
+        String method = message.path("method").asString(null);
         JsonNode id = message.get("id");
         if (method == null) {
             // A response from the client to a server-initiated request; we never send those.
@@ -99,7 +99,7 @@ public class McpProtocolService implements McpToolRegistry {
     }
 
     private JsonNode initializeResult(JsonNode message) {
-        String requestedVersion = message.path("params").path("protocolVersion").asText(DEFAULT_PROTOCOL_VERSION);
+        String requestedVersion = message.path("params").path("protocolVersion").asString(DEFAULT_PROTOCOL_VERSION);
         ObjectNode result = mapper.createObjectNode();
         result.put("protocolVersion", requestedVersion);
         result.putObject("capabilities").putObject("tools");
@@ -115,7 +115,7 @@ public class McpProtocolService implements McpToolRegistry {
         tools.values().stream().filter(spec -> spec.audience().admits(callerTaskId)).forEach(spec -> {
             ObjectNode tool = list.addObject();
             tool.put("name", spec.name());
-            tool.put("description", spec.schema().path("description").asText(""));
+            tool.put("description", spec.schema().path("description").asString(""));
             ObjectNode schema = (ObjectNode) spec.schema().deepCopy();
             schema.remove("description");
             tool.set("inputSchema", schema);
@@ -132,7 +132,7 @@ public class McpProtocolService implements McpToolRegistry {
     }
 
     private JsonNode callTool(JsonNode message, String callerTaskId) {
-        String name = message.path("params").path("name").asText("");
+        String name = message.path("params").path("name").asString("");
         JsonNode args = message.path("params").path("arguments");
         ToolSpec spec = tools.get(name);
         if (spec == null) {

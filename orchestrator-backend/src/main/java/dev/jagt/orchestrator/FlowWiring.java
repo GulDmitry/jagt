@@ -20,7 +20,8 @@ public class FlowWiring {
     @Bean
     public Capabilities capabilities(List<TaskCapability> declared, List<CapabilityInterceptor> around) {
         Capabilities capabilities = new Capabilities(declared, around);
-        capabilities.takeovers().forEach(log::info);
+        capabilities.takeovers().forEach(takeover -> log.atInfo().setMessage("capability takes over")
+                .addKeyValue("takeover", takeover).log());
         return capabilities;
     }
 

@@ -53,10 +53,10 @@ class McpProtocolServiceTest {
                 mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"), null).orElseThrow();
 
         JsonNode statusEnum = StreamSupport.stream(response.path("result").path("tools").spliterator(), false)
-                .filter(tool -> "update_agent_status".equals(tool.path("name").asText()))
+                .filter(tool -> "update_agent_status".equals(tool.path("name").asString()))
                 .findFirst().orElseThrow()
                 .path("inputSchema").path("properties").path("status").path("enum");
-        assertThat(statusEnum).extracting(JsonNode::asText).containsExactly(
+        assertThat(statusEnum).extracting(JsonNode::asString).containsExactly(
                 "NEW", "PLAN_PENDING", "IN_PROGRESS", "VERIFYING", "REVIEW_PENDING", "SHIPPING",
                 "CI_POLLING", "CI_FAILED",
                 "REVIEWED",
@@ -77,7 +77,7 @@ class McpProtocolServiceTest {
 
         JsonNode result = response.path("result");
         assertThat(result.path("isError").asBoolean()).isTrue();
-        assertThat(result.path("content").get(0).path("text").asText())
+        assertThat(result.path("content").get(0).path("text").asString())
                 .contains("instructions").contains("required");
     }
 
@@ -104,7 +104,7 @@ class McpProtocolServiceTest {
                 "/nowhere").orElseThrow().path("error");
 
         assertThat(error.path("code").asInt()).isEqualTo(-32603);
-        assertThat(error.path("message").asText()).isEqualTo("IllegalStateException");
+        assertThat(error.path("message").asString()).isEqualTo("IllegalStateException");
     }
 
     @Test
@@ -120,7 +120,7 @@ class McpProtocolServiceTest {
         JsonNode response = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"tools/call\","
                 + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null).orElseThrow();
 
-        assertThat(response.path("result").path("content").get(0).path("text").asText())
+        assertThat(response.path("result").path("content").get(0).path("text").asString())
                 .endsWith(": IllegalStateException");
     }
 
@@ -163,9 +163,9 @@ class McpProtocolServiceTest {
                 + "\"params\":{\"name\":\"boom\",\"arguments\":{}}}"), null).orElseThrow().path("result");
 
         assertThat(result.path("isError").asBoolean()).isTrue();
-        assertThat(result.path("structuredContent").path("category").asText()).isEqualTo("business");
+        assertThat(result.path("structuredContent").path("category").asString()).isEqualTo("business");
         assertThat(result.path("structuredContent").path("retryable").asBoolean()).isFalse();
-        assertThat(result.path("content").get(0).path("text").asText())
+        assertThat(result.path("content").get(0).path("text").asString())
                 .isEqualTo("Error (business, not retryable): branch ABC-1 is checked out elsewhere");
     }
 
@@ -196,7 +196,7 @@ class McpProtocolServiceTest {
         JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/list\"}"),
                 null).orElseThrow().path("result").path("tools");
 
-        assertThat(listed).extracting(tool -> tool.path("name").asText())
+        assertThat(listed).extracting(tool -> tool.path("name").asString())
                 .containsExactly("deploy_task", "revert_task");
     }
 

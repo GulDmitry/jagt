@@ -41,6 +41,7 @@ public class IntakeCandidates {
         if (found.facts().isEmpty()) {
             log.atWarn().setMessage("intake search unreadable")
                     .addKeyValue("tracker", workflow.id())
+                    .addKeyValue("cause", "the assistant answered nothing")
                     .addKeyValue("effect", "poll skipped")
                     .log();
             return Optional.empty();
