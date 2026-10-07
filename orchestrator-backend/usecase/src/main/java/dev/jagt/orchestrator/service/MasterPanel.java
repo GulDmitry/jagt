@@ -208,6 +208,8 @@ public class MasterPanel {
                 + " A check this task's request turns red is the task's to turn green, code that predates it"
                 + " included, whatever the ticket's scope: an override, an exception or a human's action is no answer"
                 + " while a change in the worktrees can pass it — decide that change."
+                + " Work needing a branch other than " + taskId + " is a task of its own: open it with a finding that"
+                + " is exactly `do " + task.project() + " <what to do…> from <branch>`, run as the human's own line."
                 + " Never answer question and never defer: the decision is the answer. verdict: ready. findings:"
                 + " the decision, one per line — what the session does, and the one clause of why. premises: what"
                 + " it rests on, each with provenBy — the file:line or read-only command that shows it. failure:"

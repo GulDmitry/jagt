@@ -83,8 +83,8 @@ public final class WorktreeHooks {
                     [ -n "$remote_ref" ] || continue
                     if [ "$remote_ref" != "refs/heads/$branch" ]; then
                         echo "jagt refuses this push: $remote_ref is not this task's branch." >&2
-                        echo "Only $branch may be pushed from this worktree — a shared branch is written by\
-                 the human's deploy." >&2
+                        echo "Only $branch may be pushed from this worktree. Work for another branch is\
+                 another task: report outcome=question naming what goes on it and its base." >&2
                         exit 1
                     fi
                     case "$local_sha" in

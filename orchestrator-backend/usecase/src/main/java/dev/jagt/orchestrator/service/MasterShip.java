@@ -15,6 +15,7 @@ public class MasterShip {
 
     private final WorktreeChanges changes;
     private final CommandService commands;
+    private final TaskLauncher launcher;
 
     /** A task holding nothing to ship is closed where {@code mayClose}; false where nothing was pressed. */
     public boolean ship(String taskId, TaskState task, boolean mayClose) {
@@ -26,6 +27,12 @@ public class MasterShip {
         // stamped as the Master's so what a ship does on its behalf can differ from what it does on yours.
         OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, TaskAction.SHIP));
         return true;
+    }
+
+    /** A part of the work needing a branch of its own, opened by the {@code do} line a human would type. */
+    public String open(String line) {
+        log.atInfo().setMessage("master opens a task").addKeyValue("line", line).log();
+        return launcher.launchLine(line).message();
     }
 
     private boolean close(String taskId) {

@@ -69,6 +69,15 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void opensATaskForWorkTheMasterMovedToABranchOfItsOwn(@TempDir Path worktree) {
+        when(ship.open("proj drop the old keys from main")).thenReturn("drop-the-old-keys started");
+
+        verdicts.answered("ABC-1", in(worktree), "a second request?", "do proj drop the old keys from main", false);
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), contains("drop-the-old-keys started"));
+    }
+
+    @Test
     void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path worktree) {
         when(sessions.relayIfChanged(eq("ABC-1"), contains("refactor the shared block"))).thenReturn(true);
 

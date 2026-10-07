@@ -34,3 +34,4 @@ alternatives — so a later reader can tell a decision from a habit.
 - [0012 — The Master finishes the task](0012-the-master-finishes-the-task.md)
 - [0013 — A deploy conflict is the session's in `act`](0013-a-deploy-conflict-is-the-sessions-in-act.md)
 - [0014 — Behaviour is recorded as OpenSpec specs](0014-behaviour-is-recorded-as-openspec-specs.md)
+- [0015 — Another branch is another task](0015-another-branch-is-another-task.md)

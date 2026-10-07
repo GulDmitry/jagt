@@ -150,4 +150,4 @@ briefing and guard beside them. A push of any branch but the task's MUST be refu
 
 #### Scenario: The agent pushes a foreign branch
 - **WHEN** it pushes another branch
-- **THEN** nothing leaves the machine
+- **THEN** nothing leaves the machine; the refusal says: ask for another task

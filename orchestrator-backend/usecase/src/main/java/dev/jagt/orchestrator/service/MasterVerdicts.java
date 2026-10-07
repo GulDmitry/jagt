@@ -24,6 +24,8 @@ public class MasterVerdicts {
     private final FlowReports reports;
     private final MasterDecisions decisions;
 
+    private static final String DO = "do ";
+
     /** Answers whether the verdict moved anything, so a caller can say so without reading the file again. */
     public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict,
                        ConfigService.ConfigFile.MasterConfig config) {
@@ -69,8 +71,10 @@ public class MasterVerdicts {
 
     /** The Master's answer to the session's own question, and the task back at work on it. */
     public boolean answered(String taskId, TaskState task, String question, String decision, boolean freshSession) {
+        String opened = decision.lines().filter(line -> line.startsWith(DO))
+                .map(line -> "\n" + ship.open(line.substring(DO.length()))).collect(Collectors.joining());
         if (!sessions.relayIfChanged(taskId, "The Master answered your question, standing in for the human:\n"
-                + decision + "\n\nReport IN_PROGRESS, apply it, and hand the round back as usual.")) {
+                + decision + opened + "\n\nReport IN_PROGRESS, apply it, and hand the round back as usual.")) {
             return false;
         }
         decisions.record(task, "- asked: " + question + " — decided: " + decision.replace('\n', ' '));
