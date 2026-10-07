@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.startup;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.StartupCheck;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.MasterBriefs;
+import dev.jagt.orchestrator.service.master.MasterBriefs;
 import dev.jagt.orchestrator.task.MasterMode;
 import dev.jagt.orchestrator.task.MasterRight;
 import lombok.RequiredArgsConstructor;

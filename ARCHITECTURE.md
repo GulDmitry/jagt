@@ -19,15 +19,15 @@ missing. Add a kind, never an exception.**
 | `task/` | the task record and everything it is made of | built — `service/StateService` writes it to `state.json` |
 | `flow/` | which status allows what, and where each outcome leads | built — `FlowRules`, `FlowEngine`, `FlowReports`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
-| `job/` | work that runs with nobody watching | built — `Job` + `Jobs`, the impls still in `service/` |
+| `job/` | work that runs with nobody watching | built — `Job`, `Jobs` and every job |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks |
 
 `service/` is the rest: work more than one kind shares — git, the state file, config, worktrees, agent sessions —
-because a class two kinds use belongs to neither. The board renders `flow/TaskView`; a report is text from the
-`GlobalCommand` that owns it.
+because a class two kinds use belongs to neither; the Master's reading is `service/master/`. The board renders
+`flow/TaskView`; a report is text from the `GlobalCommand` that owns it.
 
 ## The rings
 

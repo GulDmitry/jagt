@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
+import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -17,7 +18,6 @@ import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
 import org.junit.jupiter.api.AfterEach;

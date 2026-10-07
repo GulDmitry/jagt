@@ -8,7 +8,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.CodeReviewConfig;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
-import dev.jagt.orchestrator.service.MasterBriefs;
+import dev.jagt.orchestrator.service.master.MasterBriefs;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

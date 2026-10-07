@@ -1,10 +1,10 @@
 package dev.jagt.orchestrator;
 
+import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
-import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.ResourceLock;

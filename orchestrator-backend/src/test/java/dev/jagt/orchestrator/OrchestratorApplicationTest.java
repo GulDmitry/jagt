@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator;
 
+import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.surface.mcp.McpController;
-import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.MeteredAssistant;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.surface.ui.LogFileReset;

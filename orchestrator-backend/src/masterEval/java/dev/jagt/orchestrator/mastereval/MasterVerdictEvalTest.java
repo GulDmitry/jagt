@@ -1,8 +1,8 @@
 package dev.jagt.orchestrator.mastereval;
 
-import dev.jagt.orchestrator.service.MasterReview;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.task.TaskState;

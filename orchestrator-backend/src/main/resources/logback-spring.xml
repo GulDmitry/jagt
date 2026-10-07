@@ -29,13 +29,13 @@ the appender opens it.
         </encoder>
         <file>jagt-master.log</file>
     </appender>
-    <logger name="dev.jagt.orchestrator.service.MasterAnswerJob"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.service.MasterReviewJob"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.service.MasterVerdicts"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.service.MasterShip"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.service.MasterDeployJob"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.service.DeployConflictJob"><appender-ref ref="MASTER"/></logger>
-    <logger name="dev.jagt.orchestrator.service.MasterPanel"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.MasterAnswerJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.MasterReviewJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterVerdicts"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterShip"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.MasterDeployJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.job.DeployConflictJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.master.MasterPanel"><appender-ref ref="MASTER"/></logger>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
