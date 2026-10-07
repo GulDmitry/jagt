@@ -25,7 +25,7 @@ plan mode cannot write the change.
 
 ### Requirement: A ship folds the change into the specs
 `ship` SHALL validate and archive every open change of the task (`<task>` and `<task>-<n>`) in each of its
-repositories before the session is told to commit (`SpecFold`), so the delta reaches the request beside the code.
+repositories. It does so before the session is told to commit (`SpecFold`). The delta so reaches the request beside the code.
 A change that does not validate refuses the ship, and the task does not move.
 
 #### Scenario: A valid change

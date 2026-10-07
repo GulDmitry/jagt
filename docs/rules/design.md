@@ -3,7 +3,7 @@
 [← AGENTS.md](../../AGENTS.md)
 
 **The storybook is the board's own `Help` report**: `static/ui/legend.js` renders every mark below as the
-page's own element, and every legend row is a mark — bar a **transient** one inside an open control
+page's own element. Every legend row is a mark, bar a **transient** one inside an open control
 (`#palette-state.ok`/`.bad`, a said line's wait). The COST of adding one: [`board`](../../openspec/specs/board/spec.md).
 
 Also marks: every sample `legend.js` renders. **`--ok` and `--you` on one card do not
@@ -12,8 +12,8 @@ disagree**: APPROVED wears both — the approval landed, the deploy is yours.
 ## The colour palette
 
 Thirteen tokens, at the top of `app.css` and again under `prefers-color-scheme: dark`: a token in one scheme
-only is a hole in the other, and the dark block holds one *rule*, `button.primary`'s label (`#fff`, `#10131a`
-dark, accent text on the accent fill being illegible). A hex outside `:root` is a bug — that label and the
+only is a hole in the other. The dark block holds one *rule*, `button.primary`'s label (`#fff`, `#10131a`
+dark): accent text on the accent fill is illegible. A hex outside `:root` is a bug — that label and the
 translucent blacks (four shadows, the dialog backdrop) apart.
 
 - `--you` `#b45309` / `#fbbf24` — **your move**: nothing advances without you.

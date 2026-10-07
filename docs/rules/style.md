@@ -4,8 +4,8 @@
 
 ## Writing
 
-- The `sob-ai:commenting` gate deletes on sight: narration of what the code does, an argument that a change
-  is correct, how the code got this way, a fact whose source of truth is elsewhere.
+- The `sob-ai:commenting` gate deletes on sight: narration of what the code does; an argument that a change
+  is correct; how the code got this way; a fact whose source of truth is elsewhere.
 - **A situation is a scenario in its spec** (`openspec/specs/`): "the request does not target the base branch → …".
 - No real ticket number or abbreviation either; tests use invented `ABC-N` ids.
 - The one exception to English is functional: `KittyTerminalDriver`'s ЙЦУКЕН keymap (`map=cmd+м …`).

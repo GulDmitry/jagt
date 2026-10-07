@@ -49,9 +49,9 @@ A decided decision is no TODO: it lives in the code, these files and git history
 - A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`** — several sessions share this tree; stage explicit paths only.
 - **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
-- **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, reached by that session alone,
-  refusing exactly one thing — a push to anything but the task's own branch — with the project's hooks still
-  running underneath; an agent CLI's hooks answer that refusal and report session state, and nothing else is gated.
+- **jagt's own hooks are not that**: they live under `.jagt/` in the worktree jagt cut, reached by that session
+  alone. They refuse exactly one thing, a push to anything but the task's own branch; the project's hooks still
+  run underneath. An agent CLI's hooks answer that refusal and report session state, and nothing else is gated.
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**; permission to commit is standing, to push is not.
 - **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)).
@@ -78,7 +78,7 @@ A decided decision is no TODO: it lives in the code, these files and git history
   [`board`](openspec/specs/board/spec.md); every mark and the `Help` legend rendering them, [`docs/rules/design.md`](docs/rules/design.md).
 - **Never two controls for one question** — a report, a filter and a form included.
 - **A fact goes ON the thing it is about**: the verb's own button, the card's own edge.
-- **A row carrying four things does not want a fifth**, and **a card must not grow taller** — a fact earning neither goes in the hover.
+- **A row carrying four things does not want a fifth**, and **a card must not grow taller**. A fact earning neither goes in the hover.
 - **A colour means one thing, board-wide** — meanings in `docs/rules/design.md` alone.
 - **What is merely coming is not news.** A countdown belongs in a tooltip; what has STOPPED belongs on screen.
 - **Every mark has one row in the legend**, rendered as the page's own element rather than named in words.
@@ -97,8 +97,8 @@ A decided decision is no TODO: it lives in the code, these files and git history
 
 - **Write less than feels complete.** Delete every sentence that explains, argues, reassures or names the
   option you rejected — `docs/decisions/` alone keeps it. Load `sob-ai:commenting` before writing a comment.
-- **One fact per line**: a decision plus one clause of why, never the road to it nor what it used to be — in
-  comments, docs, prompts, output and commit messages alike.
+- **One fact per line**: a decision plus one clause of why, never the road to it nor what it used to be. This
+  holds in comments, docs, prompts, output and commit messages alike.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
 - **Never cite a line number or a line count** in a doc or a comment — it is wrong at the next edit; name the file, the symbol or the rule.
 - **Budgets, asserted by `TextBudgetTest`**: a `docs/rules/` file ≤ 700 words, a guide or spec ≤ 1200, no line over 220
@@ -119,9 +119,9 @@ A decided decision is no TODO: it lives in the code, these files and git history
   both `ActionOrigin.TRACKER` and off by default. The auto-review loop reads and drafts, its gate in the
   outcome rather than the trigger. The base branch stays read-only for all three.
 - **A review round is a judgement, not a work order**: fix the comment, change nothing and say why, or ask — never implement one you think is wrong.
-- A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human, and a
-  task contradicting what the code guarantees is such a question, asked before the code picks a side — never
-  decided quietly and named in the closing report.
+- A blocked session must reach the board: an agent reports `outcome=question` **before** asking a human. A
+  task contradicting what the code guarantees is such a question, asked before the code picks a side. It is
+  never decided quietly and named in the closing report.
 - **What is still open is a list, not a paragraph**: one `OPEN QUESTIONS:` line ending the terminal output
   names what the agent settled unasked. If the answer would have changed the code, it asks instead.
 - **Tasks are capped at 24, and no bulk branch cleanup** — never a queue, a slots indicator or a `prune` verb.

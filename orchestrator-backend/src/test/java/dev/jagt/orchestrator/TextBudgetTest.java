@@ -8,12 +8,18 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TextBudgetTest {
+
+    private static final Pattern NOT_PROSE = Pattern.compile("^(```|\\||#|<|>)");
+    private static final Pattern LIST_ITEM = Pattern.compile("^([-*]|\\d+\\.)\\s+");
 
     @ParameterizedTest
     @CsvSource({"../README.md, 950", "../AGENTS.md, 1620", "../ARCHITECTURE.md, 2900", "../TODO.md, 600"})
@@ -65,6 +71,16 @@ class TextBudgetTest {
     }
 
     @Test
+    void noSentenceAModelOrAHumanFollowsRunsPastTwentyFiveWords() {
+        List<Path> read = Stream.of(markdownIn(Path.of("../docs/rules")), specs(), List.of(Path.of("../AGENTS.md"),
+                Path.of("usecase/src/main/resources/prompts/sub-agent-context.md"))).flatMap(List::stream).toList();
+
+        assertThat(read.stream().flatMap(document -> sentences(document).stream()
+                .filter(sentence -> sentence.split("\\s+").length > 25)
+                .map(sentence -> document.getFileName() + ": " + sentence))).isEmpty();
+    }
+
+    @Test
     void commentsAreAtMostFifteenPercentOfTheMainSources() {
         List<String> code = mainSources().flatMap(source -> lines(source).stream())
                 .map(String::strip).filter(line -> !line.isEmpty()).toList();
@@ -87,6 +103,30 @@ class TextBudgetTest {
     private static int words(Path document) {
         return lines(document).stream().mapToInt(line -> line.isBlank() ? 0 : line.trim().split("\\s+").length)
                 .sum();
+    }
+
+    private static List<String> sentences(Path document) {
+        List<String> blocks = new ArrayList<>();
+        StringBuilder block = new StringBuilder();
+        boolean fenced = false;
+        for (String line : lines(document)) {
+            String text = line.strip();
+            boolean fence = text.startsWith("```");
+            fenced ^= fence;
+            boolean prose = !fenced && !fence && !text.isEmpty() && !NOT_PROSE.matcher(text).find();
+            if (!prose || LIST_ITEM.matcher(text).find()) {
+                blocks.add(block.toString());
+                block.setLength(0);
+            }
+            if (prose) {
+                block.append(' ').append(LIST_ITEM.matcher(text).replaceFirst(""));
+            }
+        }
+        blocks.add(block.toString());
+        return blocks.stream()
+                .map(text -> text.replaceAll("`[^`]*`", "CODE").replaceAll("\\[([^\\]]*)\\]\\([^)]*\\)", "$1"))
+                .flatMap(text -> Arrays.stream(text.split("(?<=[.!?;:])\\s+| · ")))
+                .map(String::strip).filter(sentence -> !sentence.isEmpty()).toList();
     }
 
     private static List<Path> markdownIn(Path directory) {

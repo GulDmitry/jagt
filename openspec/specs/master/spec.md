@@ -8,8 +8,8 @@ where the human stands.
 ## Requirements
 
 ### Requirement: The Master is a headless run per role, not a window
-By default (`master.mode: judge`) one headless run per role of the brief SHALL read each round in the task's worktrees,
-refused every write, commit and push (`HeadlessClaudeRoundReviewer`); jagt SHALL write the verdict (`MasterPanel`).
+By default (`master.mode: judge`) one headless run per role of the brief SHALL read each round in the task's worktrees.
+It is refused every write, commit and push (`HeadlessClaudeRoundReviewer`); jagt SHALL write the verdict (`MasterPanel`).
 Each round SHALL cost one heavy read per role, charged to the task as `master`.
 
 #### Scenario: You want a round read before you look
@@ -107,7 +107,7 @@ not-ready round's findings SHALL go back to the session that wrote the code, in 
 - **THEN** it is a question, not a verdict
 
 ### Requirement: A verdict rests on proof
-The Master SHALL read the ticket and the diff, and prove by a run any premise its verdict rests on, never taking it
+The Master SHALL read the ticket and the diff. It SHALL prove by a run any premise its verdict rests on, never taking it
 from the author.
 
 #### Scenario: The reviewer cannot prove a finding

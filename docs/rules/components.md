@@ -47,8 +47,8 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
 - **Sub-agents** are agent-CLI sessions in worktrees named `<taskId>-<projectKey>`, siblings of the base repo,
   briefed by `AGENTS.md` (`AgentRuntime.SYSTEM_KNOWLEDGE_FILE`) and `task_context.md`.
 - **A task is created with its item's own facts or not at all.** `TaskLauncher` and `TaskResume` read it on every
-  launch; `TicketFacts.usable()` gates on a key, a title **and** a link. A failing answer is asked again
-  (`protocol/RetryPolicy`, 3 attempts, each carrying what the last got wrong), a bare key answered for a
+  launch; `TicketFacts.usable()` gates on a key, a title **and** a link. A failing answer is asked again:
+  `protocol/RetryPolicy`, 3 attempts, each carrying what the last got wrong. A bare key answered for a
   **different** key is refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
   the task and `TaskName.from` cuts its branch out of them.
 - **Sub-agents can only act on their own task**: `surface/mcp/CallerScope` enforces X-Working-Directory.
@@ -64,7 +64,7 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
 
 ### What is missing is said at startup, not at the click that needed it
 
-- `startup/StartupValidation` asks every `StartupCheck` before the board is announced and refuses the start
+- `startup/StartupValidation` asks every `StartupCheck` before the board is announced. It refuses the start
   with **all** problems at once (`Misconfigured` via `StartupFailure`), each line naming its key.
 - A check lives **next to** the part it answers for, so it exists only when that part was selected; what no
   implementation answers for goes in `startup` — a `type` selecting nothing, `jagt.yml`, jagt's paths, git,

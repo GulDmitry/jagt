@@ -73,8 +73,8 @@ session (`POST /api/tasks/say`): not a verb, the only control there.
 
 ### Requirement: Tier 1 is grammar, tier 2 only proposes
 Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2, `service/NaturalLanguageDispatch`, sends
-⌘K free text via `POST /api/interpret` to a model that only proposes one grammar command, validated (task and verb
-exist) and run through `CommandService`: never more than a button. The call is stripped (`--strict-mcp-config
+⌘K free text via `POST /api/interpret` to a model that only proposes one grammar command. That command is
+validated (task and verb exist) and run through `CommandService`: never more than a button. The call is stripped (`--strict-mcp-config
 --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`) and answers with the interpretation first.
 
 #### Scenario: A proposal names no real verb

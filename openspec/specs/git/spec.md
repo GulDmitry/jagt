@@ -116,9 +116,9 @@ or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over a
 - **THEN** a commit, push and request per repository onto its own base; an unchanged one gets none
 
 ### Requirement: Resume reconciles origin and target
-`rebaseOntoTarget` SHALL put it on what origin holds (fast-forwarded when behind, REFUSED when both sides carry commits,
-left alone when only this machine's do), then replay it on its target, pushed back under a lease, a refusal undoing
-it; a CONFLICTING rebase stands in the worktree for the session. One this machine never had comes from
+`rebaseOntoTarget` SHALL put it on what origin holds: fast-forwarded when behind, REFUSED when both sides carry commits,
+left alone when only this machine's do. Then it replays on its target, pushed back under a lease, a refusal
+undoing it; a CONFLICTING rebase stands in the worktree for the session. One this machine never had comes from
 `origin/<branch>`, not the request's target.
 
 #### Scenario: Base checkout

@@ -2,9 +2,9 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-`./gradlew test` is the hermetic gate. `e2eTest` needs git + tmux, `boardTest` Playwright's own Chromium,
-`linuxDriverTest` Linux + binaries + a display (gated on `JAGT_IN_CONTAINER`), `promptEval` the assistant's CLI
-and tokens, `masterEval` those plus minutes — each in `src/<name>/java`, none in `check`.
+`./gradlew test` is the hermetic gate. Each other suite lives in `src/<name>/java`, none in `check`: `e2eTest`
+needs git + tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux + binaries + a display (gated on
+`JAGT_IN_CONTAINER`); `promptEval` the assistant's CLI and tokens; `masterEval` those plus minutes.
 
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix, and
 **every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite booting the app
@@ -30,8 +30,8 @@ then removes the worktrees and branches.
 
 ### The board is tested in a browser
 
-- `boardTest` boots the app on a random port and drives the real page in Playwright's headless Chromium —
-  the only place the grid's order, a card's buttons, the SSE repaint and the palette's verdict are proved.
+- `boardTest` boots the app on a random port and drives the real page in Playwright's headless Chromium. Only it
+  proves the grid's order, a card's buttons, the SSE repaint and the palette's verdict.
 - **Run it after any change to `static/`**, asserting through the **server** (seed `StateService`, stub a
   command), never by evaluating page JS. Three write paths are `@MockitoBean`s: `CommandService`,
   `TaskLauncher`, `NaturalLanguageDispatch`.
@@ -46,7 +46,7 @@ then removes the worktrees and branches.
 - It asserts the **sentence** a flow returns: run it before pushing a reword.
 - Two matrices: `TaskFlowCase` × `TaskFlowMatrixTest` is CREATE → TEARDOWN across the viewer combinations;
   `ReviewRoundCase` × `ReviewAndDeployFlowTest` is everything between (ship, a round, deploy, revert, resume)
-  on **one** combination, its verbs through the board's HTTP endpoints and the agent reporting over
+  on **one** combination. Its verbs go through the board's HTTP endpoints and the agent reports over
   `POST /mcp`, so origins (`board` vs `mcp`) are asserted end to end.
 - `promptEval` puts one operator phrasing per row (`CommandMappingCase`) through the real assistant. It guards
   the mapping prompt, each `TaskAction`'s hint and the task-list shape — run it on a change to any, or to the

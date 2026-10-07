@@ -126,8 +126,8 @@ The payload adds the session's log (else derived from the worktree), which gives
 
 ### Requirement: What jagt answers a hook, the harness reads
 The hook SHALL print jagt's answer (`curl -sf` prints the body). Two hooks are answered, each declared:
-`gate=PreToolUse`, scoped to the shell tool, and `turn-end=Stop`, refusing once a turn that leaves the agent's move
-unreported (`Move.endsUnreported`), and showing the human alone a round handed to the Master
+`gate=PreToolUse`, scoped to the shell tool; and `turn-end=Stop`. The latter refuses once a turn that leaves the
+agent's move unreported (`Move.endsUnreported`), and shows the human alone a round handed to the Master
 (`AgentRuntime.toldTheHuman`). They are not git hooks; that ban does not reach them.
 
 #### Scenario: A session starts after compaction
@@ -140,7 +140,7 @@ unreported (`Move.endsUnreported`), and showing the human alone a round handed t
 - **THEN** neither refuses anything
 
 ### Requirement: jagt reaps a worktree's processes
-Each sub-agent spawns its own language server (jdtls ~1–2 GB per Java worktree), never released, so jagt SHALL reap
+Each sub-agent spawns its own language server (jdtls ~1–2 GB per Java worktree), never released. jagt SHALL reap
 it on `done` / `remove_task` (`port/WorktreeProcesses`, `LsofWorktreeProcesses.reap`: `lsof` by cwd, `kill -9`).
 `orchestrator.agent-disabled-plugins` SHALL write `enabledPlugins: {"<name>": false}` into worktree settings,
 default empty.
