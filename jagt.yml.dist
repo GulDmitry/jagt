@@ -83,7 +83,7 @@ orchestrator:
     #   TICKET_READ: /path/to/tracker-only.json     # falls back to mcpConfig, then to your own configuration
     #   REVIEW_SWEEP: /path/to/code-host-only.json  # kinds: TICKET_READ, MR_READ, REVIEW_SWEEP, COMMAND_MAP
 
-  # ── The Master session (EXPERIMENTAL) ───────────────────────────────────────────────────────────────────────
+  # ── The Master session ──────────────────────────────────────────────────────────────────────────────────────
   # An unattended reviewer that reads what a task produced before you do. It judges unless you turn it off; what
   # each mode does and costs: docs/usage.md#the-master.
   master:

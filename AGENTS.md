@@ -113,7 +113,7 @@ A decided decision is no TODO: it lives in the code, these files and git history
 ## The human in the loop
 
 - **One thing other than a human may act as one: the Master session in `act`** — it stands where the human
-  stands and holds the same rights. Experimental and opt-in — the default is `judge` — and bounded by
+  stands and holds the same rights. Opt-in — the default is `judge` — and bounded by
   `FlowRules`: it picks a legal move, never invents one.
 - **Nothing else acts unasked but on a stage the tracker reports**: intake opens a task, the close ends one,
   both `ActionOrigin.TRACKER` and off by default. The auto-review loop reads and drafts, its gate in the

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Master: an experimental headless reader of each handed-back round that writes a verdict, and in `act` stands
+The Master: a headless reader of each handed-back round that writes a verdict, and in `act` stands
 where the human stands.
 
 ## Requirements

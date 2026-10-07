@@ -38,9 +38,7 @@ public class MasterCommand implements GlobalCommand {
         ConfigService.ConfigFile.MasterConfig config = configService.load().master();
         MasterMode mode = config.modeOrDefault();
         if (mode == MasterMode.OFF) {
-            return "master: off, and experimental. To try it: copy master-brief.md.dist to "
-                    + config.briefOrDefault() + ", edit it until it reads like you, and set"
-                    + " `orchestrator.master.mode` to " + MasterMode.JUDGE.id() + ".";
+            return "master: off. To turn it on, set `orchestrator.master.mode` to " + MasterMode.JUDGE.id() + ".";
         }
         return "master: " + mode.id() + (mode == MasterMode.JUDGE
                 ? " — it reads and writes what it found; it presses nothing."
