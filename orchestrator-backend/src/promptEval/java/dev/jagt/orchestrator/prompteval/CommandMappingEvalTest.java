@@ -46,7 +46,10 @@ class CommandMappingEvalTest {
     private MeteredAssistant assistant;
 
     @BeforeEach
-    void threeTasksBetweenThemOfferingEveryVerbTheRowsAskFor() {
+    void fourTasksBetweenThemOfferingEveryVerbTheRowsAskFor() {
+        stateService.putTask("ABC-23", TaskState.builder("shop", workspace.resolve("ABC-23").toString(),
+                        TaskStatus.PLAN_PENDING)
+                .alias("a4").title("Search ignores accented letters").build());
         stateService.putTask("ABC-42", TaskState.builder("shop", workspace.resolve("ABC-42").toString(),
                         TaskStatus.REVIEW_PENDING)
                 .alias("a1").title("Login form rejects a valid e-mail")

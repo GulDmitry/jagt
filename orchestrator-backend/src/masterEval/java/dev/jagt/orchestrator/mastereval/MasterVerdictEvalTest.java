@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.mastereval;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.MasterReview;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.UsageTracker;
@@ -119,7 +118,7 @@ class MasterVerdictEvalTest {
         String taskId = "ABC-" + ROUND.incrementAndGet();
         Path worktree = MasterEvalWorkspace.worktreeFor(
                 MasterEvalWorkspace.root().resolve("repos/" + taskId + "/repo"), round, taskId);
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING)
+        TaskState task = TaskState.builder("proj", worktree.toString(), round.status())
                 .alias("m" + ROUND.get()).title(round.instructions()).build();
         stateService.putTask(taskId, task);
         Optional<MasterReview.Verdict> verdict = awaitVerdict(task);

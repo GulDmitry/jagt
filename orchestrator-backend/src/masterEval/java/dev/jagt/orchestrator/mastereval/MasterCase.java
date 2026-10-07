@@ -1,21 +1,32 @@
 package dev.jagt.orchestrator.mastereval;
 
+import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.MasterReview;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * One round handed to the Master, and what a human would have said about it. {@code names} are the words the
- * review must contain to count as having found the thing — a symbol out of the diff rather than a wording,
- * since how a verdict is phrased is the model's and what it is about is not.
+ * One round or plan handed to the Master, and what a human would have said about it. {@code names} are the words
+ * the review must contain to count as having found the thing — a symbol out of the diff rather than a wording,
+ * since how a verdict is phrased is the model's and what it is about is not. A blank {@code plan} writes no plan.md.
  */
-record MasterCase(String name, String instructions, Map<String, String> baseline, Map<String, String> change,
-                  MasterReview.Kind verdict, List<String> names) {
+record MasterCase(String name, String instructions, TaskStatus status, Map<String, String> baseline,
+                  Map<String, String> change, String plan, MasterReview.Kind verdict, List<String> names) {
+
+    static MasterCase round(String name, String instructions, Map<String, String> baseline,
+                            Map<String, String> change, MasterReview.Kind verdict, List<String> names) {
+        return new MasterCase(name, instructions, TaskStatus.REVIEW_PENDING, baseline, change, "", verdict, names);
+    }
+
+    static MasterCase plan(String name, String instructions, Map<String, String> baseline, String plan,
+                           MasterReview.Kind verdict, List<String> names) {
+        return new MasterCase(name, instructions, TaskStatus.PLAN_PENDING, baseline, Map.of(), plan, verdict, names);
+    }
 
     static List<MasterCase> matrix() {
         return List.of(
-                new MasterCase("a fix and the test that fails without it",
+                round("a fix and the test that fails without it",
                         "Discount was applied to the shipping line too. Charge it on goods only.",
                         Map.of("build.gradle", """
                                 plugins { id 'java' }
@@ -61,7 +72,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                 """),
                         MasterReview.Kind.READY, List.of()),
 
-                new MasterCase("a boundary the diff plainly gets wrong",
+                round("a boundary the diff plainly gets wrong",
                         "Send the first page of results, twenty per page.",
                         Map.of("src/Page.java", """
                                 class Page {
@@ -79,7 +90,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                 """),
                         MasterReview.Kind.NOT_READY, List.of("Page.java")),
 
-                new MasterCase("a fix nothing tests",
+                round("a fix nothing tests",
                         "A blank surname crashed the label printer. Stop it crashing.",
                         Map.of("src/Label.java", """
                                 class Label {
@@ -95,9 +106,9 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     }
                                 }
                                 """),
-                        MasterReview.Kind.NOT_READY, List.of("Label.java", "test")),
+                        MasterReview.Kind.NOT_READY, List.of("Label.java")),
 
-                new MasterCase("work nobody asked for, carried along",
+                round("work nobody asked for, carried along",
                         "Rename `qty` to `quantity` in Order.",
                         Map.of("src/Order.java", """
                                 class Order {
@@ -125,7 +136,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                 """),
                         MasterReview.Kind.NOT_READY, List.of("Invoice.java")),
 
-                new MasterCase("a comment telling how the class is configured",
+                round("a comment telling how the class is configured",
                         "Log the order id when an order-created event arrives.",
                         Map.of("src/main/java/OrderListener.java", """
                                 class OrderListener {
@@ -150,7 +161,7 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                 """),
                         MasterReview.Kind.NOT_READY, List.of("OrderListener.java")),
 
-                new MasterCase("a version dropped that the ticket never named",
+                round("a version dropped that the ticket never named",
                         "Set the quote mock's mapping version to the latest, 3.0.",
                         Map.of("src/QuoteMock.java", """
                                 class QuoteMock {
@@ -174,6 +185,92 @@ record MasterCase(String name, String instructions, Map<String, String> baseline
                                     }
                                 }
                                 """),
+                        MasterReview.Kind.QUESTION, List.of("v2")),
+
+                plan("a plan doing exactly what the ticket asks",
+                        "Discount was applied to the shipping line too. Charge it on goods only.",
+                        Map.of("src/main/java/Basket.java", """
+                                class Basket {
+                                    static int total(int goods, int shipping, int percentOff) {
+                                        return (goods + shipping) * (100 - percentOff) / 100;
+                                    }
+                                }
+                                """),
+                        """
+                        1. In `Basket.total`, apply `percentOff` to `goods` alone, then add `shipping` undiscounted.
+                        2. Add `BasketTest`: `total(100, 10, 50)` is 60, where it is 55 before the change.
+                        """,
+                        MasterReview.Kind.READY, List.of()),
+
+                plan("a plan missing a ticket line",
+                        "Rename `qty` to `quantity` in Order, and in the invoice export that reads it.",
+                        Map.of("src/Order.java", """
+                                class Order {
+                                    int qty;
+                                }
+                                """,
+                                "src/InvoiceExport.java", """
+                                class InvoiceExport {
+                                    static String line(Order order) {
+                                        return "qty=" + order.qty;
+                                    }
+                                }
+                                """),
+                        """
+                        1. Rename the field `Order.qty` to `Order.quantity`.
+                        """,
+                        MasterReview.Kind.NOT_READY, List.of("InvoiceExport")),
+
+                plan("a plan carrying work nobody asked for",
+                        "A blank surname crashed the label printer. Stop it crashing.",
+                        Map.of("src/Label.java", """
+                                class Label {
+                                    static String of(String first, String last) {
+                                        return first + " " + last.toUpperCase();
+                                    }
+                                }
+                                """,
+                                "src/Printer.java", """
+                                class Printer {
+                                    void print(String label) {
+                                        System.out.println(label);
+                                    }
+                                }
+                                """),
+                        """
+                        1. In `Label.of`, return `first` alone when `last` is null or blank; test both.
+                        2. Rewrite `Printer` to buffer labels and print them in batches of ten.
+                        """,
+                        MasterReview.Kind.NOT_READY, List.of("Printer")),
+
+                plan("no plan written at all",
+                        "Send the first page of results, twenty per page.",
+                        Map.of("src/Page.java", """
+                                class Page {
+                                    static List<String> first(List<String> all) {
+                                        return all;
+                                    }
+                                }
+                                """),
+                        "",
+                        MasterReview.Kind.NOT_READY, List.of()),
+
+                plan("a plan choosing what the ticket leaves open",
+                        "Set the quote mock's mapping version to the latest, 3.0.",
+                        Map.of("src/QuoteMock.java", """
+                                class QuoteMock {
+                                    static String answer(int version) {
+                                        return switch (version) {
+                                            case 1 -> "/quote/v1";
+                                            case 2 -> "/quote/v2";
+                                            default -> throw new IllegalArgumentException("version " + version);
+                                        };
+                                    }
+                                }
+                                """),
+                        """
+                        1. In `QuoteMock.answer`, replace `case 2 -> "/quote/v2"` with `case 3 -> "/quote/v3"`.
+                        """,
                         MasterReview.Kind.QUESTION, List.of("v2")));
     }
 

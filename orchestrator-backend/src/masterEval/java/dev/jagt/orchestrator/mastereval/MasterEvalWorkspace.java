@@ -89,7 +89,10 @@ final class MasterEvalWorkspace {
         write(worktree, round.change());
         // What a launch leaves for a task nobody filed, kept out of the diff as jagt's own plumbing is.
         Files.writeString(worktree.resolve("task_request.md"), round.instructions());
-        Files.writeString(repo.resolve(".git/info/exclude"), "task_request.md\n");
+        if (!round.plan().isBlank()) {
+            Files.writeString(worktree.resolve("plan.md"), round.plan());
+        }
+        Files.writeString(repo.resolve(".git/info/exclude"), "task_request.md\nplan.md\n");
         MasterEvalTranscripts.nothingTypedIn(worktree);
         return worktree;
     }
