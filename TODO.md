@@ -26,7 +26,6 @@ Measured, no memory layer ([§8](docs/research/memory-layer.md#8-measured-on-our
 memory, loaded in every worktree, rotted into ticket notes, skill duplicates and "never commit" rules.
 
 - Triage it: a still-true project fact moves to its agent file, the rest goes.
-- Workers stop writing it: `autoMemoryEnabled: false` in the worktree's generated settings.
 - A worker that hit a gap adds a line to the project's agent file in its branch, reviewed in the MR.
 
 Decide first: the guard at hand-back, beside `TaskNotes.owed` — how many lines, which justification field

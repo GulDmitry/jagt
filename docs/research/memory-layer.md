@@ -312,7 +312,7 @@ Claude auto-memory directory of their repositories. Call counts are measured; wh
   `CLAUDE.local.md` does not do: gitignored, it never reaches a worktree, and jagt writes its brief there.
 - Setup and access gaps close in worktree setup or a tool, not in text.
 - Transcripts hold plaintext credentials: any distill over them needs a scrubber first.
-- Open: switching off workers' auto memory, and triaging the files already there.
+- Workers' auto memory is off (`autoMemoryEnabled: false`); open: triaging the files already there.
 - **Reopens when** one correction still recurs in 3+ tasks after the project files carry it, or rediscovery passes
   10% of tool calls.
 

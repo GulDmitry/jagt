@@ -176,6 +176,15 @@ class ClaudeAgentRuntimeTest {
     }
 
     @Test
+    void keepsATaskSessionFromWritingTheRepositorysAutoMemory() {
+        String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
+
+        boolean enabled = new JsonMapper().readTree(json).path("autoMemoryEnabled").asBoolean(true);
+
+        assertThat(enabled).isFalse();
+    }
+
+    @Test
     void preApprovesTheJagtToolsAndTheAgentsGitInGeneratedAgentSettings() {
         String json = ClaudeAgentRuntime.settingsJson(null, null, null, null);
 
