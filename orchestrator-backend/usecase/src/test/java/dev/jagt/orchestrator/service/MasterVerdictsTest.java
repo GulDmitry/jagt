@@ -11,7 +11,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
@@ -46,7 +45,7 @@ class MasterVerdictsTest {
                 List.of("Foo.java:12 the guard is inverted"), 1), acting());
 
         verify(sessions).relayIfChanged(eq("ABC-1"), contains("the guard is inverted"));
-        verify(ship, never()).ship(anyString(), any(), anyBoolean());
+        verify(ship, never()).ship(anyString(), any());
     }
 
     @Test
@@ -112,22 +111,12 @@ class MasterVerdictsTest {
     @Test
     void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path worktree) {
         TaskState task = in(worktree);
-        when(ship.ship("ABC-1", task, true)).thenReturn(true);
+        when(ship.ship("ABC-1", task)).thenReturn(true);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
 
-        verify(ship).ship("ABC-1", task, true);
+        verify(ship).ship("ABC-1", task);
         verify(reports, never()).report(anyString(), any(), anyString());
-    }
-
-    @Test
-    void leavesClosingToTheHumanWhoKeptThatStep(@TempDir Path worktree) {
-        TaskState task = in(worktree);
-        var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("done"), null);
-
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), kept);
-
-        verify(ship).ship("ABC-1", task, false);
     }
 
     @Test
@@ -138,7 +127,7 @@ class MasterVerdictsTest {
                 kept);
 
         assertThat(moved).isFalse();
-        verify(ship, never()).ship(anyString(), any(), anyBoolean());
+        verify(ship, never()).ship(anyString(), any());
     }
 
     @Test
@@ -147,7 +136,7 @@ class MasterVerdictsTest {
                 judging());
 
         assertThat(moved).isFalse();
-        verify(ship, never()).ship(anyString(), any(), anyBoolean());
+        verify(ship, never()).ship(anyString(), any());
     }
 
     @Test
@@ -159,7 +148,7 @@ class MasterVerdictsTest {
 
         verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS,
                 "outcome=question — reviewer: Add v3 beside v2, or replace it?");
-        verify(ship, never()).ship(anyString(), any(), anyBoolean());
+        verify(ship, never()).ship(anyString(), any());
     }
 
     @Test

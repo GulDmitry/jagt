@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-/** What the Master presses on a ready round. A ship of nothing moves no status, so it would ship again every tick. */
+/** What the Master presses on a ready round. Closing a task is the human's alone: a round holding nothing waits for them. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -17,10 +17,10 @@ public class MasterShip {
     private final CommandService commands;
     private final TaskLauncher launcher;
 
-    /** A task holding nothing to ship is closed where {@code mayClose}; false where nothing was pressed. */
-    public boolean ship(String taskId, TaskState task, boolean mayClose) {
+    /** False where nothing was pressed. */
+    public boolean ship(String taskId, TaskState task) {
         if (!changes.anyToShip(task)) {
-            return mayClose && close(taskId);
+            return false;
         }
         log.atInfo().setMessage("master ships").addKeyValue("task", taskId).log();
         // Through the same door a human's press uses, so an illegal move is refused rather than taken, and
@@ -33,12 +33,5 @@ public class MasterShip {
     public String open(String line) {
         log.atInfo().setMessage("master opens a task").addKeyValue("line", line).log();
         return launcher.launchLine(line).message();
-    }
-
-    private boolean close(String taskId) {
-        log.atInfo().setMessage("master closes").addKeyValue("task", taskId)
-                .addKeyValue("cause", "a ready round holds nothing to ship").log();
-        OriginContext.as(ActionOrigin.MASTER, () -> commands.execute(taskId, TaskAction.DONE));
-        return true;
     }
 }

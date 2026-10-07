@@ -22,9 +22,7 @@ public enum MasterRight {
     /** Posting a drafted reply to a person on the request. */
     REPLY,
     /** Deciding what the ticket or the code leaves open, as the human would. */
-    ANSWER,
-    /** Closing a task whose ready round holds nothing to ship. */
-    DONE;
+    ANSWER;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

@@ -35,3 +35,4 @@ alternatives — so a later reader can tell a decision from a habit.
 - [0013 — A deploy conflict is the session's in `act`](0013-a-deploy-conflict-is-the-sessions-in-act.md)
 - [0014 — Behaviour is recorded as OpenSpec specs](0014-behaviour-is-recorded-as-openspec-specs.md)
 - [0015 — Another branch is another task](0015-another-branch-is-another-task.md)
+- [0016 — Only the human closes a task](0016-only-the-human-closes-a-task.md)

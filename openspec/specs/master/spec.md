@@ -49,7 +49,8 @@ for them; unreadable, they SHALL stop the round
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
-With `master.mode: act` the Master SHALL ship a `ready` round, close an empty one and answer a question; `master.mine` SHALL keep named steps the human's.
+With `master.mode: act` the Master SHALL ship a `ready` round and answer a question; `master.mine` SHALL keep named
+steps the human's. Closing a task SHALL stay the human's alone.
 
 #### Scenario: You want it to act for you
 - **WHEN** a round is `ready` in `master.mode: act`
@@ -57,7 +58,7 @@ With `master.mode: act` the Master SHALL ship a `ready` round, close an empty on
 
 #### Scenario: A ready round holds nothing to ship
 - **WHEN** a `ready` round has nothing to ship in `master.mode: act`
-- **THEN** it closes the task; `master.mine: [done]` leaves that to you
+- **THEN** it presses nothing and the task waits for you
 
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question in `master.mode: act`

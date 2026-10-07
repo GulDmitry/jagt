@@ -49,7 +49,7 @@ public class MasterVerdicts {
                 if (!config.may(MasterRight.SHIP)) {
                     return false;
                 }
-                return ship.ship(taskId, task, config.may(MasterRight.DONE));
+                return ship.ship(taskId, task);
             }
         }
         return false;
