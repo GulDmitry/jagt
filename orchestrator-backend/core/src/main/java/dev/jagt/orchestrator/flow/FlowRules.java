@@ -179,6 +179,58 @@ public final class FlowRules {
         return WAITING_ON_THE_HOST.contains(from) ? TaskStatus.CI_FAILED : from;
     }
 
+    /**
+     * What a read of the review round leads to: a red run stops it, a clean round is approved or reviewed, and
+     * anything else leaves the task where its session has it.
+     */
+    public static Optional<TaskStatus> readReview(boolean unresolved, boolean approved, Pipeline checks) {
+        if (checks == Pipeline.RED) {
+            return Optional.of(TaskStatus.CI_FAILED);
+        }
+        if (unresolved) {
+            return Optional.empty();
+        }
+        if (approved) {
+            return Optional.of(TaskStatus.APPROVED);
+        }
+        return checks == Pipeline.GREEN ? Optional.of(TaskStatus.REVIEWED) : Optional.empty();
+    }
+
+    /** A verified hand-back reaches the human; a failed one goes back to its session. */
+    public static TaskStatus verified(boolean passed) {
+        return passed ? TaskStatus.REVIEW_PENDING : TaskStatus.IN_PROGRESS;
+    }
+
+    /** A session handed findings, an answer or a go is at work again. */
+    public static TaskStatus relayed() {
+        return TaskStatus.IN_PROGRESS;
+    }
+
+    /** A task resumed onto a request already open waits on that request's checks. */
+    public static TaskStatus resumedOnARequest() {
+        return TaskStatus.CI_POLLING;
+    }
+
+    /** Where the agent is expected to act, so its silence means death; NEW for one that died before reporting. */
+    public static boolean watched(TaskStatus status) {
+        return WATCHED.contains(status);
+    }
+
+    /** A status a session hands control back with: news to the human, and where its drafted replies wait. */
+    public static boolean handsBack(TaskStatus status) {
+        return HANDED_BACK.contains(status);
+    }
+
+    /** A hand-back the Master reads before the human, verification included. */
+    public static boolean readByTheMasterNext(TaskStatus status) {
+        return status == TaskStatus.REVIEW_PENDING || status == TaskStatus.VERIFYING;
+    }
+
+    /** A request green with every thread closed, which in act the Master deploys as the human would. */
+    public static boolean deployedByTheMaster(TaskStatus status) {
+        return WAITING_FOR_A_DEPLOY.contains(status);
+    }
+
     /** Whether the work has left the worktree, which is the only point a tracker's word can end the task. */
     public static boolean handedOver(TaskStatus status) {
         return HANDED_OVER.contains(status);
@@ -188,6 +240,13 @@ public final class FlowRules {
     public static Set<TaskStatus> redirects() {
         return EnumSet.of(TaskStatus.VERIFYING);
     }
+
+    private static final Set<TaskStatus> WATCHED = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,
+            TaskStatus.SHIPPING);
+
+    private static final Set<TaskStatus> HANDED_BACK = EnumSet.of(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED);
+
+    private static final Set<TaskStatus> WAITING_FOR_A_DEPLOY = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED);
 
     private static final Set<TaskStatus> HELD_AGAINST_A_REPORT = EnumSet.of(TaskStatus.REVERTED,
             TaskStatus.DEPLOY_CONFLICT);

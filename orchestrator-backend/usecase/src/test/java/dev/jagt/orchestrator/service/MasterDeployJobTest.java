@@ -35,6 +35,18 @@ class MasterDeployJobTest {
     }
 
     @Test
+    void deploysATaskApprovedOnTheHostBeforeTheJobLookedAtIt() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(state.tasks()).thenReturn(Map.of("ABC-1",
+                TaskState.builder("demo", "/wt", TaskStatus.APPROVED).build()));
+
+        new MasterDeployJob(state, config, commands).run();
+
+        verify(commands).execute("ABC-1", TaskAction.DEPLOY);
+    }
+
+    @Test
     void leavesTheDeployToTheHumanWhoKeptIt() {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("deploy"), null)));

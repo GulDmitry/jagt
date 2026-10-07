@@ -135,7 +135,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
                 .message("deployed").build());
 
-        reports(state).markReviewed("ABC-1");
+        reports(state).markRead("ABC-1", TaskStatus.REVIEWED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
         assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("deployed");
@@ -344,7 +344,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
 
-        reports(state).markApproved("ABC-1");
+        reports(state).markRead("ABC-1", TaskStatus.APPROVED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
         verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
@@ -357,7 +357,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
 
-        reports(state).markReviewed("ABC-1");
+        reports(state).markRead("ABC-1", TaskStatus.REVIEWED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
         verify(notifications, never()).send(any());
@@ -369,7 +369,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
                 .alias("a1").mrUrl("http://mr/1").build());
 
-        reports(state).markApproved("ABC-1");
+        reports(state).markRead("ABC-1", TaskStatus.APPROVED);
 
         verify(notifications, never()).send(any());
     }
@@ -381,7 +381,7 @@ class AgentStatusReportsTest {
                 .mrUrl("http://mr/1").message("awaiting: squash or keep the commits?")
                 .lastActiveTimestamp(1_700_000_000_000L).silentSince(1_700_000_000_000L).build());
 
-        reports(state).markReviewed("ABC-1");
+        reports(state).markRead("ABC-1", TaskStatus.REVIEWED);
 
         TaskState after = state.task("ABC-1").orElseThrow();
         assertThat(after.message()).isEqualTo("awaiting: squash or keep the commits?");
@@ -494,7 +494,7 @@ class AgentStatusReportsTest {
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
 
-        reports(state).markFailed("ABC-1");
+        reports(state).markRead("ABC-1", TaskStatus.CI_FAILED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_FAILED);
         verify(notifications, never()).send(any());

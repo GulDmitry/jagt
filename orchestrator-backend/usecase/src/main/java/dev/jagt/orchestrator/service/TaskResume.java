@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.NewTask;
@@ -105,7 +105,7 @@ public class TaskResume {
         if (asksTheTracker) {
             tickets.charge(taskId, ticket.usage());
         }
-        statusReports.report(TaskStatus.CI_POLLING, "review request: " + mrUrl, taskId);
+        statusReports.report(FlowRules.resumedOnARequest(), "review request: " + mrUrl, taskId);
         return Launched.created(taskId, "Resumed " + taskId + " on its existing branch, linked " + mrUrl
                 + "; CI_POLLING — `sweep` or `deploy`.");
     }

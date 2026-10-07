@@ -132,8 +132,7 @@ public class AgentStatusReports {
                     .log();
         }
         // A keep-alive says nothing new; a task handing control back, or stopping to ask, does.
-        boolean handedBack = landed != previous
-                && (landed == TaskStatus.REVIEW_PENDING || landed == TaskStatus.CI_FAILED);
+        boolean handedBack = landed != previous && FlowRules.handsBack(landed);
         if (handedBack || askedNow) {
             // Re-read: the same call may have LINKED the request, and the advice differs on whether one exists.
             ping(taskId, landed, shortMessage, stateService.task(taskId));
@@ -142,24 +141,23 @@ public class AgentStatusReports {
             return "Task " + taskId + " stays " + landed + ": that one is a human's to move on from. Your line"
                     + " was recorded" + (shortMessage == null ? "" : " (" + shortMessage + ")");
         }
-        boolean reviewedNext = (landed == TaskStatus.REVIEW_PENDING || landed == TaskStatus.VERIFYING)
-                && handBack.masterReads();
+        boolean reviewedNext = FlowRules.readByTheMasterNext(landed) && handBack.masterReads();
         return "Task " + taskId + " -> " + landed + (shortMessage == null ? "" : " (" + shortMessage + ")")
                 + (reviewedNext ? "; the Master reads this round next; end your turn" : "");
     }
 
-    /** A clean review IS a transition: another round stops being the next move. It is not an approval. */
-    public void markReviewed(String taskId) {
-        markOutcome(taskId, TaskStatus.REVIEWED, "reviewed — checks green, no unresolved comments");
-    }
-
-    /** A real approval by a human, not merely "nothing left to address". */
-    public void markApproved(String taskId) {
-        markOutcome(taskId, TaskStatus.APPROVED, "approved — checks green, request approved");
+    /** Puts what {@link FlowRules#readReview} concluded on the board. */
+    public void markRead(String taskId, TaskStatus read) {
+        switch (read) {
+            case REVIEWED -> markOutcome(taskId, read, "reviewed — checks green, no unresolved comments");
+            case APPROVED -> markOutcome(taskId, read, "approved — checks green, request approved");
+            case CI_FAILED -> markFailed(taskId);
+            default -> throw new IllegalArgumentException(read + " is not what a review read concludes");
+        }
     }
 
     /** The red was tapped when the round read it; this puts the stop on the board. */
-    public void markFailed(String taskId) {
+    private void markFailed(String taskId) {
         String id = stateService.canonicalTaskId(taskId);
         TaskStatus previous = stateService.task(id).map(TaskState::status).orElse(null);
         if (previous != null && FlowRules.readRed(previous) == TaskStatus.CI_FAILED) {

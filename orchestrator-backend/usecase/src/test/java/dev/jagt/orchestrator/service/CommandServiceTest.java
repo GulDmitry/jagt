@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.flow.FlowEngine;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
+import dev.jagt.orchestrator.task.ActionOrigin;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,5 +40,13 @@ class CommandServiceTest {
         assertThatThrownBy(() -> commands.execute("ABC-1", TaskAction.DEPLOY))
                 .asInstanceOf(type(Refusal.class))
                 .extracting(Refusal::code).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE);
+    }
+
+    @Test
+    void refusesTheMasterAVerbOnlyAHumanPresses() {
+        assertThatThrownBy(() -> OriginContext.as(ActionOrigin.MASTER,
+                () -> commands.execute("ABC-1", TaskAction.DONE)))
+                .isInstanceOf(Refusal.class)
+                .hasMessage("Done is a human's to press, never the Master's.");
     }
 }

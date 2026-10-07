@@ -1,10 +1,12 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.notify.Notifications;
 
 import dev.jagt.orchestrator.port.Notification;
 
 import dev.jagt.orchestrator.flow.Pipeline;
+import dev.jagt.orchestrator.flow.TaskStatus;
 
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TaskLabel;
@@ -103,24 +105,21 @@ public class ReviewSweepService {
         String said = orUnknown(r.pipelineStatus());
         record(taskId, r);
         Pipeline checks = Pipeline.of(said);
-        if (r.threads().isEmpty() && checks != Pipeline.RED) {
-            if (r.approved()) {
-                statusReports.markApproved(taskId);
-                return new SweepResult(SweepResult.Kind.APPROVED,
-                        "sweep " + taskId + ": approved, checks " + said + " — `deploy` or `done`");
-            }
-            if (checks == Pipeline.GREEN) {
-                statusReports.markReviewed(taskId);
-                return new SweepResult(SweepResult.Kind.REVIEWED,
-                        "sweep " + taskId + ": checks " + said
-                                + ", nothing unresolved — waiting for an approval; `deploy` without one");
-            }
+        Optional<TaskStatus> read = FlowRules.readReview(!r.threads().isEmpty(), r.approved(), checks);
+        read.ifPresent(status -> statusReports.markRead(taskId, status));
+        if (read.isPresent() && read.get() == TaskStatus.APPROVED) {
+            return new SweepResult(SweepResult.Kind.APPROVED,
+                    "sweep " + taskId + ": approved, checks " + said + " — `deploy` or `done`");
+        }
+        if (read.isPresent() && read.get() == TaskStatus.REVIEWED) {
+            return new SweepResult(SweepResult.Kind.REVIEWED,
+                    "sweep " + taskId + ": checks " + said
+                            + ", nothing unresolved — waiting for an approval; `deploy` without one");
+        }
+        if (read.isEmpty() && r.threads().isEmpty()) {
             return new SweepResult(SweepResult.Kind.PENDING,
                     "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved yet, not approved — waiting");
-        }
-        if (checks == Pipeline.RED) {
-            statusReports.markFailed(taskId);
         }
         if (!sessions.relayIfChanged(taskId, brief(mrUrl, r, said))) {
             return new SweepResult(SweepResult.Kind.UNCHANGED, "sweep " + taskId + ": "

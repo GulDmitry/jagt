@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Artifact;
@@ -26,7 +27,7 @@ public class ReviewDrafts {
      * the task is being MOVED to, which is not always the one it still carries.
      */
     public static boolean pending(TaskState task, TaskStatus status, boolean shipPostsEveryDraft) {
-        if (status != TaskStatus.REVIEW_PENDING && status != TaskStatus.CI_FAILED) {
+        if (!FlowRules.handsBack(status)) {
             return false;
         }
         Path file = draftsIn(task.worktreePath());

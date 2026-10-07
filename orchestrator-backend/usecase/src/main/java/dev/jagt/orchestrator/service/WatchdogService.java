@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.TaskStatus;
@@ -52,7 +53,7 @@ public class WatchdogService implements Job {
      * agent that died before its first status update. Every other status idles BY DESIGN and stays unwatched.
      */
     static boolean watches(TaskStatus status) {
-        return status == TaskStatus.NEW || status == TaskStatus.IN_PROGRESS || status == TaskStatus.SHIPPING;
+        return FlowRules.watched(status);
     }
 
     @Override

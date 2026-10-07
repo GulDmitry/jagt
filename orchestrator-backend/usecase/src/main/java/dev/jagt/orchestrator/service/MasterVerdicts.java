@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.task.MasterRight;
@@ -44,7 +45,7 @@ public class MasterVerdicts {
                 log.atInfo().setMessage("master returns the round").addKeyValue("task", taskId)
                         .addKeyValue("findings", verdict.findings().size()).log();
                 // Back to work, or the session's report is no transition and the verdict reads as this round's.
-                return reports.report(taskId, TaskStatus.IN_PROGRESS, "reviewer: not ready; relayed");
+                return reports.report(taskId, FlowRules.relayed(), "reviewer: not ready; relayed");
             }
             case QUESTION -> {
                 return ask(taskId, verdict.question());
@@ -68,7 +69,7 @@ public class MasterVerdicts {
             return false;
         }
         log.atInfo().setMessage("master approves the plan").addKeyValue("task", taskId).log();
-        return reports.report(taskId, TaskStatus.IN_PROGRESS, "master: the plan holds");
+        return reports.report(taskId, FlowRules.relayed(), "master: the plan holds");
     }
 
     /**
@@ -82,7 +83,7 @@ public class MasterVerdicts {
             return false;
         }
         log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", question).log();
-        return reports.report(taskId, TaskStatus.IN_PROGRESS, "outcome=question — reviewer: " + question);
+        return reports.report(taskId, FlowRules.relayed(), "outcome=question — reviewer: " + question);
     }
 
     /** The Master's answer to the session's own question, and the task back at work on it. */
@@ -100,7 +101,7 @@ public class MasterVerdicts {
         }
         log.atInfo().setMessage("master answered").addKeyValue("task", taskId).addKeyValue("question", question)
                 .addKeyValue("decision", decision).log();
-        return reports.report(taskId, TaskStatus.IN_PROGRESS, "master answered the question");
+        return reports.report(taskId, FlowRules.relayed(), "master answered the question");
     }
 
     public int answersOverThisTree(TaskState task) {

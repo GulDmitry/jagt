@@ -2,8 +2,8 @@
 
 ## Purpose
 
-The Master: a headless reader of each handed-back round that writes a verdict, and in `act` stands
-where the human stands.
+The Master: a headless reader writing a verdict on each handed-back round; in `act` it stands where the
+human stands.
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Each round SHALL cost one heavy read per role, charged to the task as `master`.
 
 #### Scenario: You want a round read before you look
 - **WHEN** `master.mode` is `judge`, or unset where the human's words are readable
-- **THEN** the Master reads each handed-back round and writes `master-review.md` in the worktree; it presses nothing
+- **THEN** each handed-back round is read into the worktree's `master-review.md`; it presses nothing
 
 #### Scenario: The Master is reading a round
 - **WHEN** a round is under Master review
@@ -46,16 +46,16 @@ for them; unreadable, they SHALL stop the round
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
-With `master.mode: act` the Master SHALL ship a `ready` round, start a plan that holds, answer a question and deploy a
-`REVIEWED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps the human's. Closing a task SHALL stay
-the human's alone.
+With `master.mode: act` the Master SHALL ship a `ready` round, start a plan that holds and answer a question. It SHALL
+deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps the human's. Closing
+SHALL stay the human's: the Master's `done` is refused.
 
 #### Scenario: You want it to act for you
 - **WHEN** a round is `ready`, or a plan holds, in `master.mode: act`
 - **THEN** it is shipped, or the session started
 
 #### Scenario: The request is green with every thread closed
-- **WHEN** a task reaches `REVIEWED` in `master.mode: act`
+- **WHEN** a task reaches `REVIEWED` or `APPROVED` in `master.mode: act`
 - **THEN** the Master deploys it; `mine: [deploy, revert]` leaves the press yours
 
 #### Scenario: A ready round holds nothing to ship

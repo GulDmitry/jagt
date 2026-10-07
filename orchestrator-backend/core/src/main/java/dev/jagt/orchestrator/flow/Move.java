@@ -139,9 +139,13 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         return status == TaskStatus.PLAN_PENDING || status == TaskStatus.REVIEW_PENDING;
     }
 
-    /** A closed task's leftover message is not a question anybody still owes an answer to. */
     private static boolean asking(TaskStatus status, RoundState round) {
-        return round.report() == AgentReport.QUESTION && status != TaskStatus.DONE;
+        return asking(status, round.report());
+    }
+
+    /** A closed task's leftover message is not a question anybody still owes an answer to. */
+    public static boolean asking(TaskStatus status, AgentReport report) {
+        return report == AgentReport.QUESTION && status != TaskStatus.DONE;
     }
 
     /** A turn ending on a move still the agent's, with no question put, is a session stopping unannounced. */

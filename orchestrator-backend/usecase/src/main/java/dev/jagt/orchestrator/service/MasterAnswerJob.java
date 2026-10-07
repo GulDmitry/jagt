@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.AgentReport;
-import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskState;
@@ -56,7 +56,7 @@ public class MasterAnswerJob implements Job {
     }
 
     private static boolean asking(TaskState task) {
-        return task.status() != TaskStatus.DONE && AgentReport.of(task.message()) == AgentReport.QUESTION;
+        return Move.asking(task.status(), AgentReport.of(task.message()));
     }
 
     private void answer(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {

@@ -56,8 +56,8 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.APPROVED);
-        verify(statusReports).markApproved("ABC-1");
-        verify(statusReports, never()).markReviewed("ABC-1");
+        verify(statusReports).markRead("ABC-1", TaskStatus.APPROVED);
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
     }
 
     @Test
@@ -68,8 +68,8 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
-        verify(statusReports).markReviewed("ABC-1");
-        verify(statusReports, never()).markApproved("ABC-1");
+        verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED);
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
     }
 
     @Test
@@ -101,7 +101,7 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
-        verify(statusReports, never()).markReviewed("ABC-1");
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
     }
 
     @Test
@@ -127,8 +127,8 @@ class ReviewSweepServiceTest {
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
         verify(sessions).relayIfChanged(eq("ABC-1"),
                 contains("review_replies.md"));
-        verify(statusReports, never()).markApproved("ABC-1");
-        verify(statusReports, never()).markReviewed("ABC-1");
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
     }
 
     @Test
@@ -275,7 +275,7 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(statusReports).markFailed("ABC-1");
+        verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED);
     }
 
     @Test
@@ -301,8 +301,8 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE);
-        verify(statusReports, never()).markReviewed("ABC-1");
-        verify(statusReports, never()).markApproved("ABC-1");
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
     }
 
     @Test
@@ -398,7 +398,7 @@ class ReviewSweepServiceTest {
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
         assertThat(result.message()).contains("checks running");
-        verify(statusReports, never()).markReviewed("ABC-1");
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
     }
 
     @Test
@@ -412,7 +412,7 @@ class ReviewSweepServiceTest {
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
-        verify(statusReports, never()).markApproved("ABC-1");
+        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
     }
 
     @Test
@@ -570,7 +570,7 @@ class ReviewSweepServiceTest {
 
         sweep.sweep("ABC-1");
 
-        verify(statusReports).markReviewed("ABC-1");
+        verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED);
         verifyNoInteractions(notifications);
     }
 

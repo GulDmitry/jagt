@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.task.TaskState;
@@ -49,11 +50,11 @@ public class VerifyJob implements Job {
     private void verify(String taskId, TaskState task) {
         Optional<String> failure = verification.failure(task);
         if (failure.isEmpty()) {
-            statusReports.report(TaskStatus.REVIEW_PENDING, "verified", taskId);
+            statusReports.report(FlowRules.verified(true), "verified", taskId);
             return;
         }
         sessions.relayIfChanged(taskId, brief(failure.get()));
-        statusReports.report(TaskStatus.IN_PROGRESS, "verification failed; relayed", taskId);
+        statusReports.report(FlowRules.verified(false), "verification failed; relayed", taskId);
     }
 
     /** The output, and the one route out of it: a failing command is not a judgement to weigh. */
