@@ -11,7 +11,7 @@ import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
-import dev.jagt.orchestrator.service.GitService;
+import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
@@ -199,7 +199,7 @@ class MasterModeFlowTest {
         awaitTask(task -> task.status() == TaskStatus.DEPLOY_CONFLICT);
         awaitTold("did not deploy");
 
-        Path resolveIn = GitService.deployWorktreePath(repo(), TASK);
+        Path resolveIn = GitDeploy.deployWorktreePath(repo(), TASK);
         Files.writeString(resolveIn.resolve("widget.txt"), "both sides, resolved\n");
         E2eWorkspace.git(resolveIn, "add", "widget.txt");
 
