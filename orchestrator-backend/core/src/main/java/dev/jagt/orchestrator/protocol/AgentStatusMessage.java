@@ -13,6 +13,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 /**
  * What a session says about its own task, as it arrives on the wire. Raw strings: a value out of its enum is a
  * VIOLATION to report back, not an exception on the way in.
@@ -69,10 +71,6 @@ public record AgentStatusMessage(String status, String message, String outcome, 
     public AgentStatusMessage(String status, String message, String outcome, String reviewRequestUrl,
                               Map<String, String> reviewRequests) {
         this(status, message, outcome, reviewRequestUrl, reviewRequests, null);
-    }
-
-    private static String absent(String value) {
-        return value == null || value.isBlank() ? null : value;
     }
 
     /**

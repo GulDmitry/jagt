@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 /**
  * What a session's own harness says about it. The one message jagt does not shape: a hook posts whatever the CLI
  * handed it, and the hook swallows the answer, so a violation here is not a correction anybody will read. jagt
@@ -63,9 +65,5 @@ public record SessionHookReport(@JsonProperty("transcript_path") String transcri
         return violations(MessageContext.NONE).isEmpty() && transcriptPath != null
                 ? Optional.of(Path.of(transcriptPath))
                 : Optional.empty();
-    }
-
-    private static String absent(String value) {
-        return value == null || value.isBlank() ? null : value;
     }
 }

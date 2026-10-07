@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.task.MergeRequestFacts;
 import java.util.ArrayList;
 import java.util.List;
 
+import static dev.jagt.orchestrator.protocol.Wire.blank;
+
 /** What an answer about an open review request has to hold for a `resume` to act on it. */
 public final class MergeRequestRead {
 
@@ -31,9 +33,5 @@ public final class MergeRequestRead {
             found.add(new Violation("targetBranch", "the branch the request is INTO; the next ship targets it"));
         }
         return List.copyOf(found);
-    }
-
-    private static boolean blank(String value) {
-        return value == null || value.isBlank();
     }
 }

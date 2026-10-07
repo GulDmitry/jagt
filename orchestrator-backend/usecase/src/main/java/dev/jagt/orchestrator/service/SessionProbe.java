@@ -6,8 +6,6 @@ import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -147,15 +145,7 @@ public class SessionProbe {
         long derived = worktree == null || worktree.isBlank()
                 ? 0
                 : runtime.lastSessionActivity(Path.of(worktree)).orElse(0);
-        return Math.max(derived, reported == null ? 0 : modified(reported));
-    }
-
-    private static long modified(Path log) {
-        try {
-            return Files.getLastModifiedTime(log).toMillis();
-        } catch (IOException e) {
-            return 0;
-        }
+        return Math.max(derived, reported == null ? 0 : FileStamps.modified(reported));
     }
 
     /**

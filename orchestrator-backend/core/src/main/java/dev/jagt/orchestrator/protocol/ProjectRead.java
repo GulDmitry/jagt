@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.protocol;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -19,14 +18,8 @@ public final class ProjectRead {
     public static Schema schemaFor(Collection<String> projectKeys) {
         return Schema.answer()
                 .required("failure", "string", null)
-                .choiceRequired("project", withNone(projectKeys), null)
+                .choiceRequired("project", Wire.withNone(projectKeys, NONE), null)
                 .required("reason", "string", null)
                 .required("rule", "string", null);
-    }
-
-    private static Collection<String> withNone(Collection<String> projectKeys) {
-        var allowed = new ArrayList<String>(projectKeys);
-        allowed.add(NONE);
-        return allowed;
     }
 }

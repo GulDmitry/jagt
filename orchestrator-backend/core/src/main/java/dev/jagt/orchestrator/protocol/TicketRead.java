@@ -5,6 +5,8 @@ import dev.jagt.orchestrator.task.TicketFacts;
 import java.util.ArrayList;
 import java.util.List;
 
+import static dev.jagt.orchestrator.protocol.Wire.blank;
+
 /**
  * What an answer about a work item has to hold. The reader is a model, so an answer in the shape of a schema and
  * empty of facts is the usual failure: these are the rules that tell the two apart and say what to fix.
@@ -57,9 +59,5 @@ public final class TicketRead {
     /** Only a bare key can be compared: a URL names its item in a shape no two trackers share. */
     private static boolean answersForAnotherItem(String ref, String key) {
         return ref != null && !ref.contains("://") && !blank(key) && !ref.equalsIgnoreCase(key.strip());
-    }
-
-    private static boolean blank(String value) {
-        return value == null || value.isBlank();
     }
 }

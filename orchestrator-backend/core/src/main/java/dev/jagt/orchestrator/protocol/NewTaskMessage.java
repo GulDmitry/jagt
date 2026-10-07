@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import static dev.jagt.orchestrator.protocol.Wire.absent;
+
 /** Everything a task needs to exist before any of it has been cut. */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record NewTaskMessage(String taskId, String projectKey, List<String> alsoProjects, String instructions,
@@ -72,9 +74,5 @@ public record NewTaskMessage(String taskId, String projectKey, List<String> also
 
     private static String lower(String value) {
         return value.strip().toLowerCase(Locale.ROOT);
-    }
-
-    private static String absent(String value) {
-        return value == null || value.isBlank() ? null : value;
     }
 }

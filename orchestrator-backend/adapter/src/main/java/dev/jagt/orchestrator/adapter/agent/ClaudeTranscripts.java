@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.adapter.agent;
 
+import dev.jagt.orchestrator.service.FileStamps;
 import lombok.extern.slf4j.Slf4j;
 
 import tools.jackson.core.JacksonException;
@@ -46,7 +47,7 @@ final class ClaudeTranscripts {
         }
         try (Stream<Path> logs = Files.list(dir)) {
             return logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
-                    .max(Comparator.comparingLong(ClaudeTranscripts::modified));
+                    .max(Comparator.comparingLong(FileStamps::modified));
         } catch (IOException | RuntimeException unreadable) {
             return Optional.empty();
         }
@@ -60,7 +61,7 @@ final class ClaudeTranscripts {
         }
         try (Stream<Path> logs = Files.list(dir)) {
             return logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
-                    .mapToLong(ClaudeTranscripts::modified)
+                    .mapToLong(FileStamps::modified)
                     .max()
                     .orElse(0);
         } catch (IOException e) {
@@ -81,7 +82,7 @@ final class ClaudeTranscripts {
         try (Stream<Path> logs = Files.list(dir)) {
             List<String> said = new ArrayList<>();
             for (Path log : logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
-                    .sorted(Comparator.comparingLong(ClaudeTranscripts::modified)).toList()) {
+                    .sorted(Comparator.comparingLong(FileStamps::modified)).toList()) {
                 for (String line : Files.readAllLines(log)) {
                     typed(line).map(text -> cut(text, typedByJagt)).filter(text -> !text.isEmpty())
                             .ifPresent(said::add);
@@ -125,14 +126,6 @@ final class ClaudeTranscripts {
             left = line == null || line.isEmpty() ? left : left.replace(line, "");
         }
         return left.strip();
-    }
-
-    private static long modified(Path log) {
-        try {
-            return Files.getLastModifiedTime(log).toMillis();
-        } catch (IOException e) {
-            return 0;
-        }
     }
 
     /** The PHYSICAL path is what the name is built from, so a worktree under a symlink still finds its logs. */

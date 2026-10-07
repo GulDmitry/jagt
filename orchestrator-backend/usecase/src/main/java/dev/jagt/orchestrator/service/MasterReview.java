@@ -47,7 +47,7 @@ public class MasterReview {
             List<String> findings = lines.subList(0, verdictAt).stream()
                     .filter(line -> !line.isEmpty() && !line.startsWith("#")).toList();
             return Optional.of(Verdict.of(lines.get(verdictAt).substring(VERDICT.length()), findings,
-                    modified(file)));
+                    FileStamps.modified(file)));
         } catch (IOException | RuntimeException unreadable) {
             log.atWarn().setMessage("master review unreadable")
                     .addKeyValue("file", file)
@@ -92,14 +92,6 @@ public class MasterReview {
 
         public String question() {
             return findings.isEmpty() ? "" : findings.getLast();
-        }
-    }
-
-    private static long modified(Path file) {
-        try {
-            return Files.getLastModifiedTime(file).toMillis();
-        } catch (IOException gone) {
-            return 0;
         }
     }
 }
