@@ -22,6 +22,19 @@ the appender opens it.
         <file>${LOG_FILE:-jagt-backend.log}</file>
     </appender>
 
+    <!-- The human's: what the Master does, followed in the `master` window (`MasterFeedWindow`). -->
+    <appender name="MASTER" class="ch.qos.logback.core.FileAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} %msg %kvp%n</pattern>
+        </encoder>
+        <file>jagt-master.log</file>
+    </appender>
+    <logger name="dev.jagt.orchestrator.service.MasterAnswerJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.MasterReviewJob"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.MasterVerdicts"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.MasterShip"><appender-ref ref="MASTER"/></logger>
+    <logger name="dev.jagt.orchestrator.service.MasterPanel"><appender-ref ref="MASTER"/></logger>
+
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>

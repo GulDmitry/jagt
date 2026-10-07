@@ -42,11 +42,8 @@ public interface SessionHost {
      */
     void reviveTaskWindow(String session, String dedicatedTitle, String taskId, String alias, Path worktreePath);
 
-    /**
-     * Starts a command in a window of its own, replacing any window of that name. What runs there is the
-     * caller's; every other method here finds the window again by the same name, task or not.
-     */
-    void openWindow(String session, String dedicatedTitle, String name, Path cwd, String command);
+    /** A window following a file as it grows, opened where it is missing and left alone where it is there. */
+    void keepFeedWindow(String session, String name, Path file);
 
     /** Brings the task's window to whoever is attached; false when there is no such window. */
     boolean focusTaskWindow(String session, String dedicatedTitle, String taskId);

@@ -65,6 +65,16 @@ class TmuxSessionHostE2eTest {
     }
 
     @Test
+    void keepsOneFeedWindowFollowingTheFileHoweverOftenItIsKept(@TempDir Path root) {
+        SessionHost host = hostIn(root);
+
+        host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
+        host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
+
+        assertThat(windowNames()).containsOnlyOnce("master");
+    }
+
+    @Test
     void reportsAWindowThatWasNeverOpenedAsMissing(@TempDir Path root) {
         SessionHost host = hostIn(root);
         host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false);

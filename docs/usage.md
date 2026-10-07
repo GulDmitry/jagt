@@ -88,11 +88,12 @@ An optional reader standing between the session and you, off until you turn it o
 |---------------|--------------|-------|
 | `off` | nothing: every round and every question waits for you | nothing |
 | `judge` | reads each handed-back round by the roles of its brief, writes `master-review.md`, presses nothing | one heavy read per role, per round |
-| `act` | also ships a ready round, answers a session's question, opens split-off work, closes an empty task | the same |
+| `act` | also ships a ready round, answers a session's question, opens split-off work; closing a task stays yours | the same |
 
 To turn it on: `cp master-brief.md.dist master-brief.md`, then set `master.mode` and `master.brief` in `jagt.yml`.
 `master.mine` keeps named steps yours in `act`; what you type to a session overrules it.
 `deploy`, `revert` and `sweep` stay yours in every mode.
+Each step it takes is one line in the `master` tmux window.
 
 ## Notes on the tricky ones
 

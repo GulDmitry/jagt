@@ -83,12 +83,13 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     @Override
-    public void openWindow(String session, String dedicatedTitle, String name, Path cwd, String command) {
+    public void keepFeedWindow(String session, String name, Path file) {
         synchronized (lock) {
             ensureSession(session);
-            killTaskWindows(session, name);
-            newWindow(session, name, cwd, command);
-            ensureViewer(session, dedicatedTitle);
+            if (findWindowId(session, name).isEmpty()) {
+                newWindow(session, name, VIEWER_CWD,
+                        "tail -n 200 -F '" + file.toString().replace("'", "'\\''") + "'");
+            }
         }
     }
 

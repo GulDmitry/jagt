@@ -39,6 +39,8 @@ public class MasterVerdicts {
                 if (!ruled.isEmpty()) {
                     decisions.record(task, ruled);
                 }
+                log.atInfo().setMessage("master returns the round").addKeyValue("task", taskId)
+                        .addKeyValue("findings", verdict.findings().size()).log();
                 // Back to work, or the session's REVIEW_PENDING is no transition and the verdict reads as this round's.
                 return reports.report(taskId, TaskStatus.IN_PROGRESS, "reviewer: not ready; relayed");
             }
@@ -65,7 +67,7 @@ public class MasterVerdicts {
                 + " in this window. Then report IN_PROGRESS, apply the answer uncommitted, and hand the round back.")) {
             return false;
         }
-        log.atInfo().setMessage("master asks").addKeyValue("task", taskId).log();
+        log.atInfo().setMessage("master asks").addKeyValue("task", taskId).addKeyValue("question", question).log();
         return reports.report(taskId, TaskStatus.IN_PROGRESS, "outcome=question — reviewer: " + question);
     }
 
@@ -82,7 +84,8 @@ public class MasterVerdicts {
         if (freshSession) {
             sessions.openTaskTab(taskId, null);
         }
-        log.atInfo().setMessage("master answered").addKeyValue("task", taskId).log();
+        log.atInfo().setMessage("master answered").addKeyValue("task", taskId).addKeyValue("question", question)
+                .addKeyValue("decision", decision).log();
         return reports.report(taskId, TaskStatus.IN_PROGRESS, "master answered the question");
     }
 
