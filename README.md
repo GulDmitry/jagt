@@ -40,20 +40,19 @@ One session, one worktree, one branch, one request; the server, not a prompt, ke
 
 ## Start
 
-Every tool jagt needs, one link each: **[Technologies](docs/installation.md)**.
+Every tool it needs: **[Technologies](docs/installation.md)**.
 
 ### 1 — check MCP access
 
-jagt reads a ticket, and a review round, through a **headless** Claude Code session using *your* MCP servers.
-A server behind an interactive login, or one from a plugin, answers no such call — while `claude mcp list`
-still says "connected". Run this first:
+jagt reads tickets and review rounds through a **headless** Claude Code call on *your* MCP servers; one behind
+an interactive login, or from a plugin, does not answer it, though `claude mcp list` says "connected":
 
 ```sh
 cd "$TMPDIR" && claude "Name your MCP tools for <your tracker> and <your code host>, or say NONE." -p
 ```
 
-`NONE` means jagt cannot read a ticket yet; [Installation](docs/installation.md) has the fix. Which CLI writes
-the code is a separate choice.
+`NONE` means jagt cannot read a ticket yet; [Installation](docs/installation.md) has the fix. Any agent CLI may
+write the code.
 
 ### 2 — clone, and name one repository
 
@@ -75,12 +74,16 @@ orchestrator:
     copyGlobs: ["**/.env"]                   # untracked files a fresh worktree needs to build
 ```
 
-**`copyGlobs` is what makes a worktree usable.** A worktree is a clean checkout: whatever your build reads but
-git does not track is missing until a pattern names it. Widen it until your tests pass *inside* one, knowing
-each pattern copies those secrets to a sibling directory. Every other key ships with its value, described
-in `jagt.yml.dist`.
+**`copyGlobs` makes a worktree usable**: a clean checkout lacks whatever your build reads but git does not
+track. Widen it until your tests pass inside one; each pattern copies those secrets beside the repository.
+Every other key has a default, described in `jagt.yml.dist`.
 
-### 3 — build, and run
+### 3 — decide on the Master
+
+Keep `master.mode: off` at first: every press stays yours. `judge` adds a model's review before
+yours; `act` also presses for you — [Usage](docs/usage.md#the-master).
+
+### 4 — build, and run
 
 ```sh
 cd orchestrator-backend
@@ -94,7 +97,7 @@ Anything missing, and jagt refuses to start with the **whole** list, each line n
 > Run the **staged** `jagt-run.jar`. `./gradlew build` rewrites `jagt.jar` in place, and a JVM still reading it
 > dies with a `NoClassDefFoundError` that hides the real error — [Troubleshooting](docs/troubleshooting.md).
 
-### 4 — open the board
+### 5 — open the board
 
 **http://localhost:8290** — type a ticket key or URL in the first field, press **Start**.
 
@@ -125,7 +128,7 @@ onto exactly one of them, through the same gate the button uses. `revert`, `resp
 - **Four things cost a model call**: a ticket, a merge request, a review round, a `⌘K` sentence.
 - The board asks for no password and can deploy, so it stays on `127.0.0.1`.
 
-It does not review the code, run your CI, hold a credential, or run on Windows.
+It does not run your CI, hold a credential, or run on Windows.
 
 ## Documentation
 

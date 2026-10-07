@@ -80,6 +80,19 @@ resolved, then `deploy`, then `done`. `focus` is available throughout — the ag
 to — and after a deploy you may ship and deploy again as often as you like. jagt refuses a move that makes no
 sense for the task's status, with a sentence rather than a git error.
 
+## The Master
+
+An optional reader standing between the session and you, off until you turn it on.
+
+| `master.mode` | what it does | costs |
+|---------------|--------------|-------|
+| `off` | nothing: every round and every question waits for you | nothing |
+| `judge` | reads each handed-back round by the roles of its brief, writes `master-review.md`, presses nothing | one heavy read per role, per round |
+| `act` | also ships a ready round, answers a session's question, opens split-off work, closes an empty task | the same |
+
+To turn it on: `cp master-brief.md.dist master-brief.md`, then set `master.mode` and `master.brief` in `jagt.yml`.
+`master.mine` keeps named steps yours in `act`; what you type to a session overrules it.
+
 ## Notes on the tricky ones
 
 **`ship`** is the agent's own work, with its own code-host tools: commit (title from `mrTitlePattern`), push

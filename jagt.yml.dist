@@ -84,8 +84,8 @@ orchestrator:
     #   REVIEW_SWEEP: /path/to/code-host-only.json  # kinds: TICKET_READ, MR_READ, REVIEW_SWEEP, COMMAND_MAP
 
   # ── The Master session (EXPERIMENTAL) ───────────────────────────────────────────────────────────────────────
-  # An unattended reviewer that reads what a task produced before you do. Off unless you turn it on, and it has
-  # not been driven against real work yet — see TODO.md.
+  # An unattended reviewer that reads what a task produced before you do. Off unless you turn it on; what each
+  # mode does and costs: docs/usage.md#the-master.
   master:
     mode: off                # off | judge (reads and writes what it found) | act (also presses the button)
     # brief: master-brief.md # what it judges by: copy master-brief.md.dist to this name and edit it. Relative
