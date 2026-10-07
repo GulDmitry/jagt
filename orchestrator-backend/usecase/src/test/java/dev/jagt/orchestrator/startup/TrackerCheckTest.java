@@ -26,7 +26,7 @@ class TrackerCheckTest {
     @Test
     void refusesAModeThatIsNotOneOfTheOnesJagtHas() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(new TrackerConfig("sometimes", "jira", null, null, null, null)));
+                .withTracker(TrackerConfig.defaults().withMode("sometimes").withWorkflow("jira")));
 
         assertThat(check.problems()).singleElement().asString().contains("orchestrator.tracker.mode");
     }
@@ -34,7 +34,8 @@ class TrackerCheckTest {
     @Test
     void asksForNoLandedStageWhereNothingIsSetToClose() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(new TrackerConfig("take", "jira", "dzmitry", "In Progress", null, null)));
+                .withTracker(TrackerConfig.defaults().withMode("take").withWorkflow("jira").withAssignee("dzmitry")
+                        .withStartStatus("In Progress")));
         when(workflow.id()).thenReturn("jira");
 
         assertThat(check.problems()).isEmpty();
@@ -43,7 +44,8 @@ class TrackerCheckTest {
     @Test
     void asksForNoStartingStageWhereNothingIsSetToTakeWork() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(new TrackerConfig("close", "jira", null, null, "Ready for Stage", null)));
+                .withTracker(TrackerConfig.defaults().withMode("close").withWorkflow("jira")
+                        .withDoneStatus("Ready for Stage")));
         when(workflow.id()).thenReturn("jira");
 
         assertThat(check.problems()).isEmpty();
@@ -52,7 +54,7 @@ class TrackerCheckTest {
     @Test
     void namesEveryBlankStageAtOnceRatherThanOnePerRestart() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(new TrackerConfig("both", "jira", null, null, null, null)));
+                .withTracker(TrackerConfig.defaults().withMode("both").withWorkflow("jira")));
 
         assertThat(check.problems()).hasSize(3)
                 .allSatisfy(problem -> assertThat(problem).startsWith("orchestrator.tracker."));

@@ -38,8 +38,9 @@ class JiraWorkflowTest {
     @ParameterizedTest
     @CsvSource({"ABC,true", "abc,true", "XYZ,false", "'',false"})
     void startsWorkOnlyOnAnItemOfABoardTheInstallNamed(String board, boolean starts) {
-        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("take", "jira",
-                "dzmitry", "In Progress", null, null, List.of("ABC"))));
+        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(TrackerConfig.defaults()
+                .withMode("take").withWorkflow("jira").withAssignee("dzmitry").withStartStatus("In Progress")
+                .withProjects(List.of("ABC"))));
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTrackerStatus("In Progress").withAssignee("dzmitry").withTrackerProject(board);
 
@@ -48,8 +49,9 @@ class JiraWorkflowTest {
 
     @Test
     void asksOnlyForTheBoardsTheInstallNamed() {
-        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("take", "jira",
-                "dzmitry", "In Progress", null, null, List.of("ABC", "XYZ"))));
+        when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(TrackerConfig.defaults()
+                .withMode("take").withWorkflow("jira").withAssignee("dzmitry").withStartStatus("In Progress")
+                .withProjects(List.of("ABC", "XYZ"))));
 
         assertThat(workflow.candidateQuery()).endsWith(" AND project in (\"ABC\", \"XYZ\")");
     }

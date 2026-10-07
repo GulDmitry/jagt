@@ -76,8 +76,8 @@ class ShipServiceTest {
     void namesEveryRepositoryTheTaskSpansSoNoneIsLeftUnshipped() {
         when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("Widget layout is off")
-                .repos(List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
-                        new TaskRepo("web", "/wt-web", "git@host:demo/web.git", null, null))).build()));
+                .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
+                        TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build()));
 
         new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
 
@@ -93,8 +93,8 @@ class ShipServiceTest {
     void leavesOutTheRepositoryHoldingNothingSoNoEmptyRequestIsOpened() {
         when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("Widget layout is off")
-                .repos(List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git", null, null),
-                        new TaskRepo("web", "/wt-web", "git@host:demo/web.git", null, null))).build()));
+                .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
+                        TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build()));
         when(changes.holdsWork("web", "/wt-web", "master")).thenReturn(false);
 
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");

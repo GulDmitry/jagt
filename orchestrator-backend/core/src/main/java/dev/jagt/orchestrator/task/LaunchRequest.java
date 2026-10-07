@@ -20,8 +20,12 @@ public record LaunchRequest(String ref, String project, String mode, String stra
     /** No tracker item: the project comes first and the rest is the task itself. */
     public static final String OWN_GRAMMAR = "do <project[,project…]> <what to do…> [plan] [from <branch>]";
 
+    public static LaunchRequest defaults() {
+        return new LaunchRequest(null, null, null, null, null, null);
+    }
+
     public static LaunchRequest of(String ref) {
-        return new LaunchRequest(ref, null, null, null, null, null);
+        return defaults().withRef(ref);
     }
 
     /**
@@ -70,7 +74,27 @@ public record LaunchRequest(String ref, String project, String mode, String stra
         return !named.isEmpty() && known.containsAll(named);
     }
 
+    public LaunchRequest withRef(String ref) {
+        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
+    }
+
+    public LaunchRequest withProject(String project) {
+        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
+    }
+
+    public LaunchRequest withMode(String mode) {
+        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
+    }
+
     public LaunchRequest withStrategy(String strategy) {
+        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
+    }
+
+    public LaunchRequest withBaseBranch(String baseBranch) {
+        return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
+    }
+
+    public LaunchRequest withNotes(String notes) {
         return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
     }
 

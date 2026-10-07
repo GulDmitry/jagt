@@ -55,8 +55,6 @@ public record AgentStatusMessage(String status, String message, String outcome, 
             .text("taskId", "Optional explicit task id or alias (Master use). Sub-agents may only target their"
                     + " own task.");
 
-    /** Where a link is not in the fields that name one, the message text is read for it. */
-
     public AgentStatusMessage {
         // Blank is absent: a field the sender left as "" must read the same as one it left out.
         status = absent(status);
@@ -71,6 +69,26 @@ public record AgentStatusMessage(String status, String message, String outcome, 
     public AgentStatusMessage(String status, String message, String outcome, String reviewRequestUrl,
                               Map<String, String> reviewRequests) {
         this(status, message, outcome, reviewRequestUrl, reviewRequests, null);
+    }
+
+    public static AgentStatusMessage of(String status, String message) {
+        return new AgentStatusMessage(status, message, null, null, null, null);
+    }
+
+    public AgentStatusMessage withOutcome(String outcome) {
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
+    }
+
+    public AgentStatusMessage withReviewRequestUrl(String reviewRequestUrl) {
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
+    }
+
+    public AgentStatusMessage withReviewRequests(Map<String, String> reviewRequests) {
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
+    }
+
+    public AgentStatusMessage withTaskId(String taskId) {
+        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
     }
 
     /**

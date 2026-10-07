@@ -65,7 +65,7 @@ class AutoReviewCadenceTest {
     void watchesAMultiRepoTaskWhoseRequestIsOpenOnASiblingRatherThanTheSessionRepository() {
         long shipped = 1_000_000_000_000L;
         TaskState task = TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
-                        new TaskRepo("web", "/web-wt", null, "https://host/web/-/merge_requests/2", null)),
+                        TaskRepo.of("web", "/web-wt").withMrUrl("https://host/web/-/merge_requests/2")),
                 TaskStatus.CI_POLLING).mrCreatedAt(shipped).lastPolledAt(shipped).build();
 
         assertThat(cadence.watch(task, shipped + 1000).state()).isEqualTo(AutoReviewWatch.State.WATCHING);

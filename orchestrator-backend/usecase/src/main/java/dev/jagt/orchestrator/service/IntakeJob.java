@@ -76,7 +76,7 @@ public class IntakeJob implements Job {
         }
         try {
             Launched launched = launcher.launch(
-                    new LaunchRequest(item.key(), project.get(), null, null, null, null),
+                    LaunchRequest.of(item.key()).withProject(project.get()),
                     new Answer<>(Optional.of(item), ready.paid()));
             if (!launched.created()) {
                 history.turnAway(item.key(), launched.message());

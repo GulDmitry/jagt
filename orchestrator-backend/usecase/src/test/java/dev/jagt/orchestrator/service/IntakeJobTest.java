@@ -44,7 +44,8 @@ class IntakeJobTest {
     @Test
     void takesNothingOffTheTrackerWhileAStageNameIsStillBlank() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(new TrackerConfig("both", "jira", "dzmitry", "In Progress", null, null)));
+                .withTracker(TrackerConfig.defaults().withMode("both").withWorkflow("jira").withAssignee("dzmitry")
+                        .withStartStatus("In Progress")));
 
         job.run();
 
@@ -67,7 +68,7 @@ class IntakeJobTest {
 
         job.run();
 
-        verify(launcher).launch(new LaunchRequest("ABC-42", "api", null, null, null, null),
+        verify(launcher).launch(LaunchRequest.of("ABC-42").withProject("api"),
                 new Answer<>(Optional.of(item), TokenUsage.NONE));
     }
 
@@ -112,9 +113,9 @@ class IntakeJobTest {
 
         job.run();
 
-        verify(launcher).launch(new LaunchRequest("ABC-1", "api", null, null, null, null),
+        verify(launcher).launch(LaunchRequest.of("ABC-1").withProject("api"),
                 new Answer<>(Optional.of(first), TokenUsage.NONE));
-        verify(launcher, never()).launch(new LaunchRequest("ABC-2", "api", null, null, null, null),
+        verify(launcher, never()).launch(LaunchRequest.of("ABC-2").withProject("api"),
                 new Answer<>(Optional.of(second), TokenUsage.NONE));
     }
 

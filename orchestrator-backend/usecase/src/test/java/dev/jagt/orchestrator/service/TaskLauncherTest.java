@@ -49,8 +49,7 @@ class TaskLauncherTest {
                         .withTitle("Some title").withTrackerProject("ABC")
                         .withUrl("https://tracker.example.com/browse/ABC-123")), TokenUsage.NONE));
 
-        launcher.launch(new LaunchRequest("https://tracker.example.com/browse/ABC-123", "group-a", null, null,
-                null, null));
+        launcher.launch(LaunchRequest.of("https://tracker.example.com/browse/ABC-123").withProject("group-a"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(provisioning).initializeTask(created.capture());
@@ -68,7 +67,7 @@ class TaskLauncherTest {
                 Optional.of(TicketFacts.defaults().withExists(true).withKey("ABC-123").withTitle("t")
                         .withTrackerProject("ABC").withUrl("https://tracker/ABC-123")), spent));
 
-        launcher.launch(new LaunchRequest("https://tracker/ABC-123", "group-a", null, null, null, null));
+        launcher.launch(LaunchRequest.of("https://tracker/ABC-123").withProject("group-a"));
 
         var order = inOrder(provisioning, tickets);
         order.verify(provisioning).initializeTask(any());
@@ -109,7 +108,7 @@ class TaskLauncherTest {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42");
 
-        launcher.launch(new LaunchRequest("ABC-42", "group-a", null, null, null, null),
+        launcher.launch(LaunchRequest.of("ABC-42").withProject("group-a"),
                 new Answer<>(Optional.of(item), TokenUsage.NONE));
 
         verify(tickets, never()).read(anyString());
@@ -168,7 +167,7 @@ class TaskLauncherTest {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-9").withTitle("Widget layout is off")
                 .withUrl("https://tracker/ABC-9");
 
-        launcher.launch(new LaunchRequest("ABC-9", "group-a", null, null, null, null),
+        launcher.launch(LaunchRequest.of("ABC-9").withProject("group-a"),
                 new Answer<>(Optional.of(item), TokenUsage.NONE));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
@@ -181,7 +180,7 @@ class TaskLauncherTest {
         oneProject("group-a");
         when(provisioning.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
 
-        String out = launcher.launch(new LaunchRequest("ABC-9", null, null, "fresh", null, null)).message();
+        String out = launcher.launch(LaunchRequest.of("ABC-9").withStrategy("fresh")).message();
 
         assertThat(out).contains("already exists in group-a");
         verify(provisioning, never()).initializeTask(any());
@@ -194,7 +193,8 @@ class TaskLauncherTest {
                 .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
                 .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
-        launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
+        launcher.launch(LaunchRequest.of("ABC-1").withProject("demo").withMode("plan")
+                .withNotes("start with tests only"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(provisioning).initializeTask(created.capture());
@@ -208,7 +208,8 @@ class TaskLauncherTest {
                 .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
                 .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
-        launcher.launch(new LaunchRequest("ABC-1", "demo", "plan", null, null, "start with tests only"));
+        launcher.launch(LaunchRequest.of("ABC-1").withProject("demo").withMode("plan")
+                .withNotes("start with tests only"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(provisioning).initializeTask(created.capture());
@@ -222,7 +223,7 @@ class TaskLauncherTest {
                 .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
                 .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
-        launcher.launch(new LaunchRequest("ABC-1", "demo", null, "recreate", null, null));
+        launcher.launch(LaunchRequest.of("ABC-1").withProject("demo").withStrategy("recreate"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(provisioning).initializeTask(created.capture());
@@ -236,7 +237,7 @@ class TaskLauncherTest {
                 .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
                 .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
-        launcher.launch(new LaunchRequest("ABC-1", "demo", null, null, "feature/parent", null));
+        launcher.launch(LaunchRequest.of("ABC-1").withProject("demo").withBaseBranch("feature/parent"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(provisioning).initializeTask(created.capture());
@@ -264,7 +265,7 @@ class TaskLauncherTest {
                 .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
                 .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
 
-        launcher.launch(new LaunchRequest("ABC-1", "web,api", null, null, null, null).normalized());
+        launcher.launch(LaunchRequest.of("ABC-1").withProject("web,api").normalized());
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.captor();
         verify(provisioning).initializeTask(created.capture());
@@ -277,7 +278,7 @@ class TaskLauncherTest {
         oneProject("api");
 
         assertThatThrownBy(() -> launcher.launch(
-                new LaunchRequest("ABC-1", "api,typo", null, null, null, null).normalized()))
+                LaunchRequest.of("ABC-1").withProject("api,typo").normalized()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("unknown project [typo]");
 
@@ -290,7 +291,7 @@ class TaskLauncherTest {
         when(provisioning.freeTaskName("split-the-invoice-mailer", List.of("group-a")))
                 .thenReturn("split-the-invoice-mailer");
 
-        launcher.launch(new LaunchRequest(null, "group-a", null, null, null, "Split the invoice mailer"));
+        launcher.launch(LaunchRequest.defaults().withProject("group-a").withNotes("Split the invoice mailer"));
 
         ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
         verify(provisioning).initializeTask(created.capture());
@@ -319,7 +320,7 @@ class TaskLauncherTest {
     void refusesATaskWithNeitherATicketNorAnythingToDo() {
         oneProject("group-a");
 
-        var refused = launcher.launch(new LaunchRequest(null, "group-a", null, null, null, null));
+        var refused = launcher.launch(LaunchRequest.defaults().withProject("group-a"));
 
         assertThat(refused.created()).isFalse();
         assertThat(refused.message()).contains("nothing to do");

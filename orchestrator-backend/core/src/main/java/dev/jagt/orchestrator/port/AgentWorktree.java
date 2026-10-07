@@ -16,8 +16,16 @@ public record AgentWorktree(Path path, Path orchestratorRoot, String outputStyle
         allowedTools = allowedTools == null ? List.of() : List.copyOf(allowedTools);
     }
 
-    public AgentWorktree(Path path, Path orchestratorRoot, String outputStyle, List<String> disabledPlugins) {
-        this(path, orchestratorRoot, outputStyle, disabledPlugins, List.of());
+    public static AgentWorktree of(Path path, Path orchestratorRoot) {
+        return new AgentWorktree(path, orchestratorRoot, null, null, null);
+    }
+
+    public AgentWorktree withOutputStyle(String outputStyle) {
+        return new AgentWorktree(path, orchestratorRoot, outputStyle, disabledPlugins, allowedTools);
+    }
+
+    public AgentWorktree withDisabledPlugins(List<String> plugins) {
+        return new AgentWorktree(path, orchestratorRoot, outputStyle, plugins, allowedTools);
     }
 
     public AgentWorktree withAllowedTools(List<String> tools) {

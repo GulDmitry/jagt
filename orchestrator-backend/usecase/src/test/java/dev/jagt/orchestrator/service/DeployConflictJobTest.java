@@ -32,7 +32,7 @@ class DeployConflictJobTest {
     @Test
     void handsAConflictToTheSessionWhereTheMasterActs() {
         when(config.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(new MasterConfig("act", null, null, List.of("deploy", "revert"), null)));
+                .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("deploy", "revert"))));
         when(deploys.conflicts()).thenReturn(Map.of("ABC-42",
                 new DeployService.WaitingConflict(Path.of("/src/ABC-42-deploy"), false)));
 
@@ -45,7 +45,7 @@ class DeployConflictJobTest {
     @Test
     void asksOncePerConflictEvenWhereAnotherRelayOverwroteTheAsk() {
         when(config.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(new MasterConfig("act", null, null, null, null)));
+                .withMaster(MasterConfig.defaults().withMode("act")));
         when(deploys.conflicts()).thenReturn(Map.of("ABC-42",
                 new DeployService.WaitingConflict(Path.of("/src/ABC-42-deploy"), false)));
 
@@ -58,7 +58,7 @@ class DeployConflictJobTest {
     @Test
     void finishesTheDeployOnceTheResolutionIsStagedInFull() {
         when(config.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(new MasterConfig("act", null, null, List.of("deploy", "revert"), null)));
+                .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("deploy", "revert"))));
         when(deploys.conflicts()).thenReturn(Map.of("ABC-42",
                 new DeployService.WaitingConflict(Path.of("/src/ABC-42-deploy"), true)));
 
@@ -70,7 +70,7 @@ class DeployConflictJobTest {
     @Test
     void leavesTheConflictToTheHumanWhereTheMasterOnlyJudges() {
         when(config.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(new MasterConfig("judge", null, null, null, null)));
+                .withMaster(MasterConfig.defaults().withMode("judge")));
 
         job.run();
 

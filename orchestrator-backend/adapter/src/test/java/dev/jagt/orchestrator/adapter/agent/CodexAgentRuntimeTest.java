@@ -65,7 +65,7 @@ class CodexAgentRuntimeTest {
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"));
 
-        assertThatThrownBy(() -> runtime.provisionWorktree(new AgentWorktree(worktree, root, null, null)))
+        assertThatThrownBy(() -> runtime.provisionWorktree(AgentWorktree.of(worktree, root)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("mcp_client.js");
     }
@@ -79,7 +79,7 @@ class CodexAgentRuntimeTest {
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
-                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+                .provisionWorktree(AgentWorktree.of(worktree, root));
 
         assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
                 .contains("[mcp_servers.jagt-orchestrator]")
@@ -95,7 +95,7 @@ class CodexAgentRuntimeTest {
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:9111/mcp"))
-                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+                .provisionWorktree(AgentWorktree.of(worktree, root));
 
         assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
                 .contains("env = { MCP_SERVER_URL = \"http://127.0.0.1:9111/mcp\" }");
@@ -110,7 +110,7 @@ class CodexAgentRuntimeTest {
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
-                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+                .provisionWorktree(AgentWorktree.of(worktree, root));
 
         assertThat(Files.readSymbolicLink(worktree.resolve("mcp_client.js")))
                 .isEqualTo(root.resolve("mcp_client.js"));
@@ -125,7 +125,7 @@ class CodexAgentRuntimeTest {
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
-                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+                .provisionWorktree(AgentWorktree.of(worktree, root));
 
         assertThat(Files.readString(worktree.resolve(".jagt/codex/config.toml")))
                 .contains("approval_policy = \"never\"")
@@ -142,7 +142,7 @@ class CodexAgentRuntimeTest {
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
-                .provisionWorktree(new AgentWorktree(worktree, root, null, null));
+                .provisionWorktree(AgentWorktree.of(worktree, root));
 
         assertThat(Files.readString(worktree.resolve(".codex/config.toml")))
                 .isEqualTo("model = \"the project's own choice\"\n");
@@ -157,7 +157,7 @@ class CodexAgentRuntimeTest {
                 CodexProperties.defaults(),
                 new OrchestratorPaths(OrchestratorProperties.defaults().withRoot("/orchestrator-root")),
                 new McpEndpoint("http://127.0.0.1:8290/mcp"))
-                .provisionWorktree(new AgentWorktree(worktree, root, "sob-ai:Engineer", null));
+                .provisionWorktree(AgentWorktree.of(worktree, root).withOutputStyle("sob-ai:Engineer"));
 
         assertThat(worktree.resolve(".mcp.json")).doesNotExist();
         assertThat(worktree.resolve(".claude")).doesNotExist();

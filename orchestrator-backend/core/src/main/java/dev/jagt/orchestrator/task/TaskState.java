@@ -103,7 +103,7 @@ public record TaskState(
 
     @JsonIgnore
     public TaskRepo primary() {
-        return repos.isEmpty() ? new TaskRepo(null, null, null, null, null) : repos.get(0);
+        return repos.isEmpty() ? TaskRepo.of(null, null) : repos.get(0);
     }
 
     @JsonIgnore

@@ -103,8 +103,8 @@ class TaskCommandsControllerTest {
 
     @Test
     void startsATaskThroughTheSameLauncherTheTypedCommandUses() {
-        LaunchRequest posted = new LaunchRequest("ABC-42", "demo", "plan", null, "feature/parent",
-                "with tests");
+        LaunchRequest posted = LaunchRequest.of("ABC-42").withProject("demo").withMode("plan")
+                .withBaseBranch("feature/parent").withNotes("with tests");
         when(launcher.launch(posted)).thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
         var result = api.launch(posted);
@@ -114,7 +114,7 @@ class TaskCommandsControllerTest {
 
     @Test
     void saysNoTaskWasCreatedWhenTheLaunchDeclinedInsteadOfFailing() {
-        LaunchRequest posted = new LaunchRequest("ABC-42", null, null, null, null, null);
+        LaunchRequest posted = LaunchRequest.of("ABC-42");
         when(launcher.launch(posted)).thenReturn(Launched.refused("error: read failed: ABC-42"));
 
         var result = api.launch(posted);
@@ -128,15 +128,15 @@ class TaskCommandsControllerTest {
 
         api.launch(new LaunchRequest("  ABC-42 ", "", "", "", "", ""));
 
-        verify(launcher).launch(new LaunchRequest("ABC-42", null, null, null, null, null));
+        verify(launcher).launch(LaunchRequest.of("ABC-42"));
     }
 
     @Test
     void takesAFormWithNoTicketToTheLauncherRatherThanHoldingARuleOfItsOwn() {
-        LaunchRequest written = new LaunchRequest(null, "demo", null, null, null, "split the invoice mailer");
+        LaunchRequest written = LaunchRequest.defaults().withProject("demo").withNotes("split the invoice mailer");
         when(launcher.launch(written)).thenReturn(Launched.created("split-the-invoice-mailer", "initialized"));
 
-        var result = api.launch(new LaunchRequest(" ", "demo", null, null, null, "split the invoice mailer"));
+        var result = api.launch(LaunchRequest.of(" ").withProject("demo").withNotes("split the invoice mailer"));
 
         assertThat(result.created()).isTrue();
     }

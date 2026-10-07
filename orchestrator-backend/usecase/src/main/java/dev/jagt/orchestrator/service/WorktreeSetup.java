@@ -38,8 +38,9 @@ public class WorktreeSetup {
         WorktreeFiles.excludeOrchestratorPlumbing(repo.gitCommonDir(), agentRuntime);
         WorktreeHooks.install(worktreePath, request.taskId());
         // Which files exist and what is in them belongs to the runtime.
-        agentRuntime.provisionWorktree(new AgentWorktree(worktreePath, paths.root(),
-                configService.load().agent().outputStyleOrNull(), agentDisabledPlugins)
+        agentRuntime.provisionWorktree(AgentWorktree.of(worktreePath, paths.root())
+                .withOutputStyle(configService.load().agent().outputStyleOrNull())
+                .withDisabledPlugins(agentDisabledPlugins)
                 .withAllowedTools(agentAllowedTools));
         WorktreeFiles.copyIdeProjectFiles(repo.projectPath(), worktreePath);
         WorktreeFiles.copyLocalFiles(repo.projectPath(), worktreePath,

@@ -95,7 +95,7 @@ class TaskViewTest {
     @Test
     void offersASweepAsSoonAsANYRepositoryHasARequestOpen() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
-                new TaskRepo("api", "/api-wt", "git@host:g/api.git", null, null),
+                TaskRepo.of("api", "/api-wt").withRemoteUrl("git@host:g/api.git"),
                 new TaskRepo("web", "/web-wt", "git@host:g/web.git", "https://host/web/-/merge_requests/2", null)),
                 TaskStatus.CI_POLLING).alias("a1").build(), false, AutoReviewWatch.none(),
                 Map.of("api", "dev", "web", "dev"));
@@ -136,8 +136,8 @@ class TaskViewTest {
     @Test
     void marksAMultiRepoTaskAsSoonAsONERepositoryHasLanded() {
         TaskView view = TaskView.of("ABC-1", TaskState.builder(List.of(
-                new TaskRepo("api", "/api-wt", null, null, "abc1234"),
-                new TaskRepo("web", "/web-wt", null, null, null)),
+                TaskRepo.of("api", "/api-wt").withDeployCommit("abc1234"),
+                TaskRepo.of("web", "/web-wt")),
                 TaskStatus.DEPLOY_CONFLICT).alias("a1").build(), false, AutoReviewWatch.none(),
                 Map.of("api", "dev", "web", "dev"));
 

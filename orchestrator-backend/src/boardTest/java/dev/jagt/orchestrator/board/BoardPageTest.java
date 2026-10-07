@@ -1182,7 +1182,7 @@ class BoardPageTest {
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, "fresh", null, null));
+        verify(launcher).launch(LaunchRequest.of("ABC-9").withStrategy("fresh"));
     }
 
     @Test
@@ -1195,8 +1195,8 @@ class BoardPageTest {
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, "fresh", null,
-                "start with the failing test"));
+        verify(launcher).launch(LaunchRequest.of("ABC-9").withStrategy("fresh")
+                .withNotes("start with the failing test"));
     }
 
     @Test
@@ -1285,7 +1285,7 @@ class BoardPageTest {
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9 in beta.");
-        verify(launcher).launch(new LaunchRequest("ABC-9", "beta", null, "fresh", null, null));
+        verify(launcher).launch(LaunchRequest.of("ABC-9").withProject("beta").withStrategy("fresh"));
     }
 
     @Test
@@ -1298,7 +1298,7 @@ class BoardPageTest {
         page.locator("#launch button[type=submit]").click();
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
-        verify(launcher).launch(new LaunchRequest("ABC-9", null, null, "recreate", null, null));
+        verify(launcher).launch(LaunchRequest.of("ABC-9").withStrategy("recreate"));
     }
 
     @Test
@@ -1422,10 +1422,10 @@ class BoardPageTest {
     @Test
     void aTaskSpanningRepositoriesWearsOneTickForAllOfThem() {
         state.putTask("ABC-1", TaskState.builder(List.of(
-                        new TaskRepo("alpha", root.resolve("ABC-1-alpha").toString(), null,
-                                "https://host.example/alpha/mr/7", null),
-                        new TaskRepo("beta", root.resolve("ABC-1-beta").toString(), null,
-                                "https://host.example/beta/mr/7", null)),
+                        TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString())
+                                .withMrUrl("https://host.example/alpha/mr/7"),
+                        TaskRepo.of("beta", root.resolve("ABC-1-beta").toString())
+                                .withMrUrl("https://host.example/beta/mr/7")),
                         TaskStatus.CI_POLLING).alias("a1").lastActiveTimestamp(now())
                 .pipelineStatus("failed").approved(true).build());
 

@@ -11,6 +11,6 @@ public record NewRepo(String project, ProjectConfig config, Path projectPath, Pa
 
     /** The same repository as {@code state.json} keeps it: no request and no deploy yet. */
     public TaskRepo registered() {
-        return new TaskRepo(project, worktreePath.toString(), remoteUrl, null, null);
+        return TaskRepo.of(project, worktreePath.toString()).withRemoteUrl(remoteUrl);
     }
 }
