@@ -69,7 +69,7 @@ public class MasterPanel {
         if (said.isEmpty()) {
             roles.forEach(role -> judgements.add(Judgement.failed(HUMAN_UNREAD)));
         } else {
-            RoundRead quoted = new RoundRead(facts.ticket(taskId), facts.diff(task), decisions.of(task), said.get(),
+            RoundRead quoted = new RoundRead(facts.ask(taskId, task), facts.diff(task), decisions.of(task), said.get(),
                     facts.notes(task));
             try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
                 List<Future<Answer<Judgement>>> asked = roles.stream()

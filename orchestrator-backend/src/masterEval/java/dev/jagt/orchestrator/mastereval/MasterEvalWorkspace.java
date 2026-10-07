@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.mastereval;
 
+import dev.jagt.orchestrator.adapter.agent.MasterEvalTranscripts;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,9 +78,19 @@ final class MasterEvalWorkspace {
         write(repo, round.baseline());
         git(repo, "add", "-A");
         git(repo, "commit", "-m", "Baseline");
+        // jagt reads a round against origin/<base>, as every real task has one.
+        Path origin = repo.getParent().resolve("origin.git");
+        git(repo.getParent(), "init", "--bare", "--initial-branch=main", origin.toString());
+        git(repo, "remote", "add", "origin", origin.toString());
+        git(repo, "push", "origin", "main");
+        git(repo, "fetch", "origin");
         Path worktree = repo.getParent().resolve(taskId);
         git(repo, "worktree", "add", "-b", taskId, worktree.toString(), "main");
         write(worktree, round.change());
+        // What a launch leaves for a task nobody filed, kept out of the diff as jagt's own plumbing is.
+        Files.writeString(worktree.resolve("task_request.md"), round.instructions());
+        Files.writeString(repo.resolve(".git/info/exclude"), "task_request.md\n");
+        MasterEvalTranscripts.nothingTypedIn(worktree);
         return worktree;
     }
 

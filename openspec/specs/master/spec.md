@@ -107,7 +107,7 @@ not-ready round's findings SHALL go back to the session that wrote the code, in 
 - **THEN** it is a question, not a verdict
 
 ### Requirement: A verdict rests on proof
-The Master SHALL read the ticket and the diff. It SHALL prove by a run any premise its verdict rests on, never taking it
+The Master SHALL read the ticket (else `task_request.md`) and the diff. It SHALL prove by a run any premise its verdict rests on, never
 from the author.
 
 #### Scenario: The reviewer cannot prove a finding

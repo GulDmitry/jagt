@@ -20,8 +20,10 @@ public class RoundFacts {
     private final WorktreeChanges changes;
     private final AgentRuntime agentRuntime;
 
-    public String ticket(String taskId) {
-        return tickets.of(taskId).orElse("");
+    /** The ticket as read, else what the task was opened with: a task nobody filed has no other ask. */
+    public String ask(String taskId, TaskState task) {
+        return tickets.of(taskId).orElseGet(() -> WorktreeFiles.read(
+                Path.of(task.worktreePath()).resolve(Artifact.REQUEST.fileName())).orElse("").strip());
     }
 
     public String diff(TaskState task) {
