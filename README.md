@@ -18,11 +18,14 @@ or break each other's work. You drive all of them from one board in your browser
 
 ```mermaid
 flowchart LR
-    DO["do ABC-42"] --> IDE["ide"] --> SHIP["ship"] --> SWEEP["sweep"] --> DEPLOY["deploy"] --> DONE["done"]
-    SWEEP -.->|"another round"| IDE
-    classDef c font-family:monospace,fill:#1a1a2e,color:#7ee787,stroke:#7ee787;
-    class DO,IDE,SHIP,SWEEP,DEPLOY,DONE c;
+    you(["👤 you"]) -- "board" --> jagt["<b>jagt</b><br/>tasks · flow · Master"]
+    jagt -- "spawns" --> s["<b>agent sessions</b><br/>in tmux"]
+    jagt -- "cuts, deploys" --> wt[("<b>git worktrees</b><br/>one per task")]
+    s -- "MCP: status" --> jagt
+    s -- "code, own branch" --> wt
+    s -- "MCP" --> host["code host · tracker"]
 ```
+
 
 ## The session, and you
 
@@ -33,8 +36,7 @@ flowchart LR
 | fixes the CI failures and the comments, drafts every reply | read the drafts — `replies` — then `ship` |
 | touches no shared branch and no other task | `deploy`, then `done` |
 
-One session, one worktree, one branch, one review request. That it cannot reach another task is enforced by the
-server, not by a prompt.
+One session, one worktree, one branch, one request; the server, not a prompt, keeps it out of other tasks.
 
 ## Start
 
@@ -86,8 +88,7 @@ cd orchestrator-backend
 java -jar build/libs/jagt-run.jar
 ```
 
-Anything missing or half-configured and jagt refuses to start, printing the **whole** list at once, each line
-naming the key that fixes it.
+Anything missing, and jagt refuses to start with the **whole** list, each line naming the key that fixes it.
 
 > [!IMPORTANT]
 > Run the **staged** `jagt-run.jar`. `./gradlew build` rewrites `jagt.jar` in place, and a JVM still reading it
@@ -95,8 +96,7 @@ naming the key that fixes it.
 
 ### 4 — open the board
 
-**http://localhost:8290** — type a ticket key or URL in the first field, press **Start**. Setup ends here; from
-now on you only add tasks.
+**http://localhost:8290** — type a ticket key or URL in the first field, press **Start**.
 
 ## Commands
 
@@ -111,7 +111,7 @@ now on you only add tasks.
 | `deploy ABC-42` | merge the task branch into the deploy branch |
 | `done ABC-42` | close the task and clean everything up |
 
-Each is a button on the board too, and `Help` there explains its colours and marks. A `⌘K` sentence is mapped
+Each is a board button too; `Help` explains its marks. A `⌘K` sentence is mapped
 onto exactly one of them, through the same gate the button uses. `revert`, `respawn`, `resume`, `diff`,
 `stats`, `activity` and `jobs` are in [Usage](docs/usage.md).
 
@@ -137,6 +137,7 @@ It does not review the code, run your CI, hold a credential, or run on Windows.
 | [Troubleshooting](docs/troubleshooting.md) | symptom → cause → fix |
 | [Development](docs/development.md) | test suites, CI, running the Linux suite from a Mac |
 | [Architecture](ARCHITECTURE.md) | the code map: what kinds of thing jagt has, and where a new one goes |
+| [C4](docs/c4.md) | the same, drawn: context, containers, rings, hooks, Master |
 
 ## License
 
