@@ -4,9 +4,9 @@
 
 One file per ARCHITECTURAL decision — the shape of jagt: its rings and seams, where state lives, how sessions
 run, what owns a move. Costly to reverse, or one a newcomer would undo because it looks wrong. A feature's rule or
-parameter is not one: it lives in its spec and git history.
-The rule itself lives in `openspec/specs/` or `docs/rules/`; a record keeps what the rule may not — the evidence and the
-alternatives — so a later reader can tell a decision from a habit.
+parameter is not one.
+The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidence and alternatives, so a reader tells a
+decision from a habit.
 
 - Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
 - **Never edited once accepted**, typos aside: a changed decision is a new record, and the old one's status
@@ -15,7 +15,7 @@ alternatives — so a later reader can tell a decision from a habit.
   **Decision**, **Rejected** (each with its one reason), **Reopen when** (the measurement that would change it).
 - At most 400 words: a record needing more is two decisions.
 - **Linked**: a record names the rule it backs at its top; this index lists every record (`DecisionIndexTest`). A
-  session recovering why something holds starts here, then follows the record's commits.
+  session recovering why something holds starts here.
 - A record taken after the fact says `recorded retroactively` and carries only what the history proves.
 
 ## Index
@@ -38,3 +38,6 @@ alternatives — so a later reader can tell a decision from a habit.
 - [0016 — Only the human closes a task](0016-only-the-human-closes-a-task.md)
 - [0017 — The Master is seen in one feed window](0017-the-master-is-seen-in-one-feed-window.md)
 - [0018 — The Master judges by default](0018-the-master-judges-by-default.md)
+- [0019 — Large work is cut by its spec](0019-large-work-is-cut-by-its-spec-not-split-into-requests.md)
+- [0020 — jagt holds no token of its own](0020-jagt-holds-no-token-of-its-own.md)
+- [0021 — jagt runs from its clone](0021-jagt-runs-from-a-clone-of-its-repository.md)
