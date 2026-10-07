@@ -140,6 +140,40 @@ class MasterVerdictsTest {
     }
 
     @Test
+    void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path worktree) {
+        TaskState planned = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+        when(sessions.relayIfChanged(eq("ABC-1"), contains("the plan holds. Start on it."))).thenReturn(true);
+
+        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
+
+        verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "master: the plan holds");
+        verify(ship, never()).ship(anyString(), any());
+    }
+
+    @Test
+    void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path worktree) {
+        TaskState planned = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+        var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
+
+        boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1),
+                kept);
+
+        assertThat(moved).isFalse();
+        verify(sessions, never()).relayIfChanged(anyString(), anyString());
+    }
+
+    @Test
+    void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path worktree) {
+        TaskState planned = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+
+        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("[planner] plan.md — drops the v2 route the ticket keeps"), 1), judging());
+
+        verify(sessions).relayIfChanged(eq("ABC-1"), contains("Then report PLAN_PENDING again.\n\n"
+                + "[planner] plan.md — drops the v2 route the ticket keeps"));
+    }
+
+    @Test
     void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path worktree) {
         when(sessions.relayIfChanged(eq("ABC-1"), contains("Add v3 beside v2, or replace it?"))).thenReturn(true);
 

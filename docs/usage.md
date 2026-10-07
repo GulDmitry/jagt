@@ -82,18 +82,18 @@ sense for the task's status, with a sentence rather than a git error.
 
 ## The Master
 
-A reader standing between the session and you, judging unless you turn it off.
+A reader between the session and you; it judges unless turned off.
 
 | `master.mode` | what it does | costs |
 |---------------|--------------|-------|
-| `off` | nothing: every round and every question waits for you | nothing |
-| `judge` | reads each handed-back round by the roles of its brief, writes `master-review.md`, presses nothing | one heavy read per role, per round |
-| `act` | also ships a ready round, answers a question, opens split-off work, deploys a `REVIEWED` task; closing stays yours | the same |
+| `off` | nothing: every plan, round and question waits for you | nothing |
+| `judge` | reads each plan, then each round by its brief's roles; writes `master-review.md`, presses nothing | one heavy read per plan; per role per round |
+| `act` | also starts a holding plan, ships a ready round, answers a question, opens split-off work, deploys a `REVIEWED` task; closing stays yours | the same |
 
 To turn it on: `cp master-brief.md.dist master-brief.md`, then set `master.mode` and `master.brief` in `jagt.yml`.
 `master.mine` keeps named steps yours in `act`; what you type to a session overrules it.
 `deploy`, `revert` and `sweep` stay yours in every mode.
-Each step it takes is one line in the `master` tmux window.
+Each step is one line in the `master` tmux window.
 
 ## Notes on the tricky ones
 

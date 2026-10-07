@@ -17,4 +17,13 @@ class MasterReviewJobTest {
 
         assertThat(reviewable).isFalse();
     }
+
+    @Test
+    void handsAPlanNobodyReadYetToTheMaster() {
+        TaskState planned = TaskState.builder("proj", "/wt", TaskStatus.PLAN_PENDING).message("plan written").build();
+
+        boolean reviewable = MasterReviewJob.reviewable(planned, false, true);
+
+        assertThat(reviewable).isTrue();
+    }
 }

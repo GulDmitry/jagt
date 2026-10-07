@@ -131,7 +131,12 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
     }
 
     private static boolean masterReading(TaskStatus status, RoundState round) {
-        return status == TaskStatus.REVIEW_PENDING && round.masterReading();
+        return masterReads(status) && round.masterReading();
+    }
+
+    /** A status the Master reads before the human, where it runs: a plan, or a round handed back. */
+    public static boolean masterReads(TaskStatus status) {
+        return status == TaskStatus.PLAN_PENDING || status == TaskStatus.REVIEW_PENDING;
     }
 
     /** A closed task's leftover message is not a question anybody still owes an answer to. */

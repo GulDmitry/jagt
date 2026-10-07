@@ -24,9 +24,3 @@ previous, and the fate of comments a later cut superseded.
 
 After ~10 finished tasks under the default `judge`, read the `master` report: where its verdicts and yours
 differed reopens [0018](docs/decisions/0018-the-master-judges-by-default.md) or the brief.
-
-## The Master checks the worker understood the brief (idea)
-
-One read of `plan.md` against the brief before any code: verdict to the artifacts, context dropped.
-
-Decide first: a new gate, or PLAN_PENDING judged by the Master instead of you.

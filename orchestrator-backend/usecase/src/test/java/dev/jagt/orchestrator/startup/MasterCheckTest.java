@@ -89,7 +89,7 @@ class MasterCheckTest {
         Files.writeString(root.resolve("master-brief.md"), "judge like me");
 
         assertThat(checking(root, new MasterConfig("act", null, null,
-                List.of("ship", "sweep", "deploy", "revert", "reply", "answer"), null)).problems())
+                List.of("ship", "sweep", "deploy", "revert", "reply", "answer", "plan"), null)).problems())
                 .singleElement().asString().contains("`judge` written long");
     }
 

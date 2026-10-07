@@ -35,6 +35,11 @@ public class RoundFacts {
         return WorktreeFiles.read(Path.of(task.worktreePath()).resolve(Artifact.NOTES.fileName())).orElse("").strip();
     }
 
+    /** Blank where the session wrote none. */
+    public String plan(TaskState task) {
+        return WorktreeFiles.read(Path.of(task.worktreePath()).resolve(Artifact.PLAN.fileName())).orElse("").strip();
+    }
+
     /** Empty where the session's record could not be read. */
     public Optional<List<String>> humanSaid(TaskState task) {
         return agentRuntime.humanSaid(Path.of(task.worktreePath()), Set.of(AgentSessions.NUDGE));

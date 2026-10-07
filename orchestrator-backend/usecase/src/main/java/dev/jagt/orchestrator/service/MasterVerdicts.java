@@ -29,9 +29,11 @@ public class MasterVerdicts {
     /** Answers whether the verdict moved anything, so a caller can say so without reading the file again. */
     public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict,
                        ConfigService.ConfigFile.MasterConfig config) {
+        boolean plan = task.status() == TaskStatus.PLAN_PENDING;
         switch (verdict.kind()) {
             case NOT_READY -> {
-                if (!sessions.relayIfChanged(taskId, findings(verdict))) {
+                if (!sessions.relayIfChanged(taskId, (plan ? PLAN_RETURNED : ROUND_RETURNED)
+                        + String.join("\n", verdict.findings()))) {
                     return false;
                 }
                 String ruled = verdict.findings().stream().filter(f -> !f.contains(" — " + MasterPanel.SHOW))
@@ -41,13 +43,16 @@ public class MasterVerdicts {
                 }
                 log.atInfo().setMessage("master returns the round").addKeyValue("task", taskId)
                         .addKeyValue("findings", verdict.findings().size()).log();
-                // Back to work, or the session's REVIEW_PENDING is no transition and the verdict reads as this round's.
+                // Back to work, or the session's report is no transition and the verdict reads as this round's.
                 return reports.report(taskId, TaskStatus.IN_PROGRESS, "reviewer: not ready; relayed");
             }
             case QUESTION -> {
                 return ask(taskId, verdict.question());
             }
             case READY -> {
+                if (plan) {
+                    return config.may(MasterRight.PLAN) && go(taskId);
+                }
                 if (!config.may(MasterRight.SHIP)) {
                     return false;
                 }
@@ -55,6 +60,15 @@ public class MasterVerdicts {
             }
         }
         return false;
+    }
+
+    private boolean go(String taskId) {
+        if (!sessions.relayIfChanged(taskId, "The Master read plan.md against the ticket, standing in for the human:"
+                + " the plan holds. Start on it.")) {
+            return false;
+        }
+        log.atInfo().setMessage("master approves the plan").addKeyValue("task", taskId).log();
+        return reports.report(taskId, TaskStatus.IN_PROGRESS, "master: the plan holds");
     }
 
     /**
@@ -93,13 +107,15 @@ public class MasterVerdicts {
         return decisions.answersOverThisTree(task);
     }
 
-    /** The reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
-    private static String findings(MasterReview.Verdict verdict) {
-        return "The review of your round came back NOT READY. Each line below is a review comment: fix it, or"
-                + " where you believe it wrong, change nothing for it and write in task_notes.md `disputed: <the"
-                + " comment> — <evidence>`. A `show:` comment asks for evidence: answer it the same way. Evidence is"
-                + " a ticket line, a file:line, or a command and what it printed: the reviewer checks evidence and"
-                + " cannot read your reasons. Ask (rule 1) only for a decision nobody gave you. Leave the fix"
-                + " uncommitted and report REVIEW_PENDING again.\n\n" + String.join("\n", verdict.findings());
-    }
+    /** Ahead of the reviewer's own words, relayed whole: shortening a finding is deciding it, which is not jagt's. */
+    private static final String ROUND_RETURNED = "The review of your round came back NOT READY. Each line below is a"
+            + " review comment: fix it, or where you believe it wrong, change nothing for it and write in"
+            + " task_notes.md `disputed: <the comment> — <evidence>`. A `show:` comment asks for evidence: answer it"
+            + " the same way. Evidence is a ticket line, a file:line, or a command and what it printed: the reviewer"
+            + " checks evidence and cannot read your reasons. Ask (rule 1) only for a decision nobody gave you. Leave"
+            + " the fix uncommitted and report REVIEW_PENDING again.\n\n";
+
+    private static final String PLAN_RETURNED = "The Master read plan.md against the ticket: NOT READY. Rework the"
+            + " plan for each line below. Where you believe one wrong, change nothing for it and write in"
+            + " task_notes.md `disputed: <the comment> — <evidence>`. Then report PLAN_PENDING again.\n\n";
 }

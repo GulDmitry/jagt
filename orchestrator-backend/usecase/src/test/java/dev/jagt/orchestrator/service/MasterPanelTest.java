@@ -52,6 +52,17 @@ class MasterPanelTest {
     }
 
     @Test
+    void judgesThePlanAgainstTheTicketItQuotes() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
+
+        String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
+                new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""), false);
+
+        assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>",
+                "<plan>\n1. add the v3 route\n</plan>", "whether this plan does what the ticket asks");
+    }
+
+    @Test
     void quotesTheDiffReadForTheRoundToEachReviewer() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 

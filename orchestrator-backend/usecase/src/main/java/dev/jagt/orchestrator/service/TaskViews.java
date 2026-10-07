@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.RoundState;
-import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +45,7 @@ public class TaskViews {
     private RoundState round(TaskState task, ConfigService.ConfigFile config) {
         return RoundState.of(task.message(),
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
-                .withMasterReading(task.status() == TaskStatus.REVIEW_PENDING && config.master().running()
+                .withMasterReading(Move.masterReads(task.status()) && config.master().running()
                         && !masterReview.readsTheRoundInFront(task));
     }
 

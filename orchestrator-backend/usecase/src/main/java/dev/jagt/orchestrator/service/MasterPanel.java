@@ -84,16 +84,36 @@ public class MasterPanel {
                 return false;
             }
         }
-        String file = verdictFile(taskId, roles, judgements);
+        return write(taskId, worktrees, verdictFile(taskId, roles, judgements));
+    }
+
+    /** One read, not one per role: a plan answers a single question, whether it does what the ticket asks. */
+    public boolean plan(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
+        Optional<String> brief = briefs.master(taskId, config);
+        if (brief.isEmpty()) {
+            return false;
+        }
+        Optional<List<String>> said = facts.humanSaid(task);
+        Judgement judged = said.isEmpty() ? Judgement.failed(HUMAN_UNREAD)
+                : charged(taskId, reviewer.review(new RoundReviewer.Round("",
+                        planPrompt(taskId, task, brief.get(), facts.plan(task), new RoundRead(facts.ask(taskId, task),
+                                "", decisions.of(task), said.get(), facts.notes(task)), config.may(MasterRight.ANSWER)),
+                        worktrees(task), config.modelOrInherited())));
+        return write(taskId, worktrees(task), verdictFile(taskId, List.of(PLANNER), List.of(judged)));
+    }
+
+    private static final Role PLANNER = new Role("planner", "whether the plan does what the ticket asks", "");
+
+    private static boolean write(String taskId, List<Path> worktrees, String file) {
         try {
             Files.writeString(worktrees.getFirst().resolve(MasterReview.FILE), file);
+            return true;
         } catch (IOException unwritable) {
             log.atError().setMessage("master review unwritable").addKeyValue("task", taskId)
                     .addKeyValue("cause", unwritable.toString())
                     .log();
             return false;
         }
-        return true;
     }
 
     /** The session's question decided as the human would; empty where no decision came back. */
@@ -120,13 +140,16 @@ public class MasterPanel {
 
     private Judgement read(String taskId, Future<Answer<Judgement>> answer) throws InterruptedException {
         try {
-            Answer<Judgement> read = answer.get();
-            usage.record(AssistantCallKind.MASTER_REVIEW, read.usage());
-            usage.chargeTask(taskId, read.usage());
-            return read.facts().orElse(Judgement.failed("the review answered nothing"));
+            return charged(taskId, answer.get());
         } catch (ExecutionException thrown) {
             return Judgement.failed("the review threw " + thrown.getCause());
         }
+    }
+
+    private Judgement charged(String taskId, Answer<Judgement> read) {
+        usage.record(AssistantCallKind.MASTER_REVIEW, read.usage());
+        usage.chargeTask(taskId, read.usage());
+        return read.facts().orElse(Judgement.failed("the review answered nothing"));
     }
 
     /** The Master's own table where its brief has one, else the author's: the Master extends the session. */
@@ -220,6 +243,32 @@ public class MasterPanel {
                 + " premises: what it rests on, each with provenBy — the file:line or read-only command"
                 + " that shows it."
                 + " failure: blank unless something stopped you reading, then what.";
+    }
+
+    static String planPrompt(String taskId, TaskState task, String brief, String plan, RoundRead read,
+                             boolean decides) {
+        return GOAL + "Task " + taskId + " stopped at its plan, before any code. The brief you judge by:\n" + brief
+                + "\n\n" + round(taskId, task)
+                + (read.ticket().isBlank() ? "Read the ticket with your tracker tools.\n"
+                        : "The ticket:\n<ticket>\n" + read.ticket() + "\n</ticket>\n")
+                + (plan.isBlank() ? "" : "The plan, plan.md:\n<plan>\n" + plan + "\n</plan>\n")
+                + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
+                        + "\n</session_notes>\n")
+                + settled(read.decided()) + humanSaid(read.said())
+                + "Judge one thing: whether this plan does what the ticket asks, by your brief and the codebase."
+                + " A plan missing a ticket line is wrong. So is one doing what no ticket line asks."
+                + " Read the code only where the plan rests on it."
+                + " A `disputed:` line in the notes names its evidence: check it, and proven, it stands."
+                + (plan.isBlank() ? " The session wrote no plan.md: that alone is not ready." : "")
+                + " verdict: ready where the plan holds, not ready, or question."
+                + " findings: one per problem — what the plan gets wrong, and the one clause of why."
+                + " Each finding carries pattern: two to four words naming the kind of problem."
+                + " Each finding carries severity: wrong, blocking, unproven or noise. Only noise lets the plan pass."
+                + " question: only with verdict question, the one thing the human must decide."
+                + (decides ? " You stand in for the human: never answer question. Decide what the ticket leaves"
+                        + " open as they would, and write the decision as a finding." : "")
+                + " premises: every claim the verdict rests on, each with provenBy — the file:line, or the read-only"
+                + " command and what it printed. failure: blank unless something stopped you reading, then what.";
     }
 
     /** The Master's reason to exist, ahead of every read so no rule below it is taken for the goal. */

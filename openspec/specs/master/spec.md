@@ -46,12 +46,13 @@ for them; unreadable, they SHALL stop the round
 - **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
-With `master.mode: act` the Master SHALL ship a `ready` round, answer a question and deploy a `REVIEWED` task once
-(`MasterDeployJob`); `master.mine` SHALL keep named steps the human's. Closing a task SHALL stay the human's alone.
+With `master.mode: act` the Master SHALL ship a `ready` round, start a plan that holds, answer a question and deploy a
+`REVIEWED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps the human's. Closing a task SHALL stay
+the human's alone.
 
 #### Scenario: You want it to act for you
-- **WHEN** a round is `ready` in `master.mode: act`
-- **THEN** it is shipped for you; `master.mine` keeps steps yours
+- **WHEN** a round is `ready`, or a plan holds, in `master.mode: act`
+- **THEN** it is shipped, or the session started
 
 #### Scenario: The request is green with every thread closed
 - **WHEN** a task reaches `REVIEWED` in `master.mode: act`
@@ -82,21 +83,20 @@ A nudge to a session SHALL wait while the human is typing in its window.
 - **THEN** the nudge waits until you send your line; it never lands inside it
 
 ### Requirement: Only blocking and wrong stop a round
-A round SHALL be ready unless a finding is blocking or wrong; advice SHALL be a `#` line in `master-review.md`. A
-not-ready round's findings SHALL go back to the session that wrote the code, in any mode, and the task to
-`IN_PROGRESS`.
+A plan or round SHALL be ready unless a finding is blocking or wrong; advice SHALL be a `#` line in `master-review.md`.
+Its findings SHALL go back to the session, in any mode, and the task to `IN_PROGRESS`.
 
 #### Scenario: Reviewers find only advice
 - **WHEN** findings are only unguarded, noise or an unproven premise
 - **THEN** the round is ready
 
 #### Scenario: A round is not ready
-- **WHEN** a round has a blocking or wrong finding
-- **THEN** they go back to its session and the task to `IN_PROGRESS`: the fix is a new round
+- **WHEN** a plan or round has a blocking or wrong finding
+- **THEN** the fix is read anew
 
 #### Scenario: It writes ready but its file still lists findings
 - **WHEN** the verdict is `ready` and `master-review.md` lists findings
-- **THEN** it counts as not ready and the findings go back to the session
+- **THEN** it counts as not ready
 
 #### Scenario: The ticket's acceptance check was never run
 - **WHEN** a round skipped the ticket's acceptance check
@@ -107,8 +107,8 @@ not-ready round's findings SHALL go back to the session that wrote the code, in 
 - **THEN** it is a question, not a verdict
 
 ### Requirement: A verdict rests on proof
-The Master SHALL read the ticket (else `task_request.md`) and the diff. It SHALL prove by a run any premise its verdict rests on, never
-from the author.
+The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PLAN_PENDING` task's `plan.md` in one read
+(`MasterPanel.plan`). It SHALL prove by a run any premise its verdict rests on, never from the author.
 
 #### Scenario: The reviewer cannot prove a finding
 - **WHEN** a finding cannot be proven

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.job.Job;
 import dev.jagt.orchestrator.task.MasterRight;
@@ -34,7 +35,7 @@ public class MasterReviewJob implements Job {
 
     @Override
     public String describe() {
-        return "hand the Master session each round that came back, and act on what it answered";
+        return "hand the Master session each plan and each round that came back, and act on what it answered";
     }
 
     @Override
@@ -49,7 +50,7 @@ public class MasterReviewJob implements Job {
             return;
         }
         stateService.tasks().forEach((taskId, task) -> {
-            if (task.status() != TaskStatus.REVIEW_PENDING) {
+            if (!Move.masterReads(task.status())) {
                 return;
             }
             reviews.of(task).filter(verdict -> verdict.writtenAt() >= task.statusSince())
@@ -69,7 +70,7 @@ public class MasterReviewJob implements Job {
 
     /** A question the Master answers is the answer job's: reviewing its round ships around the question. */
     static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
-        return task.status() == TaskStatus.REVIEW_PENDING && !judged
+        return Move.masterReads(task.status()) && !judged
                 && !(questionsAnswered && AgentReport.of(task.message()) == AgentReport.QUESTION);
     }
 
@@ -77,6 +78,10 @@ public class MasterReviewJob implements Job {
         log.atInfo().setMessage("master review asked").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias())
                 .log();
-        panel.review(taskId, task, config);
+        if (task.status() == TaskStatus.PLAN_PENDING) {
+            panel.plan(taskId, task, config);
+        } else {
+            panel.review(taskId, task, config);
+        }
     }
 }

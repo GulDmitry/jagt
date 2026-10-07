@@ -50,9 +50,10 @@ class MoveTest {
         assertThat(Move.endsUnreported(status, message)).isEqualTo(unreported);
     }
 
-    @Test
-    void leavesARoundTheMasterHasYetToReadOffTheHumansMoves() {
-        Move move = Move.forTask(TaskStatus.REVIEW_PENDING, false,
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVIEW_PENDING", "PLAN_PENDING"})
+    void leavesWhatTheMasterHasYetToReadOffTheHumansMoves(TaskStatus status) {
+        Move move = Move.forTask(status, false,
                 RoundState.of("done", false).withMasterReading(true), false);
 
         assertThat(move.owner()).isEqualTo(Owner.AGENT);
