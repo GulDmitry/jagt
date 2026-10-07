@@ -348,9 +348,10 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
         }
         String prompt = "Map this operator request onto EXACTLY ONE command of the tool below.\n\nREQUEST: "
                 + text + "\n\n" + context + "\n\nAnswer with the command word, the task it applies to (its"
-                + " id or alias, copied verbatim from the list — never invented), the ticket reference when"
-                + " the command is `do`, and a reason. Leave a field as an empty string when it does not"
-                + " apply. If the request does not clearly match one command and one task, answer"
+                + " id or alias, copied verbatim from the list — never invented), the ticket reference for `do` or"
+                + " the request URL for `resume`, and a reason. Leave a field as an empty string when it does not"
+                + " apply. `do` and `resume` name no task. If the request does not clearly match one command and,"
+                + " where it acts on one, one task, answer"
                 + " command=\"none\" and put the ambiguity in reason. Do NOT guess between two tasks:"
                 + " ambiguity is a `none`. Respond directly.";
         // Text -> command reads nothing, so a tool call could only be a mistake, and each loaded server costs context.

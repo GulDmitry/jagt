@@ -11,7 +11,8 @@ record CommandMappingCase(String request, String command, String taskId, String 
                 new CommandMappingCase("did the pipeline say anything about the cart one", "sweep", "ABC-7", "a2"),
                 new CommandMappingCase("get going on ABC-99", "do", "", ""),
                 new CommandMappingCase("the checkout one is finished, tidy it away", "done", "ABC-15", "a3"),
-                new CommandMappingCase("land the login change on the deploy branch", "deploy", "ABC-42", "a1"),                new CommandMappingCase("take the checkout release back out", "revert", "ABC-15", "a3"),
+                new CommandMappingCase("land the login change on the deploy branch", "deploy", "ABC-42", "a1"),
+                new CommandMappingCase("take the checkout release back out", "revert", "ABC-15", "a3"),
                 new CommandMappingCase("I want to talk to the agent working on the cart", "focus", "ABC-7", "a2"),
                 new CommandMappingCase("the cart agent is stuck, give it a fresh session", "respawn", "ABC-7",
                         "a2"),
@@ -21,6 +22,8 @@ record CommandMappingCase(String request, String command, String taskId, String 
                 new CommandMappingCase("send it for review", "none", "", ""),
                 new CommandMappingCase("the search agent wrote its plan, let me answer it in its window", "focus",
                         "ABC-23", "a4"),
+                new CommandMappingCase("take over https://example.invalid/shop/merge_requests/9 and carry it on",
+                        "resume", "", ""),
                 new CommandMappingCase("order a pizza for the team", "none", "", ""));
     }
 
