@@ -45,6 +45,22 @@ class ConfigServiceTest {
     }
 
     @Test
+    void readsTheMastersModeAsWrittenInTheShippedExample(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, """
+                orchestrator:
+                  master:
+                    mode: off
+                """);
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+
+        String mode = new ConfigService(new OrchestratorPaths(properties)).load().master().mode();
+
+        assertThat(mode).isEqualTo("off");
+    }
+
+    @Test
     void loadsAConfigFileThatContainsComments(@TempDir Path root) throws Exception {
         Path configFile = root.resolve("jagt.yml");
         Files.writeString(configFile, """

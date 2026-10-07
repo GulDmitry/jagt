@@ -13,15 +13,21 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
+import org.yaml.snakeyaml.nodes.NodeId;
+import org.yaml.snakeyaml.nodes.Tag;
+import org.yaml.snakeyaml.representer.Representer;
+import org.yaml.snakeyaml.resolver.Resolver;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -363,7 +369,8 @@ public class ConfigService {
         }
         try {
             // SafeConstructor: the file is hand-edited, and a YAML tag naming a class is not a setting.
-            Object tree = new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(file));
+            Object tree = new Yaml(new SafeConstructor(new LoaderOptions()), new Representer(new DumperOptions()),
+                    new DumperOptions(), new WordsStayWords()).load(Files.readString(file));
             return tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read " + file, e);
@@ -380,5 +387,17 @@ public class ConfigService {
                     "Unknown project '" + projectKey + "'. Known projects: " + projects.keySet());
         }
         return project;
+    }
+
+    /** YAML 1.1 reads `off`, `on`, `yes` and `no` as booleans, and `mode: off` would arrive as "false". */
+    private static final class WordsStayWords extends Resolver {
+
+        private static final Pattern WORD = Pattern.compile("(?i)on|off|yes|no|y|n");
+
+        @Override
+        public Tag resolve(NodeId kind, String value, boolean implicit) {
+            return kind == NodeId.scalar && implicit && WORD.matcher(value).matches()
+                    ? Tag.STR : super.resolve(kind, value, implicit);
+        }
     }
 }
