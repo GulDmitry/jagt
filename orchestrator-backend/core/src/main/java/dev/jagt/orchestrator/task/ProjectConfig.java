@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.task;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProjectConfig(
@@ -15,6 +16,8 @@ public record ProjectConfig(
         // One line saying what this repository IS, for placing an item no label places. Blank = its path.
         String about
 ) {
+
+    private static final Pattern REF_PREFIX = Pattern.compile("^\\+?(refs/heads/|refs/remotes/origin/|origin/)?");
 
     /** A project declaring no command of its own: the four keys every install has always had. */
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels) {
@@ -38,6 +41,12 @@ public record ProjectConfig(
 
     /** A deploy would merge into the branch tasks are cut from, which is the one write jagt must never make. */
     public boolean deploysIntoTheBaseBranch() {
-        return deployBranch != null && !deployBranch.isBlank() && deployBranch.equals(baseBranchName());
+        String deploy = localName(deployBranch);
+        return !deploy.isEmpty() && deploy.equals(localName(baseBranch));
+    }
+
+    /** The branch a ref names, however spelled: {@code +refs/heads/main} and {@code origin/main} are {@code main}. */
+    public static String localName(String ref) {
+        return ref == null ? "" : REF_PREFIX.matcher(ref.strip()).replaceFirst("");
     }
 }
