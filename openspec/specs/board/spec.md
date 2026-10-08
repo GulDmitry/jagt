@@ -36,7 +36,7 @@ project key renders only where projects are several, in the install or the task.
 - **THEN** `resume <url>` in Ask is the one control
 
 ### Requirement: Verbs come off the wire in groups
-Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`; the board renders a row per group.
+Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`, a row per group.
 A hint's text lives in `command/CommandReference` alone. A renamed verb still answers to its old spelling (`review`
 runs `sweep`), advertised nowhere (`TaskAction.RENAMED`).
 
@@ -94,20 +94,20 @@ its own.
 
 ### Requirement: Loopback only
 The board SHALL bind loopback, password-free. `LoopbackFilter` SHALL refuse a foreign Host or Origin and `/mcp`
-anything but JSON; `BoardWriteFilter` an `/api` write without Origin, the Master token included.
+anything but JSON; `BoardWriteFilter` any write without Origin but `/mcp` and `/api/agent/` as routed.
 
 #### Scenario: A second machine
 - **WHEN** jagt runs with `--server.address=0.0.0.0`
 - **THEN** it is reachable elsewhere
 
 #### Scenario: A stranger posts
-- **WHEN** a foreign page, a rebound name or a session's `curl` posts a verb
+- **WHEN** a foreign page, a rebound name, a session's `curl` or a respelled `/api;x/…` posts a verb
 - **THEN** refused 403; `ToolGate` stops the `curl` first
 
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `TaskEventStream` forwards `StateService.onChange`, the one event, as payload-free SSE at
 `/api/events` beside a 20s beat. Each connect reads the board once. A periodic tick survives for the ACTIVE clock,
-time in that status. A card carries `data-action`, never a closure, so a card rebuilt under the pointer cannot act for its old task.
+time in that status. A card carries `data-action`, never a closure: rebuilt under the pointer, it cannot act for its old task.
 
 #### Scenario: The backend goes away
 - **WHEN** the push connection drops, or misses two beats

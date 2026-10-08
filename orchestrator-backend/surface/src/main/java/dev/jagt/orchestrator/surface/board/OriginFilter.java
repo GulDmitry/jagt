@@ -28,7 +28,7 @@ public class OriginFilter extends OncePerRequestFilter {
     }
 
     private static ActionOrigin originOf(HttpServletRequest request) {
-        String path = request.getRequestURI();
+        String path = request.getServletPath();
         if (path.equals("/mcp")) {
             return ActionOrigin.MCP;
         }

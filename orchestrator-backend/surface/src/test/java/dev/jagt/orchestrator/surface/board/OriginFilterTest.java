@@ -19,9 +19,20 @@ class OriginFilterTest {
     @Test
     void attributesAnUnmarkedCallToWhoeverIsAtTheKeyboard() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
+        request.setServletPath("/mcp");
 
         new OriginFilter().doFilter(request, new MockHttpServletResponse(), chain);
 
         assertThat(seen.get()).isEqualTo(ActionOrigin.MCP);
+    }
+
+    @Test
+    void booksAWriteToTheBoardHoweverItsPathIsSpelled() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api;x/tasks/say");
+        request.setServletPath("/api/tasks/say");
+
+        new OriginFilter().doFilter(request, new MockHttpServletResponse(), chain);
+
+        assertThat(seen.get()).isEqualTo(ActionOrigin.BOARD);
     }
 }

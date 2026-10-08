@@ -11,11 +11,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
- * A write to the board acts as the human, so it carries the page's Origin, which a browser always sends and
+ * A write acts as the human, so it carries the page's Origin, which a browser always sends and
  * {@link LoopbackFilter} has already judged. The Master acts through {@code /mcp}; a session's hooks post under
- * {@code /api/agent/} as their worktree.
+ * {@code /api/agent/} as their worktree. Those two are exempt only when the raw path is the one routed:
+ * {@code ;params} and {@code %xx} are resolved before routing.
  */
 @Slf4j
 @Component
@@ -25,8 +27,9 @@ public class BoardWriteFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
+        boolean resolved = path.equals(request.getServletPath() + Objects.toString(request.getPathInfo(), ""));
         return "GET".equals(request.getMethod()) || "HEAD".equals(request.getMethod())
-                || !path.startsWith("/api/") || path.startsWith("/api/agent/");
+                || resolved && (path.equals("/mcp") || path.startsWith("/api/agent/"));
     }
 
     @Override

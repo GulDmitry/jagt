@@ -36,6 +36,7 @@ class BoardWriteFilterTest {
     @Test
     void leavesASessionsHookToItsWorktree() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/agent/session/gone");
+        request.setServletPath("/api/agent/session/gone");
         MockFilterChain chain = new MockFilterChain();
 
         new BoardWriteFilter().doFilter(request, new MockHttpServletResponse(), chain);
