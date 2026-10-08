@@ -42,8 +42,8 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - `✓` on the request, or `.tick` beside several: approved.
 - in a round's replies — `.block` head, its `.verdict` green fixed / amber a question / grey pushed back;
   the `.quote` it answers muted.
-- countdown text — `.pulse`, amber as `.pulse.stalled`: when the poll runs next; amber once nothing will look
-  again.
+- amber ring — `.mr-age.stalled` / `.repos.stalled`: the poll stopped, nothing will look again; the next poll
+  sits in the request's hover.
 - absence — no dot, no tick, no badge: the expected state, no pipeline, or nothing read yet, the hover saying
   which. **Absence is the cheapest mark**: a fact earning neither height nor colour goes in `data-tip`, not
   `title`.

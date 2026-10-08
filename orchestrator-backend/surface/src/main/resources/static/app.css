@@ -157,7 +157,7 @@ article.ci { border-left-color: var(--ci); }
    wait wearing the same chip as a status. */
 .badge.required { background: var(--you-bg); color: var(--you); }
 .badge.optional { background: var(--chip-bg); color: var(--muted); font-weight: 400; }
-.mr-age, .pulse { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.mr-age { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
 /* Not a flex container: a flex box drops the space between two words, leaving the text legible only for as
    long as a stylesheet says so. */
 .status {
@@ -174,13 +174,14 @@ a.id, a.mr-age {
 }
 /* The request wears ONE fact — an APPROVAL, as green and a tick — because the checks answer as their own dot. */
 a.mr-age.approved, .tick { color: var(--ok); }
+/* A poll that STOPPED hands the move back: a ring on the request it was watching, never a fifth thing in the row. */
+.mr-age.stalled, .repos.stalled { border: 1px solid var(--you); border-radius: 999px; padding: 0 6px; }
 .tick { font-size: 11px; align-self: center; }
 /* After the approval, or a link wearing it would answer a hover with nothing but a solid underline. */
 a.id:hover, a.mr-age:hover { color: var(--accent); text-decoration-style: solid; }
 .detail { font-size: 12px; margin: 4px 0; overflow-wrap: anywhere; }
 .detail.problem { color: var(--danger); font-weight: 600; }
 .detail.you { color: var(--you); font-weight: 600; }
-.pulse.stalled { color: var(--you); }
 a { color: var(--accent); }
 .actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
 .actions button { font-size: 12px; padding: 3px 8px; }

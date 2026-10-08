@@ -153,7 +153,6 @@ class BoardPageTest {
         Page page = open();
 
         assertThat(page.locator("article")).hasCount(1);
-        assertThat(page.locator("article .pulse")).hasCount(0);
         assertThat(page.locator("article a.mr-age")).hasCount(0);
     }
 
@@ -401,7 +400,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .meta > :not(.pulse)")).hasCount(3);
+        assertThat(page.locator("article .meta > *")).hasCount(3);
         assertThat(page.locator("article .meta .repos")).hasText("alpha + beta \u2713");
     }
 
@@ -437,19 +436,23 @@ class BoardPageTest {
     }
 
     @Test
-    void showsAPollThatStoppedInTheSlotThePulseWouldHaveUsed() {
+    void aPollThatStoppedRingsTheRequestRatherThanTakingAFifthPlaceInTheRow() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
-                .mrCreatedAt(now() - java.time.Duration.ofDays(9).toMillis())
+                .mrCreatedAt(now() - java.time.Duration.ofDays(9).toMillis()).pipelineStatus("failed")
                 .lastPolledAt(now()).lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("beta", root.resolve("ABC-2-beta").toString(),
+                TaskStatus.IN_PROGRESS).alias("b2").lastActiveTimestamp(now()).build());
 
         Page page = open();
 
-        assertThat(page.locator("article .pulse.stalled")).hasText("polling stopped");
+        Locator meta = page.locator("article", new Page.LocatorOptions().setHasText("a1")).locator(".meta");
+        assertThat(meta.locator("a.mr-age.stalled")).hasCount(1);
+        assertThat(meta.locator("> *")).hasCount(4);
     }
 
     @Test
-    void namesThePollerOnceOnACardThatIsAlreadyItsPulse() {
+    void aRequestNothingPollsAnyMoreSaysWhyInItsHover() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
                 .mrCreatedAt(now() - java.time.Duration.ofDays(9).toMillis())
@@ -457,8 +460,8 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .pulse.stalled")).hasAttribute("data-tip",
-                "no further polls: this round is past its 24h window");
+        assertThat(page.locator("article a.mr-age.stalled")).hasAttribute("data-tip",
+                Pattern.compile("polling stopped — no further polls: this round is past its 24h window"));
     }
 
     @Test
@@ -1560,7 +1563,7 @@ class BoardPageTest {
     void aRunStillGoingPulsesBesideTheRequestInsteadOfColouringIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
-                .pipelineStatus("running").lastActiveTimestamp(now()).build());
+                .mrCreatedAt(now()).pipelineStatus("running").lastActiveTimestamp(now()).build());
 
         Page page = open();
 
@@ -1601,7 +1604,7 @@ class BoardPageTest {
     void checksThatPassedWearTheirOwnDotAndLeaveTheRequestPlain() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
-                .pipelineStatus("success").approved(false).lastActiveTimestamp(now()).build());
+                .mrCreatedAt(now()).pipelineStatus("success").approved(false).lastActiveTimestamp(now()).build());
 
         Page page = open();
 

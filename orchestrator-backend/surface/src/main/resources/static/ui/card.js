@@ -19,9 +19,9 @@ const watchLine = (watch) => {
   if (!watch || !watch.note) return null;
   if (watch.state === 'WATCHING') {
     const remaining = watch.nextPollAt - Date.now();
-    return {pulse: `next poll ${remaining <= 0 ? 'due' : countdown(remaining)}`, tip: watch.note};
+    return {line: `next poll ${remaining <= 0 ? 'due' : countdown(remaining)}`};
   }
-  return {pulse: watch.label, tip: watch.note, stalled: true};
+  return {line: `${watch.label} \u2014 ${watch.note}`, stalled: true};
 };
 
 // `sole` is false for one link among several: the approval is every repository's, not one link's.
@@ -39,7 +39,8 @@ const requestChip = (url, label, openedAt, task, sole) => {
   // Only where the checks have no dot to say it themselves: one verdict in two hovers can disagree with itself.
   if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
   const watch = watchLine(task.autoReview);
-  if (watch && !watch.stalled) lines.push(watch.pulse);
+  if (watch) lines.push(watch.line);
+  if (sole && watch?.stalled) anchor.classList.add('stalled');
   anchor.dataset.tip = lines.join('\n');
   return anchor;
 };
@@ -119,6 +120,7 @@ export function card(task, manyProjects) {
         ? requestChip(repo.reviewRequestUrl, repo.project, 0, task, false) : repo.project);
     });
     if (task.approved) group.append(' ', approvalTick());
+    if (watchLine(task.autoReview)?.stalled) group.classList.add('stalled');
     meta.append(group);
   } else {
     if (manyProjects) meta.append(span(null, task.project));
@@ -126,13 +128,6 @@ export function card(task, manyProjects) {
   }
   // Beside the request whether there is one link or several: the verdict is the worst repository's either way.
   if (marked(task)) meta.append(checksDot(task));
-  // Only a poll that has STOPPED earns an element: it hands the move back, and nothing else on the card says so.
-  const watch = watchLine(task.autoReview);
-  if (watch && watch.stalled) {
-    const pulse = span('pulse stalled', watch.pulse);
-    pulse.dataset.tip = watch.tip;
-    meta.append(pulse);
-  }
 
   const parts = [top, title, meta];
 

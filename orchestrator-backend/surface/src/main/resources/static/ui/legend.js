@@ -73,8 +73,8 @@ const rows = () => [
   [[blockHead(), span('quote', '> the row count is wrong')],
     'in a round\u2019s replies: the verdict \u2014 green fixed \u00b7 amber a question \u00b7 grey pushed back '
     + '\u2014 and the comment it answers'],
-  [[span('pulse stalled', 'polling stopped')],
-    'nothing will look at this round again on its own'],
+  [[requestChip('mr-age stalled', 'MR 9d')],
+    'polling stopped: nothing will look at this round again on its own'],
   [[detailLine('detail problem', 'PROBLEM: no branch to ship'), detailLine('detail you', 'NEEDS YOU: a red run')],
     'the card\u2019s own line: broken \u00b7 your move'],
   [[span('waiting', '2 need your action')],
