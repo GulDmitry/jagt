@@ -24,14 +24,10 @@ import static org.mockito.Mockito.when;
 
 class DeployConflictsTest {
 
-    private static StateService stateIn(Path root) {
-        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-    }
-
     @Test
     void findsAConflictInTheRepositoryWhoseDeployWorktreeHoldsIt(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).build());
         ConfigService config = mock(ConfigService.class);

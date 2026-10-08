@@ -32,13 +32,10 @@ class AutoReviewSchedulerTest {
     private static final AutoReviewCadence CADENCE = new AutoReviewCadence(true, Duration.ofHours(24), 10, 60);
     private static final long NOW = 1_000_000_000_000L;
 
-    private static TaskState.Builder polling() {
-        return TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("http://mr/1").autoReview(true);
-    }
-
     @Test
     void pollsWhenTheIntervalHasElapsed() {
-        TaskState task = polling()
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
                 .mrCreatedAt(NOW - Duration.ofMinutes(20).toMillis())
                 .lastPolledAt(NOW - Duration.ofMinutes(20).toMillis()).build();
 
@@ -47,7 +44,8 @@ class AutoReviewSchedulerTest {
 
     @Test
     void skipsWhenTheLastPollWasTooRecent() {
-        TaskState task = polling()
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
                 .mrCreatedAt(NOW - Duration.ofMinutes(20).toMillis())
                 .lastPolledAt(NOW - Duration.ofMinutes(2).toMillis()).build();
 
@@ -56,7 +54,9 @@ class AutoReviewSchedulerTest {
 
     @Test
     void stopsPollingATaskThatHasBeenOutForReviewLongerThanTheWindow() {
-        TaskState task = polling().mrCreatedAt(NOW - Duration.ofHours(25).toMillis()).build();
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(NOW - Duration.ofHours(25).toMillis()).build();
 
         assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW))
                 .isEqualTo(AutoReviewScheduler.Action.WINDOW_ELAPSED);
@@ -64,7 +64,7 @@ class AutoReviewSchedulerTest {
 
     @Test
     void skipsATaskThatOptedOutOfAutoReview() {
-        TaskState task = polling().autoReview(false)
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("http://mr/1").autoReview(false)
                 .mrCreatedAt(NOW - Duration.ofMinutes(20).toMillis()).build();
 
         assertThat(AutoReviewScheduler.decide(task, CADENCE, NOW)).isEqualTo(AutoReviewScheduler.Action.SKIP);
@@ -80,14 +80,20 @@ class AutoReviewSchedulerTest {
 
     @Test
     void sweepsADueTaskAndRecordsThatItLooked(@TempDir Path root) {
-        StateService state = stateWith(root, polling()
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
                 .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
         Notifications notifications = mock(Notifications.class);
         long before = System.currentTimeMillis();
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
-        new AutoReviewScheduler(state, enabledConfig(), sweep, notifications, Runnable::run).run();
+        new AutoReviewScheduler(state, config, sweep, notifications, Runnable::run).run();
 
         verify(sweep).sweep("ABC-1");
         assertThat(state.task("ABC-1").orElseThrow().lastPolledAt()).isBetween(before, System.currentTimeMillis());
@@ -95,14 +101,20 @@ class AutoReviewSchedulerTest {
 
     @Test
     void tapsTheHumanOnceForARoundNobodyCouldReadInsteadOfOnlyLoggingIt(@TempDir Path root) {
-        StateService state = stateWith(root, polling()
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
                 .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
         when(sweep.sweep("ABC-1")).thenReturn(new ReviewSweepService.SweepResult(
                 ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1"));
         Notifications notifications = mock(Notifications.class);
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(), sweep, notifications,
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, sweep, notifications,
                 Runnable::run);
 
         scheduler.run();
@@ -115,11 +127,17 @@ class AutoReviewSchedulerTest {
 
     @Test
     void tapsTheHumanOncePerElapsedWindowInsteadOfPollingOn(@TempDir Path root) {
-        StateService state = stateWith(root, polling()
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
         Notifications notifications = mock(Notifications.class);
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(), sweep,
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config, sweep,
                 notifications, Runnable::run);
 
         scheduler.run();
@@ -132,14 +150,22 @@ class AutoReviewSchedulerTest {
 
     @Test
     void pingsAgainForTheNewWindowAShippedRoundOpens(@TempDir Path root) {
-        StateService state = stateWith(root, polling()
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(25).toMillis()).build());
         Notifications notifications = mock(Notifications.class);
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(),
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
                 mock(ReviewSweepService.class), notifications, Runnable::run);
         scheduler.run();
 
-        state.putTask("ABC-1", polling().mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(26).toMillis())
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(26).toMillis())
                 .build());
         scheduler.run();
 
@@ -151,15 +177,24 @@ class AutoReviewSchedulerTest {
     @Test
     void forgetsTheRemindersOfATaskThatWasRetiredWhileStillPolling(@TempDir Path root) {
         long window = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
-        StateService state = stateWith(root, polling().mrCreatedAt(window).build());
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(window).build());
         Notifications notifications = mock(Notifications.class);
-        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, enabledConfig(),
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
+        AutoReviewScheduler scheduler = new AutoReviewScheduler(state, config,
                 mock(ReviewSweepService.class), notifications, Runnable::run);
         scheduler.run();
 
         state.removeTask("ABC-1");
         scheduler.run();
-        state.putTask("ABC-1", polling().mrCreatedAt(window).build());
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
+                .mrCreatedAt(window).build());
         scheduler.run();
 
         verify(notifications, times(2)).send(
@@ -169,19 +204,27 @@ class AutoReviewSchedulerTest {
 
     @Test
     void keepsPollingARoundThatCameBackCleanUntilSomebodyApprovesIt(@TempDir Path root) {
-        StateService state = stateWith(root, polling().status(TaskStatus.REVIEWED)
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("http://mr/1").autoReview(true)
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis())
                 .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigFile.defaults()
+                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
 
-        new AutoReviewScheduler(state, enabledConfig(), sweep, mock(Notifications.class), Runnable::run).run();
+        new AutoReviewScheduler(state, config, sweep, mock(Notifications.class), Runnable::run).run();
 
         verify(sweep).sweep("ABC-1");
     }
 
     @Test
     void pollsNothingWhenTheInstallHasAutoReviewOff(@TempDir Path root) {
-        StateService state = stateWith(root, polling()
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://mr/1").autoReview(true)
                 .mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(1).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
         Notifications notifications = mock(Notifications.class);
@@ -191,20 +234,5 @@ class AutoReviewSchedulerTest {
         new AutoReviewScheduler(state, disabled, sweep, notifications, Runnable::run).run();
 
         verifyNoInteractions(sweep, notifications);
-    }
-
-    private static StateService stateWith(Path root, TaskState task) {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        state.putTask("ABC-1", task);
-        return state;
-    }
-
-    private static ConfigService enabledConfig() {
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigFile.defaults()
-                .withAutoReview(AutoReviewConfig.defaults().withEnabled(true)));
-        return config;
     }
 }

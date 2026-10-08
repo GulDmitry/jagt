@@ -31,23 +31,16 @@ class TaskRetirementTest {
     private final GitWorktrees git = mock(GitWorktrees.class);
     private final EditorDriver editor = mock(EditorDriver.class);
 
-    private TaskRetirement retirement(StateService state) {
-        return new TaskRetirement(state, config, git, editor, sessions);
-    }
-
-    private static StateService stateIn(Path root) {
-        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-    }
-
     @Test
     void killsTheSessionBeforeDeletingTheDirectoryItIsRunningIn(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        TaskRetirement retirement = new TaskRetirement(state, config, git, editor, sessions);
 
-        String result = retirement(state).retire("a1");
+        String result = retirement.retire("a1");
 
         var order = inOrder(sessions, git);
         order.verify(sessions).killWindows("ABC-1");
@@ -58,11 +51,13 @@ class TaskRetirementTest {
 
     @Test
     void leavesTheWorktreeOnDiskAndSaysSoWhenItsProjectIsGoneFromConfig(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("gone", "/wt", TaskStatus.DONE).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        TaskRetirement retirement = new TaskRetirement(state, config, git, editor, sessions);
 
-        String result = retirement(state).retire("a1");
+        String result = retirement.retire("a1");
 
         assertThat(result).contains("worktree left on disk: project missing from jagt.yml");
         verify(git, never()).removeWorktree(any(), any(), any());
@@ -71,26 +66,30 @@ class TaskRetirementTest {
 
     @Test
     void dropsTheDeadWorktreeFromTheEditorsRecentProjects(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        TaskRetirement retirement = new TaskRetirement(state, config, git, editor, sessions);
 
-        retirement(state).retire("ABC-1");
+        retirement.retire("ABC-1");
 
         verify(editor).forgetProject(Path.of("/wt"));
     }
 
     @Test
     void deletesTheWorktreeOfEveryRepositoryTheTaskWorkedIn(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api-repo", "origin/main", "dev", List.of()),
                 "web", new ProjectConfig("/web-repo", "origin/main", "dev", List.of()))));
+        TaskRetirement retirement = new TaskRetirement(state, config, git, editor, sessions);
 
-        retirement(state).retire("a1");
+        retirement.retire("a1");
 
         verify(git).removeWorktree(Path.of("/api-repo"), Path.of("/api-wt"), null);
         verify(git).removeWorktree(Path.of("/web-repo"), Path.of("/web-wt"), null);
@@ -99,24 +98,28 @@ class TaskRetirementTest {
 
     @Test
     void deletesTheThrowawayDiffCheckoutsOfTheRetiredTask(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        TaskRetirement retirement = new TaskRetirement(state, config, git, editor, sessions);
 
-        retirement(state).retire("ABC-1");
+        retirement.retire("ABC-1");
 
         verify(git).removeDiffWorktrees(Path.of("/repo"), "ABC-1", "demo");
     }
 
     @Test
     void hasTheAgentRuntimeUndoWhatItWroteOutsideTheRetiredWorktree(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.DONE).alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
+        TaskRetirement retirement = new TaskRetirement(state, config, git, editor, sessions);
 
-        retirement(state).retire("ABC-1");
+        retirement.retire("ABC-1");
 
         verify(sessions).forgetWorktree(Path.of("/wt"));
     }

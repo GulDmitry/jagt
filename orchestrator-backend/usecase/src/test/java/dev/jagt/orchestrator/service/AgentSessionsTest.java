@@ -54,17 +54,14 @@ class AgentSessionsTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
     }
 
-    private AgentSessions sessions() {
-        return new AgentSessions(config, state, tmux, terminal, agentRuntime);
-    }
-
     @Test
     void closesTheTerminalWindowOfTheTaskItWasGiven() {
         state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.killTaskWindows("jagt", "TEST-1")).thenReturn(1);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().closeTaskTab("TEST-1")).contains("Closed 1 tab(s) for TEST-1");
+        assertThat(sessions.closeTaskTab("TEST-1")).contains("Closed 1 tab(s) for TEST-1");
     }
 
     @Test
@@ -74,15 +71,18 @@ class AgentSessionsTest {
                 .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("tab-per-task")));
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions().closeTaskTab("TEST-1");
+        sessions.closeTaskTab("TEST-1");
 
         verify(tmux).killTaskWindows("jagt-TEST-1", "TEST-1");
     }
 
     @Test
     void refusesToCloseTheTabOfATaskNobodyOwns() {
-        assertThatThrownBy(() -> sessions().closeTaskTab("ABC-9"))
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        assertThatThrownBy(() -> sessions.closeTaskTab("ABC-9"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ABC-9");
     }
@@ -98,8 +98,9 @@ class AgentSessionsTest {
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(terminal.reveal("jagt")).thenReturn(revealed);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().focusTask("ABC-1")).contains(expected);
+        assertThat(sessions.focusTask("ABC-1")).contains(expected);
     }
 
     @Test
@@ -108,8 +109,9 @@ class AgentSessionsTest {
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().writeTaskContext("ABC-1", "new instructions")).contains("nudged");
+        assertThat(sessions.writeTaskContext("ABC-1", "new instructions")).contains("nudged");
     }
 
     @Test
@@ -119,8 +121,9 @@ class AgentSessionsTest {
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"));
         when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions().writeTaskContext("ABC-1", "new instructions");
+        sessions.writeTaskContext("ABC-1", "new instructions");
 
         verify(tmux, after(1500).never()).nudgeTaskWindow(anyString(), anyString(), anyString());
     }
@@ -132,8 +135,9 @@ class AgentSessionsTest {
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
         when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions().writeTaskContext("ABC-1", "new instructions");
+        sessions.writeTaskContext("ABC-1", "new instructions");
 
         verify(tmux, timeout(5000)).nudgeTaskWindow("jagt", "ABC-1", AgentSessions.NUDGE);
     }
@@ -146,8 +150,9 @@ class AgentSessionsTest {
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.nudgeTaskWindow("jagt", "ABC-1", "no, answer 2 differently")).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions().say("ABC-1", "no, answer 2 differently");
+        sessions.say("ABC-1", "no, answer 2 differently");
 
         assertThat(Files.readString(worktree.resolve("task_context.md")))
                 .isEqualTo("Review round for http://mr/1.");
@@ -159,8 +164,9 @@ class AgentSessionsTest {
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.DEAD_SHELL);
         when(agentRuntime.displayName()).thenReturn("Claude");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThatThrownBy(() -> sessions().say("ABC-1", "no, answer 2 differently"))
+        assertThatThrownBy(() -> sessions.say("ABC-1", "no, answer 2 differently"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No Claude session is running for ABC-1");
     }
@@ -172,8 +178,9 @@ class AgentSessionsTest {
         when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
         when(agentRuntime.lastSessionActivity(root))
                 .thenReturn(OptionalLong.of(1_700_000_000_000L));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions().writeTaskContext("ABC-1", "Review round for http://mr/1.");
+        sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
         verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false);
         verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
@@ -188,8 +195,9 @@ class AgentSessionsTest {
         when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
         when(agentRuntime.lastSessionActivity(root))
                 .thenReturn(OptionalLong.of(System.currentTimeMillis() - Duration.ofMinutes(10).toMillis()));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions().writeTaskContext("ABC-1", "Review round for http://mr/1.");
+        sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
         verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(), eq(false));
     }
@@ -199,8 +207,9 @@ class AgentSessionsTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().writeTaskContext("ABC-1", "new instructions")).contains("re-entered");
+        assertThat(sessions.writeTaskContext("ABC-1", "new instructions")).contains("re-entered");
         verify(tmux).reviveTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any());
     }
 
@@ -211,8 +220,9 @@ class AgentSessionsTest {
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.MISSING);
         when(terminal.reveal("jagt")).thenReturn(TerminalDriver.Revealed.WINDOW);
         when(agentRuntime.displayName()).thenReturn("Claude");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().focusTask("ABC-1")).contains("re-entered its Claude session");
+        assertThat(sessions.focusTask("ABC-1")).contains("re-entered its Claude session");
         verify(tmux).reviveTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any());
     }
 
@@ -221,17 +231,21 @@ class AgentSessionsTest {
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(agentRuntime.displayName()).thenReturn("Claude");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().openTaskTab("ABC-1", "auto")).contains("New Claude session started");
+        assertThat(sessions.openTaskTab("ABC-1", "auto")).contains("New Claude session started");
         verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false));
         verify(tmux, never()).reviveTaskWindow(anyString(), anyString(), anyString(), any(), any());
     }
 
     @Test
     void replacesTheRelayForANewRoundOfWork() throws Exception {
-        Path worktree = worktreeWithRelay("STALE: last round");
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
+        Files.writeString(worktree.resolve("task_context.md"), "STALE: last round");
+        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING).build());
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        sessions().writeTaskContext("ABC-1", "NEW ROUND: fix the pipeline");
+        sessions.writeTaskContext("ABC-1", "NEW ROUND: fix the pipeline");
 
         assertThat(Files.readString(worktree.resolve("task_context.md")))
                 .isEqualTo("NEW ROUND: fix the pipeline").doesNotContain("STALE");
@@ -239,30 +253,29 @@ class AgentSessionsTest {
 
     @Test
     void leavesTheAgentAloneWhenTheRoundIsTheOneItWasAlreadyHanded() throws Exception {
-        worktreeWithRelay("Review round for http://mr/1.\nComment: rename x");
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
+        Files.writeString(worktree.resolve("task_context.md"), "Review round for http://mr/1.\nComment: rename x");
+        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING).build());
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().relayIfChanged("ABC-1", "Review round for http://mr/1.\nComment: rename x"))
+        assertThat(sessions.relayIfChanged("ABC-1", "Review round for http://mr/1.\nComment: rename x"))
                 .isFalse();
         verifyNoInteractions(tmux);
     }
 
     @Test
     void relaysARoundThatDiffersFromTheOneTheAgentWasHanded() throws Exception {
-        Path worktree = worktreeWithRelay("Review round for http://mr/1.\nComment: rename x");
+        Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
+        Files.writeString(worktree.resolve("task_context.md"), "Review round for http://mr/1.\nComment: rename x");
+        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING).build());
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
         when(tmux.nudgeTaskWindow(eq("jagt"), eq("ABC-1"), anyString())).thenReturn(true);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().relayIfChanged("ABC-1", "Review round for http://mr/1.\nComment: drop the cache"))
+        assertThat(sessions.relayIfChanged("ABC-1", "Review round for http://mr/1.\nComment: drop the cache"))
                 .isTrue();
         assertThat(Files.readString(worktree.resolve("task_context.md"))).contains("drop the cache");
-    }
-
-    private Path worktreeWithRelay(String existingContent) throws Exception {
-        Path worktree = Files.createDirectories(root.resolve("ABC-1-demo"));
-        Files.writeString(worktree.resolve("task_context.md"), existingContent);
-        state.putTask("ABC-1", TaskState.builder("demo", worktree.toString(), TaskStatus.CI_POLLING).build());
-        return worktree;
     }
 
     @Test
@@ -270,8 +283,9 @@ class AgentSessionsTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withViewer(ConfigService.ConfigFile.ViewerConfig.defaults().withTmuxSession("jagt")));
         when(tmux.sessionName("jagt")).thenReturn("jagt");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().closeViewerIfNoTasksLeft()).isFalse();
+        assertThat(sessions.closeViewerIfNoTasksLeft()).isFalse();
         verifyNoInteractions(terminal);
     }
 
@@ -281,8 +295,9 @@ class AgentSessionsTest {
                 .withViewer(ConfigService.ConfigFile.ViewerConfig.defaults().withTmuxSession("jagt")
                         .withKeepViewer(false)));
         when(tmux.sessionName("jagt")).thenReturn("jagt");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
-        assertThat(sessions().closeViewerIfNoTasksLeft()).isTrue();
+        assertThat(sessions.closeViewerIfNoTasksLeft()).isTrue();
         verify(terminal).closeViewerWindow("jagt");
     }
 }

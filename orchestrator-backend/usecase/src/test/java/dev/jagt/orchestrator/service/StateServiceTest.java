@@ -28,15 +28,11 @@ import static org.assertj.core.api.Assertions.tuple;
 
 class StateServiceTest {
 
-    private static StateService stateIn(Path root, Path stateFile) {
-        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(stateFile.toString())));
-    }
-
     @Test
     void tellsListenersAboutAChangeOnlyAfterItIsOnDisk(@TempDir Path root) {
         Path stateFile = root.resolve("state.json");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
         List<String> seenByListener = new ArrayList<>();
         state.onChange(written -> seenByListener.add(
                 written.tasks().keySet() + " on disk: " + state.tasks().keySet()));
@@ -50,7 +46,8 @@ class StateServiceTest {
     void resolvesACallerFromAnyRepositoryItsTaskWorksIn(@TempDir Path root) throws IOException {
         Path api = Files.createDirectories(root.resolve("ABC-1-alpha"));
         Path client = Files.createDirectories(root.resolve("ABC-1-beta"));
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("alpha", api.toString()),
                 TaskRepo.of("beta", client.toString())), TaskStatus.IN_PROGRESS).build());
 
@@ -69,13 +66,15 @@ class StateServiceTest {
                 }}
                 """.formatted(worktree));
 
-        assertThat(stateIn(root, stateFile).findByWorktree(worktree.toString())).get()
+        assertThat(new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString()))).findByWorktree(worktree.toString())).get()
                 .extracting(Map.Entry::getKey).isEqualTo("ABC-2");
     }
 
     @Test
     void staysQuietWhenAMutationChangedNothing(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
         AtomicInteger changes = new AtomicInteger();
         state.onChange(written -> changes.incrementAndGet());
@@ -88,7 +87,8 @@ class StateServiceTest {
 
     @Test
     void reportsEveryKindOfChangeIncludingARemoval(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
         AtomicInteger changes = new AtomicInteger();
         state.onChange(written -> changes.incrementAndGet());
@@ -101,7 +101,8 @@ class StateServiceTest {
 
     @Test
     void keepsWritingAndKeepsNotifyingWhenOneListenerThrows(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         AtomicInteger secondListener = new AtomicInteger();
         state.onChange(written -> {
             throw new IllegalStateException("this listener is broken");
@@ -117,7 +118,8 @@ class StateServiceTest {
     @Test
     void keepsThePreviousVersionBesideTheStateFileOnEveryWrite(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
@@ -129,12 +131,14 @@ class StateServiceTest {
     @Test
     void recoversEveryTaskFromTheBackupWhenTheStateFileIsUnreadable(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
         Files.writeString(stateFile, "{\"tasks\": {\"ABC-1\": {truncated…");
 
-        var tasks = stateIn(root, stateFile).tasks();
+        var tasks = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString()))).tasks();
 
         assertThat(tasks).containsOnlyKeys("ABC-1");
         assertThat(Files.exists(root.resolve("state.json.corrupt"))).isTrue();
@@ -144,14 +148,17 @@ class StateServiceTest {
     @Test
     void putsTheRecoveredTasksBackSoTheNextReaderStillFindsThem(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a2").build());
         Files.writeString(stateFile, "{\"tasks\": {\"ABC-1\": {truncated…");
 
-        stateIn(root, stateFile).tasks();
+        new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString()))).tasks();
 
-        assertThat(stateIn(root, stateFile).tasks()).containsOnlyKeys("ABC-1");
+        assertThat(new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString()))).tasks()).containsOnlyKeys("ABC-1");
     }
 
     @Test
@@ -159,7 +166,8 @@ class StateServiceTest {
         Path stateFile = root.resolve("state.json");
         Files.writeString(stateFile, "this is not json");
 
-        assertThatThrownBy(() -> stateIn(root, stateFile).tasks())
+        assertThatThrownBy(() -> new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString()))).tasks())
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("no usable backup");
     }
@@ -171,7 +179,8 @@ class StateServiceTest {
         Files.writeString(stateFile, "this is not json");
         Files.writeString(root.resolve("state.json.bak"), "neither is this");
 
-        assertThatThrownBy(() -> stateIn(root, stateFile).tasks())
+        assertThatThrownBy(() -> new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString()))).tasks())
                 .isInstanceOf(UncheckedIOException.class)
                 .hasMessageContaining("no usable backup");
         assertThat(Files.readString(stateFile)).isEqualTo("this is not json");
@@ -181,7 +190,8 @@ class StateServiceTest {
     @Test
     void answersFromTheLastParseWhileTheFileOnDiskHasNotMoved(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
         FileTime written = Files.getLastModifiedTime(stateFile);
         Files.writeString(stateFile, "x".repeat((int) Files.size(stateFile)));
@@ -193,7 +203,8 @@ class StateServiceTest {
     @Test
     void picksUpAStateFileThatSomethingElseRewrote(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
         Files.writeString(stateFile, """
@@ -204,7 +215,8 @@ class StateServiceTest {
 
     @Test
     void keepsItsOwnCopyWhenACallerMutatesTheTasksItWasHanded(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
         state.tasks().clear();
@@ -215,7 +227,8 @@ class StateServiceTest {
     @Test
     void writesOnlyRealStateForATaskThatHasSpentTokens(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .usage(TokenUsage.ofCall(25_000, 100, 170, 0.05)).build());
 
@@ -231,7 +244,8 @@ class StateServiceTest {
         Files.writeString(stateFile, """
                 {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"CI_POLLING",
                 "lastActiveTimestamp":123,"alias":"a1","mrUrl":"http://mr/1"}}}""");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
 
         var task = state.task("ABC-1").orElseThrow();
 
@@ -244,7 +258,8 @@ class StateServiceTest {
 
     @Test
     void resolvesCallerTaskWhenCallerReportsPhysicalPathOfSymlinkedWorktree(@TempDir Path root) throws IOException {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.NEW).alias("a1").build());
         String physicalCallerCwd = root.toRealPath().toString();
 
@@ -255,7 +270,8 @@ class StateServiceTest {
 
     @Test
     void recordsWhoAskedForEachStepATaskTakes(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
 
         OriginContext.as(ActionOrigin.BOARD,
@@ -268,7 +284,8 @@ class StateServiceTest {
 
     @Test
     void leavesTheEarlierStepAloneWhenAKeepAliveChangesNothing(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         OriginContext.as(ActionOrigin.BOARD,
                 () -> state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build()));
 
@@ -285,7 +302,8 @@ class StateServiceTest {
         Files.writeString(stateFile, """
                 {"tasks":{"ABC-1":{"project":"proj","worktreePath":"/wt","status":"APPROVED","alias":"a1",
                 "lastActiveTimestamp":1000}}}""");
-        StateService state = stateIn(root, stateFile);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
 
         OriginContext.as(ActionOrigin.MCP, () -> state.updateTask("ABC-1", TaskState::touched));
 
@@ -296,7 +314,8 @@ class StateServiceTest {
 
     @Test
     void forgetsTaskWhenItIsRemoved(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("a1").build());
 
         boolean removed = state.removeTask("ABC-1");
@@ -307,7 +326,8 @@ class StateServiceTest {
 
     @Test
     void listsEachTaskOnOneLineWithoutItsHistory(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("alpha", "/wt/ABC-1", TaskStatus.REVIEW_PENDING)
                 .title("Fix the login").message("ready").mrUrl("https://host/mr/7")
                 .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, 1L, ActionOrigin.BOARD))).build());
@@ -319,7 +339,8 @@ class StateServiceTest {
 
     @Test
     void saysThereAreNoTasksWhenNoneIsOpen(@TempDir Path root) {
-        StateService state = stateIn(root, root.resolve("state.json"));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
 
         String listing = state.listing();
 

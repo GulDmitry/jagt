@@ -35,14 +35,10 @@ class DeployServiceTest {
 
     private final EditorDriver editor = mock(EditorDriver.class);
 
-    private static StateService stateIn(Path root) {
-        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-    }
-
     @Test
     void reportsAFullDeployAsDoneAndStampsTheBranchItLandedOn(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -58,7 +54,8 @@ class DeployServiceTest {
 
     @Test
     void aBlockedDeployWithNothingLandedNamesTheObstacleInsteadOfAdvisingTheSameRunAgain(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
@@ -75,7 +72,8 @@ class DeployServiceTest {
 
     @Test
     void recordsTheMergeCommitTheDeployCreatedSoItCanBeReverted(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
@@ -92,7 +90,8 @@ class DeployServiceTest {
     @Test
     void handsBackAConflictWithoutOpeningAnEditorOrTouchingTheTaskBranch(@TempDir Path root)
             throws Exception {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         Path worktree = java.nio.file.Files.createDirectories(root.resolve("wt"));
         state.putTask("ABC-1", TaskState.builder("proj", worktree.toString(), TaskStatus.CI_POLLING)
                 .message("MR: http://x").alias("a1").build());
@@ -117,7 +116,8 @@ class DeployServiceTest {
 
     @Test
     void refusesToLandATaskOntoTheVeryBranchItWasCutFrom(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .message("MR: http://x").alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -134,7 +134,8 @@ class DeployServiceTest {
 
     @Test
     void refusesToGuessWhereToLandAProjectThatNamesNoDeployBranch(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", null, null));
@@ -149,7 +150,8 @@ class DeployServiceTest {
 
     @Test
     void landsEveryRepositoryATaskSpansInTheOrderItHoldsThem(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -170,7 +172,8 @@ class DeployServiceTest {
 
     @Test
     void namesWhatIsLiveAndWhatIsNotWhenARepositoryConflictsAfterAnotherHasLanded(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -195,7 +198,8 @@ class DeployServiceTest {
 
     @Test
     void countsNothingAsLiveWhenTheFirstRepositoryOfAFreshRoundConflicts(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.REVIEWED).alias("a1").build());
         state.updateTask("ABC-1", t -> t.withDeployCommit("api", "0ldc0mm1t111")
@@ -215,7 +219,8 @@ class DeployServiceTest {
 
     @Test
     void startsFromTheTopWhenADeployWorktreeIsLeftOverFromSomeRoundOtherThanAConflict(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -234,7 +239,8 @@ class DeployServiceTest {
 
     @Test
     void aRepeatedDeployPicksUpAtTheRepositoryTheConflictLeftBehind(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
         state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234"));
@@ -254,7 +260,8 @@ class DeployServiceTest {
 
     @Test
     void landsTheRepositoriesThatHaveWorkAndPassesOverTheOnesWithNothingToDeploy(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -274,7 +281,8 @@ class DeployServiceTest {
 
     @Test
     void refusesTheDeployWhenNoRepositoryHasAnythingToDeploy(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -293,7 +301,8 @@ class DeployServiceTest {
 
     @Test
     void reportsAndRecordsWhatIsLiveWhenADeployBreaksOffForAReasonNoWorktreeCanFix(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -316,7 +325,8 @@ class DeployServiceTest {
 
     @Test
     void leavesNoDanglingWordWhenTheFailureItReportsCarriesNoMessage(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
@@ -335,7 +345,8 @@ class DeployServiceTest {
 
     @Test
     void refusesTheWholeDeployWhenAnyRepositoryHasNoDeployBranch(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.APPROVED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);

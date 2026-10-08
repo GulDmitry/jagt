@@ -21,14 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UsageStatsRendererTest {
 
 
-    private static StateService stateIn(Path root) {
-        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-    }
-
     @Test
     void showsWhichKindOfCallTheSpendWentOnBiggestFirst(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         UsageTracker tracker = new UsageTracker(state);
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
@@ -41,7 +37,8 @@ class UsageStatsRendererTest {
 
     @Test
     void ranksTheTasksByWhatTheyConsumed(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a2").build());
         UsageTracker tracker = new UsageTracker(state);
@@ -57,7 +54,8 @@ class UsageStatsRendererTest {
 
     @Test
     void keepsARetiredTasksSpendInTheSessionTotal(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         UsageTracker tracker = new UsageTracker(state);
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
@@ -72,7 +70,8 @@ class UsageStatsRendererTest {
 
     @Test
     void showsNothingSpentBeforeTheFirstCall(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
         String out = new UsageStatsRenderer(new UsageTracker(state)).render(state.tasks());
 

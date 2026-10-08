@@ -14,29 +14,29 @@ class MasterReviewTest {
 
     private final MasterReview reviews = new MasterReview();
 
-    private static TaskState in(Path worktree) {
-        return TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-    }
-
     @Test
     void readsNothingFromATaskTheReviewerHasNotWrittenAbout(@TempDir Path worktree) {
-        assertThat(reviews.of(in(worktree))).isEmpty();
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+
+        assertThat(reviews.of(task)).isEmpty();
     }
 
     @Test
     void readsTheVerdictOffTheLastLineTheReviewerWrote(@TempDir Path worktree) throws Exception {
         Files.writeString(worktree.resolve(MasterReview.FILE),
                 "Foo.java:12 the guard is inverted\nVERDICT: not ready\n");
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        assertThat(reviews.of(in(worktree))).get()
+        assertThat(reviews.of(task)).get()
                 .satisfies(verdict -> assertThat(verdict.ready()).isFalse());
     }
 
     @Test
     void readsOnlyTheWordThatMeansTheRoundCanGoOn(@TempDir Path worktree) throws Exception {
         Files.writeString(worktree.resolve(MasterReview.FILE), "nothing wrong\nVERDICT: ready\n");
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        assertThat(reviews.of(in(worktree))).get()
+        assertThat(reviews.of(task)).get()
                 .satisfies(verdict -> assertThat(verdict.ready()).isTrue());
     }
 
@@ -45,8 +45,9 @@ class MasterReviewTest {
         Files.writeString(worktree.resolve(MasterReview.FILE),
                 "# ABC-1 review\nFoo.java:12 no test pins it\nBar.java no v2 branch remains, recorded as the cost\n"
                         + "VERDICT: ready\n");
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        assertThat(reviews.of(in(worktree))).get()
+        assertThat(reviews.of(task)).get()
                 .satisfies(verdict -> assertThat(verdict.kind()).isEqualTo(MasterReview.Kind.NOT_READY));
     }
 
@@ -54,8 +55,9 @@ class MasterReviewTest {
     void readsAQuestionAsTheLineAboveTheVerdict(@TempDir Path worktree) throws Exception {
         Files.writeString(worktree.resolve(MasterReview.FILE),
                 "Foo.java drops v2\nAdd v3 beside v2, or replace it?\n\nVERDICT: question\n");
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        assertThat(reviews.of(in(worktree))).get().satisfies(verdict -> {
+        assertThat(reviews.of(task)).get().satisfies(verdict -> {
             assertThat(verdict.kind()).isEqualTo(MasterReview.Kind.QUESTION);
             assertThat(verdict.question()).isEqualTo("Add v3 beside v2, or replace it?");
         });
@@ -64,8 +66,9 @@ class MasterReviewTest {
     @Test
     void ignoresAFileThatStopsBeforeTheVerdict(@TempDir Path worktree) throws Exception {
         Files.writeString(worktree.resolve(MasterReview.FILE), "Foo.java:12 the guard is inverted\n");
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        assertThat(reviews.of(in(worktree))).isEmpty();
+        assertThat(reviews.of(task)).isEmpty();
     }
 
     @Test

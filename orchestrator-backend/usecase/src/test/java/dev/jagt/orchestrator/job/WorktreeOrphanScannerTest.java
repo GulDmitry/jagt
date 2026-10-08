@@ -35,7 +35,14 @@ class WorktreeOrphanScannerTest {
         Files.createDirectories(orphan.resolve("app"));
         Files.writeString(orphan.resolve("app").resolve(".env"), "TOKEN=secret");
         Files.writeString(orphan.resolve("app").resolve("key.pem"), "-----BEGIN KEY-----");
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env", "**/*.pem"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env", "**/*.pem"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         var orphans = scanner.scan();
 
@@ -51,9 +58,16 @@ class WorktreeOrphanScannerTest {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path agentRuns = Files.createDirectories(root.resolve("ABC-1-alpha"));
         Path alsoEdited = Files.createDirectories(root.resolve("ABC-1-demo"));
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"),
-                Map.of("ABC-1", TaskState.builder(List.of(TaskRepo.of("alpha", agentRuns.toString()),
-                        TaskRepo.of("demo", alsoEdited.toString())), TaskStatus.IN_PROGRESS).build()));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("alpha", agentRuns.toString()),
+                TaskRepo.of("demo", alsoEdited.toString())), TaskStatus.IN_PROGRESS).build());
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         assertThat(scanner.scan()).isEmpty();
     }
@@ -63,7 +77,14 @@ class WorktreeOrphanScannerTest {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path orphan = Files.createDirectories(root.resolve("ABC-42-demo"));
         Files.writeString(orphan.resolve(".env"), "TOKEN=secret");
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         assertThat(scanner.scan()).singleElement()
                 .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
@@ -73,8 +94,15 @@ class WorktreeOrphanScannerTest {
     void leavesTheWorktreeOfALiveTaskAlone(@TempDir Path root) throws IOException {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"),
-                Map.of("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build()));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         assertThat(scanner.scan()).isEmpty();
     }
@@ -87,7 +115,9 @@ class WorktreeOrphanScannerTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
 
-        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifications, mock(EditorDriver.class)).run();
+        new WorktreeOrphanScanner(config, new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))), notifications, mock(EditorDriver.class)).run();
 
         verifyNoInteractions(notifications);
     }
@@ -99,7 +129,14 @@ class WorktreeOrphanScannerTest {
         Files.createDirectories(repo.resolve(".git/worktrees/ABC-46-demo"));
         Files.writeString(byHand.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-46-demo") + "\n");
         Files.writeString(byHand.resolve(".env"), "TOKEN=secret");
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         assertThat(scanner.scan()).isEmpty();
     }
@@ -112,7 +149,14 @@ class WorktreeOrphanScannerTest {
         Files.writeString(cutByJagt.resolve(".git"),
                 "gitdir: " + repo.resolve(".git/worktrees/ABC-47-demo") + "\n");
         Files.writeString(cutByJagt.resolve("task_context.md"), "the task");
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         assertThat(scanner.scan()).singleElement()
                 .satisfies(found -> assertThat(found.path()).isEqualTo(cutByJagt));
@@ -136,7 +180,9 @@ class WorktreeOrphanScannerTest {
         EditorDriver editor = mock(EditorDriver.class);
         when(editor.residue()).thenReturn(Set.of(".idea", ".run"));
 
-        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifications, editor).run();
+        new WorktreeOrphanScanner(config, new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))), notifications, editor).run();
 
         assertThat(husk).doesNotExist();
         verifyNoInteractions(notifications);
@@ -155,7 +201,9 @@ class WorktreeOrphanScannerTest {
         EditorDriver editor = mock(EditorDriver.class);
         when(editor.residue()).thenReturn(Set.of(".idea"));
 
-        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), mock(Notifications.class), editor).run();
+        new WorktreeOrphanScanner(config, new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString()))), mock(Notifications.class), editor).run();
 
         assertThat(husk).doesNotExist();
     }
@@ -166,7 +214,14 @@ class WorktreeOrphanScannerTest {
         Path orphan = Files.createDirectories(root.resolve("ABC-43-demo"));
         Files.writeString(orphan.resolve(".git"), "gitdir: " + repo.resolve(".git/worktrees/ABC-43-demo") + "\n");
         Files.createDirectories(orphan.resolve(".idea"));
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         scanner.run();
 
@@ -178,7 +233,14 @@ class WorktreeOrphanScannerTest {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path orphan = Files.createDirectories(root.resolve("ABC-44-demo"));
         Files.writeString(orphan.resolve("Notes.md"), "half a day of work");
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         scanner.run();
 
@@ -190,7 +252,14 @@ class WorktreeOrphanScannerTest {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path orphan = Files.createDirectories(root.resolve("ABC-45-demo"));
         Files.createFile(orphan.resolve(".env"));
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         scanner.run();
 
@@ -230,8 +299,15 @@ class WorktreeOrphanScannerTest {
         Path live = Files.createDirectories(root.resolve("ABC-41-demo"));
         Path residue = Files.createDirectories(root.resolve("ABC-41-deploy"));
         Files.createDirectories(residue.resolve(".idea"));
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"),
-                Map.of("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build()));
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
+                mock(EditorDriver.class));
 
         assertThat(scanner.scan()).singleElement()
                 .satisfies(found -> assertThat(found.path()).isEqualTo(residue));
@@ -245,32 +321,17 @@ class WorktreeOrphanScannerTest {
         Files.writeString(unregistered.resolve(".git"),
                 "gitdir: " + repo.resolve(".git/worktrees/ABC-41-deploy") + "\n");
         Files.writeString(unregistered.resolve(".env"), "TOKEN=secret");
-        WorktreeOrphanScanner scanner = scannerFor(root, repo, List.of("**/.env"),
-                Map.of("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build()));
-
-        assertThat(scanner.scan()).singleElement()
-                .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
-    }
-
-    private static WorktreeOrphanScanner scannerFor(Path root, Path repo, List<String> copyGlobs) {
-        return scannerFor(root, repo, copyGlobs, Map.of());
-    }
-
-    private static WorktreeOrphanScanner scannerFor(Path root, Path repo, List<String> copyGlobs,
-                                                    Map<String, TaskState> tasks) {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
-                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(copyGlobs)));
-        return new WorktreeOrphanScanner(config, stateWith(root, tasks), mock(Notifications.class),
+                .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(List.of("**/.env"))));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-41", TaskState.builder("demo", live.toString(), TaskStatus.IN_PROGRESS).build());
+        WorktreeOrphanScanner scanner = new WorktreeOrphanScanner(config, state, mock(Notifications.class),
                 mock(EditorDriver.class));
-    }
 
-    private static StateService stateWith(Path root, Map<String, TaskState> tasks) {
-        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
-                OrchestratorProperties.defaults().withRoot(root.toString())
-                        .withStateFile(root.resolve("state.json").toString())));
-        tasks.forEach(state::putTask);
-        return state;
+        assertThat(scanner.scan()).singleElement()
+                .satisfies(found -> assertThat(found.secretFiles()).isEqualTo(1));
     }
 }

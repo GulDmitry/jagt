@@ -17,14 +17,10 @@ import static org.assertj.core.api.Assertions.within;
 
 class UsageTrackerTest {
 
-    private static StateService stateIn(Path root) {
-        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-    }
-
     @Test
     void splitsTheSessionSpendByWhatEachCallWasFor(@TempDir Path root) {
-        UsageTracker tracker = new UsageTracker(stateIn(root));
+        UsageTracker tracker = new UsageTracker(new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()))));
 
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(30_000, 0, 200, 0.06));
@@ -40,7 +36,8 @@ class UsageTrackerTest {
 
     @Test
     void chargesTheCallToTheTaskThatTriggeredIt(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         UsageTracker tracker = new UsageTracker(state);
 
@@ -53,7 +50,8 @@ class UsageTrackerTest {
 
     @Test
     void accumulatesEveryPollOnTheSameTaskInsteadOfOverwritingTheLastOne(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         UsageTracker tracker = new UsageTracker(state);
 
@@ -70,7 +68,8 @@ class UsageTrackerTest {
 
     @Test
     void chargesAnAliasToTheTaskItStandsFor(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         UsageTracker tracker = new UsageTracker(state);
 
@@ -81,7 +80,8 @@ class UsageTrackerTest {
 
     @Test
     void keepsTheSessionTotalForACallThatBelongsToNoTask(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         UsageTracker tracker = new UsageTracker(state);
 
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(24_000, 0, 150, 0.05));
@@ -93,7 +93,8 @@ class UsageTrackerTest {
 
     @Test
     void ignoresAnEmptyMeasurementSoUnmeteredCallsDoNotInflateTheCallCount(@TempDir Path root) {
-        UsageTracker tracker = new UsageTracker(stateIn(root));
+        UsageTracker tracker = new UsageTracker(new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()))));
 
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.NONE);
 

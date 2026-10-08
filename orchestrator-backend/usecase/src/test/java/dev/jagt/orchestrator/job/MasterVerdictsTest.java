@@ -31,22 +31,13 @@ class MasterVerdictsTest {
     private final MasterDecisions decisions = mock(MasterDecisions.class);
     private final MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, reports, decisions);
 
-    private static ConfigService.ConfigFile.MasterConfig acting() {
-        return new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
-    }
-
-    private static ConfigService.ConfigFile.MasterConfig judging() {
-        return new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
-    }
-
-    private static TaskState in(Path worktree) {
-        return TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
-    }
-
     @Test
     void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path worktree) {
-        verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("Foo.java:12 the guard is inverted"), 1), acting());
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("Foo.java:12 the guard is inverted"), 1), acting);
 
         verify(sessions).relayIfChanged(eq("ABC-1"), contains("the guard is inverted"));
         verify(ship, never()).ship(anyString(), any());
@@ -55,9 +46,11 @@ class MasterVerdictsTest {
     @Test
     void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path worktree) {
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
 
-        verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("Foo.java:12 the guard is inverted"), 1), acting());
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
+                List.of("Foo.java:12 the guard is inverted"), 1), acting);
 
         verify(reports).report(eq("ABC-1"), eq(TaskStatus.IN_PROGRESS), anyString());
     }
@@ -65,8 +58,9 @@ class MasterVerdictsTest {
     @Test
     void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path worktree) {
         when(sessions.relayIfChanged(eq("ABC-1"), contains("keep v2 beside v3"))).thenReturn(true);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        verdicts.answered("ABC-1", in(worktree), "keep v2?", "keep v2 beside v3", false);
+        verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
 
         verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "master answered the question");
     }
@@ -74,8 +68,9 @@ class MasterVerdictsTest {
     @Test
     void opensATaskForWorkTheMasterMovedToABranchOfItsOwn(@TempDir Path worktree) {
         when(ship.open("proj drop the old keys from main")).thenReturn("drop-the-old-keys started");
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        verdicts.answered("ABC-1", in(worktree), "a second request?", "do proj drop the old keys from main", false);
+        verdicts.answered("ABC-1", task, "a second request?", "do proj drop the old keys from main", false);
 
         verify(sessions).relayIfChanged(eq("ABC-1"), contains("drop-the-old-keys started"));
     }
@@ -83,41 +78,45 @@ class MasterVerdictsTest {
     @Test
     void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path worktree) {
         when(sessions.relayIfChanged(eq("ABC-1"), contains("refactor the shared block"))).thenReturn(true);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        verdicts.answered("ABC-1", in(worktree), "override the gate?", "refactor the shared block", true);
+        verdicts.answered("ABC-1", task, "override the gate?", "refactor the shared block", true);
 
         verify(sessions).openTaskTab("ABC-1", null);
     }
 
     @Test
     void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path worktree) {
-        TaskState task = in(worktree);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("Foo.java:12 the guard is inverted"), 1), acting());
+                List.of("Foo.java:12 the guard is inverted"), 1), acting);
 
         verify(decisions).record(task, "Foo.java:12 the guard is inverted");
     }
 
     @Test
     void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path worktree) {
-        TaskState task = in(worktree);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("[chaplain] Api.java — show: which caller still reads v2",
-                        "[developer] Foo.java:12 — the guard is inverted"), 1), acting());
+                        "[developer] Foo.java:12 — the guard is inverted"), 1), acting);
 
         verify(decisions).record(task, "[developer] Foo.java:12 — the guard is inverted");
     }
 
     @Test
     void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path worktree) {
-        TaskState task = in(worktree);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         when(ship.ship("ABC-1", task)).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
 
-        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting);
 
         verify(ship).ship("ABC-1", task);
         verify(reports, never()).report(anyString(), any(), anyString());
@@ -126,8 +125,9 @@ class MasterVerdictsTest {
     @Test
     void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path worktree) {
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
 
-        boolean moved = verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1),
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1),
                 kept);
 
         assertThat(moved).isFalse();
@@ -136,8 +136,11 @@ class MasterVerdictsTest {
 
     @Test
     void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path worktree) {
-        boolean moved = verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1),
-                judging());
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1),
+                judging);
 
         assertThat(moved).isFalse();
         verify(ship, never()).ship(anyString(), any());
@@ -147,8 +150,9 @@ class MasterVerdictsTest {
     void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path worktree) {
         TaskState planned = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
         when(sessions.relayIfChanged(eq("ABC-1"), contains("the plan holds. Start on it."))).thenReturn(true);
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
 
-        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting());
+        verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting);
 
         verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "master: the plan holds");
         verify(ship, never()).ship(anyString(), any());
@@ -169,9 +173,10 @@ class MasterVerdictsTest {
     @Test
     void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path worktree) {
         TaskState planned = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+        var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
-                List.of("[planner] plan.md — drops the v2 route the ticket keeps"), 1), judging());
+                List.of("[planner] plan.md — drops the v2 route the ticket keeps"), 1), judging);
 
         verify(sessions).relayIfChanged(eq("ABC-1"), contains("Then report PLAN_PENDING again.\n\n"
                 + "[planner] plan.md — drops the v2 route the ticket keeps"));
@@ -180,9 +185,11 @@ class MasterVerdictsTest {
     @Test
     void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path worktree) {
         when(sessions.relayIfChanged(eq("ABC-1"), contains("Add v3 beside v2, or replace it?"))).thenReturn(true);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
 
-        verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.QUESTION,
-                List.of("Foo.java drops v2", "Add v3 beside v2, or replace it?"), 1), acting());
+        verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
+                List.of("Foo.java drops v2", "Add v3 beside v2, or replace it?"), 1), acting);
 
         verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS,
                 "outcome=question — reviewer: Add v3 beside v2, or replace it?");
@@ -191,8 +198,11 @@ class MasterVerdictsTest {
 
     @Test
     void asksTheSameQuestionOnce(@TempDir Path worktree) {
-        boolean moved = verdicts.act("ABC-1", in(worktree), new MasterReview.Verdict(MasterReview.Kind.QUESTION,
-                List.of("Add v3 beside v2, or replace it?"), 1), acting());
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+
+        boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
+                List.of("Add v3 beside v2, or replace it?"), 1), acting);
 
         assertThat(moved).isFalse();
         verify(reports, never()).report(anyString(), any(), anyString());

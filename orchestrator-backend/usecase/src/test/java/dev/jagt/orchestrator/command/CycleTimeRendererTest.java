@@ -16,69 +16,71 @@ class CycleTimeRendererTest {
     private static final long HOUR = 3_600_000L;
     private static final long NOW = 1_700_000_000_000L;
 
-    private static TaskState withSteps(StatusChange... steps) {
-        return TaskState.builder("proj", "/wt", steps[steps.length - 1].status())
-                .history(List.of(steps)).build();
-    }
-
-    private static StatusChange step(TaskStatus status, long hoursAgo) {
-        return new StatusChange(status, NOW - hoursAgo * HOUR, null);
-    }
-
-    private static String rowFor(String taskId, String report) {
-        return report.lines().filter(line -> line.startsWith(taskId)).findFirst().orElseThrow();
-    }
-
     @Test
     void chargesEachStepToWhoeverOwnedTheStatusItWasSpentIn() {
-        Map<String, TaskState> tasks = Map.of("ABC-1", withSteps(
-                step(TaskStatus.IN_PROGRESS, 10), step(TaskStatus.CI_POLLING, 8),
-                step(TaskStatus.REVIEW_PENDING, 6)));
+        Map<String, TaskState> tasks = Map.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, NOW - 10 * HOUR, null),
+                        new StatusChange(TaskStatus.CI_POLLING, NOW - 8 * HOUR, null),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, NOW - 6 * HOUR, null)))
+                .build());
 
         String out = new CycleTimeRenderer().render(tasks, NOW);
 
-        assertThat(rowFor("ABC-1", out)).containsSubsequence("10h", "6h", "2h", "2h");
+        assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
+                .containsSubsequence("10h", "6h", "2h", "2h");
     }
 
     @Test
     void countsOneRoundPerTripOutForReview() {
-        Map<String, TaskState> tasks = Map.of("ABC-1", withSteps(
-                step(TaskStatus.IN_PROGRESS, 9), step(TaskStatus.CI_POLLING, 8),
-                step(TaskStatus.REVIEW_PENDING, 7), step(TaskStatus.CI_POLLING, 6)));
+        Map<String, TaskState> tasks = Map.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, NOW - 9 * HOUR, null),
+                        new StatusChange(TaskStatus.CI_POLLING, NOW - 8 * HOUR, null),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, NOW - 7 * HOUR, null),
+                        new StatusChange(TaskStatus.CI_POLLING, NOW - 6 * HOUR, null)))
+                .build());
 
         String out = new CycleTimeRenderer().render(tasks, NOW);
 
-        assertThat(rowFor("ABC-1", out)).endsWith("2");
+        assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow()).endsWith("2");
     }
 
     @Test
     void marksTheFiguresAsFloorsForATaskWhoseOldestStepsHaveAgedOut() {
-        StatusChange[] fifty = IntStream.range(0, 50)
-                .mapToObj(step -> step(TaskStatus.CI_POLLING, 50 - step))
-                .toArray(StatusChange[]::new);
+        List<StatusChange> fifty = IntStream.range(0, 50)
+                .mapToObj(step -> new StatusChange(TaskStatus.CI_POLLING, NOW - (50 - step) * HOUR, null))
+                .toList();
 
-        String out = new CycleTimeRenderer().render(Map.of("ABC-1", withSteps(fifty)), NOW);
+        String out = new CycleTimeRenderer().render(Map.of("ABC-1",
+                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).history(fifty).build()), NOW);
 
-        assertThat(rowFor("ABC-1", out)).contains("2d+").endsWith("50+");
+        assertThat(out.lines().filter(line -> line.startsWith("ABC-1")).findFirst().orElseThrow())
+                .contains("2d+").endsWith("50+");
         assertThat(out).contains("aged out of its history");
     }
 
     @Test
     void addsTheRoundsUpAcrossTasksAndGivesTheAverageInWords() {
         Map<String, TaskState> tasks = Map.of(
-                "ABC-1", withSteps(step(TaskStatus.CI_POLLING, 5), step(TaskStatus.CI_POLLING, 4)),
-                "ABC-2", withSteps(step(TaskStatus.CI_POLLING, 3)));
+                "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 5 * HOUR, null),
+                                new StatusChange(TaskStatus.CI_POLLING, NOW - 4 * HOUR, null)))
+                        .build(),
+                "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                        .history(List.of(new StatusChange(TaskStatus.CI_POLLING, NOW - 3 * HOUR, null)))
+                        .build());
 
         String out = new CycleTimeRenderer().render(tasks, NOW);
 
-        assertThat(rowFor("all tasks", out)).endsWith("3");
+        assertThat(out.lines().filter(line -> line.startsWith("all tasks")).findFirst().orElseThrow()).endsWith("3");
         assertThat(out).contains("1.5 per task");
     }
 
     @Test
     void namesTheSlowestStepAsAShareOfTheTimeAnyoneHeldTheTasks() {
-        Map<String, TaskState> tasks = Map.of("ABC-1", withSteps(
-                step(TaskStatus.IN_PROGRESS, 10), step(TaskStatus.REVIEW_PENDING, 8)));
+        Map<String, TaskState> tasks = Map.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .history(List.of(new StatusChange(TaskStatus.IN_PROGRESS, NOW - 10 * HOUR, null),
+                        new StatusChange(TaskStatus.REVIEW_PENDING, NOW - 8 * HOUR, null)))
+                .build());
 
         String out = new CycleTimeRenderer().render(tasks, NOW);
 
@@ -88,8 +90,12 @@ class CycleTimeRendererTest {
     @Test
     void putsTheTaskWaitingLongestOnTheHumanFirst() {
         Map<String, TaskState> tasks = Map.of(
-                "ABC-1", withSteps(step(TaskStatus.REVIEW_PENDING, 2)),
-                "ABC-2", withSteps(step(TaskStatus.REVIEW_PENDING, 20)));
+                "ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                        .history(List.of(new StatusChange(TaskStatus.REVIEW_PENDING, NOW - 2 * HOUR, null)))
+                        .build(),
+                "ABC-2", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                        .history(List.of(new StatusChange(TaskStatus.REVIEW_PENDING, NOW - 20 * HOUR, null)))
+                        .build());
 
         String out = new CycleTimeRenderer().render(tasks, NOW);
 

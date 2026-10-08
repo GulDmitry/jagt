@@ -48,80 +48,98 @@ class AgentStatusReportsTest {
     private final ConfigService configService = mock(ConfigService.class);
     private final Specs specs = mock(Specs.class);
 
-    private static StateService stateIn(Path root) {
-        return new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-    }
-
-    private AgentStatusReports reports(StateService state) {
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        return new AgentStatusReports(state, notifications, new FlowReports(state),
-                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
-                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
-                        configService, specs));
-    }
-
     @Test
     void tellsTheSessionItsHandBackIsWaitingOnVerificationRatherThanOnTheHuman(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(configService.project("proj")).thenReturn(new dev.jagt.orchestrator.task.ProjectConfig(
                 "/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test")));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        String answer = reports(state).report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
+        String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
         assertThat(answer).contains("VERIFYING");
     }
 
     @Test
     void answersAReportOnAVanishedTaskAsAFactNotAFieldToFix(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        assertThatThrownBy(() -> reports(state).report(TaskStatus.IN_PROGRESS, "working", "ABC-9"))
+        assertThatThrownBy(() -> reports.report(TaskStatus.IN_PROGRESS, "working", "ABC-9"))
                 .isInstanceOfSatisfying(Refusal.class,
                         refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.NO_SUCH_TASK));
     }
 
     @Test
     void refusesASessionsHandBackThatLeavesNoNotesForTheNextSession(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
+        assertThatThrownBy(() -> reports.reportOwn(handBack, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("write task_notes.md before handing the round back");
     }
 
     @Test
     void refusesAHandBackWhoseChangeToTheSpecsDoesNotHold(@TempDir Path root) throws Exception {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         Files.writeString(root.resolve("task_notes.md"), "notes");
         when(worktreeChanges.agentFileLinesAdded(any())).thenReturn(Optional.of(0));
         when(specs.owed(root, "ABC-1")).thenReturn(Optional.of("openspec/changes/abc-1 does not validate"));
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
+        assertThatThrownBy(() -> reports.reportOwn(handBack, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("[proj] openspec/changes/abc-1 does not validate");
     }
 
     @Test
     void refusesAHandBackWhoseAgentFileLinesGitCannotCount(@TempDir Path root) throws Exception {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS).build());
         Files.writeString(root.resolve("task_notes.md"), "notes");
         AgentStatusMessage handBack = new AgentStatusMessage("REVIEW_PENDING", "done", null, null, Map.of());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
+        assertThatThrownBy(() -> reports.reportOwn(handBack, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("jagt could not count the lines this task added to the project's agent file");
     }
 
     @Test
     void tellsTheSessionWhereItsReportLandedInTheStateItWasWrittenTo(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
         StateService staleView = spy(state);
         doReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()))
@@ -140,9 +158,14 @@ class AgentStatusReportsTest {
 
     @Test
     void tellsTheSessionTheMasterReadsItsHandBackNext(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
 
@@ -153,21 +176,33 @@ class AgentStatusReportsTest {
 
     @Test
     void storesTheRequestLinkTheAgentPutInItsStatusMessage(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.CI_POLLING, "MR: https://gitlab/x/-/merge_requests/9", "ABC-1");
+        reports.report(TaskStatus.CI_POLLING, "MR: https://gitlab/x/-/merge_requests/9", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
 
     @Test
     void leavesADeployedTaskAloneWhenAPolledRoundKeepsCallingItReviewed(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1")
                 .message("deployed").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).markRead("ABC-1", TaskStatus.REVIEWED);
+        reports.markRead("ABC-1", TaskStatus.REVIEWED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.DEPLOYED);
         assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("deployed");
@@ -175,22 +210,34 @@ class AgentStatusReportsTest {
 
     @Test
     void takesTheRequestLinkFromTheArgumentRatherThanFromTheProse(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(new AgentStatusMessage("CI_POLLING", "handed over", null, "https://gitlab/x/-/merge_requests/9", Map.of()), "ABC-1");
+        reports.report(new AgentStatusMessage("CI_POLLING", "handed over", null, "https://gitlab/x/-/merge_requests/9", Map.of()), "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo("https://gitlab/x/-/merge_requests/9");
     }
 
     @Test
     void linksEveryRepositoryToItsOwnRequestAndRecordsOneRound(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1")
                 .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", null, null),
                         new TaskRepo("web", "/wt-web", "git@host:web.git", null, null))).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(new AgentStatusMessage("CI_POLLING", "requests up", null, null, Map.of("proj", "https://host/proj/-/merge_requests/9",
+        reports.report(new AgentStatusMessage("CI_POLLING", "requests up", null, null, Map.of("proj", "https://host/proj/-/merge_requests/9",
                         "web", "https://host/web/-/merge_requests/3")), "ABC-1");
 
         TaskState reported = state.task("ABC-1").orElseThrow();
@@ -202,10 +249,16 @@ class AgentStatusReportsTest {
 
     @Test
     void refusesARequestReportedUnderAProjectTheTaskDoesNotHold(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        assertThatThrownBy(() -> reports(state).report(new AgentStatusMessage("CI_POLLING", "requests up", null, null, Map.of("frontend", "https://host/x/-/merge_requests/9")), "ABC-1"))
+        assertThatThrownBy(() -> reports.report(new AgentStatusMessage("CI_POLLING", "requests up", null, null, Map.of("frontend", "https://host/x/-/merge_requests/9")), "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("project 'frontend' is not on this task")
                 .hasMessageContaining("proj");
@@ -213,13 +266,19 @@ class AgentStatusReportsTest {
 
     @Test
     void armsAFreshRoundWhenASecondRepositoryFinallyOpensItsRequest(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .repos(List.of(new TaskRepo("proj", "/wt", "git@host:proj.git", "https://host/proj/mr/9", null),
                         new TaskRepo("web", "/wt-web", "git@host:web.git", null, null)))
                 .mrCreatedAt(1_000L).lastPolledAt(9_000L).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(new AgentStatusMessage("CI_POLLING", "web is up too", null, null, Map.of("proj", "https://host/proj/mr/9", "web", "https://host/web/mr/3")), "ABC-1");
+        reports.report(new AgentStatusMessage("CI_POLLING", "web is up too", null, null, Map.of("proj", "https://host/proj/mr/9", "web", "https://host/web/mr/3")), "ABC-1");
 
         TaskState reported = state.task("ABC-1").orElseThrow();
         assertThat(reported.reviewRequestOf("web")).contains("https://host/web/mr/3");
@@ -229,10 +288,16 @@ class AgentStatusReportsTest {
 
     @Test
     void readsTheOutcomeFromTheArgumentWhenTheMessageCarriesNoMarker(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(new AgentStatusMessage("IN_PROGRESS", "which cache should this use", "question", null, Map.of()), "ABC-1");
+        reports.report(new AgentStatusMessage("IN_PROGRESS", "which cache should this use", "question", null, Map.of()), "ABC-1");
 
         assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message()))
                 .isEqualTo(AgentReport.QUESTION);
@@ -240,12 +305,18 @@ class AgentStatusReportsTest {
 
     @Test
     void recordsARoundWithADiffWhenTheWorktreeContradictsANoChangesClaim(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .mrUrl("https://host/mr/1").build());
         when(worktreeChanges.anyUncommitted(any())).thenReturn(true);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(new AgentStatusMessage("REVIEW_PENDING", "already handled", "no_changes", null, Map.of()), "ABC-1");
+        reports.report(new AgentStatusMessage("REVIEW_PENDING", "already handled", "no_changes", null, Map.of()), "ABC-1");
 
         assertThat(AgentReport.of(state.task("ABC-1").orElseThrow().message())).isEqualTo(AgentReport.PLAIN);
     }
@@ -253,22 +324,34 @@ class AgentStatusReportsTest {
     @ParameterizedTest
     @ValueSource(strings = {"no_changes", "no-changes", "no changes"})
     void keepsANoChangesRoundThatTheWorktreeBearsOut(String outcome, @TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .mrUrl("https://host/mr/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(new AgentStatusMessage("REVIEW_PENDING", "already handled", outcome, null, Map.of()), "ABC-1");
+        reports.report(new AgentStatusMessage("REVIEW_PENDING", "already handled", outcome, null, Map.of()), "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().message()).isEqualTo("no changes: already handled");
     }
 
     @Test
     void recordsTheOutcomeAnAgentTypedIntoTheMessageInsteadOfTheField(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
                 .mrUrl("https://host/mr/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.REVIEW_PENDING, "outcome=no_changes: withdrawn thread relayed again", "ABC-1");
+        reports.report(TaskStatus.REVIEW_PENDING, "outcome=no_changes: withdrawn thread relayed again", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().message())
                 .isEqualTo("no changes: withdrawn thread relayed again");
@@ -276,9 +359,14 @@ class AgentStatusReportsTest {
 
     @Test
     void notifiesHumanWhenAgentFinishesAndHandsBackForReview(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
@@ -289,9 +377,14 @@ class AgentStatusReportsTest {
 
     @Test
     void leavesTheHumanUntappedWhileTheMasterReadsTheHandBackFirst(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
 
@@ -302,32 +395,50 @@ class AgentStatusReportsTest {
 
     @Test
     void doesNotNotifyOnRoutineInProgressKeepAlive(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.IN_PROGRESS, "step 2", "ABC-1");
+        reports.report(TaskStatus.IN_PROGRESS, "step 2", "ABC-1");
 
         verifyNoInteractions(notifications);
     }
 
     @Test
     void notifiesHumanWhenAgentStopsToAskWithoutLeavingTheStatusItWasWorkingIn(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("step 2").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.IN_PROGRESS, "awaiting: which uniqueness rule", "ABC-1");
+        reports.report(TaskStatus.IN_PROGRESS, "awaiting: which uniqueness rule", "ABC-1");
 
         verify(notifications).send(argThat(sent -> "needs input".equals(sent.title())));
     }
 
     @Test
     void doesNotNotifyAgainWhileTheAgentRepeatsTheQuestionItIsStillWaitingOn(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1")
                 .message("awaiting: which uniqueness rule").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.IN_PROGRESS, "awaiting: which uniqueness rule", "ABC-1");
+        reports.report(TaskStatus.IN_PROGRESS, "awaiting: which uniqueness rule", "ABC-1");
 
         verifyNoInteractions(notifications);
     }
@@ -335,41 +446,65 @@ class AgentStatusReportsTest {
     @ParameterizedTest
     @ValueSource(strings = {"branch pushed", "pushed, see the http docs for the request"})
     void refusesToSayATaskIsWaitingOnChecksWithoutNamingTheRequest(String message, @TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        assertThatThrownBy(() -> reports(state).report(TaskStatus.CI_POLLING, message, "ABC-1"))
+        assertThatThrownBy(() -> reports.report(TaskStatus.CI_POLLING, message, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("required with CI_POLLING");
     }
 
     @Test
     void letsATaskSayItIsWaitingOnTheChecksOnceItNamesTheRequest(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.CI_POLLING, "MR: https://gitlab.example/g/p/-/merge_requests/1", "ABC-1");
+        reports.report(TaskStatus.CI_POLLING, "MR: https://gitlab.example/g/p/-/merge_requests/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_POLLING);
     }
 
     @Test
     void refusesTheStatusEvenForATaskThatAlreadyCarriesARequestLink(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED).alias("a1")
                 .mrUrl("https://gitlab.example/g/p/-/merge_requests/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        assertThatThrownBy(() -> reports(state).report(TaskStatus.CI_POLLING, "waiting for the pipeline", "ABC-1"))
+        assertThatThrownBy(() -> reports.report(TaskStatus.CI_POLLING, "waiting for the pipeline", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("required with CI_POLLING");
     }
 
     @Test
     void truncatesStatusMessageToOneDashboardLineWhenAgentSendsAnEssay(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.IN_PROGRESS, "root cause\nanalysis ".repeat(20), "ABC-1");
+        reports.report(TaskStatus.IN_PROGRESS, "root cause\nanalysis ".repeat(20), "ABC-1");
 
         String stored = state.task("ABC-1").orElseThrow().message();
         assertThat(stored).hasSizeLessThanOrEqualTo(100).doesNotContain("\n").endsWith("…");
@@ -377,22 +512,34 @@ class AgentStatusReportsTest {
 
     @Test
     void keepsTheWholeRequestLinkWhenTheMessageIsTooLongForOneDashboardLine(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
         String link = "https://gitlab.example/group/subgroup/team/project/-/merge_requests/1234567";
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.CI_POLLING, "pipeline queued after the push — MR: " + link, "ABC-1");
+        reports.report(TaskStatus.CI_POLLING, "pipeline queued after the push — MR: " + link, "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrUrl()).isEqualTo(link);
     }
 
     @Test
     void advancesToApprovedAndTapsTheHumanTheFirstTime(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).markRead("ABC-1", TaskStatus.APPROVED);
+        reports.markRead("ABC-1", TaskStatus.APPROVED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.APPROVED);
         verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
@@ -401,11 +548,17 @@ class AgentStatusReportsTest {
 
     @Test
     void saysNothingWhenARoundCameBackCleanButUnapproved(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).markRead("ABC-1", TaskStatus.REVIEWED);
+        reports.markRead("ABC-1", TaskStatus.REVIEWED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEWED);
         verify(notifications, never()).send(any());
@@ -413,23 +566,35 @@ class AgentStatusReportsTest {
 
     @Test
     void staysQuietAboutAnApprovalTheHumanHasAlreadySeen(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
                 .alias("a1").mrUrl("http://mr/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).markRead("ABC-1", TaskStatus.APPROVED);
+        reports.markRead("ABC-1", TaskStatus.APPROVED);
 
         verify(notifications, never()).send(any());
     }
 
     @Test
     void writesNothingWhenAPollReadsTheOutcomeTheTaskAlreadyHolds(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).alias("a1")
                 .mrUrl("http://mr/1").message("awaiting: squash or keep the commits?")
                 .lastActiveTimestamp(1_700_000_000_000L).silentSince(1_700_000_000_000L).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).markRead("ABC-1", TaskStatus.REVIEWED);
+        reports.markRead("ABC-1", TaskStatus.REVIEWED);
 
         TaskState after = state.task("ABC-1").orElseThrow();
         assertThat(after.message()).isEqualTo("awaiting: squash or keep the commits?");
@@ -439,68 +604,103 @@ class AgentStatusReportsTest {
 
     @Test
     void stampsThePollingWindowWhenARequestIsFirstLinked(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
+        reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isPositive();
     }
 
     @Test
     void startsAFreshPollingWindowForEachRoundHandedBackOnTheSameRequest(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(lastRound).lastPolledAt(lastRound).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
+        reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isGreaterThan(lastRound);
     }
 
     @Test
     void startsAFreshWindowWhenTheAgentNamesAnotherRequestWithoutLeavingCiPolling(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         long lastRound = System.currentTimeMillis() - Duration.ofHours(25).toMillis();
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(lastRound).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
+        reports.report(TaskStatus.CI_POLLING, "MR: http://mr/2", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isGreaterThan(lastRound);
     }
 
     @Test
     void dropsThePreviousRoundsChecksVerdictWhenARoundGoesBackOutForReview(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_FAILED)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(12345L).pipelineStatus("failed").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
+        reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().pipelineStatus()).isNull();
     }
 
     @Test
     void keepsThePollingWindowWhileTheAgentRepeatsThatItIsWaitingOnTheSameChecks(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").mrCreatedAt(12345L).build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
+        reports.report(TaskStatus.CI_POLLING, "MR: http://mr/1", "ABC-1");
 
         assertThat(state.task("ABC-1").orElseThrow().mrCreatedAt()).isEqualTo(12345L);
     }
 
     @Test
     void tellsTheHumanAboutTheDraftedRepliesWaitingInTheWorktree(@TempDir Path root) throws IOException {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         Files.createDirectories(root.resolve("wt"));
         Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").build());
-        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
@@ -513,12 +713,17 @@ class AgentStatusReportsTest {
     @Test
     void doesNotRepeatTheDraftedRepliesWhenTheRoundChangedNothingAndTheAdviceAlreadySaysIt(@TempDir Path root)
             throws IOException {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         Files.createDirectories(root.resolve("wt"));
         Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: already handled\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").mrUrl("https://host/mr/1").build());
-        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
@@ -531,10 +736,15 @@ class AgentStatusReportsTest {
 
     @Test
     void refusesToPullATaskTheReviewHasPassedBackIntoWaitingOnChecks(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.APPROVED)
                 .alias("a1").mrUrl("https://host/mr/1").build());
-        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
         assertThatThrownBy(() -> reports.report(TaskStatus.CI_POLLING, "review request: https://host/mr/1", "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -544,11 +754,17 @@ class AgentStatusReportsTest {
 
     @Test
     void putsARedRoundOnTheBoardWithoutTappingTheHumanTwice(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .alias("a1").mrUrl("http://mr/1").build());
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
 
-        reports(state).markRead("ABC-1", TaskStatus.CI_FAILED);
+        reports.markRead("ABC-1", TaskStatus.CI_FAILED);
 
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_FAILED);
         verify(notifications, never()).send(any());
@@ -556,9 +772,14 @@ class AgentStatusReportsTest {
 
     @Test
     void tellsTheSessionItsHandBackIsVerifiedBeforeTheMasterReadsIt(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
-        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(state, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
         when(configService.project("proj")).thenReturn(new dev.jagt.orchestrator.task.ProjectConfig(
