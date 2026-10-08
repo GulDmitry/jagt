@@ -50,11 +50,10 @@ A decided decision is no TODO: it lives in the code, these files and git history
 - **Never `git add -A`** — several sessions share this tree; stage explicit paths only.
 - **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
 - **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's
-  hooks running underneath. They refuse a push off the task's branch, deleting, branchless, hook-skipping or forced
-  without the lease, and a line reaching the board or token. They report session state and gate nothing else
-  ([0022](docs/decisions/0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md),
-  [0025](docs/decisions/0025-the-board-is-no-way-around-the-token.md),
-  [0026](docs/decisions/0026-the-guards-gaps-after-round-three.md)).
+  hooks running underneath. They refuse a push off the task's branch, deleting, branchless, hook-skipping, with
+  `-c` or forced unleased; a plumbing push; `gh`/`glab` but a read; a line reaching the board or token. Else they
+  only report session state ([0028](docs/decisions/0028-what-the-guards-still-pass-after-round-four.md),
+  [0029](docs/decisions/0029-what-the-guards-still-pass-after-round-five.md)).
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**; permission to commit is standing, to push is not.
 - **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)).

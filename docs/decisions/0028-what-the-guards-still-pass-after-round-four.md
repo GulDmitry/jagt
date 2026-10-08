@@ -6,6 +6,7 @@
 
 Accepted 2026-10-08. Completes [0026](0026-the-guards-gaps-after-round-three.md) and
 [0027](0027-a-headless-call-is-fenced-by-jagt.md): every gap they name is listed here.
+Its completeness superseded by [0029](0029-what-the-guards-still-pass-after-round-five.md).
 
 ## Context
 
