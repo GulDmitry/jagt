@@ -19,7 +19,6 @@ import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -47,7 +46,6 @@ class McpToolScopeTest {
     private final StateService stateService = mock(StateService.class);
     private final CallerScope scope = new CallerScope(stateService);
     private final CommandService commands = mock(CommandService.class);
-    private final TaskRetirement retirement = mock(TaskRetirement.class);
     private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
 
     private static Map<String, ToolHandler> declared(McpTools group) {
@@ -79,14 +77,11 @@ class McpToolScopeTest {
     }
 
     @Test
-    void refusesASubAgentRetiringATask() {
-        ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class), retirement,
-                stateService, mock(ConfigService.class))).get("remove_task");
+    void offersNoToolThatClosesATask() {
+        Map<String, ToolHandler> tools = declared(new TaskLifecycleTools(mock(TaskProvisioning.class),
+                stateService, mock(ConfigService.class)));
 
-        assertThatThrownBy(() -> handler.call(args("{\"taskId\":\"ABC-1\"}"), "ABC-1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("remove_task is Master-only");
-        verifyNoInteractions(retirement);
+        assertThat(tools).doesNotContainKey("remove_task");
     }
 
     @Test
@@ -122,7 +117,7 @@ class McpToolScopeTest {
     @Test
     void refusesASubAgentCreatingATask() {
         TaskProvisioning provisioning = mock(TaskProvisioning.class);
-        ToolHandler handler = declared(new TaskLifecycleTools(provisioning, retirement, stateService,
+        ToolHandler handler = declared(new TaskLifecycleTools(provisioning, stateService,
                 mock(ConfigService.class)))
                 .get("initialize_task");
 
@@ -137,7 +132,7 @@ class McpToolScopeTest {
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig("/api",
                 "origin/main", "dev", List.of("backend"), List.of(), "the order API"))));
-        ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class), retirement,
+        ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class),
                 stateService, config)).get("list_projects");
 
         Object listed = handler.call(args("{}"), null);
@@ -182,7 +177,7 @@ class McpToolScopeTest {
 
     @Test
     void refusesASubAgentListingEveryTask() {
-        ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class), retirement,
+        ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class),
                 stateService, mock(ConfigService.class))).get("list_tasks");
 
         assertThatThrownBy(() -> handler.call(args("{}"), "MINE-1"))

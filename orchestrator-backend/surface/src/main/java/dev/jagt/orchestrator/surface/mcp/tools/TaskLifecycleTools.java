@@ -7,11 +7,9 @@ import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskProvisioning;
-import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.NewTaskMessage;
 import dev.jagt.orchestrator.protocol.NoArguments;
-import dev.jagt.orchestrator.protocol.TaskRef;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +22,6 @@ import java.util.stream.Collectors;
 public class TaskLifecycleTools implements McpTools {
 
     private final TaskProvisioning provisioning;
-    private final TaskRetirement retirement;
     private final StateService stateService;
     private final ConfigService configService;
 
@@ -41,11 +38,6 @@ public class TaskLifecycleTools implements McpTools {
                         .title(said.title())
                         .ticketUrl(said.ticketUrl())
                         .build()));
-
-        tools.tool("remove_task", Audience.MASTER, TaskRef.schema("Remove a finished or abandoned task: deletes its"
-                        + " worktree and its state.json entry, keeping the branch."),
-                TaskRef.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> retirement.retire(said.taskId()));
 
         tools.tool("list_tasks", Audience.MASTER, NoArguments.schema("Every task, one per line: its id, status,"
                         + " title, last message, and each worktree with its review request."),

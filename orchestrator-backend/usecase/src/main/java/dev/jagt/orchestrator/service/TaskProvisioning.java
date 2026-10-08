@@ -98,7 +98,7 @@ public class TaskProvisioning {
         BranchStrategy strategy = BranchStrategy.of(request.branchStrategy());
         if (stateService.task(taskId).isPresent()) {
             throw new IllegalArgumentException("Task " + taskId + " is already registered in state.json. "
-                    + "Use open_task_tab to respawn its agent or remove_task to retire it first.");
+                    + "Use open_task_tab to respawn its agent, or ask the human to press done on it first.");
         }
         // Two branches flatten to one directory, and cutting the second clears the first as a stale worktree.
         stateService.tasks().keySet().stream()
