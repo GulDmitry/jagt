@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.jagt.orchestrator.service.StateService;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,11 +28,9 @@ public class AgentToolGateController {
     }
 
     private final StateService stateService;
-    private final String serverAddress;
 
-    public AgentToolGateController(StateService stateService, @Value("${server.address:}") String serverAddress) {
+    public AgentToolGateController(StateService stateService) {
         this.stateService = stateService;
-        this.serverAddress = serverAddress;
     }
 
     /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
@@ -46,7 +43,7 @@ public class AgentToolGateController {
         }
         // A directory no task owns has no branch a push could be refused against.
         String taskBranch = stateService.findByWorktree(cwd).map(Map.Entry::getKey).orElse(null);
-        return ToolGate.refusal(call.toolName(), call.command(), taskBranch, request.getLocalPort(), serverAddress)
+        return ToolGate.refusal(call.toolName(), call.command(), taskBranch, request.getLocalPort())
                 .map(reason -> ResponseEntity.ok(denied(reason)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }

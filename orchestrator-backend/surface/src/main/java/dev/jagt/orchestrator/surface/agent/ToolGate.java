@@ -26,7 +26,7 @@ public final class ToolGate {
     /** What the branch a worktree is on is called, so a push of it is a push of the task's branch. */
     private static final String CURRENT_BRANCH = "HEAD";
     /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
-    private static final String BOARD = "(127\\.0\\.0\\.1|localhost|\\[::1]|0\\.0\\.0\\.0%s):0*%d\\b|master-token|mcp_client\\.js";
+    private static final String BOARD = "(?i):0*%d\\b|master-token|mcp_client\\.js";
     private static final String QUOTING = "[\\\\'\"]";
     private static final Pattern PUSH =Pattern.compile("\\bpush\\b");
     private static final Pattern GIT = Pattern.compile("(\\S*/)?git");
@@ -42,15 +42,13 @@ public final class ToolGate {
     }
 
     /** Why the call is refused, or empty when it is allowed. */
-    public static Optional<String> refusal(String toolName, String line, String taskBranch, int boardPort,
-                                           String boardAddress) {
+    public static Optional<String> refusal(String toolName, String line, String taskBranch, int boardPort) {
         if (!SHELL_TOOL.equalsIgnoreCase(toolName) || line == null || taskBranch == null
                 || taskBranch.isBlank()) {
             return Optional.empty();
         }
         String command = line.replace("\\\n", " ").replace("\\", "").replace("''", "").replace("\"\"", "");
-        String address = boardAddress == null || boardAddress.isBlank() ? "" : "|" + Pattern.quote(boardAddress);
-        if (Pattern.compile(BOARD.formatted(address, boardPort)).matcher(line.replaceAll(QUOTING, "")).find()) {
+        if (Pattern.compile(BOARD.formatted(boardPort)).matcher(line.replaceAll(QUOTING, "")).find()) {
             return Optional.of("jagt refuses a line reaching its board or the Master's token: a session acts"
                     + " through its own MCP tools.");
         }
