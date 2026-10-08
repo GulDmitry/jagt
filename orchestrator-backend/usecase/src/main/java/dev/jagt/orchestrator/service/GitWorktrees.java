@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.BranchStrategy;
+import dev.jagt.orchestrator.task.GitRemote;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -392,11 +393,11 @@ public class GitWorktrees {
     }
 
     public String remoteUrl(Path projectPath) {
-        return git.locked(projectPath, () ->
+        return git.locked(projectPath, () -> GitRemote.withoutCredentials(
                 git.run(projectPath, List.of("git", "remote", "get-url", "origin"))
                         .expectSuccess("git remote get-url origin in " + projectPath)
                         .stdout()
-                        .trim());
+                        .trim()));
     }
 
     public Path gitCommonDir(Path projectPath) {

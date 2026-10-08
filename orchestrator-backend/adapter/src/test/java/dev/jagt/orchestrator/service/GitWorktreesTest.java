@@ -617,6 +617,19 @@ class GitWorktreesTest {
         assertThat(worktree).doesNotExist();
     }
 
+    @Test
+    void readsTheRemoteWithoutTheTokenItsUrlCarries(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        runner.run(dir, t, List.of("git", "init", "-q", dir.toString()));
+        runner.run(dir, t, List.of("git", "remote", "add", "origin", "https://bot:s3cret@code.example/g/p.git"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        String remote = git.remoteUrl(dir);
+
+        assertThat(remote).isEqualTo("https://code.example/g/p.git");
+    }
+
     private static boolean onPath(String binary) {
         String path = System.getenv("PATH");
         return path != null && Arrays.stream(path.split(":"))

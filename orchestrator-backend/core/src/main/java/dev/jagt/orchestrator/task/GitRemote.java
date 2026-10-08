@@ -24,6 +24,11 @@ public final class GitRemote {
         return colon < 0 ? null : s.substring(colon + 1);
     }
 
+    /** The remote as it may be written down: what an https remote carries before {@code @} is a credential. */
+    public static String withoutCredentials(String remoteUrl) {
+        return remoteUrl == null ? null : remoteUrl.replaceFirst("^(?i)(https?://)[^/@]*@", "$1");
+    }
+
     private static String stripSuffix(String remoteUrl) {
         if (remoteUrl == null || remoteUrl.isBlank()) {
             return null;
