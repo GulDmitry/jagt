@@ -42,9 +42,11 @@ if (deepLink) {
   filters.box.value = deepLink;
 }
 
+// A card painted before the verbs arrived hints its offers by their bare id.
 async function loadVerbs() {
   await refreshVerbs();
   palette.refreshSuggestions();
+  render();
 }
 
 const events = new EventSource('/api/events');

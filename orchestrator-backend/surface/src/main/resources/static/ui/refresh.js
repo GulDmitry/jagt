@@ -30,11 +30,17 @@ export async function refresh() {
   }
 }
 
-// Fetched, not hardcoded: the palette completes and validates against the server's own verb list.
+let verbsFailed = false;
+
+// Fetched, not hardcoded: the palette completes and validates against the server's own verb list. Without it
+// the palette degrades rather than breaks, said once per failing streak rather than on every reconnect.
 export async function refreshVerbs() {
   try {
     store.set({verbs: await api('/api/commands')});
+    verbsFailed = false;
   } catch (e) {
-    store.set({verbs: []});          // no suggestions is a degraded palette, not a broken one
+    store.set({verbs: []});
+    if (!verbsFailed) toast(`Cannot read the commands: ${e.message}`, true);
+    verbsFailed = true;
   }
 }

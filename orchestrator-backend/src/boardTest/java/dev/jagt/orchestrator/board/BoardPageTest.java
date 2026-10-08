@@ -1076,6 +1076,34 @@ class BoardPageTest {
     }
 
     @Test
+    void anOfferedReportIsHintedByItsVerbEvenWhenTheVerbsArriveAfterTheCards() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-19-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-19", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a19").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        List<Route> verbs = new java.util.ArrayList<>();
+        Page page = session.newPage();
+        page.route("**/api/commands", verbs::add);
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("article .offer")).hasText("Replies");
+
+        verbs.get(0).resume();
+
+        assertThat(page.locator("article .offer")).hasAttribute("data-tip",
+                "the answers a round drafted, comment by comment, before `ship` posts them");
+    }
+
+    @Test
+    void verbsThatCouldNotBeReadAreSaidRatherThanSwallowed() {
+        Page page = session.newPage();
+        page.route("**/api/commands", route -> route.fulfill(new Route.FulfillOptions().setStatus(500)
+                .setContentType("application/json").setBody("{\"error\":\"the command list failed\"}")));
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#toasts .toast.error")).hasText("Cannot read the commands: the command list failed");
+    }
+
+    @Test
     void theDraftedRepliesLineOpensEveryCommentAndTheReplyItWillSend() throws IOException {
         Path worktree = Files.createDirectories(root.resolve("ABC-3-alpha"));
         Files.writeString(worktree.resolve("review_replies.md"),
