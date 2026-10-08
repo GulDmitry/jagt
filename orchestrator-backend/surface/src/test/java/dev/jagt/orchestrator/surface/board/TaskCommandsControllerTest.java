@@ -100,7 +100,8 @@ class TaskCommandsControllerTest {
         when(launcher.launch(posted)).thenReturn(Launched.refused("error: read failed: ABC-42"));
 
         assertThatThrownBy(() -> api.launch(posted))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOfSatisfying(Refusal.class,
+                        refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.STATE))
                 .hasMessage("error: read failed: ABC-42");
     }
 

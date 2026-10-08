@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -46,7 +47,7 @@ public class TaskCommandsController {
     public ActionResult launch(@RequestBody LaunchRequest request) {
         Launched launched = launcher.launch(request.normalized());
         if (!launched.created()) {
-            throw new IllegalStateException(launched.message());
+            throw new Refusal(Refusal.Code.STATE, launched.message());
         }
         return new ActionResult(launched.message());
     }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.Launched;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ class ResumeCommandTest {
         when(launcher.resume("https://host/mr/42")).thenReturn(Launched.refused("no such request"));
 
         assertThatThrownBy(() -> command.run("https://host/mr/42"))
-                .isInstanceOf(IllegalStateException.class)
+                .isInstanceOf(Refusal.class)
                 .hasMessage("no such request");
     }
 

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
@@ -48,10 +49,9 @@ public class DoCommand implements GlobalCommand {
         return created(launcher.launchLine(tail));
     }
 
-    /** A decline is a refusal here: the line that asked is the one that would repeat the attempt. */
     static String created(Launched launched) {
         if (!launched.created()) {
-            throw new IllegalStateException(launched.message());
+            throw new Refusal(Refusal.Code.STATE, launched.message());
         }
         return launched.message();
     }
