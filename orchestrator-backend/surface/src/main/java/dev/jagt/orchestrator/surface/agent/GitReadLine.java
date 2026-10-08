@@ -67,8 +67,9 @@ final class GitReadLine {
         int at = 1;
         Path repository = here;
         if ("-C".equals(words.get(at)) && words.size() > 3) {
-            if (!ReadGate.inside(read, here, words.get(at + 1))) {
-                return Optional.of("jagt refuses git outside the round's worktrees.");
+            if (!ReadGate.isRoot(read, here, words.get(at + 1))) {
+                return Optional.of("jagt refuses git -C on anything but one of the round's worktrees: a repository"
+                        + " the diff committed would run its own config.");
             }
             repository = here.resolve(words.get(at + 1));
             at += 2;

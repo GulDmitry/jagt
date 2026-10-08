@@ -25,7 +25,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
     /** The CLI's own allow-list; the fence on the run is what the human's allow rules cannot widen. */
     private static final List<String> READS = List.of("Read", "Grep", "Glob", "Bash(git diff:*)",
             "Bash(git log:*)", "Bash(git show:*)", "Bash(git status:*)", "Bash(git blame:*)",
-            "Bash(git merge-base:*)", "Bash(git rev-parse:*)", "Bash(git ls-files:*)");
+            "Bash(git merge-base:*)", "Bash(git rev-parse:*)", "Bash(git ls-files:*)", "Bash(git -C:*)");
     /**
      * The human's own allow rules still load with their MCP servers, so what must never run is denied as well.
      * Git takes {@code --ou} for {@code --output}, which writes a file, and {@code -c} for any config, an external

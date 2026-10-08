@@ -85,6 +85,15 @@ class ReadGateTest {
     }
 
     @Test
+    void refusesGitInADirectoryInsideAWorktreeThatIsNotTheWorktree() throws Exception {
+        Files.createDirectories(worktree.resolve("vendor/x"));
+        ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
+
+        assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", "git -C vendor/x status"), worktree.toString()))
+                .get().asString().contains("git -C");
+    }
+
+    @Test
     void refusesGitToAReadThatWasGivenNoShell() {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 

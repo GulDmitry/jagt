@@ -102,6 +102,19 @@ class HeadlessClaudeRoundReviewerTest {
     }
 
     @Test
+    void runsGitInEveryWorktreeOfTheRoundNotOnlyTheFirst() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42"),
+                Path.of("/w/ABC-42-api")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).contains("Bash(git -C:*)");
+    }
+
+    @Test
     void loadsNoSettingTheWorktreeCarriesAndLeavesNoSessionBehindInIt() {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));

@@ -79,6 +79,11 @@ public final class ReadGate {
         return read.roots().stream().map(ReadGate::real).anyMatch(target::startsWith);
     }
 
+    static boolean isRoot(ReadScope read, Path here, String path) {
+        Path target = real(here.resolve(path));
+        return read.roots().stream().map(ReadGate::real).anyMatch(target::equals);
+    }
+
     /** A link inside a worktree may point anywhere, so a path is judged where it really leads. */
     private static Path real(Path path) {
         Path absolute = path.toAbsolutePath().normalize();

@@ -45,6 +45,13 @@ class MasterPanelTest {
     }
 
     @Test
+    void tellsEachReviewerHowToReadAWorktreePastTheFirst() {
+        String shared = MasterPanel.shared("judge hard", "never commit unasked", false, true);
+
+        assertThat(shared).contains("`git -C <worktree>`");
+    }
+
+    @Test
     void letsAReviewerStandingInForTheHumanDecideWhatItWouldHaveAsked() {
         String shared = MasterPanel.shared("judge hard", "never commit unasked", true, true);
 
