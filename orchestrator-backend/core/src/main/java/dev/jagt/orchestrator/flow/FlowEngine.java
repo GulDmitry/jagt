@@ -52,7 +52,7 @@ public class FlowEngine {
     }
 
     private String apply(String taskId, TaskStatus was, TaskAction action, Outcome outcome) {
-        Optional<TaskStatus> next = FlowRules.next(action, outcome.kind());
+        Optional<TaskStatus> next = FlowRules.next(was, action, outcome.kind());
         if (next.isPresent() || outcome.stamp() != null) {
             TaskStatus moved = next.orElse(was);
             // Recorded even when the status is unchanged: a second round onto the same request happened.

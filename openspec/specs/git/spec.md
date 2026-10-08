@@ -18,9 +18,9 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 
 ### Requirement: Nothing rewrites what left the machine
 `GitDeploy` (`HEAD:<target>`) and `GitWorktrees` (`refs/heads/x:refs/heads/x`) SHALL push **one** branch, never
-`--force` or `-u`; no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6). The ONE exception:
-the resume rebase's `--force-with-lease` of the task's own branch. `detachUpstream` unsets the inherited
-`origin/<baseBranch>` at creation. Each git call locks its repository (shared checkout). A task named after a base or
+`--force` or `-u`; no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 6), bar the resume
+rebase's `--force-with-lease` of the task's own branch. `detachUpstream` unsets the inherited `origin/<baseBranch>` at
+creation. Each git call locks its repository (shared checkout). A task named after a base or
 deploy branch MUST be refused.
 
 #### Scenario: Release request
@@ -39,17 +39,25 @@ line comes from `TaskView.confirmations` (`TaskAction.confirmation`).
 
 #### Scenario: REVERTED
 - **WHEN** a task is REVERTED: `focus`, then `ship` or `done`
-- **THEN** no `deploy`: re-merging it brings nothing; the agent's reports move nothing
+- **THEN** no `deploy`: re-merging it brings nothing
 
 ### Requirement: Revert refuses rather than guess
 `revert` SHALL take out the last deploy's merge wherever a `deployCommit` is recorded, DEPLOYED and DEPLOY_CONFLICT
-always; it refuses with a by-hand recipe on commit absent, already reverted, conflict, or none recorded — where a
-DEPLOY_CONFLICT only discards its half-merge. It walks back the merged repositories, each **forgetting** its commit, and
-only then discards that half-merge; REVERTED once all that landed is out, both half-states **stamped on the task**.
+always; it refuses with a by-hand recipe where that is absent, reverted or conflicts. It walks back the merged
+repositories, each **forgetting** its commit, then discards a DEPLOY_CONFLICT's half-merge; REVERTED once all that
+landed is out. Part way, **stamped on the task**, it leaves DEPLOYED, or DEPLOY_CONFLICT where it came from.
 
 #### Scenario: Deployed twice
 - **WHEN** `revert <task>` after several deploys
 - **THEN** only the last; earlier ones by hand: `git log --merges --grep ABC-42`, `git revert -m 1 <sha>`
+
+#### Scenario: Revert from a conflict with nothing landed
+- **WHEN** `revert` from DEPLOY_CONFLICT, no commit recorded
+- **THEN** the half-merge is discarded; REVERTED
+
+#### Scenario: Part-way revert from a conflict
+- **WHEN** `revert` from DEPLOY_CONFLICT stops part way
+- **THEN** DEPLOY_CONFLICT: the half-merge still waits
 
 ### Requirement: Deploy stops at the first conflict
 `deploy` SHALL check every repository deployable before the **first** push, land them in the task's order, and stop at
@@ -58,10 +66,6 @@ the first conflict: DEPLOY_CONFLICT, naming both sides from there.
 #### Scenario: Conflict
 - **WHEN** a conflict: resolve it there (`git add`), then `deploy`
 - **THEN** DEPLOY_CONFLICT until you do
-
-#### Scenario: Master acts
-- **WHEN** a conflict where the Master acts
-- **THEN** the session resolves it there; once staged, jagt finishes the deploy
 
 #### Scenario: Multi-repo deploy
 - **WHEN** `deploy ABC-42` and one conflicts after another landed
@@ -145,14 +149,10 @@ repository.
 - **WHEN** `do ABC-42 api,web`
 - **THEN** one task, one session, a worktree per repository
 
-#### Scenario: Card
-- **WHEN** a task spans repositories
-- **THEN** each project's name links its request; one age per task
-
 ### Requirement: Done retires checkouts, never in bulk
 `done` SHALL end the agent and delete every worktree and checkout the task cut; the branch survives. Bulk cleanup
 (`prune all`) MUST be refused by name.
 
 #### Scenario: Diff worktrees
-- **WHEN** board-diff `jagt-diff-*` worktrees sit in the temp directory: `done <task>`
+- **WHEN** `done <task>` with board-diff `jagt-diff-*` worktrees in the temp directory
 - **THEN** removed

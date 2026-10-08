@@ -88,7 +88,7 @@ public class RevertService {
 
     /**
      * A revert that stopped part way. What came out is forgotten, so repeating undoes only the rest, but the task
-     * stays DEPLOYED because something of it still is. Stamped as well as thrown: a console line is no record.
+     * is not REVERTED because something of it still is. Stamped as well as thrown: a console line is no record.
      */
     private Outcome stillLive(String taskId, Target at, List<String> reverted, RuntimeException cause) {
         if (reverted.isEmpty()) {

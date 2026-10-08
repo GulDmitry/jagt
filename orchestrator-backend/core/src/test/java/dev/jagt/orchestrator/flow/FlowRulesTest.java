@@ -99,13 +99,18 @@ class FlowRulesTest {
     @CsvSource({"SHIP,OK,CI_POLLING", "SHIP,RELAYED,SHIPPING", "DEPLOY,OK,DEPLOYED",
             "DEPLOY,CONFLICT,DEPLOY_CONFLICT", "REVERT,OK,REVERTED", "REVERT,PARTIAL,DEPLOYED"})
     void movesTheTaskWhereTheOutcomeOfTheActionSays(TaskAction action, Outcome.Kind outcome, TaskStatus next) {
-        assertThat(FlowRules.next(action, outcome)).contains(next);
+        assertThat(FlowRules.next(TaskStatus.REVIEWED, action, outcome)).contains(next);
     }
 
     @ParameterizedTest
     @CsvSource({"FOCUS,OK", "IDE,OK", "SHIP,CONFLICT", "REVERT,RELAYED"})
     void leavesTheTaskWhereItIsForAnOutcomeTheTableMapsNowhere(TaskAction action, Outcome.Kind outcome) {
-        assertThat(FlowRules.next(action, outcome)).isEmpty();
+        assertThat(FlowRules.next(TaskStatus.REVIEWED, action, outcome)).isEmpty();
+    }
+
+    @Test
+    void keepsTheConflictWaitingWhenARevertFromItTookOutOnlySomeOfTheDeploy() {
+        assertThat(FlowRules.next(TaskStatus.DEPLOY_CONFLICT, TaskAction.REVERT, Outcome.Kind.PARTIAL)).isEmpty();
     }
 
     @Test

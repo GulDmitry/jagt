@@ -21,7 +21,7 @@ public final class FlowRules {
             TaskAction.RESPAWN, TaskAction.DONE);
 
     private record Rule(Set<TaskStatus> from, BiPredicate<TaskStatus, Facts> when,
-                        Map<Outcome.Kind, TaskStatus> next) {
+                        Map<Outcome.Kind, TaskStatus> next, Map<Outcome.Kind, Set<TaskStatus>> keeps) {
 
         boolean allows(TaskStatus status, Facts facts) {
             return from.contains(status) && when.test(status, facts);
@@ -72,6 +72,8 @@ public final class FlowRules {
                 .on(Outcome.Kind.OK, TaskStatus.REVERTED)
                 // Only some of it came out, so what is left is still live.
                 .on(Outcome.Kind.PARTIAL, TaskStatus.DEPLOYED)
+                // Its half-merge still waits in the deploy worktree, which nothing resumes from DEPLOYED.
+                .keeps(Outcome.Kind.PARTIAL, TaskStatus.DEPLOY_CONFLICT)
                 .add();
 
         for (TaskAction action : ALWAYS) {
@@ -102,10 +104,13 @@ public final class FlowRules {
                 .sorted(java.util.Comparator.comparing(TaskAction::group)).toList();
     }
 
-    /** The status this outcome leads to, or empty to leave the task where it is. */
-    public static Optional<TaskStatus> next(TaskAction action, Outcome.Kind outcome) {
+    /** The status this outcome leads a task in {@code from} to, or empty to leave the task where it is. */
+    public static Optional<TaskStatus> next(TaskStatus from, TaskAction action, Outcome.Kind outcome) {
         Rule rule = RULES.get(action);
-        return rule == null ? Optional.empty() : Optional.ofNullable(rule.next().get(outcome));
+        if (rule == null || rule.keeps().getOrDefault(outcome, Set.of()).contains(from)) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(rule.next().get(outcome));
     }
 
     /** Whether the table says anything at all about this action — a verb it does not mention can never run. */
@@ -335,6 +340,7 @@ public final class FlowRules {
         private Set<TaskStatus> from = EnumSet.allOf(TaskStatus.class);
         private BiPredicate<TaskStatus, Facts> when = (status, facts) -> true;
         private final Map<Outcome.Kind, TaskStatus> next = new EnumMap<>(Outcome.Kind.class);
+        private final Map<Outcome.Kind, Set<TaskStatus>> keeps = new EnumMap<>(Outcome.Kind.class);
 
         private Builder(TaskAction action) {
             this.action = action;
@@ -359,8 +365,13 @@ public final class FlowRules {
             return this;
         }
 
+        private Builder keeps(Outcome.Kind outcome, TaskStatus status) {
+            keeps.put(outcome, EnumSet.of(status));
+            return this;
+        }
+
         private void add() {
-            RULES.put(action, new Rule(from, when, Map.copyOf(next)));
+            RULES.put(action, new Rule(from, when, Map.copyOf(next), Map.copyOf(keeps)));
         }
     }
 }
