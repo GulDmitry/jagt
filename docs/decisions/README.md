@@ -5,8 +5,7 @@
 One file per ARCHITECTURAL decision — the shape of jagt: its rings and seams, where state lives, how sessions
 run, what owns a move. Costly to reverse, or one a newcomer would undo because it looks wrong. A feature's rule or
 parameter is not one.
-The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidence and alternatives, so a reader tells a
-decision from a habit.
+The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidence and alternatives.
 
 - Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
 - **Never edited once accepted**, typos aside: a changed decision is a new record, and the old one's status
@@ -42,3 +41,4 @@ decision from a habit.
 - [0020 — jagt holds no token of its own](0020-jagt-holds-no-token-of-its-own.md)
 - [0021 — jagt runs from its clone](0021-jagt-runs-from-a-clone-of-its-repository.md)
 - [0022 — The one rewrite](0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md)
+- [0023 — The Master is identified by a token](0023-the-master-is-identified-by-a-token.md)

@@ -25,6 +25,8 @@ public class McpProtocolService implements McpToolRegistry {
 
     private static final String DEFAULT_PROTOCOL_VERSION = "2025-06-18";
     private static final long KEEP_ALIVE_THROTTLE_MS = 15_000;
+    /** Answered on a 401, so a client minting its header anew asks again. */
+    public static final int UNKNOWN_CALLER = -32001;
 
     private record ToolSpec(String name, Audience audience, JsonNode schema, ToolHandler handler) {
     }
@@ -45,7 +47,8 @@ public class McpProtocolService implements McpToolRegistry {
         }
     }
 
-    public Optional<JsonNode> handle(JsonNode message, String callerCwd) {
+    /** {@code master}: the call presented the Master's token; a worktree of a registered task outranks it. */
+    public Optional<JsonNode> handle(JsonNode message, String callerCwd, boolean master) {
         String method = message.path("method").asString(null);
         JsonNode id = message.get("id");
         if (method == null) {
@@ -55,6 +58,10 @@ public class McpProtocolService implements McpToolRegistry {
         boolean isNotification = id == null || id.isNull();
         try {
             String callerTaskId = keepAlive(callerCwd);
+            if (callerTaskId == null && !master) {
+                return Optional.of(error(id == null ? mapper.nullNode() : id, UNKNOWN_CALLER, "Unknown caller:"
+                        + " no registered task's worktree in X-Working-Directory, and no Master token"));
+            }
             JsonNode result = switch (method) {
                 case "initialize" -> initializeResult(message);
                 case "ping" -> mapper.createObjectNode();

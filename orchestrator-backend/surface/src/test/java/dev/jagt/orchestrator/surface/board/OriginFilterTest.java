@@ -17,16 +17,6 @@ class OriginFilterTest {
     private final FilterChain chain = (request, response) -> seen.set(OriginContext.current());
 
     @Test
-    void attributesACallToTheMasterSessionRatherThanToTheHumanSharingItsRoot() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
-        request.addHeader("X-Jagt-Origin", "master");
-
-        new OriginFilter().doFilter(request, new MockHttpServletResponse(), chain);
-
-        assertThat(seen.get()).isEqualTo(ActionOrigin.MASTER);
-    }
-
-    @Test
     void attributesAnUnmarkedCallToWhoeverIsAtTheKeyboard() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/mcp");
 

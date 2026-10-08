@@ -19,16 +19,15 @@ protocol's: a worktree claim is measured where the worktree is (`service/HandBac
 ### Requirement: No raw wire value travels inward
 A message SHALL arrive as the strings and maps it was written in: `violations(...)` judges it, `accepted(...)` returns it
 in jagt's own types or nothing. Which status, what a round claims, which request it is about and what the human is shown
-are resolved once, here; a caller parsing a field again has found a leak.
+are resolved once, here.
 
 #### Scenario: Past the door
 - **WHEN** code needs a message's status
 - **THEN** it reads the accepted type, never the wire
 
 ### Requirement: Arguments are read into the message
-`MessageTool` SHALL be the one path from the wire to a verb: the arguments are read into the message and judged before the
-tool runs. A new field so arrives without anyone remembering to read it. A field the message does not
-declare is ignored: a CLI a version ahead must not be rejected over a word jagt has not learned.
+`MessageTool` SHALL be the one path from the wire to a verb: the arguments are read into the message and judged, and only
+then does the tool run. A field the message does not declare is ignored, so a CLI a version ahead is not rejected.
 
 #### Scenario: An unknown field
 - **WHEN** a call carries a field the message does not declare
@@ -44,27 +43,24 @@ in the message, a request filed under a project the task does not have.
 - **THEN** it is refused as inconsistent
 
 ### Requirement: Every violation at once
-Validation SHALL report every violation at once, never first-failure: the sender is usually a model, and one error per
-call is one call per error. Each names the field and what was expected; a missing required field, declared by the
-message, is named with the rest, not first and alone. `startup/StartupValidation` refuses a bad install the same way.
+Validation SHALL report every violation at once, never first-failure: one error per call is one call per error. Each
+names the field and what was expected; a missing required field is named with the rest, not first and alone. `startup/StartupValidation` refuses a bad install the same way.
 
 #### Scenario: Several wrong fields
 - **WHEN** a required field is missing and another is out of its enum
 - **THEN** one refusal names both, each with what was expected
 
 ### Requirement: The shape and the tool are declared once
-`protocol/Schema` SHALL render what a caller is given out of the fields a message declares. The JSON a CLI reads and
-the rules judging it so cannot disagree. An enum comes from whatever enumerates it (`FlowRules.reportable`),
-never a list beside it. `McpToolRegistry` has one way to declare a tool, taking a message class,
-so a tool skipping validation does not compile.
+`protocol/Schema` SHALL render what a caller is given out of the fields a message declares. An enum comes from whatever
+enumerates it (`FlowRules.reportable`), never a list beside it. `McpToolRegistry` has one way to declare a tool, taking a message class, so a tool skipping validation
+does not compile.
 
 #### Scenario: A status is added
 - **WHEN** a session may report a new status
 - **THEN** the schema offers it with no other edit
 
 ### Requirement: A session's refusal is a correction
-A refusal SHALL come back from the session's call; the brief tells the session to fix every line and call again, which
-is not a block and never a question for the human. A failed call says what comes next (`surface/mcp/ToolFailure`, off
+A refusal SHALL come back from the session's call, never as a block or a question for the human. A failed call says what comes next (`surface/mcp/ToolFailure`, off
 what the handler threw): `validation` is fixed and resent, `business` and `permission` are the answer, `transient` alone
 is `retryable`.
 
@@ -98,8 +94,8 @@ ask, because the identical question returns the identical answer.
 
 ### Requirement: Retries are bounded and end in a person
 `protocol/RetryPolicy` SHALL allow a paid read three attempts, spaced, under a budget. An exhausted policy answers with
-no facts, never a guess; reaching the human is the caller's, and a caller that logs it and moves on is the bug. A round
-nobody could read taps the human once (`AutoReviewScheduler`).
+no facts, never a guess; reaching the human is the caller's. A round nobody could read taps the human once
+(`AutoReviewScheduler`).
 
 #### Scenario: An unattended poll exhausts
 - **WHEN** the auto-review poll cannot read a round
@@ -119,10 +115,6 @@ Declared servers lose their plugin prefix, so `allowed-tools` must be rewritten.
 - **WHEN** the human runs `do ABC-42 <project>` and no MCP server reaches the tracker
 - **THEN** the read fails naming what stopped it, and the task carries no title
 
-#### Scenario: Independent of today's servers
-- **WHEN** `assistant.mcp-config` is set
-- **THEN** a paid read loads only the servers it declares
-
 #### Scenario: No summary
 - **WHEN** the item has no summary
 - **THEN** a short title comes from the description; a link is never invented
@@ -133,3 +125,11 @@ Off by default, a tracker stage SHALL open or close a task with no human action 
 #### Scenario: Start and landed stages
 - **WHEN** an item reaches the start stage, then the landed stage
 - **THEN** its task opens itself, then closes itself, its work having left the worktree
+
+### Requirement: An MCP caller is a task or the Master, never assumed
+A call whose `X-Working-Directory` lies in a task's worktree SHALL be that task's. Else it SHALL present the root's
+`.jagt/master-token`, drawn at each start (`surface/mcp/MasterToken`), to be the Master's, or be refused 401.
+
+#### Scenario: Nobody in particular
+- **WHEN** a `curl` without the token, or a worktree no task holds, calls a tool
+- **THEN** it is refused, never promoted to the Master

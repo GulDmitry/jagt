@@ -27,13 +27,10 @@ public class OriginFilter extends OncePerRequestFilter {
         }
     }
 
-    /** Every root session is Master, so the session jagt started says so itself; a human's carries nothing. */
-    private static final String ORIGIN_HEADER = "X-Jagt-Origin";
-
     private static ActionOrigin originOf(HttpServletRequest request) {
         String path = request.getRequestURI();
         if (path.equals("/mcp")) {
-            return "master".equals(request.getHeader(ORIGIN_HEADER)) ? ActionOrigin.MASTER : ActionOrigin.MCP;
+            return ActionOrigin.MCP;
         }
         return path.startsWith("/api/") ? ActionOrigin.BOARD : null;
     }

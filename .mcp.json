@@ -3,7 +3,7 @@
     "jagt-orchestrator": {
       "type": "http",
       "url": "http://127.0.0.1:8290/mcp",
-      "headers": { "X-Jagt-Origin": "${JAGT_ORIGIN:-}" }
+      "headersHelper": "node mcp_client.js --headers"
     }
   }
 }

@@ -18,8 +18,8 @@
 ### Whoever works on jagt reads the same file and reaches the same server
 
 The root is provisioned for both CLIs as a worktree is: **a rule only one vendor loads is a rule half the
-sessions break**. Claude reads `CLAUDE.md`, a symlink to `AGENTS.md`, and declares the server in `.mcp.json`;
-Codex reads `AGENTS.md` and `.codex/config.toml`, and needs a **trusted** project.
+sessions break**. Claude reads `CLAUDE.md`, a symlink to `AGENTS.md`, and declares the server, minting the
+Master's token, in `.mcp.json`; Codex reads `AGENTS.md` and `.codex/config.toml`, and needs a **trusted** project.
 
 - `jagt.yml` is user config, gitignored, copied from `jagt.yml.dist`: ONE file, one
   `orchestrator` root, re-read on every access, Spring binding it once for `orchestrator.*`. Sections are
@@ -51,22 +51,23 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   `protocol/RetryPolicy`, 3 attempts, each carrying what the last got wrong. A bare key answered for a
   **different** key is refused, and nothing invents a URL. **A line opening on a project key names no item**: the words after it ARE
   the task and `TaskName.from` cuts its branch out of them.
-- **Sub-agents can only act on their own task**: `surface/mcp/CallerScope` enforces X-Working-Directory.
+- **Sub-agents can only act on their own task**: `surface/mcp/CallerScope` enforces X-Working-Directory; the
+  Master presents `surface/mcp/MasterToken`; anyone else is refused.
   A tool taking a taskId gets a `McpToolScopeTest` row. `Audience.MASTER` tools (`initialize_task`,
   `remove_task`, `deploy_task`, `revert_task`) are neither listed nor answered to a sub-agent; every call from a
   registered worktree bumps `lastActiveTimestamp`.
 - **A task id is any name git accepts as a branch** (`core/task/TaskName`): a task IS its branch, and every
   directory, tmux session, socket and temp file goes through `TaskName.slug`.
 - **The MCP transport must never emit non-JSON-RPC bytes**: malformed JSON → `-32700`, an HTTP error → a
-  synthesized JSON-RPC error in `mcp_client.js`, never a Spring error page.
+  synthesized JSON-RPC error in `mcp_client.js`.
 - **`WorktreeOrphanScanner` deletes only its own residue**: an unowned directory with no checkout, no secret
-  copy, no bytes. Every other one only WARNs; no surface offers it — no dialog, no `GET /orphans`.
+  copy, no bytes. Every other one only WARNs; no surface offers it.
 
 ### What is missing is said at startup, not at the click that needed it
 
 - `startup/StartupValidation` asks every `StartupCheck` before the board is announced. It refuses the start
   with **all** problems at once (`Misconfigured` via `StartupFailure`), each line naming its key.
-- A check lives **next to** the part it answers for, so it exists only when that part was selected; what no
+- A check lives **next to** the part it answers for, existing only where that part was selected; what no
   implementation answers for goes in `startup` — a `type` selecting nothing, `jagt.yml`, jagt's paths, git,
   tmux.
 - Two limits: **nothing reaches the network** (presence, never validity) and nothing asks a

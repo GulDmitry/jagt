@@ -5,16 +5,31 @@
  * proxy is per-vendor and lives in that `AgentRuntime`, never here.
  *
  * Symlinked into every task worktree, so `process.cwd()` is the worktree for a sub-agent and the orchestrator
- * root for Master.
+ * root for Master. `--headers` prints the Master's headers as JSON, for a CLI minting them itself.
  */
+const fs = require('node:fs');
+const path = require('node:path');
 const readline = require('node:readline');
 
 // 127.0.0.1, not localhost: the server binds IPv4 loopback, and `localhost` resolves ::1 first on macOS —
 // which costs a refused connection per call, or every call on a Node without happy-eyeballs.
 const SERVER_URL = process.env.MCP_SERVER_URL || 'http://127.0.0.1:8290/mcp';
 const CWD = process.cwd();
-// Set by jagt on the Master session's launch command; empty for a human's own session at the same root.
-const ORIGIN = process.env.JAGT_ORIGIN || '';
+
+// Read per call: jagt draws a new token at each start. `__dirname` is the root, the symlink resolved.
+function masterHeaders() {
+  if (fs.realpathSync(CWD) !== __dirname) return {};
+  try {
+    return { 'X-Jagt-Master': fs.readFileSync(path.join(__dirname, '.jagt', 'master-token'), 'utf8').trim() };
+  } catch {
+    return {};
+  }
+}
+
+if (process.argv.includes('--headers')) {
+  process.stdout.write(JSON.stringify(masterHeaders()) + '\n');
+  process.exit(0);
+}
 
 // A backend restart must not kill the session's MCP connection: agents tend to
 // mark the server as failed on the first error, so retry transient connection
@@ -29,7 +44,7 @@ async function postWithRetry(body) {
         headers: {
           'Content-Type': 'application/json',
           'X-Working-Directory': CWD,
-          'X-Jagt-Origin': ORIGIN,
+          ...masterHeaders(),
         },
         body,
       });

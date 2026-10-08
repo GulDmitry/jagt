@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-/** A caller is identified by the X-Working-Directory header its stdio bridge sets, and by nothing else. */
+/** A sub-agent is identified by the X-Working-Directory header its MCP config sets, and by nothing else. */
 public class CallerScope {
 
     private final StateService stateService;

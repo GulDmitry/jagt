@@ -3,7 +3,7 @@
 Local orchestration of AI coding-agent CLI sessions across isolated Git worktrees. Java 25 / Spring Boot 4.x,
 macOS-first, every OS- and agent-specific piece behind a strategy interface. **This file is `AGENTS.md`**,
 `CLAUDE.md` a symlink to it, and nothing here is named after one vendor. Every CLI reads it and reaches the same
-MCP server; no root session carries a worktree header, so every one is Master. Which file each CLI reads it
+MCP server; a root session presents jagt's Master token, so every one is Master. Which file each CLI reads it
 through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-jagt-reads-the-same-file-and-reaches-the-same-server).
 
 ## Where things are written down
