@@ -13,6 +13,11 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 public record TaskRepo(String project, String worktreePath, String remoteUrl, String mrUrl,
                        String deployCommit) {
 
+    /** A state file written before the remote was stripped still carries the credential; `/state` serves it. */
+    public TaskRepo {
+        remoteUrl = GitRemote.withoutCredentials(remoteUrl);
+    }
+
     public static TaskRepo of(String project, String worktreePath) {
         return new TaskRepo(project, worktreePath, null, null, null);
     }

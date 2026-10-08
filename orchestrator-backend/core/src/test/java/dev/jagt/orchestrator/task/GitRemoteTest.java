@@ -19,6 +19,16 @@ class GitRemoteTest {
         assertThat(GitRemote.projectPath(remote)).isEqualTo(expected);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "https://u:t0ken@example.com/group-a/backend.git, https://example.com/group-a/backend.git",
+        "https://u:p@ss@example.com/group-a/backend.git, https://example.com/group-a/backend.git",
+        "ssh://git@example.com:2222/group-a/backend.git, ssh://git@example.com:2222/group-a/backend.git"
+    })
+    void dropsEveryCharacterOfAnHttpsCredential(String remote, String expected) {
+        assertThat(GitRemote.withoutCredentials(remote)).isEqualTo(expected);
+    }
+
     @Test
     void readsNothingOutOfABlankRemote() {
         assertThat(GitRemote.projectPath(" ")).isNull();
