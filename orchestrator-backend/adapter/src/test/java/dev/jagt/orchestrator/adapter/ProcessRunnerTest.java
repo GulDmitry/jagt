@@ -104,7 +104,10 @@ class ProcessRunnerTest {
     void handsTheAppBackWhileItIsStillRunningSoNothingWaitsOnTheEditor() {
         Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "30"));
 
-        assertThat(launched.isAlive()).isTrue();
-        launched.destroyForcibly();
+        try {
+            assertThat(launched.isAlive()).isTrue();
+        } finally {
+            launched.destroyForcibly();
+        }
     }
 }

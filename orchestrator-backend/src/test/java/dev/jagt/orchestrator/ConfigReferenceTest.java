@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -29,7 +30,7 @@ class ConfigReferenceTest {
                 .flatMap(type -> Arrays.stream(type.getRecordComponents())).map(RecordComponent::getName);
         Stream<String> looked = ROOTS.stream().flatMap(ConfigReferenceTest::javaFilesUnder)
                 .flatMap(path -> named.matcher(read(path)).results()).map(match -> Pattern.compile("-([a-z])").matcher(match.group(1))
-                        .replaceAll(letter -> letter.group(1).toUpperCase()));
+                        .replaceAll(letter -> letter.group(1).toUpperCase(Locale.ROOT)));
 
         assertThat(Stream.concat(bound, looked).distinct()
                 .filter(key -> !Pattern.compile("(?m)^\\s*#?\\s*" + key + ":").matcher(dist).find())).isEmpty();
