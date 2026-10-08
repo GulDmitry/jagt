@@ -235,6 +235,7 @@ tasks.named('test') {
         include 'docs/**/*.md'
         include 'openspec/specs/**/*.md'
         include 'orchestrator-backend/*/src/main/resources/prompts/*.md'
+        include 'orchestrator-backend/*/src/main/java/**/*.java'
         include 'jagt.yml.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
 }
