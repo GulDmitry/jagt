@@ -41,6 +41,21 @@ class SubAgentBriefingTest {
     }
 
     @Test
+    void namesTheBaseBranchOfEveryRepositoryOfTheTaskReadOnly() {
+        NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+        NewRepo api = new NewRepo("api", new ProjectConfig("/repo/api", "origin/develop", "stage", List.of()),
+                Path.of("/repo/api"), Path.of("/w/ABC-42-api"), Path.of("/repo/api/.git"), "origin/develop",
+                "git@host:g/api.git", false);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").build(), web, List.of(web, api));
+
+        assertThat(briefing).contains("The base branches `origin/main` (web), `origin/develop` (api) are read-only.");
+    }
+
+    @Test
     void saysNothingOfADeployBranchWhenTheTaskHasNone() {
         NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", null, List.of()),
                 Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",

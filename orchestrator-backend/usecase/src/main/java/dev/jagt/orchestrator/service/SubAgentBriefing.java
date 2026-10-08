@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /** The system knowledge a fresh sub-agent wakes up with: its own task, and its branches. */
@@ -23,22 +24,32 @@ public class SubAgentBriefing {
                 taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
                 repo.worktreePath(),
                 alsoYours(repo, repos),
-                taskId, repo.baseBranch(), deployBranches(repos));
+                taskId, baseBranches(repos), deployBranches(repos));
+    }
+
+    private static String baseBranches(List<NewRepo> repos) {
+        String named = named(repos, repos.size(), NewRepo::baseBranch);
+        return repos.size() == 1
+                ? "The base branch " + named + " is read-only."
+                : "The base branches " + named + " are read-only.";
     }
 
     private static String deployBranches(List<NewRepo> repos) {
         List<NewRepo> deployed = repos.stream()
                 .filter(repo -> repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
                 .toList();
-        String named = deployed.stream()
-                .map(repo -> "`" + repo.config().deployBranch() + "`"
-                        + (repos.size() == 1 ? "" : " (" + repo.project() + ")"))
-                .collect(Collectors.joining(", "));
+        String named = named(deployed, repos.size(), repo -> repo.config().deployBranch());
         return switch (deployed.size()) {
             case 0 -> "";
             case 1 -> " The deploy branch " + named + " is jagt's `deploy` alone.";
             default -> " The deploy branches " + named + " are jagt's `deploy` alone.";
         };
+    }
+
+    private static String named(List<NewRepo> repos, int ofTheTask, Function<NewRepo, String> branch) {
+        return repos.stream()
+                .map(repo -> "`" + branch.apply(repo) + "`" + (ofTheTask == 1 ? "" : " (" + repo.project() + ")"))
+                .collect(Collectors.joining(", "));
     }
 
     /** The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are none. */

@@ -29,7 +29,7 @@ You are the jagt worker agent for task %s, in this Git worktree. No preamble.
 6. HARD SAFETY, whatever the instruction. No `git merge`, `rebase` or `cherry-pick`; push only to `%s`. No
    rewriting pushed history (`--force`, `--force-with-lease`, `--amend`, `reset --hard`): fix with a new commit.
    Except where this task's brief says jagt rebased your branch leaving conflicts: finish it and
-   `push --force-with-lease`. The base branch `%s` is read-only.%s Asked to write one: refuse and call
+   `push --force-with-lease`. %s%s Asked to write one: refuse and call
    `notify_user`. Another branch's work is another task: ask (rule 1) with its content and base; never push it,
    nor hand the human a push.
 7. A refused call not saying `jagt refuses`, or a transient failure, is no block: the check is non-deterministic.
