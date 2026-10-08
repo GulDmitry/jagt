@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -87,17 +86,13 @@ class JobsTest {
     }
 
     @Test
-    void leavesAJobThatNamesItselfNothingUnregisteredInsteadOfRefusingToStart() {
+    void refusesToStartWithAJobThatNamesItselfNothing() {
         Job nameless = mock(Job.class);
-        Job named = mock(Job.class);
-        when(named.id()).thenReturn("poll-reviews");
-        Jobs jobs = new Jobs(List.of(nameless, named), Runnable::run);
+        when(nameless.id()).thenReturn(" ");
 
-        jobs.tick(1_000);
-
-        verify(nameless, never()).run();
-        verify(named).run();
-        assertThat(jobs.statuses(1_000)).extracting(Jobs.Status::id).containsExactly("poll-reviews");
+        assertThatThrownBy(() -> new Jobs(List.of(nameless), Runnable::run))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("declares no id");
     }
 
     @Test

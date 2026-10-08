@@ -50,11 +50,7 @@ public class Jobs {
         this.workers = workers;
         for (Job job : declared) {
             if (job.id() == null || job.id().isBlank()) {
-                log.atWarn().setMessage("job not registered")
-                        .addKeyValue("class", job.getClass().getSimpleName())
-                        .addKeyValue("cause", "no job id")
-                        .log();
-                continue;
+                throw new IllegalStateException(job.getClass().getSimpleName() + " declares no id");
             }
             if (jobs.put(job.id(), job) != null) {
                 throw new IllegalStateException("Two jobs declare the id '" + job.id() + "'");

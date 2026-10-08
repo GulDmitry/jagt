@@ -11,7 +11,7 @@ import com.microsoft.playwright.Route;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.options.AriaRole;
 import dev.jagt.orchestrator.job.AutoReviewScheduler;
-import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
+import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -77,7 +77,7 @@ class BoardPageTest {
     @MockitoBean
     private NaturalLanguageDispatch naturalLanguage;
     @MockitoBean
-    private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
+    private EditorDriver editorDriver;
     @MockitoBean
     private AutoReviewScheduler autoReviewScheduler;
     @MockitoBean

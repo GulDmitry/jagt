@@ -225,7 +225,7 @@ key that fixes it. The composition half, and what of it exists:
 - No "stuck status" check beside #2, deliberately: the report door judges the status being reported, not the one being
   left, so no status can trap a task.
 - #5 checks nothing about thread resolution, tab titles or an attachable session host.
-- #6 refuses to start on a duplicate job id, a duplicate command verb or an equal capability priority.
+- #6 refuses to start on a duplicate or blank job id, a duplicate command verb or an equal capability priority.
 - **The refusing half exists; the degrading half does not** — a missing kitty refuses rather than falling back.
 
 ## The build

@@ -77,6 +77,10 @@ Each unattended job SHALL be a `job/Job`: id, one line for the human, an interva
 - **WHEN** you ask whether anything else runs behind your back
 - **THEN** the header shows the next unattended job, and one that failed; `jobs` has the detail
 
+#### Scenario: A job names itself nothing
+- **WHEN** a job declares a blank id
+- **THEN** jagt refuses to start, naming the job's class
+
 ### Requirement: The activity report reads jagt's own log
 `command/ActivityReport` SHALL tail `logging.file.name` (ECS JSON) for entries carrying a `task` key, newest first.
 

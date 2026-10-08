@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
+import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.surface.mcp.McpController;
@@ -30,7 +30,7 @@ class OrchestratorApplicationTest {
     static Path root;
 
     @MockitoBean
-    private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
+    private EditorDriver editorDriver;
 
     @Autowired
     private ApplicationContext context;

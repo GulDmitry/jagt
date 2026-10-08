@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator;
 
-import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
+import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;
 import dev.jagt.orchestrator.adapter.linux.LibNotifyNotifier;
@@ -28,7 +28,7 @@ class LinuxProfileContextTest {
     static Path root;
 
     @MockitoBean
-    private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
+    private EditorDriver editorDriver;
 
     @Autowired
     private UserNotifier userNotifier;

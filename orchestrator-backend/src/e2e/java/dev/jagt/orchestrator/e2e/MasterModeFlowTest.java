@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.e2e;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.MasterAssistant;
@@ -76,8 +75,6 @@ class MasterModeFlowTest {
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 
-    @MockitoBean
-    private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
     @MockitoBean
     private TerminalDriver terminalDriver;
     @MockitoBean

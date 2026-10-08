@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -81,8 +80,6 @@ class ReviewAndDeployFlowTest {
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 
-    @MockitoBean
-    private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
     @MockitoBean
     private TerminalDriver terminalDriver;
     @MockitoBean

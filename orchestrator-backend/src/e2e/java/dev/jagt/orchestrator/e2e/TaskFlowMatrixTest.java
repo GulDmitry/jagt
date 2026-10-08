@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
@@ -45,8 +44,6 @@ class TaskFlowMatrixTest {
         registry.add("orchestrator.state-file", () -> workspace.resolve("root/state.json").toString());
     }
 
-    @MockitoBean
-    private IdeRecentProjectsCleaner ideRecentProjectsCleaner;
     @MockitoBean
     private TerminalDriver terminalDriver;
     @MockitoBean
