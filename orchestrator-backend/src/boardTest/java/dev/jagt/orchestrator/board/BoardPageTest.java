@@ -1367,6 +1367,20 @@ class BoardPageTest {
     }
 
     @Test
+    void aReviewRequestIsResumedFromAskWhichIsItsOnlyControl() {
+        when(launcher.resume("https://host.example/mr/42"))
+                .thenReturn(Launched.created("ABC-9", "Resumed ABC-9 on its existing branch"));
+
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("resume https://host.example/mr/42");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#toasts .toast")).hasText("Resumed ABC-9 on its existing branch");
+        assertThat(page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Resume").setExact(true))).hasCount(0);
+    }
+
+    @Test
     void keepsTheTypedPaletteLineWhenTheLaunchItRanCreatedNoTask() {
         when(launcher.launchLine(any()))
                 .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha (previous run)"));

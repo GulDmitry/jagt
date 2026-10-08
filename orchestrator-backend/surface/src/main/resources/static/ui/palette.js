@@ -18,9 +18,6 @@ let forms = {partFor: () => ({})};
 
 export const wire = (wired) => { forms = wired; };
 
-// One place for the hints, so no control keeps a copy of the words.
-export const hintFor = (id) => (verbFor(id) || {}).hint || '';
-
 export const isOpen = () => !form.hidden;
 
 function show(open) {

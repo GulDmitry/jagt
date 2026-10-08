@@ -57,11 +57,8 @@ body.stale #board, body.stale #phases, body.stale #launch { opacity: .5; }
 #palette { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel); }
 #palette input#ask { flex: 1; min-width: 260px; }
-#resume { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
-  border-bottom: 1px solid var(--line); background: var(--panel); }
-#resume input#resume-url { flex: 1; min-width: 300px; }
 /* An id rule outranks the browser's own [hidden], so a toggled form stayed on screen and its button did nothing. */
-#launch[hidden], #palette[hidden], #resume[hidden] { display: none; }
+#launch[hidden], #palette[hidden] { display: none; }
 button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 #palette-state.ok { color: var(--ok); }
 #palette-state.bad { color: var(--danger); }

@@ -19,8 +19,8 @@ question. Stopping the backend is no verb.
 ### Requirement: A mark says what it replaces
 The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours
 are [design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: the launch row's branch-strategy
-sentence, picker and MCP schema all read `task/BranchStrategy`. The project key renders only where an install has
-several projects, or a task spans several.
+picker and MCP schema both read `task/BranchStrategy`. A verb carrying all its inputs gets no form beside it. The
+project key renders only where projects are several, in the install or the task.
 
 #### Scenario: A mark is unclear
 - **WHEN** the human opens `Help`
@@ -31,11 +31,14 @@ several projects, or a task spans several.
 - **THEN** it offers ticket, project, base branch, `plan first`, notes, branch strategy, Start
 - **AND** an untouched picker sends nothing
 
+#### Scenario: Resuming a request
+- **WHEN** the human resumes a review request
+- **THEN** `resume <url>` in Ask is the one control
+
 ### Requirement: Verbs come off the wire in groups
 Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`; the board renders a row per group,
-read off the wire. A hint's text lives in `command/CommandReference` alone.
-A renamed verb still answers to its old spelling, advertised nowhere (`TaskAction.RENAMED`, read by the palette and
-tier 2).
+read off the wire. A hint's text lives in `command/CommandReference` alone. A renamed verb still answers to its old
+spelling, advertised nowhere (`TaskAction.RENAMED`, read by the palette and tier 2).
 
 #### Scenario: Which buttons change something
 - **WHEN** the human reads a card's buttons
@@ -53,9 +56,9 @@ palette's verb list. A launch that creates no task is refused.
 
 #### Scenario: Reports
 - **WHEN** the human runs `stats`, `master` or `finished`
-- **THEN** `stats` gives per task the time on the human, the agent, the code host
-- **AND** `master` what the Master judged, and where the human did otherwise: passed then reverted or never deployed,
-  failed then deployed
+- **THEN** `stats` gives per task the time on the human, the agent, the host
+- **AND** `master` the Master's verdicts the human overrode: passed then reverted or never deployed, failed then
+  deployed
 - **AND** `finished` every retired task with its status log
 
 #### Scenario: A verb typed alone
@@ -64,8 +67,9 @@ palette's verb list. A launch that creates no task is refused.
 
 ### Requirement: One endpoint, one dialog
 `GET /api/commands/{id}` SHALL serve any report and `POST` run any other; no command gets its own endpoint, a GET never
-starts a task. A report opens in a `<dialog>` over the board, never a page. One about one task (`aboutOneTask`) gets no bar button, no tier 2 offer, and one line typing into that
-session (`POST /api/tasks/say`): not a verb, the only control there.
+starts a task. A report opens in a `<dialog>` over the board, never a page. One about one task (`aboutOneTask`) gets
+no bar button, no tier 2 offer, and one line typing into that session (`POST /api/tasks/say`): not a verb, the only
+control there.
 
 #### Scenario: Closing
 - **WHEN** the human presses Escape, the button, or the dimmed area
@@ -97,7 +101,7 @@ Origin, and `/mcp` anything but JSON.
 
 #### Scenario: A second machine
 - **WHEN** jagt runs with `--server.address=0.0.0.0`
-- **THEN** the board is reachable elsewhere, still without a password
+- **THEN** it is reachable elsewhere, without a password
 
 #### Scenario: Another site posts a verb
 - **WHEN** a page elsewhere, or a rebound name, sends one
@@ -110,19 +114,19 @@ carries `data-action`, never a closure, so a card rebuilt under the pointer cann
 
 #### Scenario: The clock reset
 - **WHEN** a card said 17h and the restarted agent shows 0m
-- **THEN** that is correct: the clock is time in that status
+- **THEN** correct: the clock is time in that status
 
 #### Scenario: The backend goes away
 - **WHEN** the push connection drops
 - **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
 
 ### Requirement: A banner leads to its task
-A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only via `terminal-notifier
--open`; osascript and `notify-send` drop it, so no caller may depend on it.
+A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only (`terminal-notifier
+-open`): no caller may depend on it.
 
 #### Scenario: Clicking a notification
 - **WHEN** the human clicks one
-- **THEN** the board opens filtered to that task; on Linux the task is in the title instead
+- **THEN** the board opens filtered to that task; elsewhere the title names the task
 
 ### Requirement: Facts sit on the thing they are about
 Cards SHALL keep their order; only `order: alias` lets a new task take a retired one's place. The filter box (`/`)
@@ -142,7 +146,7 @@ says what to do. A badge is the human's move; a quiet "you can …" can wait.
 
 #### Scenario: A deployed task
 - **WHEN** a task is deployed
-- **THEN** it wears no badge: it waits on nobody, and `done` is the only move left
+- **THEN** it wears no badge: `done` is its only move
 
 #### Scenario: Jobs that run fine
 - **WHEN** no job's last run failed

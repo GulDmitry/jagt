@@ -3,7 +3,6 @@
 import * as filters from './filters.js';
 import * as palette from './palette.js';
 import {render} from './render.js';
-import * as resume from './resume.js';
 
 const typingInto = (target) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
   || target instanceof HTMLSelectElement;
@@ -28,5 +27,4 @@ document.addEventListener('keydown', (event) => {
     render();
   }
   palette.close();
-  resume.close();
 });

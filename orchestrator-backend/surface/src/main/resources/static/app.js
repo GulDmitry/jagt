@@ -11,12 +11,11 @@ import * as launch from './ui/launch.js';
 import * as palette from './ui/palette.js';
 import {refresh, refreshVerbs} from './ui/refresh.js';
 import {onClick, render} from './ui/render.js';
-import * as resume from './ui/resume.js';
 import {sessionLog, showLog} from './ui/toast.js';
 
 const live = document.getElementById('live');
 // Cut off from the backend, the board is a picture of the past: nothing on it may act.
-const STALE = ['board', 'phases', 'launch', 'resume', 'palette', 'resume-task', 'open-palette', 'reports'];
+const STALE = ['board', 'phases', 'launch', 'palette', 'open-palette', 'reports'];
 const connected = (yes) => {
   live.classList.toggle('on', yes);
   document.getElementById('offline').hidden = yes;
@@ -46,8 +45,6 @@ if (deepLink) {
 async function loadVerbs() {
   await refreshVerbs();
   palette.refreshSuggestions();
-  // The hint is the server's, whether resume is reached as a form or as a verb.
-  resume.describe(palette.hintFor('resume'));
 }
 
 const events = new EventSource('/api/events');

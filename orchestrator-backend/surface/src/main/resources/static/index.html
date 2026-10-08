@@ -20,7 +20,6 @@
   <input id="filter" class="control" placeholder="filter: alias, ticket or title (/)" autocomplete="off"
          data-tip="substring match">
   <label class="control checkbox" data-tip="show only tasks that need your action"><input type="checkbox" id="mine"> needs my action</label>
-  <button id="resume-task">Resume</button>
   <button id="open-palette" data-tip="⌘K / Ctrl-K: a command, or plain words">Ask</button>
   <span id="reports"></span>
   <span id="live" class="dot" role="img" aria-label="push connection to the backend" tabindex="0"
@@ -39,12 +38,6 @@
           data-tip="what to do when a branch of this name already exists"></select>
   <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button>
   <span id="launch-state" class="muted state"></span>
-</form>
-
-<form id="resume" hidden>
-  <input id="resume-url" placeholder="review-request URL (…/merge_requests/42 or …/pull/42)" autocomplete="off" required>
-  <button type="submit" class="primary">Resume</button>
-  <span id="resume-state" class="muted state"></span>
 </form>
 
 <form id="palette" hidden>
