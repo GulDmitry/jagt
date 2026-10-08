@@ -235,9 +235,14 @@ tasks.named('test') {
         include 'docs/**/*.md'
         include 'openspec/specs/**/*.md'
         include 'orchestrator-backend/*/src/main/resources/prompts/*.md'
+        include '.claude/rules/*.md'
         include 'orchestrator-backend/*/src/main/java/**/*.java'
+        include 'orchestrator-backend/src/main/java/**/*.java'
         include 'jagt.yml.dist'
+        include 'master-brief.md.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
+    // Outside the tree above: a file tree drops `.gitignore` by default.
+    inputs.file(new File(projectDir.parentFile, '.gitignore')).withPropertyName('gitignore')
 }
 
 tasks.register('e2eTest', Test) {
