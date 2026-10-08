@@ -24,6 +24,7 @@ missing. Add a kind, never an exception.**
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks |
+| `startup/` | why the assembly must not start | built — `port/StartupCheck`, `StartupValidation` and every check |
 
 `service/` is the rest: work more than one kind shares — git, the state file, config, worktrees, agent sessions —
 because a class two kinds use belongs to neither; the Master's reading is `service/master/`. The board renders
@@ -33,21 +34,22 @@ because a class two kinds use belongs to neither; the Master's reading is `servi
 
 Arrows point **inward only**: `adapter/` — the only place an OS is named, and where every vendor lives —
 implements the ports, and the use cases (`capability/` `command/` `job/` `notify/` `service/` `surface/`) use the
-centre, `port/` `task/` `flow/`: the records, the rules, and the interfaces they declare. `port/` is *inside*
-that centre rather than a ring around it — those interfaces are written by the rules for their own needs, and
-`flow/` depends on them.
+centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the interfaces they declare. `port/` is
+*inside* that centre rather than a ring around it — those interfaces are written by the rules for their own needs,
+and `flow/` depends on them.
 
 `RingsTest` asserts exactly this:
 
-- `task/`, `flow/` and `port/` name no other ring — as an import, a static import, or a qualified name.
-- those three import no Spring and no Lombok. Jackson annotations stay: the record **is** the file format.
+- `task/`, `flow/` and `port/` name no other ring — as an import, a static import, or a qualified name;
+  `protocol/` names only them.
+- those four import no Spring and no Lombok. Jackson annotations stay: the record **is** the file format.
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
   name anywhere in a source, outside `adapter/`.
 - no ring between the centre and the edge names `adapter/` — a use case naming the edge is the rule backwards.
 - it proves it read every ring, so a refactor cannot leave it guarding nothing.
 - it cannot see resources and scripts, the words a host invents, or a cycle between two *sibling* folders.
-- the `platform`, `viewer`, `tmux-command`, agent-binary and `kitty*` keys name vendors by design — its one
-  allow-list — and renaming one a human has already written is the owner's call.
+- the `platform`, `viewer`, `tmux-command`, agent-binary and `kitty*` keys name vendors by design, its one
+  allow-list; renaming one a human already wrote is the owner's call.
 
 ## The flow machine
 
@@ -62,6 +64,8 @@ answer. Every type in `flow/`, one question each:
 | `Facts` | the guard's second argument — an open request, and a liveness probe passed as a SUPPLIER |
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
 | `FlowReports` | door two: a task's report (`FlowRules.reportable`), or the host's verdict (`read`) |
+| `TaskStatus` | where a task stands |
+| `TaskAction` | a verb, named once for every surface |
 | `Capabilities` | every `port/TaskCapability` there is, one per action — the `capability/` kind's registry |
 | `Phase` | the step of a task's life a human reads |
 | `Pipeline` | what the host last said about the checks, as a verdict rather than as its own wording |
@@ -82,8 +86,8 @@ answer. Every type in `flow/`, one question each:
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.
   PARTIAL alone refuses: stamped first, thrown second, so half a change on a shared branch is recorded.
 - **An interceptor** (`port/CapabilityInterceptor`) wraps a verb and may refuse, stopping the work *and* the transition.
-- **`Facts` passes liveness as a supplier**: a card uses `Facts.projected` (assume not live, costs nothing), the gate
-  the real probe — which is why a stuck SHIPPING card offers SHIP and the gate can still refuse it.
+- **`Facts.projected`** assumes not live and costs nothing; the gate runs the real probe — so a stuck SHIPPING card
+  offers SHIP and the gate can still refuse it.
 
 ## The artifact chain
 
@@ -105,7 +109,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 
 - **Only the middle is in git**: branch, commits and request outlive the task; the documents are copied out
   first (`service/FinishedArtifacts`) and never read back, so changing their format migrates nothing.
-- **The chain is readable while the task lives** — `ide <alias>` opens the worktree holding all of it at once.
+- **The chain is readable while the task lives** — `ide <alias>` opens the worktree holding all of it.
 - **The front of the chain can be your own words**: with no ticket, what you typed is the task, names its branch,
   and lands in `task_context.md`.
 
@@ -120,6 +124,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`) |
 | `MasterAssistant` | `adapter/assistant/HeadlessClaudeAssistant` |
+| `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer` |
+| `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Notifier` | `adapter/DesktopNotifier` — a channel; `notify/Notifications` fans out to every one it finds |
 | `Processes` | `adapter/ProcessRunner` |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one seam with a single impl, not selectable by config |
@@ -128,7 +134,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |
 | `EditorDriver` | `adapter/CliEditorDriver` |
-| `StartupCheck` | three in `startup/`, and six at the edge — see [Assembly validation](#assembly-validation) |
+| `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
 | `AgentWorktree`, `Notification` | nothing: they are value **records** the interfaces above pass |
 
 ## Where a new thing goes
@@ -149,9 +155,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 - **The surface holds no list** — the usual way to break that is building a button in `static/ui/card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
 - A capability gets a folder once it owns work (`capability/ship/`); the rest are flat.
-- Two equal `priority()` values are refused rather than ordered arbitrarily.
-- `do` and `resume` are named literally in `app.js` and `TaskCommandsController`, so a new launch shortcut costs the
-  board a change.
+- `do` and `resume` are named literally in `ui/palette`, `service/NaturalLanguageDispatch` and
+  `TaskCommandsController`, so a new launch shortcut costs the board a change.
 
 ## The board is two rings too
 
@@ -189,9 +194,9 @@ file it reads its instructions from.
 
 - **No shared instruction file is named after one vendor.** The system-knowledge file is `AGENTS.md`
   (`port/AgentRuntime.SYSTEM_KNOWLEDGE_FILE`), in a provisioned worktree and in this root, where `CLAUDE.md` links to it
-  — one file, never two copies to drift.
+  — never two copies.
 - **How an agent reaches the MCP server is the adapter's business** — direct HTTP with a working-directory header, or a
-  stdio bridge for a CLI that can only spawn a server. Nothing above the port knows which.
+  stdio bridge for a CLI that can only spawn a server.
 - **What a session is doing is read, never asked**: the log a CLI keeps answers liveness (`lastSessionActivity`) and its
   own hooks report a stop (`surface/agent`) — no model in either path, so a session out of tokens still reaches the
   board. Which events a CLI reports is a resource (`adapter/…/resources/hooks/`), not Java.
@@ -204,11 +209,9 @@ file it reads its instructions from.
 ## Assembly validation
 
 At startup, **one report of everything wrong**, never first-failure, because a half-valid assembly boots and then does
-nothing: `startup/StartupCheck` implementations are collected by `startup/StartupValidation`, which throws
-`Misconfigured` once with every problem. Nine of them — three in `startup/` (`Config`, `Flow`, `Workspace`), and six at
-the edge, which can name the key that fixes it: `adapter/ToolchainCheck`, `adapter/PlatformCheck`,
-`adapter/CliEditorDriver`, `adapter/AbstractKittyTerminalDriver`, `adapter/agent/CodexAgentRuntime`,
-`adapter/linux/LibNotifyNotifier`. The composition half, and what of it exists:
+nothing: `port/StartupCheck` implementations are collected by `startup/StartupValidation`, which throws
+`Misconfigured` once with every problem. Eleven of them: five in `startup/`, and six at the edge, which can name the
+key that fixes it. The composition half, and what of it exists:
 
 | # | check | state |
 |---|-------|-------|
@@ -232,18 +235,18 @@ that points outward does not compile. Two folders inside one module it cannot se
 
 | module | holds | sees |
 |--------|-------|------|
-| `:core` | `task/` `flow/` `port/` | nothing of jagt's, no Spring, no Lombok |
+| `:core` | `task/` `flow/` `port/` `protocol/` | nothing of jagt's, no Spring, no Lombok |
 | `:usecase` | `capability/` `command/` `job/` `notify/` `service/` `config/` `startup/` | `:core` |
-| `:adapter` | `adapter/` — the only place an OS is named | `:core`, `:usecase` |
+| `:adapter` | `adapter/` | `:core`, `:usecase` |
 | `:surface` | `surface/` | `:core`, `:usecase` |
 | root | `OrchestratorApplication`, `FlowWiring`, `application.yml` | all four — the assembly |
 
-- Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git, real
-  `lsof`, real binaries), `:surface:test`, and the root's own few that assert what the install ships.
+- Tests live with what they test: `:core:test` (no container at all), `:usecase:test`, `:adapter:test` (real git,
+  `lsof`, binaries), `:surface:test`, and the root's own few that assert what the install ships.
 - The exception is a `:usecase` class a real binary is the only honest test of — the git components' tests,
   `TaskProvisioningTest` and `WorktreeHooksTest` live in `:adapter:test`, where git is.
-- Four suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `boardTest` (the page in a real browser),
-  `linuxDriverTest` (Linux binaries, container) and `promptEval` (the assistant's CLI, and tokens).
+- Five suites stay out of `check`: `e2eTest` (git + tmux, real worktrees), `boardTest` (the page in a real browser),
+  `linuxDriverTest` (Linux binaries, container), `promptEval` and `masterEval` (the assistant's CLI, and tokens).
 - `./gradlew test e2eTest boardTest` is everything runnable here; `./gradlew build stageJar && java -jar
   build/libs/jagt-run.jar` starts the board.
 - `config/` keeps what the human wrote and the edge resolves a binary where it spawns it, so no use case names
