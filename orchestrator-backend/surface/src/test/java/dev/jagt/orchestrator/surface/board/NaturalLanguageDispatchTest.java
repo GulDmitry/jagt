@@ -27,19 +27,15 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
-import static org.mockito.ArgumentCaptor.forClass;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class NaturalLanguageDispatchTest {
 
-    private final CommandAssistant assistant = mock(CommandAssistant.class);
     private final CommandService commands = mock(CommandService.class);
     private final TaskLauncher launcher = mock(TaskLauncher.class);
 
@@ -52,10 +48,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("review", "a1", "", "the human said review")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("review", "a1", "", "the human said review")), TokenUsage.NONE));
         when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
 
         String result = dispatch.interpret("what does the review say on a1");
@@ -72,10 +68,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("ship", "a1", "", "the only task about layout")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("ship", "a1", "", "the only task about layout")), TokenUsage.NONE));
         when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: pushed");
 
         String result = dispatch.interpret("push the layout one for review");
@@ -92,10 +88,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("deploy", "a1", "", "asked to release it")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("deploy", "a1", "", "asked to release it")), TokenUsage.NONE));
         when(commands.execute("ABC-1", TaskAction.DEPLOY)).thenThrow(new Refusal(
                 Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available for ABC-1 (it is REVIEW_PENDING)"));
 
@@ -116,10 +112,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("ship", "ABC-99", "", "guessed")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("ship", "ABC-99", "", "guessed")), TokenUsage.NONE));
 
         String result = dispatch.interpret("ship the other one");
 
@@ -136,10 +132,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("rm-rf", "a1", "", "")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("rm-rf", "a1", "", "")), TokenUsage.NONE));
 
         String result = dispatch.interpret("nuke it");
 
@@ -156,10 +152,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("none", "", "", "two tasks mention login")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("none", "", "", "two tasks mention login")), TokenUsage.NONE));
 
         String result = dispatch.interpret("ship the login one");
 
@@ -176,10 +172,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("do", "", "ABC-42", "a new ticket")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("do", "", "ABC-42", "a new ticket")), TokenUsage.NONE));
         when(launcher.launch(LaunchRequest.of("ABC-42")))
                 .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
@@ -197,10 +193,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("resume", "", "https://host/mr/42", "an existing merge request")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("resume", "", "https://host/mr/42", "an existing merge request")), TokenUsage.NONE));
         when(launcher.resume("https://host/mr/42")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
         assertThat(dispatch.interpret("take over this MR https://host/mr/42"))
@@ -216,10 +212,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("resume", "", "ABC-1", "no url given")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("resume", "", "ABC-1", "no url given")), TokenUsage.NONE));
 
         assertThat(dispatch.interpret("resume that thing"))
                 .contains("no review-request URL was named");
@@ -235,10 +231,10 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> new Answer<>(
+                Optional.of(new CommandProposal("do", "", "", "no ticket in the request")), TokenUsage.NONE);
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("do", "", "", "no ticket in the request")), TokenUsage.NONE));
 
         String result = dispatch.interpret("start a new task");
 
@@ -255,9 +251,9 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> Answer.unavailable();
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(Answer.unavailable());
 
         assertThat(dispatch.interpret("do something")).contains("Could not reach the assistant");
         verifyNoInteractions(commands, launcher);
@@ -272,11 +268,12 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
 
         assertThat(dispatch.interpret("   ")).isEqualTo("Nothing to interpret.");
-        verifyNoInteractions(assistant, commands, launcher);
+        verifyNoInteractions(commands, launcher);
     }
 
     @Test
@@ -288,12 +285,13 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
 
         assertThat(dispatch.interpret("shipp"))
                 .contains("Unknown command 'shipp'");
-        verifyNoInteractions(assistant, commands, launcher);
+        verifyNoInteractions(commands, launcher);
     }
 
     @Test
@@ -305,12 +303,13 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        CommandAssistant assistant = (text, tasks) -> fail("the model was asked");
         NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
                 new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
 
         assertThat(dispatch.interpret("prune all")).contains("jagt has no `prune`");
         assertThat(dispatch.interpret("prune")).contains("jagt has no `prune`");
-        verifyNoInteractions(assistant, commands, launcher);
+        verifyNoInteractions(commands, launcher);
     }
 
     @Test
@@ -322,16 +321,12 @@ class NaturalLanguageDispatchTest {
                 .alias("a1").title("Widget layout is off").build());
         ConfigService config = mock(ConfigService.class);
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
-                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal("none", "", "", "")), TokenUsage.NONE));
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch((text, tasks) -> fail("the model was asked"),
+                state, new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
 
-        dispatch.interpret("what is going on with the layout one");
+        String context = dispatch.context();
 
-        var context = forClass(String.class);
-        verify(assistant).mapCommand(any(), context.capture());
-        assertThat(context.getValue())
+        assertThat(context)
                 .contains("id=ABC-1", "alias=a1", "status=REVIEW_PENDING", "Widget layout is off")
                 .contains("legal=ship")
                 .contains("- deploy:", "- revert:", "- do:");
