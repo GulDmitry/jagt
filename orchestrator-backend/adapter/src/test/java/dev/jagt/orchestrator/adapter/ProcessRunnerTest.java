@@ -21,18 +21,28 @@ import static org.awaitility.Awaitility.await;
 class ProcessRunnerTest {
 
     @Test
-    void launchesTheAppOutsideTheProcessGroupTheTerminalSendsCtrlCTo() throws Exception {
-        Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "5"));
+    void launchesTheAppOutsideTheProcessGroupTheTerminalSendsCtrlCTo() {
+        ProcessRunner runner = new ProcessRunner();
+        Process launched = runner.runDetached(null, List.of("sleep", "5"));
 
-        assertThat(processGroupOf(launched.pid())).isNotEqualTo(processGroupOf(ProcessHandle.current().pid()));
+        String launchedGroup = runner.run(null, Duration.ofSeconds(5),
+                List.of("ps", "-o", "pgid=", "-p", String.valueOf(launched.pid()))).stdout().strip();
+        String ownGroup = runner.run(null, Duration.ofSeconds(5),
+                List.of("ps", "-o", "pgid=", "-p", String.valueOf(ProcessHandle.current().pid()))).stdout().strip();
+
+        assertThat(launchedGroup).isNotEqualTo(ownGroup);
         launched.destroyForcibly();
     }
 
     @Test
-    void leavesTheAppKillableByPidSoTheWrapperIsNotWhatSurvives() throws Exception {
-        Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "5"));
+    void leavesTheAppKillableByPidSoTheWrapperIsNotWhatSurvives() {
+        ProcessRunner runner = new ProcessRunner();
+        Process launched = runner.runDetached(null, List.of("sleep", "5"));
 
-        assertThat(commandOf(launched.pid())).isEqualTo("sleep");
+        String command = runner.run(null, Duration.ofSeconds(5),
+                List.of("ps", "-o", "comm=", "-p", String.valueOf(launched.pid()))).stdout().strip();
+
+        assertThat(command).isEqualTo("sleep");
         launched.destroyForcibly();
     }
 
@@ -90,20 +100,5 @@ class ProcessRunnerTest {
 
         assertThat(launched.isAlive()).isTrue();
         launched.destroyForcibly();
-    }
-
-    private static String processGroupOf(long pid) throws Exception {
-        return firstLineOf(new ProcessBuilder("ps", "-o", "pgid=", "-p", String.valueOf(pid)));
-    }
-
-    private static String commandOf(long pid) throws Exception {
-        return firstLineOf(new ProcessBuilder("ps", "-o", "comm=", "-p", String.valueOf(pid)));
-    }
-
-    private static String firstLineOf(ProcessBuilder query) throws Exception {
-        Process process = query.redirectErrorStream(true).start();
-        String output = new String(process.getInputStream().readAllBytes()).strip();
-        process.waitFor();
-        return output;
     }
 }

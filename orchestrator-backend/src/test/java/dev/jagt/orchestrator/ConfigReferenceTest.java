@@ -28,13 +28,10 @@ class ConfigReferenceTest {
         Stream<String> bound = Stream.of(OrchestratorProperties.class, AssistantProperties.class)
                 .flatMap(type -> Arrays.stream(type.getRecordComponents())).map(RecordComponent::getName);
         Stream<String> looked = ROOTS.stream().flatMap(ConfigReferenceTest::javaFilesUnder)
-                .flatMap(path -> named.matcher(read(path)).results()).map(match -> camel(match.group(1)));
+                .flatMap(path -> named.matcher(read(path)).results()).map(match -> Pattern.compile("-([a-z])").matcher(match.group(1))
+                        .replaceAll(letter -> letter.group(1).toUpperCase()));
 
         assertThat(Stream.concat(bound, looked).distinct().filter(key -> !dist.contains(key))).isEmpty();
-    }
-
-    private static String camel(String kebab) {
-        return Pattern.compile("-([a-z])").matcher(kebab).replaceAll(letter -> letter.group(1).toUpperCase());
     }
 
     private static Stream<Path> javaFilesUnder(Path root) {
