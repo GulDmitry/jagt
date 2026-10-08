@@ -333,6 +333,23 @@ class BoardCardTest extends BoardPageContext {
     }
 
     @Test
+    void aTitleCutShortOpensItsWholeTextFromTheKeyboard() {
+        String pasted = "Widget layout is off. ".repeat(8) + "The end of the paragraph.";
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").title(pasted).lastActiveTimestamp(System.currentTimeMillis())
+                .build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+
+        page.locator("article .title").focus();
+
+        assertThat(page.locator("article .title")).isFocused();
+        assertThat(page.locator("article .title")).hasAttribute("aria-label", pasted);
+        assertThat(page.locator("#tip")).containsText("The end of the paragraph.");
+    }
+
+    @Test
     void showsAHandEditedAliasAsTextRatherThanAsMarkup() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1<b>x</b>").lastActiveTimestamp(System.currentTimeMillis()).build());

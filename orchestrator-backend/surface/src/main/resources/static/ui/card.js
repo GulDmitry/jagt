@@ -1,6 +1,6 @@
 // One task, as one card: it reads the server's projection and builds the nodes.
 
-import {link, span} from '../core/dom.js';
+import {link, named, span} from '../core/dom.js';
 import * as store from '../core/store.js';
 import {blocked} from './inflight.js';
 import {meta} from './meta.js';
@@ -11,7 +11,9 @@ const LIMIT = 150;
 const clipped = (node, written) => {
   const cut = written.length > LIMIT;
   node.textContent = cut ? `${written.slice(0, LIMIT)}\u2026` : written;
-  if (cut) node.dataset.tip = written;
+  if (!cut) return;
+  node.dataset.tip = written;
+  named(node, written);
 };
 
 const actionRow = (group) => {
