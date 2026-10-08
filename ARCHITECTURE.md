@@ -40,8 +40,8 @@ and `flow/` depends on them.
 
 `RingsTest` asserts exactly this:
 
-- `task/`, `flow/` and `port/` name no other ring — as an import, a static import, or a qualified name;
-  `protocol/` names only them.
+- `task/`, `flow/` and `port/` name no other ring — by import, static import or qualified name;
+  `protocol/` names only them; `task/` names neither `flow/` nor `port/`, and `port/` no `flow/`.
 - those four import no Spring and no Lombok. Jackson annotations stay: the record **is** the file format.
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
   name anywhere in a source, outside `adapter/`.
@@ -84,7 +84,7 @@ answer. Every type in `flow/`, one question each:
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.
   PARTIAL alone refuses: stamped first, thrown second, so half a change on a shared branch is recorded.
 - **An interceptor** (`flow/CapabilityInterceptor`) wraps a verb and may refuse, stopping the work *and* the transition.
-- **`Facts.projected`** assumes not live and costs nothing; the gate runs the real probe — so a stuck SHIPPING card
+- **`Facts.projected`** assumes no live agent and costs nothing; the gate runs the real probe — so a stuck SHIPPING card
   offers SHIP and the gate can still refuse it.
 
 ## The artifact chain
@@ -171,7 +171,7 @@ question without owning a node, `ui/` owns the nodes it renders, `app.js` only w
 | `ui/render` | one repaint from the snapshot, and the one delegated click on the grid |
 | `ui/card`, `ui/meta`, `ui/header` | what a task looks like, and the line above the grid — pure, no listeners |
 | `ui/filters`, `ui/order`, `ui/projects` | what narrows, what re-orders, and the project picker |
-| `ui/act`, `ui/inflight`, `ui/confirm` | running one action: what is in flight, what it asks first |
+| `ui/act`, `ui/inflight` | running one action: what is in flight, what it asks first |
 | `ui/submit`, `ui/launch` | one submit pipeline, and the form that uses it |
 | `ui/palette`, `core/grammar`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
 | `ui/dialogs`, `ui/report`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
