@@ -38,6 +38,7 @@ export function card(task, manyProjects) {
   if (task.ask) {
     const badge = span(`badge ${task.attention.toLowerCase()}`, task.ask);
     badge.dataset.tip = task.hint;
+    badge.tabIndex = 0;
     top.append(badge);
   }
 

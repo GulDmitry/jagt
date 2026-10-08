@@ -282,6 +282,17 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
     }
 
     @Test
+    void theAutoReviewChipOpensItsTipFromTheKeyboard() {
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+
+        page.locator("#auto-review").focus();
+
+        assertThat(page.locator("#tip")).hasText("unattended review polling");
+    }
+
+    @Test
     void anOpenTipOnTheJobsChipFollowsItsCountdownThroughARepaint() {
         doThrow(new IllegalStateException("editor gone")).when(editorDriver).forgetDeadWorktrees(any());
         long now = System.currentTimeMillis();
