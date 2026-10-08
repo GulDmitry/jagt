@@ -151,7 +151,7 @@ article.ci { border-left-color: var(--ci); }
    pill, which is the one place a line break has nowhere to go. */
 .card-top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
 .alias {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: var(--accent);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: var(--text);
 }
 .id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .title { margin: 6px 0; }
