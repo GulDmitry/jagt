@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.flow.Facts;
 import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
@@ -171,7 +172,7 @@ public class AgentStatusReports {
         read.ifPresent(task -> {
             RoundState round = handBack.round(task);
             // Not silent: whoever this ping is about has just spoken, or jagt has just read the round for it.
-            Move move = Move.forTask(task.status(), task.hasReviewRequest(), round, false);
+            Move move = Move.forTask(task.status(), Facts.projected(task), round, false);
             if (move.owner() == Owner.YOU) {
                 notifications.send(Notification.fromAgent(taskId, title(task.status(), round),
                         banner(move.hint(), round)));

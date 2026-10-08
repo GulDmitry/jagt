@@ -15,76 +15,83 @@ class FlowRulesTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING"})
     void takesAShipAsTheHumansApprovalWhileTheWorkIsStillTheAgents(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.projected(false))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(false, false, () -> false))).isTrue();
     }
 
     @Test
     void shipsAStuckTaskAgainOnlyOnceTheAgentThatWasPushingItIsGone() {
-        assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(false, false, () -> false))).isTrue();
-        assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(true, false, () -> true))).isFalse();
+        assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(false, false,
+                () -> false))).isTrue();
+        assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(true, false,
+                () -> true))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class,
             names = {"CI_POLLING", "CI_FAILED", "REVIEWED", "DEPLOYED", "REVERTED"})
     void shipsAFurtherRoundOnlyOntoARequestThatIsAlreadyOpen(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.projected(true))).isTrue();
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.projected(false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(true, false, () -> false))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(false, false, () -> false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "DONE"})
     void refusesAShipForATaskWithNothingOnItsBranchYetOrNothingLeftToSay(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SHIP, Facts.projected(true))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.SHIP, new Facts(true, false, () -> false))).isFalse();
     }
 
     @Test
     void deploysAStalledDeployAgainWithNoRequestAtAll() {
-        assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.DEPLOY, Facts.projected(false))).isTrue();
+        assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.DEPLOY, new Facts(false, false,
+                () -> false))).isTrue();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class,
             names = {"REVIEW_PENDING", "CI_POLLING", "CI_FAILED", "REVIEWED", "APPROVED", "DEPLOYED"})
     void landsAnOpenRequestWhateverTheReviewerSaidAboutIt(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.projected(true))).isTrue();
-        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.projected(false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(true, false, () -> false))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(false, false, () -> false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"NEW", "IN_PROGRESS", "SHIPPING", "REVERTED", "DONE"})
     void refusesADeployWhereItCouldOnlyRaceTheAgentOrRefuse(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, Facts.projected(true))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.DEPLOY, new Facts(true, false, () -> false))).isFalse();
     }
 
     @Test
     void revertsATaskWhoseDeployActuallyLandedWhateverBecameOfItsRequest() {
-        assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, Facts.projected(true))).isTrue();
-        assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, Facts.projected(false))).isTrue();
+        assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, new Facts(true, false,
+                () -> false))).isTrue();
+        assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, new Facts(false, false,
+                () -> false))).isTrue();
     }
 
     @Test
     void revertsWhatADeployStoppedByAConflictLeftLive() {
-        assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.REVERT, Facts.projected(false))).isTrue();
+        assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.REVERT, new Facts(false, false,
+                () -> false))).isTrue();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"DEPLOYED", "DEPLOY_CONFLICT"})
     void refusesARevertForATaskWithNothingLiveToTakeBackOut(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.REVERT, Facts.projected(true))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.REVERT, new Facts(true, false, () -> false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void readsAReviewRoundFromAnywhereButOnlyWhereThereIsARequestToRead(TaskStatus status) {
-        assertThat(FlowRules.allows(status, TaskAction.SWEEP, Facts.projected(true))).isTrue();
-        assertThat(FlowRules.allows(status, TaskAction.SWEEP, Facts.projected(false))).isFalse();
+        assertThat(FlowRules.allows(status, TaskAction.SWEEP, new Facts(true, false, () -> false))).isTrue();
+        assertThat(FlowRules.allows(status, TaskAction.SWEEP, new Facts(false, false, () -> false))).isFalse();
     }
 
     @ParameterizedTest
     @EnumSource(TaskStatus.class)
     void letsAHumanLookAtCloseOrRestartATaskWhereverItGotTo(TaskStatus status) {
-        assertThat(FlowRules.allowed(status, Facts.projected(false))).contains(TaskAction.FOCUS, TaskAction.IDE,
+        assertThat(FlowRules.allowed(status, new Facts(false, false, () -> false))).contains(TaskAction.FOCUS,
+                TaskAction.IDE,
                 TaskAction.DIFF, TaskAction.RESPAWN, TaskAction.DONE);
     }
 

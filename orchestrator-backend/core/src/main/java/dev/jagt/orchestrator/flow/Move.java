@@ -14,9 +14,8 @@ import java.util.List;
 public record Move(Phase phase, Owner owner, Attention attention, String ask, List<TaskAction> actions,
                    TaskAction primary, String hint) {
 
-    public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round,
-                               boolean agentSilent) {
-        return forTask(status, Facts.projected(hasReviewRequest), round, agentSilent, AutoReviewWatch.none());
+    public static Move forTask(TaskStatus status, Facts facts, RoundState round, boolean agentSilent) {
+        return forTask(status, facts, round, agentSilent, AutoReviewWatch.none());
     }
 
     /** The WATCH rather than a flag off it: a promised poll that STOPPED and no poller at all are different cards. */

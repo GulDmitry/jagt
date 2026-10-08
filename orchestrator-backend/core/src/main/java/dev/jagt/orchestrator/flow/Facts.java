@@ -13,10 +13,6 @@ import java.util.function.BooleanSupplier;
  */
 public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive) {
 
-    public static Facts projected(boolean hasReviewRequest) {
-        return new Facts(hasReviewRequest, false, () -> false);
-    }
-
     public static Facts projected(TaskState task) {
         return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> false);
     }

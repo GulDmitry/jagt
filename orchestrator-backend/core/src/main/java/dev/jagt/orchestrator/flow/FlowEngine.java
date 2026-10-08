@@ -34,7 +34,7 @@ public class FlowEngine {
         if (!FlowRules.allows(task.status(), action, facts(task, taskId))) {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — "
-                    + Move.forTask(task.status(), task.hasReviewRequest(),
+                    + Move.forTask(task.status(), Facts.projected(task),
                             dev.jagt.orchestrator.flow.RoundState.of(task.message(), false),
                             task.agentIsSilent()).hint() + ")");
         }
