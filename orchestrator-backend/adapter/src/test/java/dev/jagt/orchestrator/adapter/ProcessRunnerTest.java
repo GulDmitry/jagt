@@ -5,6 +5,8 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Isolated;
+import org.junit.jupiter.api.parallel.ResourceLock;
+import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
@@ -64,21 +66,25 @@ class ProcessRunnerTest {
     }
 
     @Test
+    @ResourceLock(Resources.GLOBAL)
     void recordsHowALaunchEndedSoADeathNobodyAskedForCanBeAttributed() throws Exception {
         ListAppender<ILoggingEvent> log = new ListAppender<>();
         log.start();
         Logger runnerLog = (Logger) LoggerFactory.getLogger(ProcessRunner.class);
         runnerLog.addAppender(log);
-        Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "30"));
+        try {
+            Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "30"));
 
-        new ProcessBuilder("kill", "-TERM", String.valueOf(launched.pid())).start().waitFor();
+            new ProcessBuilder("kill", "-TERM", String.valueOf(launched.pid())).start().waitFor();
 
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
-                assertThat(List.copyOf(log.list)).filteredOn(event -> "process ended".equals(event.getMessage()))
-                        .flatExtracting(ILoggingEvent::getKeyValuePairs)
-                        .extracting(pair -> pair.key + "=" + pair.value)
-                        .contains("pid=" + launched.pid(), "exit=on SIGTERM (143)"));
-        runnerLog.detachAppender(log);
+            await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
+                    assertThat(List.copyOf(log.list)).filteredOn(event -> "process ended".equals(event.getMessage()))
+                            .flatExtracting(ILoggingEvent::getKeyValuePairs)
+                            .extracting(pair -> pair.key + "=" + pair.value)
+                            .contains("pid=" + launched.pid(), "exit=on SIGTERM (143)"));
+        } finally {
+            runnerLog.detachAppender(log);
+        }
     }
 
     @Test
