@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.TaskViews;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;

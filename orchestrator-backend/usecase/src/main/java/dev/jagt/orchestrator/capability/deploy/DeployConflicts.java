@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.capability.deploy;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.RequiredArgsConstructor;

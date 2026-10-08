@@ -15,7 +15,7 @@ import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

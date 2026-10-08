@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.TaskStatus;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;

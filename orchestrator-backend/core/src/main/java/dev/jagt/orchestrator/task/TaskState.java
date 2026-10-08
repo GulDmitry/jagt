@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.task;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

@@ -15,7 +15,7 @@ import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.port.UserNotifier;

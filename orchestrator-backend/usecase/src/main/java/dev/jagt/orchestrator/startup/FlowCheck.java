@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.startup;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.StartupCheck;
 import org.springframework.stereotype.Component;
 

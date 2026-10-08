@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.port.EditorDriver;
 import org.junit.jupiter.api.Test;

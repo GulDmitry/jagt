@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.prompteval;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;

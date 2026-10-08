@@ -13,7 +13,7 @@ import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Reported;
 import dev.jagt.orchestrator.protocol.Violation;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.RequiredArgsConstructor;

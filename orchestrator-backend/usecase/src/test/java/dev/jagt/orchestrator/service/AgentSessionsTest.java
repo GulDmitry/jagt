@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ViewerConfig;
 import org.junit.jupiter.api.BeforeEach;

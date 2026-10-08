@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 
 import java.util.List;
 import java.util.stream.Stream;

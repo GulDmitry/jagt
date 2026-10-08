@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.task.FinishedTask;

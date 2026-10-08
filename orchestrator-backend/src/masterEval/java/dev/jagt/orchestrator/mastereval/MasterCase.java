@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.mastereval;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.master.MasterReview;
 
 import java.util.List;

@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.surface.mcp;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.surface.mcp.tools.DeployTools;
 import dev.jagt.orchestrator.surface.mcp.tools.SessionTools;

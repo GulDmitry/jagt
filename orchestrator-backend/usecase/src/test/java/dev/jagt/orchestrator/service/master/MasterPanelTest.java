@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service.master;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.RoundReviewer.Premise;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.RoundFacts;
 import dev.jagt.orchestrator.service.UsageTracker;

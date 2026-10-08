@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
 import dev.jagt.orchestrator.flow.AgentReport;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

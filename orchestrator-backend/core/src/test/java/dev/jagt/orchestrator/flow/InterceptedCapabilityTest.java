@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.AgentPresence;
 import dev.jagt.orchestrator.port.CapabilityInterceptor;
 import dev.jagt.orchestrator.port.TaskCapability;

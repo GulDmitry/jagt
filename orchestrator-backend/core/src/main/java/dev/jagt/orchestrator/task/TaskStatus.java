@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.flow;
+package dev.jagt.orchestrator.task;
 
 public enum TaskStatus {
     NEW("starting"),

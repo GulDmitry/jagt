@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;

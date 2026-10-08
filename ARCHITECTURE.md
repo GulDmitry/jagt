@@ -16,7 +16,7 @@ missing. Add a kind, never an exception.**
 
 | kind | its one job | state |
 |------|-------------|-------|
-| `task/` | the task record and everything it is made of | built — `service/StateService` writes it to `state.json` |
+| `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` |
 | `flow/` | which status allows what, and where each outcome leads | built — `FlowRules`, `FlowEngine`, `FlowReports`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
 | `job/` | work that runs with nobody watching | built — `Job`, `Jobs` and every job |
@@ -64,7 +64,6 @@ answer. Every type in `flow/`, one question each:
 | `Facts` | the guard's second argument — an open request, a live deploy, and a liveness probe passed as a SUPPLIER |
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
 | `FlowReports` | door two: a task's report (`FlowRules.reportable`), or the host's verdict (`read`) |
-| `TaskStatus` | where a task stands |
 | `TaskAction` | a verb, named once for every surface |
 | `Capabilities` | every `port/TaskCapability` there is, one per action — the `capability/` kind's registry |
 | `Phase` | the step of a task's life a human reads |

@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.SessionLog;
 import dev.jagt.orchestrator.task.AgentSpend;
 import dev.jagt.orchestrator.task.TaskState;

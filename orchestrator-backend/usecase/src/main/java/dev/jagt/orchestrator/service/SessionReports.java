@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.job.WatchdogService;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskState;

@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

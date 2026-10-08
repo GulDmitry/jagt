@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
