@@ -23,10 +23,6 @@ public class TaskCommandsController {
     public record ActionResult(String message) {
     }
 
-    /** {@code created} is false for an ordinary decline, not only for a failure. */
-    public record LaunchResult(String message, boolean created) {
-    }
-
     public record InterpretRequest(String text) {
     }
 
@@ -47,9 +43,12 @@ public class TaskCommandsController {
 
     /** Slow on purpose when a ticket is named: reading it is a remote call. */
     @PostMapping("/tasks")
-    public LaunchResult launch(@RequestBody LaunchRequest request) {
+    public ActionResult launch(@RequestBody LaunchRequest request) {
         Launched launched = launcher.launch(request.normalized());
-        return new LaunchResult(launched.message(), launched.created());
+        if (!launched.created()) {
+            throw new IllegalStateException(launched.message());
+        }
+        return new ActionResult(launched.message());
     }
 
     /** A line typed where a round is read: it goes into the session, never over the brief on disk. */

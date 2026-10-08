@@ -96,13 +96,13 @@ class TaskCommandsControllerTest {
     }
 
     @Test
-    void saysNoTaskWasCreatedWhenTheLaunchDeclinedInsteadOfFailing() {
+    void refusesALaunchThatCreatedNoTaskLikeTheTypedDo() {
         LaunchRequest posted = LaunchRequest.of("ABC-42");
         when(launcher.launch(posted)).thenReturn(Launched.refused("error: read failed: ABC-42"));
 
-        var result = api.launch(posted);
-
-        assertThat(result.created()).isFalse();
+        assertThatThrownBy(() -> api.launch(posted))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("error: read failed: ABC-42");
     }
 
     @Test
@@ -121,7 +121,7 @@ class TaskCommandsControllerTest {
 
         var result = api.launch(LaunchRequest.of(" ").withProject("demo").withNotes("split the invoice mailer"));
 
-        assertThat(result.created()).isTrue();
+        assertThat(result.message()).isEqualTo("initialized");
     }
 
     @Test

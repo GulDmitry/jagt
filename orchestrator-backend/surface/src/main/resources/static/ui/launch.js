@@ -41,9 +41,7 @@ submits(form, {
       notes: document.getElementById('notes').value,
     }),
   }),
-  // Most declines arrive as an ordinary answer, and this form holds what the next attempt needs.
-  done: (result) => {
-    if (!result.created) return;
+  done: () => {
     form.reset();
     projects.forget();
   },
