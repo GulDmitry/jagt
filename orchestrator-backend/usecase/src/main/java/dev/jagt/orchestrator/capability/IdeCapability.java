@@ -20,6 +20,6 @@ public class IdeCapability implements TaskCapability {
 
     @Override
     public Outcome run(String taskId) {
-        return Outcome.ok(ide.open(taskId, "project"));
+        return Outcome.ok(ide.open(taskId, IdeLauncher.Mode.PROJECT));
     }
 }

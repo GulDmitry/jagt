@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.service.OneLine;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -109,7 +110,7 @@ public class ActivityReport {
         String alias = text(event, "alias");
         String message = text(event, "message");
         return String.format("  %-14s %-10s %s", when(event), alias == null ? task : alias,
-                abbreviate((message == null ? "" : message) + fields(event)));
+                OneLine.of((message == null ? "" : message) + fields(event), MAX_MESSAGE));
     }
 
     private static String fields(JsonNode event) {
@@ -129,11 +130,6 @@ public class ActivityReport {
         } catch (RuntimeException e) {
             return stamp;
         }
-    }
-
-    private static String abbreviate(String message) {
-        String oneLine = message.replace('\n', ' ').strip();
-        return oneLine.length() <= MAX_MESSAGE ? oneLine : oneLine.substring(0, MAX_MESSAGE - 1) + "…";
     }
 
     private JsonNode parse(String line) {

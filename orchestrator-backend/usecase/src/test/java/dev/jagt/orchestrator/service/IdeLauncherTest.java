@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -57,7 +58,7 @@ class IdeLauncherTest {
         when(deploys.hasDeployWorktree(api, "ABC-1")).thenReturn(false);
         when(deploys.hasDeployWorktree(web, "ABC-1")).thenReturn(true);
 
-        launcher(state).open("a1", null);
+        launcher(state).open("a1", IdeLauncher.Mode.PROJECT);
 
         verify(editor).open(GitDeploy.deployWorktreePath(web, "ABC-1"));
         verify(editor, never()).open(GitDeploy.deployWorktreePath(api, "ABC-1"));
@@ -73,7 +74,7 @@ class IdeLauncherTest {
                 Map.of("proj", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
         when(deploys.hasDeployWorktree(repo, "ABC-1")).thenReturn(true);
 
-        assertThat(launcher(state).open("a1", null)).contains("deploy worktree");
+        assertThat(launcher(state).open("a1", IdeLauncher.Mode.PROJECT)).contains("deploy worktree");
     }
 
     @Test
@@ -84,7 +85,7 @@ class IdeLauncherTest {
                 .alias("a1").build());
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of()));
 
-        String out = launcher(state).open("a1", null);
+        String out = launcher(state).open("a1", IdeLauncher.Mode.PROJECT);
 
         verify(editor).open(taskWorktree);
         assertThat(out).contains("as a project in the editor");
@@ -98,7 +99,7 @@ class IdeLauncherTest {
         when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
         when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
-        launcher(state).open("a1", "diff");
+        launcher(state).open("a1", IdeLauncher.Mode.DIFF);
 
         verify(editor).openDiff(Path.of("/tmp/base"), Path.of("/tmp/clean"));
     }
@@ -111,21 +112,33 @@ class IdeLauncherTest {
         when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
         when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
-        launcher(state).open("a1", "diff");
+        launcher(state).open("a1", IdeLauncher.Mode.DIFF);
 
         verify(diffs).checkoutBaseForDiff(Path.of("/repo"), "origin/release/stage", "ABC-1", "proj");
     }
 
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(strings = "project")
-    void showsTheHumanTheTasksOwnWorktreeUnlessTheyAskedForSomethingElse(String mode, @TempDir Path root) {
+    @Test
+    void showsTheHumanTheTasksOwnWorktreeAsAProject(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        launcher(state).open("a1", mode);
+        launcher(state).open("a1", IdeLauncher.Mode.PROJECT);
 
         verify(editor).open(Path.of("/wt"));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {" ", "project", "Project"})
+    void readsAnAbsentOrProjectModeAsTheProject(String wire) {
+        assertThat(IdeLauncher.Mode.of(wire)).isEqualTo(IdeLauncher.Mode.PROJECT);
+    }
+
+    @Test
+    void refusesAModeItDoesNotKnow() {
+        assertThatThrownBy(() -> IdeLauncher.Mode.of("split"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown ide mode 'split'");
     }
 
     @Test
@@ -135,7 +148,7 @@ class IdeLauncherTest {
                         TaskRepo.of("api", "/api-wt"), TaskRepo.of("web", "/web-wt")),
                 TaskStatus.REVIEW_PENDING).alias("a1").build());
 
-        launcher(state).open("a1", null);
+        launcher(state).open("a1", IdeLauncher.Mode.PROJECT);
 
         verify(editor).open(Path.of("/api-wt"));
         verify(editor).open(Path.of("/web-wt"));
@@ -152,7 +165,7 @@ class IdeLauncherTest {
         when(diffs.checkoutBaseForDiff(any(), any(), any(), any())).thenReturn(Path.of("/tmp/base"));
         when(diffs.checkoutWorktreeCleanForDiff(any(), any(), any(), any(), any())).thenReturn(Path.of("/tmp/clean"));
 
-        launcher(state).open("a1", "diff");
+        launcher(state).open("a1", IdeLauncher.Mode.DIFF);
 
         verify(diffs).checkoutBaseForDiff(Path.of("/api-repo"), "origin/main", "ABC-1", "api");
         verify(diffs).checkoutBaseForDiff(Path.of("/web-repo"), "origin/next", "ABC-1", "web");

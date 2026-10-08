@@ -362,7 +362,7 @@ class AgentStatusReportsTest {
         reports(state).report(TaskStatus.IN_PROGRESS, "root cause\nanalysis ".repeat(20), "ABC-1");
 
         String stored = state.task("ABC-1").orElseThrow().message();
-        assertThat(stored).hasSizeLessThanOrEqualTo(100).doesNotContain("\n").endsWith("...");
+        assertThat(stored).hasSizeLessThanOrEqualTo(100).doesNotContain("\n").endsWith("…");
     }
 
     @Test

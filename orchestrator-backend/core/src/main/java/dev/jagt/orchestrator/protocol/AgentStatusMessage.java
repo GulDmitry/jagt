@@ -91,10 +91,6 @@ public record AgentStatusMessage(String status, String message, String outcome, 
         return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
     }
 
-    public AgentStatusMessage withTaskId(String taskId) {
-        return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
-    }
-
     /**
      * Every violation at once, field rules and consistency rules together: a sender told about one error at a
      * time fixes them one call at a time. {@code projectsOnTask} empty means the task is unknown, which is a

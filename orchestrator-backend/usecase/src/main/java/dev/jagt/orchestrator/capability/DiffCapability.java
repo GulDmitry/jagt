@@ -20,6 +20,6 @@ public class DiffCapability implements TaskCapability {
 
     @Override
     public Outcome run(String taskId) {
-        return Outcome.ok(ide.open(taskId, "diff"));
+        return Outcome.ok(ide.open(taskId, IdeLauncher.Mode.DIFF));
     }
 }

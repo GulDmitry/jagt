@@ -89,7 +89,7 @@ public class AgentStatusReports {
         Optional<TaskState> current = stateService.task(taskId);
         TaskStatus newStatus = said.status();
         Map<String, String> requestsByProject = said.requests();
-        String shortMessage = abbreviate(stated(said, current, taskId));
+        String shortMessage = OneLine.of(stated(said, current, taskId), MAX_MESSAGE);
         String url = said.link();
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
         FlowReports.Landed written = flow.report(taskId, newStatus, shortMessage, (was, next) -> {
@@ -217,14 +217,5 @@ public class AgentStatusReports {
 
     private static String marked(String marker, String detail) {
         return detail.isBlank() ? marker : marker + ": " + detail;
-    }
-
-    /** One dashboard line: a status message is a headline, and an agent's essay ruins the table. */
-    private static String abbreviate(String message) {
-        if (message == null) {
-            return null;
-        }
-        String flat = message.replaceAll("\\s+", " ").strip();
-        return flat.length() <= MAX_MESSAGE ? flat : flat.substring(0, MAX_MESSAGE - 3) + "...";
     }
 }

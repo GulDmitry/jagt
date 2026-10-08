@@ -21,6 +21,6 @@ public class IdeTools implements McpTools {
     @Override
     public void declare(McpToolRegistry tools) {
         tools.tool("open_in_ide", Audience.ANYONE, IdeOpen.SCHEMA, IdeOpen.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> ide.open(callerScope.resolve(said.taskId(), caller), said.mode()));
+                (said, caller) -> ide.open(callerScope.resolve(said.taskId(), caller), IdeLauncher.Mode.of(said.mode())));
     }
 }
