@@ -1,4 +1,6 @@
-package dev.jagt.orchestrator.capability.deploy;
+package dev.jagt.orchestrator.job;
+
+import dev.jagt.orchestrator.capability.deploy.DeployTargets;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.GitDeploy;

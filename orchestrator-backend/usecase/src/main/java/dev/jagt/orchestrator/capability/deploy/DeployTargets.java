@@ -15,7 +15,7 @@ import java.util.Optional;
 /** Each repository of a task paired with where it lands, as the deploy, its undo and the conflict registry read it. */
 @Component
 @RequiredArgsConstructor
-class DeployTargets {
+public class DeployTargets {
 
     private final ConfigService configService;
 
@@ -23,7 +23,7 @@ class DeployTargets {
      * Every repository the task works in. All resolved before anything is pushed, so a project misconfigured at the
      * end of the list cannot be discovered half way through.
      */
-    List<Target> all(TaskState task) {
+    public List<Target> all(TaskState task) {
         List<Target> targets = new ArrayList<>();
         for (TaskRepo repo : task.repos()) {
             targets.add(new Target(repo.project(), configService.project(repo.project())));
@@ -82,13 +82,13 @@ class DeployTargets {
         return cause.getMessage() == null ? "" : " " + cause.getMessage();
     }
 
-    record Target(String project, ProjectConfig config) {
+    public record Target(String project, ProjectConfig config) {
 
-        Path path() {
+        public Path path() {
             return Path.of(config.path());
         }
 
-        String deployBranch() {
+        public String deployBranch() {
             return config.deployBranch();
         }
     }
