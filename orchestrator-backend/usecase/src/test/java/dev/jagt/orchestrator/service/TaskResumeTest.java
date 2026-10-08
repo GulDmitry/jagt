@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TicketFacts;

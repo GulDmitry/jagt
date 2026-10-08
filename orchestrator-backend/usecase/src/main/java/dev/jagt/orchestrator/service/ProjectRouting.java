@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.protocol.ProjectRead;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
@@ -33,7 +34,7 @@ public class ProjectRouting {
     private static final int PRECEDENTS = 40;
 
     private final ConfigService configService;
-    private final MeteredAssistant assistant;
+    private final RoutingAssistant assistant;
     private final FinishedTasks finished;
     private final RoutingMemory memory;
 

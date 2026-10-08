@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.protocol.RoundRead;
@@ -87,7 +87,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
                     TokenUsage.NONE);
         }
         JsonNode envelope = envelope(result.stdout());
-        TokenUsage usage = HeadlessClaudeAssistant.usageOf(envelope);
+        TokenUsage usage = HeadlessClaude.usageOf(envelope);
         JsonNode answer = envelope == null ? null : envelope.path("structured_output");
         if (result.exitCode() != 0 || answer == null || !answer.isObject()) {
             String cause = result.stderr().isBlank() ? result.stdout() : result.stderr();

@@ -12,7 +12,7 @@ Accepted 2026-10-07. Keeps [0003](0003-tracker-and-code-host-are-read-through-th
 - 0003 left one concept open: jagt reading the tracker and the code host itself, once it could state what it
   promises before it holds a token.
 - The path 0003 chose works: a headless one-shot of the agent CLI reads through the MCP servers of whoever runs
-  jagt, on a light model, and every read is metered (`MeteredAssistant`).
+  jagt, on a light model, and every read is metered (`adapter/assistant/HeadlessClaude`).
 - In daily use those reads were cheap enough that nobody asked for a faster or cheaper path.
 - A token inside jagt puts a credential behind a board that listens on loopback without auth and can deploy.
 

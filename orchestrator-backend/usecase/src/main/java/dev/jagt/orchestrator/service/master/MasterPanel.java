@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;

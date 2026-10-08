@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.Processes;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,14 +16,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * What the CLI says about its own MCP servers, free and token-less: a model whose tool never loaded answers
- * "does not exist" exactly like a host whose item is gone. Empty is NOT established and never "nothing is
- * down" — a probe that could not run would otherwise clear the failure it was called to explain.
+ * A model whose tool never loaded answers "does not exist" exactly like a host whose item is gone. Empty is NOT
+ * established and never "nothing is down" — a probe that could not run would otherwise clear the failure it was
+ * called to explain.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-class ClaudeMcpHealthProbe {
+class ClaudeMcpHealthProbe implements McpHealth {
 
     /** A human waits behind this on a refusal, and the probe measured ~9s here. */
     private static final Duration TIMEOUT = Duration.ofSeconds(25);
@@ -40,7 +41,8 @@ class ClaudeMcpHealthProbe {
     private Optional<List<String>> last = Optional.empty();
     private long lastAt;
 
-    synchronized Optional<List<String>> brokenServers() {
+    @Override
+    public synchronized Optional<List<String>> brokenServers() {
         if (Thread.currentThread().isInterrupted()) {
             log.atWarn().setMessage("mcp probe skipped")
                     .addKeyValue("cause", "thread interrupted")

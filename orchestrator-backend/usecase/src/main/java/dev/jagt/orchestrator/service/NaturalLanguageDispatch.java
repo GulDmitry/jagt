@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.port.MasterAssistant.CommandProposal;
+import dev.jagt.orchestrator.port.CommandAssistant;
+import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.flow.TaskAction;
@@ -34,7 +35,7 @@ public class NaturalLanguageDispatch {
             "prune", "jagt has no `prune`: cleaning up a merged branch is that one task's business, and yours"
                     + " to do with git.");
 
-    private final MeteredAssistant assistant;
+    private final CommandAssistant assistant;
     private final StateService stateService;
     private final TaskViews taskViews;
     private final CommandService commands;

@@ -1,10 +1,11 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.TrackerAssistant;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 class IntakeCandidatesTest {
 
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
+    private final TrackerAssistant assistant = mock(TrackerAssistant.class);
     private final TicketReader tickets = mock(TicketReader.class);
     private final TrackerWorkflow workflow = mock(TrackerWorkflow.class);
     private final IntakeCandidates candidates = new IntakeCandidates(assistant, tickets, workflow);

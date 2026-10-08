@@ -123,7 +123,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `CapabilityInterceptor` | `capability/ship/SpecFold`; an install may add its own step |
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`) |
-| `MasterAssistant` | `adapter/assistant/HeadlessClaudeAssistant` |
+| `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe` |
 | `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer` |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Notifier` | `adapter/DesktopNotifier` — a channel; `notify/Notifications` fans out to every one it finds |

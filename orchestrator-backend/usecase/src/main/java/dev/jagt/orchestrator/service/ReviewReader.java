@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CodeHostAssistant;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.protocol.MergeRequestRead;
 import dev.jagt.orchestrator.protocol.RetryPolicy;
 import dev.jagt.orchestrator.protocol.ReviewRead;
@@ -16,23 +18,27 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
- * Where the facts of a review request come from: the metered headless assistant, reading the host through the MCP
- * tools of whoever runs jagt. Metering lives here so a read costs the same wherever it is asked from.
+ * Where the facts of a review request come from: the headless assistant, reading the host through the MCP tools of
+ * whoever runs jagt.
  */
 @Component
 @Slf4j
 public class ReviewReader {
 
-    private final MeteredAssistant assistant;
+    private final CodeHostAssistant assistant;
+    private final McpHealth mcp;
+    private final UsageTracker usage;
     private final RetryPolicy policy;
 
     @Autowired
-    public ReviewReader(MeteredAssistant assistant) {
-        this(assistant, RetryPolicy.PAID_READ);
+    public ReviewReader(CodeHostAssistant assistant, McpHealth mcp, UsageTracker usage) {
+        this(assistant, mcp, usage, RetryPolicy.PAID_READ);
     }
 
-    ReviewReader(MeteredAssistant assistant, RetryPolicy policy) {
+    ReviewReader(CodeHostAssistant assistant, McpHealth mcp, UsageTracker usage, RetryPolicy policy) {
         this.assistant = assistant;
+        this.mcp = mcp;
+        this.usage = usage;
         this.policy = policy;
     }
 
@@ -42,7 +48,7 @@ public class ReviewReader {
                 corrections -> assistant.readReview(reviewRequestUrl),
                 ReviewRead::violations, facts -> ReviewRead.violations(facts).isEmpty());
         // Charged even when the read came back empty: every call was paid for either way.
-        assistant.chargeTask(taskId, answer.usage());
+        usage.chargeTask(taskId, answer.usage());
         return paidRead(answer.facts(), ReviewFacts::exists, reviewRequestUrl);
     }
 
@@ -59,7 +65,7 @@ public class ReviewReader {
     }
 
     public void charge(String taskId, TokenUsage usage) {
-        assistant.chargeTask(taskId, usage);
+        this.usage.chargeTask(taskId, usage);
     }
 
     /**
@@ -68,7 +74,7 @@ public class ReviewReader {
      */
     private <T> Optional<T> paidRead(Optional<T> facts, Predicate<T> exists, String url) {
         if (facts.isPresent() && !exists.test(facts.get())) {
-            Optional<List<String>> broken = assistant.brokenMcpServers();
+            Optional<List<String>> broken = mcp.brokenServers();
             log.atWarn().setMessage("read says not found")
                     .addKeyValue("ref", url)
                     .addKeyValue("cause", "exists=false")

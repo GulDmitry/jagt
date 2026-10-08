@@ -1,10 +1,9 @@
 package dev.jagt.orchestrator;
 
 import dev.jagt.orchestrator.port.EditorDriver;
-import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.surface.mcp.McpController;
-import dev.jagt.orchestrator.service.MeteredAssistant;
+import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.surface.ui.LogFileReset;
 import org.junit.jupiter.api.Test;
@@ -47,7 +46,7 @@ class OrchestratorApplicationTest {
     void theApplicationStartsWithEveryBeanWiredSoAStartupBreakFailsHereAndNotOnLaunch() {
         assertThat(context.getBean(McpController.class)).isNotNull();
         assertThat(context.getBean(GlobalCommands.class)).isNotNull();
-        assertThat(context.getBean(MeteredAssistant.class)).isNotNull();
+        assertThat(context.getBean(TicketReader.class)).isNotNull();
     }
 
     @Test
@@ -60,10 +59,5 @@ class OrchestratorApplicationTest {
     void launchesWithTheLogFileResetListenerRegistered() {
         assertThat(OrchestratorApplication.application().getListeners())
                 .hasAtLeastOneElementOfType(LogFileReset.class);
-    }
-
-    @Test
-    void reachesTheAssistantOnlyThroughItsMeterSoNoCallerCanSpendOffTheBooks() {
-        assertThat(context.getBeansOfType(MasterAssistant.class)).hasSize(1);
     }
 }

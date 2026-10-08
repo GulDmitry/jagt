@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.port.TrackerAssistant;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.protocol.RetryPolicy;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -21,7 +23,9 @@ import static org.mockito.Mockito.when;
 
 class TicketReaderTest {
 
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
+    private final TrackerAssistant assistant = mock(TrackerAssistant.class);
+    private final McpHealth mcp = mock(McpHealth.class);
+    private final UsageTracker usage = mock(UsageTracker.class);
 
     @Test
     void answersWithTheReadAndWhatItCost() {
@@ -31,7 +35,7 @@ class TicketReaderTest {
                 TokenUsage.ofCall(25_000, 0, 120, 0.05));
         when(assistant.readTicket(eq("https://elsewhere.example.com/item/9"), any())).thenReturn(paid);
 
-        var read = new TicketReader(assistant).read("https://elsewhere.example.com/item/9");
+        var read = new TicketReader(assistant, mcp, usage).read("https://elsewhere.example.com/item/9");
 
         assertThat(read).isEqualTo(paid);
     }
@@ -45,7 +49,7 @@ class TicketReaderTest {
                         TokenUsage.ofCall(10, 0, 1, 0.5)))
                 .thenReturn(new Answer<>(Optional.of(read), TokenUsage.ofCall(20, 0, 2, 0.25)));
 
-        var answer = new TicketReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+        var answer = new TicketReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-42");
 
         assertThat(answer.facts()).contains(read);
@@ -58,7 +62,7 @@ class TicketReaderTest {
                 Optional.of(TicketFacts.defaults()), TokenUsage.NONE);
         when(assistant.readTicket(eq("ABC-42"), any())).thenReturn(denial);
 
-        var answer = new TicketReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+        var answer = new TicketReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-42");
 
         assertThat(answer.facts()).contains(TicketFacts.defaults());
@@ -77,7 +81,7 @@ class TicketReaderTest {
                                 .withTrackerProject("ABC").withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
         ArgumentCaptor<List<String>> corrections = ArgumentCaptor.captor();
 
-        new TicketReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2))).read("ABC-42");
+        new TicketReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2))).read("ABC-42");
 
         verify(assistant, times(2)).readTicket(eq("ABC-42"), corrections.capture());
         assertThat(corrections.getAllValues().get(0)).isEmpty();
@@ -88,8 +92,8 @@ class TicketReaderTest {
     void chargesWhatAReadCostToTheTaskItNamed() {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 120, 0.05);
 
-        new TicketReader(assistant).charge("ABC-42", spent);
+        new TicketReader(assistant, mcp, usage).charge("ABC-42", spent);
 
-        verify(assistant).chargeTask("ABC-42", spent);
+        verify(usage).chargeTask("ABC-42", spent);
     }
 }

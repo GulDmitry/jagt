@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.TrackerAssistant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,13 +17,14 @@ public class TicketTexts {
     private record Read(long asOf, Optional<String> text) {
     }
 
-    private final MeteredAssistant assistant;
+    private final TrackerAssistant assistant;
+    private final UsageTracker usage;
     private final Map<String, Read> reads = new ConcurrentHashMap<>();
 
     /** A failed read is booked too: asking again every tick is paid for every tick. */
     public void read(String taskId, String ticketRef, long asOf) {
         Answer<String> answer = assistant.readTicketText(ticketRef);
-        assistant.chargeTask(taskId, answer.usage());
+        usage.chargeTask(taskId, answer.usage());
         reads.put(taskId, new Read(asOf, answer.facts()));
     }
 

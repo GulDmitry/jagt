@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.FinishedTask;
@@ -31,7 +32,7 @@ import static org.mockito.Mockito.when;
 class ProjectRoutingTest {
 
     private final ConfigService configService = mock(ConfigService.class);
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
+    private final RoutingAssistant assistant = mock(RoutingAssistant.class);
     private final FinishedTasks finished = mock(FinishedTasks.class);
     private final RoutingMemory memory = mock(RoutingMemory.class);
     private final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);

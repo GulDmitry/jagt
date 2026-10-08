@@ -1,7 +1,10 @@
 package dev.jagt.orchestrator.e2e;
 
-import dev.jagt.orchestrator.port.MasterAssistant;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.CodeHostAssistant;
+import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.port.RoutingAssistant;
+import dev.jagt.orchestrator.port.TrackerAssistant;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.ActionOrigin;
@@ -87,7 +90,13 @@ class ReviewAndDeployFlowTest {
     @MockitoBean
     private UserNotifier userNotifier;
     @MockitoBean
-    private MasterAssistant assistant;
+    private CodeHostAssistant assistant;
+    @MockitoBean
+    private TrackerAssistant tracker;
+    @MockitoBean
+    private RoutingAssistant routing;
+    @MockitoBean
+    private McpHealth mcp;
     @Autowired
     private TaskProvisioning provisioning;
     @Autowired
@@ -299,7 +308,7 @@ class ReviewAndDeployFlowTest {
         when(assistant.readMergeRequest(request())).thenReturn(
                 new Answer<>(Optional.of(new MergeRequestFacts(true, TASK, "main", TASK + " " + TITLE)),
                         TokenUsage.NONE));
-        when(assistant.readTicket(eq(TASK), any())).thenReturn(
+        when(tracker.readTicket(eq(TASK), any())).thenReturn(
                 new Answer<>(Optional.of(TicketFacts.defaults().withExists(true).withKey(TASK).withTitle(TITLE)
                         .withTrackerProject("ABC").withUrl("https://tracker.example.com/" + TASK)), TokenUsage.NONE));
 

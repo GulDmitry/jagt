@@ -1,9 +1,9 @@
 package dev.jagt.orchestrator.prompteval;
 
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
-import dev.jagt.orchestrator.port.MasterAssistant.CommandProposal;
-import dev.jagt.orchestrator.service.MeteredAssistant;
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CommandAssistant;
+import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
@@ -43,7 +43,7 @@ class CommandMappingEvalTest {
     @Autowired
     private NaturalLanguageDispatch dispatch;
     @Autowired
-    private MeteredAssistant assistant;
+    private CommandAssistant assistant;
 
     @BeforeEach
     void fourTasksBetweenThemOfferingEveryVerbTheRowsAskFor() {

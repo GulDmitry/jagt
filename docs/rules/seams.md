@@ -45,7 +45,7 @@ The **only** way jagt reads outside itself, headless and one-shot: `service/Tick
 - It can **follow a URL** into a tracker or code host jagt was never told about; it cannot reach a server
   behind an interactive login or a plugin scope — declared with `orchestrator.assistant.mcp-config` ([one
   command shows which](../installation.md#mcp-access-comes-first)).
-- `HeadlessClaudeAssistant` (`MasterAssistant`) spawns `claude "<prompt>" -p --setting-sources
+- `adapter/assistant/HeadlessClaude`, behind one port per read family, spawns `claude "<prompt>" -p --setting-sources
   user,project,local --json-schema '<schema>'` through `ProcessRunner`, hardcoding **no** MCP server or path:
   `--setting-sources` inherits the human's **own** MCP, and `java.io.tmpdir` as cwd means only user-level MCP
   loads.
@@ -62,7 +62,7 @@ The **only** way jagt reads outside itself, headless and one-shot: `service/Tick
   stopped the read goes there, naming the tool or server.
 - A non-empty `failure` comes back as **empty facts** (unreadable), logged at ERROR; it never becomes
   `exists=false`.
-- On an unreadable read the callers ask `brokenMcpServers()` (`adapter/assistant/ClaudeMcpHealthProbe`,
+- On an unreadable read the callers ask `McpHealth` (`adapter/assistant/ClaudeMcpHealthProbe`,
   `claude mcp list`): **three** values — down / nothing down / **could not be established** — and collapsing
   the last two is the same bug one layer down.
 - The surfaces say which happened: **never "could not read (or not found)"**.

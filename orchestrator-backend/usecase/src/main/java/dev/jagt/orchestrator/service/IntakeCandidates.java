@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.TrackerWorkflow;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
@@ -27,7 +28,7 @@ public class IntakeCandidates {
     /** Every candidate costs a read, so one poll buys a handful and whatever is left waits for the next. */
     private static final int READS_PER_POLL = 5;
 
-    private final MeteredAssistant assistant;
+    private final TrackerAssistant assistant;
     private final TicketReader tickets;
     private final TrackerWorkflow workflow;
 

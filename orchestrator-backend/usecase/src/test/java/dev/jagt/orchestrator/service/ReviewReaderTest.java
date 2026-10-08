@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.CodeHostAssistant;
+import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
 import dev.jagt.orchestrator.task.ReviewFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -22,14 +24,16 @@ import static org.mockito.Mockito.when;
 
 class ReviewReaderTest {
 
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
+    private final CodeHostAssistant assistant = mock(CodeHostAssistant.class);
+    private final McpHealth mcp = mock(McpHealth.class);
+    private final UsageTracker usage = mock(UsageTracker.class);
 
     @Test
     void answersTheRoundWithWhatTheReadCameBackWith() {
         when(assistant.readReview("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
                 new Answer<>(Optional.of(new ReviewFacts(true, false, "running", List.of())), TokenUsage.NONE));
 
-        var facts = new ReviewReader(assistant)
+        var facts = new ReviewReader(assistant, mcp, usage)
                 .read("ABC-1", "https://other.example.com/g/p/-/merge_requests/7");
 
         assertThat(facts).contains(new ReviewFacts(true, false, "running", List.of()));
@@ -40,7 +44,7 @@ class ReviewReaderTest {
         when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
                 .thenReturn(new Answer<>(Optional.empty(), TokenUsage.NONE));
 
-        new ReviewReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+        new ReviewReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
         verify(assistant, times(3)).readReview("https://host/g/p/-/merge_requests/7");
@@ -51,7 +55,7 @@ class ReviewReaderTest {
         when(assistant.readReview("https://host/g/p/-/merge_requests/7")).thenReturn(new Answer<>(
                 Optional.of(new ReviewFacts(false, false, "unknown", List.of())), TokenUsage.NONE));
 
-        new ReviewReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+        new ReviewReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
         verify(assistant, times(1)).readReview("https://host/g/p/-/merge_requests/7");
@@ -62,10 +66,10 @@ class ReviewReaderTest {
         when(assistant.readReview("https://host/g/p/-/merge_requests/7"))
                 .thenReturn(new Answer<>(Optional.empty(), TokenUsage.ofCall(10, 0, 1, 0.5)));
 
-        new ReviewReader(assistant, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
+        new ReviewReader(assistant, mcp, usage, new RetryPolicy(3, Duration.ZERO, Duration.ofMinutes(2)))
                 .read("ABC-1", "https://host/g/p/-/merge_requests/7");
 
-        verify(assistant).chargeTask("ABC-1", new TokenUsage(3, 30, 0, 3, 1.5));
+        verify(usage).chargeTask("ABC-1", new TokenUsage(3, 30, 0, 3, 1.5));
     }
 
     @Test
@@ -73,7 +77,7 @@ class ReviewReaderTest {
         when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
                 new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-1", "main", "t")), TokenUsage.NONE));
 
-        var read = new ReviewReader(assistant)
+        var read = new ReviewReader(assistant, mcp, usage)
                 .readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
         assertThat(read.facts()).contains(new MergeRequestFacts(true, "ABC-1", "main", "t"));
@@ -84,9 +88,9 @@ class ReviewReaderTest {
         when(assistant.readMergeRequest("https://other.example.com/g/p/-/merge_requests/7")).thenReturn(
                 new Answer<>(Optional.of(new MergeRequestFacts(false, "", "", "")), TokenUsage.NONE));
 
-        new ReviewReader(assistant).readRequest("https://other.example.com/g/p/-/merge_requests/7");
+        new ReviewReader(assistant, mcp, usage).readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
-        verify(assistant).brokenMcpServers();
+        verify(mcp).brokenServers();
     }
 
     @Test
@@ -95,9 +99,9 @@ class ReviewReaderTest {
                 new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "main", "Excel export")),
                         TokenUsage.NONE));
 
-        new ReviewReader(assistant).readRequest("https://other.example.com/g/p/-/merge_requests/7");
+        new ReviewReader(assistant, mcp, usage).readRequest("https://other.example.com/g/p/-/merge_requests/7");
 
-        verify(assistant, never()).brokenMcpServers();
+        verify(mcp, never()).brokenServers();
     }
 
 }

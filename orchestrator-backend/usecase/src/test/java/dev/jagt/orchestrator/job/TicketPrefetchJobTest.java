@@ -1,9 +1,10 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.port.TrackerAssistant;
+import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.flow.TaskStatus;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.MeteredAssistant;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TicketTexts;
 import dev.jagt.orchestrator.task.TaskState;
@@ -24,8 +25,8 @@ class TicketPrefetchJobTest {
 
     private final StateService state = mock(StateService.class);
     private final ConfigService config = mock(ConfigService.class);
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
-    private final TicketTexts tickets = new TicketTexts(assistant);
+    private final TrackerAssistant assistant = mock(TrackerAssistant.class);
+    private final TicketTexts tickets = new TicketTexts(assistant, mock(UsageTracker.class));
     private final TicketPrefetchJob job = new TicketPrefetchJob(state, config, tickets);
 
     @Test

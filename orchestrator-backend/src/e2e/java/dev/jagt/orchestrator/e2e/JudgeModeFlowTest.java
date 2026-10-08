@@ -5,8 +5,11 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.EditorDriver;
-import dev.jagt.orchestrator.port.MasterAssistant;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
+import dev.jagt.orchestrator.port.CodeHostAssistant;
+import dev.jagt.orchestrator.port.McpHealth;
+import dev.jagt.orchestrator.port.RoutingAssistant;
+import dev.jagt.orchestrator.port.TrackerAssistant;
+import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
@@ -80,7 +83,13 @@ class JudgeModeFlowTest {
     @MockitoBean
     private UserNotifier userNotifier;
     @MockitoBean
-    private MasterAssistant assistant;
+    private CodeHostAssistant assistant;
+    @MockitoBean
+    private TrackerAssistant tracker;
+    @MockitoBean
+    private RoutingAssistant routing;
+    @MockitoBean
+    private McpHealth mcp;
     @MockitoBean
     private RoundReviewer reviewer;
     @Autowired

@@ -37,5 +37,5 @@ public interface RoundReviewer {
         }
     }
 
-    MasterAssistant.Answer<Judgement> review(Round round);
+    Answer<Judgement> review(Round round);
 }

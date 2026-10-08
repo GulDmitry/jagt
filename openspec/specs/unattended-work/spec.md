@@ -98,7 +98,7 @@ opens.
 
 ### Requirement: A second wording of a rule merges into it
 When a written rule leaves `memory/routing.md` at its ceiling, one read of the whole file SHALL name two rules
-placing the same items (`MasterAssistant.sameRules`). jagt SHALL merge them only where both place in one project,
+placing the same items (`RoutingAssistant.sameRules`). jagt SHALL merge them only where both place in one project,
 adding their counts and dating the dropped wording (`RoutingMemory.merge`).
 
 #### Scenario: Two wordings place in one project

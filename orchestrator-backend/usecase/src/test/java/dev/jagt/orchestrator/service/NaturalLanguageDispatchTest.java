@@ -1,8 +1,9 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.port.MasterAssistant.Answer;
-import dev.jagt.orchestrator.port.MasterAssistant.CommandProposal;
+import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.master.MasterReview;
@@ -32,7 +33,7 @@ import static org.mockito.Mockito.when;
 
 class NaturalLanguageDispatchTest {
 
-    private final MeteredAssistant assistant = mock(MeteredAssistant.class);
+    private final CommandAssistant assistant = mock(CommandAssistant.class);
     private final CommandService commands = mock(CommandService.class);
     private final TaskLauncher launcher = mock(TaskLauncher.class);
 
