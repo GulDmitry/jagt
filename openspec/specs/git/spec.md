@@ -133,7 +133,7 @@ task's (`--de`, `-ud`), or forcing it without the lease; `HEAD` unless bare and 
 the Master's token.
 
 #### Scenario: Skipping the hook
-- **WHEN** a push line could skip the hook: `--no-verify`, `git -c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c`, `eval`, however quoted or escaped
+- **WHEN** a push line could skip the hook: `--no-verify`, `git -c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c`, `eval`, however quoted or escaped; a git line's `$'…'`
 - **THEN** refused
 
 ### Requirement: Repositories multiply worktrees, not agents
@@ -151,9 +151,9 @@ repository.
 - **THEN** one task, one session, a worktree per repository
 
 ### Requirement: Done retires checkouts, never in bulk
-`done` SHALL end the agent and delete every worktree and checkout the task cut; the branch survives. Bulk cleanup
-(`prune all`) MUST be refused by name.
+`done` SHALL end the agent and delete every worktree and checkout the task cut; the branch survives. `prune all`
+MUST be refused by name.
 
 #### Scenario: Diff worktrees
-- **WHEN** `done <task>` with board-diff `jagt-diff-*` worktrees
+- **WHEN** `done <task>` with `jagt-diff-*` worktrees
 - **THEN** removed

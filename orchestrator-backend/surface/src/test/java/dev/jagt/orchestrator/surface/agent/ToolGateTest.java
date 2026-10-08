@@ -176,6 +176,13 @@ class ToolGateTest {
                 .asString().contains("refuses deleting a branch");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"git $'\\x70ush' origin main", "git $\"push\" origin main"})
+    void refusesAGitLineInAQuotingItDoesNotRead(String command) {
+        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+                .asString().contains("plain quotes");
+    }
+
     @Test
     void refusesALineReachingTheBoardOnTheAddressItIsServedOn() {
         assertThat(ToolGate.refusal("Bash", "curl -X POST http://192.168.1.5:8290/api/tasks/say", "ABC-42", 8290))

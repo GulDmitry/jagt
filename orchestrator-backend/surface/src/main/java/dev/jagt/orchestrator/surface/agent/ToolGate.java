@@ -31,6 +31,9 @@ public final class ToolGate {
     private static final String BOARD = "(?i):0*%d\\b|master-token|mcp_client\\.js";
     private static final String QUOTING = "[\\\\'\"]";
     private static final Pattern PUSH = Pattern.compile("\\bpush\\b");
+    /** The shell decodes escapes inside these, which the line is not read through. */
+    private static final Pattern UNREAD_QUOTING = Pattern.compile("\\$['\"]");
+    private static final Pattern GIT_WORD = Pattern.compile("\\bgit\\b");
     /** git's plumbing writes a remote ref with no pre-push hook. */
     private static final Pattern PLUMBING = Pattern.compile("(send|receive)-pack|http-push");
     private static final Pattern GIT = Pattern.compile("(\\S*/)?git");
@@ -61,6 +64,9 @@ public final class ToolGate {
             return Optional.of("jagt refuses writing to the code host from here: gh and glab only read (pr, mr,"
                     + " issue, run: view, list, diff; api: GET). Push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
+        }
+        if (UNREAD_QUOTING.matcher(line).find() && GIT_WORD.matcher(line.replaceAll(QUOTING, "")).find()) {
+            return Optional.of("jagt refuses $'…' and $\"…\" on a git line: write it in plain quotes.");
         }
         if (PUSH.matcher(command).find() && (HOOK_OFF.matcher(command).find()
                 || Stream.of(command.split(SEPARATORS)).anyMatch(ToolGate::configuresAPush))) {
