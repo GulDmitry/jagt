@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -75,10 +76,13 @@ public class FinishedArtifacts {
         try (Stream<Path> stored = Files.list(store)) {
             kept = stored.count();
         }
-        if (kept >= MAX_DIRECTORIES) {
-            notifications.send(Notification.housekeeping(kept + " finished tasks kept on disk",
-                    "artifacts/ has passed " + MAX_DIRECTORIES + " directories — delete the ones you have read"));
-        }
+        pruneAsked(kept).ifPresent(notifications::send);
+    }
+
+    static Optional<Notification> pruneAsked(long kept) {
+        return kept < MAX_DIRECTORIES ? Optional.empty() : Optional.of(Notification.housekeeping(
+                kept + " finished tasks kept on disk",
+                "artifacts/ has passed " + MAX_DIRECTORIES + " directories — delete the ones you have read"));
     }
 
     private void copy(String taskId, Path worktree) {

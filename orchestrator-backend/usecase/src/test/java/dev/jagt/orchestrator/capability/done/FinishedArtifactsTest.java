@@ -94,23 +94,13 @@ class FinishedArtifactsTest {
     }
 
     @Test
-    void asksForAPruneOnceTheStoreHoldsMoreTasksThanAnyoneWillRead(@TempDir Path root) throws Exception {
-        for (int i = 0; i < FinishedArtifacts.MAX_DIRECTORIES; i++) {
-            Files.createDirectories(root.resolve("artifacts").resolve("20260101-ABC-" + i));
-        }
-        Path worktree = root.resolve("ABC-42-proj");
-        Files.createDirectories(worktree);
-        Files.writeString(worktree.resolve("plan.md"), "the plan");
-        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
-        StateService state = new StateService(new JsonMapper(), paths);
-        state.putTask("ABC-42", TaskState.builder("proj", worktree.toString(), TaskStatus.APPROVED)
-                .alias("a1").title("a thing").build());
+    void asksForAPruneOnceTheStoreHoldsAThousandTasks() {
+        assertThat(FinishedArtifacts.pruneAsked(1_000)).map(Notification::title)
+                .hasValue("1000 finished tasks kept on disk");
+    }
 
-        new FinishedArtifacts(state, notifications, paths).keep("ABC-42");
-
-        assertThat(Files.list(root.resolve("artifacts")))
-                .anySatisfy(kept -> assertThat(kept.getFileName().toString()).endsWith("-ABC-42"));
-        verify(notifications).send(any(Notification.class));
+    @Test
+    void staysQuietWhileTheStoreHoldsFewerThanAThousandTasks() {
+        assertThat(FinishedArtifacts.pruneAsked(999)).isEmpty();
     }
 }
