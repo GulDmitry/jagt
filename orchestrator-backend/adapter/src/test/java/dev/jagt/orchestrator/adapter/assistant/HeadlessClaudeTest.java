@@ -28,6 +28,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,6 +52,21 @@ class HeadlessClaudeTest {
                 mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read https://git.example.com/g/p/-/merge_requests/7.",
                 MergeRequestRead.SCHEMA.json(), "https://git.example.com/g/p/-/merge_requests/7",
                 AssistantCallKind.MR_READ);
+
+        assertThat(answer.facts()).isEmpty();
+    }
+
+    @Test
+    void discardsAnAnswerWhoseRunNoCallOfReachedTheReadGate() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        ReadOnlyTools reads = mock(ReadOnlyTools.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        when(reads.lift(any())).thenReturn(Optional.of("no call reached the read gate"));
+
+        var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42",
+                AssistantCallKind.TICKET_READ);
 
         assertThat(answer.facts()).isEmpty();
     }

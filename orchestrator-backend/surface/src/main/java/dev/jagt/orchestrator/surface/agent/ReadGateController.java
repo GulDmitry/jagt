@@ -32,7 +32,7 @@ public class ReadGateController {
                                                     @RequestBody(required = false) ToolCall call) {
         Optional<String> refusal = call == null
                 ? Optional.of("jagt refuses a call it cannot read.")
-                : scopes.find(fence)
+                : scopes.ask(fence)
                         .map(scope -> ReadGate.refusal(scope, call.toolName(), call.toolInput(), call.cwd()))
                         .orElse(Optional.of("jagt refuses a call it holds no read for."));
         return refusal.map(reason -> ResponseEntity.ok(AgentToolGateController.denied(reason)))

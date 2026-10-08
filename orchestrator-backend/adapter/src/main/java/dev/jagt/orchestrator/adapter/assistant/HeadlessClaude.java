@@ -150,11 +150,24 @@ class HeadlessClaude {
         String fence = UUID.randomUUID().toString();
         List<String> fenced = new ArrayList<>(cmd);
         fenced.addAll(readOnlyTools.fence(fence, scope));
+        Reply reply;
+        Optional<String> unheard;
         try {
-            return booked(cwd, timeout, fenced, kind, label);
+            reply = booked(cwd, timeout, fenced, kind, label);
         } finally {
-            readOnlyTools.lift(fence);
+            unheard = readOnlyTools.lift(fence);
         }
+        // The schema's own tool call passes the hook, so an object no call reached jagt for ran unfenced.
+        if (unheard.isPresent() && reply.answered() && reply.envelope().path("structured_output").isObject()) {
+            log.atError().setMessage("assistant call unfenced")
+                    .addKeyValue("ref", label)
+                    .addKeyValue("cause", unheard.get())
+                    .addKeyValue("effect", "answer discarded")
+                    .addKeyValue("fix", "allowManagedHooksOnly: false")
+                    .log();
+            return Reply.failed(reply.usage(), "unfenced: " + unheard.get());
+        }
+        return reply;
     }
 
     private Reply booked(Path cwd, Duration timeout, List<String> cmd, AssistantCallKind kind, String label) {

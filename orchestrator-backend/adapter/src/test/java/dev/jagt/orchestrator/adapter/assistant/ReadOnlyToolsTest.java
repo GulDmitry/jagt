@@ -94,6 +94,15 @@ class ReadOnlyToolsTest {
     }
 
     @Test
+    void saysAFenceNoCallReachedHeldNothing() {
+        ReadOnlyTools tools = new ReadOnlyTools(mock(McpHealth.class), AssistantProperties.empty(), new ReadScopes(),
+                new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
+        tools.fence("f1", new ReadScope(List.of(), List.of(), false));
+
+        assertThat(tools.lift("f1")).contains("no call reached the read gate");
+    }
+
+    @Test
     void liftsTheFenceSoNoLaterCallPassesUnderIt() {
         ReadScopes scopes = new ReadScopes();
         ReadOnlyTools tools = new ReadOnlyTools(mock(McpHealth.class), AssistantProperties.empty(), scopes,

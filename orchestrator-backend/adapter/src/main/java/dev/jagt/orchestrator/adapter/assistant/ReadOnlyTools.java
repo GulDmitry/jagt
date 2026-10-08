@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -64,8 +65,9 @@ class ReadOnlyTools {
                         "command", hooks.readGateCommand(fence), "timeout", 10))))))));
     }
 
-    void lift(String fence) {
-        scopes.close(fence);
+    /** Why the fence held nothing, where no call ever reached it: a managed policy may drop a hook unsaid. */
+    Optional<String> lift(String fence) {
+        return scopes.close(fence) ? Optional.empty() : Optional.of("no call reached the read gate");
     }
 
     /** The read-shaped tools of every server this kind of call loads, and the human's own list beside them. */

@@ -29,4 +29,14 @@ class ReadGateControllerTest {
 
         assertThat(answered.getBody()).isNull();
     }
+
+    @Test
+    void marksTheFenceAsHeardOnceACallAsksUnderIt() {
+        ReadScopes scopes = new ReadScopes();
+        scopes.open("f1", new ReadScope(List.of(), List.of("StructuredOutput"), false));
+
+        new ReadGateController(scopes).gate("f1", new ReadGateController.ToolCall("StructuredOutput", Map.of(), "/tmp"));
+
+        assertThat(scopes.close("f1")).isTrue();
+    }
 }
