@@ -894,6 +894,23 @@ class BoardPageTest {
     }
 
     @Test
+    void aRepaintLeavesKeyboardFocusOnTheButtonItWasOn() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(now()).build());
+        Page page = open();
+        Locator focus = page.locator("article", new Page.LocatorOptions().setHasText("a1"))
+                .getByRole(AriaRole.BUTTON, new Locator.GetByRoleOptions().setName("Focus").setExact(true));
+        focus.focus();
+
+        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+
+        assertThat(page.locator("article .status")).containsText(new String[]{"agent working", "review"});
+        assertThat(focus).isFocused();
+    }
+
+    @Test
     void theHeaderCountsTheTasksWhoseTurnItIs() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());

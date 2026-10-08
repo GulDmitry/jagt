@@ -20,7 +20,23 @@ export function render() {
   header.render(tasks, shown.length);
   // Read off the cards themselves: the configured list can be longer than the board, and shorter than the truth.
   const manyProjects = new Set(tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project))).size > 1;
-  board.replaceChildren(...shown.map((task) => card(task, manyProjects)));
+  place(shown.map((task) => card(task, manyProjects)));
+}
+
+// A card that reads the same stays the same node: rebuilding it drops keyboard focus and a click in progress.
+function place(fresh) {
+  const focused = document.activeElement?.closest('#board button[data-action]')?.dataset;
+  fresh.forEach((built, index) => {
+    const there = board.children[index];
+    if (there?.isEqualNode(built)) return;
+    if (there) there.replaceWith(built);
+    else board.append(built);
+  });
+  while (board.children.length > fresh.length) board.lastElementChild.remove();
+  if (focused && !document.activeElement?.closest('#board')) {
+    board.querySelector(`button[data-task="${CSS.escape(focused.task)}"][data-action="${CSS.escape(focused.action)}"]`)
+      ?.focus();
+  }
 }
 
 // A click carries NAMES, never a captured task, so a card rebuilt under the pointer cannot act for the task it
