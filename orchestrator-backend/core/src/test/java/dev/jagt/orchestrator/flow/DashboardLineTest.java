@@ -17,7 +17,7 @@ class DashboardLineTest {
     void showsNoDetailWhileThereIsNothingForAHumanToActOn(TaskStatus status, String message) {
         TaskState task = TaskState.builder("p", "/wt", status).message(message).build();
 
-        assertThat(DashboardLine.forTask(task, null)).isEmpty();
+        assertThat(DashboardLine.forTask(task, null).text()).isEmpty();
     }
 
     @ParameterizedTest
@@ -26,7 +26,7 @@ class DashboardLineTest {
     void saysNothingAboutARequestEverySurfaceCanLinkToItself(TaskStatus status) {
         TaskState task = TaskState.builder("p", "/wt", status).mrUrl("https://gitlab/x/-/merge_requests/9").build();
 
-        assertThat(DashboardLine.forTask(task, "https://gitlab/x/-/merge_requests/9")).isEmpty();
+        assertThat(DashboardLine.forTask(task, "https://gitlab/x/-/merge_requests/9").text()).isEmpty();
     }
 
     @Test
@@ -34,7 +34,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEWED)
                 .mrUrl("javascript:alert(1)").build();
 
-        assertThat(DashboardLine.forTask(task, null))
+        assertThat(DashboardLine.forTask(task, null).text())
                 .isEqualTo("PROBLEM: review request link unusable: javascript:alert(1)");
     }
 
@@ -42,7 +42,17 @@ class DashboardLineTest {
     void saysNothingAboutARequestAReviewedTaskDoesNotHaveYet() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEWED).build();
 
-        assertThat(DashboardLine.forTask(task, null)).isEmpty();
+        assertThat(DashboardLine.forTask(task, null).text()).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource(nullValues = "-", value = {"CI_FAILED,checks red,PROBLEM", "DEPLOY_CONFLICT,-,YOURS",
+            "IN_PROGRESS,awaiting: FE or BE,YOURS", "REVIEW_PENDING,no changes: all handled,NOTE",
+            "IN_PROGRESS,step 2,NONE"})
+    void namesWhatKindOfLineItIsSoNoReaderParsesItsWords(TaskStatus status, String message, DashboardLine.Kind kind) {
+        TaskState task = TaskState.builder("p", "/wt", status).message(message).build();
+
+        assertThat(DashboardLine.forTask(task, null).kind()).isEqualTo(kind);
     }
 
     @Test
@@ -50,7 +60,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_FAILED)
                 .message("trigger_commons failed").mrUrl("https://mr").build();
 
-        assertThat(DashboardLine.forTask(task, "https://mr")).startsWith("PROBLEM: ").contains("trigger_commons");
+        assertThat(DashboardLine.forTask(task, "https://mr").text()).startsWith("PROBLEM: ").contains("trigger_commons");
     }
 
     @Test
@@ -58,7 +68,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.DEPLOY_CONFLICT)
                 .message("resolve conflict in /repos/ABC-1-deploy").build();
 
-        assertThat(DashboardLine.forTask(task, null)).startsWith("NEEDS YOU: ").contains("ABC-1-deploy");
+        assertThat(DashboardLine.forTask(task, null).text()).startsWith("NEEDS YOU: ").contains("ABC-1-deploy");
     }
 
     @Test
@@ -66,7 +76,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
                 .message("awaiting: FE or BE decision").build();
 
-        assertThat(DashboardLine.forTask(task, null)).isEqualTo("NEEDS INPUT: FE or BE decision");
+        assertThat(DashboardLine.forTask(task, null).text()).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
 
     @ParameterizedTest
@@ -75,7 +85,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", status).message("step 2").silentSince(1_000)
                 .silentBecause("waiting for input").build();
 
-        assertThat(DashboardLine.forTask(task, null))
+        assertThat(DashboardLine.forTask(task, null).text())
                 .isEqualTo("NEEDS YOU: agent stopped: waiting for input");
     }
 
@@ -83,7 +93,7 @@ class DashboardLineTest {
     void saysWhatToLookAtWhenNothingWasEverReported() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).silentSince(1_000).build();
 
-        assertThat(DashboardLine.forTask(task, null))
+        assertThat(DashboardLine.forTask(task, null).text())
                 .isEqualTo("NEEDS YOU: agent stopped: the agent never reported — check that the CLI started");
     }
 
@@ -92,7 +102,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.NEW).silentSince(1_000)
                 .silentBecause("waiting for input").build();
 
-        assertThat(DashboardLine.forTask(task, null))
+        assertThat(DashboardLine.forTask(task, null).text())
                 .isEqualTo("NEEDS YOU: agent stopped: waiting for input");
     }
 
@@ -100,7 +110,7 @@ class DashboardLineTest {
     void fallsBackToAGeneralSentenceWhereNoReasonWasRecorded() {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS).silentSince(1_000).build();
 
-        assertThat(DashboardLine.forTask(task, null))
+        assertThat(DashboardLine.forTask(task, null).text())
                 .isEqualTo("NEEDS YOU: agent stopped: nothing has moved in its session");
     }
 
@@ -109,7 +119,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.IN_PROGRESS)
                 .message("awaiting: FE or BE decision").silentSince(1_000).build();
 
-        assertThat(DashboardLine.forTask(task, null)).isEqualTo("NEEDS INPUT: FE or BE decision");
+        assertThat(DashboardLine.forTask(task, null).text()).isEqualTo("NEEDS INPUT: FE or BE decision");
     }
 
     @Test
@@ -117,7 +127,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("awaiting: cache or index?").mrUrl("https://host/mr/425").build();
 
-        assertThat(DashboardLine.forTask(task, "https://host/mr/425")).isEqualTo("NEEDS INPUT: cache or index?");
+        assertThat(DashboardLine.forTask(task, "https://host/mr/425").text()).isEqualTo("NEEDS INPUT: cache or index?");
     }
 
     @ParameterizedTest
@@ -126,7 +136,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", status)
                 .message("awaiting: cache or index?").mrUrl("https://host/mr/425").build();
 
-        assertThat(DashboardLine.forTask(task, "https://host/mr/425")).isEqualTo("NEEDS INPUT: cache or index?");
+        assertThat(DashboardLine.forTask(task, "https://host/mr/425").text()).isEqualTo("NEEDS INPUT: cache or index?");
     }
 
     @Test
@@ -134,7 +144,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("outcome=question").mrUrl("https://host/mr/441").build();
 
-        assertThat(DashboardLine.forTask(task, "https://host/mr/441"))
+        assertThat(DashboardLine.forTask(task, "https://host/mr/441").text())
                 .isEqualTo("NEEDS INPUT: the agent is waiting on you");
     }
 
@@ -143,7 +153,7 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.REVIEW_PENDING)
                 .message("no changes: every comment already handled").mrUrl("https://host/mr/440").build();
 
-        assertThat(DashboardLine.forTask(task, "https://host/mr/440"))
+        assertThat(DashboardLine.forTask(task, "https://host/mr/440").text())
                 .isEqualTo("ANSWERED: every comment already handled"
                         + " — the open threads are the reviewer's to close");
     }
@@ -154,6 +164,6 @@ class DashboardLineTest {
         TaskState task = TaskState.builder("p", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("https://host/mr/501").pipelineStatus(pipelineStatus).build();
 
-        assertThat(DashboardLine.forTask(task, "https://host/mr/501")).isEmpty();
+        assertThat(DashboardLine.forTask(task, "https://host/mr/501").text()).isEmpty();
     }
 }

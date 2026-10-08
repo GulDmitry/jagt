@@ -465,6 +465,19 @@ class BoardPageTest {
     }
 
     @Test
+    void aCardColoursItsLineByTheKindTheServerNamesNotByItsWords() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.CI_FAILED).alias("a1").message("lint red").lastActiveTimestamp(now()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.DEPLOY_CONFLICT).alias("a2").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .detail.problem")).hasText("PROBLEM: lint red");
+        assertThat(page.locator("article .detail.you")).containsText("NEEDS YOU");
+    }
+
+    @Test
     void doesNotShoutAboutAQuestionWhileAPollIsStillReadingTheRoundItWasAskedOn() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.REVIEW_PENDING).alias("a1").mrUrl("https://host.example/mr/7")

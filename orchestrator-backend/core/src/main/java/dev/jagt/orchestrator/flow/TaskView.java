@@ -31,6 +31,7 @@ public record TaskView(
         // Keyed by action id for every verb asked before it is sent, offered on this card or not.
         Map<String, String> confirmations,
         String detail,
+        DashboardLine.Kind detailKind,
         String ticketUrl,
         String reviewRequestUrl,
         // A single-repo task has one entry, so nothing needs a second shape for the ordinary case.
@@ -77,6 +78,7 @@ public record TaskView(
         Move move = Move.forTask(task.status(), task.hasReviewRequest(), round, task.agentIsSilent(),
                 autoReview == null ? AutoReviewWatch.none() : autoReview);
         boolean deployed = deployed(task);
+        DashboardLine.Line line = DashboardLine.forTask(task, webLink(task.mrUrl()));
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
                         action == move.primary(), action.group().id(), action.readOnly(),
@@ -86,8 +88,7 @@ public record TaskView(
                 round.masterReading() ? "master review"
                         : task.status().label(), move.phase(),
                 move.owner(), move.attention(), move.ask(), move.hint(), actions,
-                confirmations(id, task, deployBranches),
-                DashboardLine.forTask(task, webLink(task.mrUrl())), webLink(task.ticketUrl()),
+                confirmations(id, task, deployBranches), line.text(), line.kind(), webLink(task.ticketUrl()),
                 webLink(task.mrUrl()),
                 task.repos().stream()
                         .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl()),

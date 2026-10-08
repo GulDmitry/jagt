@@ -136,8 +136,8 @@ export function card(task, manyProjects) {
   if (task.detail) {
     const detail = document.createElement('div');
     // A problem is broken whatever the tier says; a move of theirs drops its colour with the tier.
-    const yours = /^NEEDS/.test(task.detail) && task.attention !== 'OPTIONAL';
-    detail.className = /^PROBLEM/.test(task.detail) ? 'detail problem' : (yours ? 'detail you' : 'detail');
+    const yours = task.detailKind === 'YOURS' && task.attention !== 'OPTIONAL';
+    detail.className = task.detailKind === 'PROBLEM' ? 'detail problem' : (yours ? 'detail you' : 'detail');
     detail.textContent = task.detail;
     parts.push(detail);
   }
