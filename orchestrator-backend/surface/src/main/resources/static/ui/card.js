@@ -4,7 +4,7 @@ import {link, named, span} from '../core/dom.js';
 import {duration, countdown} from '../core/format.js';
 import {blocked} from './inflight.js';
 
-export const DRAFTS_LABEL = 'replies drafted \u2014 click to read';
+export const DRAFTS_LABEL = 'Replies';
 
 // Where a pasted paragraph is cut off, so no card grows taller; the whole of it stays in the hover.
 const LIMIT = 150;
@@ -146,17 +146,6 @@ export function card(task, manyProjects) {
     parts.push(detail);
   }
 
-  // Nothing else on the page would say the drafted answers exist.
-  if (task.draftedReplies) {
-    const drafts = document.createElement('button');
-    drafts.className = 'drafts';
-    drafts.textContent = DRAFTS_LABEL;
-    drafts.dataset.tip = 'every comment and the reply that will be sent for it';
-    drafts.dataset.report = 'replies';
-    drafts.dataset.about = task.alias || task.id;
-    parts.push(drafts);
-  }
-
   // Which groups exist, and which comes first, stays the projection's answer.
   let row = null;
   for (const action of task.actions) {
@@ -173,6 +162,20 @@ export function card(task, manyProjects) {
     if (action.again) button.classList.add('again');
     button.disabled = blocked(task, action);
     row.append(button);
+  }
+  // In the row that only looks, so drafted answers cost the card no height.
+  if (task.draftedReplies) {
+    if (!row || row.dataset.group !== 'tool') {
+      row = actionRow('tool');
+      parts.push(row);
+    }
+    const drafts = document.createElement('button');
+    drafts.className = 'drafts';
+    drafts.textContent = DRAFTS_LABEL;
+    drafts.dataset.tip = 'replies drafted: every comment and the reply that will be sent for it';
+    drafts.dataset.report = 'replies';
+    drafts.dataset.about = task.alias || task.id;
+    row.append(drafts);
   }
   article.append(...parts);
   return article;

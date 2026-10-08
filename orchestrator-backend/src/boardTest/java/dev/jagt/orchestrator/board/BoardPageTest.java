@@ -1012,7 +1012,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .drafts")).containsText("replies drafted");
+        assertThat(page.locator("article .actions.tool .drafts")).containsText("Replies");
     }
 
     @Test
