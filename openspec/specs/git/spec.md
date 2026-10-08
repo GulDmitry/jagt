@@ -133,7 +133,7 @@ task's (`--de`, `-ud`), or forcing it without the lease; `HEAD` unless bare and 
 the Master's token.
 
 #### Scenario: Skipping the hook
-- **WHEN** a push line could skip the hook: `--no-verify`, `-c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c`, `eval`, however quoted or escaped
+- **WHEN** a push line could skip the hook: `--no-verify`, `git -c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c`, `eval`, however quoted or escaped
 - **THEN** refused
 
 ### Requirement: Repositories multiply worktrees, not agents

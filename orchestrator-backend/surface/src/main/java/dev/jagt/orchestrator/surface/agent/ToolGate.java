@@ -25,8 +25,6 @@ public final class ToolGate {
             List.of("-o", "--push-option", "--repo", "--receive-pack", "--exec");
     /** git takes any prefix of a long option, and {@code d} inside a bundle of short ones. */
     private static final Pattern DELETE = Pattern.compile("--d(e(l(e(te?)?)?)?)?|-[a-zA-Z]*d[a-zA-Z]*");
-    /** A config on the line may rewrite where a push lands. */
-    private static final Pattern CONFIG = Pattern.compile("(^|\\s)-c(\\s|$)");
     /** What the branch a worktree is on is called, so a push of it is a push of the task's branch. */
     private static final String CURRENT_BRANCH = "HEAD";
     /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
@@ -65,7 +63,7 @@ public final class ToolGate {
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
         if (PUSH.matcher(command).find() && (HOOK_OFF.matcher(command).find()
-                || CONFIG.matcher(line.replaceAll(QUOTING, "")).find())) {
+                || Stream.of(command.split(SEPARATORS)).anyMatch(ToolGate::configuresAPush))) {
             return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
@@ -99,10 +97,23 @@ public final class ToolGate {
         return Optional.empty();
     }
 
+    /** A config before the subcommand may rewrite where a push lands. */
+    private static boolean configuresAPush(String segment) {
+        List<String> words = Stream.of(segment.trim().split("\\s+")).map(ToolGate::bare).toList();
+        for (int at = 0; at < words.size(); at++) {
+            int subcommand = afterGitOptions(words, at + 1);
+            if (GIT.matcher(words.get(at)).matches() && subcommand < words.size()
+                    && "push".equals(words.get(subcommand)) && words.subList(at + 1, subcommand).contains("-c")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static int afterGitOptions(List<String> words, int from) {
         int at = from;
-        while (at < words.size() && words.get(at).startsWith("-")) {
-            at += GIT_OPTION_WITH_VALUE.contains(words.get(at)) ? 2 : 1;
+        while (at < words.size() && bare(words.get(at)).startsWith("-")) {
+            at += GIT_OPTION_WITH_VALUE.contains(bare(words.get(at))) ? 2 : 1;
         }
         return at;
     }

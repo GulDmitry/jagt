@@ -69,6 +69,7 @@ class ToolGateTest {
             "git push origin HEAD",
             "git push -u origin HEAD",
             "git -C /wt/ABC-42 push origin ABC-42",
+            "git commit -c HEAD && git push origin ABC-42",
     })
     void allowsEverythingThatDoesNotWriteAnotherBranch(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
