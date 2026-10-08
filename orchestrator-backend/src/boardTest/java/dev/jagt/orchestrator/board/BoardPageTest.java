@@ -384,7 +384,23 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .mr-age")).hasText(new String[]{"alpha MR", "beta MR"});
+        assertThat(page.locator("article .mr-age")).hasText(new String[]{"alpha", "beta"});
+    }
+
+    @Test
+    void aTaskSpanningRepositoriesNamesEachOnceWithItsRequestOnTheName() {
+        state.putTask("ABC-1", TaskState.builder(List.of(
+                        TaskRepo.of("alpha", root.resolve("ABC-1-alpha").toString())
+                                .withMrUrl("https://host.example/alpha/mr/7"),
+                        TaskRepo.of("beta", root.resolve("ABC-1-beta").toString())
+                                .withMrUrl("https://host.example/beta/mr/7")),
+                        TaskStatus.CI_POLLING).alias("a1").lastActiveTimestamp(now())
+                .pipelineStatus("failed").approved(true).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .meta > :not(.pulse)")).hasCount(3);
+        assertThat(page.locator("article .meta .repos")).hasText("alpha + beta \u2713");
     }
 
     @Test

@@ -110,20 +110,20 @@ export function card(task, manyProjects) {
     named(status, `${task.statusLabel}, its work is on a shared branch`);
   }
   meta.append(status);
-  // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
+  // Each repository named once, its request on its name: a chip beside every name would crowd the row.
   const repos = task.repos || [];
-  if (manyProjects || repos.length > 1) {
-    meta.append(span(null, repos.length > 1 ? repos.map((r) => r.project).join(' + ') : task.project));
-  }
-  // ONE stamp for several requests: the same number under each would read as each one's own.
-  const folded = task.reviewRequestUrl && repos.length < 2;
-  if (folded) {
-    meta.append(requestChip(task.reviewRequestUrl, 'MR', task.requestOpenedAt, task, true));
+  if (repos.length > 1) {
+    const group = span('repos', '');
+    repos.forEach((repo, index) => {
+      if (index) group.append(' + ');
+      group.append(repo.reviewRequestUrl
+        ? requestChip(repo.reviewRequestUrl, repo.project, 0, task, false) : repo.project);
+    });
+    if (task.approved) group.append(' ', approvalTick());
+    meta.append(group);
   } else {
-    for (const repo of repos.filter((each) => each.reviewRequestUrl)) {
-      meta.append(requestChip(repo.reviewRequestUrl, `${repo.project} MR`, 0, task, false));
-    }
-    if (task.approved) meta.append(approvalTick());
+    if (manyProjects) meta.append(span(null, task.project));
+    if (task.reviewRequestUrl) meta.append(requestChip(task.reviewRequestUrl, 'MR', task.requestOpenedAt, task, true));
   }
   // Beside the request whether there is one link or several: the verdict is the worst repository's either way.
   if (marked(task)) meta.append(checksDot(task));
