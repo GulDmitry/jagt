@@ -9,6 +9,7 @@ paths:
   - "**/service/ReviewDrafts.java"
   - "**/flow/AgentReport.java"
   - "**/flow/Pipeline.java"
+  - "**/service/master/**"
 ---
 
 The loop only reads and drafts. It never ships, deploys, pushes or posts.
