@@ -118,7 +118,7 @@ open (`TaskProvisioning.MAX_TASKS`).
 
 #### Scenario: New ticket
 - **WHEN** you run `do ABC-42`, or `do ABC-42 <project>`
-- **THEN** branch `ABC-42` is cut from the project's base, in its own worktree, an agent in it
+- **THEN** branch `ABC-42` is cut from the project's base
 
 #### Scenario: Work with no ticket
 - **WHEN** you run `do <project> <what to do…>`
@@ -130,7 +130,7 @@ open (`TaskProvisioning.MAX_TASKS`).
 
 #### Scenario: Starting from another branch
 - **WHEN** you run `do ABC-42 from <branch>`
-- **THEN** it is cut from that branch and the request targets it; deploy still goes to `deployBranch`
+- **THEN** it is cut from that branch and the request targets it ([git](../git/spec.md))
 
 #### Scenario: A twenty-fifth task
 - **WHEN** 24 tasks are open and you start another
