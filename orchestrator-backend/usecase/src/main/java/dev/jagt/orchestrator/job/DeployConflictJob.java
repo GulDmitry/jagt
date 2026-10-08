@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.capability.deploy.DeployService;
+import dev.jagt.orchestrator.capability.deploy.DeployConflicts;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DeployConflictJob implements Job {
 
     private final ConfigService configService;
-    private final DeployService deploys;
+    private final DeployConflicts conflicts;
     private final AgentSessions sessions;
     private final CommandService commands;
     private final Map<String, String> asked = new ConcurrentHashMap<>();
@@ -52,7 +52,7 @@ public class DeployConflictJob implements Job {
         if (configService.load().master().modeOrDefault() != MasterMode.ACT) {
             return;
         }
-        deploys.conflicts().forEach((taskId, conflict) -> {
+        conflicts.waiting().forEach((taskId, conflict) -> {
             if (conflict.resolved()) {
                 asked.remove(taskId);
                 log.atInfo().setMessage("master finishes deploy").addKeyValue("task", taskId)

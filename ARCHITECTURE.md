@@ -79,7 +79,7 @@ answer. Every type in `flow/`, one question each:
 | `TaskView` | what the board renders, built by `service/TaskViews` |
 
 - `withStatus` has exactly two callers outside the record itself: the two doors. Two honest exceptions — a task is born
-  at NEW (`service/TaskProvisioning`), and `capability/deploy/DeployService` *reads* one to know it is resuming
+  at NEW (`service/TaskProvisioning`), and `capability/deploy/` *reads* one: a deploy resuming or waiting
   (DEPLOY_CONFLICT).
 - **A declaration without `.add()` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
   projection call, not a declaration.

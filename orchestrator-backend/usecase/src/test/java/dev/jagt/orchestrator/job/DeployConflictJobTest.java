@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.capability.deploy.DeployService;
+import dev.jagt.orchestrator.capability.deploy.DeployConflicts;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
@@ -27,17 +27,17 @@ import static org.mockito.Mockito.when;
 class DeployConflictJobTest {
 
     private final ConfigService config = mock(ConfigService.class);
-    private final DeployService deploys = mock(DeployService.class);
+    private final DeployConflicts conflicts = mock(DeployConflicts.class);
     private final AgentSessions sessions = mock(AgentSessions.class);
     private final CommandService commands = mock(CommandService.class);
-    private final DeployConflictJob job = new DeployConflictJob(config, deploys, sessions, commands);
+    private final DeployConflictJob job = new DeployConflictJob(config, conflicts, sessions, commands);
 
     @Test
     void handsAConflictToTheSessionWhereTheMasterActs() {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("deploy", "revert"))));
-        when(deploys.conflicts()).thenReturn(Map.of("ABC-42",
-                new DeployService.WaitingConflict(Path.of("/src/ABC-42-deploy"), false)));
+        when(conflicts.waiting()).thenReturn(Map.of("ABC-42",
+                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false)));
 
         job.run();
 
@@ -49,8 +49,8 @@ class DeployConflictJobTest {
     void asksOncePerConflictEvenWhereAnotherRelayOverwroteTheAsk() {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act")));
-        when(deploys.conflicts()).thenReturn(Map.of("ABC-42",
-                new DeployService.WaitingConflict(Path.of("/src/ABC-42-deploy"), false)));
+        when(conflicts.waiting()).thenReturn(Map.of("ABC-42",
+                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false)));
 
         job.run();
         job.run();
@@ -62,8 +62,8 @@ class DeployConflictJobTest {
     void finishesTheDeployOnceTheResolutionIsStagedInFull() {
         when(config.load()).thenReturn(ConfigFile.defaults()
                 .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("deploy", "revert"))));
-        when(deploys.conflicts()).thenReturn(Map.of("ABC-42",
-                new DeployService.WaitingConflict(Path.of("/src/ABC-42-deploy"), true)));
+        when(conflicts.waiting()).thenReturn(Map.of("ABC-42",
+                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), true)));
 
         job.run();
 
@@ -77,6 +77,6 @@ class DeployConflictJobTest {
 
         job.run();
 
-        verifyNoInteractions(deploys, sessions, commands);
+        verifyNoInteractions(conflicts, sessions, commands);
     }
 }

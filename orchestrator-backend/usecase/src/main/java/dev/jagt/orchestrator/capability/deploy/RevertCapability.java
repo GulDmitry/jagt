@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RevertCapability implements TaskCapability {
 
-    private final DeployService deploys;
+    private final RevertService reverts;
 
     @Override
     public TaskAction action() {
@@ -19,6 +19,6 @@ public class RevertCapability implements TaskCapability {
 
     @Override
     public Outcome run(String taskId) {
-        return deploys.revert(taskId);
+        return reverts.revert(taskId);
     }
 }

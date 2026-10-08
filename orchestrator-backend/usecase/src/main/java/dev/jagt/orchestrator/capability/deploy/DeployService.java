@@ -1,10 +1,8 @@
 package dev.jagt.orchestrator.capability.deploy;
 
+import dev.jagt.orchestrator.capability.deploy.DeployTargets.Target;
 import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
@@ -12,26 +10,28 @@ import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+
+import static dev.jagt.orchestrator.capability.deploy.DeployTargets.because;
+import static dev.jagt.orchestrator.capability.deploy.DeployTargets.mergeCommit;
+import static dev.jagt.orchestrator.capability.deploy.DeployTargets.names;
 
 /**
- * The only two operations that write a SHARED branch. Neither checks that the caller is the human; that gate sits
- * outside. A task spanning repositories lands one at a time and stops at the first conflict: a shared branch cannot
- * be written atomically, so the half-state is reported. The undo works from the other end.
+ * One of the only two operations that write a SHARED branch; it does not check that the caller is the human, that
+ * gate sits outside. A task spanning repositories lands one at a time and stops at the first conflict: a shared
+ * branch cannot be written atomically, so the half-state is reported.
  */
 @Service
 @RequiredArgsConstructor
 public class DeployService {
 
     private final StateService stateService;
-    private final ConfigService configService;
+    private final DeployTargets deployTargets;
     private final GitDeploy gitDeploy;
     private final EditorDriver editorDriver;
 
@@ -43,8 +43,8 @@ public class DeployService {
     public Outcome deploy(String taskId) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
-        List<Target> targets = deployTargets(task);
-        targets.forEach(DeployService::requireDeployable);
+        List<Target> targets = deployTargets.all(task);
+        targets.forEach(DeployTargets::requireDeployable);
         Map<String, String> merged = new LinkedHashMap<>();
         List<String> nothingToDo = new ArrayList<>();
         List<String> blocked = new ArrayList<>();
@@ -82,25 +82,6 @@ public class DeployService {
             throw idle;
         }
         return deployed(taskId, targets, from, merged, nothingToDo);
-    }
-
-    /** Every task handed back from a deploy conflict, with the worktree it waits in. */
-    public Map<String, WaitingConflict> conflicts() {
-        Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
-        stateService.tasks().forEach((taskId, task) -> {
-            if (task.status() != TaskStatus.DEPLOY_CONFLICT) {
-                return;
-            }
-            deployTargets(task).stream().filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
-                    .findFirst()
-                    .ifPresent(target -> waiting.put(taskId, new WaitingConflict(
-                            GitDeploy.deployWorktreePath(target.path(), taskId),
-                            gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()))));
-        });
-        return waiting;
-    }
-
-    public record WaitingConflict(Path worktree, boolean resolved) {
     }
 
     /**
@@ -197,141 +178,8 @@ public class DeployService {
                 "deploy stopped part way — " + half, cause);
     }
 
-    /** A cause without a message must not end the report in the word "null". */
-    private static String because(RuntimeException cause) {
-        return cause.getMessage() == null ? "" : " " + cause.getMessage();
-    }
-
-    /**
-     * Undoes one deploy: reverts the merge commits it created on the deploy branches and pushes them. The task
-     * branch keeps all its commits. Repositories are undone in reverse order and each success forgets its merge
-     * commit, so a revert that fails part way can be repeated and touches only what is still live.
-     */
-    public Outcome revert(String taskId) {
-        taskId = stateService.canonicalTaskId(taskId);
-        TaskState task = requireTask(taskId);
-        List<Target> landed = landedTargets(task);
-        if (landed.isEmpty()) {
-            throw unrecordedDeploy(taskId, deployTargets(task));
-        }
-        landed.forEach(DeployService::requireDeployable);
-        List<String> reverted = new ArrayList<>();
-        String lastRevertCommit = null;
-        for (Target target : landed.reversed()) {
-            try {
-                lastRevertCommit = gitDeploy.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
-                        mergeCommit(task, target));
-            } catch (RuntimeException e) {
-                return stillLive(taskId, target, reverted, e);
-            }
-            stateService.updateTask(taskId, t -> t.withDeployCommit(target.project(), null));
-            reverted.add(target.project() + " on " + target.deployBranch() + " ("
-                    + GitDeploy.shortSha(lastRevertCommit) + ")");
-        }
-        return allReverted(taskId, task.repos().size() == 1, landed, reverted, lastRevertCommit);
-    }
-
-    private Outcome allReverted(String taskId, boolean singleRepo, List<Target> landed, List<String> reverted,
-                               String revertCommit) {
-        String tail = "; REVERTED — fix and ship again, or `done`.";
-        if (singleRepo) {
-            String on = "on " + landed.getFirst().deployBranch() + " (" + GitDeploy.shortSha(revertCommit) + ")";
-            return Outcome.ok("Reverted " + taskId + " " + on + tail, "reverted " + on);
-        }
-        return Outcome.ok("revert " + taskId + ": reverted " + names(reverted) + tail,
-                "reverted " + names(reverted));
-    }
-
-    /**
-     * A revert that stopped part way. What came out is forgotten, so repeating undoes only the rest, but the task
-     * stays DEPLOYED because something of it still is. Stamped as well as thrown: a console line is no record.
-     */
-    private Outcome stillLive(String taskId, Target at, List<String> reverted, RuntimeException cause) {
-        if (reverted.isEmpty()) {
-            throw cause;
-        }
-        String half = "reverted " + names(reverted) + ", " + at.project() + " still live on "
-                + at.deployBranch();
-        return Outcome.partial("revert " + taskId + ": " + half + " — repeat `revert " + taskId
-                + "` once this is dealt with." + because(cause), half, cause);
-    }
-
-    /** Guessing the merge commit would risk reverting the WRONG merge on a shared branch. */
-    private RuntimeException unrecordedDeploy(String taskId, List<Target> targets) {
-        // Every repository, because a recipe naming one leaves the others live on their own branches.
-        String where = targets.stream()
-                .map(target -> "`git log --merges --grep " + taskId + " origin/" + target.deployBranch() + "`"
-                        + (targets.size() > 1 ? " in " + target.project() : ""))
-                .collect(Collectors.joining(", "));
-        return new IllegalStateException("revert " + taskId + ": jagt records no merge commit of this task's —"
-                + " nothing landed, or the deploy predates that being stored — and guessing on a shared branch is"
-                + " not something it will do. If one is live, revert by hand: " + where
-                + " to find the merge, then `git revert -m 1 <sha>` and push.");
-    }
-
-    /**
-     * Every repository the task works in, paired with where it lands. All resolved before anything is pushed, so a
-     * project misconfigured at the end of the list cannot be discovered half way through.
-     */
-    private List<Target> deployTargets(TaskState task) {
-        List<Target> targets = new ArrayList<>();
-        for (TaskRepo repo : task.repos()) {
-            targets.add(new Target(repo.project(), configService.project(repo.project())));
-        }
-        return targets;
-    }
-
-    /**
-     * The repositories an undo has something to take out, and ONLY those: a repository that never landed must not
-     * stand between a human and the merge that is live, whatever became of its configuration since.
-     */
-    private List<Target> landedTargets(TaskState task) {
-        List<Target> landed = new ArrayList<>();
-        for (TaskRepo repo : task.repos()) {
-            if (repo.deployCommit() != null && !repo.deployCommit().isBlank()) {
-                landed.add(new Target(repo.project(), configService.project(repo.project())));
-            }
-        }
-        return landed;
-    }
-
-    /** The deploy branch must NEVER be the base branch tasks are cut from. */
-    private static void requireDeployable(Target target) {
-        ProjectConfig project = target.config();
-        if (project.deployBranch() == null || project.deployBranch().isBlank()) {
-            throw new IllegalArgumentException("Project '" + target.project()
-                    + "' has no deployBranch in jagt.yml — set it to enable deploy");
-        }
-        if (project.deploysIntoTheBaseBranch()) {
-            throw new IllegalArgumentException("REFUSED: deployBranch equals the base branch '"
-                    + project.baseBranchName()
-                    + "'. jagt must never merge into the branch tasks are created from — point deployBranch"
-                    + " at a downstream branch (e.g. dev).");
-        }
-    }
-
-    private static String mergeCommit(TaskState task, Target target) {
-        String commit = task.repo(target.project()).map(TaskRepo::deployCommit).orElse(null);
-        return commit == null || commit.isBlank() ? null : commit;
-    }
-
     private static List<String> deployBranches(List<Target> targets) {
         Set<String> branches = new LinkedHashSet<>(targets.stream().map(Target::deployBranch).toList());
         return List.copyOf(branches);
-    }
-
-    private static String names(List<String> names) {
-        return names.isEmpty() ? "none" : String.join(", ", names);
-    }
-
-    private record Target(String project, ProjectConfig config) {
-
-        Path path() {
-            return Path.of(config.path());
-        }
-
-        String deployBranch() {
-            return config.deployBranch();
-        }
     }
 }
