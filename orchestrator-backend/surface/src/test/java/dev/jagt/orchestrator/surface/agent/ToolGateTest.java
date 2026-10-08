@@ -122,7 +122,8 @@ class ToolGateTest {
             "gh api --method=PUT repos/o/r/git/refs", "gh api -XDELETE repos/o/r/git/refs/heads/main",
             "gh api repos/o/r/git/refs -f ref=refs/heads/main", "gh api repos/o/r/git/refs -Fsha=abc",
             "glab api -X PUT projects/1/repository/branches", "glab api --input body.json projects/1",
-            "cd /wt && gh api graphql --raw-field query=x"})
+            "cd /wt && gh api graphql --raw-field query=x", "gh pr merge 12 --admin", "glab mr merge 12",
+            "gh repo edit --default-branch x", "gh", "/usr/local/bin/gh release create v1"})
     void refusesWritingToTheCodeHostPastThePush(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
                 .asString().contains("writing to the code host");

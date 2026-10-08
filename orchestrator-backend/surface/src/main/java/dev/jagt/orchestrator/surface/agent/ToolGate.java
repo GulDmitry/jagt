@@ -2,7 +2,9 @@ package dev.jagt.orchestrator.surface.agent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -34,6 +36,15 @@ public final class ToolGate {
     /** git's plumbing writes a remote ref with no pre-push hook. */
     private static final Pattern PLUMBING = Pattern.compile("(send|receive)-pack|http-push");
     private static final Pattern HOST_CLI = Pattern.compile("(\\S*/)?(gh|glab)");
+    /** Every other call of a host CLI is refused. */
+    private static final Map<String, Set<String>> HOST_READS = Map.of(
+            "pr", Set.of("view", "list", "diff", "checks", "status"),
+            "mr", Set.of("view", "list", "diff"),
+            "issue", Set.of("view", "list", "status"),
+            "run", Set.of("view", "list"),
+            "ci", Set.of("list", "status"),
+            "repo", Set.of("view"),
+            "auth", Set.of("status"));
     /** A field or a body makes the host's API call a POST. */
     private static final Pattern HOST_BODY = Pattern.compile("-[fF].*|--(field|raw-field|input)(=.*)?");
     private static final Pattern HOST_METHOD = Pattern.compile("(-X|--method=?)(.*)");
@@ -61,8 +72,9 @@ public final class ToolGate {
                     + " through its own MCP tools.");
         }
         if (PLUMBING.matcher(line.replaceAll(QUOTING, "")).find()
-                || Stream.of(command.split(SEPARATORS)).anyMatch(ToolGate::writesThroughTheHostsApi)) {
-            return Optional.of("jagt refuses writing to the code host from here: push " + taskBranch
+                || Stream.of(command.split(SEPARATORS)).anyMatch(ToolGate::writesToTheHost)) {
+            return Optional.of("jagt refuses writing to the code host from here: gh and glab only read (pr, mr,"
+                    + " issue, run: view, list, diff; api: GET). Push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
         if (PUSH.matcher(command).find() && HOOK_OFF.matcher(command).find()) {
@@ -99,21 +111,30 @@ public final class ToolGate {
         return Optional.empty();
     }
 
-    private static boolean writesThroughTheHostsApi(String segment) {
+    private static boolean writesToTheHost(String segment) {
         List<String> words = Stream.of(segment.trim().split("\\s+")).map(ToolGate::bare).toList();
-        int api = words.indexOf("api");
-        if (api < 1 || !HOST_CLI.matcher(words.get(api - 1)).matches()) {
-            return false;
-        }
-        for (int at = api + 1; at < words.size(); at++) {
-            Matcher method = HOST_METHOD.matcher(words.get(at));
-            String named = !method.matches() ? "GET"
-                    : method.group(2).isEmpty() && at + 1 < words.size() ? words.get(at + 1) : method.group(2);
-            if (HOST_BODY.matcher(words.get(at)).matches() || !"GET".equalsIgnoreCase(named)) {
+        for (int at = 0; at < words.size(); at++) {
+            if (HOST_CLI.matcher(words.get(at)).matches() && !readsTheHost(words, at + 1)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static boolean readsTheHost(List<String> words, int from) {
+        String command = from < words.size() ? words.get(from) : "";
+        if (!"api".equals(command)) {
+            return from + 1 < words.size() && HOST_READS.getOrDefault(command, Set.of()).contains(words.get(from + 1));
+        }
+        for (int at = from + 1; at < words.size(); at++) {
+            Matcher method = HOST_METHOD.matcher(words.get(at));
+            String named = !method.matches() ? "GET"
+                    : method.group(2).isEmpty() && at + 1 < words.size() ? words.get(at + 1) : method.group(2);
+            if (HOST_BODY.matcher(words.get(at)).matches() || !"GET".equalsIgnoreCase(named)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static int afterGitOptions(List<String> words, int from) {
