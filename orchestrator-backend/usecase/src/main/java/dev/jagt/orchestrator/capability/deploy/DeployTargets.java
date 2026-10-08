@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /** Each repository of a task paired with where it lands, as the deploy, its undo and the conflict registry read it. */
@@ -51,13 +52,19 @@ public class DeployTargets {
 
     /**
      * Where a deploy handed back from a conflict waits: the repository holding its deploy worktree. Not the first
-     * without a recorded merge, since merges outlive the round that made them.
+     * without a recorded merge, since merges outlive the round that made them; a project gone from the
+     * configuration holds nothing to probe.
      */
     public Optional<Target> stopped(TaskState task, String taskId) {
         if (!FlowRules.conflictedInTheDeployWorktree(task.status())) {
             return Optional.empty();
         }
-        return all(task).stream().filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId)).findFirst();
+        Map<String, ProjectConfig> projects = configService.load().projects();
+        return task.repos().stream()
+                .filter(repo -> projects.containsKey(repo.project()))
+                .map(repo -> new Target(repo.project(), projects.get(repo.project())))
+                .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
+                .findFirst();
     }
 
     /** The deploy branch must NEVER be the base branch tasks are cut from. */

@@ -44,8 +44,9 @@ line comes from `TaskView.confirmations` (`TaskAction.confirmation`).
 ### Requirement: Revert refuses rather than guess
 `revert` SHALL take out the last deploy's merge wherever a `deployCommit` is recorded, DEPLOYED and DEPLOY_CONFLICT
 always; it refuses with a by-hand recipe where that is absent, reverted or conflicts. It walks back the merged
-repositories, each **forgetting** its commit, then discards a DEPLOY_CONFLICT's half-merge; REVERTED once all that
-landed is out. Part way, **stamped on the task**, it leaves DEPLOYED, or DEPLOY_CONFLICT where it came from.
+repositories, each **forgetting** its commit, then discards a DEPLOY_CONFLICT's half-merge, sought only where
+`jagt.yml` still names the project; REVERTED once all that landed is out. Part way, **stamped on the task**, it leaves
+DEPLOYED, or DEPLOY_CONFLICT where it came from.
 
 #### Scenario: Deployed twice
 - **WHEN** `revert <task>` after several deploys
@@ -64,7 +65,7 @@ landed is out. Part way, **stamped on the task**, it leaves DEPLOYED, or DEPLOY_
 the first conflict: DEPLOY_CONFLICT, naming both sides from there.
 
 #### Scenario: Conflict
-- **WHEN** a conflict: resolve it there (`git add`), then `deploy`
+- **WHEN** a conflict: resolve it (`git add`), then `deploy`
 - **THEN** DEPLOY_CONFLICT until you do
 
 #### Scenario: Multi-repo deploy
@@ -154,5 +155,5 @@ repository.
 (`prune all`) MUST be refused by name.
 
 #### Scenario: Diff worktrees
-- **WHEN** `done <task>` with board-diff `jagt-diff-*` worktrees in the temp directory
+- **WHEN** `done <task>` with board-diff `jagt-diff-*` worktrees
 - **THEN** removed

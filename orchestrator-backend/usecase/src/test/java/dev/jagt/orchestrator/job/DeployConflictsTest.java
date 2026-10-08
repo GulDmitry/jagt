@@ -17,6 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -31,8 +32,7 @@ class DeployConflictsTest {
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).build());
         ConfigService config = mock(ConfigService.class);
-        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
-        when(config.project("web")).thenReturn(new ProjectConfig("/src/web", "origin/main", "dev", null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("api", new ProjectConfig("/repo/api", "origin/main", "dev", null), "web", new ProjectConfig("/src/web", "origin/main", "dev", null))));
         GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
         when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
@@ -40,7 +40,7 @@ class DeployConflictsTest {
 
         var conflicts = service.waiting();
 
-        assertThat(conflicts).containsExactly(java.util.Map.entry("ABC-1",
+        assertThat(conflicts).containsExactly(Map.entry("ABC-1",
                 new DeployConflicts.WaitingConflict(Path.of("/src/ABC-1-deploy"), true)));
     }
 }
