@@ -9,9 +9,6 @@ import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.EditorDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Files;
@@ -20,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -125,20 +121,6 @@ class IdeLauncherTest {
         launcher(state).open("a1", IdeLauncher.Mode.PROJECT);
 
         verify(editor).open(Path.of("/wt"));
-    }
-
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(strings = {" ", "project", "Project"})
-    void readsAnAbsentOrProjectModeAsTheProject(String wire) {
-        assertThat(IdeLauncher.Mode.of(wire)).isEqualTo(IdeLauncher.Mode.PROJECT);
-    }
-
-    @Test
-    void refusesAModeItDoesNotKnow() {
-        assertThatThrownBy(() -> IdeLauncher.Mode.of("split"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Unknown ide mode 'split'");
     }
 
     @Test

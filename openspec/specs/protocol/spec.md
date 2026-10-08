@@ -14,7 +14,7 @@ protocol's: a worktree claim is measured where the worktree is (`service/HandBac
 
 #### Scenario: A round claims no diff
 - **WHEN** a message says nothing changed
-- **THEN** `service/HandBack` measures the worktree instead of believing it
+- **THEN** `service/HandBack` measures the worktree
 
 ### Requirement: No raw wire value travels inward
 A message SHALL arrive as the strings and maps it was written in: `violations(...)` judges it, `accepted(...)` returns it
@@ -26,8 +26,8 @@ are resolved once, here.
 - **THEN** it reads the accepted type, never the wire
 
 ### Requirement: Arguments are read into the message
-`MessageTool` SHALL be the one path from the wire to a verb: the arguments are read into the message and judged, and only
-then does the tool run. A field the message does not declare is ignored, so a CLI a version ahead is not rejected.
+`MessageTool` SHALL be the one path from the wire to a verb: the arguments are read into the message and judged before
+the tool runs. A field the message does not declare is ignored, so a CLI a version ahead is not rejected.
 
 #### Scenario: An unknown field
 - **WHEN** a call carries a field the message does not declare

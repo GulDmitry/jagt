@@ -14,7 +14,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
   **Decision**, **Rejected** (each with its one reason), **Reopen when** (the measurement that would change it).
 - At most 400 words: a record needing more is two decisions.
 - **Linked**: a record names the rule it backs at its top; this index lists every record (`DecisionIndexTest`). Recovering
-  why something holds starts here.
+  a why starts here.
 - A record taken after the fact says `recorded retroactively` and carries only what the history proves.
 
 ## Index

@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,17 +25,7 @@ public class IdeLauncher {
 
     /** How a task opens: as projects that run, or as a static diff against what its request targets. */
     public enum Mode {
-        PROJECT, DIFF;
-
-        /** The wire's spelling, in any case; absent is {@link #PROJECT}. */
-        public static Mode of(String wire) {
-            if (wire == null || wire.isBlank()) {
-                return PROJECT;
-            }
-            return Arrays.stream(values()).filter(mode -> mode.name().equalsIgnoreCase(wire.strip())).findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Unknown ide mode '" + wire + "'. Allowed: project, diff"));
-        }
+        PROJECT, DIFF
     }
 
     public String open(String taskIdOrAlias, Mode mode) {
