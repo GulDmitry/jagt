@@ -22,7 +22,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - `--ok` `#15803d` / `#86efac` — **nothing wrong here**: a step taken, or a thing working.
 - `--danger` `#b42318` / `#fca5a5` — **broken**: a failed run, a refused command, a problem line.
 - `--accent` `#1d4ed8` / `#93b4ff` — **pressable / pressed**: hover, a primary button, a pressed filter.
-- `--muted` `#6b7280` / `#9aa3ad` — **not news**: labels, ages, a verdict with nothing wrong.
+- `--muted` `#5f6672` / `#9aa3ad` — **not news**: labels, ages, a verdict with nothing wrong.
 - `--text` / `--line` / `--panel` / `--bg` / `--chip-bg` / `--you-bg` — structure, never meaning.
 
 **A green REQUEST is an approval and nothing else**; the checks verdict wears its own DOT. **`--agent` and

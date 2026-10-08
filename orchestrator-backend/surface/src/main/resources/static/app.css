@@ -1,6 +1,6 @@
 /* One stylesheet, no imports, no fonts to fetch: the board must work with the machine offline. */
 :root {
-  --bg: #f6f7f9; --panel: #fff; --line: #d9dde3; --text: #1c2024; --muted: #6b7280;
+  --bg: #f6f7f9; --panel: #fff; --line: #d9dde3; --text: #1c2024; --muted: #5f6672;
   --you: #b45309; --you-bg: #fef3c7; --agent: #1d4ed8; --ci: #6d28d9;
   --accent: #1d4ed8; --danger: #b42318; --ok: #15803d; --chip-bg: #eceef1;
 }
