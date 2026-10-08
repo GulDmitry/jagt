@@ -7,8 +7,6 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class BoardWriteFilterTest {
 
@@ -18,23 +16,21 @@ class BoardWriteFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain chain = new MockFilterChain();
 
-        new BoardWriteFilter(mock(MasterToken.class)).doFilter(request, response, chain);
+        new BoardWriteFilter().doFilter(request, response, chain);
 
         assertThat(response.getStatus()).isEqualTo(403);
         assertThat(chain.getRequest()).isNull();
     }
 
     @Test
-    void admitsAWriteCarryingTheMastersToken() throws Exception {
-        MasterToken token = mock(MasterToken.class);
-        when(token.matches("t0ken")).thenReturn(true);
+    void refusesAWriteCarryingOnlyTheMastersToken() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/tasks/say");
         request.addHeader(MasterToken.HEADER, "t0ken");
-        MockFilterChain chain = new MockFilterChain();
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
-        new BoardWriteFilter(token).doFilter(request, new MockHttpServletResponse(), chain);
+        new BoardWriteFilter().doFilter(request, response, new MockFilterChain());
 
-        assertThat(chain.getRequest()).isSameAs(request);
+        assertThat(response.getStatus()).isEqualTo(403);
     }
 
     @Test
@@ -42,7 +38,7 @@ class BoardWriteFilterTest {
         MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/agent/session/gone");
         MockFilterChain chain = new MockFilterChain();
 
-        new BoardWriteFilter(mock(MasterToken.class)).doFilter(request, new MockHttpServletResponse(), chain);
+        new BoardWriteFilter().doFilter(request, new MockHttpServletResponse(), chain);
 
         assertThat(chain.getRequest()).isSameAs(request);
     }

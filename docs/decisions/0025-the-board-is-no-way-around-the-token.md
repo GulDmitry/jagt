@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-10-08. Adds to [0023](0023-the-master-is-identified-by-a-token.md): the token also admits a board write.
+That admission superseded by [0026](0026-the-guards-gaps-after-round-three.md).
 
 ## Context
 

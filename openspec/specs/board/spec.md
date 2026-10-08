@@ -94,7 +94,7 @@ its own.
 
 ### Requirement: Loopback only
 The board SHALL bind loopback, password-free. `LoopbackFilter` SHALL refuse a foreign Host or Origin and `/mcp`
-anything but JSON; `BoardWriteFilter` an `/api` write without Origin or Master token.
+anything but JSON; `BoardWriteFilter` an `/api` write without Origin, the Master token included.
 
 #### Scenario: A second machine
 - **WHEN** jagt runs with `--server.address=0.0.0.0`

@@ -2,19 +2,17 @@
 
 [← AGENTS.md](../../AGENTS.md)
 
-One file per ARCHITECTURAL decision — the shape of jagt: its rings and seams, where state lives, how sessions
-run, what owns a move. Costly to reverse, or one a newcomer would undo because it looks wrong. A feature's rule or
-parameter is none.
+One file per ARCHITECTURAL decision — jagt's rings and seams, where state lives, how sessions run, what owns a
+move: costly to reverse, or one a newcomer would undo as wrong. A feature's rule or parameter is none.
 The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidence and alternatives.
 
 - Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
-- **Never edited once accepted**, typos aside: a changed decision is a new record, and the old one's status
-  becomes `superseded by NNNN`.
+- **Never edited once accepted**, typos aside: a change is a new record, the old one's status `superseded by NNNN`.
 - Sections: **Status** (date, state), **Context** (what forced it, with numbers),
   **Decision**, **Rejected** (each with its one reason), **Reopen when** (what measurement changes it).
 - At most 400 words: a record needing more is two decisions.
-- **Linked**: a record names the rule it backs at its top; this index lists every record (`DecisionIndexTest`). Recovering
-  a why starts here.
+- **Linked**: a record names its rule at its top; this index, where a why is recovered, lists every record
+  (`DecisionIndexTest`).
 - A record taken after the fact says `recorded retroactively` and carries only what history proves.
 
 ## Index
@@ -28,7 +26,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0007 — Only adapter names a vendor or an OS](0007-only-adapter-names-a-vendor-or-an-os.md)
 - [0008 — A failed read is never "not found"](0008-a-failed-read-is-never-not-found.md)
 - [0009 — Read once and quoted](0009-what-jagt-can-read-it-reads-once-and-quotes.md)
-- [0010 — The human's own word stands over the Master](0010-the-humans-own-word-stands-over-the-master.md)
+- [0010 — The human's word stands over the Master](0010-the-humans-own-word-stands-over-the-master.md)
 - [0011 — A red run is the session's to diagnose](0011-a-red-run-is-the-sessions-to-diagnose.md)
 - [0012 — The Master finishes the task](0012-the-master-finishes-the-task.md)
 - [0013 — A deploy conflict is the session's in `act`](0013-a-deploy-conflict-is-the-sessions-in-act.md)
@@ -44,3 +42,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0023 — The Master holds a token](0023-the-master-is-identified-by-a-token.md)
 - [0024 — Headless calls are metered where they run](0024-every-headless-call-is-metered-where-it-runs.md)
 - [0025 — Token-guarded board writes](0025-the-board-is-no-way-around-the-token.md)
+- [0026 — The guard's gaps after round three](0026-the-guards-gaps-after-round-three.md)
