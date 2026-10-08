@@ -248,9 +248,9 @@ public final class FlowRules {
         return HANDED_BACK.contains(status);
     }
 
-    /** A hand-back the Master reads before the human, verification included. */
-    public static boolean readByTheMasterNext(TaskStatus status) {
-        return status == TaskStatus.REVIEW_PENDING || status == TaskStatus.VERIFYING;
+    /** A plan or a round handed back, which the Master reads before the human where it runs. */
+    public static boolean readByTheMaster(TaskStatus status) {
+        return READ_BY_THE_MASTER.contains(status);
     }
 
     /** A request green with every thread closed, which in act the Master deploys as the human would. */
@@ -300,6 +300,9 @@ public final class FlowRules {
 
     private static final Set<TaskStatus> WATCHED = EnumSet.of(TaskStatus.NEW, TaskStatus.IN_PROGRESS,
             TaskStatus.SHIPPING);
+
+    private static final Set<TaskStatus> READ_BY_THE_MASTER = EnumSet.of(TaskStatus.PLAN_PENDING,
+            TaskStatus.REVIEW_PENDING);
 
     private static final Set<TaskStatus> HANDED_BACK = EnumSet.of(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED);
 

@@ -57,7 +57,7 @@ public class AgentStatusReports {
     /** A session reporting on its own task, whose hand-back must leave the notes the next session starts from. */
     public String reportOwn(AgentStatusMessage said, String taskId) {
         Reported reported = accepted(said, taskId);
-        if (FlowRules.readByTheMasterNext(reported.status())) {
+        if (FlowRules.readByTheMaster(reported.status()) && !FlowRules.holdsAPlan(reported.status())) {
             stateService.task(taskId).flatMap(handBack::notesOwed).ifPresent(owed -> {
                 throw new IllegalArgumentException(owed);
             });
@@ -136,13 +136,16 @@ public class AgentStatusReports {
             // Re-read: the same call may have LINKED the request, and the advice differs on whether one exists.
             ping(taskId, stateService.task(taskId));
         }
-        if (landed != newStatus) {
+        if (landed != newStatus && !FlowRules.awaitingVerification(landed)) {
             return "Task " + taskId + " stays " + landed + ": that one is a human's to move on from. Your line"
                     + " was recorded" + (shortMessage == null ? "" : " (" + shortMessage + ")");
         }
-        boolean reviewedNext = FlowRules.readByTheMasterNext(landed) && handBack.masterReads();
+        String next = FlowRules.awaitingVerification(landed)
+                ? "; verification runs first, and the Master reads this round once it passes; end your turn"
+                : "; the Master reads this round next; end your turn";
+        boolean readNext = FlowRules.awaitingVerification(landed) || FlowRules.readByTheMaster(landed);
         return "Task " + taskId + " -> " + landed + (shortMessage == null ? "" : " (" + shortMessage + ")")
-                + (reviewedNext ? "; the Master reads this round next; end your turn" : "");
+                + (readNext && handBack.masterReads() ? next : "");
     }
 
     /** Puts what {@link FlowRules#readReview} concluded on the board; a red was tapped when the round read it. */

@@ -83,17 +83,21 @@ public class SessionReports {
         long turnStarted = probe.turnStartedAt(taskId);
         if (sentOn || pausedOnBackgroundWork || task == null || turnStarted == 0
                 || task.lastActiveTimestamp() >= turnStarted || !Move.endsUnreported(task.status(), task.message())) {
-            return withTheMaster(task) ? runtime.toldTheHuman("→ with the Master for review · its verdict arrives"
-                    + " here") : "";
+            return withTheMaster(task);
         }
         return runtime.refusedTurnEnd("Your turn is ending with " + taskId + " at " + task.status()
                 + " on the board and nothing reported this turn. Call update_agent_status first: REVIEW_PENDING"
                 + " if the work is done, outcome=question if you need the human, IN_PROGRESS if you go on.");
     }
 
-    private boolean withTheMaster(TaskState task) {
-        return task != null && FlowRules.readByTheMasterNext(task.status())
-                && configService.load().master().running();
+    private String withTheMaster(TaskState task) {
+        if (task == null || !(FlowRules.awaitingVerification(task.status())
+                || FlowRules.readByTheMaster(task.status())) || !configService.load().master().running()) {
+            return "";
+        }
+        return runtime.toldTheHuman(FlowRules.awaitingVerification(task.status())
+                ? "→ verification runs first · the Master reads the round once it passes"
+                : "→ with the Master for review · its verdict arrives here");
     }
 
     /**

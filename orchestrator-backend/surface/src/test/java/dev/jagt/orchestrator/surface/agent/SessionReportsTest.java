@@ -179,4 +179,20 @@ class SessionReportsTest {
 
         assertThat(answered).isEmpty();
     }
+
+    @Test
+    void tellsTheHumanARoundBeingVerifiedIsVerifiedBeforeTheMasterReadsIt() {
+        when(probe.turnStartedAt("ABC-1")).thenReturn(2_000L);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(runtime.toldTheHuman("→ verification runs first · the Master reads the round once it passes"))
+                .thenReturn("{\"systemMessage\": \"verification first\"}");
+        TaskState task = TaskState.builder("proj", "/wt", TaskStatus.VERIFYING).alias("a1")
+                .lastActiveTimestamp(3_000L).build();
+
+        String answered = new SessionReports(probe, watchdog, agentSpend, runtime, config)
+                .turnEnded("ABC-1", SessionReports.Report.defaults().withTask(task), false, false);
+
+        assertThat(answered).isEqualTo("{\"systemMessage\": \"verification first\"}");
+    }
 }

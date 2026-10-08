@@ -65,6 +65,10 @@ the output. `TaskStatus.heldByJagt` keeps the watchdog off that silence.
 - **WHEN** `verifyCommand` goes red
 - **THEN** the session gets it, not you
 
+#### Scenario: Verification before the Master
+- **WHEN** a hand-back is `VERIFYING` and the Master runs
+- **THEN** you and the session hear: verification first, then the Master
+
 ### Requirement: Every deploy is checked where it landed
 `DeployCheckJob` SHALL ask the session once per deploy commit and jagt run, keyed off what it asked, not the context
 file other relays overwrite; how anything reaches it is the session's. Green MUST report nothing, the task staying
@@ -154,9 +158,8 @@ tracked changes there, or another worktree holding it, MUST refuse naming the di
 ### Requirement: A worktree carries what the project needs
 `worktree.copyGlobs` SHALL copy gitignored files (`.env`, key, cert) into every new worktree at the same path. A
 repository's own `CLAUDE.md`, `AGENTS.md`, Codex config and git hooks MUST stay untouched and in force, jagt's
-briefing and guard beside them. A plain push of another branch MUST be refused before it leaves: a guardrail, not a
-boundary.
+briefing and guard beside them.
 
-#### Scenario: The agent pushes a foreign branch
-- **WHEN** it pushes another branch
-- **THEN** nothing leaves the machine; the refusal says: ask for another task
+#### Scenario: A gitignored key
+- **WHEN** `worktree.copyGlobs` names `.env`
+- **THEN** every new worktree has it

@@ -215,4 +215,10 @@ class FlowRulesTest {
     void leavesATaskSomeoneIsOnWhereItIsWhenItsRunReadsRed(TaskStatus busy) {
         assertThat(FlowRules.readLands(busy, TaskStatus.CI_FAILED)).isEqualTo(busy);
     }
+
+    @ParameterizedTest
+    @CsvSource({"PLAN_PENDING,true", "REVIEW_PENDING,true", "VERIFYING,false"})
+    void theMasterReadsAPlanOrAHandBackButNotARoundStillBeingVerified(TaskStatus status, boolean read) {
+        assertThat(FlowRules.readByTheMaster(status)).isEqualTo(read);
+    }
 }

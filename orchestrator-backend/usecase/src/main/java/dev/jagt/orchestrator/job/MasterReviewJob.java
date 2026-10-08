@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.AgentReport;
-import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -53,7 +52,7 @@ public class MasterReviewJob implements Job {
             return;
         }
         stateService.tasks().forEach((taskId, task) -> {
-            if (!Move.masterReads(task.status())) {
+            if (!FlowRules.readByTheMaster(task.status())) {
                 return;
             }
             reviews.of(task).filter(verdict -> verdict.writtenAt() >= task.statusSince())
@@ -73,7 +72,7 @@ public class MasterReviewJob implements Job {
 
     /** A question the Master answers is the answer job's: reviewing its round ships around the question. */
     static boolean reviewable(TaskState task, boolean judged, boolean questionsAnswered) {
-        return Move.masterReads(task.status()) && !judged
+        return FlowRules.readByTheMaster(task.status()) && !judged
                 && !(questionsAnswered && AgentReport.of(task.message()) == AgentReport.QUESTION);
     }
 

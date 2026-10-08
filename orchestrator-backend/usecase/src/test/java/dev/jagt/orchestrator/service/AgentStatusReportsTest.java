@@ -553,4 +553,20 @@ class AgentStatusReportsTest {
         assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.CI_FAILED);
         verify(notifications, never()).send(any());
     }
+
+    @Test
+    void tellsTheSessionItsHandBackIsVerifiedBeforeTheMasterReadsIt(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null)));
+        when(configService.project("proj")).thenReturn(new dev.jagt.orchestrator.task.ProjectConfig(
+                "/repo", "origin/main", "dev", List.of(), List.of("./gradlew", "test")));
+
+        String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
+
+        assertThat(answer).endsWith("verification runs first, and the Master reads this round once it passes;"
+                + " end your turn");
+    }
 }

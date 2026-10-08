@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Move;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
@@ -22,7 +22,7 @@ public class Rounds {
     public RoundState of(TaskState task, ConfigService.ConfigFile config) {
         return RoundState.of(task.message(),
                         ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
-                .withMasterReading(Move.masterReads(task.status()) && config.master().running()
+                .withMasterReading(FlowRules.readByTheMaster(task.status()) && config.master().running()
                         && !masterReview.readsTheRoundInFront(task));
     }
 }
