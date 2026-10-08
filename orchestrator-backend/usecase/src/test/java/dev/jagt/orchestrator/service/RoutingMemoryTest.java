@@ -34,19 +34,19 @@ class RoutingMemoryTest {
         when(paths.root()).thenReturn(root);
         RoutingMemory memory = new RoutingMemory(paths, 60);
 
-        memory.remember("PAN items about quote import", "sc");
-        memory.remember("PAN items about quote import", "api");
+        memory.remember("ABC items about quote import", "sc");
+        memory.remember("ABC items about quote import", "api");
 
-        assertThat(memory.rules()).containsExactly("PAN items about quote import -> api");
+        assertThat(memory.rules()).containsExactly("ABC items about quote import -> api");
     }
 
     @Test
     void writesNothingWhenTheRuleAlreadySaysThat() {
         when(paths.root()).thenReturn(root);
         RoutingMemory memory = new RoutingMemory(paths, 60);
-        memory.remember("PAN items about quote import", "sc");
+        memory.remember("ABC items about quote import", "sc");
 
-        assertThat(memory.remember("PAN items about quote import", "sc")).isFalse();
+        assertThat(memory.remember("ABC items about quote import", "sc")).isFalse();
     }
 
     @Test
@@ -55,11 +55,11 @@ class RoutingMemoryTest {
         Clock frozen = Clock.fixed(Instant.parse("2026-09-29T00:00:00Z"), ZoneOffset.UTC);
         RoutingMemory memory = new RoutingMemory(paths, 60, frozen);
 
-        memory.remember("PAN items about quote import", "sc");
-        memory.remember("PAN items about quote import", "api");
+        memory.remember("ABC items about quote import", "sc");
+        memory.remember("ABC items about quote import", "api");
 
         assertThat(Files.readString(root.resolve("memory/routing.md")))
-                .contains("# until 2026-09-29: PAN items about quote import -> sc");
+                .contains("# until 2026-09-29: ABC items about quote import -> sc");
     }
 
     @Test
@@ -92,21 +92,21 @@ class RoutingMemoryTest {
         when(paths.root()).thenReturn(root);
         RoutingMemory memory = new RoutingMemory(paths, 60);
 
-        memory.remember("PAN items about quote import", "sc");
-        memory.remember("PAN items about quote import", "sc");
+        memory.remember("ABC items about quote import", "sc");
+        memory.remember("ABC items about quote import", "sc");
 
         assertThat(Files.readString(root.resolve("memory/routing.md")))
-                .contains("PAN items about quote import -> sc #1");
+                .contains("ABC items about quote import -> sc #1");
     }
 
     @Test
     void readsARuleAHumanWroteByHandWithNoCountOnIt() throws IOException {
         when(paths.root()).thenReturn(root);
         Files.createDirectories(root.resolve("memory"));
-        Files.writeString(root.resolve("memory/routing.md"), "PAN items about quote import -> sc\n");
+        Files.writeString(root.resolve("memory/routing.md"), "ABC items about quote import -> sc\n");
 
         assertThat(new RoutingMemory(paths, 60).rules())
-                .containsExactly("PAN items about quote import -> sc");
+                .containsExactly("ABC items about quote import -> sc");
     }
 
     @Test
@@ -114,10 +114,10 @@ class RoutingMemoryTest {
         when(paths.root()).thenReturn(root);
         Files.createDirectories(root.resolve("memory"));
         Files.writeString(root.resolve("memory/routing.md"),
-                "# what places what\n\nPAN items about quote import -> sc\n");
+                "# what places what\n\nABC items about quote import -> sc\n");
 
         assertThat(new RoutingMemory(paths, 60).rules())
-                .containsExactly("PAN items about quote import -> sc");
+                .containsExactly("ABC items about quote import -> sc");
     }
 
     @Test
