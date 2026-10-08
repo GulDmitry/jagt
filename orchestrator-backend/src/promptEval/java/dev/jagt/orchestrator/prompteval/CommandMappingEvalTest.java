@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
-import dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch;
+import dev.jagt.orchestrator.surface.board.PaletteContext;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 
@@ -41,7 +41,7 @@ class CommandMappingEvalTest {
     @Autowired
     private StateService stateService;
     @Autowired
-    private NaturalLanguageDispatch dispatch;
+    private PaletteContext board;
     @Autowired
     private CommandAssistant assistant;
 
@@ -67,7 +67,7 @@ class CommandMappingEvalTest {
     @ParameterizedTest
     @MethodSource("cases")
     void mapsTheOperatorsOwnWordsOntoOneCommandAndOneTask(CommandMappingCase expected) {
-        Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), dispatch.context());
+        Answer<CommandProposal> answer = assistant.mapCommand(expected.request(), board.prompt());
 
         assertThat(answer.facts()).isPresent();
         assertThat(answer.facts().orElseThrow().command()).isEqualTo(expected.command());
