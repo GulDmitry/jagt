@@ -36,7 +36,7 @@ public interface SessionHost {
                         boolean planMode);
 
     /**
-     * Re-enters a task's window after the session behind it was lost — a killed tmux server, a rebooted machine —
+     * Re-enters a task's window after the session behind it was lost — a killed session server, a rebooted machine —
      * keeping what that session knew where the runtime can. A human asking for a restart gets {@link
      * #openTaskWindow} instead.
      */

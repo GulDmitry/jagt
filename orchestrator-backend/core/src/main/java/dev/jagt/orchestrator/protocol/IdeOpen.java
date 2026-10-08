@@ -13,7 +13,7 @@ public record IdeOpen(String taskId, String mode) implements Message {
 
     public static final Schema SCHEMA = Schema
             .of("Open a task in the configured editor. mode 'project' (default) opens the worktree as a full"
-                    + " project (needed to run the app; use Git → Local Changes for a live diff vs base);"
+                    + " project (needed to run the app; the editor's uncommitted-changes view is the live diff vs base);"
                     + " mode 'diff' opens a STATIC snapshot diff vs base — it does NOT auto-refresh (re-run to"
                     + " update). taskId defaults to the calling worktree's task.")
             .text("taskId", "Task id or its short alias; the calling worktree's own task where it is left out.")

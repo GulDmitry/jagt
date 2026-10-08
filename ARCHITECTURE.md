@@ -3,8 +3,8 @@
 The map of the code: **what kinds of thing jagt has, and where a new one goes.** The rules live in
 [`AGENTS.md`](AGENTS.md), the behaviour in [`openspec/specs/`](openspec/specs/).
 
-Every path below is a package under `dev.jagt.orchestrator`, inside `orchestrator-backend/` — where `gradlew` lives too,
-**not** the repository root. So `flow/` is `orchestrator-backend/core/src/main/java/dev/jagt/orchestrator/flow`.
+Every path below is a package under `dev.jagt.orchestrator`, inside `orchestrator-backend/` — where `gradlew` lives,
+**not** the root. So `flow/` is `orchestrator-backend/core/src/main/java/dev/jagt/orchestrator/flow`.
 
 Status is part of the map: *built* means built; fix a stale row, never delete it.
 
@@ -37,16 +37,17 @@ centre, `port/` `task/` `flow/`: the records, the rules, and the interfaces they
 that centre rather than a ring around it — those interfaces are written by the rules for their own needs, and
 `flow/` depends on them.
 
-`RingsTest` asserts exactly this, and nothing more:
+`RingsTest` asserts exactly this:
 
 - `task/`, `flow/` and `port/` name no other ring — as an import, a static import, or a qualified name.
 - those three import no Spring and no Lombok. Jackson annotations stay: the record **is** the file format.
-- no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell) outside `adapter/`.
+- no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
+  name anywhere in a source, outside `adapter/`.
 - no ring between the centre and the edge names `adapter/` — a use case naming the edge is the rule backwards.
-- it proves it read every ring: a root that stops matching after a refactor goes green guarding nothing.
+- it proves it read every ring, so a refactor cannot leave it guarding nothing.
 - it cannot see resources and scripts, the words a host invents, or a cycle between two *sibling* folders.
-- the `platform`, `viewer`, agent-binary and `kitty*` keys name vendors by design, each read by one adapter, and
-  renaming one a human has already written is the owner's call.
+- the `platform`, `viewer`, `tmux-command`, agent-binary and `kitty*` keys name vendors by design — its one
+  allow-list — and renaming one a human has already written is the owner's call.
 
 ## The flow machine
 
@@ -171,7 +172,7 @@ question without owning a node, `ui/` owns the nodes it renders, `app.js` only w
 | `ui/submit`, `ui/launch`, `ui/resume` | one submit pipeline, and the two forms that use it |
 | `ui/palette`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
 | `ui/dialogs`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
-| `ui/legend` | what every mark means, as the page's own elements — the one place they are defined |
+| `ui/legend` | what every mark means, as the page's own elements — their one definition |
 | `ui/refresh` | how the page learns a task changed, and the one clock it ticks itself |
 
 - **A module owns its own nodes** — never `getElementById` for another module's; one needing another to act takes a

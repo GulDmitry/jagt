@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 /**
  * A task IS its branch, so anything git accepts as a branch name is a task name — the rules of
- * {@code git check-ref-format --branch} in one pattern. Such a name may still not be a file or a tmux session:
+ * {@code git check-ref-format --branch} in one pattern. Such a name may still not be a file or a terminal session:
  * `/` nests a directory and a quote reaches a shell, so {@link #slug(String)} is the flat form.
  */
 public final class TaskName {
@@ -58,8 +58,8 @@ public final class TaskName {
     }
 
     /**
-     * The same task as ONE plain name: a worktree directory, a tmux session, a socket, a temp file. A dot goes
-     * too — tmux addresses a window as {@code session:window.pane}.
+     * The same task as ONE plain name: a worktree directory, a terminal session, a socket, a temp file. A dot goes
+     * too — a session host may read it as {@code session:window.pane}.
      */
     public static String slug(String name) {
         return NOT_PLAIN.matcher(name).replaceAll("-");

@@ -73,15 +73,14 @@ class RingsTest {
 
     @Test
     void theVendorIsNamedOnlyAtTheEdge() {
-        List<String> vendors = List.of("claude", "codex", "kitty", "tmux", "intellij");
-        Pattern prefix = Pattern.compile("@ConfigurationProperties\\(prefix = \"([^\"]+)\"");
+        List<String> vendors = List.of("claude", "codex", "kitty", "tmux", "intellij", "jetbrains", ".idea",
+                ".vscode", ".fleet");
+        Pattern keysNamingAVendorByDesign = Pattern.compile("tmuxCommand|tmuxSession");
 
         assertThat(ROOTS.stream().flatMap(RingsTest::javaFilesUnder)
                 .filter(path -> !path.toString().contains("/adapter/"))
-                .filter(path -> vendors.stream().anyMatch(vendor ->
-                        path.getFileName().toString().toLowerCase(Locale.ROOT).contains(vendor)
-                                || prefix.matcher(read(path)).results()
-                                .anyMatch(match -> match.group(1).toLowerCase(Locale.ROOT).contains(vendor))))
+                .filter(path -> vendors.stream().anyMatch(keysNamingAVendorByDesign.matcher(read(path))
+                        .replaceAll("").toLowerCase(Locale.ROOT)::contains))
                 .map(Path::getFileName)).isEmpty();
     }
 

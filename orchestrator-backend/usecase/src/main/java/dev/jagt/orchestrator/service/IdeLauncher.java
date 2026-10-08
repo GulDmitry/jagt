@@ -47,7 +47,7 @@ public class IdeLauncher {
         }
         return "Opened " + String.join(", ", opened)
                 + (opened.size() > 1 ? " as projects, one window each" : " as a project") + " in the editor"
-                + " (use Git → Local Changes for a live diff vs base)";
+                + " (its uncommitted-changes view is the live diff vs base)";
     }
 
     /** Empty when no repository holds the conflict, the task's own worktrees being what to open then. */

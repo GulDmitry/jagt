@@ -9,6 +9,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.notify.Notifications;
+import dev.jagt.orchestrator.port.EditorDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tools.jackson.databind.json.JsonMapper;
@@ -86,7 +87,7 @@ class WorktreeOrphanScannerTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
 
-        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifications).run();
+        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifications, mock(EditorDriver.class)).run();
 
         verifyNoInteractions(notifications);
     }
@@ -132,7 +133,10 @@ class WorktreeOrphanScannerTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
 
-        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifications).run();
+        EditorDriver editor = mock(EditorDriver.class);
+        when(editor.residue()).thenReturn(Set.of(".idea", ".run"));
+
+        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), notifications, editor).run();
 
         assertThat(husk).doesNotExist();
         verifyNoInteractions(notifications);
@@ -240,7 +244,8 @@ class WorktreeOrphanScannerTest {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of())))
                 .withWorktree(ConfigService.ConfigFile.WorktreeConfig.defaults().withCopyGlobs(copyGlobs)));
-        return new WorktreeOrphanScanner(config, stateWith(root, tasks), mock(Notifications.class));
+        return new WorktreeOrphanScanner(config, stateWith(root, tasks), mock(Notifications.class),
+                mock(EditorDriver.class));
     }
 
     private static StateService stateWith(Path root, Map<String, TaskState> tasks) {

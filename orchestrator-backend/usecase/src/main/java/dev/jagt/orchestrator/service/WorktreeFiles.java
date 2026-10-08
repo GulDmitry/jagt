@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.task.Artifact;
 import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /** The files a fresh worktree needs that git does not carry, and jagt's own plumbing kept out of git status. */
@@ -38,13 +40,13 @@ public final class WorktreeFiles {
 
     /**
      * Keeps orchestrator plumbing out of `git status` in every worktree of the project. info/exclude only
-     * affects untracked files, so a project's own tracked AGENTS.md/CLAUDE.md is unaffected.
+     * affects untracked files, so a project's own tracked instruction files are unaffected.
      */
-    public static void excludeOrchestratorPlumbing(Path gitCommonDir, AgentRuntime runtime) {
-        Stream<String> plumbing =
-                Stream.of("mcp_client.js", AgentRuntime.SYSTEM_KNOWLEDGE_FILE, ".jagt/", ".run/");
+    public static void excludeOrchestratorPlumbing(Path gitCommonDir, AgentRuntime runtime, EditorDriver editor) {
+        Stream<String> plumbing = Stream.of("mcp_client.js", AgentRuntime.SYSTEM_KNOWLEDGE_FILE, ".jagt/");
         List<String> entries = Stream.of(plumbing, Artifact.fileNames().stream(),
-                runtime.statusExclusions().stream()).flatMap(names -> names).distinct().toList();
+                runtime.statusExclusions().stream(), editor.projectFiles().stream())
+                .flatMap(names -> names).distinct().toList();
         try {
             Path exclude = gitCommonDir.resolve("info").resolve("exclude");
             Files.createDirectories(exclude.getParent());
@@ -65,20 +67,16 @@ public final class WorktreeFiles {
         }
     }
 
-    /**
-     * The IDE's own files are gitignored in the base repository, so a fresh checkout of the task branch lacks
-     * them. Best-effort; an absent path is a no-op.
-     */
-    public static void copyIdeProjectFiles(Path projectPath, Path worktreePath) {
-        List<String> ideFiles = List.of(".run", ".idea/runConfigurations",
-                ".idea/dataSources.xml", ".idea/dataSources.local.xml", ".idea/dataSources");
-        for (String path : ideFiles) {
+    /** Best-effort; an absent path is a no-op. */
+    public static void copyProjectFiles(Path projectPath, Path worktreePath, List<String> paths) {
+        for (String path : paths) {
             copyTree(projectPath.resolve(path), worktreePath.resolve(path), worktreePath);
         }
     }
 
     /** Gitignored local files the run configs reference but git omits. Best-effort; heavy directories skipped. */
-    public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs) {
+    public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs,
+                                      Set<String> editorResidue) {
         var matchers = localFileMatchers(globs);
         if (matchers.isEmpty()) {
             return;
@@ -87,7 +85,8 @@ public final class WorktreeFiles {
             Files.walkFileTree(projectPath, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return WorktreeNoise.UNWALKED.contains(dir.getFileName().toString())
+                    String name = dir.getFileName().toString();
+                    return WorktreeNoise.UNWALKED.contains(name) || editorResidue.contains(name)
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 

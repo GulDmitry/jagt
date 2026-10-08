@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.WorktreeFiles;
 import dev.jagt.orchestrator.service.WorktreeNoise;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskRepo;
+import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +60,7 @@ public class WorktreeOrphanScanner implements Job {
     private final ConfigService configService;
     private final StateService stateService;
     private final Notifications notifications;
+    private final EditorDriver editor;
 
     /** One WARN per leftover directory, plus a single desktop ping for whoever never opens the log. */
     @Override
@@ -80,12 +82,12 @@ public class WorktreeOrphanScanner implements Job {
 
     /**
      * Deletes what jagt can prove is its own residue and nobody's work: no checkout, no copied secret, and every
-     * file in it either the IDE's own or empty. The IDE rewrites its project files into a path git already
+     * file in it either the editor's own or empty. The editor rewrites its project files into a path git already
      * emptied, and the husk that leaves outlives the worktree by itself.
      */
-    private static boolean sweep(Orphan orphan) {
+    private boolean sweep(Orphan orphan) {
         if (orphan.secretFiles() > 0 || Files.exists(orphan.path().resolve(".git"))
-                || !holdsOnlyIdeFiles(orphan.path())) {
+                || !holdsOnlyEditorFiles(orphan.path())) {
             return false;
         }
         try {
@@ -119,13 +121,13 @@ public class WorktreeOrphanScanner implements Job {
         }
     }
 
-    private static boolean holdsOnlyIdeFiles(Path directory) {
+    private boolean holdsOnlyEditorFiles(Path directory) {
         boolean[] onlyIdeFiles = {true};
         try {
             Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return WorktreeNoise.IDE_FILES.contains(dir.getFileName().toString())
+                    return editor.residue().contains(dir.getFileName().toString())
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 
@@ -243,7 +245,7 @@ public class WorktreeOrphanScanner implements Job {
         }
     }
 
-    private static int countSecretFiles(Path worktree, List<PathMatcher> matchers) {
+    private int countSecretFiles(Path worktree, List<PathMatcher> matchers) {
         if (matchers.isEmpty()) {
             return 0;
         }
@@ -252,7 +254,8 @@ public class WorktreeOrphanScanner implements Job {
             Files.walkFileTree(worktree, new SimpleFileVisitor<>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return WorktreeNoise.UNWALKED.contains(dir.getFileName().toString())
+                    String name = dir.getFileName().toString();
+                    return WorktreeNoise.UNWALKED.contains(name) || editor.residue().contains(name)
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 

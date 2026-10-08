@@ -1,12 +1,14 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.port.EditorDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -15,55 +17,40 @@ import static org.mockito.Mockito.when;
 class WorktreeFilesTest {
 
     @Test
-    void copiesLegacyIdeaRunConfigurationsIntoTheWorktree(@TempDir Path root) throws Exception {
+    void copiesTheEditorsFilesAndDirectoriesIntoTheWorktree(@TempDir Path root) throws Exception {
         Path project = root.resolve("repo");
-        Files.createDirectories(project.resolve(".idea").resolve("runConfigurations"));
-        Files.writeString(project.resolve(".idea").resolve("runConfigurations").resolve("App.xml"),
-                "<configuration/>");
+        Files.createDirectories(project.resolve(".editor").resolve("runs"));
+        Files.writeString(project.resolve(".editor").resolve("runs").resolve("App.xml"), "<configuration/>");
+        Files.writeString(project.resolve(".editor").resolve("db.xml"), "<db/>");
         Path worktree = root.resolve("ABC-1-repo");
 
-        WorktreeFiles.copyIdeProjectFiles(project, worktree);
+        WorktreeFiles.copyProjectFiles(project, worktree, List.of(".editor/runs", ".editor/db.xml"));
 
-        assertThat(worktree.resolve(".idea").resolve("runConfigurations").resolve("App.xml"))
-                .exists().hasContent("<configuration/>");
+        assertThat(worktree.resolve(".editor").resolve("runs").resolve("App.xml")).hasContent("<configuration/>");
+        assertThat(worktree.resolve(".editor").resolve("db.xml")).hasContent("<db/>");
     }
 
     @Test
-    void copiesDatabaseConnectionsIntoTheWorktree(@TempDir Path root) throws Exception {
+    void doesNotFailWhenTheProjectHasNoneOfTheEditorsFiles(@TempDir Path root) {
         Path project = root.resolve("repo");
-        Files.createDirectories(project.resolve(".idea").resolve("dataSources"));
-        Files.writeString(project.resolve(".idea").resolve("dataSources.xml"), "<dataSource/>");
-        Files.writeString(project.resolve(".idea").resolve("dataSources.local.xml"), "<local/>");
-        Files.writeString(project.resolve(".idea").resolve("dataSources").resolve("pg.xml"), "<db/>");
         Path worktree = root.resolve("ABC-1-repo");
 
-        WorktreeFiles.copyIdeProjectFiles(project, worktree);
+        WorktreeFiles.copyProjectFiles(project, worktree, List.of(".editor/runs"));
 
-        assertThat(worktree.resolve(".idea").resolve("dataSources.xml")).exists().hasContent("<dataSource/>");
-        assertThat(worktree.resolve(".idea").resolve("dataSources.local.xml")).exists().hasContent("<local/>");
-        assertThat(worktree.resolve(".idea").resolve("dataSources").resolve("pg.xml")).exists().hasContent("<db/>");
+        assertThat(worktree.resolve(".editor")).doesNotExist();
     }
 
     @Test
-    void copiesModernDotRunConfigurationsIntoTheWorktree(@TempDir Path root) throws Exception {
-        Path project = root.resolve("repo");
-        Files.createDirectories(project.resolve(".run"));
-        Files.writeString(project.resolve(".run").resolve("App.run.xml"), "<configuration/>");
-        Path worktree = root.resolve("ABC-1-repo");
+    void copiesNoLocalFileOutOfWhatTheEditorWrote(@TempDir Path root) throws Exception {
+        Path base = root.resolve("base");
+        Files.createDirectories(base.resolve(".editor"));
+        Files.writeString(base.resolve(".editor/.env"), "IGNORED=1");
+        Path wt = root.resolve("wt");
+        Files.createDirectories(wt);
 
-        WorktreeFiles.copyIdeProjectFiles(project, worktree);
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), Set.of(".editor"));
 
-        assertThat(worktree.resolve(".run").resolve("App.run.xml")).exists().hasContent("<configuration/>");
-    }
-
-    @Test
-    void doesNotFailWhenBaseProjectHasNoSharedRunConfigurations(@TempDir Path root) {
-        Path project = root.resolve("repo");
-        Path worktree = root.resolve("ABC-1-repo");
-
-        WorktreeFiles.copyIdeProjectFiles(project, worktree);
-
-        assertThat(worktree.resolve(".idea")).doesNotExist();
+        assertThat(wt.resolve(".editor/.env")).doesNotExist();
     }
 
     @Test
@@ -78,7 +65,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"), Set.of());
 
         assertThat(wt.resolve("app/.env")).exists().hasContent("SECRET=1");
         assertThat(wt.resolve("lib/key.pem")).exists().hasContent("PEM");
@@ -94,7 +81,7 @@ class WorktreeFilesTest {
         Files.createDirectories(wt);
         Files.writeString(wt.resolve(".env"), "AS COMMITTED");
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), Set.of());
 
         assertThat(wt.resolve(".env")).hasContent("AS COMMITTED");
     }
@@ -107,7 +94,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), Set.of());
 
         assertThat(wt.resolve(".env")).exists().hasContent("SECRET=1");
     }
@@ -120,7 +107,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("vendor/**"));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("vendor/**"), Set.of());
 
         assertThat(wt.resolve("vendor")).doesNotExist();
     }
@@ -130,7 +117,7 @@ class WorktreeFilesTest {
         Files.createDirectories(gitCommonDir.resolve("info"));
         Files.writeString(gitCommonDir.resolve("info").resolve("exclude"), "*.local\n");
 
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class), mock(EditorDriver.class));
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
                 .contains("*.local", "task_context.md", "plan.md", "master-review.md", "AGENTS.md", ".jagt/");
@@ -141,16 +128,26 @@ class WorktreeFilesTest {
         AgentRuntime runtime = mock(AgentRuntime.class);
         when(runtime.statusExclusions()).thenReturn(List.of(".acme.json", ".acme/"));
 
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, runtime);
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, runtime, mock(EditorDriver.class));
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
                 .contains(".acme.json", ".acme/");
     }
 
     @Test
+    void keepsTheEditorsCopiedFilesOutOfEveryWorktreesGitStatus(@TempDir Path gitCommonDir) throws Exception {
+        EditorDriver editor = mock(EditorDriver.class);
+        when(editor.projectFiles()).thenReturn(List.of(".editor/runs"));
+
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class), editor);
+
+        assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude"))).contains(".editor/runs");
+    }
+
+    @Test
     void addsNothingTwiceWhenTheProjectIsInitialisedAgain(@TempDir Path gitCommonDir) throws Exception {
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
-        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class));
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class), mock(EditorDriver.class));
+        WorktreeFiles.excludeOrchestratorPlumbing(gitCommonDir, mock(AgentRuntime.class), mock(EditorDriver.class));
 
         assertThat(Files.readString(gitCommonDir.resolve("info").resolve("exclude")))
                 .containsOnlyOnce("task_context.md");

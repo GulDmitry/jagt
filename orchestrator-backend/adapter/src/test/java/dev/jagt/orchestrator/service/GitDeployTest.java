@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.adapter.LsofWorktreeProcesses;
 import dev.jagt.orchestrator.adapter.ProcessRunner;
+import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -9,9 +10,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class GitDeployTest {
 
@@ -35,7 +39,8 @@ class GitDeployTest {
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
 
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
-        new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner))).mergeIntoAndPush(repo, "ABC-1", "dev");
+        new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class)).mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim()).isEqualTo(taskTip);
@@ -65,7 +70,8 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "HEAD:ABC-1"));
 
-        new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner))).mergeIntoAndPush(repo, "ABC-1", "dev");
+        new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class)).mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
@@ -91,9 +97,12 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         Files.createDirectories(dir.resolve("ABC-1-deploy").resolve(".idea"));
         Files.writeString(dir.resolve("ABC-1-deploy").resolve(".idea").resolve("misc.xml"), "<project/>");
+        EditorDriver editor = mock(EditorDriver.class);
+        when(editor.residue()).thenReturn(Set.of(".idea"));
 
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
-        new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner))).mergeIntoAndPush(repo, "ABC-1", "dev");
+        new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                editor).mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
@@ -122,8 +131,11 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         Files.createDirectories(dir.resolve("ABC-1-deploy").resolve(".idea"));
         Files.writeString(dir.resolve("ABC-1-deploy").resolve(".idea").resolve("misc.xml"), "<project/>");
+        EditorDriver editor = mock(EditorDriver.class);
+        when(editor.residue()).thenReturn(Set.of(".idea"));
 
-        new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner))).mergeIntoAndPush(repo, "ABC-1", "dev");
+        new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                editor).mergeIntoAndPush(repo, "ABC-1", "dev");
 
         runner.run(repo, t, List.of("git", "fetch", "-q"));
         assertThat(runner.run(repo, t, List.of("git", "cat-file", "-p", "origin/dev:g.txt")).stdout())
@@ -149,7 +161,8 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         Files.createDirectories(dir.resolve("ABC-1-deploy"));
         Files.writeString(dir.resolve("ABC-1-deploy").resolve("notes.txt"), "mine");
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.StaleDeployPathException.class)
@@ -180,7 +193,8 @@ class GitDeployTest {
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
@@ -210,7 +224,8 @@ class GitDeployTest {
                 "--allow-empty", "-m", "base"));
         runner.run(web, t, List.of("git", "worktree", "add", "-q", "-b", "jagt-deploy-ABC-1",
                 GitDeploy.deployWorktreePath(web, "ABC-1").toString()));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(api, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)
@@ -230,7 +245,8 @@ class GitDeployTest {
                 "--allow-empty", "-m", "base"));
         runner.run(web, t, List.of("git", "worktree", "add", "-q", "-b", "jagt-deploy-ABC-1",
                 GitDeploy.deployWorktreePath(web, "ABC-1").toString()));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         assertThat(git.hasDeployWorktree(web, "ABC-1")).isTrue();
         assertThat(git.hasDeployWorktree(api, "ABC-1")).isFalse();
@@ -258,7 +274,8 @@ class GitDeployTest {
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         String taskTip = runner.run(repo, t, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -295,7 +312,8 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -329,7 +347,8 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -364,7 +383,8 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -406,7 +426,8 @@ class GitDeployTest {
         Files.writeString(repo.resolve("f.txt"), "task change");
         Files.writeString(repo.resolve("g.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -444,7 +465,8 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -483,7 +505,8 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
         Files.writeString(repo.resolve("f.txt"), "task change");
         runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(GitDeploy.MergeConflictException.class);
@@ -530,7 +553,8 @@ class GitDeployTest {
         runner.run(repo, t, List.of("git", "worktree", "add", "-q", "-B", "jagt-deploy-ABC-1",
                 deployWorktree.toString(), "origin/dev"));
         runner.run(dir, t, List.of("rm", "-rf", deployWorktree.toString()));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -563,7 +587,8 @@ class GitDeployTest {
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -600,7 +625,8 @@ class GitDeployTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
         String taskTip = runner.run(repo, timeout, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
@@ -632,7 +658,8 @@ class GitDeployTest {
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "dev"));
         runner.run(repo, timeout, List.of("git", "branch", "ABC-1", "main"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)
@@ -656,7 +683,8 @@ class GitDeployTest {
         Files.writeString(repo.resolve("g.txt"), "work that was never shipped");
         runner.run(repo, timeout, List.of("git", "add", "."));
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
                 .isInstanceOf(IllegalStateException.class)
@@ -683,7 +711,8 @@ class GitDeployTest {
         runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "task"));
         runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
         String taskTip = runner.run(repo, timeout, List.of("git", "rev-parse", "ABC-1")).stdout().trim();
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
         git.mergeIntoAndPush(repo, "ABC-1", "dev");
@@ -748,7 +777,8 @@ class GitDeployTest {
     @Test
     void revertTakesTheDeployedChangeBackOutOfDevAndLeavesTheTaskBranchIntact(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())));
+        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())),
+                mock(EditorDriver.class));
         String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
         String taskTip = repo.sha("ABC-1");
 
@@ -763,7 +793,8 @@ class GitDeployTest {
     @Test
     void refusesToRevertACommitThatIsNotOnTheDeployBranch(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())));
+        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())),
+                mock(EditorDriver.class));
         String neverDeployed = repo.sha("ABC-1");
 
         assertThatThrownBy(() -> git.revertMergeAndPush(repo.path(), "ABC-1", "dev", neverDeployed))
@@ -776,7 +807,8 @@ class GitDeployTest {
     @Test
     void refusesASecondRevertOfTheSameDeploy(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())));
+        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())),
+                mock(EditorDriver.class));
         String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
         String firstRevert = git.revertMergeAndPush(repo.path(), "ABC-1", "dev", merge);
 
@@ -790,7 +822,8 @@ class GitDeployTest {
     @Test
     void refusesToRevertACommitThatIsNotAMerge(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())));
+        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())),
+                mock(EditorDriver.class));
         repo.commitOnDev("unrelated.txt", "someone else's commit");
         String plainCommit = repo.sha("origin/dev");
 
@@ -804,7 +837,8 @@ class GitDeployTest {
     @Test
     void abortsAndPushesNothingWhenTheRevertConflictsWithLaterWorkOnDev(@TempDir Path dir) throws Exception {
         Repo repo = Repo.withTaskBranch(dir, "ABC-1");
-        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())));
+        GitDeploy git = new GitDeploy(new GitCommands(repo.runner(), new LsofWorktreeProcesses(repo.runner())),
+                mock(EditorDriver.class));
         String merge = git.mergeIntoAndPush(repo.path(), "ABC-1", "dev");
         repo.commitOnDev("feature.txt", "someone edited the deployed feature");
         String devTip = repo.sha("origin/dev");
@@ -835,7 +869,8 @@ class GitDeployTest {
         Files.writeString(repo.resolve("g.txt"), "task");
         runner.run(repo, t, List.of("git", "add", "."));
         runner.run(repo, t, List.of("git", "commit", "-qm", "task"));
-        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
 
         runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
         assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))

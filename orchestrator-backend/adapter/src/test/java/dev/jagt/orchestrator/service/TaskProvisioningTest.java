@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 
+import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.SessionHost;
 
 import dev.jagt.orchestrator.adapter.agent.ClaudeAgentRuntime;
@@ -67,7 +68,7 @@ class TaskProvisioningTest {
                 new McpEndpoint("http://localhost:8290/mcp"),
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
         return provisioning(new WorktreeSetup(runtime, paths, config,
-                new SubAgentBriefing(new PromptTemplates())));
+                new SubAgentBriefing(new PromptTemplates()), mock(EditorDriver.class)));
     }
 
     private TaskProvisioning provisioning(WorktreeSetup setup) {

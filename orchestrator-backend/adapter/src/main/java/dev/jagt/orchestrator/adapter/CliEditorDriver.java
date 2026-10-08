@@ -14,6 +14,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -57,6 +58,17 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
         command.add(left.toString());
         command.add(right.toString());
         processRunner.runDetached(null, command);
+    }
+
+    @Override
+    public Set<String> residue() {
+        return Set.of(".idea", ".run", ".vscode", ".fleet");
+    }
+
+    @Override
+    public List<String> projectFiles() {
+        return List.of(".run", ".idea/runConfigurations", ".idea/dataSources.xml", ".idea/dataSources.local.xml",
+                ".idea/dataSources");
     }
 
     /** The sentence names the key to set, not the binary the human never chose. */

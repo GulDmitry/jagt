@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.port;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 /**
  * How a worktree is opened for the human's review checkpoint. Called on an explicit human request, so unlike the
@@ -13,6 +14,16 @@ public interface EditorDriver {
 
     /** Opens a diff/compare window between two paths, no project. */
     void openDiff(Path left, Path right);
+
+    /** Top-level names the editor writes into a directory of its own accord. */
+    default Set<String> residue() {
+        return Set.of();
+    }
+
+    /** Paths under a project root the editor keeps out of git that a worktree of the project needs as well. */
+    default List<String> projectFiles() {
+        return List.of();
+    }
 
     /** Forgets a worktree that is already gone, in the editor's own project registry. Best-effort. */
     default void forgetProject(Path worktreePath) {
