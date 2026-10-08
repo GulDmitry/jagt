@@ -144,7 +144,7 @@ class McpToolScopeTest {
     @ValueSource(strings = {"write_task_context", "open_task_tab", "close_task_tab", "focus_task"})
     void refusesASubAgentDrivingEvenItsOwnSession(String tool) {
         AgentSessions sessions = mock(AgentSessions.class);
-        ToolHandler handler = declared(new SessionTools(sessions, scope, commands)).get(tool);
+        ToolHandler handler = declared(new SessionTools(sessions, commands)).get(tool);
 
         assertThatThrownBy(() -> handler.call(
                 args("{\"taskId\":\"MINE-1\",\"instructions\":\"commit and push\"}"), "MINE-1"))
@@ -165,9 +165,8 @@ class McpToolScopeTest {
 
     @Test
     void focusesATaskThroughTheCommandGate() {
-        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
         AgentSessions sessions = mock(AgentSessions.class);
-        ToolHandler handler = declared(new SessionTools(sessions, scope, commands)).get("focus_task");
+        ToolHandler handler = declared(new SessionTools(sessions, commands)).get("focus_task");
 
         handler.call(args("{\"taskId\":\"ABC-1\"}"), null);
 

@@ -69,9 +69,9 @@ The **only** way jagt reads outside itself, headless and one-shot: `service/Tick
 
 - `HeadlessClaude` books every call to the session under its kind, **before its answer is judged**; the
   caller charges the task (`UsageTracker.chargeTask`), as a call can precede its task.
-- A sub-agent's own spend is read separately (`AgentSpendReader`, tokens only); `TOKENS` and the card show
-  the SUM.
-- Floor per call: ~25k input tokens of baseline, ~$0.41 on the inherited default model against ~$0.06 on
+- A sub-agent's own spend is read apart (`AgentSpendReader`, tokens only): `stats` lists both, a
+  finished task's record sums them.
+- Floor per call: ~25k baseline input tokens, ~$0.41 on the inherited default model against ~$0.06 on
   haiku — hence `orchestrator.assistant.model` **ships as `haiku`** (blank to inherit). **The lever is fewer
   calls.**
 - **What jagt can read, it reads once and quotes**: `list_tasks` lists, never dumps; the panel's roles share one

@@ -6,7 +6,7 @@ public enum ActionOrigin {
     BOARD,
     /** Free text a model mapped to a command, whichever surface it was typed into. */
     PALETTE,
-    /** An MCP call: a sub-agent reporting its own progress, or a session working on jagt itself. */
+    /** An MCP call: a sub-agent reporting its own progress, or the Master. */
     MCP,
     AUTO_REVIEW,
     /** The Master session acting where a human would have. */

@@ -42,7 +42,7 @@ class McpProtocolServiceTest {
     private static List<McpTools> groups() {
         CallerScope scope = new CallerScope(mock(StateService.class));
         return List.of(new StatusTools(mock(AgentStatusReports.class), scope),
-                new SessionTools(mock(AgentSessions.class), scope, mock(CommandService.class)));
+                new SessionTools(mock(AgentSessions.class), mock(CommandService.class)));
     }
 
     @Test
