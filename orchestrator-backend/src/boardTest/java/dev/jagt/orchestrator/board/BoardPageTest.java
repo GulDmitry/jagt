@@ -1579,6 +1579,26 @@ class BoardPageTest {
     }
 
     @Test
+    void aCardIsNamedToAScreenReaderByBothTheNamesItAnswersTo() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.getByRole(AriaRole.ARTICLE, new Page.GetByRoleOptions().setName("a1 \u00b7 ABC-1")))
+                .hasCount(1);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"filter, filter", "ref, ticket", "base-branch, base branch", "notes, instructions",
+            "ask, command", "say, tell this session"})
+    void everyTextFieldIsNamedWithoutLeaningOnItsPlaceholder(String id, String named) {
+        Page page = open();
+
+        assertThat(page.locator("#" + id)).hasAttribute("aria-label", Pattern.compile(named));
+    }
+
+    @Test
     void aRefusalIsAnnouncedAsAnAlertAndDismissedByAButton() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());

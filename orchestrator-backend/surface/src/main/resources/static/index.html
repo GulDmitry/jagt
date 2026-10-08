@@ -17,23 +17,23 @@
   <span id="auto-review" class="chip" data-tip="unattended review polling"></span>
   <span id="jobs-pulse" class="chip bad" hidden></span>
   <span class="grow"></span>
-  <input id="filter" class="control" placeholder="filter: alias, ticket or title (/)" autocomplete="off"
+  <input id="filter" class="control" aria-label="filter the board" placeholder="filter: alias, ticket or title (/)" autocomplete="off"
          data-tip="substring match">
   <label class="control checkbox" data-tip="show only tasks that need your action"><input type="checkbox" id="mine"> needs my action</label>
   <button id="open-palette" data-tip="⌘K / Ctrl-K: a command, or plain words">Ask</button>
   <span id="reports"></span>
   <span id="live" class="dot" role="img" aria-label="push connection to the backend" tabindex="0"
         data-tip="push connection to the backend"></span>
-  <span id="offline" class="chip bad" hidden data-tip="nothing on the board is current and nothing on it can run; it reconnects by itself">backend unreachable</span>
+  <span id="offline" class="chip bad" role="status" hidden data-tip="nothing on the board is current and nothing on it can run; it reconnects by itself">backend unreachable</span>
 </header>
 
 <form id="launch">
-  <input id="ref" name="ref" placeholder="ABC-42 or a ticket URL — empty for a task of your own" autocomplete="off">
+  <input id="ref" name="ref" aria-label="ticket" placeholder="ABC-42 or a ticket URL — empty for a task of your own" autocomplete="off">
   <!-- Several picked = one task, one agent session, a worktree in each. -->
   <select id="project" name="project" multiple size="1" data-tip="one project, or several for work that spans them"></select>
-  <input id="base-branch" name="baseBranch" placeholder="base branch (optional)" autocomplete="off">
+  <input id="base-branch" name="baseBranch" aria-label="base branch" placeholder="base branch (optional)" autocomplete="off">
   <label class="checkbox" data-tip="agent writes a plan and waits for approval before changing code"><input type="checkbox" id="plan"> plan first</label>
-  <input id="notes" name="notes" placeholder="extra instructions — or the whole task, with no ticket" autocomplete="off">
+  <input id="notes" name="notes" aria-label="instructions for the agent" placeholder="extra instructions — or the whole task, with no ticket" autocomplete="off">
   <select id="strategy" name="strategy" size="1"
           data-tip="what to do when a branch of this name already exists"></select>
   <button type="submit" class="primary" data-tip="cut a worktree per project, start one agent session and brief it">Start</button>
@@ -41,7 +41,7 @@
 </form>
 
 <form id="palette" hidden>
-  <input id="ask" list="ask-options" placeholder="a command (ship a1), or plain words"
+  <input id="ask" list="ask-options" aria-label="a command or plain words" placeholder="a command (ship a1), or plain words"
          autocomplete="off" required>
   <datalist id="ask-options"></datalist>
   <button type="submit" class="primary">Run</button>
@@ -60,7 +60,7 @@
   </div>
   <!-- Only for a report about ONE task: the session it is about is the one this line reaches. -->
   <form id="report-line" hidden>
-    <input id="say" placeholder="tell this session — no, answer 2 differently" autocomplete="off" required>
+    <input id="say" aria-label="tell this session" placeholder="tell this session — no, answer 2 differently" autocomplete="off" required>
     <span id="said" class="checks running" hidden role="img" aria-label="the session is working" tabindex="0" data-tip="the session is working; this repaints when it answers"></span>
   </form>
 </dialog>
