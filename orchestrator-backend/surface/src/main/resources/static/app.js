@@ -15,6 +15,14 @@ import * as resume from './ui/resume.js';
 import {sessionLog, showLog} from './ui/toast.js';
 
 const live = document.getElementById('live');
+// Cut off from the backend, the board is a picture of the past: nothing on it may act.
+const STALE = ['board', 'phases', 'launch', 'resume', 'palette', 'resume-task', 'open-palette', 'reports'];
+const connected = (yes) => {
+  live.classList.toggle('on', yes);
+  document.getElementById('offline').hidden = yes;
+  document.body.classList.toggle('stale', !yes);
+  STALE.forEach((id) => { document.getElementById(id).inert = !yes; });
+};
 
 onClick({
   action: run,
@@ -50,12 +58,12 @@ const events = new EventSource('/api/events');
 events.addEventListener('open', (event) => {
   // The server's first message is also named `open`, and one connect is one read.
   if (event instanceof MessageEvent) return;
-  live.classList.add('on');
+  connected(true);
   loadVerbs();
   refresh();
 });
 // An open report is read again on the same signal: the round it shows may be the thing that changed.
 events.addEventListener('changed', () => { refresh(); repaintReport(); });
-events.onerror = () => live.classList.remove('on');
+events.onerror = () => connected(false);
 // The slow repaint is for the relative clocks ("4m ago") only, which no event can announce.
 setInterval(render, 15000);

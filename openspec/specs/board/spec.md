@@ -38,8 +38,8 @@ several projects, or a task spans several.
 ### Requirement: Verbs come off the wire in groups
 Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`; the board renders a row per group,
 read off the wire. A hint's text lives in `command/CommandReference` alone.
-A renamed verb keeps its old spelling, advertising only the new, owned by `TaskAction.RENAMED` through `byRetiredVerb`,
-read by the palette (`CommandReference.Verb.aliases`) and tier 2.
+A renamed verb still answers to its old spelling, advertised nowhere (`TaskAction.RENAMED`, read by the palette and
+tier 2).
 
 #### Scenario: Which buttons change something
 - **WHEN** the human reads a card's buttons
@@ -88,7 +88,7 @@ grown only when something branches on it. No tools facade: each MCP tool group d
 
 #### Scenario: A stale tab
 - **WHEN** a stale tab sends a verb `Move` no longer allows
-- **THEN** it is refused with a sentence, not a git error three layers down
+- **THEN** a sentence refuses it, not a git error
 
 ### Requirement: Loopback only
 The board SHALL bind loopback and ask no password; `surface/board/LoopbackFilter` SHALL refuse a foreign Host or
@@ -104,13 +104,17 @@ Origin, and `/mcp` anything but JSON.
 
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `StateService.onChange` is the one event, `TaskEventStream` forwarding it as SSE at
-`/api/events` with no payload, which a second serialization could contradict. A periodic tick survives for the ACTIVE
-clock. A card carries `data-action`, never a closure: `ui/render` holds the one delegated listener on the grid, so a
-card rebuilt under the pointer cannot act for its old task.
+`/api/events` with no payload. Each connect reads the board once. A periodic tick survives for the ACTIVE clock. A card
+carries `data-action`, never a closure: `ui/render` holds the one delegated listener on the grid, so a card rebuilt
+under the pointer cannot act for its old task.
 
 #### Scenario: The clock reset
 - **WHEN** a card said 17h and the restarted agent shows 0m
 - **THEN** that is correct: the clock is time in that status
+
+#### Scenario: The backend goes away
+- **WHEN** the push connection drops
+- **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
 
 ### Requirement: A banner leads to its task
 A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only via `terminal-notifier

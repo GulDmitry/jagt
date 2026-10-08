@@ -82,8 +82,8 @@ const rows = () => [
     'in the header: how many cards are an interruption'],
   [[span('chip on', 'auto-review on'), span('chip', 'auto-review off'), span('chip bad', 'jobs: 1 failed')],
     'in the header: whether anything polls \u00b7 a job whose last run failed'],
-  [[span('dot on', ''), span('dot', '')],
-    'top right: whether this page is being told about changes'],
+  [[span('dot on', ''), span('chip bad', 'backend unreachable')],
+    'top right: this page is told about changes \u00b7 it is not, and nothing on it can run'],
 ];
 
 export function node() {

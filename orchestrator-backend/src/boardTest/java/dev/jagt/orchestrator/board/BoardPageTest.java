@@ -940,6 +940,21 @@ class BoardPageTest {
     }
 
     @Test
+    void aBoardCutOffFromTheBackendSaysItIsStaleAndOffersNothingUntilItReconnects() {
+        Page page = session.newPage();
+        page.route("**/api/events", Route::abort);
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#offline")).isVisible();
+        assertThat(page.locator("#board")).hasAttribute("inert", "");
+
+        page.unroute("**/api/events");
+
+        assertThat(page.locator("#offline")).isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(10_000));
+        assertThat(page.locator("#board")).not().hasAttribute("inert", "");
+    }
+
+    @Test
     void theHeaderCountsTheTasksWhoseTurnItIs() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
