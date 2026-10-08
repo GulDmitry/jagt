@@ -258,7 +258,15 @@ public final class FlowRules {
         return WAITING_FOR_A_DEPLOY.contains(status);
     }
 
-    /** A hand-back held until jagt has run the project's own verification command. */
+    /**
+     * A round is out with the reviewers, so only the code host moves it on. NOT what the unattended poll watches,
+     * which is an open request whatever the status.
+     */
+    public static boolean outForReview(TaskStatus status) {
+        return OUT_FOR_REVIEW.contains(status);
+    }
+
+    /** A hand-back jagt holds until it has run the project's verification command; its agent's silence is no stall. */
     public static boolean awaitingVerification(TaskStatus status) {
         return status == TaskStatus.VERIFYING;
     }
@@ -303,6 +311,8 @@ public final class FlowRules {
 
     private static final Set<TaskStatus> READ_BY_THE_MASTER = EnumSet.of(TaskStatus.PLAN_PENDING,
             TaskStatus.REVIEW_PENDING);
+
+    private static final Set<TaskStatus> OUT_FOR_REVIEW = EnumSet.of(TaskStatus.CI_POLLING, TaskStatus.REVIEWED);
 
     private static final Set<TaskStatus> HANDED_BACK = EnumSet.of(TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED);
 

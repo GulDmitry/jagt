@@ -59,7 +59,7 @@ past its review.
 ### Requirement: A hand-back waits at VERIFYING
 `FlowRules.reported` SHALL redirect a hand-back owing a verification run to `VERIFYING`; no action leads there and
 no agent may report it. `VerifyJob` runs the command: green reaches the human, red MUST go back to the session with
-the output. `TaskStatus.heldByJagt` keeps the watchdog off that silence.
+the output. `FlowRules.awaitingVerification` keeps the watchdog off that silence.
 
 #### Scenario: A red verification run
 - **WHEN** `verifyCommand` goes red

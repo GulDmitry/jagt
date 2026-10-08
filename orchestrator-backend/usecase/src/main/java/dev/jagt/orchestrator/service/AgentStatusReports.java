@@ -99,11 +99,11 @@ public class AgentStatusReports {
                 return next;
             }
             // Repeating CI_POLLING on the request already carried is the same round.
-            boolean sameRound = was.outForReview() && (requestsByProject.isEmpty()
+            boolean sameRound = FlowRules.outForReview(was) && (requestsByProject.isEmpty()
                     ? url.equals(next.mrUrl())
                     : requestsByProject.entrySet().stream().allMatch(request ->
                             next.reviewRequestOf(request.getKey()).filter(request.getValue()::equals).isPresent()));
-            boolean newRound = next.status().outForReview() && !sameRound;
+            boolean newRound = FlowRules.outForReview(next.status()) && !sameRound;
             if (!requestsByProject.isEmpty()) {
                 return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
             }

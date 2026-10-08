@@ -26,17 +26,4 @@ public enum TaskStatus {
     public String label() {
         return label;
     }
-
-    /** jagt itself is holding the task, so its agent going quiet is correct rather than a stall. */
-    public boolean heldByJagt() {
-        return this == VERIFYING;
-    }
-
-    /**
-     * A round is out with the reviewers, so only the code host moves it on. NOT what the unattended poll watches,
-     * which is an open request whatever the status.
-     */
-    public boolean outForReview() {
-        return this == CI_POLLING || this == REVIEWED;
-    }
 }

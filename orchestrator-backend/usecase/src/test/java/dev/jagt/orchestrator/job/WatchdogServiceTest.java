@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -156,7 +157,7 @@ class WatchdogServiceTest {
     @EnumSource(TaskStatus.class)
     void watchesEveryStatusWhoseNextMoveIsTheAgentsOwnAndJagtIsNotHoldingItself(TaskStatus status) {
         assertThat(WatchdogService.watches(status))
-                .isEqualTo(Move.ownerOf(status) == Owner.AGENT && !status.heldByJagt());
+                .isEqualTo(Move.ownerOf(status) == Owner.AGENT && !FlowRules.awaitingVerification(status));
     }
 
     @Test

@@ -54,7 +54,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
             return Owner.AGENT;
         }
         Owner owner = waitingOn(status, hasReviewRequest, round);
-        if (owner == Owner.AGENT && agentSilent && !status.heldByJagt()) {
+        if (owner == Owner.AGENT && agentSilent && !FlowRules.awaitingVerification(status)) {
             return Owner.YOU;
         }
         // A wait on the code host that nothing will look at again is a wait on the HUMAN.
@@ -125,7 +125,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
             return Owner.CI;
         }
         // Out with the reviewers, with nothing for them to review: nobody but a human can move that.
-        if (status.outForReview() && !hasReviewRequest) {
+        if (FlowRules.outForReview(status) && !hasReviewRequest) {
             return Owner.YOU;
         }
         return ownerOf(status);
@@ -146,7 +146,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
 
     /** A turn ending on a move still the agent's, with no question put, is a session stopping unannounced. */
     public static boolean endsUnreported(TaskStatus status, String message) {
-        return ownerOf(status) == Owner.AGENT && !status.heldByJagt()
+        return ownerOf(status) == Owner.AGENT && !FlowRules.awaitingVerification(status)
                 && AgentReport.of(message) != AgentReport.QUESTION;
     }
 
