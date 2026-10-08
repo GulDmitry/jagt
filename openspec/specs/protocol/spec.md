@@ -104,7 +104,7 @@ no facts, never a guess; reaching the human is the caller's (`AutoReviewSchedule
 - **THEN** the human is tapped once, not left a log line
 
 ### Requirement: A ticket is read through the human's MCP servers
-A ticket ref SHALL be read, paid, through the human's own MCP servers for title, labels and project.
+A ticket ref SHALL be read, paid, through the human's MCP servers for title, labels and project.
 It SHALL load no built-in tool and call only MCP reads (`get*`, `list*`…) unless `allowed-tools` names more.
 `assistant.mcp-config`, a path or the JSON itself, loads only the declared servers; their tool names carry no plugin prefix.
 
