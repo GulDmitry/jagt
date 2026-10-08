@@ -34,6 +34,11 @@ public class HelpCommand implements GlobalCommand {
     }
 
     @Override
+    public String part() {
+        return "legend";
+    }
+
+    @Override
     public String run(String tail) {
         return CommandReference.text(commands.getObject().all());
     }

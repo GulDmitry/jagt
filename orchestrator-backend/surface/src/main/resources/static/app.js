@@ -31,12 +31,9 @@ onClick({
 });
 header.onBarClick(render);
 filters.onChange(render);
-palette.wire({
-  focusRef: launch.focusRef,
-  openResume: resume.open,
-  // Half of "how does this work" on a board is what its marks mean.
-  reportSection: (id) => (id === 'help' ? legend.node() : null),
-});
+// Where on this page each part a verb names is.
+const parts = {launch: {focus: launch.focusRef}, legend: {section: legend.node}};
+palette.wire({partFor: (part) => parts[part] || {}});
 showLog(() => showReport('log — this session', sessionLog()));
 
 // A linked task lands in the FILTER rather than a selection of its own: the control that did it is visible, and

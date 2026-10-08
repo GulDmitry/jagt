@@ -14,7 +14,7 @@ const opener = document.getElementById('open-palette');
 const verdict = document.getElementById('palette-state');
 
 // Asked here, decided at wiring time, so this module knows no form and no verb by name.
-let forms = {focusRef: () => {}, openResume: () => {}, reportSection: () => null};
+let forms = {partFor: () => ({})};
 
 export const wire = (wired) => { forms = wired; };
 
@@ -71,7 +71,7 @@ export function refreshSuggestions() {
       button.textContent = verb.id.charAt(0).toUpperCase() + verb.id.slice(1);
       button.dataset.tip = verb.hint;
       button.onclick = () => openReport(`${verb.id} — ${verb.hint}`, `/api/commands/${verb.id}`,
-        {extra: forms.reportSection(verb.id)});
+        {extra: forms.partFor(verb.part).section?.()});
       return button;
     }));
 }
@@ -114,38 +114,20 @@ async function runParsed(parsed) {
     await run(task.id, verb.id);
     return HANDLED;
   }
+  const part = forms.partFor(verb.part);
   // What was typed after the verb goes with it: a report that narrows to one task must not answer for all.
   if (verb.report) {
     const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : '';
     const opened = await openReport(`${verb.id} ${store.nameOf(argument)}`.trim(),
       `/api/commands/${encodeURIComponent(verb.id)}${narrowed}`,
-      {about: verb.aboutOneTask ? argument : null});
+      {about: verb.aboutOneTask ? argument : null, extra: part.section?.()});
     // A report that could not be read leaves the typed line where it was, to try again.
     return opened ? HANDLED : KEPT;
   }
-  // With no argument the palette hands over to the form, which is where the rest of a launch is decided anyway.
-  if (verb.id === 'do') {
-    if (!argument) { forms.focusRef(); return HANDLED; }
-    const result = await api('/api/tasks/line', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({line: argument}),
-    });
-    toast(result.message);
-    return result.created ? HANDLED : KEPT;
-  }
-  if (verb.id === 'resume') {
-    if (!argument.startsWith('http')) {
-      forms.openResume(argument);
-      return HANDLED;
-    }
-    const result = await api('/api/tasks/resume', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({reviewRequestUrl: argument}),
-    });
-    toast(result.message);
-    return result.created ? HANDLED : KEPT;
+  // Typed alone, a verb with a part of the board hands over to it, where the rest of its inputs are chosen.
+  if (!argument && part.focus) {
+    part.focus();
+    return HANDLED;
   }
   const narrowed = argument ? `?about=${encodeURIComponent(argument)}` : '';
   const result = await api(`/api/commands/${encodeURIComponent(verb.id)}${narrowed}`, {method: 'POST'});

@@ -43,6 +43,6 @@ public class ResumeCommand implements GlobalCommand {
             throw new IllegalArgumentException("usage: resume <request-url> — the request carries its own branches;"
                     + " to start a NEW task on a new branch use `do <ticket>`");
         }
-        return launcher.resume(url).message();
+        return DoCommand.created(launcher.resume(url));
     }
 }

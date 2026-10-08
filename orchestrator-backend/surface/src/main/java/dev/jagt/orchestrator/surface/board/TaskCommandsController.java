@@ -30,10 +30,6 @@ public class TaskCommandsController {
     public record InterpretRequest(String text) {
     }
 
-    /** The URL names both branches, so it is the only input. */
-    public record ResumeRequest(String reviewRequestUrl) {
-    }
-
     public record LineRequest(String line) {
     }
 
@@ -53,24 +49,6 @@ public class TaskCommandsController {
     @PostMapping("/tasks")
     public LaunchResult launch(@RequestBody LaunchRequest request) {
         Launched launched = launcher.launch(request.normalized());
-        return new LaunchResult(launched.message(), launched.created());
-    }
-
-    /** A typed line, parsed by the same grammar `do` uses — never by the page. */
-    @PostMapping("/tasks/line")
-    public LaunchResult launchLine(@RequestBody LineRequest request) {
-        Launched launched = launcher.launchLine(request.line());
-        return new LaunchResult(launched.message(), launched.created());
-    }
-
-    /** A ticket URL and a review-request URL are indistinguishable, so the caller picks the endpoint. */
-    @PostMapping("/tasks/resume")
-    public LaunchResult resume(@RequestBody ResumeRequest request) {
-        String url = request.reviewRequestUrl() == null ? "" : request.reviewRequestUrl().strip();
-        if (!url.startsWith("http")) {
-            throw new IllegalArgumentException("A review-request URL is required (http…)");
-        }
-        Launched launched = launcher.resume(url);
         return new LaunchResult(launched.message(), launched.created());
     }
 

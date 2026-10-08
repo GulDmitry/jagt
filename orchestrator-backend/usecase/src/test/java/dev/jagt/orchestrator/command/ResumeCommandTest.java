@@ -33,6 +33,15 @@ class ResumeCommandTest {
     }
 
     @Test
+    void refusesAResumeThatCreatedNoTaskSoTheTypedLineIsKept() {
+        when(launcher.resume("https://host/mr/42")).thenReturn(Launched.refused("no such request"));
+
+        assertThatThrownBy(() -> command.run("https://host/mr/42"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("no such request");
+    }
+
+    @Test
     void refusesAResumeWithNoUrlAtAll() {
         assertThatThrownBy(() -> command.run("ABC-9"))
                 .isInstanceOf(IllegalArgumentException.class)

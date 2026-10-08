@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The board, jagt's one front-end: what a card shows, which verbs exist, how a command reaches the core.
+What a card shows, which verbs exist, how a command reaches the core.
 
 ## Requirements
 
@@ -31,10 +31,6 @@ several projects, or a task spans several.
 - **THEN** it offers ticket, project, base branch, `plan first`, notes, branch strategy, Start
 - **AND** an untouched picker sends nothing
 
-#### Scenario: No project key
-- **WHEN** a card shows no project key
-- **THEN** the install has one project
-
 ### Requirement: Verbs come off the wire in groups
 Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`; the board renders a row per group,
 read off the wire. A hint's text lives in `command/CommandReference` alone.
@@ -52,14 +48,19 @@ tier 2).
 ### Requirement: Commands are two declarations
 A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
 `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`: id, hint, usage, report or not, about one task
-or not) running itself. `CommandReference` renders both: `help`'s text and the palette's verb list.
+or not, the board part it opens typed alone) running itself. `CommandReference` renders both: `help`'s text and the
+palette's verb list. A launch that creates no task is refused.
 
 #### Scenario: Reports
 - **WHEN** the human runs `stats`, `master` or `finished`
 - **THEN** `stats` gives per task the time on the human, the agent, the code host
-- **AND** `master` what the Master judged, and where the human did otherwise: passed then never deployed or reverted,
+- **AND** `master` what the Master judged, and where the human did otherwise: passed then reverted or never deployed,
   failed then deployed
-- **AND** `finished` every retired task with its whole status log
+- **AND** `finished` every retired task with its status log
+
+#### Scenario: A verb typed alone
+- **WHEN** the human types `do` alone
+- **THEN** the launch row takes the focus
 
 ### Requirement: One endpoint, one dialog
 `GET /api/commands/{id}` SHALL serve any report and `POST` run any other; no command gets its own endpoint, a GET never
@@ -83,8 +84,8 @@ run through `CommandService`: never more than a button. The call is stripped (`-
 ### Requirement: Rules live behind the controller
 `service/CommandService` SHALL validate against `Move` first; `service/TaskLauncher` starts a task; controller and
 palette own no rules. A refusal's sentence is the whole answer; one a caller must act on carries a `flow/Refusal.Code`,
-grown only when something branches on it. No tools facade: each MCP tool group declares its own (`surface/mcp/McpTools`
-+ `McpToolRegistry`, under `surface/mcp/tools`); `surface/mcp/CallerScope` owns the X-Working-Directory rule.
+grown only when something branches on it. No tools facade: each MCP tool group under `surface/mcp/tools` declares
+its own; `surface/mcp/CallerScope` owns the X-Working-Directory rule.
 
 #### Scenario: A stale tab
 - **WHEN** a stale tab sends a verb `Move` no longer allows
@@ -105,8 +106,7 @@ Origin, and `/mcp` anything but JSON.
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `StateService.onChange` is the one event, `TaskEventStream` forwarding it as SSE at
 `/api/events` with no payload. Each connect reads the board once. A periodic tick survives for the ACTIVE clock. A card
-carries `data-action`, never a closure: `ui/render` holds the one delegated listener on the grid, so a card rebuilt
-under the pointer cannot act for its old task.
+carries `data-action`, never a closure, so a card rebuilt under the pointer cannot act for its old task.
 
 #### Scenario: The clock reset
 - **WHEN** a card said 17h and the restarted agent shows 0m

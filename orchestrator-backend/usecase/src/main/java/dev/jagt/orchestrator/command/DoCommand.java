@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.LaunchRequest;
+import dev.jagt.orchestrator.task.Launched;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +39,20 @@ public class DoCommand implements GlobalCommand {
     }
 
     @Override
+    public String part() {
+        return "launch";
+    }
+
+    @Override
     public String run(String tail) {
-        return launcher.launchLine(tail).message();
+        return created(launcher.launchLine(tail));
+    }
+
+    /** A decline is a refusal here: the line that asked is the one that would repeat the attempt. */
+    static String created(Launched launched) {
+        if (!launched.created()) {
+            throw new IllegalStateException(launched.message());
+        }
+        return launched.message();
     }
 }

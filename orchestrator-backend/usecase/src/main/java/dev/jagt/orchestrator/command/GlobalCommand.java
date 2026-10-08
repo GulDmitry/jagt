@@ -29,6 +29,11 @@ public interface GlobalCommand {
         return false;
     }
 
+    /** The part of a surface the verb typed alone hands over to, or null: the one place a page names it. */
+    default String part() {
+        return null;
+    }
+
     /** {@code tail} is what was typed after the verb, blank when nothing was. */
     String run(String tail);
 }

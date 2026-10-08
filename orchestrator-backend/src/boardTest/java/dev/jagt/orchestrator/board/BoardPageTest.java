@@ -1356,6 +1356,17 @@ class BoardPageTest {
     }
 
     @Test
+    void aVerbTypedAloneHandsOverToThePartOfTheBoardItNames() {
+        Page page = open();
+        page.keyboard().press("Control+k");
+        page.locator("#ask").fill("do");
+        page.locator("#ask").press("Enter");
+
+        assertThat(page.locator("#ref")).isFocused();
+        verifyNoInteractions(launcher, naturalLanguage);
+    }
+
+    @Test
     void keepsTheTypedPaletteLineWhenTheLaunchItRanCreatedNoTask() {
         when(launcher.launchLine(any()))
                 .thenReturn(Launched.refused("branch 'ABC-9' already exists in alpha (previous run)"));

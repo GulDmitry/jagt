@@ -303,8 +303,8 @@ class ReviewAndDeployFlowTest {
                 new Answer<>(Optional.of(TicketFacts.defaults().withExists(true).withKey(TASK).withTitle(TITLE)
                         .withTrackerProject("ABC").withUrl("https://tracker.example.com/" + TASK)), TokenUsage.NONE));
 
-        String resumed = post("/api/tasks/resume",
-                "{\"reviewRequestUrl\": \"" + request() + "\"}", Map.of());
+        String resumed = post("/api/commands/resume?about="
+                + java.net.URLEncoder.encode(request(), java.nio.charset.StandardCharsets.UTF_8), "", Map.of());
 
         assertThat(resumed).contains("Resumed " + TASK + " on its existing branch", "CI_POLLING");
         assertThat(task().status()).isEqualTo(TaskStatus.CI_POLLING);

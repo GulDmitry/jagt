@@ -77,23 +77,6 @@ class TaskCommandsControllerTest {
     }
 
     @Test
-    void resumesAnExistingReviewRequestLikeTheConsoleDoes() {
-        when(launcher.resume("https://host/mr/42"))
-                .thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1 on its existing branch"));
-
-        assertThat(api.resume(new TaskCommandsController.ResumeRequest("  https://host/mr/42  ")).message())
-                .isEqualTo("Resumed PROJ-1 on its existing branch");
-    }
-
-    @Test
-    void refusesToResumeWithoutAReviewRequestUrl() {
-        assertThatThrownBy(() -> api.resume(new TaskCommandsController.ResumeRequest("ABC-1")))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("URL is required");
-        verifyNoInteractions(launcher);
-    }
-
-    @Test
     void refusesAnUnknownActionIdRatherThanMappingItToSomethingNear() {
         assertThatThrownBy(() -> api.act("ABC-1", "shipit"))
                 .isInstanceOf(IllegalArgumentException.class)
