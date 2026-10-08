@@ -643,6 +643,17 @@ class BoardPageTest {
     }
 
     @Test
+    void aStatusThatIsNotLiveStillOpensItsTimelineFromTheKeyboard() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article .status").focus();
+
+        assertThat(page.locator("#tip")).containsText("IN_PROGRESS");
+    }
+
+    @Test
     void aTooltipGoesAwayWithThePointerThatOpenedIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
@@ -1031,6 +1042,20 @@ class BoardPageTest {
     }
 
     @Test
+    void aBoardWhosePushConnectionFellSilentSaysItIsStaleAndConnectsAgain() {
+        Page page = session.newPage();
+        page.clock().install();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+
+        page.clock().runFor(50_500);
+        assertThat(page.locator("#offline")).isVisible();
+        page.waitForRequest("**/api/events", () -> page.clock().runFor(1_000));
+
+        assertThat(page.locator("#offline")).isHidden();
+    }
+
+    @Test
     void aBoardWhosePushConnectionWasRefusedTriesAgainOnItsOwn() {
         Page page = session.newPage();
         page.route("**/api/events", route -> route.fulfill(new Route.FulfillOptions().setStatus(403)));
@@ -1322,6 +1347,45 @@ class BoardPageTest {
         page.locator("article .offer").click();
 
         assertThat(page.locator("#report-title")).hasText("replies a7 \u00b7 ABC-7");
+    }
+
+    @Test
+    void aReportIsNamedToAScreenReaderByItsTitle() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-7", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a7").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        page.locator("article .offer").click();
+
+        assertThat(page.getByRole(AriaRole.DIALOG, new Page.GetByRoleOptions().setName("replies a7 \u00b7 ABC-7")))
+                .isVisible();
+    }
+
+    @Test
+    void aReportOpenedLastStaysOnScreenWhenAnEarlierOneAnswersAfterIt() throws IOException {
+        Path first = Files.createDirectories(root.resolve("ABC-7-alpha"));
+        Files.writeString(first.resolve("review_replies.md"), "## thread 1\nFIXED - The first round.\n");
+        state.putTask("ABC-7", TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a7").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        Path second = Files.createDirectories(root.resolve("ABC-8-alpha"));
+        Files.writeString(second.resolve("review_replies.md"), "## thread 1\nFIXED - The second round.\n");
+        state.putTask("ABC-8", TaskState.builder("alpha", second.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a8").mrUrl("https://host.example/mr/8").lastActiveTimestamp(now()).build());
+        Page page = open();
+        List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
+        page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
+        page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"),
+                () -> page.locator("article", new Page.LocatorOptions().setHasText("a7")).locator(".offer").click());
+        page.locator("article", new Page.LocatorOptions().setHasText("a8")).locator(".offer").click();
+        assertThat(page.locator("#report-title")).hasText("replies a8 \u00b7 ABC-8");
+
+        page.waitForRequestFinished(new Page.WaitForRequestFinishedOptions()
+                .setPredicate(request -> request.url().endsWith("about=a7")), () -> held.get(0).resume());
+
+        org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())
+                .contains("The second round.");
     }
 
     @Test
@@ -1654,8 +1718,8 @@ class BoardPageTest {
 
     @ParameterizedTest
     @CsvSource({"filter, filter", "ref, ticket", "base-branch, base branch", "notes, instructions",
-            "ask, command", "say, tell this session"})
-    void everyTextFieldIsNamedWithoutLeaningOnItsPlaceholder(String id, String named) {
+            "ask, command", "say, tell this session", "project, projects", "strategy, when the branch exists"})
+    void everyFieldIsNamedWithoutLeaningOnItsPlaceholder(String id, String named) {
         Page page = open();
 
         assertThat(page.locator("#" + id)).hasAttribute("aria-label", Pattern.compile(named));

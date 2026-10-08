@@ -63,6 +63,7 @@ const statusChip = (task) => {
   const status = span('status', task.statusLabel);
   status.append(' ', span('age', duration(Date.now() - task.statusSince)));
   status.dataset.tip = `${task.status}\n${timeline(task)}`;
+  status.tabIndex = 0;
   // Where no verb on this card is the deploy, nothing else on it would say the work is live.
   if (task.deployed && !(task.actions || []).some((action) => action.again)) {
     status.classList.add('live');

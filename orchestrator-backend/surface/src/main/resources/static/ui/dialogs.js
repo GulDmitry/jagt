@@ -16,6 +16,8 @@ const working = document.getElementById('said');
 // What the open report is showing, so a change under the reader can be read again and repainted.
 let showing = {path: null, about: null, body: ''};
 let poll = 0;
+// Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
+let asked = 0;
 
 function paint(title, said, extra) {
   reportTitle.textContent = title;
@@ -29,6 +31,7 @@ function paint(title, said, extra) {
 }
 
 export function showReport(title, said, extra = null) {
+  asked++;
   showing = {path: null, about: null, body: said};
   stopWaiting();
   paint(title, said, extra);
@@ -36,8 +39,10 @@ export function showReport(title, said, extra = null) {
 
 /** False when the report could not be read, the caller deciding what a failed read costs it. */
 export async function openReport(title, path, {extra = null, about = null} = {}) {
+  const mine = ++asked;
   try {
     const said = await text(path);
+    if (mine !== asked) return true;
     showing = {path, about, body: said};
     stopWaiting();
     paint(title, said, extra);

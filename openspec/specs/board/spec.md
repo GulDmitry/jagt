@@ -105,12 +105,12 @@ anything but JSON; `BoardWriteFilter` an `/api` write without Origin, the Master
 - **THEN** refused 403; `ToolGate` stops the `curl` first
 
 ### Requirement: Pushed, not polled, acted on by data
-The board SHALL NOT poll: `StateService.onChange` is the one event, `TaskEventStream` forwarding it as SSE at
-`/api/events` with no payload. Each connect reads the board once. A periodic tick survives for the ACTIVE clock,
+The board SHALL NOT poll: `TaskEventStream` forwards `StateService.onChange`, the one event, as payload-free SSE at
+`/api/events` beside a 20s beat. Each connect reads the board once. A periodic tick survives for the ACTIVE clock,
 time in that status. A card carries `data-action`, never a closure, so a card rebuilt under the pointer cannot act for its old task.
 
 #### Scenario: The backend goes away
-- **WHEN** the push connection drops
+- **WHEN** the push connection drops, or misses two beats
 - **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
 
 ### Requirement: A banner leads to its task

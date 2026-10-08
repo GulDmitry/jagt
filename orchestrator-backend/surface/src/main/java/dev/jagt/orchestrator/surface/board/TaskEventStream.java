@@ -10,11 +10,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** No payload, so changes queued behind one another are one event. Fan-out never runs on the writing thread. */
@@ -23,28 +25,32 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class TaskEventStream implements ApplicationListener<ContextClosedEvent> {
 
     private final StateService stateService;
-    private final ExecutorService broadcaster;
+    private final ScheduledExecutorService broadcaster;
+    private final Duration heartbeat;
     private final AtomicBoolean broadcastQueued = new AtomicBoolean();
     private final List<SseEmitter> browsers = new CopyOnWriteArrayList<>();
     private volatile boolean closing;
 
     @Autowired
     public TaskEventStream(StateService stateService) {
-        this(stateService, Executors.newSingleThreadExecutor(task -> {
+        this(stateService, Executors.newSingleThreadScheduledExecutor(task -> {
             Thread thread = new Thread(task, "board-sse");
             thread.setDaemon(true);
             return thread;
-        }));
+        }), Duration.ofSeconds(20));
     }
 
-    TaskEventStream(StateService stateService, ExecutorService broadcaster) {
+    TaskEventStream(StateService stateService, ScheduledExecutorService broadcaster, Duration heartbeat) {
         this.stateService = stateService;
         this.broadcaster = broadcaster;
+        this.heartbeat = heartbeat;
     }
 
     @PostConstruct
     void followStateChanges() {
         stateService.onChange(written -> queueBroadcast());
+        broadcaster.scheduleAtFixedRate(() -> browsers.forEach(this::beat), heartbeat.toMillis(),
+                heartbeat.toMillis(), TimeUnit.MILLISECONDS);
     }
 
     private void queueBroadcast() {
@@ -80,7 +86,8 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
             }
             browsers.add(browser);
         }
-        send(browser, "open");
+        send(browser, "open", "open");
+        beat(browser);
         return browser;
     }
 
@@ -102,12 +109,17 @@ public class TaskEventStream implements ApplicationListener<ContextClosedEvent> 
     // The event carries no payload: a second serialization of the projection could disagree with
     // /api/tasks, and a browser that missed one event would then be silently stale.
     private void broadcast() {
-        browsers.forEach(browser -> send(browser, "changed"));
+        browsers.forEach(browser -> send(browser, "changed", "changed"));
     }
 
-    void send(SseEmitter browser, String event) {
+    /** Carries its own interval, so the page knows how long a silence may last without a setting of its own. */
+    private void beat(SseEmitter browser) {
+        send(browser, "beat", String.valueOf(heartbeat.toMillis()));
+    }
+
+    void send(SseEmitter browser, String event, String data) {
         try {
-            browser.send(SseEmitter.event().name(event).data(event));
+            browser.send(SseEmitter.event().name(event).data(data));
         } catch (IOException | IllegalStateException e) {
             // A failed write leaves the async request registered with the container, so the connection is
             // ended rather than only forgotten.
