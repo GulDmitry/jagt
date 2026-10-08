@@ -126,7 +126,7 @@ public class MasterPanel {
         }
         Judgement judged = reviews.review(taskId, new RoundReviewer.Round("",
                 answerPrompt(taskId, task, brief.get(), briefs.author(), question, read.get().decided(),
-                        read.get().said(), stuck),
+                        read.get().said(), stuck, !assistant.mcpTools().isEmpty()),
                 worktrees(task),
                 config.modelOrInherited()));
         return Optional.of(judged).filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
@@ -208,12 +208,13 @@ public class MasterPanel {
     }
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
-                               String decided, List<String> said, boolean stuck) {
+                               String decided, List<String> said, boolean stuck, boolean tracker) {
         return GOAL + "You stand in for the human on task " + taskId + ". The session working it stopped to ask: "
                 + question + "\n\nThe brief you judge by:\n" + brief + "\n\n"
                 + "The brief the session works to, its %s filled per task:\n" + authorBrief + "\n\n"
                 + round(taskId, task) + settled(decided) + humanSaid(said) + (stuck ? STUCK : "")
-                + "Read the ticket and the code. Then decide as the human would, by both briefs and the codebase."
+                + ticket(tracker, "code") + " Read the code, its history with " + GIT + "."
+                + " Then decide as the human would, by both briefs and the codebase."
                 + " Decide only what you can prove."
                 + " Where the decision rests on a fact only the session can show, the decision is to show it first."
                 + " Name exactly what to show, and what you decide on each answer."
@@ -238,15 +239,14 @@ public class MasterPanel {
         return GOAL + "Task " + taskId + " stopped at its plan, before any code. The brief you judge by:\n" + brief
                 + "\n\n" + round(taskId, task)
                 + (!read.ticket().isBlank() ? "The ticket:\n<ticket>\n" + read.ticket() + "\n</ticket>\n"
-                        : tracker ? "Read the ticket with your tracker tools.\n" : "The ticket was not read: rule only"
-                        + " on the plan, and call any premise resting on the ticket unproven.\n")
+                        : ticket(tracker, "plan") + "\n")
                 + (plan.isBlank() ? "" : "The plan, plan.md:\n<plan>\n" + plan + "\n</plan>\n")
                 + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
                         + "\n</session_notes>\n")
                 + settled(read.decided()) + humanSaid(read.said())
                 + "Judge one thing: whether this plan does what the ticket asks, by your brief and the codebase."
                 + " A plan missing a ticket line is wrong. So is one doing what no ticket line asks."
-                + " Read the code only where the plan rests on it."
+                + " Read the code only where the plan rests on it, its history with " + GIT + "."
                 + " A `disputed:` line in the notes names its evidence: check it, and proven, it stands."
                 + (plan.isBlank() ? " The session wrote no plan.md: that alone is not ready." : "")
                 + " verdict: ready where the plan holds, not ready, or question."
@@ -266,10 +266,16 @@ public class MasterPanel {
             + " Where the session stalls or a check stays red, find the cause. Decide the change that clears it, and"
             + " insist on it until it holds. Never hold the task, defer it or settle for red.\n\n";
 
-    static final String GIT = "git in plain words (no quote, ~, ^, brace or glob; diff, log, show and blame carry"
-            + " `--no-ext-diff --no-textconv`)";
+    private static final String GIT = "git in plain words (no quote, ~, ^, brace or glob; diff, log, show and blame"
+            + " carry `--no-ext-diff --no-textconv`)";
 
-    private static final String STUCK ="Your last answers over this tree changed nothing in it: the session"
+    /** Where no MCP server loads, no ticket the round does not quote was read. */
+    private static String ticket(boolean tracker, String judged) {
+        return tracker ? "Read the ticket with your MCP tools." : "The ticket was not read: rule only on the " + judged
+                + ", and call any premise resting on the ticket unproven.";
+    }
+
+    private static final String STUCK = "Your last answers over this tree changed nothing in it: the session"
             + " could act on none, and it restarts with fresh tools. Decide the change in the worktrees that brings"
             + " the task to ready-to-merge; where options remain, recommend the best and take it.\n";
 
@@ -296,9 +302,7 @@ public class MasterPanel {
         return GOAL + "The brief you judge by:\n" + brief + "\n\n"
                 + "The brief the author worked to, its %s filled per task; yours extends it:\n"
                 + authorBrief + "\n\n"
-                + "Read the ticket: it is quoted in the round where jagt read it; elsewhere "
-                + (tracker ? "use your tracker tools." : "it was not read: rule only on the diff, and call any"
-                        + " premise resting on the ticket unproven.")
+                + "The ticket is quoted in the round where jagt read it. Elsewhere: " + ticket(tracker, "diff")
                 + " Then read everything the task changed against its base, committed and not: quoted in the round"
                 + " where jagt read it, with " + GIT + " where it is not; `git -C <worktree>` reads each worktree"
                 + " past the first. Judge from the"

@@ -90,6 +90,46 @@ class MasterPanelTest {
     }
 
     @Test
+    void sendsAPlanReaderLoadingAServerToItsMcpToolsWhicheverServerThatIs() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
+
+        String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
+                new MasterPanel.RoundRead("", "", "", List.of(), ""), false, true);
+
+        assertThat(prompt).contains("Read the ticket with your MCP tools").doesNotContain("tracker tools");
+    }
+
+    @Test
+    void tellsAPlanReaderTheFlagsItsGitReadsMustCarry() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
+
+        String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
+                new MasterPanel.RoundRead("", "", "", List.of(), ""), false, true);
+
+        assertThat(prompt).contains("`--no-ext-diff --no-textconv`");
+    }
+
+    @Test
+    void tellsTheMasterAnsweringAQuestionTheFlagsItsGitReadsMustCarry() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+
+        String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
+                "outcome=question — keep v2?", "", List.of(), false, true);
+
+        assertThat(prompt).contains("`--no-ext-diff --no-textconv`");
+    }
+
+    @Test
+    void tellsTheMasterAnsweringAQuestionWithNoServerThatTheTicketWasNeverRead() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
+
+        String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
+                "outcome=question — keep v2?", "", List.of(), false, false);
+
+        assertThat(prompt).contains("The ticket was not read").doesNotContain("Read the ticket");
+    }
+
+    @Test
     void tellsAReviewerLoadingNoServerThatATicketTheRoundDoesNotQuoteWasNeverRead(@TempDir Path worktree) {
         ChargedReviews reviews = mock(ChargedReviews.class);
         MasterBriefs briefs = mock(MasterBriefs.class);
@@ -136,7 +176,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — keep v2?", "", List.of(), false);
+                "outcome=question — keep v2?", "", List.of(), false, false);
 
         assertThat(prompt).contains("outcome=question — keep v2?").contains("Never answer question");
     }
@@ -146,7 +186,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — refactor, or override the gate?", "", List.of(), false);
+                "outcome=question — refactor, or override the gate?", "", List.of(), false, false);
 
         assertThat(prompt).contains("an override, an exception or a human's action is no answer while a change in"
                 + " the worktrees can pass it");
@@ -157,7 +197,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — override the gate?", "", List.of(), true);
+                "outcome=question — override the gate?", "", List.of(), true, false);
 
         assertThat(prompt).contains("where options remain, recommend the best and take it");
     }
@@ -167,7 +207,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
         String answer = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — keep v2?", "", List.of(), false);
+                "outcome=question — keep v2?", "", List.of(), false, false);
         String review = MasterPanel.shared("judge hard", "never commit unasked", true, true);
 
         assertThat(answer).startsWith("Your goal is the task finished: ready to merge, its request's checks green");
@@ -219,7 +259,7 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
-                "outcome=question — rename the field?", "", List.of("rename it everywhere"), false);
+                "outcome=question — rename the field?", "", List.of("rename it everywhere"), false, false);
 
         assertThat(prompt).contains("<human_said>\nrename it everywhere\n</human_said>");
     }
