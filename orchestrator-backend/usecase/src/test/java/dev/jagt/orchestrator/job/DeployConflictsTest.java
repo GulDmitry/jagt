@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.capability.deploy.DeployTargets;
+import dev.jagt.orchestrator.service.DeployTargets;
 
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.ConfigService;

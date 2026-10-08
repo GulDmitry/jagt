@@ -1,7 +1,8 @@
 package dev.jagt.orchestrator.capability.deploy;
 
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.capability.deploy.DeployTargets.Target;
+import dev.jagt.orchestrator.service.DeployTargets.Target;
+import dev.jagt.orchestrator.service.DeployTargets;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.Outcome;
@@ -17,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static dev.jagt.orchestrator.capability.deploy.DeployTargets.because;
-import static dev.jagt.orchestrator.capability.deploy.DeployTargets.mergeCommit;
-import static dev.jagt.orchestrator.capability.deploy.DeployTargets.names;
+import static dev.jagt.orchestrator.service.DeployTargets.because;
+import static dev.jagt.orchestrator.service.DeployTargets.mergeCommit;
+import static dev.jagt.orchestrator.service.DeployTargets.names;
 
 /**
  * One of the only two operations that write a SHARED branch; it does not check that the caller is the human, that

@@ -27,7 +27,8 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `startup/` | why the assembly must not start | built — `port/StartupCheck`, `StartupValidation` and every check |
 
 `service/` is the rest: work more than one kind shares — git, the state file, config, worktrees, agent sessions —
-because a class two kinds use belongs to neither; the Master's reading is `service/master/`. The board renders
+because a class two kinds use belongs to neither; the Master's reading is `service/master/`. A rule one surface
+asks stays here too (`OwnStatusReports`, `HandBackDue`): a surface never decides. The board renders
 `flow/TaskView`; a report is text from the `GlobalCommand` that owns it.
 
 ## The rings
@@ -35,8 +36,7 @@ because a class two kinds use belongs to neither; the Master's reading is `servi
 Arrows point **inward only**: `adapter/` — the only place an OS is named, and where every vendor lives —
 implements the ports, and the use cases (`capability/` `command/` `job/` `notify/` `service/` `surface/`) use the
 centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the interfaces they declare. `port/` is
-*inside* that centre rather than a ring around it — those interfaces are written by the rules for their own needs,
-and `flow/` depends on them.
+*inside* that centre: the rules write those interfaces for their own needs, and `flow/` depends on them.
 
 `RingsTest` asserts exactly this:
 
@@ -46,7 +46,7 @@ and `flow/` depends on them.
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
   name anywhere in a source, outside `adapter/`.
 - no ring between the centre and the edge names `adapter/` — a use case naming the edge is the rule backwards.
-- it proves it read every ring, so a refactor cannot leave it guarding nothing.
+- it proves it read every ring, so a refactor cannot empty it.
 - it cannot see resources and scripts, the words a host invents, or a cycle between two *sibling* folders.
 - it exempts only `tmuxCommand` and `tmuxSession`, keys naming a vendor by design; renaming one a human already
   wrote is the owner's call.

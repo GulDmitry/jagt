@@ -1,9 +1,7 @@
-package dev.jagt.orchestrator.capability.deploy;
+package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Refusal;
-import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -40,7 +38,7 @@ public class DeployTargets {
      * The repositories an undo has something to take out, and ONLY those: a repository that never landed must not
      * stand between a human and the merge that is live, whatever became of its configuration since.
      */
-    List<Target> landed(TaskState task) {
+    public List<Target> landed(TaskState task) {
         List<Target> landed = new ArrayList<>();
         for (TaskRepo repo : task.repos()) {
             if (repo.deployCommit() != null && !repo.deployCommit().isBlank()) {
@@ -51,7 +49,7 @@ public class DeployTargets {
     }
 
     /** Read where the project is still configured: a recipe for the human must survive one that was removed. */
-    Optional<String> deployBranch(String project) {
+    public Optional<String> deployBranch(String project) {
         return Optional.ofNullable(configService.load().projects().get(project))
                 .map(ProjectConfig::deployBranch)
                 .filter(branch -> !branch.isBlank());
@@ -75,7 +73,7 @@ public class DeployTargets {
     }
 
     /** The deploy branch must NEVER be the base branch tasks are cut from. */
-    static void requireDeployable(Target target) {
+    public static void requireDeployable(Target target) {
         ProjectConfig project = target.config();
         if (project.deployBranch() == null || project.deployBranch().isBlank()) {
             throw Refusal.byState("Project '" + target.project()
@@ -89,17 +87,17 @@ public class DeployTargets {
         }
     }
 
-    static String mergeCommit(TaskState task, Target target) {
+    public static String mergeCommit(TaskState task, Target target) {
         String commit = task.repo(target.project()).map(TaskRepo::deployCommit).orElse(null);
         return commit == null || commit.isBlank() ? null : commit;
     }
 
-    static String names(List<String> names) {
+    public static String names(List<String> names) {
         return names.isEmpty() ? "none" : String.join(", ", names);
     }
 
     /** A cause without a message must not end the report in the word "null". */
-    static String because(RuntimeException cause) {
+    public static String because(RuntimeException cause) {
         return cause.getMessage() == null ? "" : " " + cause.getMessage();
     }
 
