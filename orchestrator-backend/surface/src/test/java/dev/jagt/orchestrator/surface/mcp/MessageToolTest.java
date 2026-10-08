@@ -98,4 +98,14 @@ class MessageToolTest {
 
         assertThat(answer).isEqualTo("null");
     }
+
+    @Test
+    void readsACallCarryingNoArgumentsAsOneWithEveryFieldLeftOut() {
+        ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
+                (said, caller) -> MessageContext.NONE, (said, caller) -> "ran");
+
+        assertThatThrownBy(() -> tool.call(mapper.missingNode(), "ABC-1"))
+                .isInstanceOf(ToolRefusal.class)
+                .hasMessageContaining("status: required");
+    }
 }

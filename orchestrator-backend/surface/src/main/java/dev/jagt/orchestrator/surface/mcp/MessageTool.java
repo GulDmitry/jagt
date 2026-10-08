@@ -30,7 +30,8 @@ public final class MessageTool {
                                                      Class<T> message,
                                                      BiFunction<T, String, MessageContext> context,
                                                      MessageHandler<T> handler) {
-        return (args, callerTaskId) -> {
+        return (given, callerTaskId) -> {
+            JsonNode args = given.isMissingNode() || given.isNull() ? mapper.createObjectNode() : given;
             if (!audience.admits(callerTaskId)) {
                 throw new ToolRefusal(ToolFailure.PERMISSION, name + " is Master-only: a sub-agent may only act"
                         + " inside its own worktree");

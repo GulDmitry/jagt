@@ -4,9 +4,9 @@ import dev.jagt.orchestrator.service.StateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+/** A sub-agent is identified by the X-Working-Directory header its MCP config sets, and by nothing else. */
 @Component
 @RequiredArgsConstructor
-/** A sub-agent is identified by the X-Working-Directory header its MCP config sets, and by nothing else. */
 public class CallerScope {
 
     private final StateService stateService;
