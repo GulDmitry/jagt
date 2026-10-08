@@ -333,6 +333,22 @@ class BoardCardTest extends BoardPageContext {
     }
 
     @Test
+    void aTitleWithNoPlaceToBreakStillStaysInsideTheCard() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").title("w".repeat(150))
+                .lastActiveTimestamp(System.currentTimeMillis()).build());
+
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        Object spills = page.locator("article .title").evaluate("title => title.scrollWidth > title.clientWidth");
+
+        org.assertj.core.api.Assertions.assertThat(spills).isEqualTo(false);
+    }
+
+    @Test
     void aBadgeOpensItsHintFromTheKeyboard() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.REVIEWED).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
