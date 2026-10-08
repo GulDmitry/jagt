@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 
 class TaskStateTest {
 
@@ -110,13 +109,12 @@ class TaskStateTest {
 
     @Test
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
-        long anHourAgo = System.currentTimeMillis() - 3_600_000L;
-        TaskState legacy = legacyTask(TaskStatus.IN_PROGRESS, anHourAgo, "working", List.of());
+        TaskState legacy = legacyTask(TaskStatus.IN_PROGRESS, 1_700_000_000_000L, "working", List.of());
 
         TaskState afterKeepAlive = legacy.touched();
 
-        assertThat(afterKeepAlive.statusSince()).isEqualTo(anHourAgo);
-        assertThat(afterKeepAlive.lastActiveTimestamp()).isGreaterThan(anHourAgo);
+        assertThat(afterKeepAlive.statusSince()).isEqualTo(1_700_000_000_000L);
+        assertThat(afterKeepAlive.lastActiveTimestamp()).isGreaterThan(1_700_000_000_000L);
     }
 
     @Test
@@ -218,9 +216,11 @@ class TaskStateTest {
     void datesARequestItJustOpenedByTheClockInsteadOfLeavingTheAgeBlank() {
         TaskState stamped = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
                 .mrUrl("http://mr/1").requestOpenedAt(1_700_000_000_000L).build();
+        long before = System.currentTimeMillis();
 
-        assertThat(stamped.withMrUrl("http://mr/2").requestOpenedAt())
-                .isCloseTo(System.currentTimeMillis(), within(60_000L));
+        long opened = stamped.withMrUrl("http://mr/2").requestOpenedAt();
+
+        assertThat(opened).isBetween(before, System.currentTimeMillis());
         assertThat(stamped.withMrUrl("http://mr/1").requestOpenedAt()).isEqualTo(1_700_000_000_000L);
     }
 
@@ -228,12 +228,13 @@ class TaskStateTest {
     void forgetsWhatWasReadAboutARequestWhenTheTaskIsPointedAtAnotherOne() {
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.REVIEWED).mrUrl("https://host/mr/1")
                 .approved(true).pipelineStatus("success").requestOpenedAt(1_700_000_000_000L).build();
+        long before = System.currentTimeMillis();
 
         TaskState relinked = task.withMrUrl("https://host/mr/2");
 
         assertThat(relinked.approved()).isNull();
         assertThat(relinked.pipelineStatus()).isNull();
-        assertThat(relinked.requestOpenedAt()).isCloseTo(System.currentTimeMillis(), within(60_000L));
+        assertThat(relinked.requestOpenedAt()).isBetween(before, System.currentTimeMillis());
     }
 
     @Test

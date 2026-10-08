@@ -179,7 +179,7 @@ class AgentSessionsTest {
         when(tmux.sessionName(null)).thenReturn("jagt");
         when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
         when(agentRuntime.lastSessionActivity(root))
-                .thenReturn(OptionalLong.of(System.currentTimeMillis() - Duration.ofHours(2).toMillis()));
+                .thenReturn(OptionalLong.of(1_700_000_000_000L));
 
         sessions().writeTaskContext("ABC-1", "Review round for http://mr/1.");
 

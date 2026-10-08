@@ -41,7 +41,10 @@ public class CycleTimeRenderer {
     }
 
     public String render(Map<String, TaskState> tasks) {
-        long now = System.currentTimeMillis();
+        return render(tasks, System.currentTimeMillis());
+    }
+
+    String render(Map<String, TaskState> tasks, long now) {
         List<Clock> clocks = tasks.entrySet().stream()
                 .filter(e -> !e.getValue().history().isEmpty())
                 .map(e -> clockOf(e.getKey(), e.getValue(), now))

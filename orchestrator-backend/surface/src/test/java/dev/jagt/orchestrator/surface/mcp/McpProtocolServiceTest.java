@@ -175,7 +175,7 @@ class McpProtocolServiceTest {
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
-                .lastActiveTimestamp(System.currentTimeMillis()).alias("a1").build());
+                .alias("a1").build());
         McpProtocolService protocol = new McpProtocolService(mapper, state,
                 List.of(new DeployTools(mock(CommandService.class))));
 

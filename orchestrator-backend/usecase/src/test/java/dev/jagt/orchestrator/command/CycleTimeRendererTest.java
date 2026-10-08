@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CycleTimeRendererTest {
 
     private static final long HOUR = 3_600_000L;
+    private static final long NOW = 1_700_000_000_000L;
 
     private static TaskState withSteps(StatusChange... steps) {
         return TaskState.builder("proj", "/wt", steps[steps.length - 1].status())
@@ -21,7 +22,7 @@ class CycleTimeRendererTest {
     }
 
     private static StatusChange step(TaskStatus status, long hoursAgo) {
-        return new StatusChange(status, System.currentTimeMillis() - hoursAgo * HOUR, null);
+        return new StatusChange(status, NOW - hoursAgo * HOUR, null);
     }
 
     private static String rowFor(String taskId, String report) {
@@ -34,7 +35,7 @@ class CycleTimeRendererTest {
                 step(TaskStatus.IN_PROGRESS, 10), step(TaskStatus.CI_POLLING, 8),
                 step(TaskStatus.REVIEW_PENDING, 6)));
 
-        String out = new CycleTimeRenderer().render(tasks);
+        String out = new CycleTimeRenderer().render(tasks, NOW);
 
         assertThat(rowFor("ABC-1", out)).containsSubsequence("10h", "6h", "2h", "2h");
     }
@@ -45,7 +46,7 @@ class CycleTimeRendererTest {
                 step(TaskStatus.IN_PROGRESS, 9), step(TaskStatus.CI_POLLING, 8),
                 step(TaskStatus.REVIEW_PENDING, 7), step(TaskStatus.CI_POLLING, 6)));
 
-        String out = new CycleTimeRenderer().render(tasks);
+        String out = new CycleTimeRenderer().render(tasks, NOW);
 
         assertThat(rowFor("ABC-1", out)).endsWith("2");
     }
@@ -56,7 +57,7 @@ class CycleTimeRendererTest {
                 .mapToObj(step -> step(TaskStatus.CI_POLLING, 50 - step))
                 .toArray(StatusChange[]::new);
 
-        String out = new CycleTimeRenderer().render(Map.of("ABC-1", withSteps(fifty)));
+        String out = new CycleTimeRenderer().render(Map.of("ABC-1", withSteps(fifty)), NOW);
 
         assertThat(rowFor("ABC-1", out)).contains("2d+").endsWith("50+");
         assertThat(out).contains("aged out of its history");
@@ -68,7 +69,7 @@ class CycleTimeRendererTest {
                 "ABC-1", withSteps(step(TaskStatus.CI_POLLING, 5), step(TaskStatus.CI_POLLING, 4)),
                 "ABC-2", withSteps(step(TaskStatus.CI_POLLING, 3)));
 
-        String out = new CycleTimeRenderer().render(tasks);
+        String out = new CycleTimeRenderer().render(tasks, NOW);
 
         assertThat(rowFor("all tasks", out)).endsWith("3");
         assertThat(out).contains("1.5 per task");
@@ -79,7 +80,7 @@ class CycleTimeRendererTest {
         Map<String, TaskState> tasks = Map.of("ABC-1", withSteps(
                 step(TaskStatus.IN_PROGRESS, 10), step(TaskStatus.REVIEW_PENDING, 8)));
 
-        String out = new CycleTimeRenderer().render(tasks);
+        String out = new CycleTimeRenderer().render(tasks, NOW);
 
         assertThat(out).contains("you have been the slowest step: 8h of the 10h anyone has held these tasks (80%)");
     }
@@ -90,14 +91,14 @@ class CycleTimeRendererTest {
                 "ABC-1", withSteps(step(TaskStatus.REVIEW_PENDING, 2)),
                 "ABC-2", withSteps(step(TaskStatus.REVIEW_PENDING, 20)));
 
-        String out = new CycleTimeRenderer().render(tasks);
+        String out = new CycleTimeRenderer().render(tasks, NOW);
 
         assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
     }
 
     @Test
     void saysSoWhenNoTaskHasAHistoryToAddUp() {
-        String out = new CycleTimeRenderer().render(Map.of());
+        String out = new CycleTimeRenderer().render(Map.of(), NOW);
 
         assertThat(out).contains("(no task has a status history yet)").doesNotContain("ROUNDS");
     }

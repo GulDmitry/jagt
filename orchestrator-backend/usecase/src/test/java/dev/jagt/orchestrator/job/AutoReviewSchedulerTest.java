@@ -85,12 +85,12 @@ class AutoReviewSchedulerTest {
                 .lastPolledAt(System.currentTimeMillis() - Duration.ofMinutes(30).toMillis()).build());
         ReviewSweepService sweep = mock(ReviewSweepService.class);
         Notifications notifications = mock(Notifications.class);
+        long before = System.currentTimeMillis();
 
         new AutoReviewScheduler(state, enabledConfig(), sweep, notifications, Runnable::run).run();
 
         verify(sweep).sweep("ABC-1");
-        assertThat(state.task("ABC-1").orElseThrow().lastPolledAt())
-                .isGreaterThan(System.currentTimeMillis() - Duration.ofMinutes(1).toMillis());
+        assertThat(state.task("ABC-1").orElseThrow().lastPolledAt()).isBetween(before, System.currentTimeMillis());
     }
 
     @Test

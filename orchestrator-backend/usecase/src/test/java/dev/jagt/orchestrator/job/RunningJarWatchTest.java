@@ -32,7 +32,7 @@ class RunningJarWatchTest {
         RunningJarWatch watch = new RunningJarWatch(notifications, jar);
 
         Files.writeString(jar, "a different build entirely");
-        Files.setLastModifiedTime(jar, FileTime.fromMillis(System.currentTimeMillis() + 5_000));
+        Files.setLastModifiedTime(jar, FileTime.fromMillis(1_700_000_000_000L));
         watch.run();
         watch.run();
 
