@@ -34,8 +34,8 @@ public record AgentStatusMessage(String status, String message, String outcome, 
 
     /** The form a caller is given, beside the rules it is judged by: one declaration, never two that drift. */
     public static final Schema SCHEMA = Schema.of(
-                    "Update the task status and keep-alive timestamp in state.json. Sub-agents MUST call this"
-                            + " frequently to avoid Watchdog alerts, and MUST call it with outcome=question BEFORE"
+                    "Report the task's status to jagt. Sub-agents call this when their status changes, and"
+                            + " MUST call it with outcome=question BEFORE"
                             + " putting any question to the human — an interactive choice in your own window"
                             + " reaches nobody, and this call is the only thing that puts the question on their"
                             + " board. taskId defaults to the calling worktree's task.")

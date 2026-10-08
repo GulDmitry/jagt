@@ -257,7 +257,7 @@ public class ReviewSweepService {
                       in a few words. Step past the ticket only as far as a fix it asks for needs.
                     - You cannot tell, or it is right but forces a design decision nobody gave you: do not guess
                       and do not half-implement it. Leave that comment's code alone, put the question in its
-                      review_replies.md block, and hand the round back — notify_user, then set REVIEW_PENDING
+                      review_replies.md block, and hand the round back: set REVIEW_PENDING
                       with outcome=question and the question in the message (few words).
                     Implementing a change you believe is wrong is the worst outcome available to you: silent
                     compliance is invisible in a diff. Never report a fix you did not make.

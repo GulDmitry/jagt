@@ -10,7 +10,7 @@ public record UserNotice(String title, String message) implements Message {
 
     public static final Schema SCHEMA = Schema
             .of("Send an OS push notification to the human (e.g. 'review round addressed — ABC-123')."
-                    + " Use when human attention is needed.")
+                    + " Never for a question: that is update_agent_status with outcome=question.")
             .text("title", "Defaults to 'jagt'.")
             .required("message", "string", "One line, for a banner that is read in passing.");
 

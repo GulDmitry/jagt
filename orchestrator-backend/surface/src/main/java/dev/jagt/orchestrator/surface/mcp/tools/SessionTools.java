@@ -29,14 +29,14 @@ public class SessionTools implements McpTools {
                 (said, caller) -> MessageContext.NONE,
                 (said, caller) -> sessions.openTaskTab(callerScope.resolve(said.taskId(), caller), said.mode()));
 
-        tools.tool("close_task_tab", Audience.MASTER, TaskRef.schema("Close a task's window and kill its agent"
+        tools.tool("close_task_tab", Audience.MASTER, TaskRef.schema("Close a task's tab and kill its agent"
                         + " session (e.g. when the task is finished). Worktree and state entry are kept: only"
                         + " the human's done retires a task."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> sessions.closeTaskTab(callerScope.resolve(said.taskId(), caller)));
 
         tools.tool("focus_task", Audience.MASTER, TaskRef.schema("Bring the task's agent window to the user's"
-                        + " screen: select its window and raise the viewer. If the session was closed, a fresh one"
+                        + " screen: select its tab and raise the viewer. If the session was closed, a fresh one"
                         + " is started first."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> commands.execute(callerScope.resolve(said.taskId(), caller), TaskAction.FOCUS));

@@ -229,6 +229,24 @@ class McpProtocolServiceTest {
         assertThat(state.task("ABC-1").orElseThrow().lastActiveTimestamp()).isEqualTo(freshTimestamp);
     }
 
+    @Test
+    void answersAnUnknownToolWithTheToolsThisCallerHas(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+                .lastActiveTimestamp(System.currentTimeMillis()).alias("a1").build());
+        CallerScope scope = new CallerScope(state);
+        McpProtocolService protocol = new McpProtocolService(mapper, state, List.of(
+                new DeployTools(mock(CommandService.class)), new StatusTools(mock(AgentStatusReports.class), scope)));
+
+        String text = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"tools/call\","
+                + "\"params\":{\"name\":\"report_status\",\"arguments\":{}}}"), root.toString(), false)
+                .orElseThrow().path("result").path("content").get(0).path("text").asString();
+
+        assertThat(text).endsWith("Unknown tool: report_status. Yours: update_agent_status, notify_user");
+    }
+
     @ParameterizedTest
     @NullSource
     @ValueSource(strings = "/no/task/here")

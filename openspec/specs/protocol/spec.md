@@ -78,7 +78,7 @@ jagt drops what it cannot believe, keeps the rest, and logs once what it dropped
 
 ### Requirement: A paid read is judged and asked again
 For a paid read jagt is the sender: `protocol/TicketRead` SHALL judge the answer, and its violations ride into the next
-ask, because the identical question returns the identical answer.
+ask: the identical question returns the identical answer.
 
 #### Scenario: A false "does not exist"
 - **WHEN** the read says a ticket that plainly exists does not
@@ -105,7 +105,7 @@ no facts, never a guess; reaching the human is the caller's. A round nobody coul
 A ticket ref SHALL be read, paid, through the human's own MCP servers for title, labels and project.
 It SHALL load no built-in tool and no MCP write.
 `assistant.mcp-config`, a path or the JSON itself, loads only the declared servers.
-Declared servers have no plugin prefix in their tool names, so `allowed-tools`, if set, must be rewritten.
+Declared servers' tool names carry no plugin prefix: rewrite `allowed-tools` if set.
 
 #### Scenario: Key or URL
 - **WHEN** the human runs `do ABC-42` or `do <url>`
@@ -132,8 +132,12 @@ A call whose `X-Working-Directory` lies in a task's worktree SHALL be that task'
 
 #### Scenario: Nobody in particular
 - **WHEN** a tokenless `curl`, or a worktree no task holds, calls
-- **THEN** it is refused, never promoted to the Master
+- **THEN** it is refused, never the Master
 
 #### Scenario: What a sub-agent sees
 - **WHEN** a sub-agent lists or calls tools
 - **THEN** it has `update_agent_status`, `notify_user` and `open_in_ide`; every other tool is the Master's alone
+
+#### Scenario: A tool name nobody declared
+- **WHEN** a caller names an unknown tool
+- **THEN** the refusal lists its tools

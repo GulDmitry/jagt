@@ -143,7 +143,9 @@ public class McpProtocolService implements McpToolRegistry {
         JsonNode args = message.path("params").path("arguments");
         ToolSpec spec = tools.get(name);
         if (spec == null) {
-            return failed(ToolFailure.VALIDATION, "Unknown tool: " + name);
+            return failed(ToolFailure.VALIDATION, "Unknown tool: " + name + ". Yours: " + String.join(", ",
+                    tools.values().stream().filter(tool -> tool.audience().admits(callerTaskId))
+                            .map(ToolSpec::name).toList()));
         }
         try {
             return toolResult(spec.handler().call(args, callerTaskId));
