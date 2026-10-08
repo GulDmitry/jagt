@@ -48,8 +48,8 @@ for them; unreadable, they SHALL stop the round
 
 ### Requirement: In act the Master moves for you
 With `master.mode: act` the Master SHALL ship a `ready` round, start a plan that holds and answer a question. It SHALL
-deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps the human's. Closing
-SHALL stay the human's: the Master's `done` is refused.
+deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` SHALL keep named steps
+(`task/MasterRight`) the human's. Closing SHALL stay the human's: the Master's `done` is refused.
 
 #### Scenario: You want it to act for you
 - **WHEN** a round is `ready`, or a plan holds, in `master.mode: act`
@@ -81,7 +81,7 @@ A nudge to a session SHALL wait while the human is typing in its window.
 
 #### Scenario: You are typing in the agent's window when instructions arrive
 - **WHEN** instructions arrive mid-line
-- **THEN** the nudge waits until you send your line; it never lands inside it
+- **THEN** the nudge waits until you send your line
 
 ### Requirement: Only blocking and wrong stop a round
 A plan or round SHALL be ready unless a finding is blocking or wrong; advice SHALL be a `#` line in `master-review.md`.

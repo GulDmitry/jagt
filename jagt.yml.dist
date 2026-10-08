@@ -1,7 +1,7 @@
 # jagt — your whole configuration, and the only file there is: `cp jagt.yml.dist jagt.yml`, then fill in ONE
 # project. Every other key already has the value shown and can stay commented out.
-# `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview` and `master` are re-read on every
-# access; every other key is read once, at startup.
+# `projects`, `viewer`, `agent`, `worktree`, `codeReview`, `autoReview`, `master` and `tracker` are re-read on
+# every access; every other key is read once, at startup.
 
 orchestrator:
 

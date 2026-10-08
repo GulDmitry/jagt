@@ -1,31 +1,4 @@
-# startup Specification
-
-## Purpose
-
-What a start of jagt checks and refuses, where its configuration lives, and which file every agent CLI reads.
-
-## Requirements
-
-### Requirement: A bad install is refused at once, offline
-A start SHALL refuse a missing or wrong setup with **every** problem at once, each naming the key that fixes it. It
-checks nothing over the network; `--orchestrator.startup-checks=false` skips every check.
-
-#### Scenario: Missing or wrong setup
-- **WHEN** something the setup needs is missing or wrong, and you start jagt
-- **THEN** it is refused with every problem at once, each naming the key that fixes it
-
-#### Scenario: Wrong token or unreachable host
-- **WHEN** a token is wrong or the host unreachable, and you start jagt
-- **THEN** it is not detected: a start checks nothing over the network
-
-#### Scenario: No desktop
-- **WHEN** a suite boots on a machine with no desktop
-- **AND** you pass `--orchestrator.startup-checks=false`
-- **THEN** every check is skipped
-
-#### Scenario: Linux with the platform unset
-- **WHEN** you start jagt on Linux with the platform left unset
-- **THEN** it is refused: unset means macOS
+## MODIFIED Requirements
 
 ### Requirement: Configuration lives in jagt.yml
 Every setting SHALL live in `jagt.yml` at the repository root, copied from `jagt.yml.dist`, where every key is
@@ -49,13 +22,7 @@ other key need a restart.
 - **WHEN** jagt refuses to start over `config.json`
 - **THEN** it is no longer read, and the refusal prints the `jagt.yml` to write instead
 
-### Requirement: Every agent CLI reads the same rules
-Whoever works **on** jagt, with any agent CLI, SHALL read the same `AGENTS.md` and reach the same MCP server.
-See [components](../../../docs/rules/components.md#whoever-works-on-jagt-reads-the-same-file-and-reaches-the-same-server).
-
-#### Scenario: Another agent CLI
-- **WHEN** you open the repository with another agent CLI
-- **THEN** it gets the same rules and the same MCP server
+## ADDED Requirements
 
 ### Requirement: The steps the Master leaves you are checked at start
 `master.mine` SHALL name only `task/MasterRight` steps, and `deploy` and `revert` both or neither; anything else
