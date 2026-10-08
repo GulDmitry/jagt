@@ -25,7 +25,8 @@ class ReadOnlyToolsTest {
         List<String> allowed = new ReadOnlyTools(mcp, AssistantProperties.empty(), new ReadScopes(), null).allowed(AssistantCallKind.MR_READ);
 
         assertThat(allowed).contains("mcp__plugin_acme_tracker__get*", "mcp__plugin_acme_tracker__search*")
-                .doesNotContain("mcp__plugin_acme_tracker", "mcp__plugin_acme_tracker__*");
+                .doesNotContain("mcp__plugin_acme_tracker", "mcp__plugin_acme_tracker__*",
+                        "mcp__plugin_acme_tracker__query*");
     }
 
     @Test

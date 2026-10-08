@@ -43,7 +43,6 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
     private final HeadlessClaude headless;
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
-    private final ReadOnlyTools readOnlyTools;
 
     @Override
     public Answer<Judgement> review(Round round) {
@@ -56,8 +55,12 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
         if (!round.shared().isBlank()) {
             cmd.addAll(List.of("--append-system-prompt", round.shared()));
         }
+        // Any server's search takes free text, so a diff could send it anywhere: none loads unless named.
+        List<String> mcpReads = assistant.allowedTools().stream().filter(tool -> tool.startsWith("mcp__")).toList();
         String pinned = assistant.mcpConfigFor(AssistantCallKind.MASTER_REVIEW);
-        if (!pinned.isBlank()) {
+        if (mcpReads.isEmpty()) {
+            cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
+        } else if (!pinned.isBlank()) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", pinned));
         }
         round.worktrees().stream().skip(1).forEach(dir -> cmd.addAll(List.of("--add-dir", dir.toString())));
@@ -68,7 +71,6 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
         cmd.addAll(REFUSED);
         cmd.addAll(BUILDS);
         cmd.addAll(ReadOnlyTools.MCP_WRITES);
-        List<String> mcpReads = readOnlyTools.allowed(AssistantCallKind.MASTER_REVIEW);
         cmd.add("--allowedTools");
         cmd.addAll(READS);
         cmd.addAll(mcpReads);

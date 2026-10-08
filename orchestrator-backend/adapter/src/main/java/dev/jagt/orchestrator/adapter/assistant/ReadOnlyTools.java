@@ -24,8 +24,11 @@ import java.util.stream.Stream;
 @Slf4j
 class ReadOnlyTools {
 
-    /** An allow glob needs the literal server before it, so a read is allowed by its verb, server by server. */
-    private static final List<String> READ_VERBS = List.of("get", "list", "search", "read", "fetch", "query", "find",
+    /**
+     * An allow glob needs the literal server before it, so a read is allowed by its verb, server by server.
+     * {@code query} is none: a database server's query runs SQL.
+     */
+    private static final List<String> READ_VERBS = List.of("get", "list", "search", "read", "fetch", "find",
             "describe", "lookup");
 
     /** Behind the fence, a second line: a write the human allowed everywhere is denied by its verb. */

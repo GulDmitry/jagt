@@ -30,11 +30,24 @@ class HeadlessClaudeRoundReviewerTest {
     private final UsageTracker usage = mock(UsageTracker.class);
     private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
             ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
-            AssistantProperties.empty(), reads);
+            AssistantProperties.empty());
 
     @Test
-    void allowsTheMcpReadsSoATicketJagtDidNotQuoteStaysReadable() {
-        when(reads.allowed(AssistantCallKind.MASTER_REVIEW)).thenReturn(List.of("mcp__acme__get*"));
+    void callsOnlyTheMcpToolsTheHumanNamesSoADiffCannotSendTextToAnyServer() {
+        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+                ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
+                AssistantProperties.empty().withAllowedTools(List.of("mcp__acme__get_issue")));
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        named.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        verify(reads).fence(any(), eq(new ReadScope(List.of(Path.of("/w/ABC-42")),
+                List.of("mcp__acme__get_issue", "StructuredOutput"), true)));
+    }
+
+    @Test
+    void loadsNoMcpServerWhenTheHumanNamesNoMcpTool() {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
@@ -42,7 +55,7 @@ class HeadlessClaudeRoundReviewerTest {
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-        assertThat(command.getValue()).contains("mcp__acme__get*");
+        assertThat(command.getValue()).containsSubsequence("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}");
     }
 
     @Test
@@ -162,7 +175,7 @@ class HeadlessClaudeRoundReviewerTest {
     void loadsOnlyTheServersPinnedForAReview() {
         HeadlessClaudeRoundReviewer pinned = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
                 ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
-                AssistantProperties.empty().withMcpConfig("/cfg/mcp.json"), reads);
+                AssistantProperties.empty().withMcpConfig("/cfg/mcp.json").withAllowedTools(List.of("mcp__acme")));
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
