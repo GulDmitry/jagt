@@ -38,6 +38,10 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ContextClosedEvent;
+import dev.jagt.orchestrator.surface.board.TaskEventStream;
 import dev.jagt.orchestrator.command.ReviewRepliesReport;
 
 import java.io.IOException;
@@ -1005,6 +1009,25 @@ class BoardPageTest {
 
         assertThat(page.locator("#offline")).isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(10_000));
         assertThat(page.locator("#board")).not().hasAttribute("inert", "");
+    }
+
+    @Test
+    @DirtiesContext(methodMode = DirtiesContext.MethodMode.AFTER_METHOD)
+    void aRoundOpenWhenTheBackendGoesAwayTakesNoLineForItsSession(@Autowired TaskEventStream events,
+                                                                   @Autowired ApplicationContext context)
+            throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-18-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-18", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a18").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        Page page = open();
+        page.locator("article .offer").click();
+        assertThat(page.locator("#report-line")).isVisible();
+
+        events.onApplicationEvent(new ContextClosedEvent(context));
+
+        assertThat(page.locator("#offline")).isVisible();
+        assertThat(page.locator("#report-line")).hasAttribute("inert", "");
     }
 
     @Test

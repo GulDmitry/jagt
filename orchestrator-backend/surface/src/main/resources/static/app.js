@@ -15,7 +15,7 @@ import {sessionLog, showLog} from './ui/toast.js';
 
 const live = document.getElementById('live');
 // Cut off from the backend, the board is a picture of the past: nothing on it may act.
-const STALE = ['board', 'phases', 'launch', 'palette', 'open-palette', 'reports'];
+const STALE = ['board', 'phases', 'launch', 'palette', 'open-palette', 'reports', 'report-line'];
 const connected = (yes) => {
   live.classList.toggle('on', yes);
   document.getElementById('offline').hidden = yes;

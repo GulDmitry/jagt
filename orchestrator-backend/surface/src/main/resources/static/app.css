@@ -49,7 +49,7 @@ button.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.12); }
 .chip.bad { color: var(--danger); border-color: var(--danger); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .dot.on { background: var(--ok); }
-body.stale #board, body.stale #phases, body.stale #launch { opacity: .5; }
+body.stale #board, body.stale #phases, body.stale #launch, body.stale #report-line { opacity: .5; }
 
 #launch { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 16px;
   border-bottom: 1px solid var(--line); background: var(--panel); }
