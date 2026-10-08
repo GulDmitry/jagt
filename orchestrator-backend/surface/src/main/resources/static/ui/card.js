@@ -6,8 +6,14 @@ import {blocked} from './inflight.js';
 
 export const DRAFTS_LABEL = 'replies drafted \u2014 click to read';
 
-// Where a pasted paragraph is cut off; the whole of it stays in the hover.
-const TITLE_LIMIT = 150;
+// Where a pasted paragraph is cut off, so no card grows taller; the whole of it stays in the hover.
+const LIMIT = 150;
+
+const clipped = (node, written) => {
+  const cut = written.length > LIMIT;
+  node.textContent = cut ? `${written.slice(0, LIMIT)}\u2026` : written;
+  if (cut) node.dataset.tip = written;
+};
 
 // The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
 const watchLine = (watch) => {
@@ -89,10 +95,7 @@ export function card(task, manyProjects) {
 
   const title = document.createElement('div');
   title.className = 'title';
-  const written = task.title || '';
-  const clipped = written.length > TITLE_LIMIT;
-  title.textContent = clipped ? `${written.slice(0, TITLE_LIMIT)}\u2026` : written;
-  if (clipped) title.dataset.tip = written;
+  clipped(title, task.title || '');
 
   const meta = document.createElement('div');
   meta.className = 'meta';
@@ -138,7 +141,7 @@ export function card(task, manyProjects) {
     // A problem is broken whatever the tier says; a move of theirs drops its colour with the tier.
     const yours = task.detailKind === 'YOURS' && task.attention !== 'OPTIONAL';
     detail.className = task.detailKind === 'PROBLEM' ? 'detail problem' : (yours ? 'detail you' : 'detail');
-    detail.textContent = task.detail;
+    clipped(detail, task.detail);
     parts.push(detail);
   }
 

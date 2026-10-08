@@ -208,6 +208,18 @@ class BoardPageTest {
     }
 
     @Test
+    void foldsALineTooLongForACardIntoItsHover() {
+        String reason = "a merge conflict in a file whose path runs on ".repeat(4);
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.DEPLOY_CONFLICT).alias("a1").message(reason).lastActiveTimestamp(now()).build());
+
+        Page page = open();
+
+        assertThat(page.locator("article .detail")).hasText(("NEEDS YOU: " + reason).substring(0, 150) + "…");
+        assertThat(page.locator("article .detail")).hasAttribute("data-tip", "NEEDS YOU: " + reason);
+    }
+
+    @Test
     void showsOnlyThePhaseWhoseCountWasClicked() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
