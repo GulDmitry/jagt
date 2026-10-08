@@ -13,6 +13,11 @@ final class ReadOnlyTools {
             .map(verb -> "mcp__*__" + verb + "*")
             .toList();
 
+    /** The CLI names a server's tools after it, every character outside {@code [A-Za-z0-9_-]} an underscore. */
+    static List<String> servers(List<String> names) {
+        return names.stream().map(name -> "mcp__" + name.replaceAll("[^A-Za-z0-9_-]", "_")).toList();
+    }
+
     private ReadOnlyTools() {
     }
 }

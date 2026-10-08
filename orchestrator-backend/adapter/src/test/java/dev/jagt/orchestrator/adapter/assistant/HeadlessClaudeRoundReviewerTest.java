@@ -11,6 +11,7 @@ import org.mockito.ArgumentCaptor;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,8 +22,22 @@ import static org.mockito.Mockito.when;
 class HeadlessClaudeRoundReviewerTest {
 
     private final ProcessRunner runner = mock(ProcessRunner.class);
+    private final ClaudeMcpHealthProbe mcp = mock(ClaudeMcpHealthProbe.class);
     private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
-            AssistantProperties.empty());
+            AssistantProperties.empty(), mcp);
+
+    @Test
+    void allowsTheHumansOwnMcpServersSoATicketJagtDidNotQuoteStaysReadable() {
+        when(mcp.servers()).thenReturn(Optional.of(List.of("plugin:acme:tracker", "claude.ai Code Host")));
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).contains("mcp__plugin_acme_tracker", "mcp__claude_ai_Code_Host");
+    }
 
     @Test
     void refusesTheReviewEveryWriteEveryPushAndTheAuthorsOwnReplies() {
@@ -40,7 +55,7 @@ class HeadlessClaudeRoundReviewerTest {
     @Test
     void runsOnlyReadOnlyGitWhateverTheDiffAsksEvenWhereTheReadsBypassPermissions() {
         HeadlessClaudeRoundReviewer bypassing = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty().withPermissionMode("bypassPermissions"));
+                AssistantProperties.empty().withPermissionMode("bypassPermissions"), mcp);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
@@ -117,7 +132,7 @@ class HeadlessClaudeRoundReviewerTest {
     @Test
     void loadsOnlyTheServersPinnedForAReview() {
         HeadlessClaudeRoundReviewer pinned = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty().withMcpConfig("/cfg/mcp.json"));
+                AssistantProperties.empty().withMcpConfig("/cfg/mcp.json"), mcp);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 

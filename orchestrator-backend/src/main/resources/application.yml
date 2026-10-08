@@ -82,7 +82,7 @@ orchestrator:
     # Nothing can answer a permission prompt in a headless call, and a blocked tool fails silently. A read loads no
     # built-in tool and no MCP tool named as a write; the Master's review never takes this mode.
     permission-mode: bypassPermissions
-    # allowed-tools: mcp__your-jira-mcp,mcp__your-gitlab-mcp   # these alone instead; the review's only MCP
+    # allowed-tools: mcp__your-jira-mcp,mcp__your-gitlab-mcp   # these alone instead, the review's too
     # Declare the servers instead of inheriting them — one path, or the JSON itself. Settings still load, so a
     # declared file's ${ENV} placeholders and the model resolve as usual; only the server list is pinned.
     # Measured cold: it costs MORE than inheriting, which rides the prompt cache the human's own sessions keep warm.

@@ -47,6 +47,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
     private final ProcessRunner processRunner;
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
+    private final ClaudeMcpHealthProbe mcp;
     private final JsonMapper mapper = new JsonMapper();
 
     @Override
@@ -73,7 +74,9 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
         cmd.addAll(ReadOnlyTools.MCP_WRITES);
         cmd.add("--allowedTools");
         cmd.addAll(READS);
-        cmd.addAll(assistant.allowedTools());
+        cmd.addAll(assistant.allowedTools().isEmpty()
+                ? ReadOnlyTools.servers(mcp.servers().orElse(List.of()))
+                : assistant.allowedTools());
         Processes.Result result;
         try {
             result = processRunner.run(round.worktrees().getFirst(), TIMEOUT, cmd);

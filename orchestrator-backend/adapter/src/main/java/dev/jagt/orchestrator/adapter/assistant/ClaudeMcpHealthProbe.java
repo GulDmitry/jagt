@@ -32,14 +32,22 @@ class ClaudeMcpHealthProbe implements McpHealth {
     /** Every probe starts every configured server, so asking again this soon costs seconds and learns nothing. */
     private static final Duration FRESH_FOR = Duration.ofMinutes(2);
     /** The CLI's word for a server that is up. */
-    private static final String CONNECTED = "(Connected)";
+    private static final String CONNECTED = "Connected";
 
     private final ProcessRunner processRunner;
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
 
-    private Optional<List<String>> last = Optional.empty();
+    private Optional<List<Server>> last = Optional.empty();
     private long lastAt;
+
+    private record Server(String name, String status) {
+
+        @Override
+        public String toString() {
+            return name + " (" + status + ")";
+        }
+    }
 
     @Override
     public synchronized Optional<List<String>> brokenServers() {
@@ -61,6 +69,15 @@ class ClaudeMcpHealthProbe implements McpHealth {
                     .log();
             return Optional.empty();
         }
+        return listed().map(ClaudeMcpHealthProbe::broken);
+    }
+
+    /** Every server the human's own configuration lists, by name; empty where the CLI could not say. */
+    synchronized Optional<List<String>> servers() {
+        return listed().map(all -> all.stream().map(Server::name).toList());
+    }
+
+    private Optional<List<Server>> listed() {
         if (lastAt != 0 && System.nanoTime() - lastAt < FRESH_FOR.toNanos()) {
             return last;
         }
@@ -69,7 +86,7 @@ class ClaudeMcpHealthProbe implements McpHealth {
         return last;
     }
 
-    private Optional<List<String>> probe() {
+    private Optional<List<Server>> probe() {
         Processes.Result result;
         try {
             result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), TIMEOUT,
@@ -89,7 +106,7 @@ class ClaudeMcpHealthProbe implements McpHealth {
                     .log();
             return Optional.empty();
         }
-        List<String> servers = result.stdout().lines()
+        List<Server> servers = result.stdout().lines()
                 .map(ClaudeMcpHealthProbe::serverAndStatus)
                 .flatMap(Optional::stream)
                 .toList();
@@ -101,17 +118,22 @@ class ClaudeMcpHealthProbe implements McpHealth {
                     .log();
             return Optional.empty();
         }
-        List<String> broken = servers.stream().filter(server -> !server.endsWith(CONNECTED)).toList();
+        return Optional.of(servers);
+    }
+
+    private static List<String> broken(List<Server> servers) {
+        List<String> broken = servers.stream().filter(server -> !server.status().equals(CONNECTED))
+                .map(Server::toString).toList();
         if (broken.size() <= MAX_LISTED) {
-            return Optional.of(broken);
+            return broken;
         }
         List<String> capped = new ArrayList<>(broken.subList(0, MAX_LISTED));
         capped.add("and " + (broken.size() - MAX_LISTED) + " more");
-        return Optional.of(capped);
+        return capped;
     }
 
     /** A server line reads {@code <name>: <how it starts> - <marker> <verdict> — <detail>}, or it is not one. */
-    private static Optional<String> serverAndStatus(String line) {
+    private static Optional<Server> serverAndStatus(String line) {
         int named = line.indexOf(": ");
         int verdictAt = markedVerdict(line);
         if (named < 0 || verdictAt < named) {
@@ -120,7 +142,7 @@ class ClaudeMcpHealthProbe implements McpHealth {
         String verdict = line.substring(verdictAt + 3).trim();
         int detail = verdict.indexOf(" — ");
         String status = detail < 0 ? verdict : verdict.substring(0, detail);
-        return Optional.of(line.substring(0, named) + " (" + status.trim().replaceFirst("^[^\\p{L}]+", "") + ")");
+        return Optional.of(new Server(line.substring(0, named), status.trim().replaceFirst("^[^\\p{L}]+", "")));
     }
 
     /** The tick / cross / bang the CLI prints is what separates a server line from any other line carrying
