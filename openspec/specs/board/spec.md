@@ -38,20 +38,16 @@ project key renders only where projects are several, in the install or the task.
 ### Requirement: Verbs come off the wire in groups
 Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`; the board renders a row per group,
 read off the wire. A hint's text lives in `command/CommandReference` alone. A renamed verb still answers to its old
-spelling, advertised nowhere (`TaskAction.RENAMED`, read by the palette and tier 2).
+spelling (`review` runs `sweep`), advertised nowhere (`TaskAction.RENAMED`, read by the palette and tier 2).
 
 #### Scenario: Which buttons change something
 - **WHEN** the human reads a card's buttons
 - **THEN** the top row moves the task on; the bottom row only looks or restarts
 
-#### Scenario: Old spelling
-- **WHEN** the human types `review`
-- **THEN** `sweep` runs
-
 ### Requirement: Commands are two declarations
 A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
-`command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`: id, hint, usage, report or not, about one task
-or not, the board part it opens typed alone) running itself. `CommandReference` renders both: `help`'s text and the
+`command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) running itself, declaring
+the board part it opens typed alone. `CommandReference` renders both: `help`'s text and the
 palette's verb list. A launch that creates no task is refused.
 
 #### Scenario: Reports
@@ -89,7 +85,7 @@ run through `CommandService`: never more than a button. The call is stripped (`-
 `service/CommandService` SHALL validate against `Move` first; `service/TaskLauncher` starts a task; controller and
 palette own no rules. A refusal's sentence is the whole answer; one a caller must act on carries a `flow/Refusal.Code`,
 grown only when something branches on it. No tools facade: each MCP tool group under `surface/mcp/tools` declares
-its own; `surface/mcp/CallerScope` owns the X-Working-Directory rule.
+its own.
 
 #### Scenario: A stale tab
 - **WHEN** a stale tab sends a verb `Move` no longer allows
@@ -109,20 +105,15 @@ Origin, and `/mcp` anything but JSON.
 
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `StateService.onChange` is the one event, `TaskEventStream` forwarding it as SSE at
-`/api/events` with no payload. Each connect reads the board once. A periodic tick survives for the ACTIVE clock. A card
+`/api/events` with no payload. Each connect reads the board once. A periodic tick survives for the ACTIVE clock, time in that status. A card
 carries `data-action`, never a closure, so a card rebuilt under the pointer cannot act for its old task.
-
-#### Scenario: The clock reset
-- **WHEN** a card said 17h and the restarted agent shows 0m
-- **THEN** correct: the clock is time in that status
 
 #### Scenario: The backend goes away
 - **WHEN** the push connection drops
 - **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
 
 ### Requirement: A banner leads to its task
-A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only (`terminal-notifier
--open`): no caller may depend on it.
+A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only: no caller may depend on it.
 
 #### Scenario: Clicking a notification
 - **WHEN** the human clicks one
