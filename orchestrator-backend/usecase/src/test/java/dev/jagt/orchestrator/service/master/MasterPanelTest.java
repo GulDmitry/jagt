@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
@@ -140,13 +139,33 @@ class MasterPanelTest {
         when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
         when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-        new MasterPanel(reviews, briefs, quotes, AssistantProperties.empty())
+        new MasterPanel(reviews, briefs, quotes)
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
         ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
         verify(reviews).review(eq("ABC-1"), round.capture());
         assertThat(round.getValue().shared()).doesNotContain("tracker tools")
                 .contains("call any premise resting on the ticket unproven");
+    }
+
+    @Test
+    void sendsAReviewerWhoseReadLoadsAServerToItsMcpToolsForTheTicket(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        when(reviews.loadsMcpServer()).thenReturn(true);
+        when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
+
+        new MasterPanel(reviews, briefs, quotes)
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+
+        ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
+        verify(reviews).review(eq("ABC-1"), round.capture());
+        assertThat(round.getValue().shared()).contains("Read the ticket with your MCP tools");
     }
 
     @Test
@@ -274,7 +293,7 @@ class MasterPanelTest {
         when(briefs.author()).thenReturn("");
         when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
 
-        new MasterPanel(reviews, briefs, quotes, AssistantProperties.empty())
+        new MasterPanel(reviews, briefs, quotes)
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         verify(reviews, never()).review(any(), any());

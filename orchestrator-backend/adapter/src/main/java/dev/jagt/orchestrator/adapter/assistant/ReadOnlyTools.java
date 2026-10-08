@@ -86,6 +86,11 @@ class ReadOnlyTools {
                 .toList();
     }
 
+    /** The MCP tools among the human's allowed ones, a bare server as its reads. */
+    static List<String> mcpNamed(List<String> allowed) {
+        return named(allowed.stream().filter(tool -> tool.startsWith("mcp__")).toList());
+    }
+
     private static Stream<String> readsOf(String server) {
         return READ_VERBS.stream().map(verb -> server + "__" + verb + "*");
     }

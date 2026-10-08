@@ -84,7 +84,7 @@ class RingsTest {
     @Test
     void theVendorIsNamedOnlyAtTheEdge() {
         List<String> vendors = List.of("claude", "codex", "kitty", "tmux", "intellij", "jetbrains", ".idea",
-                ".vscode", ".fleet", "jira", "gitlab", "github", "anthropic", "openai");
+                ".vscode", ".fleet", "jira", "gitlab", "github", "anthropic", "openai", "mcp__");
         Pattern keysNamingAVendorByDesign = Pattern.compile("tmuxCommand|tmuxSession");
 
         assertThat(ROOTS.stream().flatMap(RingsTest::javaFilesUnder)

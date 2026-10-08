@@ -62,6 +62,24 @@ class HeadlessClaudeRoundReviewerTest {
     }
 
     @Test
+    void saysItLoadsAServerWhereTheHumanNamesOne() {
+        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+                ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
+                AssistantProperties.empty().withAllowedTools(List.of("mcp__acme")));
+
+        assertThat(named.loadsMcpServer()).isTrue();
+    }
+
+    @Test
+    void saysItLoadsNoServerWhereTheHumanNamesOnlyOtherTools() {
+        HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+                ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
+                AssistantProperties.empty().withAllowedTools(List.of("Bash(ls:*)")));
+
+        assertThat(named.loadsMcpServer()).isFalse();
+    }
+
+    @Test
     void loadsNoMcpServerWhenTheHumanNamesNoMcpTool() {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));

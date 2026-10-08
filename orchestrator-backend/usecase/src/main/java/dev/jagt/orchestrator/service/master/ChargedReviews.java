@@ -19,4 +19,8 @@ public class ChargedReviews {
         usage.chargeTask(taskId, read.usage());
         return read.facts().orElse(Judgement.failed("the review answered nothing"));
     }
+
+    public boolean loadsMcpServer() {
+        return reviewer.loadsMcpServer();
+    }
 }

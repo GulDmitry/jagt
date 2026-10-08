@@ -31,11 +31,6 @@ public record AssistantProperties(String settingSources, String model,
         return declared == null || declared.isBlank() ? mcpConfig : declared;
     }
 
-    /** The Master's review loads an MCP server only where one of these is named. */
-    public List<String> mcpTools() {
-        return allowedTools.stream().filter(tool -> tool.startsWith("mcp__")).toList();
-    }
-
     public static AssistantProperties empty() {
         return new AssistantProperties(null, null, null, null, null);
     }

@@ -56,7 +56,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
             cmd.addAll(List.of("--append-system-prompt", round.shared()));
         }
         // Any server's search takes free text, so a diff could send it anywhere: none loads unless named.
-        List<String> mcpReads = ReadOnlyTools.named(assistant.mcpTools());
+        List<String> mcpReads = ReadOnlyTools.mcpNamed(assistant.allowedTools());
         String pinned = assistant.mcpConfigFor(AssistantCallKind.MASTER_REVIEW);
         if (mcpReads.isEmpty()) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
@@ -79,6 +79,11 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
         return judged(headless.run(round.worktrees().getFirst(), TIMEOUT, cmd,
                 new ReadScope(round.worktrees(), tools, true), AssistantCallKind.MASTER_REVIEW,
                 round.worktrees().getFirst().toString()));
+    }
+
+    @Override
+    public boolean loadsMcpServer() {
+        return !ReadOnlyTools.mcpNamed(assistant.allowedTools()).isEmpty();
     }
 
     private static Answer<Judgement> judged(HeadlessClaude.Reply reply) {

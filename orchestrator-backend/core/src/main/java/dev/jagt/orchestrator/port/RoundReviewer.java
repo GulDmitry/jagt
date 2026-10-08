@@ -38,4 +38,7 @@ public interface RoundReviewer {
     }
 
     Answer<Judgement> review(Round round);
+
+    /** False where a read loads no MCP server, so no ticket the round does not quote can be read. */
+    boolean loadsMcpServer();
 }

@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -36,7 +35,6 @@ public class MasterPanel {
     private final ChargedReviews reviews;
     private final MasterBriefs briefs;
     private final RoundQuotes quotes;
-    private final AssistantProperties assistant;
 
     static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
     /** Opens a finding asking the session for evidence: it decides nothing, so no later round is bound by it. */
@@ -64,7 +62,7 @@ public class MasterPanel {
         List<Path> worktrees = worktrees(task);
         List<Role> roles = roles(brief, briefs.author());
         String shared = shared(brief, briefs.author(), config.may(MasterRight.ANSWER),
-                !assistant.mcpTools().isEmpty());
+                reviews.loadsMcpServer());
         Optional<RoundRead> read = quotes.round(taskId, task);
         List<Judgement> judgements = new ArrayList<>();
         if (read.isEmpty()) {
@@ -97,7 +95,7 @@ public class MasterPanel {
         Judgement judged = read.isEmpty() ? Judgement.failed(HUMAN_UNREAD)
                 : reviews.review(taskId, new RoundReviewer.Round("", planPrompt(taskId, task, brief.get(),
                         quotes.planFile(task), read.get(), config.may(MasterRight.ANSWER),
-                        !assistant.mcpTools().isEmpty()),
+                        reviews.loadsMcpServer()),
                         worktrees(task), config.modelOrInherited()));
         return write(taskId, worktrees(task), verdictFile(taskId, List.of(PLANNER), List.of(judged)));
     }
@@ -126,7 +124,7 @@ public class MasterPanel {
         }
         Judgement judged = reviews.review(taskId, new RoundReviewer.Round("",
                 answerPrompt(taskId, task, brief.get(), briefs.author(), question, read.get().decided(),
-                        read.get().said(), stuck, !assistant.mcpTools().isEmpty()),
+                        read.get().said(), stuck, reviews.loadsMcpServer()),
                 worktrees(task),
                 config.modelOrInherited()));
         return Optional.of(judged).filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
