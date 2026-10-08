@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.e2e;
 
 import dev.jagt.orchestrator.adapter.Executables;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.task.GitRemote;
 import dev.jagt.orchestrator.service.GitDeploy;
 
@@ -8,17 +9,36 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.awaitility.Awaitility.await;
+
 final class E2eWorkspace {
 
     static final String TMUX_SESSION = "jagt-e2e";
 
     private E2eWorkspace() {
+    }
+
+    static void awaitAFullRunStartedAfterNow(Jobs jobs, String job) {
+        long since = System.currentTimeMillis();
+        await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(100)).until(() -> {
+            try {
+                jobs.runNow(job);
+                return true;
+            } catch (IllegalStateException running) {
+                return false;
+            }
+        });
+        await().atMost(Duration.ofSeconds(60)).pollInterval(Duration.ofMillis(100))
+                .until(() -> jobs.statuses(since).stream().filter(status -> status.id().equals(job))
+                        .anyMatch(status -> !status.running() && status.lastStartedAt() != null
+                                && status.lastStartedAt() >= since));
     }
 
     static void createRepositoryWithOrigin(Path origin, Path repo) throws Exception {

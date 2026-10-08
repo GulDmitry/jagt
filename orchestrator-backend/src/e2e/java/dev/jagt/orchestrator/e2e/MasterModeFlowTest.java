@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
@@ -48,6 +49,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.when;
@@ -60,9 +62,7 @@ import static org.mockito.Mockito.when;
 class MasterModeFlowTest {
 
     private static final String TASK = "ABC-7";
-    private static final Duration A_FEW_TICKS = Duration.ofSeconds(30);
-    private static final Duration A_DEPLOY_TICK = Duration.ofSeconds(25);
-    private static final Duration A_REVIEW_TICK = Duration.ofSeconds(6);
+    private static final Duration A_FEW_TICKS_AND_A_DEPLOY_TICK = Duration.ofSeconds(55);
 
     private final HttpClient client = HttpClient.newHttpClient();
 
@@ -96,6 +96,8 @@ class MasterModeFlowTest {
     private OrchestratorPaths paths;
     @Autowired
     private OrchestratorProperties properties;
+    @Autowired
+    private Jobs jobs;
     @LocalServerPort
     private int port;
 
@@ -183,7 +185,7 @@ class MasterModeFlowTest {
         act("sweep");
 
         assertThat(awaitTask(task -> task.status() == master.expected()).status()).isEqualTo(master.expected());
-        Thread.sleep(A_DEPLOY_TICK.toMillis());
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         assertThat(task().status()).isEqualTo(master.expected());
     }
 
@@ -234,27 +236,22 @@ class MasterModeFlowTest {
                         TokenUsage.NONE));
     }
 
-    private TaskState settled(MasterModeCase master) throws Exception {
+    private TaskState settled(MasterModeCase master) {
         awaitTask(task -> task.status() == master.expected());
-        Thread.sleep(A_REVIEW_TICK.toMillis());
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-review");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-answer");
         return task();
     }
 
-    private TaskState awaitTask(Predicate<TaskState> reached) throws Exception {
-        long deadline = System.nanoTime() + A_FEW_TICKS.plus(A_DEPLOY_TICK).toNanos();
-        while (System.nanoTime() < deadline && !reached.test(task())) {
-            Thread.sleep(500);
-        }
-        return task();
+    private TaskState awaitTask(Predicate<TaskState> reached) {
+        return await().atMost(A_FEW_TICKS_AND_A_DEPLOY_TICK).pollInterval(Duration.ofMillis(500))
+                .until(this::task, reached::test);
     }
 
-    private void awaitTold(String line) throws Exception {
+    private void awaitTold(String line) {
         Path context = worktree().resolve("task_context.md");
-        long deadline = System.nanoTime() + A_FEW_TICKS.plus(A_DEPLOY_TICK).toNanos();
-        while (System.nanoTime() < deadline && !Files.readString(context).contains(line)) {
-            Thread.sleep(500);
-        }
-        assertThat(Files.readString(context)).contains(line);
+        await().atMost(A_FEW_TICKS_AND_A_DEPLOY_TICK).pollInterval(Duration.ofMillis(500))
+                .until(() -> Files.readString(context).contains(line));
     }
 
     private void agentReports(String status, String message, String extraArgument) throws Exception {

@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.job.IdeRecentProjectsCleaner;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.port.MasterAssistant;
 import dev.jagt.orchestrator.port.MasterAssistant.Answer;
@@ -45,6 +46,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -92,6 +94,8 @@ class JudgeModeFlowTest {
     private OrchestratorPaths paths;
     @Autowired
     private OrchestratorProperties properties;
+    @Autowired
+    private Jobs jobs;
     @LocalServerPort
     private int port;
 
@@ -122,7 +126,7 @@ class JudgeModeFlowTest {
         handBackTheFirstRound();
 
         assertThat(awaitReview()).contains("VERDICT: ready");
-        Thread.sleep(A_FEW_TICKS.toMillis() / 3);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-review");
         assertThat(task().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
         assertThat(task().history()).extracting(StatusChange::status).doesNotContain(TaskStatus.SHIPPING);
     }
@@ -156,7 +160,8 @@ class JudgeModeFlowTest {
                 .title("Widget layout is off").build());
 
         agentReports("IN_PROGRESS", "keep v2?", ", \"outcome\": \"question\"");
-        Thread.sleep(A_FEW_TICKS.toMillis() / 3);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-answer");
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-review");
 
         assertThat(task().message()).contains("keep v2?");
         verify(reviewer, never()).review(any());
@@ -178,7 +183,7 @@ class JudgeModeFlowTest {
                         TokenUsage.NONE));
         act("sweep");
         assertThat(task().status()).isEqualTo(TaskStatus.REVIEWED);
-        Thread.sleep(A_FEW_TICKS.toMillis() * 5 / 6);
+        E2eWorkspace.awaitAFullRunStartedAfterNow(jobs, "master-deploy");
         assertThat(task().status()).isEqualTo(TaskStatus.REVIEWED);
 
         assertThat(act("deploy")).contains("Merged " + TASK + " into dev", "DEPLOYED");
@@ -198,20 +203,12 @@ class JudgeModeFlowTest {
 
     private String awaitReview() throws Exception {
         Path review = worktree().resolve("master-review.md");
-        long deadline = System.nanoTime() + A_FEW_TICKS.toNanos();
-        while (System.nanoTime() < deadline && !Files.exists(review)) {
-            Thread.sleep(500);
-        }
-        assertThat(review).exists();
+        await().atMost(A_FEW_TICKS).pollInterval(Duration.ofMillis(500)).until(() -> Files.exists(review));
         return Files.readString(review);
     }
 
-    private TaskState awaitTask(Predicate<TaskState> reached) throws Exception {
-        long deadline = System.nanoTime() + A_FEW_TICKS.toNanos();
-        while (System.nanoTime() < deadline && !reached.test(task())) {
-            Thread.sleep(500);
-        }
-        return task();
+    private TaskState awaitTask(Predicate<TaskState> reached) {
+        return await().atMost(A_FEW_TICKS).pollInterval(Duration.ofMillis(500)).until(this::task, reached::test);
     }
 
     private void agentReports(String status, String message, String extraArgument) throws Exception {
