@@ -12,10 +12,6 @@ Shared-branch writes, commits, ships, worktree hooks and multi-repo tasks.
 the cut and the request's **target**, never the merge destination (`baseBranchOr`). A `deployBranch` naming
 `baseBranch`, however spelled, MUST be refused.
 
-#### Scenario: Deploy
-- **WHEN** `deploy <task>`
-- **THEN** merged and pushed
-
 #### Scenario: Diff base
 - **WHEN** `ide <task> diff` shows files the task never touched
 - **THEN** read against the request's target, never `deployBranch`
@@ -26,10 +22,6 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 the resume rebase's `--force-with-lease` of the task's own branch. `detachUpstream` unsets the inherited
 `origin/<baseBranch>` at creation. Each git call locks its repository (shared checkout). A task named after a base or
 deploy branch MUST be refused.
-
-#### Scenario: Wrong push
-- **WHEN** a pushed commit turns out wrong
-- **THEN** another commit, never a rewrite
 
 #### Scenario: Release request
 - **WHEN** resuming a `dev` → `main` request
@@ -125,16 +117,22 @@ undoing it; a CONFLICTING rebase stands in the worktree for the session. One thi
 - **AND** tracked changes or another worktree holding it stay refusals
 
 ### Requirement: Push guard lives in the worktree
-`.jagt/hooks/pre-push` (`WorktreeHooks`, the refs) SHALL refuse a push not to the task's branch. `ToolGate`
-(`POST /api/agent/tool`, the command LINE) SHALL refuse that too, and: a push naming no branch or deleting the task's;
-`HEAD` where the line may move it; a line that could skip the hook (`--no-verify`, `core.hooksPath`, `alias.`,
-`GIT_CONFIG*`, `env -i`, `sh -c`, `eval`). `WorktreeHooks.gitEnv` sets `core.hooksPath` via `GIT_CONFIG_*` on the
-launch command: that session and children, no repository config. A guardrail, not a boundary: a
-push built at runtime, a configured alias or a script passes; `deploy`, `revert` and a human's shell run ungated.
+`.jagt/hooks/pre-push` (`WorktreeHooks`, the refs) SHALL refuse a push not to the task's branch. `WorktreeHooks.gitEnv`
+sets `core.hooksPath` via `GIT_CONFIG_*` on the launch command: that session and children, no repository config. A
+guardrail, not a boundary: a push built at runtime, a configured alias or a script passes; `deploy`, `revert` and a
+human's shell run ungated.
 
 #### Scenario: Hooks
 - **WHEN** a client-side hook fires
 - **THEN** a stub runs the repository's own, re-resolved at run time with the override off, guard first
+
+### Requirement: ToolGate refuses the line
+`ToolGate` (`POST /api/agent/tool`) SHALL refuse that push too. It also refuses a push naming no branch or deleting the
+task's, and `HEAD` where the line may move it. So is any line that could skip the hook.
+
+#### Scenario: Skipping the hook
+- **WHEN** a push line carries `--no-verify`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c` or `eval`
+- **THEN** refused
 
 ### Requirement: Repositories multiply worktrees, not agents
 `task/TaskRepo` SHALL be a list, `repos.get(0)` running the session. Creation is all-or-nothing (`resolveRepos`),
@@ -152,7 +150,7 @@ repository.
 
 #### Scenario: Card
 - **WHEN** a task spans repositories
-- **THEN** one `<project> MR` link per repository, one age per task
+- **THEN** each project's name links its request; one age per task
 
 ### Requirement: Done retires checkouts, never in bulk
 `done` SHALL end the agent and delete every worktree and checkout the task cut; the branch survives. Bulk cleanup
