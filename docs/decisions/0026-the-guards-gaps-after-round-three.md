@@ -6,6 +6,7 @@
 
 Accepted 2026-10-08. Narrows [0025](0025-the-board-is-no-way-around-the-token.md): the token no longer admits a
 board write.
+Its gaps listed in [0028](0028-what-the-guards-still-pass-after-round-four.md).
 
 ## Context
 

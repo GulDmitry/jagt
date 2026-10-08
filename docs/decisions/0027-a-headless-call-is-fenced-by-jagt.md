@@ -4,7 +4,7 @@
 
 ## Status
 
-Accepted 2026-10-08.
+Accepted 2026-10-08. Its gaps listed in [0028](0028-what-the-guards-still-pass-after-round-four.md).
 
 ## Context
 
