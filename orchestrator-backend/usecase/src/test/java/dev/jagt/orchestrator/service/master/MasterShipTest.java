@@ -10,6 +10,8 @@ import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Map;
@@ -47,6 +49,19 @@ class MasterShipTest {
                 .withProjects(Map.of("demo", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
 
         String opened = new MasterShip(changes, commands, launcher, config).open("demo merge ABC-1 into dev");
+
+        assertThat(opened).contains("deploy");
+        verify(launcher, never()).launchLine(anyString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"demo take the hotfix from `dev`, then tidy the keys",
+            "demo rebase the keys ONTO origin/dev.", "demo merge ABC-1 into 'dev' before the release"})
+    void opensNoTaskWhoseProseNamesTheDeployBranchAfterABranchWord(String line) {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+
+        String opened = new MasterShip(changes, commands, launcher, config).open(line);
 
         assertThat(opened).contains("deploy");
         verify(launcher, never()).launchLine(anyString());
