@@ -72,8 +72,8 @@ session (`POST /api/tasks/say`): not a verb, the only control there.
 
 ### Requirement: Tier 1 is grammar, tier 2 only proposes
 Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2, `service/NaturalLanguageDispatch`, sends
-⌘K free text via `POST /api/interpret` to a model that only proposes one grammar command. That command is
-validated (task and verb exist) and run through `CommandService`: never more than a button. The call is stripped (`--strict-mcp-config
+⌘K free text via `POST /api/interpret` to a model proposing one grammar command, validated (task and verb exist) and
+run through `CommandService`: never more than a button. The call is stripped (`--strict-mcp-config
 --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`) and answers with the interpretation first.
 
 #### Scenario: A proposal names no real verb
@@ -110,12 +110,11 @@ card rebuilt under the pointer cannot act for its old task.
 
 #### Scenario: The clock reset
 - **WHEN** a card said 17h and the restarted agent shows 0m
-- **THEN** that is correct: the clock is time in that status, and a fresh session reports itself anew
+- **THEN** that is correct: the clock is time in that status
 
 ### Requirement: A banner leads to its task
-A desktop banner SHALL click through to its task (`DesktopNotifier` → `UserNotifier.notify(…, link)`), macOS-only via
-`terminal-notifier`'s `-open`, which `MacNotifier` prefers; osascript and `notify-send` drop it, so no caller may depend
-on it.
+A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only via `terminal-notifier
+-open`; osascript and `notify-send` drop it, so no caller may depend on it.
 
 #### Scenario: Clicking a notification
 - **WHEN** the human clicks one
@@ -132,10 +131,14 @@ passed, a pulsing ring running, none not read yet. The Deploy button is green wh
 - **THEN** the Deploy button loses its green
 
 ### Requirement: Only news is on screen
-The line under a card SHALL carry news only: NEEDS INPUT, ANSWERED, PROBLEM, NEEDS YOU. The next poll sits in the
-tooltip; a stopped poll gets its own mark. A status says itself in words; the highlighted button says what to do. A
-badge is the human's move; a quiet "you can …" can wait.
+The line under a card SHALL carry news only: NEEDS INPUT, ANSWERED, PROBLEM, NEEDS YOU. The next poll or job run sits
+in a tooltip; a stopped poll and a failed job get their own mark. A status says itself in words; the highlighted button
+says what to do. A badge is the human's move; a quiet "you can …" can wait.
 
 #### Scenario: A deployed task
 - **WHEN** a task is deployed
 - **THEN** it wears no badge: it waits on nobody, and `done` is the only move left
+
+#### Scenario: Jobs that run fine
+- **WHEN** no job's last run failed
+- **THEN** the header shows no jobs chip

@@ -81,7 +81,7 @@ const rows = () => [
   [[span('waiting', '2 need your action')],
     'in the header: how many cards are an interruption'],
   [[span('chip on', 'auto-review on'), span('chip', 'auto-review off'), span('chip bad', 'jobs: 1 failed')],
-    'in the header: whether anything polls, and what it did'],
+    'in the header: whether anything polls \u00b7 a job whose last run failed'],
   [[span('dot on', ''), span('dot', '')],
     'top right: whether this page is being told about changes'],
 ];

@@ -16,23 +16,18 @@ const waitingLabel = document.getElementById('waiting');
 const autoReviewChip = document.getElementById('auto-review');
 const jobsChip = document.getElementById('jobs-pulse');
 
-// A failed run OUTRANKS the countdown: the next run is not news while the last one is still broken.
+// Only a failed run is news: the next one sits in the hover.
 function renderJobs() {
   const jobs = store.jobs();
-  jobsChip.hidden = !jobs || !jobs.count;
+  jobsChip.hidden = !jobs || !jobs.failing;
   if (jobsChip.hidden) {
     return;
   }
-  // A run writes no state, so nothing pushes a fresh stamp here: this one is from the last state change and
-  // goes into the past within the minute. Past means DUE, not `0s` — a countdown frozen at zero reads as broken.
+  // A run writes no state, so this stamp is the last change's and goes into the past: past means DUE.
   const due = jobs.nextRunAt ? jobs.nextRunAt - Date.now() : null;
-  jobsChip.textContent = jobs.failing
-    ? `jobs: ${jobs.failing} failed`
-    : `jobs: ${due === null ? 'next -' : due > 0 ? `next ${countdown(due)}` : 'due'}`;
-  jobsChip.classList.toggle('bad', jobs.failing > 0);
-  jobsChip.dataset.tip = jobs.failing
-    ? 'a job\u2019s last run failed; open the Jobs report'
-    : 'next scheduled run of any unattended job; the ticker runs every minute';
+  jobsChip.textContent = `jobs: ${jobs.failing} failed`;
+  jobsChip.dataset.tip = 'a job\u2019s last run failed; open the Jobs report\nnext run: '
+    + (due === null ? '-' : due > 0 ? countdown(due) : 'due');
 }
 
 // An empty board has two causes and a human cannot act on the wrong one: nothing exists yet, or everything is

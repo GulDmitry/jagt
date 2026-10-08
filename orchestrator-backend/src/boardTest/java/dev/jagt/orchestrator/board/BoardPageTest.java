@@ -373,10 +373,11 @@ class BoardPageTest {
     }
 
     @Test
-    void saysWhenTheNextUnattendedRunIsDueWithoutAReportBeingOpened() {
+    void saysNothingInTheHeaderAboutJobsWhileNoneHasFailed() {
         Page page = open();
+        assertThat(page.locator("#auto-review")).hasText("auto-review on");
 
-        assertThat(page.locator("#jobs-pulse")).containsText("jobs: next");
+        assertThat(page.locator("#jobs-pulse")).isHidden();
     }
 
     @Test
