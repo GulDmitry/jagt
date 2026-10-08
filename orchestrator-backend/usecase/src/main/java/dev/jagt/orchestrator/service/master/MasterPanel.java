@@ -266,7 +266,10 @@ public class MasterPanel {
             + " Where the session stalls or a check stays red, find the cause. Decide the change that clears it, and"
             + " insist on it until it holds. Never hold the task, defer it or settle for red.\n\n";
 
-    private static final String STUCK = "Your last answers over this tree changed nothing in it: the session"
+    static final String GIT = "git in plain words (no quote, ~, ^, brace or glob; diff, log, show and blame carry"
+            + " `--no-ext-diff --no-textconv`)";
+
+    private static final String STUCK ="Your last answers over this tree changed nothing in it: the session"
             + " could act on none, and it restarts with fresh tools. Decide the change in the worktrees that brings"
             + " the task to ready-to-merge; where options remain, recommend the best and take it.\n";
 
@@ -297,8 +300,7 @@ public class MasterPanel {
                 + (tracker ? "use your tracker tools." : "it was not read: rule only on the diff, and call any"
                         + " premise resting on the ticket unproven.")
                 + " Then read everything the task changed against its base, committed and not: quoted in the round"
-                + " where jagt read it, with git where it is not (diff, log, show and blame carry"
-                + " `--no-ext-diff --no-textconv`). Judge from the"
+                + " where jagt read it, with " + GIT + " where it is not. Judge from the"
                 + " ticket and the diff: the author's own account is not evidence, what it points at is. A"
                 + " `disputed:` line in the session's notes names a ticket line, a file:line or a command and what it"
                 + " printed: check it, and proven, it stands over your own earlier finding. Rule only on what you can"

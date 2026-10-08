@@ -49,16 +49,20 @@ final class GitReadLine {
     private static final Set<String> RUNS_CONFIGURED_PROGRAMS = Set.of("diff", "log", "show", "blame");
     private static final List<String> NO_CONFIGURED_PROGRAMS = List.of("--no-ext-diff", "--no-textconv");
     private static final Pattern COUNT = Pattern.compile("-\\d+");
-    private static final Pattern SHELL_SYNTAX = Pattern.compile("[;&|<>$`()\\n\\\\]");
+    /** Words a shell passes on unchanged: no quote, expansion, glob or operator, and none opening with {@code =}. */
+    private static final Pattern LITERAL = Pattern.compile("[\\w./:@%+,-][\\w./=:@%+,-]*( [\\w./:@%+,-][\\w./=:@%+,-]*)*");
+    /** A format naming a signature runs the configured gpg. */
+    private static final String SIGNATURE = "%G";
 
     private GitReadLine() {
     }
 
     static Optional<String> refusal(ReadScope read, String command, Path here) {
-        List<String> words = Stream.of(command.strip().split("\\s+")).map(word -> word.replaceAll("['\"]", ""))
-                .toList();
-        if (SHELL_SYNTAX.matcher(command).find() || words.size() < 2 || !"git".equals(words.getFirst())) {
-            return Optional.of("jagt refuses this command in a read: one read-only git command, nothing around it.");
+        List<String> words = List.of(command.split(" "));
+        if (!LITERAL.matcher(command).matches() || command.contains(SIGNATURE) || words.size() < 2
+                || !"git".equals(words.getFirst())) {
+            return Optional.of("jagt refuses this command in a read: one read-only git command in plain words, single"
+                    + " spaces, no quote, ~, ^, brace, glob, %G or anything around it.");
         }
         int at = 1;
         Path repository = here;

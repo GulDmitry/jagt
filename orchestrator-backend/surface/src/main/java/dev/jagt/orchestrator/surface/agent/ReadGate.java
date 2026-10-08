@@ -21,8 +21,9 @@ public final class ReadGate {
     private static final Set<String> FILE_TOOLS = Set.of("Read", "Grep", GLOB);
     private static final List<String> PATH_KEYS = List.of("file_path", "path");
     private static final String SHELL_TOOL = "Bash";
-    /** A brace expansion's alternatives are paths too. */
-    static final Pattern PARENT = Pattern.compile("(^|[/{,])\\.\\.([/},]|$)");
+    static final Pattern PARENT = Pattern.compile("(^|/)\\.\\.(/|$)");
+    /** A brace builds a parent out of pieces no single one of which is {@code ..}. */
+    private static final Pattern GLOB_ESCAPE = Pattern.compile("[{}]|\\.\\.");
 
     private ReadGate() {
     }
@@ -64,7 +65,7 @@ public final class ReadGate {
     }
 
     private static boolean globInside(ReadScope read, Path here, String pattern) {
-        if (PARENT.matcher(pattern).find() || pattern.startsWith("~")) {
+        if (GLOB_ESCAPE.matcher(pattern).find() || pattern.startsWith("~")) {
             return false;
         }
         return !pattern.startsWith("/") || inside(read, here, pattern.split("[*?\\[{]", 2)[0]);

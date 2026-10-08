@@ -9,8 +9,8 @@ human stands.
 
 ### Requirement: The Master is a headless run per role, not a window
 One headless run per role of the brief SHALL read each round in the task's worktrees.
-It loads no worktree setting and runs read-only git there, option by option, with `--no-ext-diff --no-textconv`; it calls
-the MCP tools `allowed-tools` names alone and writes nothing, its session included. jagt SHALL write the verdict
+It loads no worktree setting and runs read-only git there in plain words, option by option, with `--no-ext-diff --no-textconv`;
+it calls the MCP tools `allowed-tools` names alone and writes nothing, its session included. jagt SHALL write the verdict
 (`MasterPanel`) and refuse any other call, your allow rules included (`ReadGate`).
 Each round SHALL cost one heavy read per role, charged to the task as `master`.
 
@@ -138,12 +138,8 @@ In `act` work needing another branch SHALL be its own task, opened by the Master
 
 ### Requirement: Every Master step is seen in one window
 While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following
-`jagt-master.log`, one line per Master step (`MasterFeedWindow`); closed, it SHALL come back.
+`jagt-master.log`, one line per Master step (`MasterFeedWindow`); closed, it SHALL come back within seconds.
 
 #### Scenario: You want to know why a window opened or closed
 - **WHEN** the Master answers, asks, returns, starts, ships, deploys or opens a task
 - **THEN** the `master` window shows it with the task, and an answer with its question and decision
-
-#### Scenario: You close the master window
-- **WHEN** you close it while the Master runs
-- **THEN** it comes back within seconds
