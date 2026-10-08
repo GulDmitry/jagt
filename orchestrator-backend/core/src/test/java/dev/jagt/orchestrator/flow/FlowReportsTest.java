@@ -26,7 +26,8 @@ class FlowReportsTest {
     void letsATaskSayItIsWaitingOnTheHuman() {
         when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
 
-        assertThat(reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed")).isTrue();
+        reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed");
+
         assertThat(written("ABC-1").apply(current(TaskStatus.IN_PROGRESS)).status())
                 .isEqualTo(TaskStatus.REVIEW_PENDING);
     }

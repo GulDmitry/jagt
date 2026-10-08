@@ -91,11 +91,8 @@ public class AgentStatusReports {
         Map<String, String> requestsByProject = said.requests();
         String shortMessage = abbreviate(stated(said, current, taskId));
         String url = said.link();
-        TaskStatus previous = current.map(TaskState::status).orElse(null);
-        boolean owed = current.map(handBack::verificationOwed).orElse(false);
         // What the machine lets this report land on; the agent is told, not left reading its own word back.
-        TaskStatus landed = previous == null ? newStatus : FlowRules.reported(previous, newStatus, owed);
-        boolean updated = flow.report(taskId, newStatus, shortMessage, (was, next) -> {
+        FlowReports.Landed written = flow.report(taskId, newStatus, shortMessage, (was, next) -> {
             if (url == null) {
                 return next;
             }
@@ -109,10 +106,10 @@ public class AgentStatusReports {
                 return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
             }
             return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
-        }, task -> owed);
-        if (!updated) {
-            throw new IllegalArgumentException("Task " + taskId + " not found in state.json");
-        }
+        }, handBack::verificationOwed).orElseThrow(() ->
+                new IllegalArgumentException("Task " + taskId + " not found in state.json"));
+        TaskStatus previous = written.previous();
+        TaskStatus landed = written.now();
         String alias = current.map(TaskState::alias).orElse(null);
         // An agent that stops to ask usually keeps its status, so the message is the only thing that changed.
         boolean askedNow = AgentReport.of(shortMessage) == AgentReport.QUESTION

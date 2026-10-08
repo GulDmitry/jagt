@@ -31,8 +31,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -104,6 +106,25 @@ class AgentStatusReportsTest {
         assertThatThrownBy(() -> reports(state).reportOwn(handBack, "ABC-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("jagt could not count the lines this task added to the project's agent file");
+    }
+
+    @Test
+    void tellsTheSessionWhereItsReportLandedInTheStateItWasWrittenTo(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVERTED).alias("a1").build());
+        StateService staleView = spy(state);
+        doReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()))
+                .when(staleView).task("ABC-1");
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        AgentStatusReports reports = new AgentStatusReports(staleView, notifications, new FlowReports(state),
+                new HandBack(worktreeChanges, new ReviewDrafts(configService),
+                        new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
+                        configService, specs));
+
+        String answer = reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
+
+        assertThat(answer).startsWith("Task ABC-1 stays REVERTED");
+        verify(notifications, never()).send(any());
     }
 
     @Test

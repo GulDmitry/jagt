@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
 
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
@@ -19,16 +21,20 @@ public class FlowReports {
 
     private final TaskStore tasks;
 
+    /** The status a report found the task in, and the one it left it in. */
+    public record Landed(TaskStatus previous, TaskStatus now) {
+    }
+
     public boolean report(String taskId, TaskStatus status, String message) {
-        return report(taskId, status, message, (was, next) -> next);
+        return report(taskId, status, message, (was, next) -> next).isPresent();
     }
 
     /**
      * The same, plus whatever else the report established. Applied in the SAME write, because a status that refuses
      * to exist without its link must not be able to land first; {@code alsoRecord} is handed the status BEFORE it.
      */
-    public boolean report(String taskId, TaskStatus status, String message,
-                          BiFunction<TaskStatus, TaskState, TaskState> alsoRecord) {
+    public Optional<Landed> report(String taskId, TaskStatus status, String message,
+                                   BiFunction<TaskStatus, TaskState, TaskState> alsoRecord) {
         return report(taskId, status, message, alsoRecord, task -> false);
     }
 
@@ -36,20 +42,23 @@ public class FlowReports {
      * The same, told per task whether a hand-back still owes jagt a verification run. Asked of the state being
      * written, so two reports arriving together cannot disagree about it.
      */
-    public boolean report(String taskId, TaskStatus status, String message,
-                          BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
-                          Predicate<TaskState> verificationOwed) {
+    public Optional<Landed> report(String taskId, TaskStatus status, String message,
+                                   BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
+                                   Predicate<TaskState> verificationOwed) {
         if (!FlowRules.reportable(status)) {
             throw new IllegalArgumentException(FlowRules.refusedReport(status, status).orElseThrow());
         }
         // Judged against the state being WRITTEN, not one read a moment earlier: two reports arriving together
         // must not both pass on a status neither of them ends up leaving from.
-        return tasks.updateTask(taskId, task -> {
+        AtomicReference<Landed> landed = new AtomicReference<>();
+        tasks.updateTask(taskId, task -> {
             FlowRules.refusedReport(task.status(), status).ifPresent(why -> {
                 throw new IllegalArgumentException(why);
             });
-            return alsoRecord.apply(task.status(), task.withStatus(
-                    FlowRules.reported(task.status(), status, verificationOwed.test(task)), message));
+            TaskStatus now = FlowRules.reported(task.status(), status, verificationOwed.test(task));
+            landed.set(new Landed(task.status(), now));
+            return alsoRecord.apply(task.status(), task.withStatus(now, message));
         });
+        return Optional.ofNullable(landed.get());
     }
 }
