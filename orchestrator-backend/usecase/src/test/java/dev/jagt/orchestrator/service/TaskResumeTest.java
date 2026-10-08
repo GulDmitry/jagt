@@ -1,16 +1,13 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Answer;
+import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.MergeRequestFacts;
-import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.ArgumentCaptor;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,12 +19,10 @@ import static org.mockito.Mockito.when;
 
 class TaskResumeTest {
 
-    private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
-    private final RequestProject projects = mock(RequestProject.class);
     private final ReviewReader reviewReader = mock(ReviewReader.class);
-    private final TicketReader tickets = mock(TicketReader.class);
-    private final TaskResume resume = new TaskResume(provisioning, mock(AgentStatusReports.class),
-            projects, reviewReader, tickets);
+    private final RequestProject projects = mock(RequestProject.class);
+    private final ResumeRegistration registration = mock(ResumeRegistration.class);
+    private final TaskResume resume = new TaskResume(reviewReader, projects, registration);
 
     @Test
     void takesTheTaskItsTitleAndItsBaseFromTheRequestBeingResumed() {
@@ -35,17 +30,13 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "release/2",
                         "PROJ-1 Excel export")), TokenUsage.NONE));
-        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("PROJ-1").withTitle("Excel export").withTrackerProject("PROJ")
-                .withUrl("https://tracker/PROJ-1")), TokenUsage.NONE));
+        when(registration.register("PROJ-1", "proj", "https://host/group/proj/-/merge_requests/425",
+                "PROJ-1 Excel export", "release/2")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
         resume.resume("https://host/group/proj/-/merge_requests/425");
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue())
-                .extracting(NewTask::taskId, NewTask::projectKey, NewTask::title, NewTask::baseBranch)
-                .containsExactly("PROJ-1", "proj", "Excel export", "release/2");
+        verify(registration).register("PROJ-1", "proj", "https://host/group/proj/-/merge_requests/425",
+                "PROJ-1 Excel export", "release/2");
     }
 
     @Test
@@ -55,9 +46,8 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/425"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "PROJ-1", "main",
                         "PROJ-1 Excel export")), spent));
-        when(tickets.read("PROJ-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("PROJ-1").withTitle("Excel export").withTrackerProject("PROJ")
-                .withUrl("https://tracker/PROJ-1")), TokenUsage.NONE));
+        when(registration.register("PROJ-1", "proj", "https://host/group/proj/-/merge_requests/425",
+                "PROJ-1 Excel export", "main")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
         resume.resume("https://host/group/proj/-/merge_requests/425");
 
@@ -65,106 +55,11 @@ class TaskResumeTest {
     }
 
     @Test
-    void titlesTheCardFromTheTicketWhenTheRequestIsNamedAfterNothingButItsKey() {
-        when(projects.of("https://host/group/proj/-/merge_requests/450")).thenReturn("proj");
-        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/450"))
-                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
-                        "ABC-42")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-42").withTitle("Excel export drops the last row").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-42")),
-                TokenUsage.NONE));
-
-        resume.resume("https://host/group/proj/-/merge_requests/450");
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue()).extracting(NewTask::title, NewTask::ticketUrl)
-                .containsExactly("Excel export drops the last row", "https://tracker/ABC-42");
-    }
-
-    @Test
-    void linksTheCardToTheTicketWhereTheRequestTitledItself() {
-        when(projects.of("https://host/group/proj/-/merge_requests/451")).thenReturn("proj");
-        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/451"))
-                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
-                        "ABC-42 Excel export drops the last row")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-42").withTitle("Excel export is broken").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
-
-        resume.resume("https://host/group/proj/-/merge_requests/451");
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue()).extracting(NewTask::title, NewTask::ticketUrl)
-                .containsExactly("Excel export drops the last row", "https://tracker/ABC-42");
-    }
-
-    @Test
-    void asksNoTrackerForASourceBranchThatIsNoTicketKey() {
-        when(projects.of("https://host/group/proj/-/merge_requests/455")).thenReturn("proj");
-        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/455"))
-                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "feature/widget-layout",
-                        "main", "Widget layout is off")), TokenUsage.NONE));
-
-        resume.resume("https://host/group/proj/-/merge_requests/455");
-
-        verifyNoInteractions(tickets);
-    }
-
-    @Test
-    void refusesARequestWhoseTicketTheTrackerNeverAnswersAbout() {
-        when(projects.of("https://host/group/proj/-/merge_requests/456")).thenReturn("proj");
-        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/456"))
-                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
-                        "ABC-42 Excel export drops the last row")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
-
-        String result = resume.resume("https://host/group/proj/-/merge_requests/456").message();
-
-        assertThat(result).contains("ticket read failed").contains("ABC-42");
-        verifyNoInteractions(provisioning);
-    }
-
-    @Test
-    void refusesToOpenACardWhenTheTrackerAnswersAboutAnotherItem() {
-        when(projects.of("https://host/group/proj/-/merge_requests/453")).thenReturn("proj");
-        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/453"))
-                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
-                        "ABC-42")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-43").withTitle("Invoice totals are wrong").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-43")), TokenUsage.NONE));
-
-        String result = resume.resume("https://host/group/proj/-/merge_requests/453").message();
-
-        assertThat(result).isEqualTo("error: asked for ABC-42 and got ABC-43 back — no task created");
-        verifyNoInteractions(provisioning);
-    }
-
-    @Test
-    void chargesTheTicketReadThatTitledTheCardToTheTaskItTitled() {
-        TokenUsage spent = TokenUsage.ofCall(9_000, 0, 80, 0.02);
-        when(projects.of("https://host/group/proj/-/merge_requests/452")).thenReturn("proj");
-        when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/452"))
-                .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "ABC-42", "release/2",
-                        "ABC-42")), TokenUsage.NONE));
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-42").withTitle("Excel export drops the last row").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-42")), spent));
-
-        resume.resume("https://host/group/proj/-/merge_requests/452");
-
-        verify(tickets).charge("ABC-42", spent);
-    }
-
-    @Test
     void saysTheReadFailedInsteadOfCallingTheRequestMissing() {
         when(reviewReader.readRequest("https://host/mr/1")).thenReturn(Answer.unavailable());
 
         assertThat(resume.resume("https://host/mr/1").message()).contains("read failed");
-        verifyNoInteractions(projects, provisioning);
+        verifyNoInteractions(projects, registration);
     }
 
     @Test
@@ -181,12 +76,13 @@ class TaskResumeTest {
         when(reviewReader.readRequest("https://host/group/proj/-/merge_requests/426"))
                 .thenReturn(new Answer<>(Optional.of(new MergeRequestFacts(true, "feature/widget-layout",
                         "main", "Widget layout is off")), TokenUsage.NONE));
+        when(registration.register("feature/widget-layout", "proj", "https://host/group/proj/-/merge_requests/426",
+                "Widget layout is off", "main")).thenReturn(Launched.created("feature/widget-layout", "Resumed"));
 
         resume.resume("https://host/group/proj/-/merge_requests/426");
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().taskId()).isEqualTo("feature/widget-layout");
+        verify(registration).register("feature/widget-layout", "proj",
+                "https://host/group/proj/-/merge_requests/426", "Widget layout is off", "main");
     }
 
     @ParameterizedTest
@@ -202,7 +98,7 @@ class TaskResumeTest {
         String result = resume.resume("https://host/mr/426").message();
 
         assertThat(result).contains(branch).contains(reason).contains("do <ticket> from");
-        verifyNoInteractions(projects, provisioning);
+        verifyNoInteractions(projects, registration);
     }
 
     @Test
@@ -211,7 +107,7 @@ class TaskResumeTest {
                 Optional.of(new MergeRequestFacts(true, " ", "main", "t")), TokenUsage.NONE));
 
         assertThat(resume.resume("https://host/mr/427").message()).contains("names no source branch");
-        verifyNoInteractions(projects, provisioning);
+        verifyNoInteractions(projects, registration);
     }
 
     @Test
@@ -219,7 +115,7 @@ class TaskResumeTest {
         assertThatThrownBy(() -> resume.link("a b", "https://host/mr/1", null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("is not a branch name");
-        verifyNoInteractions(projects, provisioning);
+        verifyNoInteractions(projects, registration);
     }
 
     @Test
@@ -227,6 +123,6 @@ class TaskResumeTest {
         assertThatThrownBy(() -> resume.link("ABC-1", null, null, null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("resume needs the request url");
-        verifyNoInteractions(projects, provisioning);
+        verifyNoInteractions(projects, registration);
     }
 }

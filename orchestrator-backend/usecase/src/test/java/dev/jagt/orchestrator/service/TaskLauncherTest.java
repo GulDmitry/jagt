@@ -1,13 +1,10 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.LaunchRequest;
-import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -17,318 +14,80 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class TaskLauncherTest {
 
-    private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
-    private final TicketReader tickets = mock(TicketReader.class);
     private final ConfigService configService = mock(ConfigService.class);
-    private final ProjectRouting routing = mock(ProjectRouting.class);
-    private final TaskLauncher launcher = new TaskLauncher(provisioning, tickets, configService,
-            mock(TaskResume.class), routing);
-
-    @BeforeEach
-    void configIsReadable() {
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
-    }
+    private final TaskLaunches launches = mock(TaskLaunches.class);
+    private final TaskLauncher launcher = new TaskLauncher(configService, launches, mock(TaskResume.class));
 
     @Test
-    void namesTheTaskByTheCanonicalKeyTheReadGaveBackWhenGivenAUrl() {
-        oneProject("group-a");
-        when(tickets.read("https://tracker.example.com/browse/ABC-123"))
-                .thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true).withKey("ABC-123")
-                        .withTitle("Some title").withTrackerProject("ABC")
-                        .withUrl("https://tracker.example.com/browse/ABC-123")), TokenUsage.NONE));
-
-        launcher.launch(LaunchRequest.of("https://tracker.example.com/browse/ABC-123").withProject("group-a"));
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue())
-                .extracting(NewTask::taskId, NewTask::projectKey, NewTask::title, NewTask::ticketUrl)
-                .containsExactly("ABC-123", "group-a", "Some title",
-                        "https://tracker.example.com/browse/ABC-123");
-    }
-
-    @Test
-    void chargesTheTicketReadToTheTaskItJustNamed() {
-        TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
-        oneProject("group-a");
-        when(tickets.read("https://tracker/ABC-123")).thenReturn(new Answer<>(
-                Optional.of(TicketFacts.defaults().withExists(true).withKey("ABC-123").withTitle("t")
-                        .withTrackerProject("ABC").withUrl("https://tracker/ABC-123")), spent));
-
-        launcher.launch(LaunchRequest.of("https://tracker/ABC-123").withProject("group-a"));
-
-        var order = inOrder(provisioning, tickets);
-        order.verify(provisioning).initializeTask(any());
-        order.verify(tickets).charge("ABC-123", spent);
-    }
-
-    @Test
-    void refusesAnItemTheRouterCouldNotPlaceRatherThanPickingARepository() {
-        oneProject("group-a");
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()
-                .withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
-                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
-        when(routing.projectFor(any())).thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
-
-        String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
-
-        assertThat(out).contains("ABC-42 not placed in a configured project: placed in no configured project");
-        verify(provisioning, never()).initializeTask(any());
-    }
-
-    @Test
-    void asksTheRouterWhereToPutAnItemNobodyNamedAProjectFor() {
-        oneProject("group-a");
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()
-                .withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
-                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
-        when(routing.projectFor(any())).thenReturn(new ProjectRouting.Placed("group-a"));
-
-        launcher.launch(LaunchRequest.of("ABC-42"));
-
-        verify(provisioning).initializeTask(any());
-    }
-
-    @Test
-    void buysNoSecondReadOfFactsTheCallerAlreadyPaidFor() {
-        oneProject("group-a");
-        when(provisioning.strategyForExisting("ABC-42", "group-a")).thenReturn(BranchStrategy.FRESH);
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
-                .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42");
-
-        launcher.launch(LaunchRequest.of("ABC-42").withProject("group-a"),
-                new Answer<>(Optional.of(item), TokenUsage.NONE));
-
-        verify(tickets, never()).read(anyString());
-    }
-
-    @Test
-    void createsNoTaskWhenTheTrackerSaysThereIsNoSuchItem() {
-        oneProject("group-a");
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(
-                Optional.of(TicketFacts.defaults()),
-                TokenUsage.ofCall(38_000, 0, 60, 0.41)));
-
-        String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
-
-        assertThat(out).contains("no such item: ABC-42", "no task created");
-        verify(provisioning, never()).initializeTask(any());
-    }
-
-    @Test
-    void saysTheReadFailedInsteadOfCallingTheTicketMissing() {
-        oneProject("group-a");
-        when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
-
-        assertThat(launcher.launch(LaunchRequest.of("ABC-42")).message()).contains("read failed");
-    }
-
-    @Test
-    void createsNoTaskWhenTheReadAnsweredAboutADifferentItem() {
-        oneProject("group-a");
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-99").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-99")), TokenUsage.NONE));
-
-        String out = launcher.launch(LaunchRequest.of("ABC-42")).message();
-
-        assertThat(out).contains("asked for ABC-42 and got ABC-99 back", "no task created");
-        verify(provisioning, never()).initializeTask(any());
-    }
-
-    @Test
-    void warnsAboutALeftoverBranchWithoutSpendingATicketRead() {
-        oneProject("group-a");
-        when(provisioning.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
-
-        String out = launcher.launch(LaunchRequest.of("ABC-9")).message();
-
-        assertThat(out).contains("already exists in group-a", "recreate", "resume");
-        verifyNoInteractions(tickets);
-        verify(provisioning, never()).initializeTask(any());
-    }
-
-    @Test
-    void intakeContinuesALeftoverBranchHoldingWorkInsteadOfRefusingIt() {
-        oneProject("group-a");
-        when(provisioning.strategyForExisting("ABC-9", "group-a")).thenReturn(BranchStrategy.RESUME);
-        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-9").withTitle("Widget layout is off")
-                .withUrl("https://tracker/ABC-9");
-
-        launcher.launch(LaunchRequest.of("ABC-9").withProject("group-a"),
-                new Answer<>(Optional.of(item), TokenUsage.NONE));
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().branchStrategy()).isEqualTo("resume");
-    }
-
-    @Test
-    void warnsAboutALeftoverBranchWhenTheHumanAskedForAFreshOne() {
-        oneProject("group-a");
-        when(provisioning.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
-
-        String out = launcher.launch(LaunchRequest.of("ABC-9").withStrategy("fresh")).message();
-
-        assertThat(out).contains("already exists in group-a");
-        verify(provisioning, never()).initializeTask(any());
-    }
-
-    @Test
-    void relaysTheHumansNotesToTheAgentAlongsideTheTicket() {
-        oneProject("demo");
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
-
-        launcher.launch(LaunchRequest.of("ABC-1").withProject("demo").withMode("plan")
-                .withNotes("start with tests only"));
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().instructions()).contains("start with tests only");
-    }
-
-    @Test
-    void carriesTheModeTheHumanAskedForThroughToTheAgent() {
-        oneProject("demo");
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
-
-        launcher.launch(LaunchRequest.of("ABC-1").withProject("demo").withMode("plan")
-                .withNotes("start with tests only"));
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().mode()).isEqualTo("plan");
-    }
-
-    @Test
-    void carriesTheHumansBranchStrategyThroughToTheWorktreeCut() {
-        oneProject("demo");
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
-
-        launcher.launch(LaunchRequest.of("ABC-1").withProject("demo").withStrategy("recreate"));
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().branchStrategy()).isEqualTo("recreate");
-    }
-
-    @Test
-    void carriesTheHumansBaseBranchThroughToTheWorktreeCut() {
-        oneProject("demo");
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
-
-        launcher.launch(LaunchRequest.of("ABC-1").withProject("demo").withBaseBranch("feature/parent"));
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().baseBranch()).isEqualTo("feature/parent");
-    }
-
-    @Test
-    void matchesTheProjectWhoseLabelIsAmongTheTicketLabels() {
-        TicketFacts facts = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Some ticket title")
-                .withTrackerProject("ABC").withLabels(List.of("area-x", "no-test", "backend"));
-
-        List<String> matches = ProjectRouting.projectsMatching(facts,
-                Map.of("group-a", List.of("backend"), "group-b", List.of("frontend")));
-
-        assertThat(matches).containsExactly("group-a");
-    }
-
-    @Test
-    void createsOneTaskAcrossEveryProjectNamedInTheSameToken() {
+    void createsOneTaskAcrossEveryProjectNamedInTheSameTokenTheFirstHoldingTheSession() {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of()),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of()))));
+        LaunchRequest request = LaunchRequest.of("ABC-1").withProject("web,api").normalized();
 
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
+        launcher.launch(request);
 
-        launcher.launch(LaunchRequest.of("ABC-1").withProject("web,api").normalized());
+        verify(launches).ticket(request, List.of("web", "api"));
+    }
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.captor();
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().projectKeys()).containsExactly("web", "api");
-        assertThat(created.getValue().projectKey()).isEqualTo("web");
+    @Test
+    void leavesAnItemNobodyNamedAProjectForToTheRouter() {
+        launcher.launch(LaunchRequest.of("ABC-42"));
+
+        verify(launches).ticket(LaunchRequest.of("ABC-42"), null);
+    }
+
+    @Test
+    void handsIntakesPaidReadOnWithTheProjectItPlacedTheItemIn() {
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        LaunchRequest request = LaunchRequest.of("ABC-42").withProject("group-a");
+        Answer<TicketFacts> read = new Answer<>(Optional.of(TicketFacts.defaults().withKey("ABC-42")),
+                TokenUsage.NONE);
+
+        launcher.launch(request, read);
+
+        verify(launches).ticket(request, List.of("group-a"), read);
     }
 
     @Test
     void refusesTheLaunchWhenOneOfTheNamedProjectsIsNotConfigured() {
-        oneProject("api");
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("api", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
 
-        assertThatThrownBy(() -> launcher.launch(
-                LaunchRequest.of("ABC-1").withProject("api,typo").normalized()))
+        assertThatThrownBy(() -> launcher.launch(LaunchRequest.of("ABC-1").withProject("api,typo").normalized()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("unknown project [typo]");
 
-        verifyNoInteractions(provisioning);
-    }
-
-    @Test
-    void makesATaskOfWhatTheHumanWroteWithoutSpendingATrackerRead() {
-        oneProject("group-a");
-        when(provisioning.freeTaskName("split-the-invoice-mailer", List.of("group-a")))
-                .thenReturn("split-the-invoice-mailer");
-
-        launcher.launch(LaunchRequest.defaults().withProject("group-a").withNotes("Split the invoice mailer"));
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue())
-                .extracting(NewTask::taskId, NewTask::title, NewTask::instructions, NewTask::ticketUrl)
-                .containsExactly("split-the-invoice-mailer", "Split the invoice mailer",
-                        "Split the invoice mailer", null);
-        verifyNoInteractions(tickets);
+        verifyNoInteractions(launches);
     }
 
     @Test
     void makesATaskOfATypedLineThatOpensOnAProjectAndNamesNoTicket() {
-        oneProject("group-a");
-        when(provisioning.freeTaskName("tighten-the-parser", List.of("group-a")))
-                .thenReturn("tighten-the-parser");
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("group-a", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
 
         launcher.launchLine("group-a tighten the parser");
 
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue()).extracting(NewTask::taskId, NewTask::instructions)
-                .containsExactly("tighten-the-parser", "tighten the parser");
+        ArgumentCaptor<LaunchRequest> written = ArgumentCaptor.forClass(LaunchRequest.class);
+        verify(launches).written(written.capture(), eq(List.of("group-a")));
+        assertThat(written.getValue().notes()).isEqualTo("tighten the parser");
     }
 
     @Test
     void refusesATaskWithNeitherATicketNorAnythingToDo() {
-        oneProject("group-a");
-
         var refused = launcher.launch(LaunchRequest.defaults().withProject("group-a"));
 
         assertThat(refused.created()).isFalse();
         assertThat(refused.message()).contains("nothing to do");
-        verify(provisioning, never()).initializeTask(any());
-    }
-
-    private void oneProject(String key) {
-        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withProjects(Map.of(key, new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        verifyNoInteractions(launches);
     }
 }

@@ -38,6 +38,17 @@ class ProjectRoutingTest {
     private final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
 
     @Test
+    void matchesTheProjectWhoseLabelIsAmongTheTicketLabels() {
+        TicketFacts facts = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Some ticket title")
+                .withTrackerProject("ABC").withLabels(List.of("area-x", "no-test", "backend"));
+
+        List<String> matches = ProjectRouting.projectsMatching(facts,
+                Map.of("group-a", List.of("backend"), "group-b", List.of("frontend")));
+
+        assertThat(matches).containsExactly("group-a");
+    }
+
+    @Test
     void buysNoRoutingCallWhenThereIsNothingToChooseBetween() {
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(
                 Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
