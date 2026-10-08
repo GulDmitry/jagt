@@ -67,7 +67,7 @@ class TaskProvisioningTest {
                 new McpEndpoint("http://localhost:8290/mcp"),
                 new HookEndpoint("http://127.0.0.1:8290/api/agent/session", "http://127.0.0.1:8290/api/agent"));
         return provisioning(new WorktreeSetup(runtime, paths, config,
-                new SubAgentBriefing(new PromptTemplates(), paths)));
+                new SubAgentBriefing(new PromptTemplates())));
     }
 
     private TaskProvisioning provisioning(WorktreeSetup setup) {

@@ -34,7 +34,7 @@ output distribution. What a template buys:
 |---------|-----|
 | cache order is enforceable | slots are visible, so a test can assert "no slot before the constant part ends" |
 | one prefix per call kind | values interleaved in prose move the first differing token forward |
-| no swapped arguments | `sub-agent-context.md` fills 16 positional `%s`; a named slot cannot be misplaced |
+| no swapped arguments | `sub-agent-context.md` fills 11 positional `%s`; a named slot cannot be misplaced |
 | the text is reviewable | one file, diffable, counted by `TextBudgetTest` |
 
 ### "Send the template once, then only its name and parameters"
@@ -141,7 +141,7 @@ the briefs are `sub-agent-context.md` and `task_context.md`.
 | Master prompts | `<instructions>`, `<round>`, `<question>` tags; question last [s8] | the format effect documented for current models |
 | model output | schema only where code consumes it; free text where it reasons [s4][s9] | a forced format can cost reasoning [s4] |
 
-`sub-agent-context.md` opens with `task %s`, so none of its ~2,500 words is shared across tasks. One write per task
+`sub-agent-context.md` opens with `task %s`, so none of its ~1,200 words is shared across tasks. One write per task
 start against hundreds of runs makes that a small gain; the headless reads carry the volume.
 
 Rule proposal:

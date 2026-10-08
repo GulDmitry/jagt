@@ -20,6 +20,7 @@ class TextBudgetTest {
 
     private static final Pattern NOT_PROSE = Pattern.compile("^(```|\\||#|<|>)");
     private static final Pattern LIST_ITEM = Pattern.compile("^([-*]|\\d+\\.)\\s+");
+    private static final Path PROMPTS = Path.of("usecase/src/main/resources/prompts");
 
     @ParameterizedTest
     @CsvSource({"../README.md, 950", "../AGENTS.md, 1620", "../ARCHITECTURE.md, 2900", "../TODO.md, 600"})
@@ -34,8 +35,9 @@ class TextBudgetTest {
     }
 
     @Test
-    void aGuideStaysUnderTwelveHundredWords() {
-        assertThat(markdownIn(Path.of("../docs"))).allSatisfy(guide ->
+    void aGuideOrAPromptStaysUnderTwelveHundredWords() {
+        assertThat(Stream.of(markdownIn(Path.of("../docs")), markdownIn(PROMPTS)).flatMap(List::stream))
+                .allSatisfy(guide ->
                 assertThat(words(guide)).describedAs("%s", guide).isLessThanOrEqualTo(1200));
     }
 
@@ -72,8 +74,8 @@ class TextBudgetTest {
 
     @Test
     void noSentenceAModelOrAHumanFollowsRunsPastTwentyFiveWords() {
-        List<Path> read = Stream.of(markdownIn(Path.of("../docs/rules")), specs(), List.of(Path.of("../AGENTS.md"),
-                Path.of("usecase/src/main/resources/prompts/sub-agent-context.md"))).flatMap(List::stream).toList();
+        List<Path> read = Stream.of(markdownIn(Path.of("../docs/rules")), specs(), List.of(Path.of("../AGENTS.md")),
+                markdownIn(PROMPTS)).flatMap(List::stream).toList();
 
         assertThat(read.stream().flatMap(document -> sentences(document).stream()
                 .filter(sentence -> sentence.split("\\s+").length > 25)
@@ -96,6 +98,7 @@ class TextBudgetTest {
         assertThat(markdownIn(Path.of("../docs/rules"))).hasSizeGreaterThan(3);
         assertThat(markdownIn(Path.of("../docs"))).hasSizeGreaterThan(3);
         assertThat(markdownIn(Path.of("../docs/decisions"))).hasSizeGreaterThan(1);
+        assertThat(markdownIn(PROMPTS)).isNotEmpty();
         assertThat(specs()).hasSizeGreaterThan(5);
         assertThat(mainSources().count()).isGreaterThan(100);
     }

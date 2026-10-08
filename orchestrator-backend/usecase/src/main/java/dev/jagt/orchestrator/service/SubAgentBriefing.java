@@ -1,26 +1,22 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.PromptTemplates;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** The system knowledge a fresh sub-agent wakes up with: its own task, and where everything else lives. */
+/** The system knowledge a fresh sub-agent wakes up with: its own task, and its branches. */
 @Service
 @RequiredArgsConstructor
 public class SubAgentBriefing {
 
-    private final PromptTemplates prompts;
-    private final OrchestratorPaths paths;
+    private static final String NO_DEPLOY = "none here";
 
-    @Value("${server.port:8290}")
-    private String boardPort = "8290";
+    private final PromptTemplates prompts;
 
     public String of(NewTask request, NewRepo repo, List<NewRepo> repos) {
         String taskId = request.taskId();
@@ -29,12 +25,12 @@ public class SubAgentBriefing {
                 taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
                 repo.worktreePath(),
                 alsoYours(repo, repos),
-                taskId,
-                taskId, repo.baseBranch(),
-                paths.root(),
-                boardPort,
-                paths.stateFile(),
-                paths.configFile());
+                taskId, repo.baseBranch(), deployBranch(repo));
+    }
+
+    private static String deployBranch(NewRepo repo) {
+        String branch = repo.config().deployBranch();
+        return branch == null || branch.isBlank() ? NO_DEPLOY : "`" + branch + "`";
     }
 
     /** The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are none. */
