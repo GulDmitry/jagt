@@ -31,18 +31,13 @@ public class Verification {
     private final ConfigService configService;
     private final Processes processes;
 
-    /** Whether any repository of this task ships a command at all. */
-    public boolean configured(TaskState task) {
-        return task.repos().stream().anyMatch(repo -> !command(repo).isEmpty());
-    }
-
     /** What the commands said, worst first: empty means every one of them passed, or none is configured. */
     public Optional<String> failure(TaskState task) {
         return task.repos().stream().map(this::failureOf).flatMap(Optional::stream).findFirst();
     }
 
     private Optional<String> failureOf(TaskRepo repo) {
-        List<String> command = command(repo);
+        List<String> command = command(configService.project(repo.project()));
         if (command.isEmpty()) {
             return Optional.empty();
         }
@@ -60,8 +55,7 @@ public class Verification {
     }
 
     /** A project the configuration no longer names runs nothing, rather than failing the report that asks. */
-    private List<String> command(TaskRepo repo) {
-        ProjectConfig project = configService.project(repo.project());
+    static List<String> command(ProjectConfig project) {
         return project == null || project.verifyCommand() == null ? List.of() : project.verifyCommand();
     }
 

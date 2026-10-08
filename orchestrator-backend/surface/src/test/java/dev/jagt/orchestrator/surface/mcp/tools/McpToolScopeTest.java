@@ -12,6 +12,7 @@ import dev.jagt.orchestrator.protocol.Schema;
 import dev.jagt.orchestrator.surface.mcp.MessageHandler;
 import dev.jagt.orchestrator.surface.mcp.MessageTool;
 import dev.jagt.orchestrator.service.AgentStatusReports;
+import dev.jagt.orchestrator.service.OwnStatusReports;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
@@ -96,27 +97,29 @@ class McpToolScopeTest {
     @Test
     void refusesAStatusUpdateAimedAtASiblingTask() {
         when(stateService.canonicalTaskId("OTHER-1")).thenReturn("OTHER-1");
+        OwnStatusReports ownReports = mock(OwnStatusReports.class);
         Registered registered = new Registered();
-        new StatusTools(statusReports, scope).declare(registered);
+        new StatusTools(statusReports, ownReports, scope).declare(registered);
         ToolHandler handler = registered.handlers.get("update_agent_status");
 
         assertThatThrownBy(() -> handler.call(
                 new JsonMapper().readTree("{\"status\":\"DONE\",\"taskId\":\"OTHER-1\"}"), "MINE-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("only act on their own task");
-        verifyNoInteractions(statusReports);
+        verifyNoInteractions(statusReports, ownReports);
     }
 
     @Test
     void letsAnAgentReportOnItsOwnTaskWithoutNamingIt() {
         when(statusReports.contextFor(any())).thenReturn(MessageContext.NONE);
+        OwnStatusReports ownReports = mock(OwnStatusReports.class);
         Registered registered = new Registered();
-        new StatusTools(statusReports, scope).declare(registered);
+        new StatusTools(statusReports, ownReports, scope).declare(registered);
         ToolHandler handler = registered.handlers.get("update_agent_status");
 
         handler.call(new JsonMapper().readTree("{\"status\":\"IN_PROGRESS\",\"message\":\"working\"}"), "MINE-1");
 
-        verify(statusReports).reportOwn(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1"));
+        verify(ownReports).report(argThat(said -> "IN_PROGRESS".equals(said.status())), eq("MINE-1"));
     }
 
     @Test

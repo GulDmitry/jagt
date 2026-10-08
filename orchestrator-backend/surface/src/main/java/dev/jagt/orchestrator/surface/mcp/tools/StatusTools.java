@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.UserNotice;
 import dev.jagt.orchestrator.service.AgentStatusReports;
+import dev.jagt.orchestrator.service.OwnStatusReports;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 public class StatusTools implements McpTools {
 
     private final AgentStatusReports statusReports;
+    private final OwnStatusReports ownReports;
     private final CallerScope callerScope;
 
     /** The task a report is about: the one it names where a Master sent it, else the caller's own worktree. */
@@ -30,7 +32,7 @@ public class StatusTools implements McpTools {
                 (said, caller) -> statusReports.contextFor(taskOf(said, caller)),
                 (said, caller) -> caller == null
                         ? statusReports.report(said, taskOf(said, caller))
-                        : statusReports.reportOwn(said, taskOf(said, caller)));
+                        : ownReports.report(said, taskOf(said, caller)));
 
         tools.tool("notify_user", Audience.ANYONE, UserNotice.SCHEMA, UserNotice.class,
                 (said, caller) -> MessageContext.NONE,

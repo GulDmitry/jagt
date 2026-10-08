@@ -7,7 +7,7 @@ The change a task adds to the behaviour its repository records as OpenSpec specs
 
 ### Requirement: A hand-back carries a valid change
 In a repository holding `openspec/`, a session's REVIEW_PENDING SHALL be refused until
-`openspec/changes/<task>/` validates strict or says `skip_specs: true` (`HandBack.specsOwed`, `adapter/OpenSpec`).
+`openspec/changes/<task>/` validates strict or says `skip_specs: true` (`HandBackDue`, `adapter/OpenSpec`).
 The refusal is the validator's own words; the session fixes them and reports again. A plan is not gated:
 plan mode cannot write the change.
 

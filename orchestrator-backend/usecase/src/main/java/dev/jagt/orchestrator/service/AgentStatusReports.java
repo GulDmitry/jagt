@@ -54,20 +54,6 @@ public class AgentStatusReports {
         return report(accepted(said, taskId), taskId);
     }
 
-    /** A session reporting on its own task, whose hand-back must leave the notes the next session starts from. */
-    public String reportOwn(AgentStatusMessage said, String taskId) {
-        Reported reported = accepted(said, taskId);
-        if (FlowRules.readByTheMaster(reported.status()) && !FlowRules.holdsAPlan(reported.status())) {
-            stateService.task(taskId).flatMap(handBack::notesOwed).ifPresent(owed -> {
-                throw Refusal.byState(owed);
-            });
-            stateService.task(taskId).flatMap(task -> handBack.specsOwed(taskId, task)).ifPresent(owed -> {
-                throw Refusal.byState(owed);
-            });
-        }
-        return report(reported, taskId);
-    }
-
     private Reported accepted(AgentStatusMessage said, String taskId) {
         MessageContext context = contextFor(taskId);
         List<Violation> violations = said.violations(context);
