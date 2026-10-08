@@ -11,7 +11,6 @@ import com.microsoft.playwright.Route;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.options.AriaRole;
 import com.microsoft.playwright.options.RequestOptions;
-import dev.jagt.orchestrator.job.AutoReviewScheduler;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
@@ -81,8 +80,6 @@ class BoardPageTest {
     private NaturalLanguageDispatch naturalLanguage;
     @MockitoBean
     private EditorDriver editorDriver;
-    @MockitoBean
-    private AutoReviewScheduler autoReviewScheduler;
     @MockitoBean
     private AgentSessions sessions;
 
