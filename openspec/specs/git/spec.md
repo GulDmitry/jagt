@@ -128,11 +128,11 @@ guardrail: a runtime-built push, an alias or a script passes; `deploy`, `revert`
 
 ### Requirement: ToolGate refuses the line
 `ToolGate` (`POST /api/agent/tool`) SHALL refuse that push too. It also refuses a push naming no branch, deleting the
-task's, or forcing it without the lease; `HEAD` unless bare and unmoved; `send-pack`, `http-push`, `receive-pack`
-and every `gh`/`glab` call but a read; any line naming the board's port or the Master's token.
+task's (`--de`, `-ud`), or forcing it without the lease; `HEAD` unless bare and unmoved; `send-pack`, `http-push`,
+`receive-pack` and every `gh`/`glab` call but a read; any line naming the board's port or the Master's token.
 
 #### Scenario: Skipping the hook
-- **WHEN** a line could skip the hook: `--no-verify`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c`, `eval`, however quoted or escaped
+- **WHEN** a push line could skip the hook: `--no-verify`, `-c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c`, `eval`, however quoted or escaped
 - **THEN** refused
 
 ### Requirement: Repositories multiply worktrees, not agents

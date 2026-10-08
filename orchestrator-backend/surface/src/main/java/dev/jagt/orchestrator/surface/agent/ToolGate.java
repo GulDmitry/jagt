@@ -26,13 +26,16 @@ public final class ToolGate {
             List.of("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env");
     private static final List<String> PUSH_OPTION_WITH_VALUE =
             List.of("-o", "--push-option", "--repo", "--receive-pack", "--exec");
-    private static final List<String> DELETES = List.of("--delete", "-d");
+    /** git takes any prefix of a long option, and {@code d} inside a bundle of short ones. */
+    private static final Pattern DELETE = Pattern.compile("--d(e(l(e(te?)?)?)?)?|-[a-zA-Z]*d[a-zA-Z]*");
+    /** A config on the line may rewrite where a push lands. */
+    private static final Pattern CONFIG = Pattern.compile("(^|\\s)-c(\\s|$)");
     /** What the branch a worktree is on is called, so a push of it is a push of the task's branch. */
     private static final String CURRENT_BRANCH = "HEAD";
     /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
     private static final String BOARD = "(?i):0*%d\\b|master-token|mcp_client\\.js";
     private static final String QUOTING = "[\\\\'\"]";
-    private static final Pattern PUSH =Pattern.compile("\\bpush\\b");
+    private static final Pattern PUSH = Pattern.compile("\\bpush\\b");
     /** git's plumbing writes a remote ref with no pre-push hook. */
     private static final Pattern PLUMBING = Pattern.compile("(send|receive)-pack|http-push");
     private static final Pattern HOST_CLI = Pattern.compile("(\\S*/)?(gh|glab)");
@@ -77,7 +80,8 @@ public final class ToolGate {
                     + " issue, run: view, list, diff; api: GET). Push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
-        if (PUSH.matcher(command).find() && HOOK_OFF.matcher(command).find()) {
+        if (PUSH.matcher(command).find() && (HOOK_OFF.matcher(command).find()
+                || CONFIG.matcher(line.replaceAll(QUOTING, "")).find())) {
             return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
@@ -159,7 +163,7 @@ public final class ToolGate {
     private static Optional<String> refuse(List<String> arguments, String taskBranch, boolean headIsTheTask) {
         List<String> words = commandWords(arguments);
         List<String> refspecs = refspecs(words);
-        if (words.stream().anyMatch(DELETES::contains)
+        if (words.stream().anyMatch(word -> DELETE.matcher(word).matches())
                 || refspecs.stream().anyMatch(refspec -> refspec.startsWith(":"))) {
             return Optional.of("jagt refuses deleting a branch from here: the review request of this task is"
                     + " built on it.");

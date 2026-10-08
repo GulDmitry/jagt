@@ -86,6 +86,8 @@ class ToolGateTest {
             "bash -lc \"git push origin ABC-42\"",
             "unset GIT_CONF''IG_COUNT; git push origin ABC-42",
             "env - git push origin ABC-42",
+            "git -c remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
+            "git '-c' remote.origin.push=refs/heads/ABC-42:refs/heads/main push origin ABC-42",
     })
     void refusesAPushThatCouldSkipThePrePushCheck(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
@@ -159,7 +161,7 @@ class ToolGateTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"git push origin :ABC-42", "git push --delete origin ABC-42",
-            "git push -d origin ABC-42"})
+            "git push -d origin ABC-42", "git push --dele origin ABC-42", "git push -ud origin ABC-42"})
     void refusesDeletingTheTasksOwnBranch(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
                 .asString().contains("refuses deleting a branch");
