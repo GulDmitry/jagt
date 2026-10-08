@@ -363,6 +363,23 @@ class BoardCardTest extends BoardPageContext {
     }
 
     @Test
+    void aPollThatStoppedOnARequestWithNoLinkRingsTheStatus() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("!7")
+                .mrCreatedAt(System.currentTimeMillis() - java.time.Duration.ofDays(9).toMillis())
+                .lastPolledAt(System.currentTimeMillis()).lastActiveTimestamp(System.currentTimeMillis()).build());
+
+        Page page = session.newPage();
+
+        page.navigate("http://localhost:" + port + "/");
+
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+
+        assertThat(page.locator("article .status.stalled")).hasAttribute("data-tip",
+                Pattern.compile("polling stopped — no further polls: this round is past its 24h window"));
+    }
+
+    @Test
     void aTitleCutShortOpensItsWholeTextFromTheKeyboard() {
         String pasted = "Widget layout is off. ".repeat(8) + "The end of the paragraph.";
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),

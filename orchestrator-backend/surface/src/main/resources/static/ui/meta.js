@@ -59,11 +59,15 @@ const timeline = (task) => (task.history || [])
   .join('\n');
 
 // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
-const statusChip = (task) => {
+const statusChip = (task, stalled) => {
   const status = span('status', task.statusLabel);
   status.append(' ', span('age', duration(Date.now() - task.statusSince)));
   status.dataset.tip = `${task.status}\n${timeline(task)}`;
   status.tabIndex = 0;
+  if (stalled) {
+    status.classList.add('stalled');
+    status.dataset.tip = `${status.dataset.tip}\n\n${stalled.line}`;
+  }
   // Where no verb on this card is the deploy, nothing else on it would say the work is live.
   if (task.deployed && !(task.actions || []).some((action) => action.again)) {
     status.classList.add('live');
@@ -90,8 +94,11 @@ const repositories = (task) => {
 export function meta(task, manyProjects) {
   const row = document.createElement('div');
   row.className = 'meta';
-  row.append(statusChip(task));
-  if ((task.repos || []).length > 1) {
+  const many = (task.repos || []).length > 1;
+  // A stopped poll with no request chip to ring rings the state instead.
+  const watch = watchLine(task.autoReview);
+  row.append(statusChip(task, !many && !task.reviewRequestUrl && watch?.stalled ? watch : null));
+  if (many) {
     row.append(repositories(task));
   } else {
     if (manyProjects) row.append(span(null, task.project));

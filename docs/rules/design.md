@@ -12,7 +12,7 @@ disagree**: APPROVED wears both — the approval landed, the deploy is yours.
 ## The colour palette
 
 Thirteen tokens, at the top of `app.css` and again under `prefers-color-scheme: dark`: a token in one scheme
-only is a hole in the other. The dark block holds one *rule*, `button.primary`'s label (`#fff`, `#10131a`
+only is a hole. The dark block holds one *rule*, `button.primary`'s label (`#fff`, `#10131a`
 dark): accent text on the accent fill is illegible. A hex outside `:root` is a bug — that label and the
 translucent blacks (four shadows, the dialog backdrop) apart.
 
@@ -42,8 +42,8 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - `✓` on the request, or `.tick` closing `.repos`: approved.
 - in a round's replies — `.block` head, its `.verdict` green fixed / amber a question / grey pushed back;
   the `.quote` it answers muted.
-- amber ring — `.mr-age.stalled` / `.repos.stalled`: the poll stopped, nothing will look again; the next poll
-  sits in the request's hover.
+- amber ring — `.mr-age.stalled` / `.repos.stalled` / `.status.stalled` (no link): the poll stopped,
+  nothing will look again; the next poll sits in the request's hover.
 - absence — no dot, no tick, no badge: the expected state, no pipeline, or nothing read yet, the hover saying
   which. **Absence is the cheapest mark**: a fact earning neither height nor colour goes in `data-tip`, not
   `title`.

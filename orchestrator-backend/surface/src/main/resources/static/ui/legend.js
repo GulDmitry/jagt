@@ -16,6 +16,12 @@ const liveStatusChip = () => {
   return status;
 };
 
+const stalledStatusChip = () => {
+  const status = span('status stalled', 'out for review');
+  status.append(' ', span('age', '9d'));
+  return status;
+};
+
 // The board draws this one as an anchor, and the dotted underline is half of what it says.
 const requestChip = (className, text) => {
   const anchor = document.createElement('a');
@@ -79,8 +85,8 @@ const rows = () => [
   [[blockHead(), span('quote', '> the row count is wrong')],
     'in a round\u2019s replies: the verdict \u2014 green fixed \u00b7 amber a question \u00b7 grey pushed back '
     + '\u2014 and the comment it answers'],
-  [[requestChip('mr-age stalled', 'MR 9d')],
-    'polling stopped: nothing will look at this round again on its own'],
+  [[requestChip('mr-age stalled', 'MR 9d'), stalledStatusChip()],
+    'polling stopped: nothing will look at this round again on its own; the state wears it where no request is linked'],
   [[detailLine('detail problem', 'PROBLEM: no branch to ship'), detailLine('detail you', 'NEEDS YOU: a red run')],
     'the card\u2019s own line: broken \u00b7 your move'],
   [[span('waiting', '2 need your action')],
