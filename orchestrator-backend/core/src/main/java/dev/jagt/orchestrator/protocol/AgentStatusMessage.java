@@ -101,9 +101,9 @@ public record AgentStatusMessage(String status, String message, String outcome, 
         List<String> projectsOnTask = context.projectsOnTask();
         List<Violation> found = new ArrayList<>();
         if (status == null) {
-            found.add(new Violation("status", "required, one of " + List.of(TaskStatus.values())));
-        } else if (parsedStatus() == null) {
-            found.add(new Violation("status", "one of " + List.of(TaskStatus.values())));
+            found.add(new Violation("status", "required, one of " + OFFERED));
+        } else if (!OFFERED.contains(parsedStatus())) {
+            found.add(new Violation("status", "one of " + OFFERED));
         }
         if (outcome != null && !OUTCOMES.contains(normalised(outcome))) {
             found.add(new Violation("outcome", "one of " + OUTCOMES + ", or left out"));

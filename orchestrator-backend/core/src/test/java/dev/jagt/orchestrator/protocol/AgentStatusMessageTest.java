@@ -26,6 +26,15 @@ class AgentStatusMessageTest {
     }
 
     @Test
+    void refusesAStatusOnlyJagtSetsNamingOnlyTheReportableOnes() {
+        var said = AgentStatusMessage.of("DEPLOYED", "landed");
+
+        assertThat(said.violations(MessageContext.NONE)).singleElement()
+                .satisfies(violation -> assertThat(violation.expected())
+                        .isEqualTo("one of [PLAN_PENDING, IN_PROGRESS, REVIEW_PENDING, SHIPPING, CI_POLLING, CI_FAILED]"));
+    }
+
+    @Test
     void refusesARoundThatIsOutForReviewWithNoRequestAnywhereInIt() {
         var said = AgentStatusMessage.of("CI_POLLING", "shipped it");
 
