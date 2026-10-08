@@ -9,9 +9,10 @@ export function hideTip() {
   tip.hidden = true;
 }
 
-// A repaint that kept the node a tip stands on, unchanged, keeps the tip.
+// A repaint that kept the node a tip stands on keeps the tip, in the node's new words: a countdown ticks in it.
 export function hideStaleTip() {
-  if (!shownFor?.isConnected || shownFor.dataset.tip !== tip.textContent) hideTip();
+  if (!shownFor?.isConnected || !shownFor.dataset.tip) hideTip();
+  else if (!tip.hidden && shownFor.dataset.tip !== tip.textContent) showTip(shownFor);
 }
 
 function showTip(target) {

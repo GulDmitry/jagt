@@ -1,15 +1,23 @@
 package dev.jagt.orchestrator.board;
 
 import com.microsoft.playwright.Page;
+import dev.jagt.orchestrator.job.Jobs;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Duration;
 import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 
 class BoardHeaderAndFiltersTest extends BoardPageContext {
+
+    @Autowired
+    Jobs jobs;
 
     @Test
     void saysThatTheUnattendedPollIsOnAndWhenItWillNextLookAtATask() {
@@ -271,6 +279,29 @@ class BoardHeaderAndFiltersTest extends BoardPageContext {
         assertThat(page.locator("#auto-review")).hasText("auto-review on");
 
         assertThat(page.locator("#jobs-pulse")).isHidden();
+    }
+
+    @Test
+    void anOpenTipOnTheJobsChipFollowsItsCountdownThroughARepaint() {
+        doThrow(new IllegalStateException("editor gone")).when(editorDriver).forgetDeadWorktrees(any());
+        long now = System.currentTimeMillis();
+        Page page = session.newPage();
+        page.clock().setFixedTime(now - Duration.ofSeconds(630).toMillis());
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        jobs.runNow("idecleanup");
+        page.waitForCondition(() -> jobs.summary(System.currentTimeMillis()).failing() > 0);
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now).build());
+        page.locator("#jobs-pulse").hover();
+        assertThat(page.locator("#tip")).containsText("next run: 11m");
+
+        page.clock().setFixedTime(now - Duration.ofSeconds(330).toMillis());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(now).build());
+
+        assertThat(page.locator("article")).hasCount(2);
+        assertThat(page.locator("#tip")).containsText("next run: 6m");
     }
 
     @Test
