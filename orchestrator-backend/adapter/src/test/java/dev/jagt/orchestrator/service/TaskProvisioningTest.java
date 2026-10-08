@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 
@@ -151,14 +152,14 @@ class TaskProvisioningTest {
     }
 
     @Test
-    void refusesTheTwentyFifthTask() throws Exception {
+    void refusesTheTwentyFifthTaskAsTheStateNotTheCall() throws Exception {
         Files.writeString(root.resolve("state.json"), """
                 {"tasks":{"T01":{},"T02":{},"T03":{},"T04":{},"T05":{},"T06":{},"T07":{},"T08":{},
                 "T09":{},"T10":{},"T11":{},"T12":{},"T13":{},"T14":{},"T15":{},"T16":{},
                 "T17":{},"T18":{},"T19":{},"T20":{},"T21":{},"T22":{},"T23":{},"T24":{}}}""");
 
         assertThatThrownBy(() -> provisioning().initializeTask(NewTask.builder("ABC-99", "proj").build()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
                 .hasMessageContaining("24 tasks are already open");
     }
 

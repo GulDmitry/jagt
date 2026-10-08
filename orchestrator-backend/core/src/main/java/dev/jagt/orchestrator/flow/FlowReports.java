@@ -47,14 +47,14 @@ public class FlowReports {
                                    BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
                                    Predicate<TaskState> verificationOwed) {
         if (!FlowRules.reportable(status)) {
-            throw new IllegalArgumentException(FlowRules.refusedReport(status, status).orElseThrow());
+            throw Refusal.byState(FlowRules.refusedReport(status, status).orElseThrow());
         }
         // Judged against the state being WRITTEN, not one read a moment earlier: two reports arriving together
         // must not both pass on a status neither of them ends up leaving from.
         AtomicReference<Landed> landed = new AtomicReference<>();
         tasks.updateTask(taskId, task -> {
             FlowRules.refusedReport(task.status(), status).ifPresent(why -> {
-                throw new IllegalArgumentException(why);
+                throw Refusal.byState(why);
             });
             TaskStatus now = FlowRules.reported(task.status(), status, verificationOwed.test(task));
             landed.set(new Landed(task.status(), now));

@@ -77,8 +77,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
 
     private TaskState requireTask(String taskId) {
         return stateService.task(taskId)
-                .orElseThrow(() -> new Refusal(Refusal.Code.NO_SUCH_TASK,
-                        "Task " + taskId + " not found in state.json"));
+                .orElseThrow(() -> Refusal.noSuchTask(taskId));
     }
 
     public String openTaskTab(String taskId, String mode) {

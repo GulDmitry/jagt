@@ -29,8 +29,7 @@ public class FlowEngine {
     /** Runs {@code action} on the task and returns what to show the human. */
     public String run(String taskIdOrAlias, TaskAction action) {
         String taskId = tasks.canonicalTaskId(taskIdOrAlias);
-        TaskState task = tasks.task(taskId).orElseThrow(() -> new Refusal(Refusal.Code.NO_SUCH_TASK,
-                "No task " + taskIdOrAlias + " — it may have been closed since this page loaded."));
+        TaskState task = tasks.task(taskId).orElseThrow(() -> Refusal.noSuchTask(taskIdOrAlias));
         if (!FlowRules.allows(task.status(), action, facts(task, taskId))) {
             throw new Refusal(Refusal.Code.ACTION_NOT_AVAILABLE, action.label() + " is not available for "
                     + taskId + " (it is " + task.status() + " — "

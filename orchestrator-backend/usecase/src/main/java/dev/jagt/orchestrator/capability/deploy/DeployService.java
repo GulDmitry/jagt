@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.deploy;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.capability.deploy.DeployTargets.Target;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
@@ -37,7 +38,7 @@ public class DeployService {
 
     private TaskState requireTask(String taskId) {
         return stateService.task(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
+                .orElseThrow(() -> Refusal.noSuchTask(taskId));
     }
 
     public Outcome deploy(String taskId) {

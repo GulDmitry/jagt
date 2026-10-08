@@ -43,8 +43,8 @@ in the message, a request filed under a project the task does not have.
 - **THEN** it is refused as inconsistent
 
 ### Requirement: Every violation at once
-Validation SHALL report every violation at once, never first-failure: one error per call is one call per error. Each
-names the field and what was expected; a missing required field is named with the rest, not first and alone. `startup/StartupValidation` refuses a bad install the same way.
+Validation SHALL report every violation at once, never first-failure, each naming the field and what was expected.
+`startup/StartupValidation` refuses a bad install the same way.
 
 #### Scenario: Several wrong fields
 - **WHEN** a required field is missing and another is out of its enum
@@ -61,12 +61,12 @@ does not compile.
 
 ### Requirement: A session's refusal is a correction
 A refusal SHALL come back from the session's call, never a block or a human's question. `surface/mcp/ToolFailure` reads
-what comes next off what the handler threw: `validation` is fixed and resent; `business` (a `flow/Refusal`, a vanished
-task) and `permission` are the answer; `transient` alone is `retryable`.
+what comes next off what the handler threw: `validation`, a wrong argument, is fixed and resent; `business` (a
+`flow/Refusal`: what jagt holds refuses) and `permission` are the answer; `transient` alone is `retryable`.
 
-#### Scenario: Refused
-- **WHEN** a session's call is refused as `validation`
-- **THEN** it fixes every line and calls again
+#### Scenario: The board is full
+- **WHEN** a session asks for a task while 24 are open
+- **THEN** it is refused as `business`, not `validation`
 
 ### Requirement: A hook's post is filtered, not refused
 `protocol/SessionHookReport` SHALL accept what a hook posts without correction, since the hook throws the answer away:

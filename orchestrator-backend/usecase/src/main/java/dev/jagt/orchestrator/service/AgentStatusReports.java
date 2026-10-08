@@ -109,7 +109,7 @@ public class AgentStatusReports {
             }
             return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
         }, handBack::verificationOwed).orElseThrow(() ->
-                new Refusal(Refusal.Code.NO_SUCH_TASK, "Task " + taskId + " not found in state.json"));
+                Refusal.noSuchTask(taskId));
         TaskStatus previous = written.previous();
         TaskStatus landed = written.now();
         String alias = current.map(TaskState::alias).orElse(null);

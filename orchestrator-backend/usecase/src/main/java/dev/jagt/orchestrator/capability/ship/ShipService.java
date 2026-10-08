@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.OriginContext;
@@ -46,7 +47,7 @@ public class ShipService {
 
     private Outcome shipExclusively(String taskId) {
         TaskState task = stateService.task(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
+                .orElseThrow(() -> Refusal.noSuchTask(taskId));
         ConfigService.ConfigFile config = configService.load();
         String title = ReviewRequestTitle.expand(config.codeReview().mrTitlePatternOrDefault(), taskId,
                 task.title());

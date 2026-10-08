@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
@@ -71,7 +72,7 @@ public class TaskProvisioning {
                 return candidate;
             }
         }
-        throw new IllegalArgumentException(MAX_SAME_NAME + " tasks are already called '" + base
+        throw Refusal.byState(MAX_SAME_NAME + " tasks are already called '" + base
                 + "' — open the line with different words");
     }
 
@@ -91,13 +92,13 @@ public class TaskProvisioning {
         requireOwnBranch(taskId, request.baseBranch(), config);
         // Before anything is cut: a refusal after a worktree exists leaves the disk ahead of state.json.
         if (stateService.tasks().size() >= MAX_TASKS) {
-            throw new IllegalArgumentException(MAX_TASKS + " tasks are already open, which is the limit —"
+            throw Refusal.byState(MAX_TASKS + " tasks are already open, which is the limit —"
                     + " finish one with `done` before starting another.");
         }
         boolean plan = AgentSessions.planMode(request.mode());
         BranchStrategy strategy = BranchStrategy.of(request.branchStrategy());
         if (stateService.task(taskId).isPresent()) {
-            throw new IllegalArgumentException("Task " + taskId + " is already registered in state.json. "
+            throw Refusal.byState("Task " + taskId + " is already registered in state.json. "
                     + "Use open_task_tab to respawn its agent, or ask the human to press done on it first.");
         }
         // Two branches flatten to one directory, and cutting the second clears the first as a stale worktree.
@@ -105,7 +106,7 @@ public class TaskProvisioning {
                 .filter(registered -> TaskName.slug(registered).equals(TaskName.slug(taskId)))
                 .findFirst()
                 .ifPresent(registered -> {
-                    throw new IllegalArgumentException("Task " + taskId + " and " + registered + " both become"
+                    throw Refusal.byState("Task " + taskId + " and " + registered + " both become"
                             + " the directory " + TaskName.slug(taskId) + ". Retire " + registered
                             + " first, or take a different branch.");
                 });
@@ -233,7 +234,7 @@ public class TaskProvisioning {
                                  BranchStrategy strategy) {
         // A RESUMED task is not cut from anything: the branch is only remembered as its review target.
         if (strategy != BranchStrategy.RESUME && !gitWorktrees.remoteBranchExists(projectPath, branch)) {
-            throw new IllegalArgumentException("Base branch '" + branch + "' does not exist on "
+            throw Refusal.byState("Base branch '" + branch + "' does not exist on "
                     + projectKey + "'s origin — the worktree is cut from origin/" + branch + ", so check the"
                     + " name (or push it there first).");
         }

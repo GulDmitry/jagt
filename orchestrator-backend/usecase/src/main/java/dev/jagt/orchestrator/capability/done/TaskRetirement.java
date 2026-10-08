@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.capability.done;
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.GitWorktrees;
@@ -30,7 +31,7 @@ public class TaskRetirement {
     public String retire(String taskIdOrAlias) {
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
         TaskState task = stateService.task(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
+                .orElseThrow(() -> Refusal.noSuchTask(taskId));
         // First: removing a worktree under a live process's cwd leaves an agent grinding in a deleted directory.
         sessions.killWindows(taskId);
         // EVERY repository, not just the session's: the others hold a checkout nothing else would ever delete.

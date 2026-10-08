@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 
 
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -37,7 +38,7 @@ public class IdeLauncher {
     public String open(String taskIdOrAlias, Mode mode) {
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
         TaskState task = stateService.task(taskId)
-                .orElseThrow(() -> new IllegalArgumentException("Task " + taskId + " not found in state.json"));
+                .orElseThrow(() -> Refusal.noSuchTask(taskId));
         if (mode == Mode.DIFF) {
             return openDiff(taskId, task);
         }

@@ -53,7 +53,7 @@ class FlowEngineTest {
                 .asInstanceOf(type(Refusal.class))
                 .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.NO_SUCH_TASK))
                 .satisfies(refusal -> assertThat(refusal).hasMessageContaining("No task ABC-1")
-                        .hasMessageContaining("closed since this page loaded"));
+                        .hasMessageContaining("may have been closed"));
     }
 
     @Test
