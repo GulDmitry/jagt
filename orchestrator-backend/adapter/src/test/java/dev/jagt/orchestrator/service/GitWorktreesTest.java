@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -120,7 +119,9 @@ class GitWorktreesTest {
 
     @Test
     void removeWorktreeReapsEveryWorktreeRootedProcessNotJustJava(@TempDir Path dir) throws Exception {
-        assumeTrue(onPath("lsof"), "lsof is not installed — the reap cannot see cwds without it");
+        assumeTrue(Arrays.stream(System.getenv("PATH").split(":"))
+                .anyMatch(bin -> Files.isExecutable(Path.of(bin, "lsof"))),
+                "lsof is not installed — the reap cannot see cwds without it");
         Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
@@ -340,7 +341,17 @@ class GitWorktreesTest {
     @Test
     void freesTheBaseRepositoryWhenItStillHoldsTheBranchThisTaskNeeds(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RESUME);
@@ -353,7 +364,17 @@ class GitWorktreesTest {
     @Test
     void refusesWhenTheCheckoutHoldingTheBranchHasUncommittedWork(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         Files.writeString(repo.resolve("f.txt"), "work nobody committed");
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
@@ -369,7 +390,17 @@ class GitWorktreesTest {
     @Test
     void freesTheBaseRepositoryBeforeDeletingTheBranchItStillHolds(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main", BranchStrategy.RECREATE);
@@ -382,7 +413,17 @@ class GitWorktreesTest {
     @Test
     void leavesTheCheckoutAloneWhenItRefusesAnExistingBranch(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
         assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
@@ -395,7 +436,17 @@ class GitWorktreesTest {
     @Test
     void freesACheckoutThatOnlyHasUntrackedFilesInIt(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         Files.writeString(repo.resolve("scratch.txt"), "never added to git");
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
@@ -408,7 +459,17 @@ class GitWorktreesTest {
     @Test
     void resumesTheBranchWhenTheRequestTargetsABaseThatNoLongerExists(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
         git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/deleted-base",
@@ -422,7 +483,17 @@ class GitWorktreesTest {
     @Test
     void putsTheCheckoutBackWhenTheWorktreeItWasFreedForCannotBeCut(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
         Path aFileEvenRootCannotCreateUnder = Files.writeString(dir.resolve("in-the-way"), "");
@@ -438,7 +509,17 @@ class GitWorktreesTest {
     @Test
     void leavesTheFilesOfTheFreedCheckoutExactlyAsTheyWere(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         Files.writeString(repo.resolve("f.txt"), "the branch's own content");
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "add", "."));
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "-c", "user.email=t@t", "-c", "user.name=t",
@@ -453,7 +534,17 @@ class GitWorktreesTest {
     @Test
     void leavesARepositoryOnItsOwnBranchAloneWhenAskedToReattach(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
@@ -466,7 +557,17 @@ class GitWorktreesTest {
     @Test
     void putsTheCheckoutBackWhenRecreatingTheBranchLeavesTheWorktreeUncut(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm",
+                "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
         Path notADirectory = Files.writeString(dir.resolve("in-the-way"), "");
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
@@ -481,20 +582,6 @@ class GitWorktreesTest {
     @Test
     void refusesWhenAnotherWorktreeHoldsTheBranch(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
-        Path repo = repositoryOnItsOwnBranch(runner, dir);
-        runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
-        runner.run(repo, Duration.ofSeconds(30),
-                List.of("git", "worktree", "add", "-q", dir.resolve("elsewhere").toString(), "ABC-1"));
-        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
-
-        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
-                BranchStrategy.RESUME))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("elsewhere");
-        assertThat(dir.resolve("wt")).doesNotExist();
-    }
-
-    private static Path repositoryOnItsOwnBranch(Processes runner, Path dir) throws IOException {
         Duration timeout = Duration.ofSeconds(30);
         Path origin = dir.resolve("origin.git");
         Path repo = dir.resolve("repo");
@@ -506,7 +593,16 @@ class GitWorktreesTest {
                 "init"));
         runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
         runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
-        return repo;
+        runner.run(repo, Duration.ofSeconds(30), List.of("git", "checkout", "-q", "main"));
+        runner.run(repo, Duration.ofSeconds(30),
+                List.of("git", "worktree", "add", "-q", dir.resolve("elsewhere").toString(), "ABC-1"));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
+                BranchStrategy.RESUME))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("elsewhere");
+        assertThat(dir.resolve("wt")).doesNotExist();
     }
 
     @Test
@@ -628,11 +724,5 @@ class GitWorktreesTest {
         String remote = git.remoteUrl(dir);
 
         assertThat(remote).isEqualTo("https://code.example/g/p.git");
-    }
-
-    private static boolean onPath(String binary) {
-        String path = System.getenv("PATH");
-        return path != null && Arrays.stream(path.split(":"))
-                .anyMatch(dir -> !dir.isBlank() && Files.isExecutable(Path.of(dir, binary)));
     }
 }
