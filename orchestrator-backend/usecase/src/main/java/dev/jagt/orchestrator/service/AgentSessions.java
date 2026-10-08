@@ -85,7 +85,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         TaskState task = requireTask(taskId);
         String session = openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(),
                 planMode(mode));
-        return "New " + agentRuntime.displayName() + " session started for " + taskId + " in terminal window '"
+        return "New " + agentRuntime.displayName() + " session started for " + taskId + " in tab '"
                 + taskId + "' of session '" + session + "' (worktree " + task.worktreePath() + ")"
                 + (planMode(mode) ? " in PLAN MODE" : "");
     }
@@ -97,8 +97,8 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         int killed = sessions.killTaskWindows(
                 agentSession(configService.load(), taskId), taskId);
         return killed == 0
-                ? "No terminal window named '" + taskId + "' found — the session was already closed."
-                : "Closed " + killed + " terminal window(s) for " + taskId + "; the "
+                ? "No tab named '" + taskId + "' found — the session was already closed."
+                : "Closed " + killed + " tab(s) for " + taskId + "; the "
                         + agentRuntime.displayName() + " session is terminated. Worktree kept: "
                         + task.worktreePath();
     }
@@ -116,7 +116,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                     Path.of(task.worktreePath()));
         }
         sessions.focusTaskWindow(session, dedicatedTitle, taskId);
-        return "Focused terminal window '" + taskId + "'" + viewer(terminalDriver.reveal(dedicatedTitle))
+        return "Focused tab '" + taskId + "'" + viewer(terminalDriver.reveal(dedicatedTitle))
                 + (revived ? "; the session was down, re-entered its " + agentRuntime.displayName()
                         + " session" : "");
     }
