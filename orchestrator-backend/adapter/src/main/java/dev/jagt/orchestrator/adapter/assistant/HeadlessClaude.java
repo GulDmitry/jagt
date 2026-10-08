@@ -81,8 +81,12 @@ class HeadlessClaude {
                 first.usage().plus(second.usage()));
     }
 
-    /** A failed call carries no envelope: asking again would not mend it. */
-    private record Reply(JsonNode envelope, TokenUsage usage) {
+    /** A failed call carries no envelope, only its cause: asking again would not mend it. */
+    record Reply(JsonNode envelope, TokenUsage usage, String cause) {
+
+        static Reply failed(TokenUsage usage, String cause) {
+            return new Reply(null, usage, cause);
+        }
 
         boolean answered() {
             return envelope != null;
@@ -128,9 +132,14 @@ class HeadlessClaude {
                 cmd.addAll(List.of("--permission-mode", assistant.permissionMode()));
             }
         }
+        return run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd, kind, label);
+    }
+
+    /** Any headless command, booked under {@code kind} the moment it returns, whatever it answered. */
+    Reply run(Path cwd, Duration timeout, List<String> cmd, AssistantCallKind kind, String label) {
         Processes.Result result;
         try {
-            result = processRunner.run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd);
+            result = processRunner.run(cwd, timeout, cmd);
         } catch (RuntimeException e) {
             // A timeout kills the CLI: no envelope, so the tokens already burned are unknowable, not zero.
             log.atWarn().setMessage("assistant call did not return")
@@ -139,7 +148,7 @@ class HeadlessClaude {
                     .addKeyValue("limit", timeout)
                     .addKeyValue("effect", "token cost unmeasured")
                     .log();
-            return new Reply(null, TokenUsage.NONE);
+            return Reply.failed(TokenUsage.NONE, "did not return: " + e.getMessage());
         }
         JsonNode envelope = parseEnvelope(result.stdout(), label);
         // Booked whatever the outcome: a call that errored or came back unusable was still paid for.
@@ -165,16 +174,16 @@ class HeadlessClaude {
                     .addKeyValue("exit", result.exitCode())
                     .addKeyValue("cause", oneLine(result.stderr().isBlank() ? result.stdout() : result.stderr()))
                     .log();
-            return new Reply(null, usage);
+            return Reply.failed(usage, "exit " + result.exitCode());
         }
         if (envelope.path("is_error").asBoolean(false)) {
             log.atWarn().setMessage("assistant call errored")
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", envelope.path("result").asString(""))
                     .log();
-            return new Reply(null, usage);
+            return Reply.failed(usage, "errored");
         }
-        return new Reply(envelope, usage);
+        return new Reply(envelope, usage, "");
     }
 
     /** `%kvp` quotes a value but escapes nothing, so a multi-line stderr would break the console line apart. */

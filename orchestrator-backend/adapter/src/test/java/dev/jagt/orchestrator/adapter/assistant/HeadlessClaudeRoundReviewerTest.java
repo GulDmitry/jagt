@@ -6,6 +6,9 @@ import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
+import dev.jagt.orchestrator.service.UsageTracker;
+import dev.jagt.orchestrator.task.AssistantCallKind;
+import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -24,7 +27,9 @@ class HeadlessClaudeRoundReviewerTest {
 
     private final ProcessRunner runner = mock(ProcessRunner.class);
     private final McpHealth mcp = mock(McpHealth.class);
-    private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
+    private final UsageTracker usage = mock(UsageTracker.class);
+    private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+            ClaudeProperties.defaults(), AssistantProperties.empty(), usage), ClaudeProperties.defaults(),
             AssistantProperties.empty(), mcp);
 
     @Test
@@ -55,7 +60,8 @@ class HeadlessClaudeRoundReviewerTest {
 
     @Test
     void runsOnlyReadOnlyGitWhateverTheDiffAsksEvenWhereTheReadsBypassPermissions() {
-        HeadlessClaudeRoundReviewer bypassing = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
+        HeadlessClaudeRoundReviewer bypassing = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+                ClaudeProperties.defaults(), AssistantProperties.empty(), usage), ClaudeProperties.defaults(),
                 AssistantProperties.empty().withPermissionMode("bypassPermissions"), mcp);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
@@ -132,7 +138,8 @@ class HeadlessClaudeRoundReviewerTest {
 
     @Test
     void loadsOnlyTheServersPinnedForAReview() {
-        HeadlessClaudeRoundReviewer pinned = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
+        HeadlessClaudeRoundReviewer pinned = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
+                ClaudeProperties.defaults(), AssistantProperties.empty(), usage), ClaudeProperties.defaults(),
                 AssistantProperties.empty().withMcpConfig("/cfg/mcp.json"), mcp);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
@@ -152,5 +159,16 @@ class HeadlessClaudeRoundReviewerTest {
         var answer = reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
 
         assertThat(answer.facts()).get().satisfies(judgement -> assertThat(judgement.failure()).isNotBlank());
+    }
+
+    @Test
+    void booksTheReviewUnderItsKindTheMomentItReturns() {
+        when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,
+                "{\"structured_output\":{\"verdict\":\"ready\"},\"usage\":{\"input_tokens\":900,\"output_tokens\":40}}",
+                ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        verify(usage).record(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(900, 0, 40, 0));
     }
 }

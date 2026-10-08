@@ -4,7 +4,7 @@
 
 ## Pluggable by design
 
-**A firm architectural invariant. Do not erode it.** Linux and macOS both, with terminals, notifiers, editors
+**A firm invariant: never erode it.** Linux and macOS both, with terminals, notifiers, editors
 and agent runtimes (any MCP-capable CLI) behind a **strategy interface** selected by config: an
 implementation plus a config value, never `if claude` or `if macos`. The flow stays agent-agnostic.
 
@@ -15,8 +15,7 @@ implementation plus a config value, never `if claude` or `if macos`. The flow st
   except that a notifier reaching nothing logs and returns.
 - **The tracker and the code host are not seams of jagt's**: a model reads them through the MCP of whoever
   runs it, jagt holding no credential. Its WORKFLOW is one — `TrackerWorkflow` by
-  `orchestrator.tracker.workflow` names the stage that starts work and the stage that closes it, and
-  reads nothing itself.
+  `orchestrator.tracker.workflow` names the start and close stages, and reads nothing itself.
 - `AgentRuntime` covers `launchCommand`, `provisionWorktree` (template in `AbstractAgentRuntime` + per-agent
   hook) and `lastSessionActivity`.
 - `mcp_client.js` is a **standard, agent-agnostic** stdio↔HTTP proxy; only the config declaring it differs
@@ -32,8 +31,7 @@ implementation plus a config value, never `if claude` or `if macos`. The flow st
 - Claude's fallback is `CLAUDE.local.md`, the one name a repository does not version; **every other runtime
   refuses**, and the bootstrap prompt names **no** file.
 - **A port answers what it achieved, never a value the caller must interpret**: `TerminalDriver.reveal` →
-  `Revealed` (`WINDOW`, `UNREACHABLE_TAB`, `NOT_RUNNING`), `AgentRuntime.lastSessionActivity` →
-  `OptionalLong` — never a boolean plus a comment, never a magic value.
+  `Revealed`, `AgentRuntime.lastSessionActivity` → `OptionalLong` — never a boolean plus a comment, never a magic value.
 - A read that FAILED is a third thing, the adapter's to report: `ClaudeTranscripts` logs it rather than
   passing a zero up ([never an answer](#a-read-that-failed-is-never-an-answer)).
 
@@ -69,8 +67,8 @@ The **only** way jagt reads outside itself, headless and one-shot: `service/Tick
 
 ## Every assistant call is metered
 
-- `UsageTracker` books a call to the task (`state.json`) and the session (in memory), **before its answer is
-  judged**.
+- `HeadlessClaude` books every call to the session under its kind, **before its answer is judged**; the
+  caller charges the task (`UsageTracker.chargeTask`), as a call can precede its task.
 - A sub-agent's own spend is read separately (`AgentSpendReader`, tokens only); `TOKENS` and the card show
   the SUM.
 - Floor per call: ~25k input tokens of baseline, ~$0.41 on the inherited default model against ~$0.06 on

@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.RoundFacts;
 import dev.jagt.orchestrator.service.UsageTracker;
-import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -131,7 +130,6 @@ public class MasterPanel {
                 answerPrompt(taskId, task, brief.get(), briefs.author(), question, decisions.of(task), said.get(), stuck),
                 worktrees(task),
                 config.modelOrInherited()));
-        usage.record(AssistantCallKind.MASTER_REVIEW, read.usage());
         usage.chargeTask(taskId, read.usage());
         return read.facts().filter(judged -> judged.failure().isBlank() && !judged.findings().isEmpty())
                 .map(judged -> judged.findings().stream().map(f -> oneLine(f.issue())).collect(Collectors.joining("\n")));
@@ -150,7 +148,6 @@ public class MasterPanel {
     }
 
     private Judgement charged(String taskId, Answer<Judgement> read) {
-        usage.record(AssistantCallKind.MASTER_REVIEW, read.usage());
         usage.chargeTask(taskId, read.usage());
         return read.facts().orElse(Judgement.failed("the review answered nothing"));
     }

@@ -1,20 +1,15 @@
 package dev.jagt.orchestrator.adapter.assistant;
 
-import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.protocol.RoundRead;
-import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -23,7 +18,6 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class HeadlessClaudeRoundReviewer implements RoundReviewer {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(15);
@@ -45,11 +39,10 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
             "Bash(mvn:*)", "Bash(npm:*)", "Bash(npx:*)", "Bash(yarn:*)", "Bash(pnpm:*)", "Bash(composer:*)",
             "Bash(vendor/bin/phpunit:*)", "Bash(pytest:*)", "Bash(make:*)", "Bash(docker:*)", "Bash(timeout:*)");
 
-    private final ProcessRunner processRunner;
+    private final HeadlessClaude headless;
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
     private final McpHealth mcp;
-    private final JsonMapper mapper = new JsonMapper();
 
     @Override
     public Answer<Judgement> review(Round round) {
@@ -78,40 +71,17 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
         cmd.addAll(assistant.allowedTools().isEmpty()
                 ? ReadOnlyTools.servers(mcp.servers().orElse(List.of()))
                 : assistant.allowedTools());
-        Processes.Result result;
-        try {
-            result = processRunner.run(round.worktrees().getFirst(), TIMEOUT, cmd);
-        } catch (RuntimeException e) {
-            log.atWarn().setMessage("master review did not return")
-                    .addKeyValue("path", round.worktrees().getFirst())
-                    .addKeyValue("cause", e.toString())
-                    .addKeyValue("effect", "token cost unmeasured")
-                    .log();
-            return new Answer<>(Optional.of(Judgement.failed("the review did not return: " + e.getMessage())),
-                    TokenUsage.NONE);
-        }
-        JsonNode envelope = envelope(result.stdout());
-        TokenUsage usage = HeadlessClaude.usageOf(envelope);
-        JsonNode answer = envelope == null ? null : envelope.path("structured_output");
-        if (result.exitCode() != 0 || answer == null || !answer.isObject()) {
-            String cause = result.stderr().isBlank() ? result.stdout() : result.stderr();
-            log.atWarn().setMessage("master review failed")
-                    .addKeyValue("path", round.worktrees().getFirst())
-                    .addKeyValue("exit", result.exitCode())
-                    .addKeyValue("cause", cause.strip())
-                    .log();
-            return new Answer<>(Optional.of(Judgement.failed("the review answered nothing readable, exit "
-                    + result.exitCode())), usage);
-        }
-        return new Answer<>(Optional.of(judgement(answer)), usage);
+        return judged(headless.run(round.worktrees().getFirst(), TIMEOUT, cmd, AssistantCallKind.MASTER_REVIEW,
+                round.worktrees().getFirst().toString()));
     }
 
-    private JsonNode envelope(String stdout) {
-        try {
-            return stdout == null || stdout.isBlank() ? null : mapper.readTree(stdout);
-        } catch (RuntimeException unparseable) {
-            return null;
+    private static Answer<Judgement> judged(HeadlessClaude.Reply reply) {
+        if (!reply.answered()) {
+            return new Answer<>(Optional.of(Judgement.failed("the review failed: " + reply.cause())), reply.usage());
         }
+        JsonNode answer = reply.envelope().path("structured_output");
+        return new Answer<>(Optional.of(answer.isObject() ? judgement(answer)
+                : Judgement.failed("the review answered nothing readable")), reply.usage());
     }
 
     private static Judgement judgement(JsonNode answer) {

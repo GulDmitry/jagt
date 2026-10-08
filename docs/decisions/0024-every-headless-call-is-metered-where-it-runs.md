@@ -15,9 +15,10 @@ Accepted 2026-10-08.
 
 ## Decision
 
-- The shared adapter runner `adapter/assistant/HeadlessClaude` books every call with `UsageTracker` under its
-  kind as soon as the CLI returns, before the answer is judged.
-- Callers inject only the port they read; none meters.
+- The shared adapter runner `adapter/assistant/HeadlessClaude` books every call, the round reviewer's included, to
+  the session under its kind as soon as the CLI returns, before the answer is judged.
+- Callers inject only the port they read and never book the session; the one that knows the task charges it
+  (`UsageTracker.chargeTask`), since a ticket is read before its task exists.
 
 ## Rejected
 
