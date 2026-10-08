@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.service.master.MasterShip;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.FlowReports;
-import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.MasterRight;
@@ -36,7 +35,7 @@ public class MasterVerdicts {
     /** Answers whether the verdict moved anything, so a caller can say so without reading the file again. */
     public boolean act(String taskId, TaskState task, MasterReview.Verdict verdict,
                        ConfigService.ConfigFile.MasterConfig config) {
-        boolean plan = task.status() == TaskStatus.PLAN_PENDING;
+        boolean plan = FlowRules.holdsAPlan(task.status());
         switch (verdict.kind()) {
             case NOT_READY -> {
                 if (!sessions.relayIfChanged(taskId, (plan ? PLAN_RETURNED : ROUND_RETURNED)

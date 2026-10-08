@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TicketTexts;
@@ -47,7 +47,7 @@ public class TicketPrefetchJob implements Job {
     }
 
     private boolean due(String taskId, TaskState task) {
-        return task.status() == TaskStatus.IN_PROGRESS && task.ticketUrl() != null && !task.ticketUrl().isBlank()
+        return FlowRules.atWork(task.status()) && task.ticketUrl() != null && !task.ticketUrl().isBlank()
                 && !tickets.readSince(taskId, task.statusSince());
     }
 }

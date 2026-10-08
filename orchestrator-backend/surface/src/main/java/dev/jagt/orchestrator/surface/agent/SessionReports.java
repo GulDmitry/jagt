@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.job.WatchdogService;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.TaskState;
@@ -93,7 +93,8 @@ public class SessionReports {
     }
 
     private boolean withTheMaster(TaskState task) {
-        return task != null && task.status() == TaskStatus.REVIEW_PENDING && configService.load().master().running();
+        return task != null && FlowRules.readByTheMasterNext(task.status())
+                && configService.load().master().running();
     }
 
     /**

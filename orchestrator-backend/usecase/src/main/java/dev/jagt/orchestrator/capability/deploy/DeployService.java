@@ -5,7 +5,7 @@ import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -106,7 +106,7 @@ public class DeployService {
      * left over from any other round is not a resume point, and jumping to it would skip the ones before it.
      */
     private int resumeFrom(TaskState task, String taskId, List<Target> targets) {
-        if (targets.size() == 1 || task.status() != TaskStatus.DEPLOY_CONFLICT) {
+        if (targets.size() == 1 || !FlowRules.conflictedInTheDeployWorktree(task.status())) {
             return 0;
         }
         for (int i = 0; i < targets.size(); i++) {

@@ -1,7 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.task.AutoReviewWatch;
-import dev.jagt.orchestrator.task.TaskStatus;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
@@ -41,7 +41,7 @@ public final class AutoReviewCadence {
      */
     public boolean polls(TaskState task) {
         // ANY repository's request, the same question the sweep and the projection ask.
-        return enabled && task.hasReviewRequest() && task.status() != TaskStatus.DONE;
+        return enabled && task.hasReviewRequest() && !FlowRules.closed(task.status());
     }
 
     /** What a human is owed about this task: is anything watching it, and when will it next look. */

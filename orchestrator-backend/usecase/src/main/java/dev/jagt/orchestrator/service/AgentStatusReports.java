@@ -57,7 +57,7 @@ public class AgentStatusReports {
     /** A session reporting on its own task, whose hand-back must leave the notes the next session starts from. */
     public String reportOwn(AgentStatusMessage said, String taskId) {
         Reported reported = accepted(said, taskId);
-        if (reported.status() == TaskStatus.REVIEW_PENDING) {
+        if (FlowRules.readByTheMasterNext(reported.status())) {
             stateService.task(taskId).flatMap(handBack::notesOwed).ifPresent(owed -> {
                 throw new IllegalArgumentException(owed);
             });
@@ -99,11 +99,11 @@ public class AgentStatusReports {
                 return next;
             }
             // Repeating CI_POLLING on the request already carried is the same round.
-            boolean sameRound = was == TaskStatus.CI_POLLING && (requestsByProject.isEmpty()
+            boolean sameRound = was.outForReview() && (requestsByProject.isEmpty()
                     ? url.equals(next.mrUrl())
                     : requestsByProject.entrySet().stream().allMatch(request ->
                             next.reviewRequestOf(request.getKey()).filter(request.getValue()::equals).isPresent()));
-            boolean newRound = next.status() == TaskStatus.CI_POLLING && !sameRound;
+            boolean newRound = next.status().outForReview() && !sameRound;
             if (!requestsByProject.isEmpty()) {
                 return newRound ? next.withReviewRound(requestsByProject) : next.withMrUrls(requestsByProject);
             }
@@ -155,7 +155,8 @@ public class AgentStatusReports {
         };
         String id = stateService.canonicalTaskId(taskId);
         flow.read(id, read, message)
-                .filter(landed -> landed.now() != landed.previous() && read != TaskStatus.CI_FAILED)
+                .filter(landed -> landed.now() != landed.previous()
+                        && (FlowRules.reviewed(read) || FlowRules.approved(read)))
                 .ifPresent(landed -> ping(id, stateService.task(id)));
     }
 

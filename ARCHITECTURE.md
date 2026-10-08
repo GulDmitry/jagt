@@ -77,9 +77,8 @@ answer. Every type in `flow/`, one question each:
 | `Attention` | whether the card is an interruption — one value for the badge, the count and the filter |
 | `TaskView` | what the board renders, built by `service/TaskViews` |
 
-- `withStatus` has exactly two callers outside the record itself: the two doors. Two honest exceptions — a task is born
-  at NEW (`service/TaskProvisioning`), and `capability/deploy/` *reads* one: a deploy resuming or waiting
-  (DEPLOY_CONFLICT).
+- `withStatus` has exactly two callers outside the record itself: the two doors. One honest exception — a task is born
+  at NEW (`service/TaskProvisioning`).
 - **A declaration without `.add()` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
   projection call, not a declaration.
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.

@@ -223,6 +223,16 @@ public final class FlowRules {
         return TaskStatus.CI_POLLING;
     }
 
+    /** A session writing the round it hands back next. */
+    public static boolean atWork(TaskStatus status) {
+        return status == relayed();
+    }
+
+    /** A closed task: its worktree is gone, so nothing can be relayed into it. */
+    public static boolean closed(TaskStatus status) {
+        return status == TaskStatus.DONE;
+    }
+
     /** Where the agent is expected to act, so its silence means death; NEW for one that died before reporting. */
     public static boolean watched(TaskStatus status) {
         return WATCHED.contains(status);
