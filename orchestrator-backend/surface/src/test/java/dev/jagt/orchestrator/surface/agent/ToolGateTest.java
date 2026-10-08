@@ -125,7 +125,9 @@ class ToolGateTest {
             "gh api repos/o/r/git/refs -f ref=refs/heads/main", "gh api repos/o/r/git/refs -Fsha=abc",
             "glab api -X PUT projects/1/repository/branches", "glab api --input body.json projects/1",
             "cd /wt && gh api graphql --raw-field query=x", "gh pr merge 12 --admin", "glab mr merge 12",
-            "gh repo edit --default-branch x", "gh", "/usr/local/bin/gh release create v1"})
+            "gh repo edit --default-branch x", "gh", "/usr/local/bin/gh release create v1",
+            "GH_TOKEN=x gh pr merge 12", "env -u GH_HOST gh pr merge 12", "xargs -n 1 gh pr close",
+            "command 'gh' pr merge 12"})
     void refusesWritingToTheCodeHostPastThePush(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
                 .asString().contains("writing to the code host");
@@ -135,6 +137,12 @@ class ToolGateTest {
     @ValueSource(strings = {"gh api repos/o/r/pulls", "gh api -X GET repos/o/r", "glab api --method get projects/1",
             "gh pr view 7", "glab mr view 7"})
     void letsTheCodeHostBeRead(String command) {
+        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"grep -rn glab src", "ls docs/gh", "which gh", "git commit -m \"bump gh to 2.0\""})
+    void letsAHostCliBeNamedAnywhereButInCommandPosition(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
     }
 
