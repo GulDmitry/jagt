@@ -231,6 +231,8 @@ tasks.named('test') {
     inputs.files(fileTree(projectDir.parentFile) {
         include '*.md'
         include 'docs/**/*.md'
+        include 'openspec/specs/**/*.md'
+        include 'orchestrator-backend/*/src/main/resources/prompts/*.md'
         include 'jagt.yml.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
 }
