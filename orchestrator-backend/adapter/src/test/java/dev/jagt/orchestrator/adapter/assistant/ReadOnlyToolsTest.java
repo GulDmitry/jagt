@@ -90,7 +90,7 @@ class ReadOnlyToolsTest {
 
         assertThat(settings.getFirst()).isEqualTo("--settings");
         assertThat(settings.get(1)).contains("PreToolUse", "http://127.0.0.1:8290/api/agent/read/f1", "exit 2");
-        assertThat(scopes.find("f1")).contains(scope);
+        assertThat(scopes.ask("f1")).contains(scope);
     }
 
     @Test
@@ -111,6 +111,6 @@ class ReadOnlyToolsTest {
 
         tools.lift("f1");
 
-        assertThat(scopes.find("f1")).isEmpty();
+        assertThat(scopes.ask("f1")).isEmpty();
     }
 }

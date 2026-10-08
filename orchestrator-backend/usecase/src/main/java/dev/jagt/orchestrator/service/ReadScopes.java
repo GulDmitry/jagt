@@ -33,13 +33,9 @@ public class ReadScopes {
         return asked.remove(fence);
     }
 
-    public Optional<ReadScope> find(String fence) {
-        return Optional.ofNullable(fence).map(open::get);
-    }
-
-    /** {@link #find}, counting the call as one the fence heard. */
+    /** The scope held under {@code fence}, counting the call as one the fence heard. */
     public Optional<ReadScope> ask(String fence) {
-        Optional<ReadScope> scope = find(fence);
+        Optional<ReadScope> scope = Optional.ofNullable(fence).map(open::get);
         scope.ifPresent(held -> asked.add(fence));
         return scope;
     }
