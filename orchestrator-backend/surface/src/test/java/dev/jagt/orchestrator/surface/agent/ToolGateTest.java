@@ -24,6 +24,13 @@ class ToolGateTest {
             "git switch main && git push origin HEAD",
             "git -C /repo push origin HEAD",
             "cd /repo && git push -u origin HEAD",
+            "git push origin ABC-42 & git push origin main",
+            "git push origin ABC-42 >/dev/null main",
+            "git push origin ABC-42 2> /dev/null main",
+            "\\git push origin main",
+            "\"git\" push origin main",
+            "'git' push origin main",
+            "g''it push origin main",
     })
     void refusesAPushWhoseDestinationIsNotTheTasksBranch(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42"))
@@ -65,10 +72,20 @@ class ToolGateTest {
             "env -i git push origin ABC-42",
             "sh -c 'git push origin dev'",
             "bash -lc \"git push origin ABC-42\"",
+            "unset GIT_CONF''IG_COUNT; git push origin ABC-42",
+            "env - git push origin ABC-42",
     })
     void refusesAPushThatCouldSkipThePrePushCheck(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42")).get()
                 .asString().contains("could skip its pre-push check");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"git push --force origin ABC-42", "git push -f origin ABC-42",
+            "git push -uf origin ABC-42", "git push origin +ABC-42", "git push --force-with-lease origin +ABC-42"})
+    void refusesForcingTheTasksOwnBranchWithoutTheLease(String command) {
+        assertThat(ToolGate.refusal("Bash", command, "ABC-42")).get()
+                .asString().contains("--force-with-lease");
     }
 
     @Test

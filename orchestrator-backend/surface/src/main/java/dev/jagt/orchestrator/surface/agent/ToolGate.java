@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 /**
  * The one call a session may be refused: a push whose destination is not the task's own branch, a delete of the
- * branch its review request is built on, and a push that could switch off the hook checking it. Detaching a
+ * branch its review request is built on, a force without the lease, and a push that could switch off the hook. Detaching a
  * worktree's upstream removes the DEFAULT target and nothing else, so an explicit {@code git push origin dev} still
  * needs refusing. Everything that is not a push is allowed: this is a gate on one command, not a permission layer.
  * What is read is the command LINE, so a push assembled at runtime is not seen.
@@ -16,7 +16,7 @@ public final class ToolGate {
 
     /** Only a shell command can push; every other tool is answered with nothing. */
     private static final String SHELL_TOOL = "Bash";
-    private static final String SEPARATORS = "&&|\\|\\||;|\\n|\\||\\(|\\)|`|\\$\\(";
+    private static final String SEPARATORS = "&&|\\|\\||;|\\n|\\||&|\\(|\\)|`|\\$\\(";
     private static final List<String> GIT_OPTION_WITH_VALUE =
             List.of("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env");
     private static final List<String> PUSH_OPTION_WITH_VALUE =
@@ -25,8 +25,11 @@ public final class ToolGate {
     /** What the branch a worktree is on is called, so a push of it is a push of the task's branch. */
     private static final String CURRENT_BRANCH = "HEAD";
     private static final Pattern PUSH = Pattern.compile("\\bpush\\b");
+    /** A word quoted whole is still the command; one quoted with what follows is data. */
+    private static final Pattern GIT = Pattern.compile("([\"']?)(\\S*/)?git\\1");
+    private static final Pattern FORCE = Pattern.compile("--force|-[a-zA-Z]*f[a-zA-Z]*");
     private static final Pattern HOOK_OFF = Pattern.compile("--no-verify|GIT_CONFIG|(?i:core\\.hookspath)"
-            + "|alias\\.|--config-env|\\benv\\s+(-\\w*[iu]\\b|--ignore-environment|--unset)"
+            + "|alias\\.|--config-env|\\benv\\s+(-\\w*[iu]\\b|-(\\s|$)|--ignore-environment|--unset)"
             + "|\\b(sh|bash|zsh|dash|ksh)\\s+-\\w*c\\b|\\beval\\b");
     /** Where the line may leave the task's branch or worktree, HEAD is no longer known to be the task's branch. */
     private static final Pattern HEAD_MOVES = Pattern.compile(
@@ -36,11 +39,13 @@ public final class ToolGate {
     }
 
     /** Why the call is refused, or empty when it is allowed. */
-    public static Optional<String> refusal(String toolName, String command, String taskBranch) {
-        if (!SHELL_TOOL.equalsIgnoreCase(toolName) || command == null || taskBranch == null
+    public static Optional<String> refusal(String toolName, String line, String taskBranch) {
+        if (!SHELL_TOOL.equalsIgnoreCase(toolName) || line == null || taskBranch == null
                 || taskBranch.isBlank()) {
             return Optional.empty();
         }
+        // The shell reads `\git` and `g''it` as git.
+        String command = line.replace("\\\n", " ").replace("\\", "").replace("''", "").replace("\"\"", "");
         if (PUSH.matcher(command).find() && HOOK_OFF.matcher(command).find()) {
             return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
@@ -82,7 +87,7 @@ public final class ToolGate {
     }
 
     private static boolean isGit(String word) {
-        return "git".equals(word) || word.endsWith("/git");
+        return GIT.matcher(word).matches();
     }
 
     /**
@@ -90,8 +95,9 @@ public final class ToolGate {
      * naming no ref at all is refused too, depending as it would on a config jagt did not write.
      */
     private static Optional<String> refuse(List<String> arguments, String taskBranch, boolean headIsTheTask) {
-        List<String> refspecs = refspecs(arguments);
-        if (arguments.stream().anyMatch(DELETES::contains)
+        List<String> words = commandWords(arguments);
+        List<String> refspecs = refspecs(words);
+        if (words.stream().anyMatch(DELETES::contains)
                 || refspecs.stream().anyMatch(refspec -> refspec.startsWith(":"))) {
             return Optional.of("jagt refuses deleting a branch from here: the review request of this task is"
                     + " built on it.");
@@ -100,25 +106,44 @@ public final class ToolGate {
             return Optional.of("jagt refuses a push that names no branch: push " + taskBranch
                     + " explicitly.");
         }
+        if (words.stream().anyMatch(word -> FORCE.matcher(word).matches())
+                || refspecs.stream().anyMatch(refspec -> refspec.startsWith("+"))) {
+            return Optional.of("jagt refuses a forced push: push " + taskBranch + " under --force-with-lease.");
+        }
         return refspecs.stream().filter(refspec -> !writes(refspec, taskBranch, headIsTheTask)).findFirst()
                 .map(refspec -> "jagt refuses this push: " + destinationOf(refspec) + " is not this task's"
                         + " branch. Only " + taskBranch + " may be pushed from here — a shared branch is written"
                         + " by the human's `deploy`.");
     }
 
-    /** A push carries the shell's own words too, so the words stop where the command does. */
-    private static List<String> refspecs(List<String> arguments) {
-        List<String> positional = new ArrayList<>();
-        boolean valueExpected = false;
+    /**
+     * A push carries the shell's own words too: a comment ends the command, a redirection is dropped with its
+     * target, and a QUOTED word is data, as a branch may be named {@code #123}.
+     */
+    private static List<String> commandWords(List<String> arguments) {
+        List<String> words = new ArrayList<>();
+        boolean redirectTarget = false;
         for (String raw : arguments) {
             String argument = unquoted(raw);
-            // The shell's own words end the command; a QUOTED word is data, and a branch may be named `#123`.
-            boolean shellSyntax = argument.equals(raw)
-                    && (argument.startsWith("#") || argument.contains(">") || argument.contains("<")
-                    || "&".equals(argument));
-            if (argument.isBlank() || shellSyntax) {
+            boolean quoted = !argument.equals(raw);
+            if (argument.isBlank() || !quoted && argument.startsWith("#")) {
                 break;
             }
+            if (redirectTarget) {
+                redirectTarget = false;
+            } else if (!quoted && (argument.contains(">") || argument.contains("<"))) {
+                redirectTarget = argument.endsWith(">") || argument.endsWith("<");
+            } else {
+                words.add(argument);
+            }
+        }
+        return words;
+    }
+
+    private static List<String> refspecs(List<String> words) {
+        List<String> positional = new ArrayList<>();
+        boolean valueExpected = false;
+        for (String argument : words) {
             if (valueExpected) {
                 valueExpected = false;
             } else if (argument.startsWith("-")) {
