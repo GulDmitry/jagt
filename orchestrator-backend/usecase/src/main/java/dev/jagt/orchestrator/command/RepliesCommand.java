@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.flow.TaskView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -39,6 +40,11 @@ public class RepliesCommand implements GlobalCommand {
     @Override
     public boolean aboutOneTask() {
         return true;
+    }
+
+    @Override
+    public boolean offeredOn(TaskView task) {
+        return task.draftedReplies();
     }
 
     @Override

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.flow.TaskView;
+
 import java.util.List;
 
 /** A command no task owns. Every surface reads this declaration instead of naming the verb itself. */
@@ -26,6 +28,11 @@ public interface GlobalCommand {
 
     /** The answer is about ONE task, so a surface with cards puts it on the card rather than in the bar. */
     default boolean aboutOneTask() {
+        return false;
+    }
+
+    /** A report the card of {@code task} offers, so no surface keeps a list of when to show it. */
+    default boolean offeredOn(TaskView task) {
         return false;
     }
 

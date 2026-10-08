@@ -1009,7 +1009,7 @@ class BoardPageTest {
 
         Page page = open();
 
-        assertThat(page.locator("article .actions.tool .drafts")).containsText("Replies");
+        assertThat(page.locator("article .actions.tool .offer")).containsText("Replies");
     }
 
     @Test
@@ -1021,7 +1021,7 @@ class BoardPageTest {
                 .alias("a3").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
 
         assertThat(page.locator("#report-body")).containsText("1 · FIXED · !12 thread 1");
         assertThat(page.locator("#report-body")).containsText("Measured it and pinned the count.");
@@ -1036,7 +1036,7 @@ class BoardPageTest {
                 .alias("a4").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
 
         assertThat(page.locator("#report-body .verdict.ok")).hasText("FIXED ");
         assertThat(page.locator("#report-body .quote")).containsText("the canonical row count is wrong");
@@ -1051,7 +1051,7 @@ class BoardPageTest {
         when(sessions.say("a5", "no, answer 1 differently")).thenReturn("Said to the agent.");
 
         Page page = open();
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#say").press("Enter");
 
@@ -1085,10 +1085,10 @@ class BoardPageTest {
                 .alias("a14").mrUrl("https://host.example/mr/8").lastActiveTimestamp(now()).build());
 
         Page page = open();
-        page.locator("article:has-text(\"a13\") .drafts").click();
+        page.locator("article:has-text(\"a13\") .offer").click();
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#close-report").click();
-        page.locator("article:has-text(\"a14\") .drafts").click();
+        page.locator("article:has-text(\"a14\") .offer").click();
 
         assertThat(page.locator("#say")).hasValue("");
     }
@@ -1102,7 +1102,7 @@ class BoardPageTest {
         when(sessions.say("a15", "no, answer 1 differently")).thenReturn("Said to the agent.");
 
         Page page = open();
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
         page.locator("#say").fill("no, answer 1 differently");
         page.locator("#say").press("Enter");
         page.locator("#said").hover();
@@ -1118,7 +1118,7 @@ class BoardPageTest {
                 .alias("a11").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
 
         assertThat(page.locator("#said")).isHidden();
     }
@@ -1145,7 +1145,7 @@ class BoardPageTest {
                 .alias("a9").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
         Files.writeString(worktree.resolve("review_replies.md"),
                 "## thread 1\nNO CHANGE - The name is the one the caller uses.\n");
         state.putTask("ABC-9", state.task("ABC-9").orElseThrow()
@@ -1172,7 +1172,7 @@ class BoardPageTest {
             route.fulfill(new Route.FulfillOptions().setResponse(read));
         });
 
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
 
         assertThat(page.locator("#report-body")).containsText("The name is the one the caller uses.");
     }
@@ -1186,7 +1186,7 @@ class BoardPageTest {
                 .alias("a6").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
 
         assertThat(page.locator("#report-body a"))
                 .hasAttribute("href", "https://host.example/mr/7#note_8708");
@@ -1202,7 +1202,7 @@ class BoardPageTest {
                 .alias("a7").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
 
         Page page = open();
-        page.locator("article .drafts").click();
+        page.locator("article .offer").click();
 
         assertThat(page.locator("#report-title")).hasText("replies a7 \u00b7 ABC-7");
     }
@@ -1689,7 +1689,7 @@ class BoardPageTest {
         assertThat(page.locator("#report")).isVisible();
         assertThat(page.locator("#report-section .legend button.again")).hasText("Deploy");
         assertThat(page.locator("#report-section .legend .checks.red")).hasCount(1);
-        assertThat(page.locator("#report-section .legend button.drafts")).hasCount(1);
+        assertThat(page.locator("#report-section .legend button.offer")).hasCount(1);
     }
 
     private static long now() {

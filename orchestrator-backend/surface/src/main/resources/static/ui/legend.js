@@ -1,7 +1,6 @@
 // What the board's marks mean, as a section of the help report: every row renders the page's OWN element.
 
 import {span} from '../core/dom.js';
-import {DRAFTS_LABEL} from './card.js';
 
 const edge = (owner) => span(`legend-edge ${owner}`, '');
 
@@ -32,10 +31,10 @@ const deployedButton = () => {
   return button;
 };
 
-const draftsButton = () => {
+const offerButton = () => {
   const button = document.createElement('button');
-  button.className = 'drafts';
-  button.textContent = DRAFTS_LABEL;
+  button.className = 'offer';
+  button.textContent = 'Replies';
   return button;
 };
 
@@ -69,7 +68,7 @@ const rows = () => [
     'its checks: failed \u00b7 passed \u00b7 still running. No dot: no pipeline, or nothing read it'],
   [[span('tick', '\u2713')],
     'approved, where a task spans repositories'],
-  [[draftsButton()],
+  [[offerButton()],
     'replies are drafted \u2014 read them before you ship'],
   [[blockHead(), span('quote', '> the row count is wrong')],
     'in a round\u2019s replies: the verdict \u2014 green fixed \u00b7 amber a question \u00b7 grey pushed back '

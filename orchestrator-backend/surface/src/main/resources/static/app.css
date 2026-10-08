@@ -189,11 +189,11 @@ a { color: var(--accent); }
 .actions.tool { margin-top: 4px; gap: 4px; }
 .actions.tool button:not(.primary) { font-size: 11px; padding: 2px 7px; color: var(--muted); }
 /* A nudge to read before shipping, not an error: warm rather than red, the badge's look. */
-.actions.tool button.drafts, .legend-key button.drafts {
+.actions.tool button.offer, .legend-key button.offer {
   font-size: 11px; padding: 2px 7px; background: var(--you-bg); color: var(--you); font-weight: 600;
   border-color: transparent; text-decoration: underline dotted; text-underline-offset: 2px;
 }
-.actions.tool button.drafts:hover:not(:disabled) { border-color: var(--you); color: var(--you); }
+.actions.tool button.offer:hover:not(:disabled) { border-color: var(--you); color: var(--you); }
 .empty { color: var(--muted); padding: 0 16px 16px; }
 
 #show-log {

@@ -46,8 +46,8 @@ spelling (`review` runs `sweep`), advertised nowhere (`TaskAction.RENAMED`, read
 
 ### Requirement: Commands are two declarations
 A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
-`command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) running itself, declaring
-the board part it opens typed alone. `CommandReference` renders both: `help`'s text and the
+`command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) running itself. It declares
+the board part it opens typed alone and the card offering it (`offeredOn`). `CommandReference` renders both: `help`'s text and the
 palette's verb list. A launch that creates no task is refused.
 
 #### Scenario: Reports

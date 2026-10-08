@@ -2,9 +2,8 @@
 
 import {link, named, span} from '../core/dom.js';
 import {duration, countdown} from '../core/format.js';
+import * as store from '../core/store.js';
 import {blocked} from './inflight.js';
-
-export const DRAFTS_LABEL = 'Replies';
 
 // Where a pasted paragraph is cut off, so no card grows taller; the whole of it stays in the hover.
 const LIMIT = 150;
@@ -163,19 +162,19 @@ export function card(task, manyProjects) {
     button.disabled = blocked(task, action);
     row.append(button);
   }
-  // In the row that only looks, so drafted answers cost the card no height.
-  if (task.draftedReplies) {
+  // In the row that only looks, so an offered report costs the card no height.
+  for (const id of store.offersOn(task)) {
     if (!row || row.dataset.group !== 'tool') {
       row = actionRow('tool');
       parts.push(row);
     }
-    const drafts = document.createElement('button');
-    drafts.className = 'drafts';
-    drafts.textContent = DRAFTS_LABEL;
-    drafts.dataset.tip = 'replies drafted: every comment and the reply that will be sent for it';
-    drafts.dataset.report = 'replies';
-    drafts.dataset.about = task.alias || task.id;
-    row.append(drafts);
+    const offer = document.createElement('button');
+    offer.className = 'offer';
+    offer.textContent = id.charAt(0).toUpperCase() + id.slice(1);
+    offer.dataset.tip = store.verbs().find((verb) => verb.id === id)?.hint || id;
+    offer.dataset.report = id;
+    offer.dataset.about = task.alias || task.id;
+    row.append(offer);
   }
   article.append(...parts);
   return article;

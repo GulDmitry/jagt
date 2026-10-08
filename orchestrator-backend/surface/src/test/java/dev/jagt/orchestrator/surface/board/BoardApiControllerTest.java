@@ -5,10 +5,14 @@ import dev.jagt.orchestrator.command.GlobalCommand;
 import dev.jagt.orchestrator.command.GlobalCommands;
 import dev.jagt.orchestrator.service.AutoReviewCadence;
 import dev.jagt.orchestrator.service.TaskViews;
+import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.flow.TaskView;
+import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -102,5 +106,29 @@ class BoardApiControllerTest {
 
         assertThat(board.autoReviewEnabled()).isTrue();
         assertThat(board.autoReview()).isEqualTo("auto-review on");
+    }
+
+    @Test
+    void offersOnACardTheReportThatDeclaresItselfForThatTask() {
+        GlobalCommand drafts = new GlobalCommand() {
+            public String id() { return "replies"; }
+            public String hint() { return "the drafted answers"; }
+            public int rank() { return 20; }
+            public boolean report() { return true; }
+            public boolean offeredOn(TaskView task) { return task.draftedReplies(); }
+            public String run(String tail) { return ""; }
+        };
+        BoardApiController board = new BoardApiController(taskViews, mock(TaskEventStream.class),
+                new GlobalCommands(List.of(drafts)), new dev.jagt.orchestrator.job.Jobs(List.of()));
+        TaskView drafted = TaskView.of("ABC-1", TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build(),
+                true, null, Map.of());
+        TaskView quiet = TaskView.of("ABC-2", TaskState.builder("demo", "/wt2", TaskStatus.REVIEW_PENDING).build(),
+                false, null, Map.of());
+        when(taskViews.snapshot()).thenReturn(new TaskViews.Snapshot(List.of(drafted, quiet),
+                new AutoReviewCadence(false, Duration.ofHours(24), 10, 60), List.of("demo")));
+
+        var offers = board.tasks().offers();
+
+        assertThat(offers).containsExactly(Map.entry("ABC-1", List.of("replies")));
     }
 }

@@ -18,7 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -27,7 +29,8 @@ public class BoardApiController {
 
     public record Board(List<TaskView> tasks, List<String> projects, String autoReview,
                         boolean autoReviewEnabled, Jobs.Summary jobs,
-                        List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases) {
+                        List<BranchStrategy.Choice> branchStrategies, List<Phase.Choice> phases,
+                        Map<String, List<String>> offers) {
     }
 
     private final TaskViews taskViews;
@@ -40,7 +43,20 @@ public class BoardApiController {
         var snapshot = taskViews.snapshot();
         return new Board(snapshot.tasks(), snapshot.projects(),
                 snapshot.cadence().summary(), snapshot.cadence().enabled(),
-                jobs.summary(System.currentTimeMillis()), BranchStrategy.choices(), Phase.choices());
+                jobs.summary(System.currentTimeMillis()), BranchStrategy.choices(), Phase.choices(),
+                offers(snapshot.tasks()));
+    }
+
+    private Map<String, List<String>> offers(List<TaskView> tasks) {
+        Map<String, List<String>> offers = new LinkedHashMap<>();
+        for (TaskView task : tasks) {
+            List<String> ids = globals.all().stream().filter(command -> command.offeredOn(task))
+                    .map(GlobalCommand::id).toList();
+            if (!ids.isEmpty()) {
+                offers.put(task.id(), ids);
+            }
+        }
+        return offers;
     }
 
     @GetMapping("/commands")
