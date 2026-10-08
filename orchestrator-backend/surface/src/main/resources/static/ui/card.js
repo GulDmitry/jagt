@@ -26,6 +26,7 @@ export function card(task, manyProjects) {
   const article = document.createElement('article');
   article.className = task.attention === 'OPTIONAL' ? `${owner} optional` : owner;
   article.setAttribute('aria-label', store.bothNames(task));
+  article.dataset.task = task.id;
 
   const top = document.createElement('div');
   top.className = 'card-top';

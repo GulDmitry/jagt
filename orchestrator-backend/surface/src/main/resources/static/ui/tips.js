@@ -3,13 +3,21 @@
 const tip = Object.assign(document.createElement('div'), {id: 'tip', hidden: true});
 document.body.append(tip);
 
+let shownFor = null;
+
 export function hideTip() {
   tip.hidden = true;
+}
+
+// A repaint that kept the node a tip stands on, unchanged, keeps the tip.
+export function hideStaleTip() {
+  if (!shownFor?.isConnected || shownFor.dataset.tip !== tip.textContent) hideTip();
 }
 
 function showTip(target) {
   // A modal dialog renders in the top layer, above every z-index: a tip under it hides behind the backdrop.
   (target.closest('dialog[open]') || document.body).append(tip);
+  shownFor = target;
   tip.textContent = target.dataset.tip;
   tip.hidden = false;
   tip.scrollTop = 0;

@@ -143,6 +143,39 @@ class BoardConnectionTest extends BoardPageContext {
     }
 
     @Test
+    void aRepaintLeavesKeyboardFocusOnTheChipOfTheCardItRebuilt() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("article .status").focus();
+
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+
+        assertThat(page.locator("article .status")).containsText("review");
+        assertThat(page.locator("article .status")).isFocused();
+    }
+
+    @Test
+    void aRepaintKeepsTheTipOfAChipWhoseCardDidNotChange() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());
+        state.putTask("ABC-2", TaskState.builder("alpha", root.resolve("ABC-2-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a2").lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("article", new Page.LocatorOptions().setHasText("a1")).locator(".status").focus();
+        assertThat(page.locator("#tip")).containsText("IN_PROGRESS");
+
+        state.putTask("ABC-2", state.task("ABC-2").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "done"));
+
+        assertThat(page.locator("article .status")).containsText(new String[]{"agent working", "review"});
+        assertThat(page.locator("#tip")).isVisible();
+    }
+
+    @Test
     void aBoardCutOffFromTheBackendSaysItIsStaleAndOffersNothingUntilItReconnects() {
         Page page = session.newPage();
         page.route("**/api/events", Route::abort);
