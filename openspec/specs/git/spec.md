@@ -16,10 +16,6 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 - **WHEN** `deploy <task>`
 - **THEN** merged into `deployBranch` and pushed
 
-#### Scenario: Ship
-- **WHEN** `ship <task>`
-- **THEN** commits, pushes the task branch, opens or updates the request; never merges
-
 #### Scenario: Diff base
 - **WHEN** `ide <task> diff` shows files the task never touched
 - **THEN** read against the request's target, never `deployBranch`
@@ -27,11 +23,16 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 ### Requirement: Nothing rewrites what left the machine
 `pushBranch` SHALL push **one** branch, both-sided refspec, never `--force` or `-u`; no `commit --amend` or
 `reset --hard` onto a pushed commit (sub-agent rule 8), the ONE exception the resume rebase. `detachUpstream` unsets
-the inherited `origin/<baseBranch>` at creation. Each git call locks its repository (shared checkout).
+the inherited `origin/<baseBranch>` at creation. Each git call locks its repository (shared checkout). A task named
+after a base or deploy branch MUST be refused.
 
 #### Scenario: Wrong push
 - **WHEN** a pushed commit turns out wrong
 - **THEN** another commit, never a rewrite
+
+#### Scenario: Release request
+- **WHEN** resuming a `dev` → `main` request
+- **THEN** refused: `dev` is shared
 
 ### Requirement: No verdict gates deploy
 `FlowRules`' `DEPLOY` SHALL ask only for an open request, plus DEPLOY_CONFLICT; NEW, PLAN_PENDING, IN_PROGRESS,

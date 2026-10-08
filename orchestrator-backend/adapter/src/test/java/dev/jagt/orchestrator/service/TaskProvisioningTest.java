@@ -97,6 +97,19 @@ class TaskProvisioningTest {
         verifyNoInteractions(git);
     }
 
+    @ParameterizedTest
+    @CsvSource({"main,", "Main,", "origin/main,", "dev,", "release,release"})
+    void refusesATaskWhoseBranchIsASharedOneBeforeTouchingGit(String taskId, String baseBranch) {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig(root.resolve("repo").toString(), "origin/main", "refs/heads/dev", List.of()))));
+
+        assertThatThrownBy(() -> provisioning().initializeTask(NewTask.builder(taskId, "proj")
+                .branchStrategy("resume").baseBranch(baseBranch).build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("would be the shared branch");
+        verifyNoInteractions(git);
+    }
+
     @Test
     void cutsOneFlatWorktreeForASlashedBranchTakenOverFromSomeoneElse() throws Exception {
         Files.createDirectories(root.resolve("feature-ABC-42-proj"));

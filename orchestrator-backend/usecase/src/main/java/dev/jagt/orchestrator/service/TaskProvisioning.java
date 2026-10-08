@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * What belongs to the AGENT rather than to jagt stays behind {@link AgentRuntime}: this class never learns what a
@@ -86,6 +87,8 @@ public class TaskProvisioning {
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();
         TaskName.require(taskId, "taskId");
+        ConfigService.ConfigFile config = configService.load();
+        requireOwnBranch(taskId, request.baseBranch(), config);
         // Before anything is cut: a refusal after a worktree exists leaves the disk ahead of state.json.
         if (stateService.tasks().size() >= MAX_TASKS) {
             throw new IllegalArgumentException(MAX_TASKS + " tasks are already open, which is the limit —"
@@ -106,7 +109,6 @@ public class TaskProvisioning {
                             + " the directory " + TaskName.slug(taskId) + ". Retire " + registered
                             + " first, or take a different branch.");
                 });
-        ConfigService.ConfigFile config = configService.load();
         List<NewRepo> repos = resolveRepos(request, config, strategy);
         NewRepo session = repos.get(0);
         cutWorktrees(request, repos, strategy);
@@ -200,6 +202,21 @@ public class TaskProvisioning {
         return requested == null || requested.isBlank()
                 ? null
                 : requested.strip().replaceFirst("^origin/", "");
+    }
+
+    /** A task's branch is rebased and force-pushed, so it must not be one other work lands on. */
+    private static void requireOwnBranch(String taskId, String baseOverride, ConfigService.ConfigFile config) {
+        String task = ProjectConfig.localName(taskId);
+        Stream.concat(config.projects().values().stream()
+                                .flatMap(project -> Stream.of(project.baseBranch(), project.deployBranch())),
+                        Stream.of(baseOverride))
+                .map(ProjectConfig::localName)
+                .filter(task::equalsIgnoreCase)
+                .findFirst()
+                .ifPresent(shared -> {
+                    throw new IllegalArgumentException("Task " + taskId + " would be the shared branch " + shared
+                            + ", which a task rebases and pushes. Name the task after a branch of its own.");
+                });
     }
 
     /**
