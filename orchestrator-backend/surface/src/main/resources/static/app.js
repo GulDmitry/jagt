@@ -46,7 +46,10 @@ async function loadVerbs() {
 }
 
 const events = new EventSource('/api/events');
-events.addEventListener('open', () => {
+// Every connect reads the board, the first one included: whatever changed while disconnected sent no event.
+events.addEventListener('open', (event) => {
+  // The server's first message is also named `open`, and one connect is one read.
+  if (event instanceof MessageEvent) return;
   live.classList.add('on');
   loadVerbs();
   refresh();
@@ -56,5 +59,3 @@ events.addEventListener('changed', () => { refresh(); repaintReport(); });
 events.onerror = () => live.classList.remove('on');
 // The slow repaint is for the relative clocks ("4m ago") only, which no event can announce.
 setInterval(render, 15000);
-loadVerbs();
-refresh();

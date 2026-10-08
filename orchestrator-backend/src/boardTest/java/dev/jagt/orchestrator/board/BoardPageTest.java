@@ -855,6 +855,18 @@ class BoardPageTest {
     }
 
     @Test
+    void aPageReadsTheBoardAndItsVerbsOnceWhenItOpens() {
+        List<String> reads = new java.util.concurrent.CopyOnWriteArrayList<>();
+        session.onRequest(request -> reads.add(request.url().replaceFirst("^http://[^/]+", "")));
+
+        Page page = open();
+        assertThat(page.locator("#show-help")).isVisible();
+
+        org.assertj.core.api.Assertions.assertThat(reads).filteredOn(url -> url.equals("/api/tasks")).hasSize(1);
+        org.assertj.core.api.Assertions.assertThat(reads).filteredOn(url -> url.equals("/api/commands")).hasSize(1);
+    }
+
+    @Test
     void theHeaderCountsTheTasksWhoseTurnItIs() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
@@ -1326,6 +1338,7 @@ class BoardPageTest {
     void theShortcutsLeaveTheBoardAloneWhileAReportIsOpen() {
         Page page = open();
         page.locator("#show-activity").click();
+        assertThat(page.locator("#report")).isVisible();
         page.keyboard().press("Control+k");
         page.locator("#close-report").click();
 
