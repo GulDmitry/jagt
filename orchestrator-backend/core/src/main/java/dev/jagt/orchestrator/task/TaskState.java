@@ -335,10 +335,6 @@ public record TaskState(
         return toBuilder().repos(mapRepo(project, repo -> repo.withRemoteUrl(remoteUrl))).build();
     }
 
-    public TaskState withMrCreatedAt(long mrCreatedAt) {
-        return toBuilder().mrCreatedAt(mrCreatedAt).build();
-    }
-
     public TaskState withLastPolledAt(long lastPolledAt) {
         return toBuilder().lastPolledAt(lastPolledAt).build();
     }

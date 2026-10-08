@@ -81,16 +81,8 @@ class AgentSessionsTest {
     }
 
     @Test
-    void namesTheSessionATasksWindowLivesIn() {
-        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build());
-        when(tmux.sessionName(null)).thenReturn("jagt");
-
-        assertThat(sessions().sessionOf("ABC-1")).isEqualTo("jagt");
-    }
-
-    @Test
-    void refusesToNameASessionForATaskNobodyOwns() {
-        assertThatThrownBy(() -> sessions().sessionOf("ABC-9"))
+    void refusesToCloseTheTabOfATaskNobodyOwns() {
+        assertThatThrownBy(() -> sessions().closeTaskTab("ABC-9"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("ABC-9");
     }

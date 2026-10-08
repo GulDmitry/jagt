@@ -63,12 +63,6 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         return true;
     }
 
-    public String sessionOf(String taskId) {
-        String canonical = stateService.canonicalTaskId(taskId);
-        requireTask(canonical);
-        return agentSession(configService.load(), canonical);
-    }
-
     @Override
     public boolean agentLive(String taskId) {
         return sessions.taskWindowState(agentSession(configService.load(), taskId), taskId)

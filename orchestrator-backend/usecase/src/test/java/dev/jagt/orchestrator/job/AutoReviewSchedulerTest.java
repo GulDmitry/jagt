@@ -139,9 +139,8 @@ class AutoReviewSchedulerTest {
                 mock(ReviewSweepService.class), notifications, Runnable::run);
         scheduler.run();
 
-        state.updateTask("ABC-1", task -> task.withReviewRound("http://mr/1"));
-        state.updateTask("ABC-1", task -> task.withMrCreatedAt(
-                System.currentTimeMillis() - Duration.ofHours(25).toMillis()));
+        state.putTask("ABC-1", polling().mrCreatedAt(System.currentTimeMillis() - Duration.ofHours(26).toMillis())
+                .build());
         scheduler.run();
 
         verify(notifications, times(2)).send(
