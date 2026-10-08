@@ -16,7 +16,8 @@ public final class ToolGate {
 
     /** Only a shell command can push; every other tool is answered with nothing. */
     private static final String SHELL_TOOL = "Bash";
-    private static final String SEPARATORS = "&&|\\|\\||;|\\n|\\||&|\\(|\\)|`|\\$\\(";
+    /** An {@code &} beside a redirection ({@code 2>&1}, {@code &>}) separates nothing. */
+    private static final String SEPARATORS = "&&|\\|\\||;|\\n|\\||(?<![<>])&(?!>)|\\(|\\)|`|\\$\\(";
     private static final List<String> GIT_OPTION_WITH_VALUE =
             List.of("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env");
     private static final List<String> PUSH_OPTION_WITH_VALUE =
