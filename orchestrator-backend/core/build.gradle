@@ -6,7 +6,7 @@ plugins {
 // build is what stops that becoming a promise. Jackson is here because the record IS the state file's format.
 dependencies {
     api 'com.fasterxml.jackson.core:jackson-annotations'
-    api 'tools.jackson.core:jackson-databind'
+    implementation 'tools.jackson.core:jackson-databind'
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
     testImplementation 'org.mockito:mockito-core'
