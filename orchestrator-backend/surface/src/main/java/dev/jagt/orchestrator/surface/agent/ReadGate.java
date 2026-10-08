@@ -43,11 +43,9 @@ public final class ReadGate {
         return Optional.of("jagt refuses " + tool + " in a read: only the tools it was given may run.");
     }
 
+    /** A bare server names none of its tools. */
     private static boolean names(String named, String tool) {
-        if (named.contains("*")) {
-            return Pattern.compile(Pattern.quote(named).replace("*", "\\E.*\\Q")).matcher(tool).matches();
-        }
-        return tool.equals(named) || tool.startsWith(named + "__");
+        return Pattern.compile(Pattern.quote(named).replace("*", "\\E.*\\Q")).matcher(tool).matches();
     }
 
     /** A search naming no path searches where the call runs; a glob's own pattern may name a directory. */

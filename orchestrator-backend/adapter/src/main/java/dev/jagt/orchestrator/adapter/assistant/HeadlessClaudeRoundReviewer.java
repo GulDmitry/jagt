@@ -56,7 +56,8 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
             cmd.addAll(List.of("--append-system-prompt", round.shared()));
         }
         // Any server's search takes free text, so a diff could send it anywhere: none loads unless named.
-        List<String> mcpReads = assistant.allowedTools().stream().filter(tool -> tool.startsWith("mcp__")).toList();
+        List<String> mcpReads = ReadOnlyTools.named(
+                assistant.allowedTools().stream().filter(tool -> tool.startsWith("mcp__")).toList());
         String pinned = assistant.mcpConfigFor(AssistantCallKind.MASTER_REVIEW);
         if (mcpReads.isEmpty()) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));

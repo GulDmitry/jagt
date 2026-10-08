@@ -43,7 +43,7 @@ catch two fields that cannot both hold: `reviewRequests` beside `reviewRequestUr
 request filed under a project the task does not have.
 
 #### Scenario: CI_POLLING without a request
-- **WHEN** a message reports CI_POLLING and names no request
+- **WHEN** a message reports CI_POLLING without one
 - **THEN** it is refused as inconsistent
 
 ### Requirement: Every violation at once
@@ -52,7 +52,7 @@ Validation SHALL report every violation at once, never first-failure, each namin
 
 #### Scenario: Several wrong fields
 - **WHEN** a required field is missing and another is out of its enum
-- **THEN** one refusal names both, each with what was expected
+- **THEN** one refusal names both
 
 ### Requirement: The shape and the tool are declared once
 `protocol/Schema` SHALL render what a caller is given out of the fields a message declares. An enum comes from
@@ -106,8 +106,8 @@ no facts, never a guess; reaching the human is the caller's (`AutoReviewSchedule
 
 ### Requirement: A ticket is read through the human's MCP servers
 A ticket ref SHALL be read, paid, through the human's MCP servers for title, labels and project.
-It SHALL load no built-in tool, and `ReadGate` SHALL refuse any call but MCP reads (`get*`, `list*`…) and
-`allowed-tools`, your allow rules included; unreachable, every call.
+It SHALL load no built-in tool. `ReadGate` SHALL refuse any call but MCP reads (`get*`, `list*`…) and
+`allowed-tools`, whose bare server means its reads, your allow rules included; unreachable, every call.
 `assistant.mcp-config`, a path or the JSON itself, loads only the declared servers; their tool names carry no plugin prefix.
 
 #### Scenario: Key or URL

@@ -19,18 +19,19 @@ class ReadGateTest {
     Path worktree;
 
     @ParameterizedTest
-    @ValueSource(strings = {"mcp__acme__get_issue", "mcp__whole__save_note", "StructuredOutput"})
+    @ValueSource(strings = {"mcp__acme__get_issue", "mcp__whole__add_comment", "StructuredOutput"})
     void letsThroughEveryToolTheReadWasGiven(String tool) {
-        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*", "mcp__whole", "StructuredOutput"),
-                false);
+        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*", "mcp__whole__add_comment",
+                "StructuredOutput"), false);
 
         assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp")).isEmpty();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"mcp__plugin_acme_browser__new_page", "mcp__acme__save_note", "WebFetch", "Write"})
+    @ValueSource(strings = {"mcp__plugin_acme_browser__new_page", "mcp__acme__save_note", "mcp__whole__save_note",
+            "WebFetch", "Write"})
     void refusesAToolTheReadWasNotGivenWhateverTheHumanAllowsElsewhere(String tool) {
-        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*"), false);
+        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*", "mcp__whole"), false);
 
         assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp")).get().asString().contains("refuses " + tool);
     }

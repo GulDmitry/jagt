@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /** A headless read takes its orders from the text it reads, so what it may call is bounded here, not in the prompt. */
@@ -47,6 +48,8 @@ class ReadOnlyTools {
                     .flatMap(verb -> Stream.of("mcp__*__*_" + verb, "mcp__*__*_" + verb + "_*")))
             .toList();
 
+    private static final Pattern BARE_SERVER = Pattern.compile("mcp__(?!.*__)[^*]+");
+
     private final McpHealth mcp;
     private final AssistantProperties assistant;
     private final ReadScopes scopes;
@@ -70,9 +73,19 @@ class ReadOnlyTools {
         String pinned = assistant.mcpConfigFor(kind);
         List<String> servers = pinned.isBlank() ? mcp.servers().orElse(List.of()) : declared(pinned);
         return Stream.concat(servers.stream()
-                        .map(name -> "mcp__" + name.replaceAll("[^A-Za-z0-9_-]", "_") + "__")
-                        .flatMap(prefix -> READ_VERBS.stream().map(verb -> prefix + verb + "*")),
-                assistant.allowedTools().stream()).toList();
+                        .map(name -> "mcp__" + name.replaceAll("[^A-Za-z0-9_-]", "_"))
+                        .flatMap(ReadOnlyTools::readsOf),
+                named(assistant.allowedTools()).stream()).toList();
+    }
+
+    /** A bare server the human names is its reads; only a tool or a glob named in full widens past them. */
+    static List<String> named(List<String> tools) {
+        return tools.stream().flatMap(tool -> BARE_SERVER.matcher(tool).matches() ? readsOf(tool) : Stream.of(tool))
+                .toList();
+    }
+
+    private static Stream<String> readsOf(String server) {
+        return READ_VERBS.stream().map(verb -> server + "__" + verb + "*");
     }
 
     private List<String> declared(String pinned) {
