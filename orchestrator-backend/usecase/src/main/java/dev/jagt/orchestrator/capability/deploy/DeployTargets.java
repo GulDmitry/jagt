@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.capability.deploy;
 
 import dev.jagt.orchestrator.flow.FlowRules;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.task.ProjectConfig;
@@ -63,11 +64,11 @@ public class DeployTargets {
     static void requireDeployable(Target target) {
         ProjectConfig project = target.config();
         if (project.deployBranch() == null || project.deployBranch().isBlank()) {
-            throw new IllegalArgumentException("Project '" + target.project()
+            throw Refusal.byState("Project '" + target.project()
                     + "' has no deployBranch in jagt.yml — set it to enable deploy");
         }
         if (project.deploysIntoTheBaseBranch()) {
-            throw new IllegalArgumentException("REFUSED: deployBranch equals the base branch '"
+            throw Refusal.byState("REFUSED: deployBranch equals the base branch '"
                     + project.baseBranchName()
                     + "'. jagt must never merge into the branch tasks are created from — point deployBranch"
                     + " at a downstream branch (e.g. dev).");

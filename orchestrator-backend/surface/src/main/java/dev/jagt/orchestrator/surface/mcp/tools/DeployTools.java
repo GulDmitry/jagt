@@ -20,8 +20,8 @@ public class DeployTools implements McpTools {
     @Override
     public void declare(McpToolRegistry tools) {
         tools.tool("deploy_task", Audience.MASTER, TaskRef.schema("Merge the task's branch into the project's"
-                        + " deployBranch (jagt.yml) and push it. On merge conflict nothing is pushed and the human"
-                        + " resolves manually."),
+                        + " deployBranch (jagt.yml) and push it. Stops at the first conflict; repositories before it"
+                        + " stay live; resolve in the deploy worktree, then deploy again."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> commands.execute(said.taskId(), TaskAction.DEPLOY));
 

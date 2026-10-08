@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.Outcome;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -125,8 +126,9 @@ class DeployServiceTest {
         DeployService deploys = new DeployService(state, new DeployTargets(config, git), git, editor);
 
         assertThatThrownBy(() -> deploys.deploy("a1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("base branch");
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("base branch")
+                .extracting("code").isEqualTo(Refusal.Code.STATE);
         verifyNoInteractions(git);
     }
 
@@ -140,8 +142,9 @@ class DeployServiceTest {
         DeployService deploys = new DeployService(state, new DeployTargets(config, git), git, editor);
 
         assertThatThrownBy(() -> deploys.deploy("ABC-1"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("deployBranch");
+                .isInstanceOf(Refusal.class)
+                .hasMessageContaining("deployBranch")
+                .extracting("code").isEqualTo(Refusal.Code.STATE);
     }
 
     @Test
