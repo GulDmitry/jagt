@@ -2,7 +2,7 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterPanel;
@@ -82,7 +82,7 @@ public class MasterReviewJob implements Job {
         log.atInfo().setMessage("master review asked").addKeyValue("task", taskId)
                 .addKeyValue("alias", task.alias())
                 .log();
-        if (task.status() == TaskStatus.PLAN_PENDING) {
+        if (FlowRules.holdsAPlan(task.status())) {
             panel.plan(taskId, task, config);
         } else {
             panel.review(taskId, task, config);

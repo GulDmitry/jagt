@@ -240,6 +240,36 @@ public final class FlowRules {
         return WAITING_FOR_A_DEPLOY.contains(status);
     }
 
+    /** A hand-back held until jagt has run the project's own verification command. */
+    public static boolean awaitingVerification(TaskStatus status) {
+        return status == TaskStatus.VERIFYING;
+    }
+
+    /** Live on the deploy branch, so its session checks the change where it landed. */
+    public static boolean checkedWhereItLanded(TaskStatus status) {
+        return status == TaskStatus.DEPLOYED;
+    }
+
+    /** A plan waiting to be read, rather than a round of code. */
+    public static boolean holdsAPlan(TaskStatus status) {
+        return status == TaskStatus.PLAN_PENDING;
+    }
+
+    /** A deploy waiting in the deploy worktree, where its conflict is resolved. */
+    public static boolean conflictedInTheDeployWorktree(TaskStatus status) {
+        return status == TaskStatus.DEPLOY_CONFLICT;
+    }
+
+    /** A round read that found the request approved. */
+    public static boolean approved(TaskStatus read) {
+        return read == TaskStatus.APPROVED;
+    }
+
+    /** A round read that found nothing unresolved and the checks green, with no approval yet. */
+    public static boolean reviewed(TaskStatus read) {
+        return read == TaskStatus.REVIEWED;
+    }
+
     /** Whether the work has left the worktree, which is the only point a tracker's word can end the task. */
     public static boolean handedOver(TaskStatus status) {
         return HANDED_OVER.contains(status);

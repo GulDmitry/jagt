@@ -3,7 +3,7 @@ package dev.jagt.orchestrator.service;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ public class IdeLauncher {
             throw new IllegalArgumentException("Unknown ide mode '" + mode + "'. Allowed: project, diff");
         }
         // A DEPLOY_CONFLICT lives on the DEPLOY side; the task's own worktrees are clean.
-        if (task.status() == TaskStatus.DEPLOY_CONFLICT) {
+        if (FlowRules.conflictedInTheDeployWorktree(task.status())) {
             Optional<String> conflict = openConflict(taskId, task);
             if (conflict.isPresent()) {
                 return conflict.get();

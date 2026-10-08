@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -48,7 +48,7 @@ public class DeployCheckJob implements Job {
     @Override
     public void run() {
         stateService.tasks().forEach((taskId, task) -> {
-            if (task.status() != TaskStatus.DEPLOYED) {
+            if (!FlowRules.checkedWhereItLanded(task.status())) {
                 return;
             }
             brief(taskId, task).filter(brief -> !brief.equals(asked.get(taskId))).ifPresent(brief -> {

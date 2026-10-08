@@ -107,11 +107,11 @@ public class ReviewSweepService {
         Pipeline checks = Pipeline.of(said);
         Optional<TaskStatus> read = FlowRules.readReview(!r.threads().isEmpty(), r.approved(), checks);
         read.ifPresent(status -> statusReports.markRead(taskId, status));
-        if (read.isPresent() && read.get() == TaskStatus.APPROVED) {
+        if (read.filter(FlowRules::approved).isPresent()) {
             return new SweepResult(SweepResult.Kind.APPROVED,
                     "sweep " + taskId + ": approved, checks " + said + " — `deploy` or `done`");
         }
-        if (read.isPresent() && read.get() == TaskStatus.REVIEWED) {
+        if (read.filter(FlowRules::reviewed).isPresent()) {
             return new SweepResult(SweepResult.Kind.REVIEWED,
                     "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved — waiting for an approval; `deploy` without one");

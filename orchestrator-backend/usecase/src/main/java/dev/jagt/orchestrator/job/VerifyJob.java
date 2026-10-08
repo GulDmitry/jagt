@@ -1,7 +1,6 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.flow.FlowRules;
-import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.AgentStatusReports;
 import dev.jagt.orchestrator.service.StateService;
@@ -46,7 +45,7 @@ public class VerifyJob implements Job {
     @Override
     public void run() {
         stateService.tasks().entrySet().stream()
-                .filter(entry -> entry.getValue().status() == TaskStatus.VERIFYING)
+                .filter(entry -> FlowRules.awaitingVerification(entry.getValue().status()))
                 .forEach(entry -> verify(entry.getKey(), entry.getValue()));
     }
 
