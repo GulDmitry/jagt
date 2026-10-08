@@ -69,6 +69,6 @@ public class FlowEngine {
 
     /** The real liveness probe, unlike the projection's: this one is about to act on the answer. */
     private Facts facts(TaskState task, String taskId) {
-        return new Facts(task.hasReviewRequest(), () -> agents.agentLive(taskId));
+        return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> agents.agentLive(taskId));
     }
 }

@@ -157,4 +157,22 @@ class RevertServiceTest {
         assertThat(state.task("ABC-1").orElseThrow().repos()).extracting(TaskRepo::deployCommit)
                 .containsExactly("cafebabe1234", null);
     }
+
+    @Test
+    void discardsTheHalfMergeTheConflictLeftWhenTheDeployIsRevertedFromIt(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitDeploy git = mock(GitDeploy.class);
+        when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234")).thenReturn("beef00991122");
+        RevertService service = new RevertService(state, new DeployTargets(config), git);
+
+        service.revert("a1");
+
+        verify(git).discardDeploy(Path.of("/repo/web"), "ABC-1");
+    }
 }

@@ -15,18 +15,19 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
 
     public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round,
                                boolean agentSilent) {
-        return forTask(status, hasReviewRequest, round, agentSilent, AutoReviewWatch.none());
+        return forTask(status, Facts.projected(hasReviewRequest), round, agentSilent, AutoReviewWatch.none());
     }
 
     /** The WATCH rather than a flag off it: a promised poll that STOPPED and no poller at all are different cards. */
-    public static Move forTask(TaskStatus status, boolean hasReviewRequest, RoundState round,
+    public static Move forTask(TaskStatus status, Facts facts, RoundState round,
                                boolean agentSilent, AutoReviewWatch watch) {
+        boolean hasReviewRequest = facts.hasReviewRequest();
         boolean polled = watch.state() == AutoReviewWatch.State.WATCHING;
         Owner owner = ownerOf(status, hasReviewRequest, round, agentSilent, watch.stopped());
         Attention attention = attentionOf(owner, status, round, polled);
         return new Move(phaseOf(status), owner, attention,
                 ask(status, hasReviewRequest, round, agentSilent, attention),
-                FlowRules.allowed(status, Facts.projected(hasReviewRequest)),
+                FlowRules.allowed(status, facts),
                 primaryOf(status, hasReviewRequest, round, polled),
                 hint(status, hasReviewRequest, round, agentSilent, polled));
     }

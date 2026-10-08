@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
+import dev.jagt.orchestrator.task.TaskState;
+
 import java.util.function.BooleanSupplier;
 
 /**
@@ -9,9 +11,13 @@ import java.util.function.BooleanSupplier;
  * of a dashboard passes one that says no, while the gate that is about to act passes the real thing. One rule,
  * two prices.
  */
-public record Facts(boolean hasReviewRequest, BooleanSupplier agentLive) {
+public record Facts(boolean hasReviewRequest, boolean liveDeploy, BooleanSupplier agentLive) {
 
     public static Facts projected(boolean hasReviewRequest) {
-        return new Facts(hasReviewRequest, () -> false);
+        return new Facts(hasReviewRequest, false, () -> false);
+    }
+
+    public static Facts projected(TaskState task) {
+        return new Facts(task.hasReviewRequest(), task.hasLiveDeploy(), () -> false);
     }
 }

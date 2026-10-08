@@ -71,9 +71,9 @@ public record TaskView(
     public static TaskView of(String id, TaskState task, RoundState round, AutoReviewWatch autoReview,
                               Map<String, String> deployBranches) {
         boolean draftedReplies = round.draftedReplies();
-        Move move = Move.forTask(task.status(), task.hasReviewRequest(), round, task.agentIsSilent(),
+        Move move = Move.forTask(task.status(), Facts.projected(task), round, task.agentIsSilent(),
                 autoReview == null ? AutoReviewWatch.none() : autoReview);
-        boolean deployed = deployed(task);
+        boolean deployed = task.hasLiveDeploy();
         DashboardLine.Line line = DashboardLine.forTask(task, webLink(task.mrUrl()));
         List<ActionView> actions = move.actions().stream()
                 .map(action -> new ActionView(action.id(), action.label(), action.hint(),
@@ -111,11 +111,6 @@ public record TaskView(
     }
 
     /** The merge commit each repository still holds IS the answer: a revert forgets it as it takes the work out. */
-    private static boolean deployed(TaskState task) {
-        return task.repos().stream()
-                .anyMatch(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank());
-    }
-
     /**
      * A link a page can put in an {@code href}, or nothing. Neither URL is jagt's own, so a {@code javascript:} or
      * {@code data:} URL would run on the page that renders it; anything but http(s) is dropped, not escaped.

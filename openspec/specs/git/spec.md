@@ -42,13 +42,10 @@ line comes from `RepoView.deployBranch`.
 - **THEN** no `deploy`: re-merging it brings nothing; the agent's reports move nothing
 
 ### Requirement: Revert refuses rather than guess
-`revert` SHALL take out the last deploy's merge, DEPLOY_CONFLICT included; it refuses with a by-hand recipe on no
-`deployCommit`, commit absent, already reverted, or conflict. It walks back the repositories holding a merge commit,
-each **forgetting** it; REVERTED once all that landed is out, both half-states **stamped on the task**.
-
-#### Scenario: Revert
-- **WHEN** `revert ABC-42`
-- **THEN** reverse order, only what landed
+`revert` SHALL take out the last deploy's merge wherever a `deployCommit` is recorded, DEPLOYED and DEPLOY_CONFLICT
+always; it refuses with a by-hand recipe on none recorded, commit absent, already reverted, or conflict. It first
+discards a DEPLOY_CONFLICT's waiting half-merge, then walks back the merged repositories, each **forgetting** its
+commit; REVERTED once all that landed is out, both half-states **stamped on the task**.
 
 #### Scenario: Deployed twice
 - **WHEN** `revert <task>` after several deploys

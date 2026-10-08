@@ -155,6 +155,12 @@ public record TaskState(
         return repos.stream().anyMatch(TaskRepo::hasReviewRequest);
     }
 
+    /** A recorded merge is one no revert has taken out yet. */
+    @JsonIgnore
+    public boolean hasLiveDeploy() {
+        return repos.stream().anyMatch(repo -> repo.deployCommit() != null && !repo.deployCommit().isBlank());
+    }
+
     /** A status move — the ONE place history grows. */
     public TaskState withStatus(TaskStatus status, String message) {
         return withStatus(status, message, false);

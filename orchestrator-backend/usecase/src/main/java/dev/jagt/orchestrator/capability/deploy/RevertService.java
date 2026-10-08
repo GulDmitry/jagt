@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.capability.deploy;
 
 import dev.jagt.orchestrator.capability.deploy.DeployTargets.Target;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
@@ -43,6 +44,12 @@ public class RevertService {
             throw unrecordedDeploy(taskId, deployTargets.all(task));
         }
         landed.forEach(DeployTargets::requireDeployable);
+        // An undone deploy leaves its conflict nothing to finish.
+        if (FlowRules.conflictedInTheDeployWorktree(task.status())) {
+            for (Target target : deployTargets.all(task)) {
+                gitDeploy.discardDeploy(target.path(), taskId);
+            }
+        }
         List<String> reverted = new ArrayList<>();
         String lastRevertCommit = null;
         for (Target target : landed.reversed()) {

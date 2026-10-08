@@ -63,9 +63,11 @@ public final class FlowRules {
                 .on(Outcome.Kind.CONFLICT, TaskStatus.DEPLOY_CONFLICT)
                 .add();
 
-        // A deploy stopped by a conflict may have left an earlier repository live.
+        // A deploy that stopped part way, or one the task has moved on from, may have left a repository live.
         rule(TaskAction.REVERT)
-                .from(TaskStatus.DEPLOYED, TaskStatus.DEPLOY_CONFLICT)
+                .fromAny()
+                .when((status, facts) -> status == TaskStatus.DEPLOYED || status == TaskStatus.DEPLOY_CONFLICT
+                        || facts.liveDeploy())
                 .on(Outcome.Kind.OK, TaskStatus.REVERTED)
                 // Only some of it came out, so what is left is still live.
                 .on(Outcome.Kind.PARTIAL, TaskStatus.DEPLOYED)

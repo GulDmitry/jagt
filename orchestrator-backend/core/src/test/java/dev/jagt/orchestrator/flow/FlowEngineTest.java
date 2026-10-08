@@ -103,6 +103,17 @@ class FlowEngineTest {
     }
 
     @Test
+    void revertsWhatADeployThatBrokeOffLeftLiveWhileTheStatusStayedPut() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
+                .mrUrl("http://host/1").deployCommit("cafebabe1234").build()));
+        FlowEngine engine = engine(new FixedCapability(TaskAction.REVERT, Outcome.ok("reverted ABC-1")));
+
+        assertThat(engine.run("ABC-1", TaskAction.REVERT)).isEqualTo("reverted ABC-1");
+        assertThat(statusWritten("ABC-1", TaskStatus.APPROVED)).isEqualTo(TaskStatus.REVERTED);
+    }
+
+    @Test
     void leavesTheTaskWhereItIsWhenAnOutcomeLeadsNowhereButStillHasSomethingToSay() {
         havingTask("ABC-1", TaskStatus.CI_POLLING, true);
         FlowEngine engine = engine(new FixedCapability(TaskAction.SWEEP,

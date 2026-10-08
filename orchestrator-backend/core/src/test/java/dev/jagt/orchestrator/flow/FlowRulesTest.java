@@ -19,8 +19,8 @@ class FlowRulesTest {
 
     @Test
     void shipsAStuckTaskAgainOnlyOnceTheAgentThatWasPushingItIsGone() {
-        assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(false, () -> false))).isTrue();
-        assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(true, () -> true))).isFalse();
+        assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(false, false, () -> false))).isTrue();
+        assertThat(FlowRules.allows(TaskStatus.SHIPPING, TaskAction.SHIP, new Facts(true, false, () -> true))).isFalse();
     }
 
     @ParameterizedTest
@@ -137,7 +137,7 @@ class FlowRulesTest {
     void doesNotProbeTheAgentForAStatusWhoseVerdictLivenessCannotChange(TaskStatus status) {
         AtomicBoolean probed = new AtomicBoolean();
 
-        FlowRules.allowed(status, new Facts(true, () -> {
+        FlowRules.allowed(status, new Facts(true, false, () -> {
             probed.set(true);
             return true;
         }));

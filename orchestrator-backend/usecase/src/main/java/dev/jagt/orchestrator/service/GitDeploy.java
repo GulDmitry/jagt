@@ -195,6 +195,22 @@ public class GitDeploy {
                 .expectSuccess("git unmerged paths in " + worktree).stdout().trim();
     }
 
+    /** Throws away the deploy this repository has waiting, a conflicted merge included; none of it was pushed. */
+    public void discardDeploy(Path projectPath, String sourceBranch) {
+        git.locked(projectPath, () -> {
+            if (!hasDeployWorktree(projectPath, sourceBranch)) {
+                return;
+            }
+            Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
+            log.atInfo().setMessage("deploy worktree discarded")
+                    .addKeyValue("worktree", deployWorktree)
+                    .addKeyValue("cause", "the deploy was reverted")
+                    .log();
+            removeDeployWorktree(projectPath, deployWorktree, "jagt-deploy-" + sourceBranch);
+            editor.forgetProject(deployWorktree);
+        });
+    }
+
     /** Best-effort: the checkout is scaffolding, not state. */
     private void removeDeployWorktree(Path projectPath, Path deployWorktree, String deployBranch) {
         git.run(projectPath,

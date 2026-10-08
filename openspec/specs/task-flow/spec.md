@@ -7,9 +7,9 @@ A task's life: which status allows which action, where each outcome leads, and h
 ## Requirements
 
 ### Requirement: One table owns the life of a task
-`flow/FlowRules` SHALL hold, in one Java file the compiler checks, which statuses allow which action and what each
-outcome leads to. Its guard MUST read `flow/Facts`: an open request, and a liveness probe the projection passes as
-"no", costing a spawn per row.
+`flow/FlowRules` SHALL hold, in one compiler-checked Java file, which statuses allow which action and what each
+outcome leads to. Its guard MUST read `flow/Facts`: an open request, a live deploy, and a liveness probe the projection
+passes as "no" (a spawn per row).
 
 #### Scenario: An action is asked
 - **WHEN** an action is asked

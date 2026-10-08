@@ -253,6 +253,39 @@ class GitDeployTest {
     }
 
     @Test
+    void discardsTheConflictedMergeWaitingInTheDeployWorktree(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration t = Duration.ofSeconds(30);
+        Path origin = dir.resolve("o.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, t, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, t, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, t, List.of("git", "add", "."));
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "base"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "main:dev"));
+        runner.run(repo, t, List.of("git", "fetch", "-q"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "_dev", "origin/dev"));
+        Files.writeString(repo.resolve("f.txt"), "dev change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "dev"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "_dev:dev"));
+        runner.run(repo, t, List.of("git", "checkout", "-q", "-b", "ABC-1", "main"));
+        Files.writeString(repo.resolve("f.txt"), "task change");
+        runner.run(repo, t, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qam", "task"));
+        runner.run(repo, t, List.of("git", "push", "-q", "origin", "ABC-1"));
+        GitDeploy git = new GitDeploy(new GitCommands(runner, new LsofWorktreeProcesses(runner)),
+                mock(EditorDriver.class));
+        assertThatThrownBy(() -> git.mergeIntoAndPush(repo, "ABC-1", "dev"))
+                .isInstanceOf(GitDeploy.MergeConflictException.class);
+
+        git.discardDeploy(repo, "ABC-1");
+
+        assertThat(dir.resolve("ABC-1-deploy")).doesNotExist();
+        assertThat(runner.run(repo, t, List.of("git", "branch", "--list", "jagt-deploy-ABC-1")).stdout()).isBlank();
+    }
+
+    @Test
     void deployingAgainAfterResolvingTheDeployWorktreePushesDevAndCleansUp(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration t = Duration.ofSeconds(30);

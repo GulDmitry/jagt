@@ -61,7 +61,7 @@ answer. Every type in `flow/`, one question each:
 | `port/TaskCapability` | `Outcome run(taskId)` — and names no `TaskStatus` |
 | `Outcome` | OK, NOTHING, RELAYED, CONFLICT, PARTIAL, GONE + the sentence, the stamp, the cause |
 | `FlowRules` | `rule(DEPLOY).from(<statuses>).when(<guard>).on(OK, DEPLOYED).on(CONFLICT, DEPLOY_CONFLICT).add()` |
-| `Facts` | the guard's second argument — an open request, and a liveness probe passed as a SUPPLIER |
+| `Facts` | the guard's second argument — an open request, a live deploy, and a liveness probe passed as a SUPPLIER |
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
 | `FlowReports` | door two: a task's report (`FlowRules.reportable`), or the host's verdict (`read`) |
 | `TaskStatus` | where a task stands |
