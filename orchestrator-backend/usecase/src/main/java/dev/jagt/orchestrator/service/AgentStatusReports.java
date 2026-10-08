@@ -132,7 +132,7 @@ public class AgentStatusReports {
         boolean handedBack = landed != previous && FlowRules.handsBack(landed);
         if (handedBack || askedNow) {
             // Re-read: the same call may have LINKED the request, and the advice differs on whether one exists.
-            ping(taskId, landed, shortMessage, stateService.task(taskId));
+            ping(taskId, stateService.task(taskId));
         }
         if (landed != newStatus) {
             return "Task " + taskId + " stays " + landed + ": that one is a human's to move on from. Your line"
@@ -154,7 +154,7 @@ public class AgentStatusReports {
         String id = stateService.canonicalTaskId(taskId);
         flow.read(id, read, message)
                 .filter(landed -> landed.now() != landed.previous() && read != TaskStatus.CI_FAILED)
-                .ifPresent(landed -> ping(id, landed.now(), message, stateService.task(id)));
+                .ifPresent(landed -> ping(id, stateService.task(id)));
     }
 
     public String notifyUser(String title, String message) {
@@ -166,16 +166,16 @@ public class AgentStatusReports {
      * The human is tapped for a move of THEIRS and nothing else. Which is what the projection answers, so this
      * reads it rather than keeping a second list of statuses worth interrupting for.
      */
-    private void ping(String taskId, TaskStatus status, String message, Optional<TaskState> task) {
-        RoundState round = RoundState.of(message,
-                task.map(t -> handBack.draftsPending(t, status)).orElse(false));
-        // Not silent: whoever this ping is about has just spoken, or jagt has just read the round for it.
-        Move move = Move.forTask(status, task.map(TaskState::hasReviewRequest).orElse(true), round, false);
-        if (move.owner() != Owner.YOU) {
-            return;
-        }
-        notifications.send(Notification.fromAgent(taskId, title(status, round),
-                banner(move.hint(), round)));
+    private void ping(String taskId, Optional<TaskState> read) {
+        read.ifPresent(task -> {
+            RoundState round = handBack.round(task);
+            // Not silent: whoever this ping is about has just spoken, or jagt has just read the round for it.
+            Move move = Move.forTask(task.status(), task.hasReviewRequest(), round, false);
+            if (move.owner() == Owner.YOU) {
+                notifications.send(Notification.fromAgent(taskId, title(task.status(), round),
+                        banner(move.hint(), round)));
+            }
+        });
     }
 
     /** A question is what the human has to act on; which status it was asked from is not. */

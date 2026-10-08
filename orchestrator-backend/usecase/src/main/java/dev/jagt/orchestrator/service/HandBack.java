@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
+import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.port.Specs;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ import java.util.Optional;
 public class HandBack {
 
     private final WorktreeChanges worktreeChanges;
-    private final ReviewDrafts reviewDrafts;
+    private final Rounds rounds;
     private final Verification verification;
     private final ConfigService configService;
     private final Specs specs;
@@ -24,8 +24,8 @@ public class HandBack {
         return worktreeChanges.anyUncommitted(task);
     }
 
-    public boolean draftsPending(TaskState task, TaskStatus status) {
-        return reviewDrafts.pending(task, status);
+    public RoundState round(TaskState task) {
+        return rounds.of(task);
     }
 
     /** Whether this hand-back still owes jagt a verification run, which holds it at VERIFYING. */

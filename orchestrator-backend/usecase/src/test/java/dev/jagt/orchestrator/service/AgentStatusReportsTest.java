@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.port.Specs;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
+import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.flow.TaskStatus;
 import dev.jagt.orchestrator.port.Notification;
@@ -54,7 +55,7 @@ class AgentStatusReportsTest {
     private AgentStatusReports reports(StateService state) {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         return new AgentStatusReports(state, notifications, new FlowReports(state),
-                new HandBack(worktreeChanges, new ReviewDrafts(configService),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
                         new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
                         configService, specs));
     }
@@ -117,7 +118,7 @@ class AgentStatusReportsTest {
                 .when(staleView).task("ABC-1");
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
         AgentStatusReports reports = new AgentStatusReports(staleView, notifications, new FlowReports(state),
-                new HandBack(worktreeChanges, new ReviewDrafts(configService),
+                new HandBack(worktreeChanges, new Rounds(configService, new MasterReview()),
                         new Verification(configService, mock(dev.jagt.orchestrator.port.Processes.class)),
                         configService, specs));
 
@@ -267,10 +268,26 @@ class AgentStatusReportsTest {
     void notifiesHumanWhenAgentFinishesAndHandsBackForReview(@TempDir Path root) {
         StateService state = stateIn(root);
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
-        reports(state).report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
+        reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
         verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())));
+    }
+
+    @Test
+    void leavesTheHumanUntappedWhileTheMasterReadsTheHandBackFirst(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build());
+        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+
+        reports.report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
+
+        verify(notifications, never()).send(any());
     }
 
     @Test
@@ -473,8 +490,11 @@ class AgentStatusReportsTest {
         Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: done\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").build());
+        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
-        reports(state).report(TaskStatus.REVIEW_PENDING, "widget fixed", "ABC-1");
+        reports.report(TaskStatus.REVIEW_PENDING, "widget fixed", "ABC-1");
 
         verify(notifications).send(argThat(sent -> "ABC-1".equals(sent.taskId())
                 && sent.body().contains("review_replies.md")));
@@ -488,8 +508,11 @@ class AgentStatusReportsTest {
         Files.writeString(root.resolve("wt/review_replies.md"), "to thread 1: already handled\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.resolve("wt").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").mrUrl("https://host/mr/1").build());
+        AgentStatusReports reports = reports(state);
+        when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("off", null, null, null, null)));
 
-        reports(state).report(TaskStatus.REVIEW_PENDING, "no changes: every comment already handled", "ABC-1");
+        reports.report(TaskStatus.REVIEW_PENDING, "no changes: every comment already handled", "ABC-1");
 
         ArgumentCaptor<Notification> ping = ArgumentCaptor.forClass(Notification.class);
         verify(notifications).send(ping.capture());

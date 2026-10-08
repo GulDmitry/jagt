@@ -1,9 +1,6 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Move;
-import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.flow.TaskView;
-import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +21,7 @@ public class TaskViews {
 
     private final StateService stateService;
     private final ConfigService configService;
-    private final MasterReview masterReview;
+    private final Rounds rounds;
 
     /** One render's worth of answers, read from the configuration ONCE so two reads cannot disagree mid-render. */
     public record Snapshot(List<TaskView> tasks, AutoReviewCadence cadence, List<String> projects) {
@@ -37,17 +34,10 @@ public class TaskViews {
         Map<String, String> deployBranches = new java.util.LinkedHashMap<>();
         config.projects().forEach((key, project) -> deployBranches.put(key, project.deployBranch()));
         List<TaskView> views = stateService.tasks().entrySet().stream()
-                .map(entry -> TaskView.of(entry.getKey(), entry.getValue(), round(entry.getValue(), config),
+                .map(entry -> TaskView.of(entry.getKey(), entry.getValue(), rounds.of(entry.getValue(), config),
                         cadence.watch(entry.getValue(), now), deployBranches))
                 .toList();
         return new Snapshot(views, cadence, List.copyOf(config.projects().keySet()));
-    }
-
-    private RoundState round(TaskState task, ConfigService.ConfigFile config) {
-        return RoundState.of(task.message(),
-                        ReviewDrafts.pending(task, task.status(), config.codeReview().shipPostsEveryDraft()))
-                .withMasterReading(Move.masterReads(task.status()) && config.master().running()
-                        && !masterReview.readsTheRoundInFront(task));
     }
 
     public List<TaskView> all() {

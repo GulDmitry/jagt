@@ -26,7 +26,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        var views = new TaskViews(stateService, configService, new MasterReview()).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(true);
     }
@@ -37,7 +37,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        var views = new TaskViews(stateService, configService, new MasterReview()).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
     }
@@ -49,7 +49,7 @@ class TaskViewsTest {
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults()
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
 
-        var views = new TaskViews(stateService, configService, new MasterReview()).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
 
         assertThat(views).singleElement().extracting("statusLabel").isEqualTo("master review");
     }
@@ -60,7 +60,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", "/nowhere/ABC-1-proj", TaskStatus.CI_POLLING).build()));
         when(configService.load()).thenThrow(new IllegalStateException("jagt.yml is not valid YAML"));
 
-        var snapshot = new TaskViews(stateService, configService, new MasterReview()).snapshot();
+        var snapshot = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).snapshot();
 
         assertThat(snapshot.tasks()).hasSize(1);
         assertThat(snapshot.cadence().enabled()).isFalse();
@@ -73,7 +73,7 @@ class TaskViewsTest {
                 TaskState.builder("proj", "/nowhere/ABC-1-proj", TaskStatus.DONE).build()));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        var views = new TaskViews(stateService, configService, new MasterReview()).all();
+        var views = new TaskViews(stateService, configService, new Rounds(configService, new MasterReview())).all();
 
         assertThat(views).singleElement().extracting("draftedReplies").isEqualTo(false);
     }
