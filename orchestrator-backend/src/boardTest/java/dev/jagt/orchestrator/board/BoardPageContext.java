@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Each board area's tests boot the app against their own temporary root, so a context never outlives it. */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=",
                 "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false"})

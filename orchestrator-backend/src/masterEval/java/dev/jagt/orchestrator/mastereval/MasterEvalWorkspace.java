@@ -6,10 +6,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 final class MasterEvalWorkspace {
 
-    static final String TMUX_SESSION = "jagt-master-eval";
+    static final String TMUX_SESSION = "jagt-master-eval-" + UUID.randomUUID().toString().substring(0, 8);
     private static final Path FIXED_ROOT_A_HUMAN_TRUSTED_ONCE = Path.of("..", ".master-eval").toAbsolutePath().normalize();
 
     private MasterEvalWorkspace() {
@@ -28,8 +29,9 @@ final class MasterEvalWorkspace {
         Files.writeString(lock, String.valueOf(ProcessHandle.current().pid()));
     }
 
-    static void release() throws IOException {
+    static void release() throws Exception {
         Files.deleteIfExists(FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolveSibling(".master-eval.lock"));
+        new ProcessBuilder("tmux", "kill-session", "-t", "=" + TMUX_SESSION).start().waitFor(10, TimeUnit.SECONDS);
     }
 
     private static boolean alive(String pid) {
