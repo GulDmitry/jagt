@@ -45,8 +45,6 @@ public record TaskView(
         boolean deployed,
         // Drafted review replies are waiting in the worktree, and nothing else announces them.
         boolean draftedReplies,
-        // What the last round REPORTED, which no status carries: all three outcomes end at REVIEW_PENDING.
-        AgentReport round,
         AutoReviewWatch autoReview,
         // `pipeline` is the verdict anything decides on; `pipelineSaid` is the host's own wording, for display.
         Pipeline pipeline,
@@ -54,8 +52,7 @@ public record TaskView(
         // Whether the newest round could not read them, so the verdict above is an older round's.
         boolean pipelineUnread,
         // Whether the request is approved; null until a read has said. No status can answer this.
-        Boolean approved,
-        long tokens
+        Boolean approved
 ) {
 
     /** {@code again} = this verb has already run and what it did is still live, so pressing it repeats it. */
@@ -63,8 +60,7 @@ public record TaskView(
                             boolean readOnly, boolean again) {
     }
 
-    /** {@code deployBranch} is per repository so a confirm can name it; null when the project configures none. */
-    public record RepoView(String project, String reviewRequestUrl, String deployBranch) {
+    public record RepoView(String project, String reviewRequestUrl) {
     }
 
     public static TaskView of(String id, TaskState task, boolean draftedReplies, AutoReviewWatch autoReview,
@@ -91,14 +87,12 @@ public record TaskView(
                 confirmations(id, task, deployBranches), line.text(), line.kind(), webLink(task.ticketUrl()),
                 webLink(task.mrUrl()),
                 task.repos().stream()
-                        .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl()),
-                                deployBranches.get(repo.project())))
+                        .map(repo -> new RepoView(repo.project(), webLink(repo.mrUrl())))
                         .toList(),
                 task.statusSince(), task.hasReviewRequest() ? task.requestOpenedAt() : 0,
-                task.history(), deployed, draftedReplies, AgentReport.of(task.message()), autoReview,
+                task.history(), deployed, draftedReplies, autoReview,
                 Pipeline.of(task.pipelineStatus()), task.pipelineStatus(), task.pipelineUnread(),
-                task.hasReviewRequest() ? task.approved() : null,
-                task.totalUsage().total());
+                task.hasReviewRequest() ? task.approved() : null);
     }
 
     private static Map<String, String> confirmations(String id, TaskState task, Map<String, String> deployBranches) {
