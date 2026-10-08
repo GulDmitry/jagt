@@ -28,10 +28,15 @@ class LogFileResetTest {
         Files.writeString(log, "yesterday\n");
         Files.writeString(root.resolve("jagt.log.2026-08-17.0.gz"), "older still");
         Files.writeString(root.resolve("keep-me.log"), "another program's");
+        int freePort;
+        try (ServerSocket probe = new ServerSocket()) {
+            probe.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+            freePort = probe.getLocalPort();
+        }
 
         new LogFileReset().apply(new MockEnvironment()
                 .withProperty("logging.file.name", log.toString())
-                .withProperty("server.port", String.valueOf(freePort())));
+                .withProperty("server.port", String.valueOf(freePort)));
 
         assertThat(log).doesNotExist();
         assertThat(root.resolve("jagt.log.2026-08-17.0.gz")).doesNotExist();
@@ -65,12 +70,5 @@ class LogFileResetTest {
         assertThat(new LogFileReset().getOrder())
                 .isGreaterThan(new EnvironmentPostProcessorApplicationListener().getOrder())
                 .isLessThan(new LoggingApplicationListener().getOrder());
-    }
-
-    private static int freePort() throws IOException {
-        try (ServerSocket probe = new ServerSocket()) {
-            probe.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
-            return probe.getLocalPort();
-        }
     }
 }
