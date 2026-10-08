@@ -37,16 +37,18 @@ class AgentSpendReaderTest {
         Path log = dir.resolve("session.jsonl");
         Files.writeString(log, "x".repeat(500));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
-                .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(5, 0, 1, 0), name(log), 200));
+                .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(5, 0, 1, 0), log.toString(), 200));
         when(stateService.task("ABC-42")).thenReturn(Optional.of(task));
         when(sessionLog.spent(eq(log), eq(200L), eq(300L)))
                 .thenReturn(new SessionLog.Spent(TokenUsage.ofCall(7, 200, 20, 0), 500));
 
         new AgentSpendReader(stateService, sessionLog).charge("ABC-42", log);
 
-        AgentSpend booked = applied(task);
+        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-42"), update.capture());
+        AgentSpend booked = update.getValue().apply(task).agentSpendOrNone();
         assertThat(booked.usageOrNone()).isEqualTo(new TokenUsage(2, 12, 200, 21, 0));
-        assertThat(booked.markFor(name(log))).isEqualTo(500);
+        assertThat(booked.markFor(log.toString())).isEqualTo(500);
     }
 
     @Test
@@ -58,11 +60,14 @@ class AgentSpendReaderTest {
         when(sessionLog.spent(eq(log), eq(0L), anyLong()))
                 .thenReturn(new SessionLog.Spent(TokenUsage.ofCall(7, 0, 20, 0), 400));
         TaskState bookedMeanwhile = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
-                .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(7, 0, 20, 0), name(log), 400));
+                .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(7, 0, 20, 0), log.toString(), 400));
 
         new AgentSpendReader(stateService, sessionLog).charge("ABC-42", log);
 
-        assertThat(applied(bookedMeanwhile).usageOrNone()).isEqualTo(new TokenUsage(1, 7, 0, 20, 0));
+        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-42"), update.capture());
+        assertThat(update.getValue().apply(bookedMeanwhile).agentSpendOrNone().usageOrNone())
+                .isEqualTo(new TokenUsage(1, 7, 0, 20, 0));
     }
 
     @Test
@@ -70,14 +75,16 @@ class AgentSpendReaderTest {
         Path log = dir.resolve("session.jsonl");
         Files.writeString(log, "x".repeat(50));
         TaskState task = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
-                .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(9, 0, 3, 0), name(log), 900));
+                .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(9, 0, 3, 0), log.toString(), 900));
         when(stateService.task("ABC-42")).thenReturn(Optional.of(task));
 
         new AgentSpendReader(stateService, sessionLog).charge("ABC-42", log);
 
-        AgentSpend booked = applied(task);
+        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-42"), update.capture());
+        AgentSpend booked = update.getValue().apply(task).agentSpendOrNone();
         assertThat(booked.usageOrNone()).isEqualTo(new TokenUsage(1, 9, 0, 3, 0));
-        assertThat(booked.markFor(name(log))).isEqualTo(50);
+        assertThat(booked.markFor(log.toString())).isEqualTo(50);
         verifyNoInteractions(sessionLog);
     }
 
@@ -87,16 +94,18 @@ class AgentSpendReaderTest {
         Files.writeString(second, "x".repeat(120));
         TaskState afterFirst = TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
                 .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(5, 0, 1, 0),
-                        name(dir.resolve("first.jsonl")), 700));
+                        dir.resolve("first.jsonl").toString(), 700));
         when(stateService.task("ABC-42")).thenReturn(Optional.of(afterFirst));
         when(sessionLog.spent(eq(second), eq(0L), eq(120L)))
                 .thenReturn(new SessionLog.Spent(TokenUsage.ofCall(3, 0, 2, 0), 120));
 
         new AgentSpendReader(stateService, sessionLog).charge("ABC-42", second);
 
-        AgentSpend booked = applied(afterFirst);
-        assertThat(booked.markFor(name(dir.resolve("first.jsonl")))).isEqualTo(700);
-        assertThat(booked.markFor(name(second))).isEqualTo(120);
+        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-42"), update.capture());
+        AgentSpend booked = update.getValue().apply(afterFirst).agentSpendOrNone();
+        assertThat(booked.markFor(dir.resolve("first.jsonl").toString())).isEqualTo(700);
+        assertThat(booked.markFor(second.toString())).isEqualTo(120);
         assertThat(booked.usageOrNone().calls()).isEqualTo(2);
     }
 
@@ -113,20 +122,10 @@ class AgentSpendReaderTest {
         Files.writeString(log, "x".repeat(300));
         when(stateService.task("ABC-42")).thenReturn(Optional.of(
                 TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()
-                        .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(1, 0, 1, 0), name(log), 300))));
+                        .withAgentSpend(AgentSpend.NONE.plus(TokenUsage.ofCall(1, 0, 1, 0), log.toString(), 300))));
 
         new AgentSpendReader(stateService, sessionLog).charge("ABC-42", log);
 
         verify(stateService, never()).updateTask(eq("ABC-42"), any());
-    }
-
-    private static String name(Path log) {
-        return log.toAbsolutePath().normalize().toString();
-    }
-
-    private AgentSpend applied(TaskState to) {
-        ArgumentCaptor<UnaryOperator<TaskState>> update = ArgumentCaptor.captor();
-        verify(stateService).updateTask(eq("ABC-42"), update.capture());
-        return update.getValue().apply(to).agentSpendOrNone();
     }
 }

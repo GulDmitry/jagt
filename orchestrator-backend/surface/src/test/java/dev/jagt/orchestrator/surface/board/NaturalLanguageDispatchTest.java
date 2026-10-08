@@ -43,56 +43,63 @@ class NaturalLanguageDispatchTest {
     private final CommandService commands = mock(CommandService.class);
     private final TaskLauncher launcher = mock(TaskLauncher.class);
 
-    private NaturalLanguageDispatch dispatchWith(StateService state) {
-        ConfigService config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
-        return new NaturalLanguageDispatch(assistant, state, new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
-    }
-
-    private static StateService stateWithOneTask(Path root) {
+    @Test
+    void answersWithTheCurrentVerbWhenTheProposalEchoedTheSpellingItWasRenamedFrom(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
                 OrchestratorProperties.defaults().withRoot(root.toString())
                         .withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
                 .alias("a1").title("Widget layout is off").build());
-        return state;
-    }
-
-    private void proposes(String command, String task, String ticket, String reason) {
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
         when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
-                Optional.of(new CommandProposal(command, task, ticket, reason)), TokenUsage.NONE));
-    }
-
-    @Test
-    void answersWithTheCurrentVerbWhenTheProposalEchoedTheSpellingItWasRenamedFrom(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("review", "a1", "", "the human said review");
+                Optional.of(new CommandProposal("review", "a1", "", "the human said review")), TokenUsage.NONE));
         when(commands.execute("ABC-1", TaskAction.SWEEP)).thenReturn("sweep ABC-1: checks success");
 
-        String result = dispatchWith(state).interpret("what does the review say on a1");
+        String result = dispatch.interpret("what does the review say on a1");
 
         assertThat(result).isEqualTo("understood as `sweep ABC-1` — sweep ABC-1: checks success");
     }
 
     @Test
     void runsTheMappedActionThroughTheSameGateAButtonUsesAndSaysWhatItUnderstood(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("ship", "a1", "", "the only task about layout");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("ship", "a1", "", "the only task about layout")), TokenUsage.NONE));
         when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: pushed");
 
-        String result = dispatchWith(state).interpret("push the layout one for review");
+        String result = dispatch.interpret("push the layout one for review");
 
         assertThat(result).isEqualTo("understood as `ship ABC-1` — ship ABC-1: pushed");
     }
 
     @Test
     void keepsTheInterpretationVisibleWhenTheGateRefusesWhatWasUnderstood(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("deploy", "a1", "", "asked to release it");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("deploy", "a1", "", "asked to release it")), TokenUsage.NONE));
         when(commands.execute("ABC-1", TaskAction.DEPLOY)).thenThrow(new Refusal(
                 Refusal.Code.ACTION_NOT_AVAILABLE, "Deploy is not available for ABC-1 (it is REVIEW_PENDING)"));
 
-        assertThatThrownBy(() -> dispatchWith(state).interpret("put the layout one live"))
+        assertThatThrownBy(() -> dispatch.interpret("put the layout one live"))
                 .asInstanceOf(type(Refusal.class))
                 .satisfies(refused -> assertThat(refused.code()).isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE))
                 .extracting(Throwable::getMessage)
@@ -102,10 +109,19 @@ class NaturalLanguageDispatchTest {
 
     @Test
     void refusesATaskTheModelInventedInsteadOfActingOnSomethingNear(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("ship", "ABC-99", "", "guessed");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("ship", "ABC-99", "", "guessed")), TokenUsage.NONE));
 
-        String result = dispatchWith(state).interpret("ship the other one");
+        String result = dispatch.interpret("ship the other one");
 
         assertThat(result).contains("not which task");
         verifyNoInteractions(commands);
@@ -113,10 +129,19 @@ class NaturalLanguageDispatchTest {
 
     @Test
     void refusesAVerbThatIsNotInTheGrammar(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("rm-rf", "a1", "", "");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("rm-rf", "a1", "", "")), TokenUsage.NONE));
 
-        String result = dispatchWith(state).interpret("nuke it");
+        String result = dispatch.interpret("nuke it");
 
         assertThat(result).contains("unknown command 'rm-rf'");
         verifyNoInteractions(commands, launcher);
@@ -124,10 +149,19 @@ class NaturalLanguageDispatchTest {
 
     @Test
     void reportsTheAmbiguityWhenTheModelCouldNotChooseRatherThanPickingOne(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("none", "", "", "two tasks mention login");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("none", "", "", "two tasks mention login")), TokenUsage.NONE));
 
-        String result = dispatchWith(state).interpret("ship the login one");
+        String result = dispatch.interpret("ship the login one");
 
         assertThat(result).contains("Not clear enough to act on: two tasks mention login");
         verifyNoInteractions(commands, launcher);
@@ -135,42 +169,78 @@ class NaturalLanguageDispatchTest {
 
     @Test
     void startsANewTaskWhenTheRequestIsADoAndCarriesTheTicketThrough(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("do", "", "ABC-42", "a new ticket");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("do", "", "ABC-42", "a new ticket")), TokenUsage.NONE));
         when(launcher.launch(LaunchRequest.of("ABC-42")))
                 .thenReturn(Launched.created("ABC-42", "Task ABC-42 initialized"));
 
-        String result = dispatchWith(state).interpret("pick up ABC-42");
+        String result = dispatch.interpret("pick up ABC-42");
 
         assertThat(result).isEqualTo("understood as `do ABC-42` — Task ABC-42 initialized");
     }
 
     @Test
     void resumesAReviewRequestWhenTheRequestIsAUrlToOne(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("resume", "", "https://host/mr/42", "an existing merge request");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("resume", "", "https://host/mr/42", "an existing merge request")), TokenUsage.NONE));
         when(launcher.resume("https://host/mr/42")).thenReturn(Launched.created("PROJ-1", "Resumed PROJ-1"));
 
-        assertThat(dispatchWith(state).interpret("take over this MR https://host/mr/42"))
+        assertThat(dispatch.interpret("take over this MR https://host/mr/42"))
                 .isEqualTo("understood as `resume https://host/mr/42` — Resumed PROJ-1");
     }
 
     @Test
     void refusesToResumeWithoutAUrlBecauseThereIsNothingToTakeOver(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("resume", "", "ABC-1", "no url given");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("resume", "", "ABC-1", "no url given")), TokenUsage.NONE));
 
-        assertThat(dispatchWith(state).interpret("resume that thing"))
+        assertThat(dispatch.interpret("resume that thing"))
                 .contains("no review-request URL was named");
         verifyNoInteractions(launcher);
     }
 
     @Test
     void asksForTheTicketWhenADoArrivesWithoutOne(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("do", "", "", "no ticket in the request");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("do", "", "", "no ticket in the request")), TokenUsage.NONE));
 
-        String result = dispatchWith(state).interpret("start a new task");
+        String result = dispatch.interpret("start a new task");
 
         assertThat(result).contains("no ticket was named");
         verifyNoInteractions(launcher);
@@ -178,29 +248,65 @@ class NaturalLanguageDispatchTest {
 
     @Test
     void saysSoWhenTheAssistantIsUnavailableInsteadOfFailingSilently(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
         when(assistant.mapCommand(anyString(), anyString())).thenReturn(Answer.unavailable());
 
-        assertThat(dispatchWith(state).interpret("do something")).contains("Could not reach the assistant");
+        assertThat(dispatch.interpret("do something")).contains("Could not reach the assistant");
         verifyNoInteractions(commands, launcher);
     }
 
     @Test
     void spendsNothingOnEmptyInput(@TempDir Path root) {
-        assertThat(dispatchWith(stateWithOneTask(root)).interpret("   ")).isEqualTo("Nothing to interpret.");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+
+        assertThat(dispatch.interpret("   ")).isEqualTo("Nothing to interpret.");
         verifyNoInteractions(assistant, commands, launcher);
     }
 
     @Test
     void treatsASingleUnknownWordAsATypoWithoutSpendingACall(@TempDir Path root) {
-        assertThat(dispatchWith(stateWithOneTask(root)).interpret("shipp"))
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+
+        assertThat(dispatch.interpret("shipp"))
                 .contains("Unknown command 'shipp'");
         verifyNoInteractions(assistant, commands, launcher);
     }
 
     @Test
     void answersARetiredVerbByNameInsteadOfLettingAModelMapItOntoALiveOne(@TempDir Path root) {
-        NaturalLanguageDispatch dispatch = dispatchWith(stateWithOneTask(root));
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
 
         assertThat(dispatch.interpret("prune all")).contains("jagt has no `prune`");
         assertThat(dispatch.interpret("prune")).contains("jagt has no `prune`");
@@ -209,10 +315,19 @@ class NaturalLanguageDispatchTest {
 
     @Test
     void tellsTheModelOnlyAboutRealTasksAndTheirLegalActions(@TempDir Path root) {
-        StateService state = stateWithOneTask(root);
-        proposes("none", "", "", "");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(
+                OrchestratorProperties.defaults().withRoot(root.toString())
+                        .withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING)
+                .alias("a1").title("Widget layout is off").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        NaturalLanguageDispatch dispatch = new NaturalLanguageDispatch(assistant, state,
+                new TaskViews(state, config, new Rounds(config, new MasterReview())), commands, launcher);
+        when(assistant.mapCommand(anyString(), anyString())).thenReturn(new Answer<>(
+                Optional.of(new CommandProposal("none", "", "", "")), TokenUsage.NONE));
 
-        dispatchWith(state).interpret("what is going on with the layout one");
+        dispatch.interpret("what is going on with the layout one");
 
         var context = forClass(String.class);
         verify(assistant).mapCommand(any(), context.capture());
