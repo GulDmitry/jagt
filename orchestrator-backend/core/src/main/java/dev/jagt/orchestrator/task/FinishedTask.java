@@ -20,7 +20,6 @@ public record FinishedTask(
         List<String> projects,
         String ticketUrl,
         long finishedAt,
-        // How many times the task went out for review: every entry into CI_POLLING is one round.
         int rounds,
         // The host's last word on the checks, or null if nothing ever read one.
         String checks,
@@ -36,7 +35,7 @@ public record FinishedTask(
 
     public static FinishedTask of(String id, TaskState task, long finishedAt, String masterVerdict) {
         return new FinishedTask(id, task.alias(), task.title(), task.projects(), task.ticketUrl(), finishedAt,
-                rounds(task), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict);
+                task.rounds(), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict);
     }
 
     /** Whether the reviewer read this task at all; every comparison below is over these and no others. */
@@ -52,11 +51,6 @@ public record FinishedTask(
     /** A question judged nothing, so whatever you did after it cannot disagree with it. */
     public boolean asked() {
         return "question".equalsIgnoreCase(masterVerdict == null ? "" : masterVerdict.strip());
-    }
-
-    private static int rounds(TaskState task) {
-        return (int) task.history().stream()
-                .filter(step -> step.status() == TaskStatus.CI_POLLING).count();
     }
 
     /** Who opened it, which is who chose its repository; null for a task opened before origins were stamped. */

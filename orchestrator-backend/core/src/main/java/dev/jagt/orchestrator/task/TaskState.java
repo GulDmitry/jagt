@@ -288,6 +288,12 @@ public record TaskState(
         return history.size() >= MAX_HISTORY;
     }
 
+    /** How many times the task went out for review: every entry into CI_POLLING is one round. */
+    @JsonIgnore
+    public int rounds() {
+        return (int) history.stream().filter(step -> step.status() == TaskStatus.CI_POLLING).count();
+    }
+
     /**
      * Since when the task has been in its CURRENT status. NOT {@code lastActiveTimestamp}, which a keep-alive
      * bumps.

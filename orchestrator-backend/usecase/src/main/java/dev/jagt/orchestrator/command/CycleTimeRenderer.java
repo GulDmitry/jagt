@@ -4,7 +4,6 @@ import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
@@ -100,17 +99,13 @@ public class CycleTimeRenderer {
     private static Clock clockOf(String taskId, TaskState task, long now) {
         List<StatusChange> history = task.history();
         Map<Owner, Long> byOwner = new EnumMap<>(Owner.class);
-        int rounds = 0;
         for (int step = 0; step < history.size(); step++) {
             StatusChange change = history.get(step);
             long until = step + 1 < history.size() ? history.get(step + 1).at() : now;
             byOwner.merge(Move.ownerOf(change.status()), Math.max(0, until - change.at()), Long::sum);
-            if (change.status() == TaskStatus.CI_POLLING) {
-                rounds++;
-            }
         }
         return new Clock(taskId, Math.max(0, now - history.getFirst().at()),
                 byOwner.getOrDefault(Owner.YOU, 0L), byOwner.getOrDefault(Owner.AGENT, 0L),
-                byOwner.getOrDefault(Owner.CI, 0L), rounds, task.historyAtCap());
+                byOwner.getOrDefault(Owner.CI, 0L), task.rounds(), task.historyAtCap());
     }
 }
