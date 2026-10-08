@@ -1031,6 +1031,18 @@ class BoardPageTest {
     }
 
     @Test
+    void aBoardWhosePushConnectionWasRefusedTriesAgainOnItsOwn() {
+        Page page = session.newPage();
+        page.route("**/api/events", route -> route.fulfill(new Route.FulfillOptions().setStatus(403)));
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#offline")).isVisible();
+
+        page.unroute("**/api/events");
+
+        assertThat(page.locator("#offline")).isHidden(new LocatorAssertions.IsHiddenOptions().setTimeout(10_000));
+    }
+
+    @Test
     void theHeaderCountsTheTasksWhoseTurnItIs() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());

@@ -105,7 +105,7 @@ export function card(task, manyProjects) {
   status.append(' ', span('age', duration(Date.now() - task.statusSince)));
   status.dataset.tip = `${task.status}\n${timeline(task)}`;
   // Where no verb on this card is the deploy, nothing else on it would say the work is live.
-  if (task.deployed && !task.actions.some((action) => action.again)) {
+  if (task.deployed && !(task.actions || []).some((action) => action.again)) {
     status.classList.add('live');
     status.dataset.tip = `${status.dataset.tip}\n\nits work is on a shared branch`;
     named(status, `${task.statusLabel}, its work is on a shared branch`);
@@ -143,7 +143,7 @@ export function card(task, manyProjects) {
 
   // Which groups exist, and which comes first, stays the projection's answer.
   let row = null;
-  for (const action of task.actions) {
+  for (const action of task.actions || []) {
     if (!row || row.dataset.group !== action.group) {
       row = actionRow(action.group);
       parts.push(row);

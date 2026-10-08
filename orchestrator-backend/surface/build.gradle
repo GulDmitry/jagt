@@ -9,3 +9,8 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
+
+// A local tool's state left under static/ would otherwise be served from the jar.
+processResources {
+    exclude '**/.omc/**'
+}

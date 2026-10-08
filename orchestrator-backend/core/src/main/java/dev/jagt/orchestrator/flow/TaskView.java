@@ -111,7 +111,6 @@ public record TaskView(
         return confirmations;
     }
 
-    /** The merge commit each repository still holds IS the answer: a revert forgets it as it takes the work out. */
     /**
      * A link a page can put in an {@code href}, or nothing. Neither URL is jagt's own, so a {@code javascript:} or
      * {@code data:} URL would run on the page that renders it; anything but http(s) is dropped, not escaped.

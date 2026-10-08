@@ -49,17 +49,29 @@ async function loadVerbs() {
   render();
 }
 
-const events = new EventSource('/api/events');
-// Every connect reads the board, the first one included: whatever changed while disconnected sent no event.
-events.addEventListener('open', (event) => {
-  // The server's first message is also named `open`, and one connect is one read.
-  if (event instanceof MessageEvent) return;
-  connected(true);
-  loadVerbs();
-  refresh();
-});
-// An open report is read again on the same signal: the round it shows may be the thing that changed.
-events.addEventListener('changed', () => { refresh(); repaintReport(); });
-events.onerror = () => connected(false);
+let retryIn = 1000;
+
+function listen() {
+  const events = new EventSource('/api/events');
+  // Every connect reads the board, the first one included: whatever changed while disconnected sent no event.
+  events.addEventListener('open', (event) => {
+    // The server's first message is also named `open`, and one connect is one read.
+    if (event instanceof MessageEvent) return;
+    retryIn = 1000;
+    connected(true);
+    loadVerbs();
+    refresh();
+  });
+  // An open report is read again on the same signal: the round it shows may be the thing that changed.
+  events.addEventListener('changed', () => { refresh(); repaintReport(); });
+  // A refused connect is final for an EventSource; only a new one tries again.
+  events.onerror = () => {
+    connected(false);
+    if (events.readyState !== EventSource.CLOSED) return;
+    setTimeout(listen, retryIn);
+    retryIn = Math.min(retryIn * 2, 30000);
+  };
+}
+listen();
 // The slow repaint is for the relative clocks ("4m ago") only, which no event can announce.
 setInterval(render, 15000);
