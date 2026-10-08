@@ -36,8 +36,8 @@ several projects, or a task spans several.
 - **THEN** the install has one project
 
 ### Requirement: Verbs come off the wire in groups
-Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group` (FLOW moves the task on, TOOL only
-looks); the board renders a row per group, read off the wire. A hint's text lives in `command/CommandReference` alone.
+Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`; the board renders a row per group,
+read off the wire. A hint's text lives in `command/CommandReference` alone.
 A renamed verb keeps its old spelling, advertising only the new, owned by `TaskAction.RENAMED` through `byRetiredVerb`,
 read by the palette (`CommandReference.Verb.aliases`) and tier 2.
 
@@ -63,8 +63,7 @@ or not) running itself. `CommandReference` renders both: `help`'s text and the p
 
 ### Requirement: One endpoint, one dialog
 `GET /api/commands/{id}` SHALL serve any report and `POST` run any other; no command gets its own endpoint, a GET never
-starts a task. A report opens in a `<dialog>` over the board, never a page, closing by Escape, its button, or the
-dimmed area. One about one task (`aboutOneTask`) gets no bar button, no tier 2 offer, and one line typing into that
+starts a task. A report opens in a `<dialog>` over the board, never a page. One about one task (`aboutOneTask`) gets no bar button, no tier 2 offer, and one line typing into that
 session (`POST /api/tasks/say`): not a verb, the only control there.
 
 #### Scenario: Closing
@@ -92,12 +91,16 @@ grown only when something branches on it. No tools facade: each MCP tool group d
 - **THEN** it is refused with a sentence, not a git error three layers down
 
 ### Requirement: Loopback only
-The board SHALL listen on loopback (`server.address: 127.0.0.1`): no password, yet it can deploy, close a task, start an
-agent.
+The board SHALL bind loopback and ask no password; `surface/board/LoopbackFilter` SHALL refuse a foreign Host or
+Origin, and `/mcp` anything but JSON.
 
 #### Scenario: A second machine
 - **WHEN** jagt runs with `--server.address=0.0.0.0`
 - **THEN** the board is reachable elsewhere, still without a password
+
+#### Scenario: Another site posts a verb
+- **WHEN** a page elsewhere, or a rebound name, sends one
+- **THEN** it is refused 403
 
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `StateService.onChange` is the one event, `TaskEventStream` forwarding it as SSE at

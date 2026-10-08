@@ -20,7 +20,7 @@ public class McpController {
     private final StateService stateService;
     private final ObjectMapper mapper;
 
-    @PostMapping(value = "/mcp", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/mcp", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JsonNode> mcp(@RequestBody String body,
                                         @RequestHeader(value = "X-Working-Directory", required = false) String cwd) {
         JsonNode message;
