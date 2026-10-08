@@ -1,6 +1,10 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.TicketTexts;
+import dev.jagt.orchestrator.service.WorktreeChanges;
+import dev.jagt.orchestrator.service.WorktreeFiles;
 import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;

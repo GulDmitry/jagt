@@ -1,7 +1,9 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.service.master;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.service.TicketTexts;
+import dev.jagt.orchestrator.service.WorktreeChanges;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

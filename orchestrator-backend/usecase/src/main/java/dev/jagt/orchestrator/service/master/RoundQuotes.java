@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.service.RoundFacts;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
