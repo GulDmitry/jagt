@@ -199,9 +199,15 @@ public class TaskProvisioning {
     }
 
     private static String branchOverride(String requested) {
-        return requested == null || requested.isBlank()
-                ? null
-                : requested.strip().replaceFirst("^origin/", "");
+        if (requested == null || requested.isBlank()) {
+            return null;
+        }
+        String branch = requested.strip().replaceFirst("^origin/", "");
+        String unusable = TaskName.unusableReason(branch);
+        if (unusable != null) {
+            throw new IllegalArgumentException("Base branch '" + branch + "' is not a branch name: " + unusable);
+        }
+        return branch;
     }
 
     /** A task's branch is rebased and force-pushed, so it must not be one other work lands on. */

@@ -111,6 +111,18 @@ class TaskProvisioningTest {
     }
 
     @Test
+    void refusesABaseBranchGitWouldReadAsAnOptionBeforeTouchingGit() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of("proj",
+                new ProjectConfig(root.resolve("repo").toString(), "origin/main", null, List.of()))));
+
+        assertThatThrownBy(() -> provisioning().initializeTask(NewTask.builder("ABC-42", "proj")
+                .baseBranch("--upload-pack=touch").build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("is not a branch name: it starts with '-'");
+        verifyNoInteractions(git);
+    }
+
+    @Test
     void cutsOneFlatWorktreeForASlashedBranchTakenOverFromSomeoneElse() throws Exception {
         Files.createDirectories(root.resolve("feature-ABC-42-proj"));
         Path projectPath = withProject("proj");
