@@ -31,7 +31,7 @@ misspelling a field the call left out is refused.
 
 #### Scenario: An unknown field
 - **WHEN** a call carries a field the message does not declare
-- **THEN** the field is ignored and the call is judged on the rest
+- **THEN** it is ignored and the rest judged
 
 #### Scenario: A misspelled field
 - **WHEN** a call sends `task_id` and no `taskId`
@@ -78,7 +78,7 @@ what jagt cannot believe is dropped and logged once.
 
 #### Scenario: A relative log path
 - **WHEN** a hook posts a relative log path
-- **THEN** the path is dropped and the rest kept
+- **THEN** it is dropped, the rest kept
 
 ### Requirement: A paid read is judged and asked again
 For a paid read jagt is the sender: `protocol/TicketRead` SHALL judge the answer, and its violations ride into the next
@@ -106,7 +106,8 @@ no facts, never a guess; reaching the human is the caller's (`AutoReviewSchedule
 
 ### Requirement: A ticket is read through the human's MCP servers
 A ticket ref SHALL be read, paid, through the human's MCP servers for title, labels and project.
-It SHALL load no built-in tool and call only MCP reads (`get*`, `list*`…) unless `allowed-tools` names more.
+It SHALL load no built-in tool, and `ReadGate` SHALL refuse any call but MCP reads (`get*`, `list*`…) and
+`allowed-tools`, your allow rules included; unreachable, every call.
 `assistant.mcp-config`, a path or the JSON itself, loads only the declared servers; their tool names carry no plugin prefix.
 
 #### Scenario: Key or URL
@@ -114,7 +115,7 @@ It SHALL load no built-in tool and call only MCP reads (`get*`, `list*`…) unle
 - **THEN** title, labels and project are read through those servers
 
 #### Scenario: No server reaches the tracker
-- **WHEN** the human runs `do ABC-42 <project>` and no MCP server reaches the tracker
+- **WHEN** no MCP server reaches the tracker of `do ABC-42 <project>`
 - **THEN** the read fails naming what stopped it, and the task carries no title
 
 #### Scenario: No summary

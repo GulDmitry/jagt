@@ -52,7 +52,7 @@ public class AgentToolGateController {
     }
 
     /** The CLI's own shape for a refusal a model is meant to read. */
-    private static Map<String, Object> denied(String reason) {
+    static Map<String, Object> denied(String reason) {
         return Map.of("continue", true,
                 "hookSpecificOutput", Map.of(
                         "hookEventName", "PreToolUse",

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
+import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -17,6 +18,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -190,5 +192,15 @@ class HeadlessClaudeRoundReviewerTest {
         reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
 
         verify(usage).record(AssistantCallKind.MASTER_REVIEW, TokenUsage.ofCall(900, 0, 40, 0));
+    }
+
+    @Test
+    void holdsTheReviewToTheRoundsWorktreesAndReadOnlyGitWhateverTheHumanAllows() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        verify(reads).fence(any(), eq(new ReadScope(List.of(Path.of("/w/ABC-42")), List.of("StructuredOutput"), true)));
     }
 }

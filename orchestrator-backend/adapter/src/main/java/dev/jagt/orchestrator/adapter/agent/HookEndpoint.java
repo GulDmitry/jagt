@@ -31,6 +31,13 @@ public class HookEndpoint {
         return command(worktree, "tool", gateUrl);
     }
 
+    /** A headless read's gate fails closed: exit 2 refuses the call when jagt cannot answer. */
+    public String readGateCommand(String fence) {
+        return "curl -sf -m 5 -X POST --data-binary @- -H 'Content-Type: application/json' "
+                + AbstractAgentRuntime.shellQuote(gateUrl + "/read/" + fence)
+                + " || { echo 'jagt could not judge this call' >&2; exit 2; }";
+    }
+
     /**
      * Capped and always successful: a hook reporting a failure would put jagt's plumbing in front of the human,
      * and one that hung would hold up the session. A harness adds a hook's stdout to the session's context, so

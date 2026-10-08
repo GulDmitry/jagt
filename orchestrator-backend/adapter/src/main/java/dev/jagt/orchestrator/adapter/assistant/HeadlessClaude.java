@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.service.OneLine;
+import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -20,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,6 +45,8 @@ class HeadlessClaude {
             + " what stopped you, and which tool or server it was>, and NEVER report that as not existing."
             + " A tool asking for a site or cloud id gets one the host's own listing of reachable sites"
             + " answered, never one recalled or guessed.";
+    /** The CLI's own tool carrying the answer a {@code --json-schema} asks for. */
+    static final String STRUCTURED_OUTPUT = "StructuredOutput";
     private static final int MAX_CAUSE = 400;
     private static final Pattern FENCE = Pattern.compile("```(?:json)?\\s*(\\{.*?})\\s*```", Pattern.DOTALL);
 
@@ -119,6 +123,7 @@ class HeadlessClaude {
             cmd.add(assistant.model());
         }
         // Headless `-p` cannot answer a permission prompt: what the allow-list does not name is refused.
+        List<String> allowed = withMcp ? readOnlyTools.allowed(kind) : List.of();
         if (!withMcp) {
             log.atDebug().setMessage("assistant call without mcp")
                     .addKeyValue("ref", label)
@@ -126,17 +131,33 @@ class HeadlessClaude {
         } else {
             cmd.addAll(List.of("--permission-mode", "dontAsk", "--disallowedTools"));
             cmd.addAll(ReadOnlyTools.MCP_WRITES);
-            List<String> allowed = readOnlyTools.allowed(kind);
             if (!allowed.isEmpty()) {
                 cmd.add("--allowedTools");
                 cmd.addAll(allowed);
             }
         }
-        return run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd, kind, label);
+        List<String> tools = new ArrayList<>(allowed);
+        tools.add(STRUCTURED_OUTPUT);
+        return run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd, new ReadScope(List.of(), tools, false),
+                kind, label);
     }
 
-    /** Any headless command, booked under {@code kind} the moment it returns, whatever it answered. */
-    Reply run(Path cwd, Duration timeout, List<String> cmd, AssistantCallKind kind, String label) {
+    /**
+     * Any headless command, held to {@code scope} while it runs and booked under {@code kind} the moment it returns,
+     * whatever it answered.
+     */
+    Reply run(Path cwd, Duration timeout, List<String> cmd, ReadScope scope, AssistantCallKind kind, String label) {
+        String fence = UUID.randomUUID().toString();
+        List<String> fenced = new ArrayList<>(cmd);
+        fenced.addAll(readOnlyTools.fence(fence, scope));
+        try {
+            return booked(cwd, timeout, fenced, kind, label);
+        } finally {
+            readOnlyTools.lift(fence);
+        }
+    }
+
+    private Reply booked(Path cwd, Duration timeout, List<String> cmd, AssistantCallKind kind, String label) {
         Processes.Result result;
         try {
             result = processRunner.run(cwd, timeout, cmd);

@@ -14,6 +14,7 @@ import dev.jagt.orchestrator.protocol.ProjectRead;
 import dev.jagt.orchestrator.protocol.ReviewRead;
 import dev.jagt.orchestrator.protocol.TicketRead;
 import dev.jagt.orchestrator.protocol.TicketSearch;
+import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -31,6 +32,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -366,5 +368,26 @@ class HeadlessClaudeTest {
         var envelope = new JsonMapper().readTree("{\"result\":\"{}\"}");
 
         assertThat(HeadlessClaude.usageOf(envelope)).isEqualTo(TokenUsage.NONE);
+    }
+
+    @Test
+    void holdsAReadToItsOwnReadsAndItsAnswerUntilItReturns() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        ReadOnlyTools reads = mock(ReadOnlyTools.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        when(reads.allowed(AssistantCallKind.TICKET_READ)).thenReturn(List.of("mcp__acme__get*"));
+        when(reads.fence(any(), any())).thenReturn(List.of("--settings", "{\"hooks\":{}}"));
+
+        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class),
+                reads).read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
+
+        ArgumentCaptor<String> fence = ArgumentCaptor.captor();
+        verify(reads).fence(fence.capture(),
+                eq(new ReadScope(List.of(), List.of("mcp__acme__get*", "StructuredOutput"), false)));
+        verify(reads).lift(fence.getValue());
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--settings", "{\"hooks\":{}}");
     }
 }

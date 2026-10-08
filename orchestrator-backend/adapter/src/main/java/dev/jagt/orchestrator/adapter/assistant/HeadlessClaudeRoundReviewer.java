@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.protocol.RoundRead;
+import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(15);
     private static final String TOOLS = "Read,Grep,Glob,Bash";
-    /** It reads a diff anyone could have written, so the shell runs read-only git and nothing else. */
+    /** The CLI's own allow-list; the fence on the run is what the human's allow rules cannot widen. */
     private static final List<String> READS = List.of("Read", "Grep", "Glob", "Bash(git diff:*)",
             "Bash(git log:*)", "Bash(git show:*)", "Bash(git status:*)", "Bash(git blame:*)",
             "Bash(git merge-base:*)", "Bash(git rev-parse:*)", "Bash(git ls-files:*)");
@@ -67,10 +68,14 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
         cmd.addAll(REFUSED);
         cmd.addAll(BUILDS);
         cmd.addAll(ReadOnlyTools.MCP_WRITES);
+        List<String> mcpReads = readOnlyTools.allowed(AssistantCallKind.MASTER_REVIEW);
         cmd.add("--allowedTools");
         cmd.addAll(READS);
-        cmd.addAll(readOnlyTools.allowed(AssistantCallKind.MASTER_REVIEW));
-        return judged(headless.run(round.worktrees().getFirst(), TIMEOUT, cmd, AssistantCallKind.MASTER_REVIEW,
+        cmd.addAll(mcpReads);
+        List<String> tools = new ArrayList<>(mcpReads);
+        tools.add(HeadlessClaude.STRUCTURED_OUTPUT);
+        return judged(headless.run(round.worktrees().getFirst(), TIMEOUT, cmd,
+                new ReadScope(round.worktrees(), tools, true), AssistantCallKind.MASTER_REVIEW,
                 round.worktrees().getFirst().toString()));
     }
 

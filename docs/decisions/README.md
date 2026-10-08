@@ -9,11 +9,11 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
 - **Never edited once accepted**, typos aside: a change is a new record, the old one's status `superseded by NNNN`.
 - Sections: **Status** (date, state), **Context** (what forced it, with numbers),
-  **Decision**, **Rejected** (each with its one reason), **Reopen when** (what measurement changes it).
+  **Decision**, **Rejected** (each with its reason), **Reopen when** (what measurement changes it).
 - At most 400 words: a record needing more is two decisions.
-- **Linked**: a record names its rule at its top; this index, where a why is recovered, lists every record
+- **Linked**: a record names its rule first; this index, where a why is recovered, lists every record
   (`DecisionIndexTest`).
-- A record taken after the fact says `recorded retroactively` and carries only what history proves.
+- A record taken after the fact says `recorded retroactively`, carrying only what history proves.
 
 ## Index
 
@@ -42,4 +42,5 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0023 — The Master holds a token](0023-the-master-is-identified-by-a-token.md)
 - [0024 — Headless calls are metered where they run](0024-every-headless-call-is-metered-where-it-runs.md)
 - [0025 — Token-guarded board writes](0025-the-board-is-no-way-around-the-token.md)
-- [0026 — The guard's gaps after round three](0026-the-guards-gaps-after-round-three.md)
+- [0026 — The guard's gaps, round three](0026-the-guards-gaps-after-round-three.md)
+- [0027 — Headless calls are fenced](0027-a-headless-call-is-fenced-by-jagt.md)
