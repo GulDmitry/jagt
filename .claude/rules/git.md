@@ -6,6 +6,7 @@ paths:
   - "**/capability/deploy/**"
   - "**/capability/ship/**"
   - "**/service/TaskProvisioning.java"
+  - "**/service/NewTaskWorktrees.java"
 ---
 
 The base branch is read-only. The only writes to a shared branch are `deploy` and `revert`. No git hooks, ever.

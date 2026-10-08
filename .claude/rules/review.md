@@ -1,6 +1,7 @@
 ---
 paths:
   - "**/service/ReviewSweepService.java"
+  - "**/service/Round*.java"
   - "**/AutoReview*.java"
   - "**/task/AutoReviewWatch.java"
   - "**/dev/jagt/orchestrator/job/Job.java"
