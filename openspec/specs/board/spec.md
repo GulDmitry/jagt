@@ -36,9 +36,9 @@ project key renders only where projects are several, in the install or the task.
 - **THEN** `resume <url>` in Ask is the one control
 
 ### Requirement: Verbs come off the wire in groups
-Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`; the board renders a row per group,
-read off the wire. A hint's text lives in `command/CommandReference` alone. A renamed verb still answers to its old
-spelling (`review` runs `sweep`), advertised nowhere (`TaskAction.RENAMED`, read by the palette and tier 2).
+Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`; the board renders a row per group.
+A hint's text lives in `command/CommandReference` alone. A renamed verb still answers to its old spelling (`review`
+runs `sweep`), advertised nowhere (`TaskAction.RENAMED`).
 
 #### Scenario: Which buttons change something
 - **WHEN** the human reads a card's buttons
@@ -47,8 +47,8 @@ spelling (`review` runs `sweep`), advertised nowhere (`TaskAction.RENAMED`, read
 ### Requirement: Commands are two declarations
 A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
 `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) running itself. It declares
-the board part it opens typed alone and the card offering it (`offeredOn`). `CommandReference` renders both: `help`'s text and the
-palette's verb list. A launch that creates no task is refused.
+the board part it opens typed alone and the card offering it (`offeredOn`). `CommandReference` renders both: `help`'s
+text and the palette's verb list. A launch that creates no task is refused.
 
 #### Scenario: Reports
 - **WHEN** the human runs `stats`, `master` or `finished`
@@ -72,9 +72,10 @@ session (`POST /api/tasks/say`): not a verb, the only control there.
 - **THEN** the dialog closes
 
 ### Requirement: Tier 1 is grammar, tier 2 only proposes
-Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2, `surface/board/NaturalLanguageDispatch`, sends
-⌘K free text via `POST /api/interpret` to a model proposing one grammar command, validated (task and verb exist) and
-run through `CommandService`: never more than a button. The call is stripped (`--strict-mcp-config
+Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2,
+`surface/board/NaturalLanguageDispatch`, sends ⌘K free text via `POST /api/interpret` to a model proposing one grammar
+command, validated (task and verb exist) and run through `CommandService`: never more than a button. The call is
+stripped (`--strict-mcp-config
 --mcp-config '{"mcpServers":{}}'`, no `--setting-sources`) and answers with the interpretation first.
 
 #### Scenario: A proposal names no real verb
@@ -105,15 +106,16 @@ anything but JSON; `BoardWriteFilter` an `/api` write without Origin or Master t
 
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `StateService.onChange` is the one event, `TaskEventStream` forwarding it as SSE at
-`/api/events` with no payload. Each connect reads the board once. A periodic tick survives for the ACTIVE clock, time in that status. A card
-carries `data-action`, never a closure, so a card rebuilt under the pointer cannot act for its old task.
+`/api/events` with no payload. Each connect reads the board once. A periodic tick survives for the ACTIVE clock,
+time in that status. A card carries `data-action`, never a closure, so a card rebuilt under the pointer cannot act for its old task.
 
 #### Scenario: The backend goes away
 - **WHEN** the push connection drops
 - **THEN** the board dims, takes no input and says `backend unreachable` until it reconnects
 
 ### Requirement: A banner leads to its task
-A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only: no caller may depend on it.
+A desktop banner SHALL click through to its task (`UserNotifier.notify(…, link)`), macOS-only: no caller may depend
+on it.
 
 #### Scenario: Clicking a notification
 - **WHEN** the human clicks one

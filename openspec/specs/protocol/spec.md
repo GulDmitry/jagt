@@ -39,7 +39,8 @@ misspelling a field the call left out is refused.
 
 ### Requirement: Field and consistency rules, one report
 Field rules SHALL catch a value out of its enum, a missing required field, a link nobody can open. Consistency rules
-catch two fields that cannot both hold: `reviewRequests` beside `reviewRequestUrl`, CI_POLLING with no request, a request filed under a project the task does not have.
+catch two fields that cannot both hold: `reviewRequests` beside `reviewRequestUrl`, CI_POLLING with no request, a
+request filed under a project the task does not have.
 
 #### Scenario: CI_POLLING without a request
 - **WHEN** a message reports CI_POLLING and names no request
@@ -54,9 +55,9 @@ Validation SHALL report every violation at once, never first-failure, each namin
 - **THEN** one refusal names both, each with what was expected
 
 ### Requirement: The shape and the tool are declared once
-`protocol/Schema` SHALL render what a caller is given out of the fields a message declares. An enum comes from whatever
-enumerates it (`FlowRules.reportable`), never a list beside it. `McpToolRegistry` has one way to declare a tool, taking a message class, so a tool skipping validation
-does not compile.
+`protocol/Schema` SHALL render what a caller is given out of the fields a message declares. An enum comes from
+whatever enumerates it (`FlowRules.reportable`), never a list beside it. `McpToolRegistry` has one way to declare a
+tool, taking a message class, so a tool skipping validation does not compile.
 
 #### Scenario: A status is added
 - **WHEN** a session may report a new status
