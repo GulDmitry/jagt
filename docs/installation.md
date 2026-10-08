@@ -33,7 +33,7 @@ jagt talks to no external service: it reads a ticket, and a review round, by spa
 Claude Code, which uses **your** MCP servers. Two kinds of server cannot answer such a call:
 
 - one that only an **interactive login** authenticates — a headless session authenticates none;
-- one that is **plugin-scoped** — a headless session does not load those at all.
+- one that is **plugin-scoped** where `assistant.settingSources` drops `user` — the session then loads none.
 
 `claude mcp list` calls a plugin server connected throughout, so nothing looks wrong: the read has no tool for
 the host it was asked about, and fails naming whichever unauthenticated server it could still see. Check what a

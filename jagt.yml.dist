@@ -72,7 +72,7 @@ orchestrator:
 
   # ── Reading tickets, merge requests and review rounds ──────────────────────────────────────────────────────
   # The only place jagt spends model money. Each read is a HEADLESS one-shot of your agent CLI: no interactive
-  # login, no plugin-scoped MCP server. Read docs/installation.md before trusting it.
+  # login, and a plugin's MCP server only with `user` in settingSources. Read docs/installation.md before trusting it.
   # `agent.cli: stub` (the e2e matrix's) replaces the task agent alone: `do` and the reads still run `claude.command`.
   assistant:
     model: haiku                        # blank inherits your own; the reads are mechanical

@@ -35,11 +35,13 @@ class ReadOnlyToolsTest {
     }
 
     @Test
-    void allowsTheHumansOwnListInsteadWhenOneIsNamed() {
+    void widensTheReadsWithTheHumansOwnListWhenOneIsNamed() {
+        McpHealth mcp = mock(McpHealth.class);
+        when(mcp.servers()).thenReturn(Optional.of(List.of("gitlab")));
         var named = AssistantProperties.empty().withAllowedTools(List.of("mcp__acme_jira"));
 
-        List<String> allowed = new ReadOnlyTools(mock(McpHealth.class), named).allowed(AssistantCallKind.TICKET_READ);
+        List<String> allowed = new ReadOnlyTools(mcp, named).allowed(AssistantCallKind.TICKET_READ);
 
-        assertThat(allowed).containsExactly("mcp__acme_jira");
+        assertThat(allowed).contains("mcp__acme_jira", "mcp__gitlab__get*");
     }
 }

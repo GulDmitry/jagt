@@ -38,17 +38,14 @@ class ReadOnlyTools {
     private final AssistantProperties assistant;
     private final JsonMapper mapper = new JsonMapper();
 
-    /** The human's own list, else the read-shaped tools of every server this kind of call loads. */
+    /** The read-shaped tools of every server this kind of call loads, and the human's own list beside them. */
     List<String> allowed(AssistantCallKind kind) {
-        if (!assistant.allowedTools().isEmpty()) {
-            return assistant.allowedTools();
-        }
         String pinned = assistant.mcpConfigFor(kind);
         List<String> servers = pinned.isBlank() ? mcp.servers().orElse(List.of()) : declared(pinned);
-        return servers.stream()
-                .map(name -> "mcp__" + name.replaceAll("[^A-Za-z0-9_-]", "_") + "__")
-                .flatMap(prefix -> READ_VERBS.stream().map(verb -> prefix + verb + "*"))
-                .toList();
+        return Stream.concat(servers.stream()
+                        .map(name -> "mcp__" + name.replaceAll("[^A-Za-z0-9_-]", "_") + "__")
+                        .flatMap(prefix -> READ_VERBS.stream().map(verb -> prefix + verb + "*")),
+                assistant.allowedTools().stream()).toList();
     }
 
     private List<String> declared(String pinned) {
