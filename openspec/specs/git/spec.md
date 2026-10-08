@@ -47,9 +47,9 @@ DONE are not. The confirm's `project → branch` line comes from `RepoView.deplo
 - **THEN** no `deploy`: re-merging it brings nothing; the agent's reports move nothing
 
 ### Requirement: Revert refuses rather than guess
-`revert` SHALL take out the last deploy's merge, refusing with a by-hand recipe on no `deployCommit`, commit absent,
-already reverted, or conflict. It walks back the repositories holding a merge commit, each **forgetting** it; REVERTED
-once all that landed is out, both half-states **stamped on the task**.
+`revert` SHALL take out the last deploy's merge, DEPLOY_CONFLICT included; it refuses with a by-hand recipe on no
+`deployCommit`, commit absent, already reverted, or conflict. It walks back the repositories holding a merge commit,
+each **forgetting** it; REVERTED once all that landed is out, both half-states **stamped on the task**.
 
 #### Scenario: Revert
 - **WHEN** `revert ABC-42`
@@ -73,8 +73,7 @@ the first conflict: DEPLOY_CONFLICT, naming both sides from there.
 
 #### Scenario: Multi-repo deploy
 - **WHEN** `deploy ABC-42` and one conflicts after another landed
-- **THEN** the next `deploy` resumes there
-- **AND** one with nothing to deploy is passed over
+- **THEN** the next `deploy` resumes there, or `revert` takes out what landed
 
 #### Scenario: Break-off
 - **WHEN** it breaks off for something no worktree fixes

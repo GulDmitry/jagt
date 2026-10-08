@@ -263,9 +263,9 @@ public class DeployService {
                 .map(target -> "`git log --merges --grep " + taskId + " origin/" + target.deployBranch() + "`"
                         + (targets.size() > 1 ? " in " + target.project() : ""))
                 .collect(Collectors.joining(", "));
-        return new IllegalStateException("revert " + taskId + ": jagt has no record of which commit this"
-                + " deploy created (it predates that being stored), and guessing on a shared branch is not"
-                + " something it will do. Revert by hand: " + where
+        return new IllegalStateException("revert " + taskId + ": jagt records no merge commit of this task's —"
+                + " nothing landed, or the deploy predates that being stored — and guessing on a shared branch is"
+                + " not something it will do. If one is live, revert by hand: " + where
                 + " to find the merge, then `git revert -m 1 <sha>` and push.");
     }
 

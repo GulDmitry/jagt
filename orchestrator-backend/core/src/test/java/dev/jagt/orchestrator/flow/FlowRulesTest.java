@@ -62,8 +62,13 @@ class FlowRulesTest {
         assertThat(FlowRules.allows(TaskStatus.DEPLOYED, TaskAction.REVERT, Facts.projected(false))).isTrue();
     }
 
+    @Test
+    void revertsWhatADeployStoppedByAConflictLeftLive() {
+        assertThat(FlowRules.allows(TaskStatus.DEPLOY_CONFLICT, TaskAction.REVERT, Facts.projected(false))).isTrue();
+    }
+
     @ParameterizedTest
-    @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = "DEPLOYED")
+    @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE, names = {"DEPLOYED", "DEPLOY_CONFLICT"})
     void refusesARevertForATaskWithNothingLiveToTakeBackOut(TaskStatus status) {
         assertThat(FlowRules.allows(status, TaskAction.REVERT, Facts.projected(true))).isFalse();
     }
