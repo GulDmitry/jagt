@@ -10,6 +10,7 @@ import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.Route;
 import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.options.AriaRole;
+import com.microsoft.playwright.options.RequestOptions;
 import dev.jagt.orchestrator.job.AutoReviewScheduler;
 import dev.jagt.orchestrator.port.EditorDriver;
 import dev.jagt.orchestrator.task.LaunchRequest;
@@ -29,6 +30,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -1391,6 +1394,18 @@ class BoardPageTest {
 
         assertThat(page.locator("#toasts .toast")).hasText("Started ABC-9.");
         verify(launcher).launch(LaunchRequest.of("ABC-9").withStrategy("recreate"));
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {"/api/tasks/say|{\"line\": \"hello\"}|'task'",
+            "/api/tasks|{not json|not readable"})
+    void aMalformedRequestIsRefusedInTheShapeEveryRefusalHas(String path, String body, String named) {
+        APIResponse refused = session.request().post("http://localhost:" + port + path,
+                RequestOptions.create().setHeader("Content-Type", "application/json").setData(body));
+
+        org.assertj.core.api.Assertions.assertThat(refused.status()).isEqualTo(400);
+        org.assertj.core.api.Assertions.assertThat(refused.text()).startsWith("{\"error\":").contains(named)
+                .doesNotContain("timestamp");
     }
 
     @Test
