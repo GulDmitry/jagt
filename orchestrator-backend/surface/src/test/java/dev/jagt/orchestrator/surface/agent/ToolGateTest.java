@@ -109,6 +109,27 @@ class ToolGateTest {
                 .asString().contains("reaching its board");
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"git send-pack origin refs/heads/ABC-42:refs/heads/main",
+            "git -C /wt send-pack origin ABC-42:main", "git http-push https://host/repo.git main",
+            "git receive-pack /repo", "git-send-pack origin ABC-42:main",
+            "gh api -X PATCH repos/o/r/git/refs/heads/main -f sha=abc", "gh api --method POST repos/o/r/git/refs",
+            "gh api --method=PUT repos/o/r/git/refs", "gh api -XDELETE repos/o/r/git/refs/heads/main",
+            "gh api repos/o/r/git/refs -f ref=refs/heads/main", "gh api repos/o/r/git/refs -Fsha=abc",
+            "glab api -X PUT projects/1/repository/branches", "glab api --input body.json projects/1",
+            "cd /wt && gh api graphql --raw-field query=x"})
+    void refusesWritingToTheCodeHostPastThePush(String command) {
+        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
+                .asString().contains("writing to the code host");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"gh api repos/o/r/pulls", "gh api -X GET repos/o/r", "glab api --method get projects/1",
+            "gh pr view 7", "glab mr view 7"})
+    void letsTheCodeHostBeRead(String command) {
+        assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
+    }
+
     @Test
     void letsATaskWhoseBranchOpensWithAHashPushItQuoted() {
         assertThat(ToolGate.refusal("Bash", "git push origin '#123'", "#123", 8290)).isEmpty();

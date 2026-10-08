@@ -3,12 +3,14 @@ package dev.jagt.orchestrator.surface.agent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * The calls a session may be refused: a push whose destination is not the task's own branch, a delete of the
- * branch its review request is built on, a force without the lease, a push that could switch off the hook, and a
- * line reaching the board. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an
+ * branch its review request is built on, a force without the lease, a push that could switch off the hook, a write
+ * to the code host past the push, and a line reaching the board. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an
  * explicit {@code git push origin dev} still needs refusing. This is a gate on a few lines, not a permission layer.
  * What is read is the command LINE, so a push assembled at runtime is not seen.
  */
@@ -29,6 +31,12 @@ public final class ToolGate {
     private static final String BOARD = "(?i):0*%d\\b|master-token|mcp_client\\.js";
     private static final String QUOTING = "[\\\\'\"]";
     private static final Pattern PUSH =Pattern.compile("\\bpush\\b");
+    /** git's plumbing writes a remote ref with no pre-push hook. */
+    private static final Pattern PLUMBING = Pattern.compile("(send|receive)-pack|http-push");
+    private static final Pattern HOST_CLI = Pattern.compile("(\\S*/)?(gh|glab)");
+    /** A field or a body makes the host's API call a POST. */
+    private static final Pattern HOST_BODY = Pattern.compile("-[fF].*|--(field|raw-field|input)(=.*)?");
+    private static final Pattern HOST_METHOD = Pattern.compile("(-X|--method=?)(.*)");
     private static final Pattern GIT = Pattern.compile("(\\S*/)?git");
     private static final Pattern FORCE = Pattern.compile("--force|-[a-zA-Z]*f[a-zA-Z]*");
     private static final Pattern HOOK_OFF = Pattern.compile("--no-verify|GIT_CONFIG|(?i:core\\.hookspath)"
@@ -51,6 +59,11 @@ public final class ToolGate {
         if (Pattern.compile(BOARD.formatted(boardPort)).matcher(line.replaceAll(QUOTING, "")).find()) {
             return Optional.of("jagt refuses a line reaching its board or the Master's token: a session acts"
                     + " through its own MCP tools.");
+        }
+        if (PLUMBING.matcher(line.replaceAll(QUOTING, "")).find()
+                || Stream.of(command.split(SEPARATORS)).anyMatch(ToolGate::writesThroughTheHostsApi)) {
+            return Optional.of("jagt refuses writing to the code host from here: push " + taskBranch
+                    + " with a plain `git push origin " + taskBranch + "`.");
         }
         if (PUSH.matcher(command).find() && HOOK_OFF.matcher(command).find()) {
             return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
@@ -82,6 +95,23 @@ public final class ToolGate {
             }
         }
         return Optional.empty();
+    }
+
+    private static boolean writesThroughTheHostsApi(String segment) {
+        List<String> words = Stream.of(segment.trim().split("\\s+")).map(ToolGate::bare).toList();
+        int api = words.indexOf("api");
+        if (api < 1 || !HOST_CLI.matcher(words.get(api - 1)).matches()) {
+            return false;
+        }
+        for (int at = api + 1; at < words.size(); at++) {
+            Matcher method = HOST_METHOD.matcher(words.get(at));
+            String named = !method.matches() ? "GET"
+                    : method.group(2).isEmpty() && at + 1 < words.size() ? words.get(at + 1) : method.group(2);
+            if (HOST_BODY.matcher(words.get(at)).matches() || !"GET".equalsIgnoreCase(named)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static int afterGitOptions(List<String> words, int from) {
