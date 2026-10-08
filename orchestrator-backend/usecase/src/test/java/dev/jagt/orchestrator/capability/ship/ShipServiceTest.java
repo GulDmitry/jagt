@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.capability.ship;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
@@ -11,11 +13,13 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,14 +34,17 @@ import static org.mockito.Mockito.when;
 
 class ShipServiceTest {
 
-    private final StateService stateService = mock(StateService.class);
+    @TempDir
+    Path root;
+    private StateService stateService;
     private final ConfigService configService = mock(ConfigService.class);
     private final AgentSessions sessions = mock(AgentSessions.class);
     private final WorktreeChanges changes = mock(WorktreeChanges.class);
 
     @BeforeEach
     void oneProjectAndTasksAddressedByTheirId() {
-        when(stateService.canonicalTaskId(anyString())).thenAnswer(call -> call.getArgument(0));
+        stateService = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         when(configService.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of()))));
         when(configService.project("demo")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", List.of()));
@@ -47,9 +54,9 @@ class ShipServiceTest {
 
     @Test
     void handsTheShipToTheAgentAndWaitsForTheRequestItOpens() {
-        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git")
-                .title("Widget layout is off").build()));
+                .title("Widget layout is off").build());
 
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
 
@@ -61,9 +68,9 @@ class ShipServiceTest {
 
     @Test
     void namesTheTasksOwnBaseBranchAsWhatTheRequestMergesIntoWhenItHasOne() {
-        when(stateService.task("ABC-7")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+        stateService.putTask("ABC-7", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t")
-                .baseBranch("feature/parent").build()));
+                .baseBranch("feature/parent").build());
 
         new ShipService(stateService, configService, sessions, changes).ship("ABC-7");
 
@@ -74,10 +81,10 @@ class ShipServiceTest {
 
     @Test
     void namesEveryRepositoryTheTaskSpansSoNoneIsLeftUnshipped() {
-        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("Widget layout is off")
                 .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
-                        TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build()));
+                        TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build());
 
         new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
 
@@ -91,10 +98,10 @@ class ShipServiceTest {
 
     @Test
     void leavesOutTheRepositoryHoldingNothingSoNoEmptyRequestIsOpened() {
-        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("Widget layout is off")
                 .repos(List.of(TaskRepo.of("demo", "/wt").withRemoteUrl("git@host:demo/demo.git"),
-                        TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build()));
+                        TaskRepo.of("web", "/wt-web").withRemoteUrl("git@host:demo/web.git"))).build());
         when(changes.holdsWork("web", "/wt-web", "master")).thenReturn(false);
 
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
@@ -107,8 +114,8 @@ class ShipServiceTest {
 
     @Test
     void shipsNothingWhenNoRepositoryOfTheTaskHoldsWork() {
-        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build()));
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build());
         when(changes.holdsWork("demo", "/wt", "main")).thenReturn(false);
 
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
@@ -120,10 +127,10 @@ class ShipServiceTest {
 
     @Test
     void shipsARepositoryAlreadyInReviewEvenWhenItHoldsNothingNew() {
-        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
                 TaskStatus.REVIEW_PENDING).title("t")
                 .repos(List.of(new TaskRepo("demo", "/wt", "git@host:demo/demo.git",
-                        "https://code.example/demo/-/merge_requests/1", null))).build()));
+                        "https://code.example/demo/-/merge_requests/1", null))).build());
         when(changes.holdsWork("demo", "/wt", "main")).thenReturn(false);
 
         Outcome outcome = new ShipService(stateService, configService, sessions, changes).ship("ABC-42");
@@ -134,8 +141,8 @@ class ShipServiceTest {
 
     @Test
     void refusesASecondShipWhileTheFirstIsStillRunning() {
-        when(stateService.task("ABC-42")).thenReturn(Optional.of(TaskState.builder("demo", "/wt",
-                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build()));
+        stateService.putTask("ABC-42", TaskState.builder("demo", "/wt",
+                TaskStatus.REVIEW_PENDING).remoteUrl("git@host:demo/demo.git").title("t").build());
         ShipService shipService = new ShipService(stateService, configService, sessions, changes);
         AtomicReference<Outcome> reentrant = new AtomicReference<>();
         doAnswer(call -> {
