@@ -936,26 +936,25 @@ class BoardPageTest {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
         Page page = open();
-        List<Route> held = new java.util.ArrayList<>();
-        List<APIResponse> heldRead = new java.util.ArrayList<>();
+        List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
+        List<APIResponse> read = new java.util.concurrent.CopyOnWriteArrayList<>();
         page.route("**/api/tasks", route -> {
-            if (held.isEmpty()) {
-                heldRead.add(route.fetch());
-                held.add(route);
-            } else {
-                route.resume();
-            }
+            read.add(route.fetch());
+            held.add(route);
         });
-
-        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "older"));
-        page.waitForCondition(() -> !held.isEmpty());
-        page.waitForResponse(response -> response.url().endsWith("/api/tasks"), () -> state.putTask("ABC-1",
+        page.waitForRequest("**/api/tasks", () -> state.putTask("ABC-1",
+                state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "older")));
+        page.waitForCondition(() -> held.size() == 1);
+        page.waitForRequest("**/api/tasks", () -> state.putTask("ABC-1",
                 state.task("ABC-1").orElseThrow().withStatus(TaskStatus.CI_POLLING, "newer")));
-        page.waitForResponse(response -> response.url().endsWith("/api/tasks"),
-                () -> held.get(0).fulfill(new Route.FulfillOptions().setResponse(heldRead.get(0))));
-        page.evaluate("() => new Promise((done) => setTimeout(done, 100))");
-
+        page.waitForCondition(() -> held.size() == 2);
+        held.get(1).fulfill(new Route.FulfillOptions().setResponse(read.get(1)));
         assertThat(page.locator("article .status")).containsText("out for review");
+
+        page.waitForRequestFinished(() -> held.get(0).fulfill(new Route.FulfillOptions().setResponse(read.get(0))));
+
+        org.assertj.core.api.Assertions.assertThat(page.locator("article .status").textContent())
+                .contains("out for review");
     }
 
     @Test
