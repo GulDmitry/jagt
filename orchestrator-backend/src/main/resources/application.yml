@@ -48,7 +48,7 @@ orchestrator:
   # Any CLI launcher, resolved on PATH and in the usual install dirs; the worktree path is appended.
   # `open -a` will NOT do: it activates the app without opening the passed directory.
   editor-command: ["idea"]
-  # editor-command: ["/Applications/IntelliJ IDEA.app/Contents/MacOS/idea"]   # no `idea` launcher installed
+  # editor-command: ["code"]   # another editor's launcher, by bare name
   # Two paths are appended: <left> <right>. Any difftool takes them — ["difft"], ["code", "--diff"].
   editor-diff-command: ["idea", "diff"]
   # `agent.cli` selects the runtime; the rest of `agent` is read live. One key cannot be a word to Spring and a

@@ -225,12 +225,13 @@ tasks.register('linuxDriverTest', Test) {
     shouldRunAfter tasks.named('test')
 }
 
-// TextBudgetTest reads the repository's markdown, which lives outside every source set: without declaring it
+// TextBudgetTest and ConfigReferenceTest read files that live outside every source set: without declaring it
 // the task stays UP-TO-DATE while a document grows past its budget, and the suite is green over a breach.
 tasks.named('test') {
     inputs.files(fileTree(projectDir.parentFile) {
         include '*.md'
         include 'docs/**/*.md'
+        include 'jagt.yml.dist'
     }).withPropertyName('documents').withPathSensitivity(PathSensitivity.RELATIVE)
 }
 
