@@ -57,7 +57,8 @@ class ReadGateTest {
             "git diff --no-ext-diff --no-textconv main..HEAD", "git show --no-ext-diff --no-textconv HEAD:src/a.txt",
             "git diff --no-ext-diff --no-textconv --output-indicator-new=+ -U3 HEAD",
             "git log --no-ext-diff --no-textconv --grep=ABC-42 --format=%h:%s", "git status -uno",
-            "git -C . log --no-ext-diff --no-textconv", "git blame --no-ext-diff --no-textconv -L10,20 a.txt"})
+            "git -C . log --no-ext-diff --no-textconv", "git blame --no-ext-diff --no-textconv -L10,20 a.txt",
+            "git log --no-ext-diff --no-textconv -- docs/café.md"})
     void runsAReadOnlyGitCommandInsideTheWorktrees(String command) {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
@@ -98,6 +99,14 @@ class ReadGateTest {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
         assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString())).isPresent();
+    }
+
+    @Test
+    void namesWhatToWriteInsteadOfARevisionSuffix() {
+        ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
+
+        assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", "git show --no-ext-diff --no-textconv HEAD~1"),
+                worktree.toString())).get().asString().contains("a SHA, A..B, A...B, --skip=N -n 1");
     }
 
     @Test

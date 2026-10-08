@@ -15,6 +15,9 @@ Accepted 2026-10-08. Amends [0029](0029-what-the-guards-still-pass-after-round-f
 
 - 0029's row "a deny glob mid-name" is closed: `ReadScope` carries `ReadOnlyTools.MCP_WRITES`, and `ReadGate` refuses
   a tool matching one where only a glob allowed it. A tool the human names in full still passes.
+- A read's git line takes a letter of any script beside 0029's set: it means nothing to the shell.
+- Known to refuse: `git -C` on a worktree whose path holds a space, since a read's git line is split on single
+  spaces. The first worktree, where the review runs, needs no `-C`. Reopen: a round's second worktree has one.
 
 ## Rejected
 

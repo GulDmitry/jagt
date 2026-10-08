@@ -50,7 +50,8 @@ final class GitReadLine {
     private static final List<String> NO_CONFIGURED_PROGRAMS = List.of("--no-ext-diff", "--no-textconv");
     private static final Pattern COUNT = Pattern.compile("-\\d+");
     /** Words a shell passes on unchanged: no quote, expansion, glob or operator, and none opening with {@code =}. */
-    private static final Pattern LITERAL = Pattern.compile("[\\w./:@%+,-][\\w./=:@%+,-]*( [\\w./:@%+,-][\\w./=:@%+,-]*)*");
+    private static final Pattern LITERAL = Pattern.compile("[\\w./:@%+,-][\\w./=:@%+,-]*( [\\w./:@%+,-][\\w./=:@%+,-]*)*",
+            Pattern.UNICODE_CHARACTER_CLASS);
     /** A format naming a signature runs the configured gpg. */
     private static final String SIGNATURE = "%G";
 
@@ -62,7 +63,8 @@ final class GitReadLine {
         if (!LITERAL.matcher(command).matches() || command.contains(SIGNATURE) || words.size() < 2
                 || !"git".equals(words.getFirst())) {
             return Optional.of("jagt refuses this command in a read: one read-only git command in plain words, single"
-                    + " spaces, no quote, ~, ^, brace, glob, %G or anything around it.");
+                    + " spaces, no quote, ~, ^, brace, glob, %G or anything around it. For a revision write a SHA,"
+                    + " A..B, A...B, --skip=N -n 1.");
         }
         int at = 1;
         Path repository = here;
