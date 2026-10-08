@@ -2,31 +2,21 @@ package dev.jagt.orchestrator.capability.done;
 
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.GitDeploy;
-import dev.jagt.orchestrator.service.GitWorktrees;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.StateService;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-
-import java.nio.file.Path;
 
 /** Retires a task: session killed, worktree and state entry removed. The branch survives. */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class TaskRetirement {
 
     private final StateService stateService;
     private final ConfigService configService;
-    private final GitWorktrees gitWorktrees;
-    private final EditorDriver editorDriver;
     private final AgentSessions sessions;
+    private final RetiredWorktrees worktrees;
 
     public String retire(String taskIdOrAlias) {
         String taskId = stateService.canonicalTaskId(taskIdOrAlias);
@@ -34,33 +24,7 @@ public class TaskRetirement {
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
         // First: removing a worktree under a live process's cwd leaves an agent grinding in a deleted directory.
         sessions.killWindows(taskId);
-        // EVERY repository, not just the session's: the others hold a checkout nothing else would ever delete.
-        boolean anyProjectMissing = false;
-        var projects = configService.load().projects();
-        for (TaskRepo repo : task.repos()) {
-            // Before the project lookup: a project deleted from jagt.yml is exactly when a stale registration
-            // would be left behind.
-            editorDriver.forgetProject(Path.of(repo.worktreePath()));
-            ProjectConfig project = projects.get(repo.project());
-            if (project == null) {
-                anyProjectMissing = true;
-                log.atWarn().setMessage("worktree removal skipped")
-                        .addKeyValue("task", taskId)
-                        .addKeyValue("project", repo.project())
-                        .addKeyValue("cause", "not in jagt.yml")
-                        .log();
-                continue;
-            }
-            Path projectPath = Path.of(project.path());
-            // The agent's record of the worktree goes too, or the next session there stops at the prompt it answers.
-            sessions.forgetWorktree(Path.of(repo.worktreePath()));
-            gitWorktrees.removeWorktree(projectPath, Path.of(repo.worktreePath()), null);
-            // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.
-            gitWorktrees.removeDeployWorktreeIfPresent(projectPath, taskId);
-            // A diff opened from the board cuts throwaway checkouts in the temp directory; nothing else ends them.
-            gitWorktrees.removeDiffWorktrees(projectPath, taskId, repo.project());
-            editorDriver.forgetProject(GitDeploy.deployWorktreePath(projectPath, taskId));
-        }
+        boolean anyProjectMissing = worktrees.remove(taskId, task.repos(), configService.load().projects());
         stateService.removeTask(taskId);
         boolean closedViewer = sessions.closeViewerIfNoTasksLeft();
         return "Task " + taskId + " removed: worktree deleted, state entry dropped. Branch '" + taskId
