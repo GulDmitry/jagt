@@ -1,6 +1,7 @@
 // Tier 2, behind ⌘K because it costs a model call: free text mapped to ONE command, run by the gate a button uses.
 
 import {api, refusal} from '../core/api.js';
+import {parse, verdictOf} from '../core/grammar.js';
 import * as store from '../core/store.js';
 import {run} from './act.js';
 import {openReport} from './dialogs.js';
@@ -36,25 +37,6 @@ export function toggle() {
   judge();
 }
 
-// A retired spelling is accepted and never offered: two spellings on screen are two answers to one question.
-function verbFor(word) {
-  const typed = word.toLowerCase();
-  // Its own name first, exactly as the server resolves it: an alias must never shadow another verb's id.
-  return store.verbs().find((verb) => verb.id === typed)
-    || store.verbs().find((verb) => (verb.aliases || []).includes(typed));
-}
-
-// Understood WITHOUT a model: a known verb, and — for the per-task ones — a task that exists.
-function parse(line) {
-  const tokens = line.trim().split(/\s+/).filter(Boolean);
-  if (!tokens.length) return null;
-  const verb = verbFor(tokens[0]);
-  if (!verb) return null;
-  const argument = tokens.slice(1).join(' ');
-  if (!verb.takesTask) return {verb, argument};
-  return {verb, argument, task: store.taskFor(argument)};
-}
-
 // A report about ONE task gets no button: the card that has something to show is where it is pressed, and a bar
 // button would answer for all of them.
 export function refreshSuggestions() {
@@ -73,31 +55,11 @@ export function refreshSuggestions() {
     }));
 }
 
-// The verdict, live: a typo must be visible before Run, not after a model has been paid to guess at it.
 export function judge() {
-  const line = ask.value.trim();
+  const {kind, text} = verdictOf(ask.value.trim());
   verdict.classList.remove('ok', 'bad');
-  if (!line) {
-    verdict.textContent = '';
-    return;
-  }
-  const parsed = parse(line);
-  if (!parsed) {
-    const word = line.split(/\s+/)[0];
-    verdict.textContent = verbFor(word)
-      ? ''
-      : `“${word}” is not a command — this will go to the model as plain words`;
-    return;
-  }
-  if (parsed.verb.takesTask && !parsed.task) {
-    verdict.classList.add('bad');
-    verdict.textContent = parsed.argument
-      ? `no task “${parsed.argument}” — use a ticket id or its alias`
-      : `${parsed.verb.id} needs a task: ${parsed.verb.id} <ticket|alias>`;
-    return;
-  }
-  verdict.classList.add('ok');
-  verdict.textContent = `runs as typed — ${parsed.verb.hint}`;
+  if (kind) verdict.classList.add(kind);
+  verdict.textContent = text;
 }
 
 // A line the backend answered without creating anything is the line that would repeat the attempt.

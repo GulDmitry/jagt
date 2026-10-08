@@ -1,9 +1,9 @@
 // One task, as one card: it reads the server's projection and builds the nodes.
 
-import {link, named, span} from '../core/dom.js';
-import {duration, countdown} from '../core/format.js';
+import {link, span} from '../core/dom.js';
 import * as store from '../core/store.js';
 import {blocked} from './inflight.js';
+import {meta} from './meta.js';
 
 // Where a pasted paragraph is cut off, so no card grows taller; the whole of it stays in the hover.
 const LIMIT = 150;
@@ -14,61 +14,6 @@ const clipped = (node, written) => {
   if (cut) node.dataset.tip = written;
 };
 
-// The words are the server's; only the countdown is formatted here, so a slow repaint keeps it honest without a fetch.
-const watchLine = (watch) => {
-  if (!watch || !watch.note) return null;
-  if (watch.state === 'WATCHING') {
-    const remaining = watch.nextPollAt - Date.now();
-    return {line: `next poll ${remaining <= 0 ? 'due' : countdown(remaining)}`};
-  }
-  return {line: `${watch.label} \u2014 ${watch.note}`, stalled: true};
-};
-
-// `sole` is false for one link among several: the approval is every repository's, not one link's.
-const requestChip = (url, label, openedAt, task, sole) => {
-  const anchor = link(url, openedAt > 0 ? `${label} ${duration(Date.now() - openedAt)}` : label);
-  anchor.className = 'mr-age';
-  const lines = [openedAt > 0
-    ? `review request; opened ${new Date(openedAt).toLocaleString()}`
-    : 'review request; the next sweep will date it'];
-  if (sole && task.approved) {
-    anchor.classList.add('approved');
-    anchor.append(' \u2713');
-  }
-  if (task.approved != null) lines.push(task.approved ? 'approved' : 'not approved yet');
-  // Only where the checks have no dot to say it themselves: one verdict in two hovers can disagree with itself.
-  if (!marked(task)) lines.push(`checks: ${task.pipelineSaid || 'nothing has read them yet'}`);
-  const watch = watchLine(task.autoReview);
-  if (watch) lines.push(watch.line);
-  if (sole && watch?.stalled) anchor.classList.add('stalled');
-  anchor.dataset.tip = lines.join('\n');
-  return anchor;
-};
-
-// Where several links share one approval there is no label to tick, so it becomes the same glyph on its own.
-const approvalTick = () => {
-  const tick = named(span('tick', '\u2713'), 'review request approved');
-  tick.dataset.tip = 'review request approved';
-  return tick;
-};
-
-// Equality rather than a negation: a projection missing the field would throw inside the render and blank the board.
-const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING' || task.pipeline === 'GREEN';
-
-const checksDot = (task) => {
-  const said = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
-  const dot = named(span(`checks ${task.pipeline.toLowerCase()}`, ''), said);
-  dot.dataset.tip = task.pipelineUnread ? `${said}\nthe last sweep could not read them` : said;
-  return dot;
-};
-
-const timeline = (task) => (task.history || [])
-  .map((step) => {
-    const asked = step.origin ? `  (${step.origin.toLowerCase().replace('_', '-')})` : '';
-    return `${new Date(step.at).toLocaleString()}  ${step.status}${asked}`;
-  })
-  .join('\n');
-
 const actionRow = (group) => {
   const row = document.createElement('div');
   row.className = `actions ${group}`;
@@ -76,7 +21,6 @@ const actionRow = (group) => {
   return row;
 };
 
-// `manyProjects` comes from the wiring: where every card would wear the same key, it is a word nobody reads.
 export function card(task, manyProjects) {
   const owner = task.owner.toLowerCase();
   const article = document.createElement('article');
@@ -98,39 +42,7 @@ export function card(task, manyProjects) {
   title.className = 'title';
   clipped(title, task.title || '');
 
-  const meta = document.createElement('div');
-  meta.className = 'meta';
-  // The age is INSIDE the status: a bare duration between two separators reads as a fact of its own.
-  const status = span('status', task.statusLabel);
-  status.append(' ', span('age', duration(Date.now() - task.statusSince)));
-  status.dataset.tip = `${task.status}\n${timeline(task)}`;
-  // Where no verb on this card is the deploy, nothing else on it would say the work is live.
-  if (task.deployed && !(task.actions || []).some((action) => action.again)) {
-    status.classList.add('live');
-    status.dataset.tip = `${status.dataset.tip}\n\nits work is on a shared branch`;
-    named(status, `${task.statusLabel}, its work is on a shared branch`);
-  }
-  meta.append(status);
-  // Each repository named once, its request on its name: a chip beside every name would crowd the row.
-  const repos = task.repos || [];
-  if (repos.length > 1) {
-    const group = span('repos', '');
-    repos.forEach((repo, index) => {
-      if (index) group.append(' + ');
-      group.append(repo.reviewRequestUrl
-        ? requestChip(repo.reviewRequestUrl, repo.project, 0, task, false) : repo.project);
-    });
-    if (task.approved) group.append(' ', approvalTick());
-    if (watchLine(task.autoReview)?.stalled) group.classList.add('stalled');
-    meta.append(group);
-  } else {
-    if (manyProjects) meta.append(span(null, task.project));
-    if (task.reviewRequestUrl) meta.append(requestChip(task.reviewRequestUrl, 'MR', task.requestOpenedAt, task, true));
-  }
-  // Beside the request whether there is one link or several: the verdict is the worst repository's either way.
-  if (marked(task)) meta.append(checksDot(task));
-
-  const parts = [top, title, meta];
+  const parts = [top, title, meta(task, manyProjects)];
 
   if (task.detail) {
     const detail = document.createElement('div');

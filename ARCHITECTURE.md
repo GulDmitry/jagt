@@ -169,12 +169,12 @@ question without owning a node, `ui/` owns the nodes it renders, `app.js` only w
 | `core/format` | the two clocks, mirroring `DurationFormat` |
 | `core/dom` | how an element is built — never markup: ids come from a hand-edited state file |
 | `ui/render` | one repaint from the snapshot, and the one delegated click on the grid |
-| `ui/card`, `ui/header` | what a task looks like, and the line above the grid — pure, no listeners |
+| `ui/card`, `ui/meta`, `ui/header` | what a task looks like, and the line above the grid — pure, no listeners |
 | `ui/filters`, `ui/order`, `ui/projects` | what narrows, what re-orders, and the project picker |
 | `ui/act`, `ui/inflight`, `ui/confirm` | running one action: what is in flight, what it asks first |
 | `ui/submit`, `ui/launch` | one submit pipeline, and the form that uses it |
-| `ui/palette`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
-| `ui/dialogs`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
+| `ui/palette`, `core/grammar`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
+| `ui/dialogs`, `ui/report`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
 | `ui/legend` | what every mark means, as the page's own elements — their one definition |
 | `ui/refresh` | how the page learns a task changed, and the one clock it ticks itself |
 
