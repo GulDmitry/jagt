@@ -49,9 +49,12 @@ A decided decision is no TODO: it lives in the code, these files and git history
 - A sub-agent pushes **its own task branch** and nothing else.
 - **Never `git add -A`** — several sessions share this tree; stage explicit paths only.
 - **No git hook in a repository, ever**: never add one, never ask a human to install one, never depend on one.
-- **jagt's own hooks are not that**: they live under `.jagt/` in the worktree jagt cut, reached by that session
-  alone. They refuse exactly one thing, a push to anything but the task's own branch; the project's hooks still
-  run underneath. An agent CLI's hooks answer that refusal and report session state, and nothing else is gated.
+- **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's
+  hooks running underneath. They refuse a push off the task's branch, deleting, branchless, hook-skipping or forced
+  without the lease, and a line reaching the board or token. They report session state and gate nothing else
+  ([0022](docs/decisions/0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md),
+  [0025](docs/decisions/0025-the-board-is-no-way-around-the-token.md),
+  [0026](docs/decisions/0026-the-guards-gaps-after-round-three.md)).
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
 - **Commit every finished piece of work in the turn it went green**; permission to commit is standing, to push is not.
 - **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)).
