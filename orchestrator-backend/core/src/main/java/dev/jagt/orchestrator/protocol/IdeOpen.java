@@ -24,6 +24,10 @@ public record IdeOpen(String taskId, String mode) implements Message {
         mode = mode == null || mode.isBlank() ? null : mode;
     }
 
+    public boolean diff() {
+        return mode != null && "diff".equals(mode.strip().toLowerCase(Locale.ROOT));
+    }
+
     @Override
     public List<Violation> violations(MessageContext context) {
         return mode != null && !MODES.contains(mode.strip().toLowerCase(Locale.ROOT))

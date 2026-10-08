@@ -22,6 +22,7 @@ import dev.jagt.orchestrator.service.TaskProvisioning;
 import dev.jagt.orchestrator.capability.done.TaskRetirement;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -148,12 +149,34 @@ class McpToolScopeTest {
     @ValueSource(strings = {"write_task_context", "open_task_tab", "close_task_tab", "focus_task"})
     void refusesASubAgentDrivingEvenItsOwnSession(String tool) {
         AgentSessions sessions = mock(AgentSessions.class);
-        ToolHandler handler = declared(new SessionTools(sessions, scope)).get(tool);
+        ToolHandler handler = declared(new SessionTools(sessions, scope, commands)).get(tool);
 
         assertThatThrownBy(() -> handler.call(
                 args("{\"taskId\":\"MINE-1\",\"instructions\":\"commit and push\"}"), "MINE-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(tool + " is Master-only");
+        verifyNoInteractions(sessions);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"diff, DIFF", "project, IDE"})
+    void opensAnAgentsOwnTaskInTheIdeThroughTheCommandGate(String mode, TaskAction action) {
+        ToolHandler handler = declared(new IdeTools(commands, scope)).get("open_in_ide");
+
+        handler.call(args("{\"mode\":\"" + mode + "\"}"), "MINE-1");
+
+        verify(commands).execute("MINE-1", action);
+    }
+
+    @Test
+    void focusesATaskThroughTheCommandGate() {
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        AgentSessions sessions = mock(AgentSessions.class);
+        ToolHandler handler = declared(new SessionTools(sessions, scope, commands)).get("focus_task");
+
+        handler.call(args("{\"taskId\":\"ABC-1\"}"), null);
+
+        verify(commands).execute("ABC-1", TaskAction.FOCUS);
         verifyNoInteractions(sessions);
     }
 

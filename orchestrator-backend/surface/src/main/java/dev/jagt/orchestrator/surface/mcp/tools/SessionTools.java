@@ -4,7 +4,9 @@ import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
 import dev.jagt.orchestrator.surface.mcp.CallerScope;
+import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.service.AgentSessions;
+import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.SessionStart;
 import dev.jagt.orchestrator.protocol.TaskInstructions;
@@ -19,6 +21,7 @@ public class SessionTools implements McpTools {
 
     private final AgentSessions sessions;
     private final CallerScope callerScope;
+    private final CommandService commands;
 
     @Override
     public void declare(McpToolRegistry tools) {
@@ -36,7 +39,7 @@ public class SessionTools implements McpTools {
                         + " screen: select its window and raise the viewer. If the session was closed, a fresh one"
                         + " is started first."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
-                (said, caller) -> sessions.focusTask(callerScope.resolve(said.taskId(), caller)));
+                (said, caller) -> commands.execute(callerScope.resolve(said.taskId(), caller), TaskAction.FOCUS));
 
         tools.tool("write_task_context", Audience.MASTER, TaskInstructions.SCHEMA, TaskInstructions.class,
                 (said, caller) -> MessageContext.NONE,
