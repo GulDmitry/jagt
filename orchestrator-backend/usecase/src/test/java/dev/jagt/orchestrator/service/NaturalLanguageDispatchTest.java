@@ -96,7 +96,7 @@ class NaturalLanguageDispatchTest {
     @Test
     void refusesATaskTheModelInventedInsteadOfActingOnSomethingNear(@TempDir Path root) {
         StateService state = stateWithOneTask(root);
-        proposes("ship", "ZZZ-999", "", "guessed");
+        proposes("ship", "ABC-99", "", "guessed");
 
         String result = dispatchWith(state).interpret("ship the other one");
 
