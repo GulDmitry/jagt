@@ -23,7 +23,8 @@
   <button id="resume-task">Resume</button>
   <button id="open-palette" data-tip="⌘K / Ctrl-K: a command, or plain words">Ask</button>
   <span id="reports"></span>
-  <span id="live" class="dot" data-tip="push connection to the backend"></span>
+  <span id="live" class="dot" role="img" aria-label="push connection to the backend" tabindex="0"
+        data-tip="push connection to the backend"></span>
   <span id="offline" class="chip bad" hidden data-tip="nothing on the board is current and nothing on it can run; it reconnects by itself">backend unreachable</span>
 </header>
 
@@ -67,7 +68,7 @@
   <!-- Only for a report about ONE task: the session it is about is the one this line reaches. -->
   <form id="report-line" hidden>
     <input id="say" placeholder="tell this session — no, answer 2 differently" autocomplete="off" required>
-    <span id="said" class="checks running" hidden data-tip="the session is working; this repaints when it answers"></span>
+    <span id="said" class="checks running" hidden role="img" aria-label="the session is working" tabindex="0" data-tip="the session is working; this repaints when it answers"></span>
   </form>
 </dialog>
 
@@ -77,7 +78,7 @@
   <code>do ABC-42</code> in Ask.</p>
 <p id="filtered" class="empty" hidden></p>
 <button id="show-log" class="log" hidden>log</button>
-<div id="toasts"></div>
+<div id="toasts" role="status"></div>
 <script type="module" src="app.js"></script>
 </body>
 </html>

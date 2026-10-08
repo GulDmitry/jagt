@@ -14,10 +14,15 @@ export function toast(message, isError) {
   opener.hidden = false;
   opener.dataset.tip = `every message this session; the last:\n${message}`;
 
+  // An error interrupts a screen reader; the rest wait their turn in the status region.
   const node = document.createElement('div');
-  node.className = isError ? 'toast error' : 'toast';
-  node.textContent = message;
-  node.onclick = () => node.remove();
+  if (isError) node.setAttribute('role', 'alert');
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = isError ? 'toast error' : 'toast';
+  dismiss.textContent = message;
+  dismiss.onclick = () => node.remove();
+  node.append(dismiss);
   toasts.append(node);
   setTimeout(() => node.remove(), isError ? 12000 : 7000);
 }

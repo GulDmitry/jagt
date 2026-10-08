@@ -1472,6 +1472,33 @@ class BoardPageTest {
     }
 
     @Test
+    void aMarkWithoutWordsIsNamedToAScreenReaderAndReachableByKeyboard() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")
+                .pipelineStatus("failed").lastActiveTimestamp(now()).build());
+
+        Page page = open();
+        Locator checks = page.getByRole(AriaRole.IMG, new Page.GetByRoleOptions().setName("checks: failed"));
+        checks.focus();
+
+        assertThat(checks).isFocused();
+        assertThat(page.locator("#tip")).hasText("checks: failed");
+    }
+
+    @Test
+    void aRefusalIsAnnouncedAsAnAlertAndDismissedByAButton() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.SHIP)).thenThrow(new IllegalStateException("nothing to ship"));
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Ship").setExact(true)).click();
+        page.getByRole(AriaRole.ALERT).getByRole(AriaRole.BUTTON).click();
+
+        assertThat(page.locator("#toasts .toast")).hasCount(0);
+    }
+
+    @Test
     void aRunStillGoingPulsesBesideTheRequestInsteadOfColouringIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")

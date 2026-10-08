@@ -218,12 +218,12 @@ a { color: var(--accent); }
 #tip.scrolls { pointer-events: auto; }
 #toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px;
   max-width: min(520px, 90vw); }
-.toast {
-  background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--ok);
+.toast, .toast:hover:not(:disabled) {
+  background: var(--panel); color: var(--text); border: 1px solid var(--line); border-left: 3px solid var(--ok);
   border-radius: 8px; padding: 8px 10px; font-size: 13px; overflow-wrap: anywhere; cursor: pointer;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%); width: 100%; text-align: left;
 }
-.toast.error { border-left-color: var(--danger); }
+.toast.error, .toast.error:hover:not(:disabled) { border-left-color: var(--danger); }
 
 /* A verdict is filled — red failed, green passed — and a run still going is a hollow pulsing ring, so the three
    read apart with the animation switched off. No dot at all is a verdict nothing here can read. */

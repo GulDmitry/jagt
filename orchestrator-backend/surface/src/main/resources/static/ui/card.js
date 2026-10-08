@@ -1,6 +1,6 @@
 // One task, as one card: it reads the server's projection and builds the nodes.
 
-import {link, span} from '../core/dom.js';
+import {link, named, span} from '../core/dom.js';
 import {duration, countdown} from '../core/format.js';
 import {blocked} from './inflight.js';
 
@@ -47,7 +47,7 @@ const requestChip = (url, label, openedAt, task, sole) => {
 
 // Where several links share one approval there is no label to tick, so it becomes the same glyph on its own.
 const approvalTick = () => {
-  const tick = span('tick', '\u2713');
+  const tick = named(span('tick', '\u2713'), 'review request approved');
   tick.dataset.tip = 'review request approved';
   return tick;
 };
@@ -56,8 +56,8 @@ const approvalTick = () => {
 const marked = (task) => task.pipeline === 'RED' || task.pipeline === 'RUNNING' || task.pipeline === 'GREEN';
 
 const checksDot = (task) => {
-  const dot = span(`checks ${task.pipeline.toLowerCase()}`, '');
   const said = `checks: ${task.pipelineSaid || task.pipeline.toLowerCase()}`;
+  const dot = named(span(`checks ${task.pipeline.toLowerCase()}`, ''), said);
   dot.dataset.tip = task.pipelineUnread ? `${said}\nthe last sweep could not read them` : said;
   return dot;
 };
@@ -107,6 +107,7 @@ export function card(task, manyProjects) {
   if (task.deployed && !task.actions.some((action) => action.again)) {
     status.classList.add('live');
     status.dataset.tip = `${status.dataset.tip}\n\nits work is on a shared branch`;
+    named(status, `${task.statusLabel}, its work is on a shared branch`);
   }
   meta.append(status);
   // One session, one or more repositories: naming them all is what tells you this task moves two codebases.
