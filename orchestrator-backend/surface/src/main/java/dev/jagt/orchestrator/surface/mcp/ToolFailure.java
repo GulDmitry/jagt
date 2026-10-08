@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.surface.mcp;
 
+import dev.jagt.orchestrator.flow.Refusal;
+
 import java.util.Locale;
 
 /** What a failed call tells the agent to do next, read off what the handler threw. */
@@ -29,6 +31,7 @@ public enum ToolFailure {
     public static ToolFailure of(Exception thrown) {
         return switch (thrown) {
             case ToolRefusal refusal -> refusal.failure();
+            case Refusal _ -> BUSINESS;
             case IllegalArgumentException _ -> VALIDATION;
             case IllegalStateException _ -> BUSINESS;
             default -> TRANSIENT;

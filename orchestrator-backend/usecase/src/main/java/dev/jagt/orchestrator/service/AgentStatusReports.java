@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.flow.FlowReports;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.flow.Owner;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.RoundState;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.Message;
@@ -107,7 +108,7 @@ public class AgentStatusReports {
             }
             return newRound ? next.withReviewRound(url) : next.withMrUrl(url);
         }, handBack::verificationOwed).orElseThrow(() ->
-                new IllegalArgumentException("Task " + taskId + " not found in state.json"));
+                new Refusal(Refusal.Code.NO_SUCH_TASK, "Task " + taskId + " not found in state.json"));
         TaskStatus previous = written.previous();
         TaskStatus landed = written.now();
         String alias = current.map(TaskState::alias).orElse(null);

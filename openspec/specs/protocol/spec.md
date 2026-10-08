@@ -60,12 +60,12 @@ does not compile.
 - **THEN** the schema offers it with no other edit
 
 ### Requirement: A session's refusal is a correction
-A refusal SHALL come back from the session's call, never as a block or a question for the human. A failed call says what comes next (`surface/mcp/ToolFailure`, off
-what the handler threw): `validation` is fixed and resent, `business` and `permission` are the answer, `transient` alone
-is `retryable`.
+A refusal SHALL come back from the session's call, never a block or a human's question. `surface/mcp/ToolFailure` reads
+what comes next off what the handler threw: `validation` is fixed and resent; `business` (a `flow/Refusal`, a vanished
+task) and `permission` are the answer; `transient` alone is `retryable`.
 
 #### Scenario: Refused
-- **WHEN** a session's call is refused
+- **WHEN** a session's call is refused as `validation`
 - **THEN** it fixes every line and calls again
 
 ### Requirement: A hook's post is filtered, not refused
@@ -74,7 +74,7 @@ jagt drops what it cannot believe, keeps the rest, and logs once what it dropped
 
 #### Scenario: A relative log path
 - **WHEN** a hook posts a relative log path
-- **THEN** the path is dropped, as it names a file some other process writes, and the rest is kept
+- **THEN** the path is dropped and the rest kept
 
 ### Requirement: A paid read is judged and asked again
 For a paid read jagt is the sender: `protocol/TicketRead` SHALL judge the answer, and its violations ride into the next
@@ -104,8 +104,8 @@ no facts, never a guess; reaching the human is the caller's. A round nobody coul
 ### Requirement: A ticket is read through the human's MCP servers
 A ticket ref SHALL be read, paid, through the human's own MCP servers for title, labels and project.
 It SHALL load no built-in tool and no MCP write.
-`assistant.mcp-config`, a path or the JSON itself, loads only the declared servers: steadier, and costs more.
-Declared servers lose their plugin prefix, so `allowed-tools` must be rewritten.
+`assistant.mcp-config`, a path or the JSON itself, loads only the declared servers.
+Declared servers have no plugin prefix in their tool names, so `allowed-tools`, if set, must be rewritten.
 
 #### Scenario: Key or URL
 - **WHEN** the human runs `do ABC-42` or `do <url>`

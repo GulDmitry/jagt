@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowReports;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.port.Specs;
@@ -70,6 +71,15 @@ class AgentStatusReportsTest {
         String answer = reports(state).report(TaskStatus.REVIEW_PENDING, "done", "ABC-1");
 
         assertThat(answer).contains("VERIFYING");
+    }
+
+    @Test
+    void answersAReportOnAVanishedTaskAsAFactNotAFieldToFix(@TempDir Path root) {
+        StateService state = stateIn(root);
+
+        assertThatThrownBy(() -> reports(state).report(TaskStatus.IN_PROGRESS, "working", "ABC-9"))
+                .isInstanceOfSatisfying(Refusal.class,
+                        refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.NO_SUCH_TASK));
     }
 
     @Test
