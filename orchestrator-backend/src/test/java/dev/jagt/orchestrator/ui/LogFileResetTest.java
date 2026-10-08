@@ -60,10 +60,6 @@ class LogFileResetTest {
         assertThat(new LogFileReset().apply(new MockEnvironment())).isFalse();
     }
 
-    /**
-     * Too early and `logging.file.name` has not been read from application.yml, too late and the appender
-     * already holds the file open.
-     */
     @Test
     void runsAfterTheConfigFilesAreReadAndBeforeLoggingIsInitialised() {
         assertThat(new LogFileReset().getOrder())

@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
 import dev.jagt.orchestrator.task.TaskState;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -25,27 +26,19 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
-/**
- * The reviewer that replaces the first reading of every diff, read against rounds whose answer is already known.
- * It judges by the SHIPPED brief rather than an install's own, so what this measures is the document, and the
- * whole path is the real one: the job's trigger, the panel, the file it writes and how that file is parsed.
- */
 @Tag("masterEval")
 @SpringBootTest(properties = {"spring.config.import=", "orchestrator.startup-checks=false",
         "orchestrator.open-terminal-window=false",
-        // Every one of these defaults to the running board's own port. A review started here is a real CLI
-        // with real tools, and pointed at a live install it would act on tasks that are not the suite's.
         "orchestrator.mcp-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/mcp",
         "orchestrator.hook-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/api/agent/session",
         "orchestrator.gate-url=http://127.0.0.1:" + MasterVerdictEvalTest.DEAD_PORT + "/api/agent"})
 @org.junit.jupiter.api.TestInstance(org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS)
 class MasterVerdictEvalTest {
 
-    /** Nothing may listen here, and the suite refuses to start if anything does. */
     static final String DEAD_PORT = "8391";
 
-    /** Every role of the panel reading the round, run in parallel, plus the job's next tick. */
     private static final Duration VERDICT_WAIT = Duration.ofMinutes(20);
 
     private static final AtomicInteger ROUND = new AtomicInteger();
@@ -79,9 +72,8 @@ class MasterVerdictEvalTest {
         refuseIfSomethingAnswers(Integer.parseInt(DEAD_PORT));
     }
 
-    /** The job is still ticking in a context nobody has closed; turned OFF in the file it re-reads. */
     @AfterAll
-    void leavesNothingOfItsOwnRunning() throws Exception {
+    void turnsOffTheJobStillTickingInTheUnclosedContext() throws Exception {
         TokenUsage spent = usage.sessionByKind().getOrDefault(AssistantCallKind.MASTER_REVIEW, TokenUsage.NONE);
         LoggerFactory.getLogger(MasterVerdictEvalTest.class).atInfo().setMessage("master eval spent")
                 .addKeyValue("calls", spent.calls())
@@ -98,17 +90,13 @@ class MasterVerdictEvalTest {
         }
     }
 
-    /**
-     * The one failure this suite must not have: a review of its own reaching an install that is not it. The
-     * port it is pointed at is proved dead before a review exists to use it.
-     */
     private static void refuseIfSomethingAnswers(int port) {
         try (var socket = new java.net.Socket()) {
             socket.connect(new java.net.InetSocketAddress("127.0.0.1", port), 500);
             throw new IllegalStateException("Something is listening on 127.0.0.1:" + port
                     + " — masterEval points its reviews there precisely because nothing should be. Move it.");
-        } catch (java.io.IOException refused) {
-            // Nothing there, which is the whole requirement.
+        } catch (java.io.IOException nothingThereAsRequired) {
+            return;
         }
     }
 
@@ -127,23 +115,17 @@ class MasterVerdictEvalTest {
         assertThat(verdict).describedAs("no verdict inside %s", VERDICT_WAIT).isPresent();
         assertThat(verdict.orElseThrow().kind()).describedAs("%s", verdict.orElseThrow().findings())
                 .isEqualTo(round.verdict());
-        // The verdict line carries one word; what the review is ABOUT is the file it wrote. A round with
-        // nothing to find names nothing, and that is an empty list rather than a case of its own.
         String review = Files.readString(reviews.file(task));
         assertThat(round.names()).allSatisfy(name -> assertThat(review).contains(name));
     }
 
-    /** The job is what asks; this only waits for the file it ends up writing. */
-    private Optional<MasterReview.Verdict> awaitVerdict(TaskState task) throws InterruptedException {
-        long deadline = System.nanoTime() + VERDICT_WAIT.toNanos();
-        while (System.nanoTime() < deadline) {
-            Optional<MasterReview.Verdict> written = reviews.of(task);
-            if (written.isPresent()) {
-                return written;
-            }
-            Thread.sleep(2_000);
+    private Optional<MasterReview.Verdict> awaitVerdict(TaskState task) {
+        try {
+            return await().atMost(VERDICT_WAIT).pollInterval(Duration.ofSeconds(2))
+                    .until(() -> reviews.of(task), Optional::isPresent);
+        } catch (ConditionTimeoutException noVerdict) {
+            return Optional.empty();
         }
-        return Optional.empty();
     }
 
     static List<MasterCase> rounds() {

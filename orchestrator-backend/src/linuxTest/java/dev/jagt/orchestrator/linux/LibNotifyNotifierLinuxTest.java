@@ -6,8 +6,10 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class LibNotifyNotifierLinuxTest {
 
@@ -58,18 +60,8 @@ class LibNotifyNotifierLinuxTest {
         }
     }
 
-    /**
-     * dbus-monitor writes asynchronously, so every wait on it is a poll rather than a blind sleep — the bus
-     * hands it a NameAcquired for its own connection, which is the only proof it is attached and listening.
-     */
-    private static String awaitCapture(Path capture, String expected) throws Exception {
-        for (int attempt = 0; attempt < 40; attempt++) {
-            String seen = Files.exists(capture) ? Files.readString(capture) : "";
-            if (seen.contains(expected)) {
-                return seen;
-            }
-            Thread.sleep(250);
-        }
-        return Files.exists(capture) ? Files.readString(capture) : "";
+    private static String awaitCapture(Path capture, String expected) {
+        return await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(250))
+                .until(() -> Files.exists(capture) ? Files.readString(capture) : "", seen -> seen.contains(expected));
     }
 }

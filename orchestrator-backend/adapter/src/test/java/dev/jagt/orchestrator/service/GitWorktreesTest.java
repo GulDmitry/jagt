@@ -425,12 +425,10 @@ class GitWorktreesTest {
         Path repo = repositoryOnItsOwnBranch(runner, dir);
         GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
 
-        // A FILE where the worktree's parent directory would go: git cannot create anything under it, and
-        // unlike a read-only directory that holds for root too — the container harness runs as one.
-        Path notADirectory = Files.writeString(dir.resolve("in-the-way"), "");
+        Path aFileEvenRootCannotCreateUnder = Files.writeString(dir.resolve("in-the-way"), "");
 
-        assertThatThrownBy(() -> git.createWorktree(repo, notADirectory.resolve("wt"), "ABC-1", "origin/main",
-                BranchStrategy.RESUME))
+        assertThatThrownBy(() -> git.createWorktree(repo, aFileEvenRootCannotCreateUnder.resolve("wt"), "ABC-1",
+                "origin/main", BranchStrategy.RESUME))
                 .isInstanceOf(RuntimeException.class);
 
         assertThat(runner.run(repo, Duration.ofSeconds(30), List.of("git", "branch", "--show-current"))

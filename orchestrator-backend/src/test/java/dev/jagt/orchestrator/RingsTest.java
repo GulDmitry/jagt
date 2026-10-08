@@ -25,7 +25,6 @@ class RingsTest {
             Path.of("surface/src/main/java/dev/jagt/orchestrator"),
             Path.of("src/main/java/dev/jagt/orchestrator"));
     private static final Set<String> CORE = Set.of("flow", "task", "port");
-    /** The protocol may speak the centre's vocabulary; the centre must not know the protocol exists. */
     private static final Set<String> PROTOCOL_MAY_SEE = Set.of("flow", "task", "port", "protocol");
 
     @ParameterizedTest

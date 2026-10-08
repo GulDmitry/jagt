@@ -17,10 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-/**
- * Alone: it reads the global process table and attaches to the shared logger, and `LoggerFactory` answers with
- * a substitute to any thread arriving while another is still binding the backend.
- */
 @Isolated
 class ProcessRunnerTest {
 
@@ -67,7 +63,6 @@ class ProcessRunnerTest {
 
         new ProcessBuilder("kill", "-TERM", String.valueOf(launched.pid())).start().waitFor();
 
-        // The record is written by ITS OWN stage of the same future, which does not run before the test's.
         await().atMost(Duration.ofSeconds(5)).untilAsserted(() ->
                 assertThat(List.copyOf(log.list)).filteredOn(event -> "process ended".equals(event.getMessage()))
                         .flatExtracting(ILoggingEvent::getKeyValuePairs)

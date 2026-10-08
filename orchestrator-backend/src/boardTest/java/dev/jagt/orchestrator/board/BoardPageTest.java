@@ -713,10 +713,6 @@ class BoardPageTest {
         assertThat(page.locator("#toasts .toast.error")).containsText("The board is up to date now.");
     }
 
-    /**
-     * The latch IS the behaviour: what a card offers while a move is still running cannot be asserted without
-     * holding one there.
-     */
     @Test
     void aMoveInFlightLocksTheButtonsThatWriteAndLeavesTheLookOnlyOnesClickable() throws Exception {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),

@@ -76,13 +76,8 @@ class TaskFlowMatrixTest {
         E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
     }
 
-    /**
-     * A combination that failed early holds none of this, so nothing here may stop on the piece it cannot find:
-     * a cleanup that gives up hands its own leftovers to the next combination, which then fails for a reason the
-     * run never had. The one line that can throw — a file write — is last for the same reason.
-     */
     @AfterEach
-    void leaveNothingBehindForTheNextCombination() {
+    void leaveNothingBehindForTheNextCombinationEvenOneThatFailedEarly() {
         E2eWorkspace.forgetTask(workspace.resolve("proj"), workspace.resolve("ABC-1-proj"), "ABC-1");
         E2eWorkspace.killTmuxSessions(properties.tmuxCommand());
         stateService.removeTask("ABC-1");

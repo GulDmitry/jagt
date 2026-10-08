@@ -8,7 +8,6 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/** The startup refusal tells a human to copy a file, so the file has to be there under that name. */
 class MasterBriefShippedTest {
 
     private static final Path SHIPPED = Path.of("../master-brief.md.dist");

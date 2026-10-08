@@ -36,11 +36,9 @@ class OrchestratorApplicationTest {
     private ApplicationContext context;
 
     @DynamicPropertySource
-    static void keepConfigAndStateOutOfTheDevelopersOwnFiles(DynamicPropertyRegistry registry) {
+    static void keepConfigAndStateOutOfTheDevelopersOwnFilesEvenWhereTheyExportedThemOverTheRoot(
+            DynamicPropertyRegistry registry) {
         registry.add("orchestrator.root", () -> root.toString());
-        // The root alone is not enough: both files are ALSO settable on their own (ORCHESTRATOR_CONFIG_FILE
-        // / ORCHESTRATOR_STATE_FILE in application.yml), and they win over the root when a developer has
-        // either exported — which would point this context straight at their live files.
         registry.add("orchestrator.config-file", () -> root.resolve("jagt.yml").toString());
         registry.add("orchestrator.state-file", () -> root.resolve("state.json").toString());
     }

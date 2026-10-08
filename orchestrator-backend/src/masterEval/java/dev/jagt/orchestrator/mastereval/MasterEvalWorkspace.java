@@ -7,32 +7,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-/** A throwaway repository per round: a committed baseline, and the case's change left uncommitted in a worktree. */
 final class MasterEvalWorkspace {
 
     static final String TMUX_SESSION = "jagt-master-eval";
-    /**
-     * A FIXED root rather than a temp one, and the reason is trust: an agent CLI refuses to work in a
-     * directory nobody has said it may, and a fresh path every run would be asked about every run. Trusted
-     * once, by a human, and nothing here forges that.
-     */
-    private static final Path ROOT = Path.of("..", ".master-eval").toAbsolutePath().normalize();
+    private static final Path FIXED_ROOT_A_HUMAN_TRUSTED_ONCE = Path.of("..", ".master-eval").toAbsolutePath().normalize();
 
     private MasterEvalWorkspace() {
     }
 
     static Path root() {
-        return ROOT.resolve("root");
+        return FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolve("root");
     }
-
-    /**
-     * Refuses while another run of this suite is alive. Two of them share one tmux session and one Master
-     * window, and each would type its own rounds at the other's reviewer — which reads as a reviewer answering
-     * about a task it was never given. Beside the tree rather than inside it: {@link #clean} empties that.
-     */
     static void claim() throws IOException {
-        Path lock = ROOT.resolveSibling(".master-eval.lock");
+        Path lock = FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolveSibling(".master-eval.lock");
         if (Files.isRegularFile(lock) && alive(Files.readString(lock).strip())) {
             throw new IllegalStateException("Another masterEval run holds " + lock + " — one session cannot"
                     + " serve two. Wait for it, or end it and delete that file.");
@@ -42,7 +29,7 @@ final class MasterEvalWorkspace {
     }
 
     static void release() throws IOException {
-        Files.deleteIfExists(ROOT.resolveSibling(".master-eval.lock"));
+        Files.deleteIfExists(FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolveSibling(".master-eval.lock"));
     }
 
     private static boolean alive(String pid) {
@@ -52,13 +39,11 @@ final class MasterEvalWorkspace {
             return false;
         }
     }
-
-    /** Between runs, since the rounds are rebuilt and a worktree left behind would be reviewed again. */
     static void clean() throws IOException {
-        if (!Files.exists(ROOT)) {
+        if (!Files.exists(FIXED_ROOT_A_HUMAN_TRUSTED_ONCE)) {
             return;
         }
-        try (var walk = Files.walk(ROOT)) {
+        try (var walk = Files.walk(FIXED_ROOT_A_HUMAN_TRUSTED_ONCE)) {
             walk.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
                 try {
                     Files.deleteIfExists(path);
@@ -68,8 +53,6 @@ final class MasterEvalWorkspace {
             });
         }
     }
-
-    /** Answers the worktree the round is to be reviewed in. */
     static Path worktreeFor(Path repo, MasterCase round, String taskId) throws Exception {
         Files.createDirectories(repo);
         git(repo, "init", "--initial-branch=main", ".");
@@ -78,7 +61,6 @@ final class MasterEvalWorkspace {
         write(repo, round.baseline());
         git(repo, "add", "-A");
         git(repo, "commit", "-m", "Baseline");
-        // jagt reads a round against origin/<base>, as every real task has one.
         Path origin = repo.getParent().resolve("origin.git");
         git(repo.getParent(), "init", "--bare", "--initial-branch=main", origin.toString());
         git(repo, "remote", "add", "origin", origin.toString());
@@ -87,7 +69,6 @@ final class MasterEvalWorkspace {
         Path worktree = repo.getParent().resolve(taskId);
         git(repo, "worktree", "add", "-b", taskId, worktree.toString(), "main");
         write(worktree, round.change());
-        // What a launch leaves for a task nobody filed, kept out of the diff as jagt's own plumbing is.
         Files.writeString(worktree.resolve("task_request.md"), round.instructions());
         if (!round.plan().isBlank()) {
             Files.writeString(worktree.resolve("plan.md"), round.plan());

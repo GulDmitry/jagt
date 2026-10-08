@@ -11,11 +11,6 @@ import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Boots a real {@code SpringApplication}, and logging initialisation is JVM-wide: run concurrently with another
- * context's boot, Boot's own listener fails with "Unable to find Spring Environment in logger context" — hence
- * the lock every Spring-booting test in this module shares.
- */
 @ResourceLock("spring-logging")
 class StartupRefusalTest {
 

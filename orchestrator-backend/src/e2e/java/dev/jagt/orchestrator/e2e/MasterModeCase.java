@@ -5,11 +5,6 @@ import dev.jagt.orchestrator.flow.TaskStatus;
 import java.util.List;
 import java.util.stream.Stream;
 
-/**
- * One Master step under one `master.mode` and `master.mine`, and where the task is once the Master had its ticks.
- * Not covered: the ninth answer over an unchanged tree, a runaway nine scripted questions long
- * ({@code MasterAnswerJobTest}).
- */
 record MasterModeCase(String name, String mode, List<String> mine, String verdict, TaskStatus expected,
                       boolean read, String told) {
 

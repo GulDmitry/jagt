@@ -6,11 +6,6 @@ import dev.jagt.orchestrator.service.master.MasterReview;
 import java.util.List;
 import java.util.Map;
 
-/**
- * One round or plan handed to the Master, and what a human would have said about it. {@code names} are the words
- * the review must contain to count as having found the thing — a symbol out of the diff rather than a wording,
- * since how a verdict is phrased is the model's and what it is about is not. A blank {@code plan} writes no plan.md.
- */
 record MasterCase(String name, String instructions, TaskStatus status, Map<String, String> baseline,
                   Map<String, String> change, String plan, MasterReview.Kind verdict, List<String> names) {
 

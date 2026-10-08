@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.adapter.linux.LinuxKittyTerminalDriver;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,14 +15,13 @@ import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class LinuxKittyTerminalDriverLinuxTest {
 
     private static final Duration T = Duration.ofSeconds(20);
-    /** Probing gets a SHORT timeout: `kitty @` against a socket nobody listens on blocks until it is cut off. */
-    private static final Duration PROBE = Duration.ofSeconds(3);
-    /** How long a viewer gets to come up and answer: ~2s on an idle machine, and a shared runner is slower. */
-    private static final Duration UP = Duration.ofSeconds(60);
+    private static final Duration PROBE_CUT_OFF_SINCE_A_DEAD_SOCKET_BLOCKS = Duration.ofSeconds(3);
+    private static final Duration UP_ON_A_SLOW_SHARED_RUNNER = Duration.ofSeconds(60);
     private static final String SESSION = "jagt-kitty-linux-test";
 
     private final ProcessRunner runner = new ProcessRunner();
@@ -42,7 +42,7 @@ class LinuxKittyTerminalDriverLinuxTest {
     }
 
     @Test
-    void bringsUpADetachedRemoteControllableViewerAttachedToTheSession() throws Exception {
+    void bringsUpADetachedRemoteControllableViewerAttachedToTheSession() {
         runner.run(null, T, List.of("tmux", "new-session", "-d", "-s", SESSION));
 
         driver().openViewer(SESSION, SESSION, Path.of(System.getProperty("java.io.tmpdir")));
@@ -60,7 +60,7 @@ class LinuxKittyTerminalDriverLinuxTest {
 
     @org.junit.jupiter.api.Disabled("closeViewerWindow did not kill the instance under the container harness")
     @Test
-    void revealsARunningViewerAndThenClosesItByItsOwnSocket() throws Exception {
+    void revealsARunningViewerAndThenClosesItByItsOwnSocket() {
         runner.run(null, T, List.of("tmux", "new-session", "-d", "-s", SESSION));
         LinuxKittyTerminalDriver driver = driver();
         driver.openViewer(SESSION, SESSION, Path.of(System.getProperty("java.io.tmpdir")));
@@ -69,29 +69,23 @@ class LinuxKittyTerminalDriverLinuxTest {
         assertThat(driver.reveal(SESSION)).isEqualTo(TerminalDriver.Revealed.WINDOW);
 
         driver.closeViewerWindow(SESSION);
-        assertThat(awaitInstanceGone()).as("the instance holding the socket is gone").isTrue();
+        awaitInstanceGoneFromTheProcessTable();
     }
 
-    private String awaitRemoteControl() throws Exception {
-        long until = System.nanoTime() + UP.toNanos();
-        while (System.nanoTime() < until) {
-            var listed = runner.run(null, PROBE, List.of("kitty", "@", "--to", socket(), "ls"));
-            if (listed.exitCode() == 0) {
-                return listed.stdout();
-            }
-            Thread.sleep(250);
+    private String awaitRemoteControl() {
+        try {
+            return await().atMost(UP_ON_A_SLOW_SHARED_RUNNER).pollInterval(Duration.ofMillis(250))
+                    .until(() -> runner.run(null, PROBE_CUT_OFF_SINCE_A_DEAD_SOCKET_BLOCKS,
+                            List.of("kitty", "@", "--to", socket(), "ls")), listed -> listed.exitCode() == 0)
+                    .stdout();
+        } catch (ConditionTimeoutException e) {
+            throw new AssertionError("kitty never answered on " + socket() + " in "
+                    + UP_ON_A_SLOW_SHARED_RUNNER.toSeconds() + "s — asked in the foreground, it says: "
+                    + whyKittyDiedWithoutThrowingOverTheFailure(), e);
         }
-        throw new AssertionError("kitty never answered on " + socket() + " in " + UP.toSeconds()
-                + "s — asked in the foreground, it says: " + inTheForeground());
     }
 
-    /**
-     * {@code --detach} exits ZERO whatever becomes of the instance, so a kitty that died on the way up says
-     * why only when it is asked again in the foreground — with the options it was refusing, over a command
-     * that exits at once. It runs on the failure path only, so it gets the full timeout and throws NOTHING:
-     * a diagnostic that fails must still report, or it replaces the failure it was called to explain.
-     */
-    private String inTheForeground() {
+    private String whyKittyDiedWithoutThrowingOverTheFailure() {
         try {
             var probe = runner.run(null, T, List.of("kitty",
                     "--listen-on", "unix:" + Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-probe"),
@@ -102,16 +96,11 @@ class LinuxKittyTerminalDriverLinuxTest {
         }
     }
 
-    /** Asks the PROCESS TABLE, not the socket: "the instance is gone" is exactly what closeViewerWindow claims
-     *  (it kills by the socket path in the cmdline), and a dead socket answers only by timing out. */
-    private boolean awaitInstanceGone() throws Exception {
+    private void awaitInstanceGoneFromTheProcessTable() {
         String socketPath = Path.of(System.getProperty("java.io.tmpdir"), "jagt-kitty-" + SESSION).toString();
-        for (int attempt = 0; attempt < 20; attempt++) {
-            if (runner.run(null, PROBE, List.of("pgrep", "-f", socketPath)).exitCode() != 0) {
-                return true;
-            }
-            Thread.sleep(250);
-        }
-        return false;
+        await("the instance holding the socket is gone").atMost(Duration.ofSeconds(5))
+                .pollInterval(Duration.ofMillis(250))
+                .until(() -> runner.run(null, PROBE_CUT_OFF_SINCE_A_DEAD_SOCKET_BLOCKS,
+                        List.of("pgrep", "-f", socketPath)).exitCode() != 0);
     }
 }
