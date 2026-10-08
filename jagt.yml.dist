@@ -76,8 +76,9 @@ orchestrator:
   assistant:
     model: haiku                        # blank inherits your own; the reads are mechanical
     settingSources: user,project,local  # NOT `project` alone: the call runs from a temp dir, which has none
-    permissionMode: bypassPermissions   # nothing can answer a permission prompt in a headless call
-    # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # takes precedence over permissionMode
+    permissionMode: bypassPermissions   # nothing can answer a prompt headless; a read loads no shell and no MCP write
+    # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # these alone instead; the Master's review gets
+    #                                                            # no MCP without them, and read-only git either way
     # mcpConfig: /path/to/mcp-servers.json   # pin the servers instead of inheriting all of them
     # mcpConfigByKind:                       # one list per kind of read, so a cheap one loads only what it needs
     #   TICKET_READ: /path/to/tracker-only.json     # falls back to mcpConfig, then to your own configuration

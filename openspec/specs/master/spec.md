@@ -9,7 +9,8 @@ human stands.
 
 ### Requirement: The Master is a headless run per role, not a window
 One headless run per role of the brief SHALL read each round in the task's worktrees.
-It may not write, commit or push (`HeadlessClaudeRoundReviewer`); jagt SHALL write the verdict (`MasterPanel`).
+It may run read-only git alone, writing nothing (`HeadlessClaudeRoundReviewer`); jagt SHALL write the verdict
+(`MasterPanel`).
 Each round SHALL cost one heavy read per role, charged to the task as `master`.
 
 #### Scenario: You want a round read before you look

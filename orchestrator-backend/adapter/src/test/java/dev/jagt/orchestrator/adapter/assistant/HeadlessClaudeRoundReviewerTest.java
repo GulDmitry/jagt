@@ -38,6 +38,47 @@ class HeadlessClaudeRoundReviewerTest {
     }
 
     @Test
+    void runsOnlyReadOnlyGitWhateverTheDiffAsksEvenWhereTheReadsBypassPermissions() {
+        HeadlessClaudeRoundReviewer bypassing = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
+                AssistantProperties.empty().withPermissionMode("bypassPermissions"));
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        bypassing.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--permission-mode", "dontAsk")
+                .containsSequence("--tools", "Read,Grep,Glob,Bash")
+                .contains("Bash(git diff:*)")
+                .doesNotContain("Bash", "bypassPermissions");
+    }
+
+    @Test
+    void refusesGitsOutputFlagBecauseItWritesAFile() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).contains("Bash(git * --ou*)");
+    }
+
+    @Test
+    void refusesEveryMcpToolNamedAsAWrite() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).contains("mcp__*__save*", "mcp__*__merge*", "mcp__*__create*");
+    }
+
+    @Test
     void keepsTheWorktreeOutOfTheSystemPromptSoEveryRoundSharesOneCache() {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));

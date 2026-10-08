@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Everything crossing into jagt is a message, validated once at the door: the door, its refusals, reading a ticket.
+Everything crossing into jagt is a message, validated once at the door.
 
 ## Requirements
 
@@ -107,8 +107,9 @@ nobody could read taps the human once (`AutoReviewScheduler`).
 
 ### Requirement: A ticket is read through the human's MCP servers
 A ticket ref SHALL be read, paid, through the human's own MCP servers for title, labels and project.
+It SHALL load no built-in tool and no MCP write.
 `assistant.mcp-config`, a path or the JSON itself, loads only the declared servers: steadier, and costs more.
-Declared servers have no plugin prefix in their tool names, so `allowed-tools`, if set, must be rewritten.
+Declared servers lose their plugin prefix, so `allowed-tools` must be rewritten.
 
 #### Scenario: Key or URL
 - **WHEN** the human runs `do ABC-42` or `do <url>`

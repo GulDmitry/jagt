@@ -26,11 +26,19 @@ import java.util.Optional;
 public class HeadlessClaudeRoundReviewer implements RoundReviewer {
 
     private static final Duration TIMEOUT = Duration.ofMinutes(15);
-    private static final List<String> READS = List.of("Read", "Grep", "Glob", "Bash");
-    /** Writes nothing, moves no ref, and does not read the author's own account first. */
+    private static final String TOOLS = "Read,Grep,Glob,Bash";
+    /** It reads a diff anyone could have written, so the shell runs read-only git and nothing else. */
+    private static final List<String> READS = List.of("Read", "Grep", "Glob", "Bash(git diff:*)",
+            "Bash(git log:*)", "Bash(git show:*)", "Bash(git status:*)", "Bash(git blame:*)",
+            "Bash(git merge-base:*)", "Bash(git rev-parse:*)", "Bash(git ls-files:*)");
+    /**
+     * The human's own allow rules still load with their MCP servers, so what must never run is denied as well.
+     * Git takes {@code --ou} for {@code --output}, which writes a file.
+     */
     private static final List<String> REFUSED = List.of("Edit", "Write", "NotebookEdit",
             "Bash(git push:*)", "Bash(git commit:*)", "Bash(git reset:*)", "Bash(git checkout:*)",
-            "Bash(git stash:*)", "Bash(git restore:*)", "Read(**/review_replies.md)");
+            "Bash(git stash:*)", "Bash(git restore:*)", "Bash(git clean:*)", "Bash(git * --ou*)",
+            "Read(**/review_replies.md)");
     /** The tests ran before the round reached review; every role building at once in one worktree is the cost. */
     private static final List<String> BUILDS = List.of("Bash(./gradlew:*)", "Bash(gradle:*)", "Bash(./mvnw:*)",
             "Bash(mvn:*)", "Bash(npm:*)", "Bash(npx:*)", "Bash(yarn:*)", "Bash(pnpm:*)", "Bash(composer:*)",
@@ -59,15 +67,13 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
         if (!round.model().isBlank()) {
             cmd.addAll(List.of("--model", round.model()));
         }
+        cmd.addAll(List.of("--tools", TOOLS, "--permission-mode", "dontAsk", "--disallowedTools"));
+        cmd.addAll(REFUSED);
+        cmd.addAll(BUILDS);
+        cmd.addAll(ReadOnlyTools.MCP_WRITES);
         cmd.add("--allowedTools");
         cmd.addAll(READS);
         cmd.addAll(assistant.allowedTools());
-        if (assistant.permissionMode() != null && !assistant.permissionMode().isBlank()) {
-            cmd.addAll(List.of("--permission-mode", assistant.permissionMode()));
-        }
-        cmd.add("--disallowedTools");
-        cmd.addAll(REFUSED);
-        cmd.addAll(BUILDS);
         Processes.Result result;
         try {
             result = processRunner.run(round.worktrees().getFirst(), TIMEOUT, cmd);

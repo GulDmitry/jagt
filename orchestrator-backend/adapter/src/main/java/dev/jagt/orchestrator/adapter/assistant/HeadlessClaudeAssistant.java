@@ -394,7 +394,8 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
                 // The envelope carries the call's token usage and cost alongside the answer.
                 "--output-format", "json",
                 // Off the system prompt, cwd and git status stop making every worktree write its own cache.
-                "--exclude-dynamic-system-prompt-sections"));
+                "--exclude-dynamic-system-prompt-sections",
+                "--tools", ""));
         if (!withMcp) {
             cmd.addAll(List.of("--strict-mcp-config", "--mcp-config", "{\"mcpServers\":{}}"));
         } else if (!pinned.isBlank()) {
@@ -407,18 +408,21 @@ public class HeadlessClaudeAssistant implements MasterAssistant {
             cmd.add("--model");
             cmd.add(assistant.model());
         }
-        // Headless `-p` cannot answer the permission classifier, which then silently blocks the MCP calls a
-        // read needs; an allow-list or a permission mode lifts that gate. No MCP means nothing to gate.
+        // Headless `-p` cannot answer a permission prompt, so an allow-list or a permission mode lifts it; with no
+        // built-in tool loaded, either reaches the MCP reads alone.
         if (!withMcp) {
             log.atDebug().setMessage("assistant call without mcp")
                     .addKeyValue("ref", label)
                     .log();
-        } else if (!assistant.allowedTools().isEmpty()) {
-            cmd.add("--allowedTools");
-            cmd.addAll(assistant.allowedTools());
-        } else if (assistant.permissionMode() != null && !assistant.permissionMode().isBlank()) {
-            cmd.add("--permission-mode");
-            cmd.add(assistant.permissionMode());
+        } else {
+            cmd.add("--disallowedTools");
+            cmd.addAll(ReadOnlyTools.MCP_WRITES);
+            if (!assistant.allowedTools().isEmpty()) {
+                cmd.addAll(List.of("--permission-mode", "dontAsk", "--allowedTools"));
+                cmd.addAll(assistant.allowedTools());
+            } else if (assistant.permissionMode() != null && !assistant.permissionMode().isBlank()) {
+                cmd.addAll(List.of("--permission-mode", assistant.permissionMode()));
+            }
         }
         Processes.Result result;
         try {

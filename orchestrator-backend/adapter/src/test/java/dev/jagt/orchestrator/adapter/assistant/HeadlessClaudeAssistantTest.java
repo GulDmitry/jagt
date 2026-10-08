@@ -63,7 +63,7 @@ class HeadlessClaudeAssistantTest {
     }
 
     @Test
-    void scopesTheBypassToTheConfiguredMcpServersInsteadOfLiftingItWholesale() {
+    void runsOnlyTheConfiguredMcpToolsInsteadOfBypassingEveryPermission() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
@@ -75,8 +75,39 @@ class HeadlessClaudeAssistantTest {
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-        assertThat(command.getValue()).endsWith("--allowedTools", "mcp__acme_jira", "mcp__acme_gitlab");
-        assertThat(command.getValue()).doesNotContain("--permission-mode");
+        assertThat(command.getValue()).endsWith("--permission-mode", "dontAsk", "--allowedTools", "mcp__acme_jira",
+                "mcp__acme_gitlab");
+    }
+
+    @Test
+    void loadsNoBuiltInToolSoATicketCannotAskTheReadForAShell() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
+                AssistantProperties.empty().withPermissionMode("bypassPermissions"));
+
+        assistant.readTicket("ABC-42");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--tools", "");
+    }
+
+    @Test
+    void refusesEveryMcpToolNamedAsAWriteSoATicketCannotAskTheReadToChangeTheHost() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var assistant = new HeadlessClaudeAssistant(runner, ClaudeProperties.defaults(), mock(ClaudeMcpHealthProbe.class),
+                AssistantProperties.empty().withPermissionMode("bypassPermissions"));
+
+        assistant.readTicket("ABC-42");
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).contains("mcp__*__create*", "mcp__*__save*", "mcp__*__accept*",
+                "mcp__*__transition*");
     }
 
     @Test
