@@ -50,6 +50,13 @@ public class DeployTargets {
         return landed;
     }
 
+    /** Read where the project is still configured: a recipe for the human must survive one that was removed. */
+    Optional<String> deployBranch(String project) {
+        return Optional.ofNullable(configService.load().projects().get(project))
+                .map(ProjectConfig::deployBranch)
+                .filter(branch -> !branch.isBlank());
+    }
+
     /**
      * Where a deploy handed back from a conflict waits: the repository holding its deploy worktree. Not the first
      * without a recorded merge, since merges outlive the round that made them; a project gone from the

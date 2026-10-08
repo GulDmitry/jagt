@@ -59,7 +59,8 @@ class RevertServiceTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
-        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("proj", new ProjectConfig("/repo", "origin/main", "dev", null))));
         GitDeploy git = mock(GitDeploy.class);
         RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
@@ -77,8 +78,9 @@ class RevertServiceTest {
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOYED).alias("a1").build());
         ConfigService config = mock(ConfigService.class);
-        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
-        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "staging", null));
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults().withProjects(Map.of(
+                "api", new ProjectConfig("/repo/api", "origin/main", "dev", null),
+                "web", new ProjectConfig("/repo/web", "origin/main", "staging", null))));
         GitDeploy git = mock(GitDeploy.class);
         RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
@@ -86,6 +88,24 @@ class RevertServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("origin/dev` in api")
                 .hasMessageContaining("origin/staging` in web");
+    }
+
+    @Test
+    void sendsTheHumanToEveryRepositoryEvenOneWhoseProjectLeftTheConfiguration(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("gone", "/gone-wt")), TaskStatus.DEPLOYED).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("api", new ProjectConfig("/repo/api", "origin/main", "dev", null))));
+        GitDeploy git = mock(GitDeploy.class);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
+
+        assertThatThrownBy(() -> service.revert("a1"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("origin/dev` in api")
+                .hasMessageContaining("origin/<its deploy branch>` in gone");
     }
 
     @Test

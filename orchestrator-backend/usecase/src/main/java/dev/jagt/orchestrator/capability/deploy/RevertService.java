@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.capability.deploy.DeployTargets.Target;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,7 @@ public class RevertService {
             if (waiting.isPresent()) {
                 return discarded(taskId, waiting.get());
             }
-            throw unrecordedDeploy(taskId, deployTargets.all(task));
+            throw unrecordedDeploy(taskId, task);
         }
         landed.forEach(DeployTargets::requireDeployable);
         List<String> reverted = new ArrayList<>();
@@ -101,11 +102,13 @@ public class RevertService {
     }
 
     /** Guessing the merge commit would risk reverting the WRONG merge on a shared branch. */
-    private RuntimeException unrecordedDeploy(String taskId, List<Target> targets) {
+    private RuntimeException unrecordedDeploy(String taskId, TaskState task) {
         // Every repository, because a recipe naming one leaves the others live on their own branches.
-        String where = targets.stream()
-                .map(target -> "`git log --merges --grep " + taskId + " origin/" + target.deployBranch() + "`"
-                        + (targets.size() > 1 ? " in " + target.project() : ""))
+        List<TaskRepo> repos = task.repos();
+        String where = repos.stream()
+                .map(repo -> "`git log --merges --grep " + taskId + " origin/"
+                        + deployTargets.deployBranch(repo.project()).orElse("<its deploy branch>") + "`"
+                        + (repos.size() > 1 ? " in " + repo.project() : ""))
                 .collect(Collectors.joining(", "));
         return new IllegalStateException("revert " + taskId + ": jagt records no merge commit of this task's —"
                 + " nothing landed, or the deploy predates that being stored — and guessing on a shared branch is"
