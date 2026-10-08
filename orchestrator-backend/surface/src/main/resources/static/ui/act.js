@@ -4,7 +4,7 @@ import {api, refusal} from '../core/api.js';
 import * as store from '../core/store.js';
 import {blocked, hold, release, waitingFor} from './inflight.js';
 import {refresh} from './refresh.js';
-import {render} from './render.js';
+import {refocus, render} from './render.js';
 import {toast} from './toast.js';
 
 // A verb the card does not offer is still SENT: this page may be describing a task that has moved on, and it
@@ -27,6 +27,7 @@ export async function run(taskId, actionId) {
   if (question && !confirm(question)) {
     return;
   }
+  const pressed = document.activeElement?.closest?.('#board') ? {task: task.id, action: action.id} : null;
   hold(task, action);
   render();
   try {
@@ -37,5 +38,6 @@ export async function run(taskId, actionId) {
   } finally {
     release(task, action);
     await refresh();
+    if (pressed) refocus(pressed);
   }
 }

@@ -23,9 +23,13 @@ export function render() {
   place(shown.map((task) => card(task, manyProjects)));
 }
 
+const buttonOf = ({task, action, report, about}) => board.querySelector(action
+  ? `button[data-task="${CSS.escape(task)}"][data-action="${CSS.escape(action)}"]`
+  : `button[data-report="${CSS.escape(report)}"][data-about="${CSS.escape(about)}"]`);
+
 // A card that reads the same stays the same node: rebuilding it drops keyboard focus and a click in progress.
 function place(fresh) {
-  const focused = document.activeElement?.closest('#board button[data-action]')?.dataset;
+  const focused = document.activeElement?.closest('#board button[data-action], #board button[data-report]')?.dataset;
   fresh.forEach((built, index) => {
     const there = board.children[index];
     if (there?.isEqualNode(built)) return;
@@ -33,10 +37,12 @@ function place(fresh) {
     else board.append(built);
   });
   while (board.children.length > fresh.length) board.lastElementChild.remove();
-  if (focused && !document.activeElement?.closest('#board')) {
-    board.querySelector(`button[data-task="${CSS.escape(focused.task)}"][data-action="${CSS.escape(focused.action)}"]`)
-      ?.focus();
-  }
+  if (focused && !document.activeElement?.closest('#board')) buttonOf(focused)?.focus();
+}
+
+// A press disables its own button while it runs, which drops the focus to the page; nobody else has taken it.
+export function refocus(pressed) {
+  if (document.activeElement === document.body) buttonOf(pressed)?.focus();
 }
 
 // A click carries NAMES, never a captured task, so a card rebuilt under the pointer cannot act for the task it

@@ -961,6 +961,38 @@ class BoardPageTest {
     }
 
     @Test
+    void aButtonPressedFromTheKeyboardKeepsTheFocusOnceItsMoveHasRun() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1.");
+
+        Page page = open();
+        Locator focus = page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true));
+        focus.focus();
+        focus.press("Enter");
+
+        assertThat(page.locator("#toasts .toast")).hasText("Focused ABC-1.");
+        assertThat(focus).isFocused();
+    }
+
+    @Test
+    void aRepaintLeavesKeyboardFocusOnTheReportTheCardOffers() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-17-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-17", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a17").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        Page page = open();
+        Locator offer = page.locator("article .offer");
+        offer.focus();
+
+        state.putTask("ABC-17", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a17").title("Renamed").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+
+        assertThat(page.locator("article .title")).hasText("Renamed");
+        assertThat(offer).isFocused();
+    }
+
+    @Test
     void aBoardCutOffFromTheBackendSaysItIsStaleAndOffersNothingUntilItReconnects() {
         Page page = session.newPage();
         page.route("**/api/events", Route::abort);
@@ -1204,11 +1236,11 @@ class BoardPageTest {
 
     @Test
     void aReportThatCouldNotBeReadSaysTheSentenceOfTheRefusalRatherThanItsWireShape() throws IOException {
-        Path worktree = Files.createDirectories(root.resolve("ABC-8-alpha"));
+        Path worktree = Files.createDirectories(root.resolve("ABC-16-alpha"));
         Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
-        state.putTask("ABC-8", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
-                .alias("a8").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
-        doThrow(new IllegalStateException("the round file is not readable")).when(replies).render("a8");
+        state.putTask("ABC-16", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a16").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        doThrow(new IllegalStateException("the round file is not readable")).when(replies).render("a16");
 
         Page page = open();
         page.locator("article .offer").click();
