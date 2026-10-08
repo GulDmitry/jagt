@@ -9,7 +9,8 @@ needs git + tmux; `boardTest` Playwright's own Chromium; `linuxDriverTest` Linux
 **Every fixed bug gets a regression unit test** (`sob-ai:unit-testing`), verified RED by reverting the fix, and
 **every new install requirement goes in `docs/installation.md`**. **Leave no trace**: a suite booting the app
 passes `--orchestrator.open-terminal-window=false`, uses a throwaway tmux session plus `ORCHESTRATOR_ROOT`,
-then removes the worktrees and branches.
+then removes the worktrees and branches. A meta test reading the repository's own files (`RingsTest`,
+`TextBudgetTest` …) may keep stream helpers only wrapping `IOException`.
 
 ### No absolute macOS paths, and a unit suite that runs concurrently
 
@@ -20,21 +21,20 @@ then removes the worktrees and branches.
   (`/Applications/<App>.app/Contents/MacOS/<name>`). The agent CLI is deliberately **not** resolved: it runs in
   the agent's tmux window under the human's PATH.
 - `editor-command` / `editor-diff-command` are **lists**: only the launcher is resolved, the arguments stay the
-  human's, and one nowhere to be found fails with the config **key** to set.
+  human's; a launcher found nowhere fails naming the config **key**.
 - JUnit parallel, methods **and** classes: no `@BeforeAll`, no mutable statics, every file under a `@TempDir`;
   anything competing for a **machine-wide** resource declares it (`@ResourceLock("loopback-ports")` +
   `@Execution(SAME_THREAD)`). Only this suite is parallel.
-- **A test that asserts on a log line takes `@ResourceLock(Resources.GLOBAL)`**: an appender attached to a
-  live logger otherwise captures a concurrent test's events, and the cast to logback's `Logger` races
-  SLF4J's own start-up.
+- **A test that asserts on a log line takes `@ResourceLock(Resources.GLOBAL)`**: otherwise its appender captures a
+  concurrent test's events, and the cast to logback's `Logger` races SLF4J's start-up.
 
 ### The board is tested in a browser
 
-- `boardTest` boots the app on a random port and drives the real page in Playwright's headless Chromium. Only it
+- `boardTest` drives the real page, on a random port, in headless Chromium. Only it
   proves the grid's order, a card's buttons, the SSE repaint and the palette's verdict.
 - **Run it after any change to `static/`**, asserting through the **server** (seed `StateService`, stub a
-  command), never by evaluating page JS. Three write paths are `@MockitoBean`s: `CommandService`,
-  `TaskLauncher`, `NaturalLanguageDispatch`.
+  command), never by evaluating page JS. Its `@MockitoBean`s, like e2e's, stub whole-app seams, not
+  a class's collaborators: `CommandService`, `TaskLauncher`, `NaturalLanguageDispatch`.
 - Shared browser libraries are one list (`scripts/linux-test-deps.sh`). Geometry is in scope: assert an element
   inside the viewport at a set size, not a screenshot.
 
@@ -66,5 +66,5 @@ then removes the worktrees and branches.
   (`scripts/linux-test-deps.sh` the package list, `scripts/with-linux-desktop.sh` Xvfb + session bus +
   notification daemon). **A step in one pipeline only, or a CI-only code path, is a bug.** `linuxDriverTest` is
   gated on **capability**, never on the harness.
-- **The build cache is for the hermetic suite only**: three of them prove the **machine** and two a model, so
-  all five opt out (`cacheIf` / `upToDateWhen` false).
+- **Only the hermetic suite is cached**: three others prove the **machine**, two a model
+  (`cacheIf` / `upToDateWhen` false).
