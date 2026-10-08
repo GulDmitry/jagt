@@ -9,7 +9,6 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,18 +24,6 @@ public class TaskProvisioning {
     private final StateService stateService;
     private final NewTaskWorktrees worktrees;
     private final AgentSessions agentSessions;
-
-    public String existingBranchProject(String taskId, Collection<String> projectKeys) {
-        return worktrees.existingBranchProject(taskId, projectKeys);
-    }
-
-    public BranchStrategy strategyForExisting(String taskId, String projectKey) {
-        return worktrees.strategyForExisting(taskId, projectKey);
-    }
-
-    public String freeTaskName(String base, List<String> projectKeys) {
-        return worktrees.freeTaskName(base, projectKeys);
-    }
 
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();

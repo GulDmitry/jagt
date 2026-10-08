@@ -25,6 +25,7 @@ public class TaskLaunches {
     private static final int TITLE_MAX = 80;
 
     private final TaskProvisioning provisioning;
+    private final NewTaskWorktrees worktrees;
     private final TicketReader tickets;
     private final ProjectRouting routing;
 
@@ -40,7 +41,7 @@ public class TaskLaunches {
      */
     public Launched ticket(LaunchRequest request, List<String> chosen, Answer<TicketFacts> read) {
         LaunchRequest settled = request.strategy() != null || request.project() == null ? request
-                : request.withStrategy(provisioning.strategyForExisting(request.ref(), request.project()).id());
+                : request.withStrategy(worktrees.strategyForExisting(request.ref(), request.project()).id());
         return refusedForExistingBranch(settled, chosen).orElseGet(() -> launched(settled, read, chosen));
     }
 
@@ -55,7 +56,7 @@ public class TaskLaunches {
             return Launched.refused("error: nothing in that line can name a branch — open it with a word: "
                     + LaunchRequest.OWN_GRAMMAR);
         }
-        String taskId = provisioning.freeTaskName(named, projects);
+        String taskId = worktrees.freeTaskName(named, projects);
         return Launched.created(taskId, provisioning.initializeTask(
                 newTask(taskId, projects, written, request).title(titleOf(written)).build()));
     }
@@ -66,7 +67,7 @@ public class TaskLaunches {
         if (!TaskName.isTicketKey(ref) || BranchStrategy.of(request.strategy()) != BranchStrategy.FRESH) {
             return Optional.empty();
         }
-        String existing = provisioning.existingBranchProject(ref, chosen == null ? List.of() : chosen);
+        String existing = worktrees.existingBranchProject(ref, chosen == null ? List.of() : chosen);
         return existing == null ? Optional.empty()
                 : Optional.of(Launched.refused("branch '" + ref + "' already exists in " + existing
                         + " (previous run of this ticket). Say which: " + choice(BranchStrategy.RECREATE)

@@ -26,9 +26,10 @@ import static org.mockito.Mockito.when;
 class TaskLaunchesTest {
 
     private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
+    private final NewTaskWorktrees worktrees = mock(NewTaskWorktrees.class);
     private final TicketReader tickets = mock(TicketReader.class);
     private final ProjectRouting routing = mock(ProjectRouting.class);
-    private final TaskLaunches launches = new TaskLaunches(provisioning, tickets, routing);
+    private final TaskLaunches launches = new TaskLaunches(provisioning, worktrees, tickets, routing);
 
     @Test
     void namesTheTaskByTheCanonicalKeyTheReadGaveBackWhenGivenAUrl() {
@@ -91,7 +92,7 @@ class TaskLaunchesTest {
 
     @Test
     void buysNoSecondReadOfFactsTheCallerAlreadyPaidFor() {
-        when(provisioning.strategyForExisting("ABC-42", "group-a")).thenReturn(BranchStrategy.FRESH);
+        when(worktrees.strategyForExisting("ABC-42", "group-a")).thenReturn(BranchStrategy.FRESH);
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42");
 
@@ -133,7 +134,7 @@ class TaskLaunchesTest {
 
     @Test
     void warnsAboutALeftoverBranchWithoutSpendingATicketRead() {
-        when(provisioning.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
+        when(worktrees.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
 
         String out = launches.ticket(LaunchRequest.of("ABC-9"), null).message();
 
@@ -144,7 +145,7 @@ class TaskLaunchesTest {
 
     @Test
     void intakeContinuesALeftoverBranchHoldingWorkInsteadOfRefusingIt() {
-        when(provisioning.strategyForExisting("ABC-9", "group-a")).thenReturn(BranchStrategy.RESUME);
+        when(worktrees.strategyForExisting("ABC-9", "group-a")).thenReturn(BranchStrategy.RESUME);
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-9").withTitle("Widget layout is off")
                 .withUrl("https://tracker/ABC-9");
 
@@ -158,7 +159,7 @@ class TaskLaunchesTest {
 
     @Test
     void warnsAboutALeftoverBranchWhenTheHumanAskedForAFreshOne() {
-        when(provisioning.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
+        when(worktrees.existingBranchProject(eq("ABC-9"), any())).thenReturn("group-a");
 
         String out = launches.ticket(LaunchRequest.of("ABC-9").withStrategy("fresh"), null).message();
 
@@ -236,7 +237,7 @@ class TaskLaunchesTest {
 
     @Test
     void makesATaskOfWhatTheHumanWroteWithoutSpendingATrackerRead() {
-        when(provisioning.freeTaskName("split-the-invoice-mailer", List.of("group-a")))
+        when(worktrees.freeTaskName("split-the-invoice-mailer", List.of("group-a")))
                 .thenReturn("split-the-invoice-mailer");
 
         launches.written(LaunchRequest.defaults().withProject("group-a").withNotes("Split the invoice mailer"),
