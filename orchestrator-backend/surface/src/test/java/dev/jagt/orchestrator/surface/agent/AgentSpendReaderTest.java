@@ -1,4 +1,6 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.surface.agent;
+
+import dev.jagt.orchestrator.service.StateService;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.SessionLog;

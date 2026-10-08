@@ -1,4 +1,10 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.capability.ide;
+
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.DiffCheckouts;
+import dev.jagt.orchestrator.service.GitDeploy;
+import dev.jagt.orchestrator.service.StateService;
+
 
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
