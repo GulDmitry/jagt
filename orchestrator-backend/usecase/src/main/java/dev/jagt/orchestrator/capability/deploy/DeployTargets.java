@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /** Each repository of a task paired with where it lands, as the deploy, its undo and the conflict registry read it. */
 @Component
@@ -42,6 +43,14 @@ class DeployTargets {
             }
         }
         return landed;
+    }
+
+    /** Where a deploy handed back from a conflict stopped: the first repository with no merge of its own recorded. */
+    Optional<Target> stopped(TaskState task) {
+        return task.repos().stream()
+                .filter(repo -> repo.deployCommit() == null || repo.deployCommit().isBlank())
+                .findFirst()
+                .map(repo -> new Target(repo.project(), configService.project(repo.project())));
     }
 
     /** The deploy branch must NEVER be the base branch tasks are cut from. */

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static dev.jagt.orchestrator.capability.deploy.DeployTargets.because;
@@ -40,16 +41,15 @@ public class RevertService {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         List<Target> landed = deployTargets.landed(task);
+        Optional<Target> waiting = FlowRules.conflictedInTheDeployWorktree(task.status())
+                ? deployTargets.stopped(task) : Optional.empty();
         if (landed.isEmpty()) {
+            if (waiting.isPresent()) {
+                return discarded(taskId, waiting.get());
+            }
             throw unrecordedDeploy(taskId, deployTargets.all(task));
         }
         landed.forEach(DeployTargets::requireDeployable);
-        // An undone deploy leaves its conflict nothing to finish.
-        if (FlowRules.conflictedInTheDeployWorktree(task.status())) {
-            for (Target target : deployTargets.all(task)) {
-                gitDeploy.discardDeploy(target.path(), taskId);
-            }
-        }
         List<String> reverted = new ArrayList<>();
         String lastRevertCommit = null;
         for (Target target : landed.reversed()) {
@@ -63,7 +63,17 @@ public class RevertService {
             reverted.add(target.project() + " on " + target.deployBranch() + " ("
                     + GitDeploy.shortSha(lastRevertCommit) + ")");
         }
+        // Only once all is out: a refused revert keeps the human's resolution.
+        if (waiting.isPresent()) {
+            gitDeploy.discardDeploy(waiting.get().path(), taskId);
+        }
         return allReverted(taskId, task.repos().size() == 1, landed, reverted, lastRevertCommit);
+    }
+
+    private Outcome discarded(String taskId, Target at) {
+        gitDeploy.discardDeploy(at.path(), taskId);
+        String what = "discarded the conflicted merge into " + at.deployBranch() + ", nothing had landed";
+        return Outcome.ok("revert " + taskId + ": " + what + "; REVERTED — fix and ship again, or `done`.", what);
     }
 
     private Outcome allReverted(String taskId, boolean singleRepo, List<Target> landed, List<String> reverted,

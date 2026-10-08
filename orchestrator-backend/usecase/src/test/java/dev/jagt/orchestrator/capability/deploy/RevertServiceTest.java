@@ -175,4 +175,38 @@ class RevertServiceTest {
 
         verify(git).discardDeploy(Path.of("/repo/web"), "ABC-1");
     }
+
+    @Test
+    void discardsTheConflictedMergeAndLandsTheUndoWhenNothingHadLanded(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        GitDeploy git = mock(GitDeploy.class);
+        RevertService service = new RevertService(state, new DeployTargets(config), git);
+
+        Outcome outcome = service.revert("a1");
+
+        verify(git).discardDeploy(Path.of("/repo"), "ABC-1");
+        assertThat(outcome.kind()).isEqualTo(Outcome.Kind.OK);
+        assertThat(outcome.stamp()).contains("discarded the conflicted merge into dev");
+    }
+
+    @Test
+    void keepsTheConflictWaitingWhenTheRevertOfWhatLandedIsRefused(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
+                TaskRepo.of("web", "/web-wt")), TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
+        state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234"));
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
+        when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
+        GitDeploy git = mock(GitDeploy.class);
+        doThrow(new IllegalStateException("the revert conflicts"))
+                .when(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
+        RevertService service = new RevertService(state, new DeployTargets(config), git);
+
+        assertThatThrownBy(() -> service.revert("a1")).hasMessage("the revert conflicts");
+        verify(git, never()).discardDeploy(any(), anyString());
+    }
 }
