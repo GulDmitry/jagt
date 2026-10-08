@@ -77,12 +77,11 @@ public final class FlowRules {
 
     /**
      * Statuses an AGENT may put its own task into. Everything else is jagt's to set — a task cannot talk itself
-     * onto a shared branch, out of one, or closed.
+     * onto a shared branch, out of one, closed, or past its own review.
      */
     private static final Set<TaskStatus> AGENT_REPORTABLE = EnumSet.of(TaskStatus.PLAN_PENDING,
             TaskStatus.IN_PROGRESS,
-            TaskStatus.SHIPPING, TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED, TaskStatus.CI_POLLING,
-            TaskStatus.REVIEWED, TaskStatus.APPROVED);
+            TaskStatus.SHIPPING, TaskStatus.REVIEW_PENDING, TaskStatus.CI_FAILED, TaskStatus.CI_POLLING);
 
     private FlowRules() {
     }
@@ -166,17 +165,26 @@ public final class FlowRules {
         if (HELD_AGAINST_A_REPORT.contains(from)) {
             return from;
         }
-        if (verificationOwed && to == TaskStatus.REVIEW_PENDING) {
-            return TaskStatus.VERIFYING;
-        }
-        // A verdict off a review round is a READ, and reading one cannot undo a deploy: landing it would put a
-        // task whose code is on the shared branch back in a phase asking for an approval.
-        return A_VERDICT.contains(to) && PAST_THE_REVIEW.contains(from) ? from : to;
+        return verificationOwed && to == TaskStatus.REVIEW_PENDING ? TaskStatus.VERIFYING : to;
     }
 
-    /** A red round read for a task stops it only where the round waits on the host: a session on it keeps going. */
-    public static TaskStatus readRed(TaskStatus from) {
-        return WAITING_ON_THE_HOST.contains(from) ? TaskStatus.CI_FAILED : from;
+    /** What a read of the review round can conclude, which only the host's round read may land. */
+    public static Set<TaskStatus> reads() {
+        return EnumSet.copyOf(READ_FROM_THE_HOST);
+    }
+
+    /**
+     * Where a round read lands. Red stops a task only where the round waits on the host, a session on it keeps
+     * going; a verdict never undoes a deploy, since that would ask shipped work for an approval.
+     */
+    public static TaskStatus readLands(TaskStatus from, TaskStatus read) {
+        if (!READ_FROM_THE_HOST.contains(read)) {
+            throw new IllegalArgumentException(read + " is not what a read of the review round concludes");
+        }
+        if (read == TaskStatus.CI_FAILED) {
+            return WAITING_ON_THE_HOST.contains(from) ? TaskStatus.CI_FAILED : from;
+        }
+        return HELD_AGAINST_A_REPORT.contains(from) || PAST_THE_REVIEW.contains(from) ? from : read;
     }
 
     /**
@@ -251,8 +259,8 @@ public final class FlowRules {
     private static final Set<TaskStatus> HELD_AGAINST_A_REPORT = EnumSet.of(TaskStatus.REVERTED,
             TaskStatus.DEPLOY_CONFLICT);
 
-    /** What a read of the round alone concludes, as opposed to what the task itself is doing. */
-    private static final Set<TaskStatus> A_VERDICT = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED);
+    private static final Set<TaskStatus> READ_FROM_THE_HOST = EnumSet.of(TaskStatus.REVIEWED, TaskStatus.APPROVED,
+            TaskStatus.CI_FAILED);
 
     private static final Set<TaskStatus> WAITING_ON_THE_HOST = EnumSet.of(TaskStatus.CI_POLLING,
             TaskStatus.REVIEWED, TaskStatus.APPROVED);

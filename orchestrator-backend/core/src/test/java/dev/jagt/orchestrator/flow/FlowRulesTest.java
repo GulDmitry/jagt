@@ -115,14 +115,14 @@ class FlowRulesTest {
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, mode = EnumSource.Mode.EXCLUDE,
-            names = {"NEW", "VERIFYING", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
+            names = {"NEW", "VERIFYING", "REVIEWED", "APPROVED", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
     void acceptsTheStatusesATasksOwnAgentIsReportingAbout(TaskStatus status) {
         assertThat(FlowRules.reportable(status)).isTrue();
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class,
-            names = {"NEW", "VERIFYING", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
+            names = {"NEW", "VERIFYING", "REVIEWED", "APPROVED", "DEPLOYED", "DEPLOY_CONFLICT", "REVERTED", "DONE"})
     void refusesTheStatusesThatAreJagtsToSetRatherThanATasksToReport(TaskStatus status) {
         assertThat(FlowRules.reportable(status)).isFalse();
     }
@@ -176,7 +176,7 @@ class FlowRulesTest {
     @CsvSource({"DEPLOYED, REVIEWED", "DEPLOYED, APPROVED", "DEPLOY_CONFLICT, REVIEWED",
             "DEPLOY_CONFLICT, APPROVED", "DONE, REVIEWED", "DONE, APPROVED"})
     void keepsATaskWhoseCodeWentOutWhereItIsWhateverAReadOfTheRoundConcludes(TaskStatus from, TaskStatus verdict) {
-        assertThat(FlowRules.reported(from, verdict)).isEqualTo(from);
+        assertThat(FlowRules.readLands(from, verdict)).isEqualTo(from);
     }
 
     @ParameterizedTest
@@ -189,12 +189,12 @@ class FlowRulesTest {
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"CI_POLLING", "REVIEWED", "APPROVED"})
     void stopsATaskWaitingOnTheHostWhenItsRunReadsRed(TaskStatus waiting) {
-        assertThat(FlowRules.readRed(waiting)).isEqualTo(TaskStatus.CI_FAILED);
+        assertThat(FlowRules.readLands(waiting, TaskStatus.CI_FAILED)).isEqualTo(TaskStatus.CI_FAILED);
     }
 
     @ParameterizedTest
     @EnumSource(value = TaskStatus.class, names = {"IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "DEPLOYED"})
     void leavesATaskSomeoneIsOnWhereItIsWhenItsRunReadsRed(TaskStatus busy) {
-        assertThat(FlowRules.readRed(busy)).isEqualTo(busy);
+        assertThat(FlowRules.readLands(busy, TaskStatus.CI_FAILED)).isEqualTo(busy);
     }
 }

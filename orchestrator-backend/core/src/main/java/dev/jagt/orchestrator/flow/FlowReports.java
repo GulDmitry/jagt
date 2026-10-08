@@ -61,4 +61,18 @@ public class FlowReports {
         });
         return Optional.ofNullable(landed.get());
     }
+
+    /**
+     * What jagt read off the task's review round on the host, the one way into a verdict. A read that moves nothing
+     * writes nothing: a polled round reads the same every interval.
+     */
+    public Optional<Landed> read(String taskId, TaskStatus concluded, String message) {
+        AtomicReference<Landed> landed = new AtomicReference<>();
+        tasks.updateTask(taskId, task -> {
+            TaskStatus now = FlowRules.readLands(task.status(), concluded);
+            landed.set(new Landed(task.status(), now));
+            return now == task.status() ? task : task.withStatus(now, message);
+        });
+        return Optional.ofNullable(landed.get());
+    }
 }

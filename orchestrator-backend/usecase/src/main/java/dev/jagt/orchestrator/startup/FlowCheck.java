@@ -26,9 +26,9 @@ public class FlowCheck implements StartupCheck {
         return java.util.Arrays.stream(TaskStatus.values())
                 .filter(status -> !WITHOUT_A_WAY_IN.contains(status))
                 .filter(status -> !FlowRules.targets().contains(status) && !FlowRules.reportable(status)
-                        && !FlowRules.redirects().contains(status))
+                        && !FlowRules.redirects().contains(status) && !FlowRules.reads().contains(status))
                 .map(status -> "flow: nothing can put a task into " + status
-                        + " — no action leads there and no agent may report it");
+                        + " — no action, report or round read leads there");
     }
 
     /** A missing rule looks exactly like a rule that says no. */

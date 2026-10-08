@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.protocol;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import dev.jagt.orchestrator.flow.AgentReport;
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.TaskStatus;
 
 import java.util.ArrayList;
@@ -28,6 +29,9 @@ public record AgentStatusMessage(String status, String message, String outcome, 
 
     private static final Pattern URL = Pattern.compile("https?://\\S+");
 
+    private static final List<TaskStatus> OFFERED = java.util.Arrays.stream(TaskStatus.values())
+            .filter(FlowRules::reportable).toList();
+
     /** The form a caller is given, beside the rules it is judged by: one declaration, never two that drift. */
     public static final Schema SCHEMA = Schema.of(
                     "Update the task status and keep-alive timestamp in state.json. Sub-agents MUST call this"
@@ -35,7 +39,7 @@ public record AgentStatusMessage(String status, String message, String outcome, 
                             + " putting any question to the human — an interactive choice in your own window"
                             + " reaches nobody, and this call is the only thing that puts the question on their"
                             + " board. taskId defaults to the calling worktree's task.")
-            .choiceRequired("status", List.of(TaskStatus.values()), null)
+            .choiceRequired("status", OFFERED, null)
             .choice("outcome", OUTCOMES,
                     "What this report says about the work, in jagt's own words rather than yours:"
                             + " `question` = you have STOPPED and need the human (the message is the question),"

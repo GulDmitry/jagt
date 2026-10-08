@@ -60,7 +60,7 @@ answer. Every type in `flow/`, one question each:
 | `FlowRules` | `rule(DEPLOY).from(<statuses>).when(<guard>).on(OK, DEPLOYED).on(CONFLICT, DEPLOY_CONFLICT).add()` |
 | `Facts` | the guard's second argument — an open request, and a liveness probe passed as a SUPPLIER |
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
-| `FlowReports` | door two: a status the task itself reports, gated by `FlowRules.reportable` |
+| `FlowReports` | door two: a task's report (`FlowRules.reportable`), or the host's verdict (`read`) |
 | `Capabilities` | every `port/TaskCapability` there is, one per action — the `capability/` kind's registry |
 | `Phase` | the step of a task's life a human reads |
 | `Pipeline` | what the host last said about the checks, as a verdict rather than as its own wording |

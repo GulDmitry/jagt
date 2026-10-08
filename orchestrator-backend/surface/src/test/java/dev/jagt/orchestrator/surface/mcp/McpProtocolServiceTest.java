@@ -43,7 +43,7 @@ class McpProtocolServiceTest {
     }
 
     @Test
-    void advertisesStatusEnumMatchingTaskStatusValues(@TempDir Path root) {
+    void offersASessionOnlyTheStatusesItMayReport(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
@@ -57,10 +57,7 @@ class McpProtocolServiceTest {
                 .findFirst().orElseThrow()
                 .path("inputSchema").path("properties").path("status").path("enum");
         assertThat(statusEnum).extracting(JsonNode::asString).containsExactly(
-                "NEW", "PLAN_PENDING", "IN_PROGRESS", "VERIFYING", "REVIEW_PENDING", "SHIPPING",
-                "CI_POLLING", "CI_FAILED",
-                "REVIEWED",
-                "APPROVED", "DEPLOY_CONFLICT", "DEPLOYED", "REVERTED", "DONE");
+                "PLAN_PENDING", "IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "CI_POLLING", "CI_FAILED");
     }
 
     @Test

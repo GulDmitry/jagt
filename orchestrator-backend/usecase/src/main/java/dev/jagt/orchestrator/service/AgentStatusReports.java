@@ -143,48 +143,23 @@ public class AgentStatusReports {
                 + (reviewedNext ? "; the Master reads this round next; end your turn" : "");
     }
 
-    /** Puts what {@link FlowRules#readReview} concluded on the board. */
+    /** Puts what {@link FlowRules#readReview} concluded on the board; a red was tapped when the round read it. */
     public void markRead(String taskId, TaskStatus read) {
-        switch (read) {
-            case REVIEWED -> markOutcome(taskId, read, "reviewed — checks green, no unresolved comments");
-            case APPROVED -> markOutcome(taskId, read, "approved — checks green, request approved");
-            case CI_FAILED -> markFailed(taskId);
+        String message = switch (read) {
+            case REVIEWED -> "reviewed — checks green, no unresolved comments";
+            case APPROVED -> "approved — checks green, request approved";
+            case CI_FAILED -> "checks failed — relayed to the session";
             default -> throw new IllegalArgumentException(read + " is not what a review read concludes");
-        }
-    }
-
-    /** The red was tapped when the round read it; this puts the stop on the board. */
-    private void markFailed(String taskId) {
+        };
         String id = stateService.canonicalTaskId(taskId);
-        TaskStatus previous = stateService.task(id).map(TaskState::status).orElse(null);
-        if (previous != null && FlowRules.readRed(previous) == TaskStatus.CI_FAILED) {
-            flow.report(id, TaskStatus.CI_FAILED, "checks failed — relayed to the session");
-        }
+        flow.read(id, read, message)
+                .filter(landed -> landed.now() != landed.previous() && read != TaskStatus.CI_FAILED)
+                .ifPresent(landed -> ping(id, landed.now(), message, stateService.task(id)));
     }
 
     public String notifyUser(String title, String message) {
         notifications.send(Notification.fromAgent(null, title, message));
         return "Notification sent";
-    }
-
-    /**
-     * A polled round reads the same outcome every interval, and reporting it again would rewrite the task's
-     * message, clear the silence stamp and stamp activity for a session that has not spoken.
-     */
-    private void markOutcome(String taskId, TaskStatus status, String message) {
-        String id = stateService.canonicalTaskId(taskId);
-        TaskStatus previous = stateService.task(id).map(TaskState::status).orElse(null);
-        if (status == previous) {
-            return;
-        }
-        // A verdict the flow would not land is not written as a message either: every poll would rewrite the
-        // line of a task that has moved on, and tap the human for it.
-        if (previous != null && FlowRules.reported(previous, status) != status) {
-            return;
-        }
-        if (flow.report(id, status, message)) {
-            ping(id, status, message, stateService.task(id));
-        }
     }
 
     /**

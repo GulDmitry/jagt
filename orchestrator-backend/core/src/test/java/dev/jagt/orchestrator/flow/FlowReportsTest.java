@@ -4,6 +4,8 @@ import dev.jagt.orchestrator.port.TaskStore;
 
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
 import java.util.function.UnaryOperator;
@@ -39,6 +41,24 @@ class FlowReportsTest {
                 .hasMessageContaining("DEPLOYED")
                 .hasMessageContaining("jagt's to set");
         verifyNoInteractions(stateService);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TaskStatus.class, names = {"REVIEWED", "APPROVED"})
+    void refusesASessionThatReportsItsOwnReviewVerdict(TaskStatus verdict) {
+        assertThatThrownBy(() -> reports.report("ABC-1", verdict, "lgtm"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("jagt's to set");
+        verifyNoInteractions(stateService);
+    }
+
+    @Test
+    void landsAnApprovalTheHostsRoundReadConcluded() {
+        when(stateService.updateTask(eq("ABC-1"), any())).thenReturn(true);
+
+        reports.read("ABC-1", TaskStatus.APPROVED, "approved");
+
+        assertThat(written("ABC-1").apply(current(TaskStatus.CI_POLLING)).status()).isEqualTo(TaskStatus.APPROVED);
     }
 
     @Test

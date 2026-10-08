@@ -26,8 +26,8 @@ are resolved once, here; a caller parsing a field again has found a leak.
 - **THEN** it reads the accepted type, never the wire
 
 ### Requirement: Arguments are read into the message
-`MessageTool` SHALL be the one path from the wire to a verb: the arguments are read into the message and judged, and only
-then does the tool run. A new field so arrives without anyone remembering to read it. A field the message does not
+`MessageTool` SHALL be the one path from the wire to a verb: the arguments are read into the message and judged before the
+tool runs. A new field so arrives without anyone remembering to read it. A field the message does not
 declare is ignored: a CLI a version ahead must not be rejected over a word jagt has not learned.
 
 #### Scenario: An unknown field
@@ -54,12 +54,12 @@ message, is named with the rest, not first and alone. `startup/StartupValidation
 
 ### Requirement: The shape and the tool are declared once
 `protocol/Schema` SHALL render what a caller is given out of the fields a message declares. The JSON a CLI reads and
-the rules judging the answer so cannot disagree. An enum comes from whatever enumerates it (`TaskStatus.values()`), never a
-list beside it. `McpToolRegistry` has one way to declare a tool, taking a message class, so a tool skipping validation
-does not compile.
+the rules judging it so cannot disagree. An enum comes from whatever enumerates it (`FlowRules.reportable`),
+never a list beside it. `McpToolRegistry` has one way to declare a tool, taking a message class,
+so a tool skipping validation does not compile.
 
 #### Scenario: A status is added
-- **WHEN** `TaskStatus` gains a value
+- **WHEN** a session may report a new status
 - **THEN** the schema offers it with no other edit
 
 ### Requirement: A session's refusal is a correction

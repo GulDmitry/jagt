@@ -9,7 +9,7 @@ A task's life: which status allows which action, where each outcome leads, and h
 ### Requirement: One table owns the life of a task
 `flow/FlowRules` SHALL hold, in one Java file the compiler checks, which statuses allow which action and what each
 outcome leads to. Its guard MUST read `flow/Facts`: an open request, and a liveness probe the projection passes as
-"no", since it costs a process spawn per row.
+"no", costing a spawn per row.
 
 #### Scenario: An action is asked
 - **WHEN** an action is asked
@@ -43,13 +43,18 @@ gives for its `flow/Outcome`.
 - **THEN** its outcome sets the status
 
 ### Requirement: Door two takes a reported status
-`flow/FlowReports` SHALL take a status the task reports, by its agent over MCP or a round jagt read for it, refused
-unless `FlowRules.refusedReport` allows it. The refusal MUST own the reason the agent acts on, so no task talks
-itself onto a shared branch, out of one, or closed.
+`flow/FlowReports` SHALL take a status a session reports over MCP, refused unless `FlowRules.refusedReport` allows
+it. `REVIEWED` and `APPROVED` MUST land only through `FlowReports.read`, jagt's round read on the host. The
+refusal MUST own the reason the agent acts on: no task talks itself onto a shared branch, out of one, closed, or
+past its review.
 
 #### Scenario: A forbidden report
 - **WHEN** `FlowRules.refusedReport` refuses an agent's report
 - **THEN** the agent gets the reason
+
+#### Scenario: A session approves itself
+- **WHEN** a session reports `APPROVED`
+- **THEN** it is refused; only the round read lands it
 
 ### Requirement: A hand-back waits at VERIFYING
 `FlowRules.reported` SHALL redirect a hand-back owing a verification run to `VERIFYING`; no action leads there and
@@ -79,9 +84,8 @@ finish the press the human made ([0013](../../../docs/decisions/0013-a-deploy-co
 
 ### Requirement: Statuses a report cannot move
 A status a human owns SHALL be held, not refused: `FlowRules.reported` keeps `REVERTED`, and `DEPLOY_CONFLICT`
-until deployed, recording the line. Refusing errors every call of that session; passing the next status
-erases the revert and launders the `CI_POLLING` guard through `IN_PROGRESS`. A poll reading `REVIEWED` or `APPROVED` MUST
-leave a `DEPLOYED`, `DEPLOY_CONFLICT` or `DONE` task in place: shipped work never goes back to approval.
+until deployed, recording the line: refusing errors every call of that session. A round read MUST leave a `DEPLOYED`,
+`DEPLOY_CONFLICT` or `DONE` task in place: shipped work never goes back to approval.
 
 #### Scenario: A report at REVERTED
 - **WHEN** a `REVERTED` task's agent reports
@@ -93,8 +97,8 @@ leave a `DEPLOYED`, `DEPLOY_CONFLICT` or `DONE` task in place: shipped work neve
 
 ### Requirement: Nothing below flow decides a status
 A capability SHALL report `OK` / `RELAYED` / `CONFLICT` / `PARTIAL` / `GONE` plus the sentence and the stamp, so
-work serves several statuses. Its sentence MAY name the status (`DeployService` says `; DEPLOYED` /
-`; REVERTED`); nothing parses it. `withStatus` MUST appear only in `flow/` and its implementing record.
+work serves several statuses. Its sentence MAY name the status; nothing parses it. `withStatus` MUST appear only in
+`flow/` and its implementing record.
 
 #### Scenario: Grepping for withStatus
 - **WHEN** the sources are grepped

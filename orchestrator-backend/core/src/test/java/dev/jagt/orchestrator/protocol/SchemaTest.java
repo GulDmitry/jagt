@@ -1,11 +1,9 @@
 package dev.jagt.orchestrator.protocol;
 
-import dev.jagt.orchestrator.flow.TaskStatus;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -14,12 +12,12 @@ class SchemaTest {
     private final JsonMapper mapper = new JsonMapper();
 
     @Test
-    void offersEveryStatusTheMachineHasAndNoOtherValue() {
+    void offersOnlyTheStatusesASessionMayReport() {
         JsonNode schema = mapper.readTree(AgentStatusMessage.SCHEMA.json());
 
         assertThat(schema.path("properties").path("status").path("enum"))
                 .extracting(JsonNode::asString)
-                .containsExactlyElementsOf(List.of(TaskStatus.values()).stream().map(Enum::name).toList());
+                .containsExactly("PLAN_PENDING", "IN_PROGRESS", "REVIEW_PENDING", "SHIPPING", "CI_POLLING", "CI_FAILED");
     }
 
     @Test
