@@ -73,7 +73,8 @@ class ClaudeMcpHealthProbe implements McpHealth {
     }
 
     /** Every server the human's own configuration lists, by name; empty where the CLI could not say. */
-    synchronized Optional<List<String>> servers() {
+    @Override
+    public synchronized Optional<List<String>> servers() {
         return listed().map(all -> all.stream().map(Server::name).toList());
     }
 

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
@@ -22,7 +23,7 @@ import static org.mockito.Mockito.when;
 class HeadlessClaudeRoundReviewerTest {
 
     private final ProcessRunner runner = mock(ProcessRunner.class);
-    private final ClaudeMcpHealthProbe mcp = mock(ClaudeMcpHealthProbe.class);
+    private final McpHealth mcp = mock(McpHealth.class);
     private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(runner, ClaudeProperties.defaults(),
             AssistantProperties.empty(), mcp);
 

@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.protocol.RoundRead;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -47,7 +48,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
     private final ProcessRunner processRunner;
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
-    private final ClaudeMcpHealthProbe mcp;
+    private final McpHealth mcp;
     private final JsonMapper mapper = new JsonMapper();
 
     @Override

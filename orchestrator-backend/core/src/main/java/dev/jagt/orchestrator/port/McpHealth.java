@@ -11,4 +11,7 @@ public interface McpHealth {
      * established; an empty LIST means nothing is down.
      */
     Optional<List<String>> brokenServers();
+
+    /** Every server the CLI lists, by name; empty {@code Optional} = could not be established. */
+    Optional<List<String>> servers();
 }
