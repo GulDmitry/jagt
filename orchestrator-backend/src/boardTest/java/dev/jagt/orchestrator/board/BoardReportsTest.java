@@ -4,6 +4,7 @@ import com.microsoft.playwright.APIResponse;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Route;
 import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
@@ -348,6 +349,23 @@ class BoardReportsTest extends BoardPageContext {
         page.locator("article .offer").click();
 
         assertThat(page.locator("#toasts .toast.error")).hasText("the round file is not readable");
+    }
+
+    @Test
+    void aReportAboutATaskThatIsGoneSaysTheBoardIsUpToDateNow() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-18-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-18", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a18").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
+                .build());
+        doThrow(Refusal.noSuchTask("a18")).when(replies).render("a18");
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+
+        page.locator("article .offer").click();
+
+        assertThat(page.locator("#toasts .toast.error")).containsText("The board is up to date now.");
     }
 
     @Test
