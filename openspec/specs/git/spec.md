@@ -98,10 +98,6 @@ reads); a modified `AGENTS.md` is the agent's. A ship
 approves ONE commit: only the next relay replaces `task_context.md` (`writeTaskContext` truncates, `relayIfChanged`
 skips an identical brief); re-reading it is no permission.
 
-#### Scenario: Generated file
-- **WHEN** the project versions a per-worktree jagt file: `ship <task>`
-- **THEN** the commit holds the task's work only
-
 #### Scenario: Follow-up
 - **WHEN** one more change after a ship: instruct the session
 - **THEN** back uncommitted for review; only a new `ship` lands it
@@ -128,10 +124,12 @@ undoing it; a CONFLICTING rebase stands in the worktree for the session. One thi
 - **AND** tracked changes or another worktree holding it stay refusals
 
 ### Requirement: Push guard lives in the worktree
-`ToolGate` (`POST /api/agent/tool`, the command LINE) and `.jagt/hooks/pre-push` (`WorktreeHooks`, the refs) SHALL
-refuse only a push not to the task's branch. `core.hooksPath` goes via `GIT_CONFIG_*` on the launch command
-(`WorktreeHooks.gitEnv`): that session and children, no repository config.
-`--no-verify` skips it; `deploy`, `revert` and a human's shell run ungated.
+`.jagt/hooks/pre-push` (`WorktreeHooks`, the refs) SHALL refuse a push not to the task's branch. `ToolGate`
+(`POST /api/agent/tool`, the command LINE) SHALL refuse that too, and: a push naming no branch or deleting the task's;
+`HEAD` where the line may move it; a line that could skip the hook (`--no-verify`, `core.hooksPath`, `alias.`,
+`GIT_CONFIG*`, `env -i`, `sh -c`, `eval`). `WorktreeHooks.gitEnv` sets `core.hooksPath` via `GIT_CONFIG_*` on the
+launch command: that session and children, no repository config. A guardrail, not a boundary: a
+push built at runtime, a configured alias or a script passes; `deploy`, `revert` and a human's shell run ungated.
 
 #### Scenario: Hooks
 - **WHEN** a client-side hook fires
@@ -151,22 +149,14 @@ repository.
 - **WHEN** `do ABC-42 api,web`
 - **THEN** one task, one session, a worktree per repository
 
-#### Scenario: Sweep
-- **WHEN** `sweep ABC-42`
-- **THEN** as far as the least finished repository
-
 #### Scenario: Card
 - **WHEN** a task spans repositories
 - **THEN** one `<project> MR` link per repository, one age per task
 
 ### Requirement: Done retires checkouts, never in bulk
-`done` SHALL end the agent and delete every worktree and checkout the task cut; the branch survives. Bulk cleanup MUST
-be refused.
+`done` SHALL end the agent and delete every worktree and checkout the task cut; the branch survives. Bulk cleanup
+(`prune all`) MUST be refused by name.
 
 #### Scenario: Diff worktrees
 - **WHEN** board-diff `jagt-diff-*` worktrees sit in the temp directory: `done <task>`
 - **THEN** retiring the task ends them
-
-#### Scenario: prune all
-- **WHEN** someone types `prune all`
-- **THEN** refused by name

@@ -3,13 +3,14 @@ package dev.jagt.orchestrator.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
- * The one call a session may be refused: a push whose destination is not the task's own branch, and a delete of the
- * branch its review request is built on. Detaching a worktree's upstream removes the DEFAULT target and nothing
- * else, so an explicit {@code git push origin dev} still needs refusing. Everything that is not a push is allowed:
- * this is a gate on one command, not a permission layer. What is read is the command LINE, so a push assembled at
- * runtime is not seen.
+ * The one call a session may be refused: a push whose destination is not the task's own branch, a delete of the
+ * branch its review request is built on, and a push that could switch off the hook checking it. Detaching a
+ * worktree's upstream removes the DEFAULT target and nothing else, so an explicit {@code git push origin dev} still
+ * needs refusing. Everything that is not a push is allowed: this is a gate on one command, not a permission layer.
+ * What is read is the command LINE, so a push assembled at runtime is not seen.
  */
 public final class ToolGate {
 
@@ -23,6 +24,13 @@ public final class ToolGate {
     private static final List<String> DELETES = List.of("--delete", "-d");
     /** What the branch a worktree is on is called, so a push of it is a push of the task's branch. */
     private static final String CURRENT_BRANCH = "HEAD";
+    private static final Pattern PUSH = Pattern.compile("\\bpush\\b");
+    private static final Pattern HOOK_OFF = Pattern.compile("--no-verify|GIT_CONFIG|(?i:core\\.hookspath)"
+            + "|alias\\.|--config-env|\\benv\\s+(-\\w*[iu]\\b|--ignore-environment|--unset)"
+            + "|\\b(sh|bash|zsh|dash|ksh)\\s+-\\w*c\\b|\\beval\\b");
+    /** Where the line may leave the task's branch or worktree, HEAD is no longer known to be the task's branch. */
+    private static final Pattern HEAD_MOVES = Pattern.compile(
+            "\\b(cd|pushd|checkout|switch)\\b|(^|\\s)(-C|--git-dir|--work-tree)(\\s|=)");
 
     private ToolGate() {
     }
@@ -33,8 +41,13 @@ public final class ToolGate {
                 || taskBranch.isBlank()) {
             return Optional.empty();
         }
+        if (PUSH.matcher(command).find() && HOOK_OFF.matcher(command).find()) {
+            return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
+                    + " with a plain `git push origin " + taskBranch + "`.");
+        }
+        boolean headIsTheTask = !HEAD_MOVES.matcher(command).find();
         for (String segment : command.split(SEPARATORS)) {
-            Optional<String> refusal = pushIn(segment).flatMap(push -> refuse(push, taskBranch));
+            Optional<String> refusal = pushIn(segment).flatMap(push -> refuse(push, taskBranch, headIsTheTask));
             if (refusal.isPresent()) {
                 return refusal;
             }
@@ -76,7 +89,7 @@ public final class ToolGate {
      * The DESTINATION decides: {@code HEAD:dev} and {@code refs/heads/x:refs/heads/dev} both write dev. A push
      * naming no ref at all is refused too, depending as it would on a config jagt did not write.
      */
-    private static Optional<String> refuse(List<String> arguments, String taskBranch) {
+    private static Optional<String> refuse(List<String> arguments, String taskBranch, boolean headIsTheTask) {
         List<String> refspecs = refspecs(arguments);
         if (arguments.stream().anyMatch(DELETES::contains)
                 || refspecs.stream().anyMatch(refspec -> refspec.startsWith(":"))) {
@@ -87,7 +100,7 @@ public final class ToolGate {
             return Optional.of("jagt refuses a push that names no branch: push " + taskBranch
                     + " explicitly.");
         }
-        return refspecs.stream().filter(refspec -> !writes(refspec, taskBranch)).findFirst()
+        return refspecs.stream().filter(refspec -> !writes(refspec, taskBranch, headIsTheTask)).findFirst()
                 .map(refspec -> "jagt refuses this push: " + destinationOf(refspec) + " is not this task's"
                         + " branch. Only " + taskBranch + " may be pushed from here — a shared branch is written"
                         + " by the human's `deploy`.");
@@ -122,9 +135,9 @@ public final class ToolGate {
         return argument.replaceAll("^[\"']|[\"']$", "");
     }
 
-    private static boolean writes(String refspec, String taskBranch) {
+    private static boolean writes(String refspec, String taskBranch, boolean headIsTheTask) {
         String destination = destinationOf(refspec);
-        return destination.equals(taskBranch) || destination.equals(CURRENT_BRANCH);
+        return destination.equals(taskBranch) || headIsTheTask && destination.equals(CURRENT_BRANCH);
     }
 
     private static String destinationOf(String refspec) {

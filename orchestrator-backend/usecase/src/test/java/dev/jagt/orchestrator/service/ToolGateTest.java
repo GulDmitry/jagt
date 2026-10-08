@@ -21,6 +21,9 @@ class ToolGateTest {
             "git -C /wt/ABC-42 push origin dev",
             "git --no-pager push origin main",
             "git -c user.name=x push origin release/stage",
+            "git switch main && git push origin HEAD",
+            "git -C /repo push origin HEAD",
+            "cd /repo && git push -u origin HEAD",
     })
     void refusesAPushWhoseDestinationIsNotTheTasksBranch(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42"))
@@ -50,6 +53,22 @@ class ToolGateTest {
     })
     void allowsEverythingThatDoesNotWriteAnotherBranch(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42")).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "git push --no-verify origin ABC-42",
+            "git -c core.hooksPath=/dev/null push origin ABC-42",
+            "git -c alias.p=push p origin dev",
+            "env -u GIT_CONFIG_COUNT git push origin ABC-42",
+            "GIT_CONFIG_COUNT=0 git push origin ABC-42",
+            "env -i git push origin ABC-42",
+            "sh -c 'git push origin dev'",
+            "bash -lc \"git push origin ABC-42\"",
+    })
+    void refusesAPushThatCouldSkipThePrePushCheck(String command) {
+        assertThat(ToolGate.refusal("Bash", command, "ABC-42")).get()
+                .asString().contains("could skip its pre-push check");
     }
 
     @Test
