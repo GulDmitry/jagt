@@ -50,6 +50,7 @@ class HeadlessClaude {
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
     private final UsageTracker usageTracker;
+    private final ReadOnlyTools readOnlyTools;
     private final JsonMapper mapper = new JsonMapper();
 
     /** A read that reports what stopped it comes back unreadable, never as an answer with empty facts. */
@@ -117,20 +118,18 @@ class HeadlessClaude {
             cmd.add("--model");
             cmd.add(assistant.model());
         }
-        // Headless `-p` cannot answer a permission prompt, so an allow-list or a permission mode lifts it; with no
-        // built-in tool loaded, either reaches the MCP reads alone.
+        // Headless `-p` cannot answer a permission prompt: what the allow-list does not name is refused.
         if (!withMcp) {
             log.atDebug().setMessage("assistant call without mcp")
                     .addKeyValue("ref", label)
                     .log();
         } else {
-            cmd.add("--disallowedTools");
+            cmd.addAll(List.of("--permission-mode", "dontAsk", "--disallowedTools"));
             cmd.addAll(ReadOnlyTools.MCP_WRITES);
-            if (!assistant.allowedTools().isEmpty()) {
-                cmd.addAll(List.of("--permission-mode", "dontAsk", "--allowedTools"));
-                cmd.addAll(assistant.allowedTools());
-            } else if (assistant.permissionMode() != null && !assistant.permissionMode().isBlank()) {
-                cmd.addAll(List.of("--permission-mode", assistant.permissionMode()));
+            List<String> allowed = readOnlyTools.allowed(kind);
+            if (!allowed.isEmpty()) {
+                cmd.add("--allowedTools");
+                cmd.addAll(allowed);
             }
         }
         return run(Path.of(System.getProperty("java.io.tmpdir")), timeout, cmd, kind, label);

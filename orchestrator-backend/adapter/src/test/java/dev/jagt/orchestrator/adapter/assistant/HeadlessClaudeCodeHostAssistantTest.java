@@ -28,7 +28,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
 
@@ -45,7 +45,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
 
@@ -61,7 +61,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
 
@@ -77,7 +77,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
 
@@ -94,7 +94,7 @@ class HeadlessClaudeCodeHostAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.readReview("https://host/mr/9");
 
@@ -114,7 +114,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                         + "\"openedAt\":\"\",\"threads\":[\"https://host/mr/9#note_1\\nbot: quote the pattern"
                         + "\\ndev: the rule IS a pattern\\nbot: then bound the input\"]}}", ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -131,7 +131,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                         + "\"openedAt\":\"\",\"threads\":[\"bot: " + "x".repeat(3000)
                         + "\\ndev: it is bound\\nbot: then bound the input\"]}}", ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -149,7 +149,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"success",\
                 "openedAt":"2026-08-01T09:15:00Z","threads":[]}}""", ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
 
@@ -166,7 +166,7 @@ class HeadlessClaudeCodeHostAssistantTest {
                  "structured_output":{"exists":true,"approved":false,"pipelineStatus":"failed",\
                 "pipelineFailure":"LOG","openedAt":"","threads":[]}}""".replace("LOG", "x".repeat(5000)), ""));
         var assistant = new HeadlessClaudeCodeHostAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readReview("https://host/mr/9").facts();
 

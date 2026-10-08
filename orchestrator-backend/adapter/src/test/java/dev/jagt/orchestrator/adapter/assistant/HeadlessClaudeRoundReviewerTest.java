@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.adapter.assistant;
 
 import dev.jagt.orchestrator.adapter.ProcessRunner;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
-import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.RoundReviewer;
@@ -15,7 +14,6 @@ import org.mockito.ArgumentCaptor;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,15 +24,15 @@ import static org.mockito.Mockito.when;
 class HeadlessClaudeRoundReviewerTest {
 
     private final ProcessRunner runner = mock(ProcessRunner.class);
-    private final McpHealth mcp = mock(McpHealth.class);
+    private final ReadOnlyTools reads = mock(ReadOnlyTools.class);
     private final UsageTracker usage = mock(UsageTracker.class);
     private final HeadlessClaudeRoundReviewer reviewer = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
-            ClaudeProperties.defaults(), AssistantProperties.empty(), usage), ClaudeProperties.defaults(),
-            AssistantProperties.empty(), mcp);
+            ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
+            AssistantProperties.empty(), reads);
 
     @Test
-    void allowsTheHumansOwnMcpServersSoATicketJagtDidNotQuoteStaysReadable() {
-        when(mcp.servers()).thenReturn(Optional.of(List.of("plugin:acme:tracker", "claude.ai Code Host")));
+    void allowsTheMcpReadsSoATicketJagtDidNotQuoteStaysReadable() {
+        when(reads.allowed(AssistantCallKind.MASTER_REVIEW)).thenReturn(List.of("mcp__acme__get*"));
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
@@ -42,7 +40,7 @@ class HeadlessClaudeRoundReviewerTest {
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-        assertThat(command.getValue()).contains("mcp__plugin_acme_tracker", "mcp__claude_ai_Code_Host");
+        assertThat(command.getValue()).contains("mcp__acme__get*");
     }
 
     @Test
@@ -59,21 +57,18 @@ class HeadlessClaudeRoundReviewerTest {
     }
 
     @Test
-    void runsOnlyReadOnlyGitWhateverTheDiffAsksEvenWhereTheReadsBypassPermissions() {
-        HeadlessClaudeRoundReviewer bypassing = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
-                ClaudeProperties.defaults(), AssistantProperties.empty(), usage), ClaudeProperties.defaults(),
-                AssistantProperties.empty().withPermissionMode("bypassPermissions"), mcp);
+    void runsOnlyReadOnlyGitWhateverTheDiffAsks() {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 
-        bypassing.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
         assertThat(command.getValue()).containsSequence("--permission-mode", "dontAsk")
                 .containsSequence("--tools", "Read,Grep,Glob,Bash")
                 .contains("Bash(git diff:*)")
-                .doesNotContain("Bash", "bypassPermissions");
+                .doesNotContain("Bash");
     }
 
     @Test
@@ -139,8 +134,8 @@ class HeadlessClaudeRoundReviewerTest {
     @Test
     void loadsOnlyTheServersPinnedForAReview() {
         HeadlessClaudeRoundReviewer pinned = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
-                ClaudeProperties.defaults(), AssistantProperties.empty(), usage), ClaudeProperties.defaults(),
-                AssistantProperties.empty().withMcpConfig("/cfg/mcp.json"), mcp);
+                ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),
+                AssistantProperties.empty().withMcpConfig("/cfg/mcp.json"), reads);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
 

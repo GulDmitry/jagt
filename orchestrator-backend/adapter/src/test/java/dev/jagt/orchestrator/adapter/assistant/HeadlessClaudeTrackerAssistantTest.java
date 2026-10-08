@@ -28,7 +28,7 @@ class HeadlessClaudeTrackerAssistantTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"keys\":[]}}", ""));
         var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         assistant.findCandidates("assignee = currentUser()");
 
@@ -49,7 +49,7 @@ class HeadlessClaudeTrackerAssistantTest {
                  "structured_output":{"exists":true,"key":"ABC-42","title":"Widget layout is off",\
                 "trackerProject":"ABC","labels":["backend"],"url":"https://tracker/ABC-42"}}""", ""));
         var assistant = new HeadlessClaudeTrackerAssistant(new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty(), mock(UsageTracker.class)));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class)));
 
         var facts = assistant.readTicket("ABC-42").facts();
 

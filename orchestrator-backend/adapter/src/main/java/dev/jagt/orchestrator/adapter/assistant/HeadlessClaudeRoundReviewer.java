@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.adapter.assistant;
 import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Answer;
-import dev.jagt.orchestrator.port.McpHealth;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.protocol.RoundRead;
 import dev.jagt.orchestrator.task.AssistantCallKind;
@@ -42,7 +41,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
     private final HeadlessClaude headless;
     private final ClaudeProperties claude;
     private final AssistantProperties assistant;
-    private final McpHealth mcp;
+    private final ReadOnlyTools readOnlyTools;
 
     @Override
     public Answer<Judgement> review(Round round) {
@@ -68,9 +67,7 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
         cmd.addAll(ReadOnlyTools.MCP_WRITES);
         cmd.add("--allowedTools");
         cmd.addAll(READS);
-        cmd.addAll(assistant.allowedTools().isEmpty()
-                ? ReadOnlyTools.servers(mcp.servers().orElse(List.of()))
-                : assistant.allowedTools());
+        cmd.addAll(readOnlyTools.allowed(AssistantCallKind.MASTER_REVIEW));
         return judged(headless.run(round.worktrees().getFirst(), TIMEOUT, cmd, AssistantCallKind.MASTER_REVIEW,
                 round.worktrees().getFirst().toString()));
     }

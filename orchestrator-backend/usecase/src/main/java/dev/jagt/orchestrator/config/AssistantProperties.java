@@ -9,7 +9,7 @@ import java.util.Map;
 
 @With
 @ConfigurationProperties(prefix = "orchestrator.assistant")
-public record AssistantProperties(String settingSources, String model, String permissionMode,
+public record AssistantProperties(String settingSources, String model,
                                   List<String> allowedTools, String mcpConfig,
                                   Map<AssistantCallKind, String> mcpConfigByKind) {
 
@@ -32,6 +32,6 @@ public record AssistantProperties(String settingSources, String model, String pe
     }
 
     public static AssistantProperties empty() {
-        return new AssistantProperties(null, null, null, null, null, null);
+        return new AssistantProperties(null, null, null, null, null);
     }
 }

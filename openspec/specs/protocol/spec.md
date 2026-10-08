@@ -105,9 +105,8 @@ no facts, never a guess; reaching the human is the caller's (`AutoReviewSchedule
 
 ### Requirement: A ticket is read through the human's MCP servers
 A ticket ref SHALL be read, paid, through the human's own MCP servers for title, labels and project.
-It SHALL load no built-in tool and no MCP write.
-`assistant.mcp-config`, a path or the JSON itself, loads only the declared servers.
-Declared servers' tool names carry no plugin prefix: rewrite `allowed-tools` if set.
+It SHALL load no built-in tool and call only MCP reads (`get*`, `list*`…) unless `allowed-tools` names more.
+`assistant.mcp-config`, a path or the JSON itself, loads only the declared servers; their tool names carry no plugin prefix.
 
 #### Scenario: Key or URL
 - **WHEN** the human runs `do ABC-42` or `do <url>`

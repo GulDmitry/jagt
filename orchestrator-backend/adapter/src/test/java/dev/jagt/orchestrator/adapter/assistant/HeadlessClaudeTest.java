@@ -46,7 +46,7 @@ class HeadlessClaudeTest {
                 "sourceBranch":"","targetBranch":"","title":""}}""", ""));
 
         var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class)).read("Read https://git.example.com/g/p/-/merge_requests/7.",
+                mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read https://git.example.com/g/p/-/merge_requests/7.",
                 MergeRequestRead.SCHEMA.json(), "https://git.example.com/g/p/-/merge_requests/7",
                 AssistantCallKind.MR_READ);
 
@@ -54,35 +54,22 @@ class HeadlessClaudeTest {
     }
 
     @Test
-    void liftsThePermissionGateSoTheHeadlessReadCanCallMcpTools() {
+    void callsOnlyTheAllowedReadsAndRefusesWhateverElseWouldPrompt() {
         ProcessRunner runner = mock(ProcessRunner.class);
+        ReadOnlyTools reads = mock(ReadOnlyTools.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty().withPermissionMode("bypassPermissions"), mock(UsageTracker.class));
+        when(reads.allowed(AssistantCallKind.TICKET_READ)).thenReturn(List.of("mcp__acme__get*"));
+        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), reads);
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-        assertThat(command.getValue()).containsSequence("--permission-mode", "bypassPermissions");
-    }
-
-    @Test
-    void runsOnlyTheConfiguredMcpToolsInsteadOfBypassingEveryPermission() {
-        ProcessRunner runner = mock(ProcessRunner.class);
-        when(runner.run(any(Path.class), any(Duration.class), any()))
-                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty()
-                .withPermissionMode("bypassPermissions").withAllowedTools(List.of("mcp__acme_jira", "mcp__acme_gitlab")),
-                mock(UsageTracker.class));
-
-        claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
-
-        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
-        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
-        assertThat(command.getValue()).endsWith("--permission-mode", "dontAsk", "--allowedTools", "mcp__acme_jira",
-                "mcp__acme_gitlab");
+        assertThat(command.getValue()).containsSequence("--permission-mode", "dontAsk")
+                .endsWith("--allowedTools", "mcp__acme__get*")
+                .doesNotContain("bypassPermissions");
     }
 
     @Test
@@ -91,7 +78,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty().withPermissionMode("bypassPermissions"), mock(UsageTracker.class));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -106,14 +93,14 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(),
-                AssistantProperties.empty().withPermissionMode("bypassPermissions"), mock(UsageTracker.class));
+                AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
         assertThat(command.getValue()).contains("mcp__*__create*", "mcp__*__save*", "mcp__*__accept*",
-                "mcp__*__transition*");
+                "mcp__*__transition*", "mcp__*__evaluate*", "mcp__*__python*", "mcp__*__navigate*");
     }
 
     @Test
@@ -122,7 +109,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty()
-                .withMcpConfig("{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"), mock(UsageTracker.class));
+                .withMcpConfig("{\"mcpServers\":{\"a\":{\"command\":\"x\"},\"b\":{\"command\":\"y\"}}}"), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -140,7 +127,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class));
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -155,7 +142,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty().withModel("haiku"), mock(UsageTracker.class));
+        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty().withModel("haiku"), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -169,7 +156,7 @@ class HeadlessClaudeTest {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
-        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty().withModel(""), mock(UsageTracker.class));
+        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty().withModel(""), mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -184,7 +171,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class));
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
@@ -199,7 +186,7 @@ class HeadlessClaudeTest {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class));
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
                 AssistantCallKind.REVIEW_SWEEP);
@@ -216,7 +203,7 @@ class HeadlessClaudeTest {
                 "{\"type\":\"result\",\"is_error\":false,"
                         + "\"result\":\"{\\\"title\\\":\\\"Late invoice mail\\\",\\\"url\\\":\\\"\\\"}\"}", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class));
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         var answer = claude.read("Read ABC-7.", TicketRead.SCHEMA.json(), "ABC-7", AssistantCallKind.TICKET_READ);
 
@@ -232,7 +219,7 @@ class HeadlessClaudeTest {
                  "result":"{\\"exists\\":true,\\"key\\":\\"ABC-7\\",\\"title\\":\\"Late invoice mail\\",\
                 \\"trackerProject\\":\\"ABC\\",\\"labels\\":[],\\"url\\":\\"\\"}"}""", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class));
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         var facts = claude.read("Read ABC-7.", TicketRead.SCHEMA.json(), "ABC-7", AssistantCallKind.TICKET_READ).facts();
 
@@ -248,7 +235,7 @@ class HeadlessClaudeTest {
                  "result":"The search returned no matching issues.\\n\\n```json\\n{\\"failure\\": \\"\\", \\"keys\\": []}\\n```"}""", ""));
 
         var facts = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class)).read("Find assignee = me.", TicketSearch.SCHEMA.json(), "assignee = me",
+                mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Find assignee = me.", TicketSearch.SCHEMA.json(), "assignee = me",
                 AssistantCallKind.INTAKE).facts();
 
         assertThat(facts).map(answer -> answer.path("keys").isEmpty()).contains(true);
@@ -267,7 +254,7 @@ class HeadlessClaudeTest {
                 {"type":"result","is_error":false,
                  "result":"I need the GitLab MCP server logged in before I can read this request."}""", ""));
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class))
+        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), mock(UsageTracker.class), mock(ReadOnlyTools.class))
                 .read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
                         AssistantCallKind.REVIEW_SWEEP);
 
@@ -290,7 +277,7 @@ class HeadlessClaudeTest {
                         {"structured_output":{"failure":"","project":"abc","reason":"named","rule":""}}""", ""));
 
         var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class)).read("Place ABC-42.", ProjectRead.schemaFor(Set.of("abc", "xyz")).json(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Place ABC-42.", ProjectRead.schemaFor(Set.of("abc", "xyz")).json(),
                 "ABC-42", AssistantCallKind.ROUTE);
 
         assertThat(answer.facts()).map(facts -> facts.path("project").asString()).contains("abc");
@@ -305,7 +292,7 @@ class HeadlessClaudeTest {
                  "result":"{\\"error\\":\\"the GitLab MCP server is not authenticated\\"}"}""", ""));
 
         var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class)).read("Read https://host/mr/9.", MergeRequestRead.SCHEMA.json(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read https://host/mr/9.", MergeRequestRead.SCHEMA.json(),
                 "https://host/mr/9", AssistantCallKind.MR_READ);
 
         assertThat(answer.facts()).isEmpty();
@@ -319,7 +306,7 @@ class HeadlessClaudeTest {
                 {"type":"result","is_error":false,"result":"\\"no such merge request\\""}""", ""));
 
         var answer = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class)).read("Read https://host/mr/9.", MergeRequestRead.SCHEMA.json(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class)).read("Read https://host/mr/9.", MergeRequestRead.SCHEMA.json(),
                 "https://host/mr/9", AssistantCallKind.MR_READ);
 
         assertThat(answer.facts()).isEmpty();
@@ -335,7 +322,7 @@ class HeadlessClaudeTest {
                 "cache_read_input_tokens":0,"output_tokens":40},
                  "result":"the tracker MCP is not available"}""", ""));
         var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
-                mock(UsageTracker.class));
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
 
         var answer = claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
                 AssistantCallKind.REVIEW_SWEEP);
@@ -353,7 +340,7 @@ class HeadlessClaudeTest {
                  "structured_output":{"exists":false,"failure":"no tracker MCP tool"}}""", ""));
         UsageTracker usage = mock(UsageTracker.class);
 
-        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), usage)
+        new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(), usage, mock(ReadOnlyTools.class))
                 .read("Read ABC-42.", TicketRead.SCHEMA.json(), "ABC-42", AssistantCallKind.TICKET_READ);
 
         verify(usage).record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(31_000, 0, 40, 0.06));

@@ -77,9 +77,8 @@ orchestrator:
   assistant:
     model: haiku                        # blank inherits your own; the reads are mechanical
     settingSources: user,project,local  # NOT `project` alone: the call runs from a temp dir, which has none
-    permissionMode: bypassPermissions   # nothing can answer a prompt headless; a read loads no shell and no MCP write
-    # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # these alone instead; unset, the Master's review
-    #                                                            # gets every server `claude mcp list` names
+    # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # widen to these; unset, a read and the Master's
+    #                     # review call only get*/list*/search*/read*/fetch*/query*/find*/describe*/lookup* tools
     # mcpConfig: /path/to/mcp-servers.json   # pin the servers instead of inheriting all of them
     # mcpConfigByKind:                       # one list per kind of read, so a cheap one loads only what it needs
     #   TICKET_READ: /path/to/tracker-only.json     # falls back to mcpConfig, then to your own configuration
