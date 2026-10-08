@@ -37,6 +37,8 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import dev.jagt.orchestrator.command.ReviewRepliesReport;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -50,6 +52,7 @@ import java.util.regex.Pattern;
 
 import static com.microsoft.playwright.assertions.PlaywrightAssertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -82,6 +85,8 @@ class BoardPageTest {
     private EditorDriver editorDriver;
     @MockitoBean
     private AgentSessions sessions;
+    @MockitoSpyBean
+    private ReviewRepliesReport replies;
 
     private BrowserContext session;
 
@@ -1192,6 +1197,20 @@ class BoardPageTest {
                 .hasAttribute("href", "https://host.example/mr/7#note_8708");
         assertThat(page.locator("#report-body")).containsText("javascript:alert(1) stays text.");
         assertThat(page.locator("#report-body a")).hasCount(1);
+    }
+
+    @Test
+    void aReportThatCouldNotBeReadSaysTheSentenceOfTheRefusalRatherThanItsWireShape() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-8-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-8", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a8").mrUrl("https://host.example/mr/7").lastActiveTimestamp(now()).build());
+        doThrow(new IllegalStateException("the round file is not readable")).when(replies).render("a8");
+
+        Page page = open();
+        page.locator("article .offer").click();
+
+        assertThat(page.locator("#toasts .toast.error")).hasText("the round file is not readable");
     }
 
     @Test

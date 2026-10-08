@@ -1,20 +1,31 @@
 // A failure carries both: the code a caller acts on and the sentence a human reads.
 
+const failed = (response, refused) => {
+  const failure = new Error(refused.error || `${response.status} ${response.statusText}`);
+  failure.code = refused.code;
+  return failure;
+};
+
+const parsed = (said) => {
+  try {
+    const refused = JSON.parse(said);
+    return refused?.error ? refused : {error: said};
+  } catch {
+    return {error: said};
+  }
+};
+
 export async function api(path, options) {
   const response = await fetch(path, options);
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const failure = new Error(body.error || `${response.status} ${response.statusText}`);
-    failure.code = body.code;
-    throw failure;
-  }
+  if (!response.ok) throw failed(response, body);
   return body;
 }
 
 export async function text(path, options) {
   const response = await fetch(path, options);
   const body = await response.text();
-  if (!response.ok) throw new Error(body || `${response.status} ${response.statusText}`);
+  if (!response.ok) throw failed(response, parsed(body));
   return body;
 }
 
