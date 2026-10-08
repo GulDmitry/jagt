@@ -8,11 +8,14 @@ human stands.
 ## Requirements
 
 ### Requirement: The Master is a headless run per role, not a window
-One headless run per role of the brief SHALL read each round in the task's worktrees.
-It loads no worktree setting and runs read-only git in each, `-C` naming a worktree, in plain words, option by option,
-with `--no-ext-diff --no-textconv`; it calls the MCP tools `allowed-tools` names alone and writes nothing, its session
-included. jagt SHALL write the verdict (`MasterPanel`) and refuse any other call, your allow rules included (`ReadGate`).
-Each round SHALL cost one heavy read per role, charged to the task as `master`.
+One headless run per role of the brief SHALL read each round in the task's worktrees, loading no worktree setting.
+jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy read per role, charged as `master`.
+
+#### Scenario: What a role may call
+- **WHEN** a role reads
+- **THEN** read-only git, `-C` naming a worktree, plain words, option by option, `--no-ext-diff --no-textconv`
+- **AND** only the MCP tools `allowed-tools` names; it writes nothing, its session included
+- **AND** jagt refuses any other call, your allow rules included (`ReadGate`)
 
 #### Scenario: You want a round read before you look
 - **WHEN** `master.mode` is `judge`, or unset where the human's words are readable
