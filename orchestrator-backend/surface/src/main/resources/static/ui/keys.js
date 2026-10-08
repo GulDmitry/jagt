@@ -9,6 +9,8 @@ const typingInto = (target) => target instanceof HTMLInputElement || target inst
   || target instanceof HTMLSelectElement;
 
 document.addEventListener('keydown', (event) => {
+  // Behind a modal the board is inert: a shortcut would change it unseen.
+  if (document.querySelector('dialog[open]')) return;
   if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
     event.preventDefault();
     palette.toggle();

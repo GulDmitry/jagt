@@ -7,9 +7,10 @@ export const span = (className, text) => {
   return node;
 };
 
+// Only http(s) becomes an href: a `javascript:` one would run in the page that can deploy.
 export const link = (href, text) => {
   const anchor = document.createElement('a');
-  anchor.href = href;
+  if (/^https?:/i.test(href)) anchor.href = href;
   anchor.target = '_blank';
   anchor.rel = 'noreferrer';
   anchor.textContent = text;

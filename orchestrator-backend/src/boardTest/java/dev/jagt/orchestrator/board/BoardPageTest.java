@@ -1309,6 +1309,16 @@ class BoardPageTest {
     }
 
     @Test
+    void theShortcutsLeaveTheBoardAloneWhileAReportIsOpen() {
+        Page page = open();
+        page.locator("#show-activity").click();
+        page.keyboard().press("Control+k");
+        page.locator("#close-report").click();
+
+        assertThat(page.locator("#palette")).isHidden();
+    }
+
+    @Test
     void aReportSurvivesASelectionThatStartedInsideItAndEndedOutside() {
         Page page = open();
         page.locator("#show-activity").click();
