@@ -14,14 +14,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.IntStream;
 
 /** What the Master presses on a ready round. Closing a task is the human's alone: a round holding nothing waits for them. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MasterShip {
+
+    /** The words that make the next one a branch; anywhere else {@code dev} is just a word of the task. */
+    private static final Set<String> BRANCH_WORDS = Set.of("from", "into", "onto");
 
     private final WorktreeChanges changes;
     private final CommandService commands;
@@ -53,10 +59,11 @@ public class MasterShip {
     private boolean namesTheDeployBranch(String line) {
         Map<String, ProjectConfig> projects = configService.load().projects();
         String project = LaunchRequest.ofLine(line, projects.keySet()).project();
-        String deployBranch = project == null || !projects.containsKey(project) ? null
-                : projects.get(project).deployBranch();
-        return deployBranch != null && !deployBranch.isBlank()
-                && Arrays.stream(line.split("[\\s,.;:`'\"]+")).map(word -> word.replaceFirst("^origin/", ""))
-                        .anyMatch(deployBranch::equals);
+        String deployBranch = project == null || !projects.containsKey(project) ? ""
+                : ProjectConfig.localName(projects.get(project).deployBranch());
+        List<String> words = List.of(line.split("[\\s,.;:`'\"]+"));
+        return !deployBranch.isEmpty() && IntStream.range(1, words.size())
+                .filter(i -> BRANCH_WORDS.contains(words.get(i - 1).toLowerCase(Locale.ROOT)))
+                .mapToObj(words::get).map(ProjectConfig::localName).anyMatch(deployBranch::equals);
     }
 }

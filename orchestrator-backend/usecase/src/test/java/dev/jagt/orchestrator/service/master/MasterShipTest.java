@@ -53,6 +53,19 @@ class MasterShipTest {
     }
 
     @Test
+    void opensATaskWhoseWordsMentionTheDeployBranchOutsideABranchPosition() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig("/p", "origin/main", "dev", List.of()))));
+        when(launcher.launchLine("demo fix the dev server port from main"))
+                .thenReturn(Launched.created("fix-the-dev-server-port", "fix-the-dev-server-port started"));
+
+        String opened = new MasterShip(changes, commands, launcher, config)
+                .open("demo fix the dev server port from main");
+
+        assertThat(opened).isEqualTo("fix-the-dev-server-port started");
+    }
+
+    @Test
     void shipsATaskThatHoldsWork() {
         TaskState task = TaskState.builder("demo", "/wt", TaskStatus.REVIEW_PENDING).build();
         when(changes.anyToShip(task)).thenReturn(true);

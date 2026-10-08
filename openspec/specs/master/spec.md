@@ -126,12 +126,12 @@ The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PL
 - **THEN** it reopens it only for a blocking reason
 
 ### Requirement: Another branch is another task
-In `act` work needing another branch SHALL be a task of its own, opened by the Master's line
-`do <project> <what to do…> from <branch>` (`MasterShip.open`), the session told what opened; one naming the deploy
-branch SHALL open nothing.
+In `act` work needing another branch SHALL be its own task, opened by the Master's line
+`do <project> <what to do…> from <branch>` (`MasterShip.open`), the session told what opened; a `from`, `into` or
+`onto` the deploy branch SHALL open nothing.
 
 #### Scenario: A session asks for its work on the deploy branch
-- **WHEN** the Master's `do` line names the deploy branch
+- **WHEN** its `do` line says `into dev`
 - **THEN** nothing opens; that merge is the task's own `deploy`, once `REVIEWED`
 
 ### Requirement: Every Master step is seen in one window
