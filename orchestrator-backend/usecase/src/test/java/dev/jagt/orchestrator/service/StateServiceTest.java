@@ -165,6 +165,20 @@ class StateServiceTest {
     }
 
     @Test
+    void refusesToStartAndTouchesNeitherFileWhenStateAndBackupAreBothUnreadable(@TempDir Path root)
+            throws IOException {
+        Path stateFile = root.resolve("state.json");
+        Files.writeString(stateFile, "this is not json");
+        Files.writeString(root.resolve("state.json.bak"), "neither is this");
+
+        assertThatThrownBy(() -> stateIn(root, stateFile).tasks())
+                .isInstanceOf(UncheckedIOException.class)
+                .hasMessageContaining("no usable backup");
+        assertThat(Files.readString(stateFile)).isEqualTo("this is not json");
+        assertThat(Files.readString(root.resolve("state.json.bak"))).isEqualTo("neither is this");
+    }
+
+    @Test
     void answersFromTheLastParseWhileTheFileOnDiskHasNotMoved(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
         StateService state = stateIn(root, stateFile);
