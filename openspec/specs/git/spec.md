@@ -30,7 +30,7 @@ deploy branch MUST be refused.
 ### Requirement: No verdict gates deploy
 `FlowRules`' `DEPLOY` SHALL ask only for an open request, plus DEPLOY_CONFLICT; NEW, PLAN_PENDING, IN_PROGRESS,
 VERIFYING, SHIPPING, REVERTED and DONE are refused; `ship` still runs from DEPLOYED. The confirm's `project → branch`
-line comes from `RepoView.deployBranch`.
+line comes from `TaskView.confirmations` (`TaskAction.confirmation`).
 
 #### Scenario: Confirms
 - **WHEN** you press Deploy
