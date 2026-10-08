@@ -1,24 +1,14 @@
 package dev.jagt.orchestrator.job;
 
-import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.service.AgentSessions;
-import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
 import dev.jagt.orchestrator.service.ConfigService;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -27,55 +17,25 @@ class DeployConflictJobTest {
 
     private final ConfigService config = mock(ConfigService.class);
     private final DeployConflicts conflicts = mock(DeployConflicts.class);
-    private final AgentSessions sessions = mock(AgentSessions.class);
-    private final CommandService commands = mock(CommandService.class);
-    private final DeployConflictJob job = new DeployConflictJob(config, conflicts, sessions, commands);
+    private final ConflictHandOff handOff = mock(ConflictHandOff.class);
 
     @Test
-    void handsAConflictToTheSessionWhereTheMasterActs() {
-        when(config.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("deploy", "revert"))));
-        when(conflicts.waiting()).thenReturn(Map.of("ABC-42",
-                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false)));
+    void handsEachWaitingConflictOnWhereTheMasterActs() {
+        DeployConflicts.WaitingConflict conflict = new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false);
+        when(config.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("act")));
+        when(conflicts.waiting()).thenReturn(Map.of("ABC-42", conflict));
 
-        job.run();
+        new DeployConflictJob(config, conflicts, handOff).run();
 
-        verify(sessions).relayIfChanged(eq("ABC-42"), contains("/src/ABC-42-deploy"));
-        verify(commands, never()).execute(anyString(), any());
-    }
-
-    @Test
-    void asksOncePerConflictEvenWhereAnotherRelayOverwroteTheAsk() {
-        when(config.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("act")));
-        when(conflicts.waiting()).thenReturn(Map.of("ABC-42",
-                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), false)));
-
-        job.run();
-        job.run();
-
-        verify(sessions, times(1)).relayIfChanged(eq("ABC-42"), anyString());
-    }
-
-    @Test
-    void finishesTheDeployOnceTheResolutionIsStagedInFull() {
-        when(config.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("act").withMine(List.of("deploy", "revert"))));
-        when(conflicts.waiting()).thenReturn(Map.of("ABC-42",
-                new DeployConflicts.WaitingConflict(Path.of("/src/ABC-42-deploy"), true)));
-
-        job.run();
-
-        verify(commands).execute("ABC-42", TaskAction.DEPLOY);
+        verify(handOff).handle("ABC-42", conflict);
     }
 
     @Test
     void leavesTheConflictToTheHumanWhereTheMasterOnlyJudges() {
-        when(config.load()).thenReturn(ConfigFile.defaults()
-                .withMaster(MasterConfig.defaults().withMode("judge")));
+        when(config.load()).thenReturn(ConfigFile.defaults().withMaster(MasterConfig.defaults().withMode("judge")));
 
-        job.run();
+        new DeployConflictJob(config, conflicts, handOff).run();
 
-        verifyNoInteractions(conflicts, sessions, commands);
+        verifyNoInteractions(conflicts, handOff);
     }
 }
