@@ -33,8 +33,7 @@ public class TurnEnds {
     }
 
     private String withTheMaster(TaskState task) {
-        if (task == null || !(FlowRules.awaitingVerification(task.status())
-                || FlowRules.readByTheMaster(task.status())) || !configService.load().master().running()) {
+        if (task == null || !FlowRules.headedForTheMaster(task.status()) || !configService.load().master().running()) {
             return "";
         }
         return runtime.toldTheHuman(FlowRules.awaitingVerification(task.status())

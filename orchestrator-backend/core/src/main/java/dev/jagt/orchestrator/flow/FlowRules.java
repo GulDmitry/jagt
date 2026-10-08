@@ -253,6 +253,11 @@ public final class FlowRules {
         return READ_BY_THE_MASTER.contains(status);
     }
 
+    /** A hand-back the Master reads next, once verification has passed where one runs. */
+    public static boolean headedForTheMaster(TaskStatus status) {
+        return awaitingVerification(status) || readByTheMaster(status);
+    }
+
     /** A request green with every thread closed, which in act the Master deploys as the human would. */
     public static boolean deployedByTheMaster(TaskStatus status) {
         return WAITING_FOR_A_DEPLOY.contains(status);

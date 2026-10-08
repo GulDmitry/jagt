@@ -143,9 +143,8 @@ public class AgentStatusReports {
         String next = FlowRules.awaitingVerification(landed)
                 ? "; verification runs first, and the Master reads this round once it passes; end your turn"
                 : "; the Master reads this round next; end your turn";
-        boolean readNext = FlowRules.awaitingVerification(landed) || FlowRules.readByTheMaster(landed);
         return "Task " + taskId + " -> " + landed + (shortMessage == null ? "" : " (" + shortMessage + ")")
-                + (readNext && handBack.masterReads() ? next : "");
+                + (FlowRules.headedForTheMaster(landed) && handBack.masterReads() ? next : "");
     }
 
     /** Puts what {@link FlowRules#readReview} concluded on the board; a red was tapped when the round read it. */
