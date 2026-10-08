@@ -47,7 +47,7 @@ class RevertServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.revertMergeAndPush(any(), eq("ABC-1"), eq("dev"), eq("cafebabe1234")))
                 .thenReturn("f00dfeed5678");
-        RevertService service = new RevertService(state, new DeployTargets(config), git);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         Outcome outcome = service.revert("a1");
 
@@ -63,7 +63,7 @@ class RevertServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         GitDeploy git = mock(GitDeploy.class);
-        RevertService service = new RevertService(state, new DeployTargets(config), git);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         assertThatThrownBy(() -> service.revert("a1"))
                 .isInstanceOf(IllegalStateException.class)
@@ -80,7 +80,8 @@ class RevertServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "staging", null));
-        RevertService service = new RevertService(state, new DeployTargets(config), mock(GitDeploy.class));
+        GitDeploy git = mock(GitDeploy.class);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         assertThatThrownBy(() -> service.revert("a1"))
                 .isInstanceOf(IllegalStateException.class)
@@ -99,7 +100,7 @@ class RevertServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234"))
                 .thenReturn("beef00991122");
-        RevertService service = new RevertService(state, new DeployTargets(config), git);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         Outcome outcome = service.revert("a1");
 
@@ -119,7 +120,7 @@ class RevertServiceTest {
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
         GitDeploy git = mock(GitDeploy.class);
         when(git.revertMergeAndPush(any(), anyString(), anyString(), anyString())).thenReturn("beef00991122");
-        RevertService service = new RevertService(state, new DeployTargets(config), git);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         Outcome outcome = service.revert("a1");
 
@@ -147,7 +148,7 @@ class RevertServiceTest {
                 .thenReturn("beef00991122");
         doThrow(new IllegalStateException("the revert conflicts with work done there since the deploy"))
                 .when(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
-        RevertService service = new RevertService(state, new DeployTargets(config), git);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         Outcome outcome = service.revert("a1");
 
@@ -168,8 +169,9 @@ class RevertServiceTest {
         when(config.project("api")).thenReturn(new ProjectConfig("/repo/api", "origin/main", "dev", null));
         when(config.project("web")).thenReturn(new ProjectConfig("/repo/web", "origin/main", "dev", null));
         GitDeploy git = mock(GitDeploy.class);
+        when(git.hasDeployWorktree(Path.of("/repo/web"), "ABC-1")).thenReturn(true);
         when(git.revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234")).thenReturn("beef00991122");
-        RevertService service = new RevertService(state, new DeployTargets(config), git);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         service.revert("a1");
 
@@ -183,7 +185,8 @@ class RevertServiceTest {
         ConfigService config = mock(ConfigService.class);
         when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
         GitDeploy git = mock(GitDeploy.class);
-        RevertService service = new RevertService(state, new DeployTargets(config), git);
+        when(git.hasDeployWorktree(Path.of("/repo"), "ABC-1")).thenReturn(true);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         Outcome outcome = service.revert("a1");
 
@@ -204,9 +207,26 @@ class RevertServiceTest {
         GitDeploy git = mock(GitDeploy.class);
         doThrow(new IllegalStateException("the revert conflicts"))
                 .when(git).revertMergeAndPush(Path.of("/repo/api"), "ABC-1", "dev", "cafebabe1234");
-        RevertService service = new RevertService(state, new DeployTargets(config), git);
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
 
         assertThatThrownBy(() -> service.revert("a1")).hasMessage("the revert conflicts");
         verify(git, never()).discardDeploy(any(), anyString());
+    }
+
+    @Test
+    void discardsTheConflictedMergeOfASecondDeployAfterRevertingTheFirst(@TempDir Path root) {
+        StateService state = stateIn(root);
+        state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.DEPLOY_CONFLICT).alias("a1")
+                .deployCommit("cafebabe1234").build());
+        ConfigService config = mock(ConfigService.class);
+        when(config.project("proj")).thenReturn(new ProjectConfig("/repo", "origin/main", "dev", null));
+        GitDeploy git = mock(GitDeploy.class);
+        when(git.hasDeployWorktree(Path.of("/repo"), "ABC-1")).thenReturn(true);
+        when(git.revertMergeAndPush(Path.of("/repo"), "ABC-1", "dev", "cafebabe1234")).thenReturn("beef00991122");
+        RevertService service = new RevertService(state, new DeployTargets(config, git), git);
+
+        service.revert("a1");
+
+        verify(git).discardDeploy(Path.of("/repo"), "ABC-1");
     }
 }

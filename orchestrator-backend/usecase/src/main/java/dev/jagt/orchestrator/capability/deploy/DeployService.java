@@ -6,7 +6,6 @@ import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -107,15 +106,7 @@ public class DeployService {
      * left over from any other round is not a resume point, and jumping to it would skip the ones before it.
      */
     private int resumeFrom(TaskState task, String taskId, List<Target> targets) {
-        if (targets.size() == 1 || !FlowRules.conflictedInTheDeployWorktree(task.status())) {
-            return 0;
-        }
-        for (int i = 0; i < targets.size(); i++) {
-            if (gitDeploy.hasDeployWorktree(targets.get(i).path(), taskId)) {
-                return i;
-            }
-        }
-        return 0;
+        return targets.size() == 1 ? 0 : deployTargets.stopped(task, taskId).map(targets::indexOf).orElse(0);
     }
 
     /**

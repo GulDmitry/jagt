@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.capability.deploy;
 
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.capability.deploy.DeployTargets.Target;
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
@@ -42,8 +41,7 @@ public class RevertService {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         List<Target> landed = deployTargets.landed(task);
-        Optional<Target> waiting = FlowRules.conflictedInTheDeployWorktree(task.status())
-                ? deployTargets.stopped(task) : Optional.empty();
+        Optional<Target> waiting = deployTargets.stopped(task, taskId);
         if (landed.isEmpty()) {
             if (waiting.isPresent()) {
                 return discarded(taskId, waiting.get());

@@ -40,7 +40,7 @@ class DeployConflictsTest {
         GitDeploy git = mock(GitDeploy.class);
         when(git.hasDeployWorktree(Path.of("/src/web"), "ABC-1")).thenReturn(true);
         when(git.deployResolved(Path.of("/src/web"), "ABC-1", "dev")).thenReturn(true);
-        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config), git);
+        DeployConflicts service = new DeployConflicts(state, new DeployTargets(config, git), git);
 
         var conflicts = service.waiting();
 

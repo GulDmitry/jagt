@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.capability.deploy;
 
+import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -18,6 +20,7 @@ import java.util.Optional;
 public class DeployTargets {
 
     private final ConfigService configService;
+    private final GitDeploy gitDeploy;
 
     /**
      * Every repository the task works in. All resolved before anything is pushed, so a project misconfigured at the
@@ -45,12 +48,15 @@ public class DeployTargets {
         return landed;
     }
 
-    /** Where a deploy handed back from a conflict stopped: the first repository with no merge of its own recorded. */
-    Optional<Target> stopped(TaskState task) {
-        return task.repos().stream()
-                .filter(repo -> repo.deployCommit() == null || repo.deployCommit().isBlank())
-                .findFirst()
-                .map(repo -> new Target(repo.project(), configService.project(repo.project())));
+    /**
+     * Where a deploy handed back from a conflict waits: the repository holding its deploy worktree. Not the first
+     * without a recorded merge, since merges outlive the round that made them.
+     */
+    public Optional<Target> stopped(TaskState task, String taskId) {
+        if (!FlowRules.conflictedInTheDeployWorktree(task.status())) {
+            return Optional.empty();
+        }
+        return all(task).stream().filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId)).findFirst();
     }
 
     /** The deploy branch must NEVER be the base branch tasks are cut from. */

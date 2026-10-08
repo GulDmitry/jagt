@@ -2,7 +2,6 @@ package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.capability.deploy.DeployTargets;
 
-import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.service.GitDeploy;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.RequiredArgsConstructor;
@@ -23,16 +22,10 @@ public class DeployConflicts {
     /** Every task handed back from a deploy conflict, with the worktree it waits in. */
     public Map<String, WaitingConflict> waiting() {
         Map<String, WaitingConflict> waiting = new LinkedHashMap<>();
-        stateService.tasks().forEach((taskId, task) -> {
-            if (!FlowRules.conflictedInTheDeployWorktree(task.status())) {
-                return;
-            }
-            deployTargets.all(task).stream().filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
-                    .findFirst()
-                    .ifPresent(target -> waiting.put(taskId, new WaitingConflict(
-                            GitDeploy.deployWorktreePath(target.path(), taskId),
-                            gitDeploy.deployResolved(target.path(), taskId, target.deployBranch()))));
-        });
+        stateService.tasks().forEach((taskId, task) -> deployTargets.stopped(task, taskId)
+                .ifPresent(target -> waiting.put(taskId, new WaitingConflict(
+                        GitDeploy.deployWorktreePath(target.path(), taskId),
+                        gitDeploy.deployResolved(target.path(), taskId, target.deployBranch())))));
         return waiting;
     }
 
