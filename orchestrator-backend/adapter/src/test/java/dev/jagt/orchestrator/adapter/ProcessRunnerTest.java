@@ -86,11 +86,9 @@ class ProcessRunnerTest {
 
     @Test
     void handsTheAppBackWhileItIsStillRunningSoNothingWaitsOnTheEditor() {
-        long start = System.currentTimeMillis();
-        Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "3"));
-        long elapsedMillis = System.currentTimeMillis() - start;
+        Process launched = new ProcessRunner().runDetached(null, List.of("sleep", "30"));
 
-        assertThat(elapsedMillis).isLessThan(2_000);
+        assertThat(launched.isAlive()).isTrue();
         launched.destroyForcibly();
     }
 
