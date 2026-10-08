@@ -124,7 +124,7 @@ final class E2eWorkspace {
                 GitDeploy.revertWorktreePath(repo, branch).toString());
         gitQuietly(repo, "worktree", "prune");
         gitQuietly(repo, "branch", "-D", branch);
-        gitQuietly(repo, "branch", "-D", "jagt-deploy-" + branch);
+        gitQuietly(repo, "branch", "-D", GitDeploy.deployBranch(branch));
         gitQuietly(repo, "branch", "-D", "jagt-revert-" + branch);
         gitQuietly(repo, "push", "origin", "--delete", branch);
     }

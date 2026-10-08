@@ -378,12 +378,8 @@ public class GitWorktrees {
         if (!Files.isDirectory(deployWorktree)) {
             return;
         }
-        git.locked(projectPath, () -> {
-            git.run(projectPath,
-                    List.of("git", "worktree", "remove", "--force", deployWorktree.toString()));
-            git.run(projectPath, List.of("git", "worktree", "prune"));
-            git.run(projectPath, List.of("git", "branch", "-D", "jagt-deploy-" + sourceBranch));
-        });
+        git.locked(projectPath, () -> git.removeWorktreeAndBranch(projectPath, deployWorktree,
+                GitDeploy.deployBranch(sourceBranch)));
     }
 
     /** A diff checkout outlives the viewer that opened it, and only the task's own retirement knows it is over. */

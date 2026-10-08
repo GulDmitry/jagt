@@ -72,6 +72,13 @@ public class GitCommands {
         forceDeleteDir(temp);
     }
 
+    /** Best-effort: the checkout and its branch are scaffolding, not state. */
+    void removeWorktreeAndBranch(Path projectPath, Path worktree, String branch) {
+        run(projectPath, List.of("git", "worktree", "remove", "--force", worktree.toString()));
+        run(projectPath, List.of("git", "worktree", "prune"));
+        run(projectPath, List.of("git", "branch", "-D", branch));
+    }
+
     /** A process rooted in the directory can keep recreating files, so every pass kills it before deleting. */
     void forceDeleteDir(Path dir) {
         for (int attempt = 0; attempt < 4 && Files.exists(dir); attempt++) {

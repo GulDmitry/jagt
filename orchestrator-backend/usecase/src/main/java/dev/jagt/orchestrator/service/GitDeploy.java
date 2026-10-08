@@ -29,7 +29,7 @@ public class GitDeploy {
     public String mergeIntoAndPush(Path projectPath, String sourceBranch, String targetBranch) {
         return git.locked(projectPath, () -> {
             Path deployWorktree = deployWorktreePath(projectPath, sourceBranch);
-            String deployBranch = "jagt-deploy-" + sourceBranch;
+            String deployBranch = deployBranch(sourceBranch);
             git.run(projectPath, List.of("git", "fetch", "--prune"))
                     .expectSuccess("git fetch in " + projectPath);
             if (Files.isDirectory(deployWorktree)) {
@@ -75,7 +75,7 @@ public class GitDeploy {
                 // Only UNMERGED PATHS mean a conflict. git also exits non-zero for a missing committer identity
                 // or a refusing hook, and calling those a conflict leaves a worktree the next deploy pushes.
                 if (unmergedPaths(deployWorktree).isBlank()) {
-                    removeDeployWorktree(projectPath, deployWorktree, deployBranch);
+                    git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
                     throw new IllegalStateException("Could not merge " + sourceBranch + " into " + targetBranch
                             + " — nothing was pushed and no conflict is waiting for you; git said: " + details);
                 }
@@ -133,7 +133,7 @@ public class GitDeploy {
                 .addKeyValue("cause", "no resolution staged, committed or part done in it")
                 .addKeyValue("effect", "merged again from origin/" + targetBranch)
                 .log();
-        removeDeployWorktree(projectPath, deployWorktree, deployBranch);
+        git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
     }
 
     private boolean mergeInProgress(Path deployWorktree) {
@@ -163,7 +163,7 @@ public class GitDeploy {
                 List.of("git", "push", "origin", "HEAD:" + targetBranch));
         if (push.exitCode() != 0) {
             if (nothingLeftToPush(deployWorktree, targetBranch)) {
-                removeDeployWorktree(projectPath, deployWorktree, deployBranch);
+                git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
                 throw new NothingToDeployException("Nothing left to push: what the deploy worktree held is"
                         + " already on " + targetBranch + ", which has moved on since. That worktree is gone —"
                         + " deploy again if '" + sourceBranch + "' still holds work " + targetBranch + " lacks.");
@@ -174,7 +174,7 @@ public class GitDeploy {
         }
         String merged = git.run(deployWorktree, List.of("git", "rev-parse", "HEAD"))
                 .expectSuccess("git rev-parse HEAD in " + deployWorktree).stdout().trim();
-        removeDeployWorktree(projectPath, deployWorktree, deployBranch);
+        git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch);
         return merged;
     }
 
@@ -206,16 +206,9 @@ public class GitDeploy {
                     .addKeyValue("worktree", deployWorktree)
                     .addKeyValue("cause", "the deploy was reverted")
                     .log();
-            removeDeployWorktree(projectPath, deployWorktree, "jagt-deploy-" + sourceBranch);
+            git.removeWorktreeAndBranch(projectPath, deployWorktree, deployBranch(sourceBranch));
             editor.forgetProject(deployWorktree);
         });
-    }
-
-    /** Best-effort: the checkout is scaffolding, not state. */
-    private void removeDeployWorktree(Path projectPath, Path deployWorktree, String deployBranch) {
-        git.run(projectPath,
-                List.of("git", "worktree", "remove", "--force", deployWorktree.toString()));
-        git.run(projectPath, List.of("git", "branch", "-D", deployBranch));
     }
 
     /**
@@ -300,6 +293,10 @@ public class GitDeploy {
 
     public static String shortSha(String sha) {
         return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
+    }
+
+    public static String deployBranch(String sourceBranch) {
+        return "jagt-deploy-" + sourceBranch;
     }
 
     public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
