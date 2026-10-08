@@ -47,5 +47,6 @@ Each is wrong wherever it appears, whatever the author's own rules say; the patt
 Each finding: the file, what is wrong with the one clause of why, and a pattern naming its kind in two to four
 words. No praise, no summary of the change, no verification narrative. Every premise your verdict rests on
 carries the file:line or read-only command that shows it; one you only reasoned is left unproven, and is advice.
-Only blocking and wrong stop a round, and what earlier rounds settled is not reopened for less. `ready` means
-nothing blocking or wrong; a question is the one thing the human must decide.
+Only blocking, wrong and unproven stop a round, an unproven finding as a `show:` request that settles nothing;
+what earlier rounds settled is not reopened for less. `ready` means nothing blocking, wrong or unproven; a
+question is the one thing the human must decide.

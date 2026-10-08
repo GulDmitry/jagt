@@ -16,7 +16,7 @@ public interface RoundReviewer {
     record Round(String shared, String prompt, List<Path> worktrees, String model) {
     }
 
-    /** {@code severity}: blocking, wrong, unguarded or noise; only the first two stop a round. */
+    /** {@code severity}: blocking, wrong, unproven, unguarded or noise; only the first three stop a round. */
     record Finding(String file, String issue, String pattern, String severity) {
 
         public boolean stops() {
