@@ -25,13 +25,13 @@ in jagt's own types or nothing. The status, the round's claim, its request and t
 - **THEN** it reads the accepted type, never the wire
 
 ### Requirement: Arguments are read into the message
-`MessageTool` SHALL be the one path from the wire to a verb: the arguments are read into the message and judged before
+`MessageTool` SHALL be the one path from the wire to a verb: arguments are read into the message and judged before
 the tool runs. A field the message does not declare is ignored, so a CLI a version ahead is not rejected; one
 misspelling a field the call left out is refused.
 
 #### Scenario: An unknown field
 - **WHEN** a call carries a field the message does not declare
-- **THEN** it is ignored and the rest judged
+- **THEN** ignored; the rest judged
 
 #### Scenario: A misspelled field
 - **WHEN** a call sends `task_id` and no `taskId`
@@ -69,7 +69,7 @@ what comes next off what the handler threw: `validation`, a wrong argument, is f
 `flow/Refusal`: what jagt holds refuses) and `permission` are the answer; `transient` alone is `retryable`.
 
 #### Scenario: The board is full
-- **WHEN** a session asks for a task while 24 are open
+- **WHEN** a session asks for a 25th task, or hands back owing its notes
 - **THEN** it is refused as `business`, not `validation`
 
 ### Requirement: A hook's post is filtered, not refused

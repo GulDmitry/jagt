@@ -222,7 +222,8 @@ class RevertServiceTest {
 
     @Test
     void revertsWhatLandedWhenARepositoryThatNeverLandedHasLeftTheConfiguration(@TempDir Path root) {
-        StateService state = stateIn(root);
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder(List.of(TaskRepo.of("api", "/api-wt"),
                 TaskRepo.of("gone", "/gone-wt")), TaskStatus.DEPLOY_CONFLICT).alias("a1").build());
         state.updateTask("ABC-1", t -> t.withDeployCommit("api", "cafebabe1234"));

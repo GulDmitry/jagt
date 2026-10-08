@@ -94,7 +94,7 @@ class AgentStatusReportsTest {
                         configService, specs));
 
         assertThatThrownBy(() -> reports.reportOwn(handBack, "ABC-1"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
                 .hasMessage("write task_notes.md before handing the round back");
     }
 
@@ -114,7 +114,7 @@ class AgentStatusReportsTest {
                         configService, specs));
 
         assertThatThrownBy(() -> reports.reportOwn(handBack, "ABC-1"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
                 .hasMessage("[proj] openspec/changes/abc-1 does not validate");
     }
 
@@ -132,7 +132,7 @@ class AgentStatusReportsTest {
                         configService, specs));
 
         assertThatThrownBy(() -> reports.reportOwn(handBack, "ABC-1"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOfSatisfying(Refusal.class, refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.STATE))
                 .hasMessage("jagt could not count the lines this task added to the project's agent file");
     }
 

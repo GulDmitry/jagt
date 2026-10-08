@@ -59,10 +59,10 @@ public class AgentStatusReports {
         Reported reported = accepted(said, taskId);
         if (FlowRules.readByTheMaster(reported.status()) && !FlowRules.holdsAPlan(reported.status())) {
             stateService.task(taskId).flatMap(handBack::notesOwed).ifPresent(owed -> {
-                throw new IllegalArgumentException(owed);
+                throw Refusal.byState(owed);
             });
             stateService.task(taskId).flatMap(task -> handBack.specsOwed(taskId, task)).ifPresent(owed -> {
-                throw new IllegalArgumentException(owed);
+                throw Refusal.byState(owed);
             });
         }
         return report(reported, taskId);
