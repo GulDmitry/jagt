@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.master.MasterDecisions;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.flow.FlowReports;
@@ -9,6 +12,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -27,14 +31,16 @@ class MasterVerdictsTest {
 
     private final AgentSessions sessions = mock(AgentSessions.class);
     private final MasterShip ship = mock(MasterShip.class);
-    private final FlowReports reports = mock(FlowReports.class);
     private final MasterDecisions decisions = mock(MasterDecisions.class);
-    private final MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, reports, decisions);
 
     @Test
-    void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path worktree) {
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    void sendsARoundThatIsNotReadyBackToWhoeverWroteTheCode(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("Foo.java:12 the guard is inverted"), 1), acting);
@@ -44,31 +50,45 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path worktree) {
+    void takesANotReadyRoundBackToWorkSoTheFixedOneIsReadAgain(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("Foo.java:12 the guard is inverted"), 1), acting);
 
-        verify(reports).report(eq("ABC-1"), eq(TaskStatus.IN_PROGRESS), anyString());
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.IN_PROGRESS);
     }
 
     @Test
-    void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path worktree) {
+    void putsTheSessionBackToWorkOnTheAnswerTheMasterGaveIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("keep v2 beside v3"))).thenReturn(true);
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.answered("ABC-1", task, "keep v2?", "keep v2 beside v3", false);
 
-        verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "master answered the question");
+        assertThat(state.task("ABC-1").orElseThrow())
+                .returns(TaskStatus.IN_PROGRESS, TaskState::status)
+                .returns("master answered the question", TaskState::message);
     }
 
     @Test
-    void opensATaskForWorkTheMasterMovedToABranchOfItsOwn(@TempDir Path worktree) {
+    void opensATaskForWorkTheMasterMovedToABranchOfItsOwn(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         when(ship.open("proj drop the old keys from main")).thenReturn("drop-the-old-keys started");
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.answered("ABC-1", task, "a second request?", "do proj drop the old keys from main", false);
 
@@ -76,9 +96,13 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path worktree) {
+    void restartsTheSessionWithFreshToolsWhenItsAnswersChangedNothing(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("refactor the shared block"))).thenReturn(true);
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.answered("ABC-1", task, "override the gate?", "refactor the shared block", true);
 
@@ -86,10 +110,14 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path worktree) {
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    void settlesWhatANotReadyRoundSentBackSoTheNextRoundDoesNotReopenIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("Foo.java:12 the guard is inverted"), 1), acting);
@@ -98,10 +126,14 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path worktree) {
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    void settlesNoRequestForEvidenceSoTheSessionsAnswerCanStillChangeIt(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), anyString())).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("[chaplain] Api.java — show: which caller still reads v2",
@@ -111,21 +143,29 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path worktree) {
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    void shipsAReadyRoundOnlyWhereAHumanSaidTheReviewerStandsInForThem(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         when(ship.ship("ABC-1", task)).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting);
 
         verify(ship).ship("ABC-1", task);
-        verify(reports, never()).report(anyString(), any(), anyString());
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
     }
 
     @Test
-    void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path worktree) {
+    void shipsNothingWhereTheHumanKeptThatStep(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("ship"), null);
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1),
                 kept);
@@ -135,9 +175,13 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path worktree) {
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    void leavesAReadyRoundForTheHumanWhileTheReviewerOnlyJudges(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1),
                 judging);
@@ -147,21 +191,31 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path worktree) {
-        TaskState planned = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+    void startsTheSessionOnAPlanTheMasterFoundHolds(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+        state.putTask("ABC-1", planned);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("the plan holds. Start on it."))).thenReturn(true);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1), acting);
 
-        verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS, "master: the plan holds");
+        assertThat(state.task("ABC-1").orElseThrow())
+                .returns(TaskStatus.IN_PROGRESS, TaskState::status)
+                .returns("master: the plan holds", TaskState::message);
         verify(ship, never()).ship(anyString(), any());
     }
 
     @Test
-    void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path worktree) {
-        TaskState planned = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+    void leavesAPlanThatHoldsForTheHumanWhoKeptThatStep(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+        state.putTask("ABC-1", planned);
         var kept = new ConfigService.ConfigFile.MasterConfig("act", null, null, List.of("plan"), null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         boolean moved = verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.READY, List.of(), 1),
                 kept);
@@ -171,9 +225,13 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path worktree) {
-        TaskState planned = TaskState.builder("proj", worktree.toString(), TaskStatus.PLAN_PENDING).build();
+    void sendsAPlanThatMissesTheTicketBackToBeReworked(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState planned = TaskState.builder("proj", root.toString(), TaskStatus.PLAN_PENDING).build();
+        state.putTask("ABC-1", planned);
         var judging = new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.act("ABC-1", planned, new MasterReview.Verdict(MasterReview.Kind.NOT_READY,
                 List.of("[planner] plan.md — drops the v2 route the ticket keeps"), 1), judging);
@@ -183,28 +241,37 @@ class MasterVerdictsTest {
     }
 
     @Test
-    void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path worktree) {
+    void putsTheReviewersQuestionToTheHumanThroughTheSessionThatWaitsOnTheAnswer(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         when(sessions.relayIfChanged(eq("ABC-1"), contains("Add v3 beside v2, or replace it?"))).thenReturn(true);
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
                 List.of("Foo.java drops v2", "Add v3 beside v2, or replace it?"), 1), acting);
 
-        verify(reports).report("ABC-1", TaskStatus.IN_PROGRESS,
-                "outcome=question — reviewer: Add v3 beside v2, or replace it?");
+        assertThat(state.task("ABC-1").orElseThrow())
+                .returns(TaskStatus.IN_PROGRESS, TaskState::status)
+                .returns("outcome=question — reviewer: Add v3 beside v2, or replace it?", TaskState::message);
         verify(ship, never()).ship(anyString(), any());
     }
 
     @Test
-    void asksTheSameQuestionOnce(@TempDir Path worktree) {
-        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+    void asksTheSameQuestionOnce(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        TaskState task = TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).alias("a1").build();
+        state.putTask("ABC-1", task);
         var acting = new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null);
+        MasterVerdicts verdicts = new MasterVerdicts(sessions, ship, new FlowReports(state), decisions);
 
         boolean moved = verdicts.act("ABC-1", task, new MasterReview.Verdict(MasterReview.Kind.QUESTION,
                 List.of("Add v3 beside v2, or replace it?"), 1), acting);
 
         assertThat(moved).isFalse();
-        verify(reports, never()).report(anyString(), any(), anyString());
+        assertThat(state.task("ABC-1").orElseThrow().status()).isEqualTo(TaskStatus.REVIEW_PENDING);
     }
 }

@@ -27,16 +27,17 @@ class TaskLaunchesTest {
 
     private final TaskProvisioning provisioning = mock(TaskProvisioning.class);
     private final NewTaskWorktrees worktrees = mock(NewTaskWorktrees.class);
-    private final TicketReader tickets = mock(TicketReader.class);
-    private final ProjectRouting routing = mock(ProjectRouting.class);
-    private final TaskLaunches launches = new TaskLaunches(provisioning, worktrees, tickets, routing);
+    private final TicketPlacement placement = mock(TicketPlacement.class);
+    private final TaskLaunches launches = new TaskLaunches(provisioning, worktrees, placement);
 
     @Test
     void namesTheTaskByTheCanonicalKeyTheReadGaveBackWhenGivenAUrl() {
-        when(tickets.read("https://tracker.example.com/browse/ABC-123"))
-                .thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true).withKey("ABC-123")
-                        .withTitle("Some title").withTrackerProject("ABC")
-                        .withUrl("https://tracker.example.com/browse/ABC-123")), TokenUsage.NONE));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-123").withTitle("Some title")
+                .withUrl("https://tracker.example.com/browse/ABC-123");
+        when(placement.read("https://tracker.example.com/browse/ABC-123"))
+                .thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+        when(placement.place(eq("https://tracker.example.com/browse/ABC-123"), any(), eq(List.of("group-a"))))
+                .thenReturn(new TicketPlacement.Placed(item, List.of("group-a")));
 
         launches.ticket(LaunchRequest.of("https://tracker.example.com/browse/ABC-123").withProject("group-a"),
                 List.of("group-a"));
@@ -50,44 +51,31 @@ class TaskLaunchesTest {
     }
 
     @Test
-    void chargesTheTicketReadToTheTaskItJustNamed() {
+    void chargesTheTicketReadOnlyOnceTheTaskItNamedExists() {
         TokenUsage spent = TokenUsage.ofCall(25_000, 0, 170, 0.05);
-        when(tickets.read("https://tracker/ABC-123")).thenReturn(new Answer<>(
-                Optional.of(TicketFacts.defaults().withExists(true).withKey("ABC-123").withTitle("t")
-                        .withTrackerProject("ABC").withUrl("https://tracker/ABC-123")), spent));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-123").withTitle("t")
+                .withUrl("https://tracker/ABC-123");
+        when(placement.read("https://tracker/ABC-123")).thenReturn(new Answer<>(Optional.of(item), spent));
+        when(placement.place(eq("https://tracker/ABC-123"), any(), any()))
+                .thenReturn(new TicketPlacement.Placed(item, List.of("group-a")));
 
         launches.ticket(LaunchRequest.of("https://tracker/ABC-123").withProject("group-a"), List.of("group-a"));
 
-        var order = inOrder(provisioning, tickets);
+        var order = inOrder(provisioning, placement);
         order.verify(provisioning).initializeTask(any());
-        order.verify(tickets).charge("ABC-123", spent);
+        order.verify(placement).created("ABC-123", List.of("group-a"), spent);
     }
 
     @Test
-    void refusesAnItemTheRouterCouldNotPlaceRatherThanPickingARepository() {
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()
-                .withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
-                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
-        when(routing.projectFor(any())).thenReturn(new ProjectRouting.Undecided("placed in no configured project"));
+    void createsNoTaskForAnItemThePlacementRefused() {
+        when(placement.read("ABC-42")).thenReturn(Answer.unavailable());
+        when(placement.place(eq("ABC-42"), any(), any()))
+                .thenReturn(new TicketPlacement.Refused("error: read failed: ABC-42"));
 
         String out = launches.ticket(LaunchRequest.of("ABC-42"), null).message();
 
-        assertThat(out).contains("ABC-42 not placed in a configured project: placed in no configured project");
+        assertThat(out).isEqualTo("error: read failed: ABC-42");
         verify(provisioning, never()).initializeTask(any());
-    }
-
-    @Test
-    void asksTheRouterWhereToPutAnItemNobodyNamedAProjectFor() {
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()
-                .withExists(true).withKey("ABC-42").withTitle("Widget layout is off")
-                .withUrl("https://tracker/ABC-42")), TokenUsage.NONE));
-        when(routing.projectFor(any())).thenReturn(new ProjectRouting.Placed("group-a"));
-
-        launches.ticket(LaunchRequest.of("ABC-42"), null);
-
-        ArgumentCaptor<NewTask> created = ArgumentCaptor.forClass(NewTask.class);
-        verify(provisioning).initializeTask(created.capture());
-        assertThat(created.getValue().projectKey()).isEqualTo("group-a");
     }
 
     @Test
@@ -95,41 +83,13 @@ class TaskLaunchesTest {
         when(worktrees.strategyForExisting("ABC-42", "group-a")).thenReturn(BranchStrategy.FRESH);
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42");
+        when(placement.place(eq("ABC-42"), any(), any()))
+                .thenReturn(new TicketPlacement.Placed(item, List.of("group-a")));
 
         launches.ticket(LaunchRequest.of("ABC-42").withProject("group-a"), List.of("group-a"),
                 new Answer<>(Optional.of(item), TokenUsage.NONE));
 
-        verify(tickets, never()).read(anyString());
-    }
-
-    @Test
-    void createsNoTaskWhenTheTrackerSaysThereIsNoSuchItem() {
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults()),
-                TokenUsage.ofCall(38_000, 0, 60, 0.41)));
-
-        String out = launches.ticket(LaunchRequest.of("ABC-42"), null).message();
-
-        assertThat(out).contains("no such item: ABC-42", "no task created");
-        verify(provisioning, never()).initializeTask(any());
-    }
-
-    @Test
-    void saysTheReadFailedInsteadOfCallingTheTicketMissing() {
-        when(tickets.read("ABC-42")).thenReturn(Answer.unavailable());
-
-        assertThat(launches.ticket(LaunchRequest.of("ABC-42"), null).message()).contains("read failed");
-    }
-
-    @Test
-    void createsNoTaskWhenTheReadAnsweredAboutADifferentItem() {
-        when(tickets.read("ABC-42")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-99").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-99")), TokenUsage.NONE));
-
-        String out = launches.ticket(LaunchRequest.of("ABC-42"), null).message();
-
-        assertThat(out).contains("asked for ABC-42 and got ABC-99 back", "no task created");
-        verify(provisioning, never()).initializeTask(any());
+        verify(placement, never()).read(anyString());
     }
 
     @Test
@@ -139,7 +99,7 @@ class TaskLaunchesTest {
         String out = launches.ticket(LaunchRequest.of("ABC-9"), null).message();
 
         assertThat(out).contains("already exists in group-a", "recreate", "resume");
-        verifyNoInteractions(tickets);
+        verifyNoInteractions(placement);
         verify(provisioning, never()).initializeTask(any());
     }
 
@@ -148,6 +108,7 @@ class TaskLaunchesTest {
         when(worktrees.strategyForExisting("ABC-9", "group-a")).thenReturn(BranchStrategy.RESUME);
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-9").withTitle("Widget layout is off")
                 .withUrl("https://tracker/ABC-9");
+        when(placement.place(eq("ABC-9"), any(), any())).thenReturn(new TicketPlacement.Placed(item, List.of("group-a")));
 
         launches.ticket(LaunchRequest.of("ABC-9").withProject("group-a"), List.of("group-a"),
                 new Answer<>(Optional.of(item), TokenUsage.NONE));
@@ -169,9 +130,10 @@ class TaskLaunchesTest {
 
     @Test
     void relaysTheHumansNotesToTheAgentAlongsideTheTicket() {
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-1");
+        when(placement.read("ABC-1")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+        when(placement.place(eq("ABC-1"), any(), any())).thenReturn(new TicketPlacement.Placed(item, List.of("demo")));
 
         launches.ticket(LaunchRequest.of("ABC-1").withProject("demo").withMode("plan")
                 .withNotes("start with tests only"), List.of("demo"));
@@ -183,9 +145,10 @@ class TaskLaunchesTest {
 
     @Test
     void carriesTheModeTheHumanAskedForThroughToTheAgent() {
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-1");
+        when(placement.read("ABC-1")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+        when(placement.place(eq("ABC-1"), any(), any())).thenReturn(new TicketPlacement.Placed(item, List.of("demo")));
 
         launches.ticket(LaunchRequest.of("ABC-1").withProject("demo").withMode("plan"), List.of("demo"));
 
@@ -196,9 +159,10 @@ class TaskLaunchesTest {
 
     @Test
     void carriesTheHumansBranchStrategyThroughToTheWorktreeCut() {
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-1");
+        when(placement.read("ABC-1")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+        when(placement.place(eq("ABC-1"), any(), any())).thenReturn(new TicketPlacement.Placed(item, List.of("demo")));
 
         launches.ticket(LaunchRequest.of("ABC-1").withProject("demo").withStrategy("recreate"), List.of("demo"));
 
@@ -209,9 +173,10 @@ class TaskLaunchesTest {
 
     @Test
     void carriesTheHumansBaseBranchThroughToTheWorktreeCut() {
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-1");
+        when(placement.read("ABC-1")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+        when(placement.place(eq("ABC-1"), any(), any())).thenReturn(new TicketPlacement.Placed(item, List.of("demo")));
 
         launches.ticket(LaunchRequest.of("ABC-1").withProject("demo").withBaseBranch("feature/parent"),
                 List.of("demo"));
@@ -223,9 +188,11 @@ class TaskLaunchesTest {
 
     @Test
     void createsOneTaskAcrossEveryProjectItIsHanded() {
-        when(tickets.read("ABC-1")).thenReturn(new Answer<>(Optional.of(TicketFacts.defaults().withExists(true)
-                .withKey("ABC-1").withTitle("Widget layout is off").withTrackerProject("ABC")
-                .withUrl("https://tracker/ABC-1")), TokenUsage.NONE));
+        TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-1").withTitle("Widget layout is off")
+                .withUrl("https://tracker/ABC-1");
+        when(placement.read("ABC-1")).thenReturn(new Answer<>(Optional.of(item), TokenUsage.NONE));
+        when(placement.place(eq("ABC-1"), any(), any()))
+                .thenReturn(new TicketPlacement.Placed(item, List.of("web", "api")));
 
         launches.ticket(LaunchRequest.of("ABC-1").withProject("web,api"), List.of("web", "api"));
 
@@ -249,6 +216,6 @@ class TaskLaunchesTest {
                 .extracting(NewTask::taskId, NewTask::title, NewTask::instructions, NewTask::ticketUrl)
                 .containsExactly("split-the-invoice-mailer", "Split the invoice mailer",
                         "Split the invoice mailer", null);
-        verifyNoInteractions(tickets);
+        verifyNoInteractions(placement);
     }
 }

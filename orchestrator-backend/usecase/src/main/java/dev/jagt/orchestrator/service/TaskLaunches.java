@@ -26,13 +26,12 @@ public class TaskLaunches {
 
     private final TaskProvisioning provisioning;
     private final NewTaskWorktrees worktrees;
-    private final TicketReader tickets;
-    private final ProjectRouting routing;
+    private final TicketPlacement placement;
 
     public Launched ticket(LaunchRequest request, List<String> chosen) {
         // The read answers with the canonical key, which is what names the branch and the worktree.
         return refusedForExistingBranch(request, chosen)
-                .orElseGet(() -> launched(request, tickets.read(request.ref()), chosen));
+                .orElseGet(() -> launched(request, placement.read(request.ref()), chosen));
     }
 
     /**
@@ -75,45 +74,21 @@ public class TaskLaunches {
     }
 
     private Launched launched(LaunchRequest request, Answer<TicketFacts> read, List<String> chosen) {
-        String ref = request.ref();
-        // Three different answers: one names a missing item, the others a read that never got there.
-        if (read.facts().isEmpty()) {
-            return Launched.refused("error: read failed: " + ref + " (cause in the log) — no task created");
-        }
-        if (!read.facts().get().exists()) {
-            return Launched.refused("error: no such item: " + ref + " (the tracker says so) — no task"
-                    + " created");
-        }
-        var facts = read.facts().filter(TicketFacts::usable);
-        if (facts.isEmpty()) {
-            return Launched.refused("error: read incomplete: " + ref + " (no key, title or url) — no task"
-                    + " created");
-        }
-        TicketFacts f = facts.get();
-        if (TaskName.isTicketKey(ref) && !ref.equalsIgnoreCase(f.key())) {
-            return Launched.refused("error: asked for " + ref + " and got " + f.key() + " back — no task"
-                    + " created. Launch it under the key the tracker itself reports.");
-        }
-        String taskId = f.key();
-        // A human who named a project has settled it; only an unplaced one is worth asking about.
-        ProjectRouting.Placement placement = chosen != null ? null : routing.projectFor(f);
-        List<String> resolved = chosen != null ? chosen : placement.project().map(List::of).orElse(null);
-        if (resolved == null) {
-            return Launched.refused("error: " + taskId + " not placed in a configured project: "
-                    + placement.reason() + " — say which: do " + taskId + " <project>");
-        }
-        String instructions = withNotes("Implement " + taskId + " — \"" + f.title()
+        return switch (placement.place(request.ref(), read, chosen)) {
+            case TicketPlacement.Refused refused -> Launched.refused(refused.message());
+            case TicketPlacement.Placed placed -> created(request, placed, chosen, read);
+        };
+    }
+
+    private Launched created(LaunchRequest request, TicketPlacement.Placed placed, List<String> chosen,
+                             Answer<TicketFacts> read) {
+        TicketFacts f = placed.facts();
+        String instructions = withNotes("Implement " + f.key() + " — \"" + f.title()
                 + "\". Read it via your issue-tracker MCP for full details, then work.", request.notes());
-        String result = provisioning.initializeTask(newTask(taskId, resolved, instructions, request)
+        String result = provisioning.initializeTask(newTask(f.key(), placed.projects(), instructions, request)
                 .title(f.title()).ticketUrl(f.url()).build());
-        // Only where the human named it: their word against a rule is the correction, and the router's own
-        // placement contradicts nothing.
-        if (chosen != null) {
-            routing.placedByHand(taskId, resolved.get(0));
-        }
-        // Only NOW does the task exist, so only now can the read that named it be charged to it.
-        tickets.charge(taskId, read.usage());
-        return Launched.created(taskId, result);
+        placement.created(f.key(), chosen, read.usage());
+        return Launched.created(f.key(), result);
     }
 
     /** The card's own words for a task no tracker titled. */

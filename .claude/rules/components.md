@@ -5,6 +5,7 @@ paths:
   - "**/dev/jagt/orchestrator/startup/**"
   - "**/service/TaskLauncher.java"
   - "**/service/TaskLaunches.java"
+  - "**/service/TicketPlacement.java"
   - "**/service/ResumeRegistration.java"
   - "**/task/TaskState.java"
 ---

@@ -3,7 +3,6 @@ package dev.jagt.orchestrator.surface.board;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.flow.TaskAction;
-import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import dev.jagt.orchestrator.task.Launched;
@@ -21,10 +20,7 @@ class TaskCommandsControllerTest {
 
     private final CommandService commands = mock(CommandService.class);
     private final TaskLauncher launcher = mock(TaskLauncher.class);
-    private final NaturalLanguageDispatch naturalLanguage = mock(NaturalLanguageDispatch.class);
-    private final AgentSessions sessions = mock(AgentSessions.class);
-    private final TaskCommandsController api =
-            new TaskCommandsController(commands, launcher, naturalLanguage, sessions);
+    private final TaskCommandsController api = new TaskCommandsController(commands, launcher);
     private final RefusedRequests refusals = new RefusedRequests();
 
     @Test
@@ -32,22 +28,6 @@ class TaskCommandsControllerTest {
         when(commands.execute("ABC-1", TaskAction.SHIP)).thenReturn("ship ABC-1: approval relayed");
 
         assertThat(api.act("ABC-1", "ship").message()).isEqualTo("ship ABC-1: approval relayed");
-    }
-
-    @Test
-    void saysALineToTheSessionOfTheTaskTheReportIsAbout() {
-        when(sessions.say("a1", "no, answer 2 differently")).thenReturn("Said to the agent.");
-
-        assertThat(api.say("a1", new TaskCommandsController.LineRequest("no, answer 2 differently")).message())
-                .isEqualTo("Said to the agent.");
-    }
-
-    @Test
-    void refusesAnEmptyLineRatherThanInterruptingASessionWithNothing() {
-        assertThatThrownBy(() -> api.say("a1", new TaskCommandsController.LineRequest("   ")))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("nothing to say");
-        verifyNoInteractions(sessions);
     }
 
     @Test
@@ -63,16 +43,6 @@ class TaskCommandsControllerTest {
         var refused = refusals.refused(new IllegalStateException("ship: ABC-1 is DEPLOYED"));
 
         assertThat(refused.getBody()).containsOnlyKeys("error");
-    }
-
-    @Test
-    void passesPaletteTextToTheDispatcherAndReturnsItsAnswerUnchanged() {
-        when(naturalLanguage.interpret("ship the login task"))
-                .thenReturn("understood as `ship a2` — ship a2: pushed");
-
-        assertThat(api.interpret(new TaskCommandsController.InterpretRequest("ship the login task")).message())
-                .isEqualTo("understood as `ship a2` — ship a2: pushed");
-        verifyNoInteractions(commands, launcher);
     }
 
     @Test
