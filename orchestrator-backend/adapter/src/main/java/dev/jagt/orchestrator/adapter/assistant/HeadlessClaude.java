@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.adapter.agent.ClaudeProperties;
 import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.Processes;
+import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TokenUsage;
@@ -179,7 +180,7 @@ class HeadlessClaude {
         if (envelope.path("is_error").asBoolean(false)) {
             log.atWarn().setMessage("assistant call errored")
                     .addKeyValue("ref", label)
-                    .addKeyValue("cause", envelope.path("result").asString(""))
+                    .addKeyValue("cause", oneLine(envelope.path("result").asString("")))
                     .log();
             return Reply.failed(usage, "errored");
         }
@@ -188,8 +189,7 @@ class HeadlessClaude {
 
     /** `%kvp` quotes a value but escapes nothing, so a multi-line stderr would break the console line apart. */
     private static String oneLine(String value) {
-        String flat = value == null ? "" : value.replaceAll("\\s+", " ").replace('"', '\'').strip();
-        return flat.length() <= MAX_CAUSE ? flat : flat.substring(0, MAX_CAUSE) + "…";
+        return OneLine.of(value == null ? "" : value.replace('"', '\''), MAX_CAUSE);
     }
 
     private JsonNode parseEnvelope(String stdout, String label) {

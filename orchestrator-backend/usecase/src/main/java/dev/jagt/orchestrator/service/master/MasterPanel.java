@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.service.RoundFacts;
+import dev.jagt.orchestrator.service.OneLine;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskRepo;
@@ -132,7 +133,7 @@ public class MasterPanel {
                 config.modelOrInherited()));
         usage.chargeTask(taskId, read.usage());
         return read.facts().filter(judged -> judged.failure().isBlank() && !judged.findings().isEmpty())
-                .map(judged -> judged.findings().stream().map(f -> oneLine(f.issue())).collect(Collectors.joining("\n")));
+                .map(judged -> judged.findings().stream().map(f -> OneLine.of(f.issue())).collect(Collectors.joining("\n")));
     }
 
     private static List<Path> worktrees(TaskState task) {
@@ -184,19 +185,19 @@ public class MasterPanel {
             String role = roles.get(i).name();
             Judgement said = judgements.get(i);
             if (!said.failure().isBlank()) {
-                questions.add("The " + role + " could not read the round: " + oneLine(said.failure()));
+                questions.add("The " + role + " could not read the round: " + OneLine.of(said.failure()));
                 continue;
             }
             // Only what breaks something or misses the ticket stops a round; the rest is advice, a `#` line jagt skips.
             said.findings().forEach(f -> (f.stops() ? lines : advice).add((f.stops() ? "- [" : "# advice [") + role
-                    + "] " + oneLine(f.file()) + " — " + (f.severity().equals("unproven") ? SHOW : "")
-                    + oneLine(f.issue())
-                    + (f.pattern().isBlank() ? "" : " (" + oneLine(f.pattern()) + ")")));
+                    + "] " + OneLine.of(f.file()) + " — " + (f.severity().equals("unproven") ? SHOW : "")
+                    + OneLine.of(f.issue())
+                    + (f.pattern().isBlank() ? "" : " (" + OneLine.of(f.pattern()) + ")")));
             said.premises().stream().filter(p -> p.provenBy().isBlank())
-                    .forEach(p -> advice.add("# unproven [" + role + "] " + oneLine(p.claim())));
+                    .forEach(p -> advice.add("# unproven [" + role + "] " + OneLine.of(p.claim())));
             if (said.verdict().equals("question")) {
                 questions.add(said.question().isBlank() ? "The " + role + " asks, naming no question"
-                        : oneLine(said.question()));
+                        : OneLine.of(said.question()));
             } else if (!said.verdict().equals("ready") && said.findings().isEmpty()) {
                 lines.add("- [" + role + "] not ready, naming nothing");
             }
@@ -212,11 +213,6 @@ public class MasterPanel {
             return file.append("\nVERDICT: not ready\n").toString();
         }
         return file.append("nothing wrong\n\nVERDICT: ready\n").toString();
-    }
-
-    /** The file is read line by line: a finding that wraps would count twice. */
-    private static String oneLine(String text) {
-        return text.replaceAll("\\s+", " ").strip();
     }
 
     static String answerPrompt(String taskId, TaskState task, String brief, String authorBrief, String question,
