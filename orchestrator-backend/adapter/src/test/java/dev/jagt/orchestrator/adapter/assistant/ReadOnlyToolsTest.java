@@ -7,9 +7,12 @@ import dev.jagt.orchestrator.service.ReadScopes;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -60,10 +63,20 @@ class ReadOnlyToolsTest {
                 .doesNotContain("mcp__your-jira-mcp");
     }
 
-    @Test
-    void refusesAWriteNamedByItsVerbMidNameToo() {
-        assertThat(ReadOnlyTools.MCP_WRITES).contains("mcp__*__new*", "mcp__*__hover*", "mcp__*__take*",
-                "mcp__*__*_write_*", "mcp__*__*_clear", "mcp__*__*_delete", "mcp__*__*_replace");
+    @ParameterizedTest
+    @ValueSource(strings = {"mcp__plugin_omc_t__state_clear", "mcp__plugin_omc_t__notepad_write_manual",
+            "mcp__plugin_omc_t__lsp_rename", "mcp__plugin_acme_browser__new_page", "mcp__gitlab__save_note"})
+    void refusesAWriteNamedByItsVerbMidNameToo(String tool) {
+        assertThat(ReadOnlyTools.MCP_WRITES)
+                .anyMatch(glob -> Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"mcp__gitlab__get_merge_request", "mcp__plugin_omc_t__lsp_hover",
+            "mcp__docs__get_type_info"})
+    void letsAReadWhoseNameHoldsAWriteVerbThrough(String tool) {
+        assertThat(ReadOnlyTools.MCP_WRITES)
+                .noneMatch(glob -> Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
     }
 
     @Test
