@@ -1,6 +1,6 @@
 package dev.jagt.orchestrator.capability.done;
 
-import dev.jagt.orchestrator.port.TaskCapability;
+import dev.jagt.orchestrator.flow.TaskCapability;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import dev.jagt.orchestrator.flow.Outcome;
 import dev.jagt.orchestrator.flow.TaskAction;

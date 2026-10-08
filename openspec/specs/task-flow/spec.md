@@ -35,7 +35,7 @@ between is what the Master stands in for where `master.mode` is `act` ([master](
 - **THEN** a human pressed it
 
 ### Requirement: Door one runs an action
-`flow/FlowEngine.run` SHALL check the rules, run the action's `port/TaskCapability`, and write the status the table
+`flow/FlowEngine.run` SHALL check the rules, run the action's `flow/TaskCapability`, and write the status the table
 gives for its `flow/Outcome`.
 
 #### Scenario: A verb runs

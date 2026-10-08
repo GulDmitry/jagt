@@ -1,7 +1,4 @@
-package dev.jagt.orchestrator.port;
-
-import dev.jagt.orchestrator.flow.Outcome;
-import dev.jagt.orchestrator.flow.TaskAction;
+package dev.jagt.orchestrator.flow;
 
 /**
  * One thing that can be done to one task. It knows no status: it does the work and reports an {@link Outcome}, and

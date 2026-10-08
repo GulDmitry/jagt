@@ -11,8 +11,8 @@ Status is part of the map: *built* means built; fix a stale row, never delete it
 ## The kinds
 
 Anything that runs, tells, decides, or is done to a task is one of the **kinds**: one interface — in `port/` when
-something outside implements it — one registry, one folder of implementations. **If something fits no kind, the kind is
-missing. Add a kind, never an exception.**
+something outside implements it, in `flow/` when it speaks the table's words — one registry, one folder of
+implementations. **If something fits no kind, the kind is missing. Add a kind, never an exception.**
 
 | kind | its one job | state |
 |------|-------------|-------|
@@ -58,14 +58,14 @@ answer. Every type in `flow/`, one question each:
 
 | type | answers |
 |------|---------|
-| `port/TaskCapability` | `Outcome run(taskId)` — and names no `TaskStatus` |
+| `flow/TaskCapability` | `Outcome run(taskId)` — and names no `TaskStatus` |
 | `Outcome` | OK, NOTHING, RELAYED, CONFLICT, PARTIAL, GONE + the sentence, the stamp, the cause |
 | `FlowRules` | `rule(DEPLOY).from(<statuses>).when(<guard>).on(OK, DEPLOYED).on(CONFLICT, DEPLOY_CONFLICT).add()` |
 | `Facts` | the guard's second argument — an open request, a live deploy, and a liveness probe passed as a SUPPLIER |
 | `FlowEngine` | door one: `rules.allows?` → `capability.run` → `rules.next(outcome)` → ONE status write |
 | `FlowReports` | door two: a task's report (`FlowRules.reportable`), or the host's verdict (`read`) |
 | `TaskAction` | a verb, named once for every surface |
-| `Capabilities` | every `port/TaskCapability` there is, one per action — the `capability/` kind's registry |
+| `Capabilities` | every `flow/TaskCapability` there is, one per action — the `capability/` kind's registry |
 | `Phase` | the step of a task's life a human reads |
 | `Pipeline` | what the host last said about the checks, as a verdict rather than as its own wording |
 | `AgentReport` | what the agent is reporting about a round — a question, no changes, or progress |
@@ -83,7 +83,7 @@ answer. Every type in `flow/`, one question each:
   projection call, not a declaration.
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.
   PARTIAL alone refuses: stamped first, thrown second, so half a change on a shared branch is recorded.
-- **An interceptor** (`port/CapabilityInterceptor`) wraps a verb and may refuse, stopping the work *and* the transition.
+- **An interceptor** (`flow/CapabilityInterceptor`) wraps a verb and may refuse, stopping the work *and* the transition.
 - **`Facts.projected`** assumes not live and costs nothing; the gate runs the real probe — so a stuck SHIPPING card
   offers SHIP and the gate can still refuse it.
 
@@ -117,8 +117,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 |------|----------------|
 | `TaskStore` | `service/StateService` |
 | `AgentPresence` | `service/AgentSessions` |
-| `TaskCapability` | one per verb under `capability/` |
-| `CapabilityInterceptor` | `capability/ship/SpecFold`; an install may add its own step |
+| `flow/TaskCapability` | one per verb under `capability/` |
+| `flow/CapabilityInterceptor` | `capability/ship/SpecFold`; an install may add its own step |
 | `Specs` | `adapter/OpenSpec` |
 | `AgentRuntime` | `adapter/agent/{Claude,Codex,Stub}AgentRuntime` (+ `AbstractAgentRuntime`) |
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe` |
@@ -143,7 +143,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | add a report | one `GlobalCommand` in `command/` with `report()` true — the board picks it up |
 | add a launch shortcut | a `GlobalCommand` whose `part()` names the board form it opens |
 | replace a built-in verb | another `TaskCapability` for the same action with a higher `priority()` |
-| run something before/after a verb | a `port/CapabilityInterceptor` for that action — never a new status |
+| run something before/after a verb | a `flow/CapabilityInterceptor` for that action — never a new status |
 | add unattended work | one `Job`; `Jobs` tickers it and the `jobs` report lists it |
 | notify somewhere else | one `Notifier` in `adapter/`; `Notifications` finds it and no caller changes |
 | support another host, tracker, agent or OS | one adapter behind its port, plus the `@ConditionalOnProperty` value |

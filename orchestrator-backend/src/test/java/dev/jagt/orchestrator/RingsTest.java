@@ -34,6 +34,16 @@ class RingsTest {
     }
 
     @Test
+    void theTaskRecordImportsNoRuleAndNoPort() {
+        assertThat(importsOf("task").filter(imported -> !imported.equals("task"))).isEmpty();
+    }
+
+    @Test
+    void aPortImportsNoRule() {
+        assertThat(importsOf("port").filter("flow"::equals)).isEmpty();
+    }
+
+    @Test
     void theProtocolSpeaksOnlyTheCentresVocabulary() {
         assertThat(importsOf("protocol").filter(imported -> !PROTOCOL_MAY_SEE.contains(imported))).isEmpty();
     }
