@@ -15,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.when;
 
 class TmuxSessionHostE2eTest {
 
-    private static final String SESSION = "jagt-host-e2e";
+    private static final String SESSION = "jagt-host-e2e-" + UUID.randomUUID().toString().substring(0, 8);
 
     private final Processes processes = new ProcessRunner();
     private final AgentRuntime agentRuntime = mock(AgentRuntime.class);

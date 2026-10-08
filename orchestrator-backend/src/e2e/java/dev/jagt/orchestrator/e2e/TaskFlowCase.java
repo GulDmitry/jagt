@@ -6,10 +6,10 @@ record TaskFlowCase(String viewMode, boolean autoReview, String agentSession) {
 
     static List<TaskFlowCase> matrix() {
         return List.of(
-                new TaskFlowCase("shared", false, "jagt-e2e"),
-                new TaskFlowCase("shared", true, "jagt-e2e"),
-                new TaskFlowCase("tab-per-task", false, "jagt-e2e-ABC-1"),
-                new TaskFlowCase("tab-per-task", true, "jagt-e2e-ABC-1"));
+                new TaskFlowCase("shared", false, E2eWorkspace.TMUX_SESSION),
+                new TaskFlowCase("shared", true, E2eWorkspace.TMUX_SESSION),
+                new TaskFlowCase("tab-per-task", false, E2eWorkspace.TMUX_SESSION + "-ABC-1"),
+                new TaskFlowCase("tab-per-task", true, E2eWorkspace.TMUX_SESSION + "-ABC-1"));
     }
 
     @Override

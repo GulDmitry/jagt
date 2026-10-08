@@ -13,6 +13,7 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,7 @@ import static org.awaitility.Awaitility.await;
 
 final class E2eWorkspace {
 
-    static final String TMUX_SESSION = "jagt-e2e";
+    static final String TMUX_SESSION = "jagt-e2e-" + UUID.randomUUID().toString().substring(0, 8);
 
     private E2eWorkspace() {
     }
