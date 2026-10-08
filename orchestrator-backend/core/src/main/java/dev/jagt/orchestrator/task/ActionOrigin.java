@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import java.util.Locale;
+
 /** Who asked for a status change. */
 public enum ActionOrigin {
 
@@ -15,6 +17,6 @@ public enum ActionOrigin {
     TRACKER;
 
     public String label() {
-        return name().toLowerCase().replace('_', '-');
+        return name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 }

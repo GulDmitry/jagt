@@ -75,6 +75,16 @@ class TaskProvisioningTest {
     }
 
     @Test
+    void aliasesATicketStartingWithIWithTheDottedIWhateverTheMachineLocale() {
+        when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/INF-2-proj"), null, "origin/main", null, true)));
+
+        provisioning.initializeTask(NewTask.builder("INF-2", "proj").build());
+
+        assertThat(state.task("INF-2").orElseThrow().alias()).isEqualTo("i1");
+    }
+
+    @Test
     void remembersTheBaseBranchTheHumanNamedForTheReviewRequest() {
         when(worktrees.cut(any(), any(), any())).thenReturn(List.of(new NewRepo("proj", null, Path.of("/repo"),
                 Path.of("/ABC-3-proj"), null, "feature/parent", null, true)));

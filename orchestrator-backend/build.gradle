@@ -95,6 +95,8 @@ allprojects {
         systemProperty 'junit.jupiter.execution.parallel.config.strategy', 'dynamic'
         // Oversubscribed: the wall clock goes on blocked subprocesses, not on computing.
         systemProperty 'junit.jupiter.execution.parallel.config.dynamic.factor', '3'
+        // Turkish lowercases I to a dotless ı: a case change on the default locale fails here, not on a user's machine.
+        systemProperty 'user.language', 'tr'
     }
 }
 

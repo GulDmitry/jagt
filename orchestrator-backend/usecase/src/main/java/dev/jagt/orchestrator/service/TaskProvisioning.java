@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -64,7 +65,7 @@ public class TaskProvisioning {
     }
 
     private String nextAlias(String taskId) {
-        String letter = taskId.substring(0, 1).toLowerCase();
+        String letter = taskId.substring(0, 1).toLowerCase(Locale.ROOT);
         var used = stateService.tasks().values().stream()
                 .map(TaskState::alias)
                 .filter(a -> a != null)
