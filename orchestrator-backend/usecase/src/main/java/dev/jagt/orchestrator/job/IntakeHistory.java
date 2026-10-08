@@ -1,5 +1,7 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.service.FinishedTasks;
+import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import dev.jagt.orchestrator.task.FinishedTask;

@@ -1,5 +1,8 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.surface.agent;
 
+import dev.jagt.orchestrator.service.AgentSpendReader;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.task.TaskStatus;

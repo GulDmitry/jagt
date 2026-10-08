@@ -107,7 +107,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `done` | the documents, copied out before the worktree goes | `artifacts/<date>-<taskId>/`, beside `state.json` |
 
 - **Only the middle is in git**: branch, commits and request outlive the task; the documents are copied out
-  first (`service/FinishedArtifacts`) and never read back, so changing their format migrates nothing.
+  first (`capability/done/FinishedArtifacts`) and never read back, so changing their format migrates nothing.
 - **The chain is readable while the task lives** — `ide <alias>` opens the worktree holding all of it.
 - **The front of the chain can be your own words**: with no ticket, what you typed is the task, names its branch,
   and lands in `task_context.md`.
@@ -154,8 +154,8 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 - **The surface holds no list** — the usual way to break that is building a button in `static/ui/card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
 - A capability gets a folder once it owns work (`capability/ship/`); the rest are flat.
-- `do` and `resume` are named literally in `ui/palette`, `service/NaturalLanguageDispatch` and
-  `TaskCommandsController`, so a new launch shortcut costs the board a change.
+- `do` and `resume` are named literally only in tier 2 (`surface/board/NaturalLanguageDispatch`): its prompt maps a
+  line onto their fields.
 
 ## The board is two rings too
 

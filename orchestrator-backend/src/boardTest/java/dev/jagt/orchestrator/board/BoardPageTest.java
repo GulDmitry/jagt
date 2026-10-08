@@ -20,7 +20,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.AgentSessions;
 import dev.jagt.orchestrator.service.CommandService;
-import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
+import dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.service.TaskLauncher;
 import org.junit.jupiter.api.AfterAll;

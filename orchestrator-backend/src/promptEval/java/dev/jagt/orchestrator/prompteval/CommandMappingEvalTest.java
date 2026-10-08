@@ -4,7 +4,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.port.CommandAssistant.CommandProposal;
-import dev.jagt.orchestrator.service.NaturalLanguageDispatch;
+import dev.jagt.orchestrator.surface.board.NaturalLanguageDispatch;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 

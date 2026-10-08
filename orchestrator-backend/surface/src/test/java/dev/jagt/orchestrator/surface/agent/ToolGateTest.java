@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.surface.agent;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

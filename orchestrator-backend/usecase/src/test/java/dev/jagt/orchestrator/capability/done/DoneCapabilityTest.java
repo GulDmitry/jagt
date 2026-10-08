@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.capability.done;
 
-import dev.jagt.orchestrator.service.FinishedArtifacts;
 import dev.jagt.orchestrator.service.FinishedTasks;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;

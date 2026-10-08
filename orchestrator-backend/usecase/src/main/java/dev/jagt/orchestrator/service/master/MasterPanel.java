@@ -43,7 +43,7 @@ public class MasterPanel {
 
     static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
     /** Opens a finding asking the session for evidence: it decides nothing, so no later round is bound by it. */
-    static final String SHOW = "show: ";
+    public static final String SHOW = "show: ";
 
     /** What jagt read for a round once, quoted to every role. */
     record RoundRead(String ticket, String diff, String decided, List<String> said, String notes) {

@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service.master;
+package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;

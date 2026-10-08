@@ -1,4 +1,4 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.command;
 
 /** How an elapsed time is written in a fixed-width column — one owner, shared by every view that shows one. */
 public final class DurationFormat {

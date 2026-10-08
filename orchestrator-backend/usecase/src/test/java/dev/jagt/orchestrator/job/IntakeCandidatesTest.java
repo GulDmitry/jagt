@@ -1,5 +1,6 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.port.TrackerAssistant;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;

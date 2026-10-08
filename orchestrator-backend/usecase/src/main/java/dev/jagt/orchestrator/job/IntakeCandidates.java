@@ -1,5 +1,6 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.job;
 
+import dev.jagt.orchestrator.service.TicketReader;
 import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.TrackerAssistant;
 import dev.jagt.orchestrator.port.TrackerWorkflow;

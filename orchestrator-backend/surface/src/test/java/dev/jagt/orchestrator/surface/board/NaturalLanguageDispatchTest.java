@@ -1,5 +1,11 @@
-package dev.jagt.orchestrator.service;
+package dev.jagt.orchestrator.surface.board;
 
+import dev.jagt.orchestrator.service.CommandService;
+import dev.jagt.orchestrator.service.ConfigService;
+import dev.jagt.orchestrator.service.Rounds;
+import dev.jagt.orchestrator.service.StateService;
+import dev.jagt.orchestrator.service.TaskLauncher;
+import dev.jagt.orchestrator.service.TaskViews;
 import dev.jagt.orchestrator.port.CommandAssistant;
 import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.Answer;

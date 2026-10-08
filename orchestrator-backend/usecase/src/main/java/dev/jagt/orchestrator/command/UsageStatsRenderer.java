@@ -1,6 +1,5 @@
 package dev.jagt.orchestrator.command;
 
-import dev.jagt.orchestrator.service.TokenFormat;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TaskState;
