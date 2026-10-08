@@ -9,8 +9,8 @@ human stands.
 
 ### Requirement: The Master is a headless run per role, not a window
 One headless run per role of the brief SHALL read each round in the task's worktrees.
-It may run read-only git and the human's MCP reads alone, writing nothing (`HeadlessClaudeRoundReviewer`);
-jagt SHALL write the verdict (`MasterPanel`).
+It may run read-only git and MCP reads alone, writing nothing, its session included (`HeadlessClaudeRoundReviewer`).
+It loads no worktree setting; jagt SHALL write the verdict (`MasterPanel`).
 Each round SHALL cost one heavy read per role, charged to the task as `master`.
 
 #### Scenario: You want a round read before you look
@@ -79,7 +79,7 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 ### Requirement: Instructions never land inside your line
 A nudge to a session SHALL wait while the human is typing in its window.
 
-#### Scenario: You are typing in the agent's window when instructions arrive
+#### Scenario: You are typing when instructions arrive
 - **WHEN** instructions arrive mid-line
 - **THEN** the nudge waits until you send your line
 
@@ -95,7 +95,7 @@ Its findings SHALL go back to the session, in any mode, and the task to `IN_PROG
 - **WHEN** a plan or round has a blocking or wrong finding
 - **THEN** the fix is read anew
 
-#### Scenario: It writes ready but its file still lists findings
+#### Scenario: Ready, but its file lists findings
 - **WHEN** the verdict is `ready` and `master-review.md` lists findings
 - **THEN** it counts as not ready
 

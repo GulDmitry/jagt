@@ -72,6 +72,31 @@ class HeadlessClaudeRoundReviewerTest {
     }
 
     @Test
+    void loadsNoSettingTheWorktreeCarriesAndLeavesNoSessionBehindInIt() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).containsSequence("--setting-sources", "user")
+                .contains("--no-session-persistence");
+    }
+
+    @Test
+    void refusesGitConfigOnTheCommandLineBecauseItCanNameAnExternalDiff() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).contains("Bash(git -c:*)", "Bash(git --config-env:*)");
+    }
+
+    @Test
     void refusesGitsOutputFlagBecauseItWritesAFile() {
         when(runner.run(any(Path.class), any(Duration.class), any()))
                 .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));

@@ -27,12 +27,13 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
             "Bash(git merge-base:*)", "Bash(git rev-parse:*)", "Bash(git ls-files:*)");
     /**
      * The human's own allow rules still load with their MCP servers, so what must never run is denied as well.
-     * Git takes {@code --ou} for {@code --output}, which writes a file.
+     * Git takes {@code --ou} for {@code --output}, which writes a file, and {@code -c} for any config, an external
+     * diff included.
      */
     private static final List<String> REFUSED = List.of("Edit", "Write", "NotebookEdit",
             "Bash(git push:*)", "Bash(git commit:*)", "Bash(git reset:*)", "Bash(git checkout:*)",
             "Bash(git stash:*)", "Bash(git restore:*)", "Bash(git clean:*)", "Bash(git * --ou*)",
-            "Read(**/review_replies.md)");
+            "Bash(git -c:*)", "Bash(git --config-env:*)", "Read(**/review_replies.md)");
     /** The tests ran before the round reached review; every role building at once in one worktree is the cost. */
     private static final List<String> BUILDS = List.of("Bash(./gradlew:*)", "Bash(gradle:*)", "Bash(./mvnw:*)",
             "Bash(mvn:*)", "Bash(npm:*)", "Bash(npx:*)", "Bash(yarn:*)", "Bash(pnpm:*)", "Bash(composer:*)",
@@ -47,7 +48,8 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
     public Answer<Judgement> review(Round round) {
         List<String> cmd = new ArrayList<>(List.of(claude.command(), round.prompt(), "-p",
                 "--json-schema", RoundRead.SCHEMA.json(), "--output-format", "json",
-                "--setting-sources", assistant.settingSources(),
+                // The worktree's settings are the diff's to write, and its hooks would report as the task's session.
+                "--setting-sources", "user", "--no-session-persistence",
                 // Off the system prompt, cwd and git status stop making every worktree write its own cache.
                 "--exclude-dynamic-system-prompt-sections"));
         if (!round.shared().isBlank()) {
