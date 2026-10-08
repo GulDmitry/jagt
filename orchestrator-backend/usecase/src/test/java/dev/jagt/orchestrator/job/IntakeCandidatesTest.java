@@ -97,7 +97,7 @@ class IntakeCandidatesTest {
     void offersTheItemTheWorkflowSaysAMachineMayStart() {
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTitle("Widget layout is off").withUrl("https://tracker/ABC-42")
-                .withTrackerStatus("In Progress").withAssignee("dzmitry");
+                .withTrackerStatus("In Progress").withAssignee("jdoe");
         when(workflow.candidateQuery()).thenReturn("whatever is ready");
         when(assistant.findCandidates("whatever is ready"))
                 .thenReturn(new Answer<>(Optional.of(List.of("ABC-42")), TokenUsage.NONE));

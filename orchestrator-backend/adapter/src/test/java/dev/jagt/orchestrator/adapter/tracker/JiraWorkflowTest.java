@@ -20,15 +20,15 @@ class JiraWorkflowTest {
     private final JiraWorkflow workflow = new JiraWorkflow(configService);
 
     @ParameterizedTest
-    @CsvSource({"In Progress,dzmitry,true",
-            "in progress,DZMITRY,true",
-            "To Do,dzmitry,false",
+    @CsvSource({"In Progress,jdoe,true",
+            "in progress,JDOE,true",
+            "To Do,jdoe,false",
             "In Progress,someone-else,false",
             "In Progress,,false"})
     void startsWorkOnlyOnTheConfiguredStageHeldByTheConfiguredPerson(String stage, String assignee,
                                                                      boolean starts) {
         when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("both", "jira",
-                "dzmitry", "In Progress", "Ready for Stage", null)));
+                "jdoe", "In Progress", "Ready for Stage", null)));
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTrackerStatus(stage).withAssignee(assignee);
 
@@ -39,10 +39,10 @@ class JiraWorkflowTest {
     @CsvSource({"ABC,true", "abc,true", "XYZ,false", "'',false"})
     void startsWorkOnlyOnAnItemOfABoardTheInstallNamed(String board, boolean starts) {
         when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(TrackerConfig.defaults()
-                .withMode("take").withWorkflow("jira").withAssignee("dzmitry").withStartStatus("In Progress")
+                .withMode("take").withWorkflow("jira").withAssignee("jdoe").withStartStatus("In Progress")
                 .withProjects(List.of("ABC"))));
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
-                .withTrackerStatus("In Progress").withAssignee("dzmitry").withTrackerProject(board);
+                .withTrackerStatus("In Progress").withAssignee("jdoe").withTrackerProject(board);
 
         assertThat(workflow.startsWork(item)).isEqualTo(starts);
     }
@@ -50,7 +50,7 @@ class JiraWorkflowTest {
     @Test
     void asksOnlyForTheBoardsTheInstallNamed() {
         when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(TrackerConfig.defaults()
-                .withMode("take").withWorkflow("jira").withAssignee("dzmitry").withStartStatus("In Progress")
+                .withMode("take").withWorkflow("jira").withAssignee("jdoe").withStartStatus("In Progress")
                 .withProjects(List.of("ABC", "XYZ"))));
 
         assertThat(workflow.candidateQuery()).endsWith(" AND project in (\"ABC\", \"XYZ\")");
@@ -59,7 +59,7 @@ class JiraWorkflowTest {
     @Test
     void closesWorkOnTheStageTheInstallCallsDoneWhoeverHoldsTheItem() {
         when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("both", "jira",
-                "dzmitry", "In Progress", "Ready for Stage", null)));
+                "jdoe", "In Progress", "Ready for Stage", null)));
         TicketFacts item = TicketFacts.defaults().withExists(true).withKey("ABC-42")
                 .withTrackerStatus("Ready for Stage").withAssignee("someone-else");
 
@@ -69,10 +69,10 @@ class JiraWorkflowTest {
     @Test
     void asksForTheItemsTheConfiguredPersonHoldsAtTheConfiguredStage() {
         when(configService.load()).thenReturn(ConfigFile.defaults().withTracker(new TrackerConfig("both", "jira",
-                "dzmitry", "In Progress", "Ready for Stage", null)));
+                "jdoe", "In Progress", "Ready for Stage", null)));
 
         assertThat(workflow.candidateQuery())
-                .isEqualTo("the Jira issues matching the JQL: assignee = \"dzmitry\" AND status ="
+                .isEqualTo("the Jira issues matching the JQL: assignee = \"jdoe\" AND status ="
                         + " \"In Progress\"");
     }
 }

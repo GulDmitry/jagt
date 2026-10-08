@@ -34,7 +34,7 @@ class TrackerCheckTest {
     @Test
     void asksForNoLandedStageWhereNothingIsSetToClose() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(TrackerConfig.defaults().withMode("take").withWorkflow("jira").withAssignee("dzmitry")
+                .withTracker(TrackerConfig.defaults().withMode("take").withWorkflow("jira").withAssignee("jdoe")
                         .withStartStatus("In Progress")));
         when(workflow.id()).thenReturn("jira");
 
@@ -63,7 +63,7 @@ class TrackerCheckTest {
     @Test
     void refusesADrivenTrackerJagtCarriesNoWorkflowFor() {
         when(configService.load()).thenReturn(ConfigFile.defaults()
-                .withTracker(new TrackerConfig("both", "none", "dzmitry", "In Progress", "Ready for Stage",
+                .withTracker(new TrackerConfig("both", "none", "jdoe", "In Progress", "Ready for Stage",
                         null)));
         when(workflow.id()).thenReturn("none");
 
