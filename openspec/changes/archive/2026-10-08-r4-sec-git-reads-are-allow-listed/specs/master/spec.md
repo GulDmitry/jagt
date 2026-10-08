@@ -1,11 +1,4 @@
-# master Specification
-
-## Purpose
-
-The Master: a headless reader writing a verdict on each handed-back round; in `act` it stands where the
-human stands.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: The Master is a headless run per role, not a window
 One headless run per role of the brief SHALL read each round in the task's worktrees.
@@ -29,23 +22,6 @@ Each round SHALL cost one heavy read per role, charged to the task as `master`.
 #### Scenario: Whose roles a round is read by
 - **WHEN** a session hands back a round
 - **THEN** its `<self_review>` reads it first, then the Master by the same roles unless its brief names others
-
-### Requirement: The Master judges by a brief
-The Master SHALL judge by `master.brief`, copied from `master-brief.md.dist`, or by that `.dist` where none is named
-or copied (`MasterBriefs.file`); a named brief missing SHALL refuse the start.
-
-#### Scenario: No brief copied
-- **WHEN** you start jagt without copying a brief
-- **THEN** the Master judges by the shipped one
-
-### Requirement: The human's own word stands over the Master
-Every read SHALL quote the human's own words to the session (`AgentRuntime.humanSaid`), overruling any decision taken
-for them; unreadable, they SHALL stop the round
-([0010](../../../docs/decisions/0010-the-humans-own-word-stands-over-the-master.md)).
-
-#### Scenario: The human's words cannot be read
-- **WHEN** reading what the human said fails
-- **THEN** the round stops
 
 ### Requirement: In act the Master moves for you
 With `master.mode: act` the Master SHALL ship a `ready` round, start a plan that holds and answer a question. It SHALL
@@ -77,13 +53,6 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 - **THEN** in `act` it decides as you would and sends the decision back as a finding
 - **AND** a question reaches you in `judge`, or where `mine` keeps `answer`
 
-### Requirement: Instructions never land inside your line
-A nudge to a session SHALL wait while the human is typing in its window.
-
-#### Scenario: You are typing when instructions arrive
-- **WHEN** instructions arrive mid-line
-- **THEN** the nudge waits until you send your line
-
 ### Requirement: Only blocking and wrong stop a round
 A plan or round SHALL be ready unless a finding is blocking or wrong; advice SHALL be a `#` line in `master-review.md`.
 Its findings SHALL go back to the session, in any mode, and the task to `IN_PROGRESS`.
@@ -107,43 +76,3 @@ Its findings SHALL go back to the session, in any mode, and the task to `IN_PROG
 #### Scenario: A round removes something no ticket line asks for
 - **WHEN** it removes an endpoint or version unasked
 - **THEN** it is a question, not a verdict
-
-### Requirement: A verdict rests on proof
-The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PLAN_PENDING` task's `plan.md` in one read
-(`MasterPanel.plan`). It SHALL prove by a run any premise its verdict rests on, never from the author.
-
-#### Scenario: The reviewer cannot prove a finding
-- **WHEN** a finding cannot be proven
-- **THEN** it asks the session to `show:` it, settling nothing
-
-#### Scenario: The session thinks a finding wrong
-- **WHEN** the session disagrees with a finding
-- **THEN** it writes `disputed:` with evidence in `task_notes.md`; proven, it reopens even a settled decision
-
-### Requirement: A settled decision holds across rounds
-`master-decisions.md` in the worktree SHALL hold what earlier rounds settled.
-
-#### Scenario: An earlier round settled something
-- **WHEN** a later reviewer meets a settled decision
-- **THEN** it reopens it only for a blocking reason
-
-### Requirement: Another branch is another task
-In `act` work needing another branch SHALL be its own task, opened by the Master's line
-`do <project> <what to do…> from <branch>` (`MasterShip.open`), the session told what opened; a `from`, `into` or
-`onto` the deploy branch SHALL open nothing.
-
-#### Scenario: A session asks for its work on the deploy branch
-- **WHEN** its `do` line says `into dev`
-- **THEN** nothing opens; that merge is the task's own `deploy`, once `REVIEWED`
-
-### Requirement: Every Master step is seen in one window
-While `master.mode` is not `off`, jagt SHALL keep one `master` window in its tmux session following
-`jagt-master.log`, one line per Master step (`MasterFeedWindow`); closed, it SHALL come back.
-
-#### Scenario: You want to know why a window opened or closed
-- **WHEN** the Master answers, asks, returns, starts, ships, deploys or opens a task
-- **THEN** the `master` window shows it with the task, and an answer with its question and decision
-
-#### Scenario: You close the master window
-- **WHEN** you close it while the Master runs
-- **THEN** it comes back within seconds

@@ -36,8 +36,11 @@ class ReadGateTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"git log --oneline -5", "git diff main..HEAD", "git show HEAD:src/a.txt",
-            "git diff --output-indicator-new=+ HEAD~1", "git log --grep 'ABC-42 fix'", "git status", "git -C . log"})
+    @ValueSource(strings = {"git log --no-ext-diff --no-textconv --oneline -5",
+            "git diff --no-ext-diff --no-textconv main..HEAD", "git show --no-ext-diff --no-textconv HEAD:src/a.txt",
+            "git diff --no-ext-diff --no-textconv --output-indicator-new=+ -U3 HEAD~1",
+            "git log --no-ext-diff --no-textconv --grep 'ABC-42 fix'", "git status -uno",
+            "git -C . log --no-ext-diff --no-textconv", "git blame --no-ext-diff --no-textconv -L10,20 a.txt"})
     void runsAReadOnlyGitCommandInsideTheWorktrees(String command) {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
@@ -51,6 +54,17 @@ class ReadGateTest {
             "git log --ou=/tmp/x", "git blame --contents /etc/passwd a.txt", "git diff /etc/passwd /dev/null",
             "git -C /etc log", "git diff ../../other", "GIT_DIR=/tmp git log", "git -c core.pager=id log"})
     void refusesEveryShellLineButAReadOnlyGitCommandInsideTheWorktrees(String command) {
+        ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
+
+        assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString())).isPresent();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"git blame --no-ext-diff --no-textconv --ignore-revs-file=/etc/passwd a.txt",
+            "git diff --no-ext-diff --no-textconv -O/etc/passwd", "git ls-files --exclude-from=/etc/passwd",
+            "git ls-files -X/etc/passwd", "git diff --no-ext-diff --no-textconv --textconv", "git diff HEAD",
+            "git show --no-ext-diff HEAD"})
+    void refusesAGitOptionOrPathItDoesNotKnowToStayInsideTheWorktrees(String command) {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), true);
 
         assertThat(ReadGate.refusal(scope, "Bash", Map.of("command", command), worktree.toString())).isPresent();
@@ -104,7 +118,7 @@ class ReadGateTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/etc/*", "../**/*", "~/.ssh/*"})
+    @ValueSource(strings = {"/etc/*", "../**/*", "~/.ssh/*", "{../,}secret.txt", "{..,x}/secret.txt"})
     void refusesAGlobPatternReachingOutOfTheWorktrees(String pattern) {
         ReadScope scope = new ReadScope(List.of(worktree), List.of(), false);
 

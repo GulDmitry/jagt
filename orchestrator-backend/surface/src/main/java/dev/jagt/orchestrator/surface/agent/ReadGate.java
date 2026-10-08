@@ -21,12 +21,8 @@ public final class ReadGate {
     private static final Set<String> FILE_TOOLS = Set.of("Read", "Grep", GLOB);
     private static final List<String> PATH_KEYS = List.of("file_path", "path");
     private static final String SHELL_TOOL = "Bash";
-    private static final Set<String> GIT_READS = Set.of("diff", "log", "show", "status", "blame", "merge-base",
-            "rev-parse", "ls-files");
-    /** Each writes a file, or reads one from outside the repository; git takes any unambiguous prefix. */
-    private static final List<String> GIT_REFUSED = List.of("--output", "--no-index", "--contents", "--ext-diff");
-    private static final Pattern SHELL_SYNTAX = Pattern.compile("[;&|<>$`()\\n\\\\]");
-    private static final Pattern PARENT = Pattern.compile("(^|/)\\.\\.(/|$)");
+    /** A brace expansion's alternatives are paths too. */
+    static final Pattern PARENT = Pattern.compile("(^|[/{,])\\.\\.([/},]|$)");
 
     private ReadGate() {
     }
@@ -42,7 +38,7 @@ public final class ReadGate {
             return fileRefusal(read, arguments, here, GLOB.equals(tool));
         }
         if (SHELL_TOOL.equals(tool) && read.git()) {
-            return gitRefusal(read, String.valueOf(arguments.getOrDefault("command", "")), here);
+            return GitReadLine.refusal(read, String.valueOf(arguments.getOrDefault("command", "")), here);
         }
         return Optional.of("jagt refuses " + tool + " in a read: only the tools it was given may run.");
     }
@@ -76,42 +72,7 @@ public final class ReadGate {
         return !pattern.startsWith("/") || inside(read, here, pattern.split("[*?\\[{]", 2)[0]);
     }
 
-    private static Optional<String> gitRefusal(ReadScope read, String command, Path here) {
-        List<String> words = List.of(command.strip().split("\\s+"));
-        if (SHELL_SYNTAX.matcher(command).find() || words.size() < 2 || !"git".equals(words.getFirst())) {
-            return Optional.of("jagt refuses this command in a read: one read-only git command, nothing around it.");
-        }
-        int at = 1;
-        Path repository = here;
-        if ("-C".equals(words.get(at)) && words.size() > 3) {
-            if (!inside(read, here, bare(words.get(at + 1)))) {
-                return Optional.of("jagt refuses git outside the round's worktrees.");
-            }
-            repository = here.resolve(bare(words.get(at + 1)));
-            at += 2;
-        }
-        if (!GIT_READS.contains(words.get(at))) {
-            return Optional.of("jagt refuses git " + words.get(at) + " in a read: only " + GIT_READS + " run.");
-        }
-        for (String word : words.subList(at + 1, words.size())) {
-            String argument = bare(word);
-            String name = argument.split("=", 2)[0];
-            if (name.startsWith("--") && name.length() > 3 && GIT_REFUSED.stream().anyMatch(o -> o.startsWith(name))) {
-                return Optional.of("jagt refuses git " + name + " in a read: it writes or reads outside the repository.");
-            }
-            if ((argument.startsWith("/") || argument.startsWith("~") || PARENT.matcher(argument).find())
-                    && !inside(read, repository, argument)) {
-                return Optional.of("jagt refuses the path " + argument + ": a read stays inside the round's worktrees.");
-            }
-        }
-        return Optional.empty();
-    }
-
-    private static String bare(String word) {
-        return word.replaceAll("['\"]", "");
-    }
-
-    private static boolean inside(ReadScope read, Path here, String path) {
+    static boolean inside(ReadScope read, Path here, String path) {
         if (path.startsWith("~")) {
             return false;
         }
