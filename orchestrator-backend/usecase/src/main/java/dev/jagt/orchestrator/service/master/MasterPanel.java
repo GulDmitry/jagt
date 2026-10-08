@@ -1,12 +1,9 @@
 package dev.jagt.orchestrator.service.master;
 
-import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
-import dev.jagt.orchestrator.service.RoundFacts;
 import dev.jagt.orchestrator.service.OneLine;
-import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.MasterRight;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
@@ -35,11 +32,9 @@ import java.util.concurrent.Future;
 @Slf4j
 public class MasterPanel {
 
-    private final RoundReviewer reviewer;
-    private final UsageTracker usage;
+    private final ChargedReviews reviews;
     private final MasterBriefs briefs;
-    private final MasterDecisions decisions;
-    private final RoundFacts facts;
+    private final RoundQuotes quotes;
 
     static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
     /** Opens a finding asking the session for evidence: it decides nothing, so no later round is bound by it. */
@@ -59,28 +54,27 @@ public class MasterPanel {
 
     /** Writes the round's review file; false where the brief could not be read, and nothing was asked. */
     public boolean review(String taskId, TaskState task, ConfigService.ConfigFile.MasterConfig config) {
-        Optional<String> read = briefs.master(taskId, config);
-        if (read.isEmpty()) {
+        Optional<String> masters = briefs.master(taskId, config);
+        if (masters.isEmpty()) {
             return false;
         }
-        String brief = read.get();
+        String brief = masters.get();
         List<Path> worktrees = worktrees(task);
         List<Role> roles = roles(brief, briefs.author());
         String shared = shared(brief, briefs.author(), config.may(MasterRight.ANSWER));
-        Optional<List<String>> said = facts.humanSaid(task);
+        Optional<RoundRead> read = quotes.round(taskId, task);
         List<Judgement> judgements = new ArrayList<>();
-        if (said.isEmpty()) {
+        if (read.isEmpty()) {
             roles.forEach(role -> judgements.add(Judgement.failed(HUMAN_UNREAD)));
         } else {
-            RoundRead quoted = new RoundRead(facts.ask(taskId, task), facts.diff(task), decisions.of(task), said.get(),
-                    facts.notes(task));
+            RoundRead quoted = read.get();
             try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
-                List<Future<Answer<Judgement>>> asked = roles.stream()
+                List<Future<Judgement>> asked = roles.stream()
                         .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, quoted), worktrees,
                                 role.modelOr(config.modelOrInherited())))
-                        .map(round -> threads.submit(() -> reviewer.review(round))).toList();
-                for (Future<Answer<Judgement>> answer : asked) {
-                    judgements.add(read(taskId, answer));
+                        .map(round -> threads.submit(() -> reviews.review(taskId, round))).toList();
+                for (Future<Judgement> answer : asked) {
+                    judgements.add(read(answer));
                 }
             } catch (InterruptedException stopped) {
                 Thread.currentThread().interrupt();
@@ -96,12 +90,11 @@ public class MasterPanel {
         if (brief.isEmpty()) {
             return false;
         }
-        Optional<List<String>> said = facts.humanSaid(task);
-        Judgement judged = said.isEmpty() ? Judgement.failed(HUMAN_UNREAD)
-                : charged(taskId, reviewer.review(new RoundReviewer.Round("",
-                        planPrompt(taskId, task, brief.get(), facts.plan(task), new RoundRead(facts.ask(taskId, task),
-                                "", decisions.of(task), said.get(), facts.notes(task)), config.may(MasterRight.ANSWER)),
-                        worktrees(task), config.modelOrInherited())));
+        Optional<RoundRead> read = quotes.plan(taskId, task);
+        Judgement judged = read.isEmpty() ? Judgement.failed(HUMAN_UNREAD)
+                : reviews.review(taskId, new RoundReviewer.Round("", planPrompt(taskId, task, brief.get(),
+                        quotes.planFile(task), read.get(), config.may(MasterRight.ANSWER)),
+                        worktrees(task), config.modelOrInherited()));
         return write(taskId, worktrees(task), verdictFile(taskId, List.of(PLANNER), List.of(judged)));
     }
 
@@ -123,34 +116,29 @@ public class MasterPanel {
     public Optional<String> answer(String taskId, TaskState task, String question,
                                    ConfigService.ConfigFile.MasterConfig config, boolean stuck) {
         Optional<String> brief = briefs.master(taskId, config);
-        Optional<List<String>> said = facts.humanSaid(task);
-        if (brief.isEmpty() || said.isEmpty()) {
+        Optional<RoundRead> read = quotes.question(task);
+        if (brief.isEmpty() || read.isEmpty()) {
             return Optional.empty();
         }
-        Answer<Judgement> read = reviewer.review(new RoundReviewer.Round("",
-                answerPrompt(taskId, task, brief.get(), briefs.author(), question, decisions.of(task), said.get(), stuck),
+        Judgement judged = reviews.review(taskId, new RoundReviewer.Round("",
+                answerPrompt(taskId, task, brief.get(), briefs.author(), question, read.get().decided(),
+                        read.get().said(), stuck),
                 worktrees(task),
                 config.modelOrInherited()));
-        usage.chargeTask(taskId, read.usage());
-        return read.facts().filter(judged -> judged.failure().isBlank() && !judged.findings().isEmpty())
-                .map(judged -> judged.findings().stream().map(f -> OneLine.of(f.issue())).collect(Collectors.joining("\n")));
+        return Optional.of(judged).filter(said -> said.failure().isBlank() && !said.findings().isEmpty())
+                .map(said -> said.findings().stream().map(f -> OneLine.of(f.issue())).collect(Collectors.joining("\n")));
     }
 
     private static List<Path> worktrees(TaskState task) {
         return task.repos().stream().map(TaskRepo::worktreePath).map(Path::of).toList();
     }
 
-    private Judgement read(String taskId, Future<Answer<Judgement>> answer) throws InterruptedException {
+    private static Judgement read(Future<Judgement> answer) throws InterruptedException {
         try {
-            return charged(taskId, answer.get());
+            return answer.get();
         } catch (ExecutionException thrown) {
             return Judgement.failed("the review threw " + thrown.getCause());
         }
-    }
-
-    private Judgement charged(String taskId, Answer<Judgement> read) {
-        usage.chargeTask(taskId, read.usage());
-        return read.facts().orElse(Judgement.failed("the review answered nothing"));
     }
 
     /** The Master's own table where its brief has one, else the author's: the Master extends the session. */
