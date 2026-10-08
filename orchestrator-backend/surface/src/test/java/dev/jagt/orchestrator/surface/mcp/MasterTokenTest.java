@@ -28,6 +28,17 @@ class MasterTokenTest {
     }
 
     @Test
+    void closesTheDirectoryHoldingItToEveryoneButItsOwner(@TempDir Path root) throws Exception {
+        Files.createDirectory(root.resolve(".jagt"), PosixFilePermissions.asFileAttribute(
+                PosixFilePermissions.fromString("rwxr-xr-x")));
+
+        new MasterToken(new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())));
+
+        assertThat(PosixFilePermissions.toString(Files.getPosixFilePermissions(root.resolve(".jagt"))))
+                .isEqualTo("rwx------");
+    }
+
+    @Test
     void drawsANewTokenAtEachStart(@TempDir Path root) throws Exception {
         OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString()));
         new MasterToken(paths);

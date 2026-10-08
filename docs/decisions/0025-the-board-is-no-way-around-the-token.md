@@ -22,6 +22,10 @@ Accepted 2026-10-08. Adds to [0023](0023-the-master-is-identified-by-a-token.md)
   `mcp_client.js`.
 - Both are guardrails. Known to pass: a same-user process forging Origin; a URL or path assembled at runtime; the
   Read tool on the token file; another worktree's path in `X-Working-Directory`.
+- Past [0022](0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md)'s guard too: a session
+  editing its own `.jagt/hooks`, the Write tool being ungated; a shared repository config (`core.fsmonitor`,
+  `diff.external`) set from a worktree, which then runs in the human's checkout.
+- `.jagt` at the root is its owner's alone (0700).
 - The worktree header stays unauthenticated: a per-task token would sit in worktree files any same-user process
   reads, adding a step, not a boundary.
 

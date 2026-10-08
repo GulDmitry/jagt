@@ -37,6 +37,7 @@ public class MasterToken {
     private static void write(Path file, String value) {
         try {
             Files.createDirectories(file.getParent());
+            Files.setPosixFilePermissions(file.getParent(), PosixFilePermissions.fromString("rwx------"));
             Files.deleteIfExists(file);
             Files.createFile(file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")));
             Files.writeString(file, value);
