@@ -19,8 +19,8 @@ and a third `model` column reads that role with its own model.
 
 ## Environments
 
-- **Name the environments sessions use freely**, such as dev and stage: logging in and checking there needs no
-  one's leave. Name the one that is off limits, such as production.
+Sessions log in and check freely in: _none named yet_.
+Off limits to every session: _none named yet_.
 
 ## Patterns that stop a round
 
