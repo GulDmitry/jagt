@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.config.AssistantProperties;
 import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.service.ConfigService;
@@ -35,6 +36,7 @@ public class MasterPanel {
     private final ChargedReviews reviews;
     private final MasterBriefs briefs;
     private final RoundQuotes quotes;
+    private final AssistantProperties assistant;
 
     static final String HUMAN_UNREAD = "what the human typed to the session could not be read";
     /** Opens a finding asking the session for evidence: it decides nothing, so no later round is bound by it. */
@@ -61,7 +63,8 @@ public class MasterPanel {
         String brief = masters.get();
         List<Path> worktrees = worktrees(task);
         List<Role> roles = roles(brief, briefs.author());
-        String shared = shared(brief, briefs.author(), config.may(MasterRight.ANSWER));
+        String shared = shared(brief, briefs.author(), config.may(MasterRight.ANSWER),
+                !assistant.mcpTools().isEmpty());
         Optional<RoundRead> read = quotes.round(taskId, task);
         List<Judgement> judgements = new ArrayList<>();
         if (read.isEmpty()) {
@@ -93,7 +96,8 @@ public class MasterPanel {
         Optional<RoundRead> read = quotes.plan(taskId, task);
         Judgement judged = read.isEmpty() ? Judgement.failed(HUMAN_UNREAD)
                 : reviews.review(taskId, new RoundReviewer.Round("", planPrompt(taskId, task, brief.get(),
-                        quotes.planFile(task), read.get(), config.may(MasterRight.ANSWER)),
+                        quotes.planFile(task), read.get(), config.may(MasterRight.ANSWER),
+                        !assistant.mcpTools().isEmpty()),
                         worktrees(task), config.modelOrInherited()));
         return write(taskId, worktrees(task), verdictFile(taskId, List.of(PLANNER), List.of(judged)));
     }
@@ -230,11 +234,12 @@ public class MasterPanel {
     }
 
     static String planPrompt(String taskId, TaskState task, String brief, String plan, RoundRead read,
-                             boolean decides) {
+                             boolean decides, boolean tracker) {
         return GOAL + "Task " + taskId + " stopped at its plan, before any code. The brief you judge by:\n" + brief
                 + "\n\n" + round(taskId, task)
-                + (read.ticket().isBlank() ? "Read the ticket with your tracker tools.\n"
-                        : "The ticket:\n<ticket>\n" + read.ticket() + "\n</ticket>\n")
+                + (!read.ticket().isBlank() ? "The ticket:\n<ticket>\n" + read.ticket() + "\n</ticket>\n"
+                        : tracker ? "Read the ticket with your tracker tools.\n" : "The ticket was not read: rule only"
+                        + " on the plan, and call any premise resting on the ticket unproven.\n")
                 + (plan.isBlank() ? "" : "The plan, plan.md:\n<plan>\n" + plan + "\n</plan>\n")
                 + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
                         + "\n</session_notes>\n")
@@ -284,11 +289,13 @@ public class MasterPanel {
     }
 
     /** Names no role and no task, so every reader of every round sends it alike and finds it cached. */
-    static String shared(String brief, String authorBrief, boolean decides) {
+    static String shared(String brief, String authorBrief, boolean decides, boolean tracker) {
         return GOAL + "The brief you judge by:\n" + brief + "\n\n"
                 + "The brief the author worked to, its %s filled per task; yours extends it:\n"
                 + authorBrief + "\n\n"
-                + "Read the ticket: it is quoted in the round where jagt read it; elsewhere use your tracker tools."
+                + "Read the ticket: it is quoted in the round where jagt read it; elsewhere "
+                + (tracker ? "use your tracker tools." : "it was not read: rule only on the diff, and call any"
+                        + " premise resting on the ticket unproven.")
                 + " Then read everything the task changed against its base, committed and not: quoted in the round"
                 + " where jagt read it, with git where it is not. Judge from the"
                 + " ticket and the diff: the author's own account is not evidence, what it points at is. A"

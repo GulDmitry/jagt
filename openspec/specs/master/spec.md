@@ -110,7 +110,7 @@ Its findings SHALL go back to the session, in any mode, and the task to `IN_PROG
 
 ### Requirement: A verdict rests on proof
 The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PLAN_PENDING` task's `plan.md` in one read
-(`MasterPanel.plan`). It SHALL prove by a run any premise its verdict rests on, never from the author.
+(`MasterPanel.plan`). It SHALL prove each premise by a run, never from the author; an unread ticket proves nothing.
 
 #### Scenario: The reviewer cannot prove a finding
 - **WHEN** a finding cannot be proven

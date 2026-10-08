@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service.master;
 
+import dev.jagt.orchestrator.config.AssistantProperties;
+import dev.jagt.orchestrator.port.RoundReviewer;
 import dev.jagt.orchestrator.port.RoundReviewer.Finding;
 import dev.jagt.orchestrator.port.RoundReviewer.Judgement;
 import dev.jagt.orchestrator.port.RoundReviewer.Premise;
@@ -8,6 +10,7 @@ import dev.jagt.orchestrator.service.ConfigService;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,14 +32,14 @@ class MasterPanelTest {
 
     @Test
     void showsEachReviewerTheBriefTheAuthorWorkedTo() {
-        String shared = MasterPanel.shared("judge hard", "never commit unasked", false);
+        String shared = MasterPanel.shared("judge hard", "never commit unasked", false, true);
 
         assertThat(shared).contains("never commit unasked");
     }
 
     @Test
     void letsAReviewerStandingInForTheHumanDecideWhatItWouldHaveAsked() {
-        String shared = MasterPanel.shared("judge hard", "never commit unasked", true);
+        String shared = MasterPanel.shared("judge hard", "never commit unasked", true, true);
 
         assertThat(shared).contains("never answer question");
     }
@@ -56,10 +59,40 @@ class MasterPanelTest {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
         String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
-                new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""), false);
+                new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""), false, true);
 
         assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>",
                 "<plan>\n1. add the v3 route\n</plan>", "whether this plan does what the ticket asks");
+    }
+
+    @Test
+    void tellsAPlanReaderLoadingNoServerThatTheTicketWasNeverRead() {
+        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
+
+        String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
+                new MasterPanel.RoundRead("", "", "", List.of(), ""), false, false);
+
+        assertThat(prompt).doesNotContain("tracker tools").contains("The ticket was not read");
+    }
+
+    @Test
+    void tellsAReviewerLoadingNoServerThatATicketTheRoundDoesNotQuoteWasNeverRead(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of("| QA | is it tested right |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
+
+        new MasterPanel(reviews, briefs, quotes, AssistantProperties.empty())
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+
+        ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
+        verify(reviews).review(eq("ABC-1"), round.capture());
+        assertThat(round.getValue().shared()).doesNotContain("tracker tools")
+                .contains("call any premise resting on the ticket unproven");
     }
 
     @Test
@@ -121,7 +154,7 @@ class MasterPanelTest {
 
         String answer = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
                 "outcome=question — keep v2?", "", List.of(), false);
-        String review = MasterPanel.shared("judge hard", "never commit unasked", true);
+        String review = MasterPanel.shared("judge hard", "never commit unasked", true, true);
 
         assertThat(answer).startsWith("Your goal is the task finished: ready to merge, its request's checks green");
         assertThat(review).startsWith("Your goal is the task finished: ready to merge, its request's checks green");
@@ -187,7 +220,7 @@ class MasterPanelTest {
         when(briefs.author()).thenReturn("");
         when(quotes.round("ABC-1", task)).thenReturn(Optional.empty());
 
-        new MasterPanel(reviews, briefs, quotes)
+        new MasterPanel(reviews, briefs, quotes, AssistantProperties.empty())
                 .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("act", null, null, null, null));
 
         verify(reviews, never()).review(any(), any());
