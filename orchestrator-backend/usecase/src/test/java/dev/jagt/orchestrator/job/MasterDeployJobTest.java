@@ -86,4 +86,16 @@ class MasterDeployJobTest {
 
         verify(commands, times(1)).execute("ABC-1", TaskAction.DEPLOY);
     }
+
+    @Test
+    void deploysNothingWhereTheMasterOnlyJudges() {
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
+        when(state.tasks()).thenReturn(Map.of("ABC-1",
+                TaskState.builder("demo", "/wt", TaskStatus.REVIEWED).build()));
+
+        new MasterDeployJob(state, config, commands).run();
+
+        verify(commands, never()).execute(anyString(), any());
+    }
 }

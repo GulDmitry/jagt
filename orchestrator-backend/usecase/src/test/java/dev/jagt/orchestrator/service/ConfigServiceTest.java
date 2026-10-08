@@ -5,11 +5,14 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AgentConfig;
+import dev.jagt.orchestrator.service.ConfigService.ConfigFile.MasterConfig;
+import dev.jagt.orchestrator.task.MasterRight;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -123,5 +126,11 @@ class ConfigServiceTest {
         AgentConfig agent = AgentConfig.defaults().withProbeSeconds(configured);
 
         assertThat(agent.probeSecondsOrDefault()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @EnumSource(MasterRight.class)
+    void grantsTheMasterNoRightWhileItOnlyJudges(MasterRight right) {
+        assertThat(MasterConfig.defaults().withMode("judge").may(right)).isFalse();
     }
 }
