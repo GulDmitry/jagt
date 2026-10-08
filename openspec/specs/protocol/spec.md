@@ -105,15 +105,15 @@ no facts, never a guess; reaching the human is the caller's (`AutoReviewSchedule
 - **THEN** the human is tapped once, not left a log line
 
 ### Requirement: A ticket is read through the human's MCP servers
-A ticket ref SHALL be read, paid, through the human's MCP servers for title, labels and project.
-It SHALL load no built-in tool. `ReadGate` SHALL refuse any call but MCP reads (`get*`, `list*`…) and
-`allowed-tools`, whose bare server means its reads, your allow rules included; unreachable, every call. An answer that
-never reached it is discarded.
+A ticket ref's title, labels and project SHALL be read, paid, through the human's MCP servers.
+It SHALL load no built-in tool. `ReadGate` SHALL refuse any call but MCP reads (`get*`, `list*`…, no `*_delete`
+mid-name) and `allowed-tools`, whose bare server means its reads, your allow rules included; unreachable, every call.
+An answer that never reached it is discarded.
 `assistant.mcp-config`, a path or the JSON itself, loads only the declared servers; their tool names carry no plugin prefix.
 
 #### Scenario: Key or URL
 - **WHEN** the human runs `do ABC-42` or `do <url>`
-- **THEN** title, labels and project are read through those servers
+- **THEN** all three are read through those servers
 
 #### Scenario: No server reaches the tracker
 - **WHEN** no MCP server reaches the tracker of `do ABC-42 <project>`

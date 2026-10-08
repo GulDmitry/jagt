@@ -90,7 +90,7 @@ class ReadOnlyToolsTest {
 
         assertThat(settings.getFirst()).isEqualTo("--settings");
         assertThat(settings.get(1)).contains("PreToolUse", "http://127.0.0.1:8290/api/agent/read/f1", "exit 2");
-        assertThat(scopes.ask("f1")).contains(scope);
+        assertThat(scopes.ask("f1")).contains(scope.withWrites(ReadOnlyTools.MCP_WRITES));
     }
 
     @Test

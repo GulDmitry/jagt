@@ -3,14 +3,14 @@
 [← AGENTS.md](../../AGENTS.md)
 
 One file per ARCHITECTURAL decision — jagt's rings and seams, where state lives, how sessions run, what owns a
-move: costly to reverse, or one a newcomer would undo as wrong. A feature's rule or parameter is none.
+move: costly to reverse, or one a newcomer would undo as wrong. Never a feature's rule or parameter.
 The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidence and alternatives.
 
 - Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
 - **Never edited once accepted**, typos aside: a change is a new record, the old one's status `superseded by NNNN`.
 - Sections: **Status** (date, state), **Context** (what forced it, with numbers),
   **Decision**, **Rejected** (each with its reason), **Reopen when** (what measurement changes it).
-- At most 400 words: a record needing more is two decisions.
+- At most 400 words, or it is two decisions.
 - **Linked**: a record names its rule first; this index, where a why is recovered, lists every record
   (`DecisionIndexTest`).
 - A record taken after the fact says `recorded retroactively`, carrying only what history proves.
@@ -20,17 +20,17 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0001 — A session lives one round](0001-a-task-session-lives-one-round.md)
 - [0002 — The board is jagt's only UI](0002-the-board-is-jagts-only-ui.md)
 - [0003 — Tracker, code host via MCP](0003-tracker-and-code-host-are-read-through-the-agents-own-mcp.md)
-- [0004 — jagt keeps its invariants out of git hooks](0004-jagt-keeps-its-invariants-out-of-git-hooks.md)
+- [0004 — Invariants stay out of git hooks](0004-jagt-keeps-its-invariants-out-of-git-hooks.md)
 - [0005 — The base branch is read-only](0005-the-base-branch-is-read-only.md)
 - [0006 — The machine moves; a model only judges](0006-the-machine-owns-every-move-a-model-only-judges.md)
 - [0007 — Only adapter names a vendor or an OS](0007-only-adapter-names-a-vendor-or-an-os.md)
 - [0008 — A failed read is never "not found"](0008-a-failed-read-is-never-not-found.md)
 - [0009 — Read once and quoted](0009-what-jagt-can-read-it-reads-once-and-quotes.md)
-- [0010 — The human's word overrules the Master](0010-the-humans-own-word-stands-over-the-master.md)
+- [0010 — The human overrules the Master](0010-the-humans-own-word-stands-over-the-master.md)
 - [0011 — A red run is the session's to diagnose](0011-a-red-run-is-the-sessions-to-diagnose.md)
 - [0012 — The Master finishes the task](0012-the-master-finishes-the-task.md)
 - [0013 — A deploy conflict is the session's in `act`](0013-a-deploy-conflict-is-the-sessions-in-act.md)
-- [0014 — Behaviour is recorded as OpenSpec specs](0014-behaviour-is-recorded-as-openspec-specs.md)
+- [0014 — Behaviour lives in OpenSpec](0014-behaviour-is-recorded-as-openspec-specs.md)
 - [0015 — Another branch is another task](0015-another-branch-is-another-task.md)
 - [0016 — Only the human closes a task](0016-only-the-human-closes-a-task.md)
 - [0017 — The Master in one feed window](0017-the-master-is-seen-in-one-feed-window.md)
@@ -46,3 +46,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0027 — Headless calls are fenced](0027-a-headless-call-is-fenced-by-jagt.md)
 - [0028 — Guard gaps, round four](0028-what-the-guards-still-pass-after-round-four.md)
 - [0029 — Guard gaps, round five](0029-what-the-guards-still-pass-after-round-five.md)
+- [0030 — Guard gaps, round six](0030-what-the-guards-still-pass-after-round-six.md)

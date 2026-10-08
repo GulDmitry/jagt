@@ -30,7 +30,9 @@ public final class ReadGate {
 
     /** Why the call is refused, or empty when it may go on to the CLI's own permission rules. */
     public static Optional<String> refusal(ReadScope read, String tool, Map<String, Object> input, String cwd) {
-        if (read.tools().stream().anyMatch(named -> names(named, tool))) {
+        List<String> allowing = read.tools().stream().filter(named -> names(named, tool)).toList();
+        if (allowing.contains(tool)
+                || !allowing.isEmpty() && read.writes().stream().noneMatch(write -> names(write, tool))) {
             return Optional.empty();
         }
         Map<String, Object> arguments = input == null ? Map.of() : input;

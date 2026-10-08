@@ -6,6 +6,7 @@
 
 Accepted 2026-10-08. Supersedes the claim of [0028](0028-what-the-guards-still-pass-after-round-four.md) that
 its list is complete; its rows stand, and those below join them.
+Its mid-name deny row closed by [0030](0030-what-the-guards-still-pass-after-round-six.md).
 
 ## Context
 

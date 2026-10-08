@@ -36,6 +36,22 @@ class ReadGateTest {
         assertThat(ReadGate.refusal(scope, tool, Map.of(), "/tmp")).get().asString().contains("refuses " + tool);
     }
 
+    @Test
+    void refusesAWriteVerbMidNameThatOnlyAGlobAllowed() {
+        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*"), false, List.of("mcp__*__*_delete_*"));
+
+        assertThat(ReadGate.refusal(scope, "mcp__acme__get_and_delete_issue", Map.of(), "/tmp")).get().asString()
+                .contains("refuses mcp__acme__get_and_delete_issue");
+    }
+
+    @Test
+    void letsThroughAWriteVerbMidNameTheHumanNamedExactly() {
+        ReadScope scope = new ReadScope(List.of(), List.of("mcp__acme__get*", "mcp__acme__get_and_delete_issue"),
+                false, List.of("mcp__*__*_delete_*"));
+
+        assertThat(ReadGate.refusal(scope, "mcp__acme__get_and_delete_issue", Map.of(), "/tmp")).isEmpty();
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"git log --no-ext-diff --no-textconv --oneline -5",
             "git diff --no-ext-diff --no-textconv main..HEAD", "git show --no-ext-diff --no-textconv HEAD:src/a.txt",

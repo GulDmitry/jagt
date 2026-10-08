@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import lombok.With;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -15,9 +16,14 @@ public class ReadScopes {
 
     /**
      * {@code tools} are tool names or globs; {@code roots} bound the file tools; {@code git} admits the read-only
-     * git subcommands inside them.
+     * git subcommands inside them; {@code writes} are globs a tool only a glob allowed must not match.
      */
-    public record ReadScope(List<Path> roots, List<String> tools, boolean git) {
+    @With
+    public record ReadScope(List<Path> roots, List<String> tools, boolean git, List<String> writes) {
+
+        public ReadScope(List<Path> roots, List<String> tools, boolean git) {
+            this(roots, tools, git, List.of());
+        }
     }
 
     private final Map<String, ReadScope> open = new ConcurrentHashMap<>();
