@@ -19,7 +19,7 @@ missing. Add a kind, never an exception.**
 | `task/` | the task record and everything it is made of, its `TaskStatus` too | built — `service/StateService` writes it to `state.json` |
 | `flow/` | which status allows what, and where each outcome leads | built — `FlowRules`, `FlowEngine`, `FlowReports`, `Move` |
 | `capability/` | one thing that can be done to a task | built — a class per verb |
-| `job/` | work that runs with nobody watching | built — `Job`, `Jobs` and every job |
+| `job/` | work that runs with nobody watching | built — `Job`, `Jobs`, every job and what only jobs read |
 | `notify/` | something a human must be told | built — the fan-out; the contract is `port/Notification` + `port/Notifier` |
 | `surface/` | who is asking | built — `board`, `mcp`, `agent`, `ui` |
 | `command/` | what a human asks that no task owns | built — `GlobalCommand` + `GlobalCommands`, one class per verb |
@@ -133,7 +133,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |
 | `EditorDriver` | `adapter/CliEditorDriver` |
 | `StartupCheck` | `startup/` and the edge — see [Assembly validation](#assembly-validation) |
-| `AgentWorktree`, `Notification` | nothing: they are value **records** the interfaces above pass |
+| `AgentWorktree`, `Notification`, `Answer` | nothing: they are value **records** the interfaces above pass |
 
 ## Where a new thing goes
 
@@ -141,7 +141,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 |-------------|---------|
 | add a per-task verb | a constant in `flow/TaskAction`, a class in `capability/`, **and** a rule in `flow/FlowRules` |
 | add a report | one `GlobalCommand` in `command/` with `report()` true — the board picks it up |
-| add a launch shortcut | a `GlobalCommand`, plus an endpoint and a form for the board |
+| add a launch shortcut | a `GlobalCommand` whose `part()` names the board form it opens |
 | replace a built-in verb | another `TaskCapability` for the same action with a higher `priority()` |
 | run something before/after a verb | a `port/CapabilityInterceptor` for that action — never a new status |
 | add unattended work | one `Job`; `Jobs` tickers it and the `jobs` report lists it |
@@ -172,7 +172,7 @@ question without owning a node, `ui/` owns the nodes it renders, `app.js` only w
 | `ui/card`, `ui/header` | what a task looks like, and the line above the grid — pure, no listeners |
 | `ui/filters`, `ui/order`, `ui/projects` | what narrows, what re-orders, and the project picker |
 | `ui/act`, `ui/inflight`, `ui/confirm` | running one action: what is in flight, what it asks first |
-| `ui/submit`, `ui/launch`, `ui/resume` | one submit pipeline, and the two forms that use it |
+| `ui/submit`, `ui/launch` | one submit pipeline, and the form that uses it |
 | `ui/palette`, `ui/keys` | ⌘K's two tiers, and every key binding in one table |
 | `ui/dialogs`, `ui/toast`, `ui/tips` | what opens over the board, what is said in passing, what a hover shows |
 | `ui/legend` | what every mark means, as the page's own elements — their one definition |
