@@ -44,7 +44,7 @@ public final class ToolGate {
             + "|\\b(sh|bash|zsh|dash|ksh)\\s+-\\w*c\\b|\\beval\\b");
     /** Where the line may leave the task's branch or worktree, HEAD is no longer known to be the task's branch. */
     private static final Pattern HEAD_MOVES = Pattern.compile(
-            "\\b(cd|pushd|checkout|switch)\\b|(^|\\s)(-C|--git-dir|--work-tree)(\\s|=)");
+            "\\b(cd|pushd|checkout|switch|GIT_DIR|GIT_WORK_TREE)\\b|(^|\\s)(-C|--git-dir|--work-tree)(\\s|=)");
 
     private ToolGate() {
     }
@@ -70,7 +70,9 @@ public final class ToolGate {
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
         boolean headIsTheTask = !HEAD_MOVES.matcher(command).find();
-        for (String segment : command.split(SEPARATORS)) {
+        String escapesQuoted = line.replace("\\\n", " ").replace("''", "").replace("\"\"", "")
+                .replaceAll("\\\\(.)", "\"$1\"");
+        for (String segment : escapesQuoted.split(SEPARATORS)) {
             Optional<String> refusal = pushIn(segment).flatMap(push -> refuse(push, taskBranch, headIsTheTask));
             if (refusal.isPresent()) {
                 return refusal;
@@ -201,7 +203,7 @@ public final class ToolGate {
 
     private static boolean writes(String refspec, String taskBranch, boolean headIsTheTask) {
         String destination = destinationOf(refspec);
-        return destination.equals(taskBranch) || headIsTheTask && destination.equals(CURRENT_BRANCH);
+        return destination.equals(taskBranch) || headIsTheTask && refspec.equals(CURRENT_BRANCH);
     }
 
     private static String destinationOf(String refspec) {

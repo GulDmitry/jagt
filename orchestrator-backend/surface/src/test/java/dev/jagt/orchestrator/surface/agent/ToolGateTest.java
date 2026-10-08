@@ -38,6 +38,11 @@ class ToolGateTest {
             "git \"push\" origin main",
             "g'i't push origin main",
             "git pu'sh' origin main",
+            "GIT_DIR=/repo/.git git push origin HEAD",
+            "GIT_WORK_TREE=/repo git push origin HEAD",
+            "git push origin ABC-42:HEAD",
+            "git push origin ABC-42 \\#x main",
+            "git push origin ABC-42 x\\> main",
     })
     void refusesAPushWhoseDestinationIsNotTheTasksBranch(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290))
