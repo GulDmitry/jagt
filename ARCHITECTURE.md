@@ -126,7 +126,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `{Tracker,Routing,CodeHost,Command}Assistant`, `McpHealth` | `adapter/assistant/HeadlessClaude<port>`, `ClaudeMcpHealthProbe` |
 | `RoundReviewer` | `adapter/assistant/HeadlessClaudeRoundReviewer` |
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
-| `Notifier` | `adapter/DesktopNotifier` — a channel; `notify/Notifications` fans out to every one it finds |
+| `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
 | `Processes` | `adapter/ProcessRunner` |
 | `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one seam with a single impl, not selectable by config |
 | `SessionLog` | `adapter/agent/ClaudeSessionLog` — what a session's own log says it last did |
