@@ -14,7 +14,7 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 
 #### Scenario: Deploy
 - **WHEN** `deploy <task>`
-- **THEN** merged into `deployBranch` and pushed
+- **THEN** merged and pushed
 
 #### Scenario: Diff base
 - **WHEN** `ide <task> diff` shows files the task never touched
@@ -33,7 +33,7 @@ deploy branch MUST be refused.
 
 #### Scenario: Release request
 - **WHEN** resuming a `dev` → `main` request
-- **THEN** refused: `dev` is shared
+- **THEN** refused
 
 ### Requirement: No verdict gates deploy
 `FlowRules`' `DEPLOY` SHALL ask only for an open request, plus DEPLOY_CONFLICT; NEW, PLAN_PENDING, IN_PROGRESS,
@@ -76,7 +76,7 @@ the first conflict: DEPLOY_CONFLICT, naming both sides from there.
 
 #### Scenario: Multi-repo deploy
 - **WHEN** `deploy ABC-42` and one conflicts after another landed
-- **THEN** the next `deploy` resumes there, or `revert` takes out what landed
+- **THEN** the next `deploy` resumes there
 
 #### Scenario: Break-off
 - **WHEN** it breaks off for something no worktree fixes
