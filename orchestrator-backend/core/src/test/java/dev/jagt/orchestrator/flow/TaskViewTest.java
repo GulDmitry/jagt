@@ -14,17 +14,6 @@ import static org.assertj.core.api.Assertions.tuple;
 
 class TaskViewTest {
 
-    private static TaskView viewOf(String ticketUrl, String reviewRequestUrl) {
-        return TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                .alias("a1").ticketUrl(ticketUrl).mrUrl(reviewRequestUrl).build(), false,
-                AutoReviewWatch.none(), Map.of("proj", "dev"));
-    }
-
-    private static TaskView polling(AutoReviewWatch watch) {
-        return TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                .alias("a1").mrUrl("http://host/mr/1").build(), false, watch, Map.of("proj", "dev"));
-    }
-
     private static java.util.stream.Stream<org.junit.jupiter.params.provider.Arguments> watches() {
         return java.util.stream.Stream.of(
                 org.junit.jupiter.params.provider.Arguments.of(AutoReviewWatch.watching(1L), Owner.CI),
@@ -37,7 +26,10 @@ class TaskViewTest {
     @ParameterizedTest
     @org.junit.jupiter.params.provider.MethodSource("watches")
     void asksForAHumanOnlyWhereAnExpectedPollHasStopped(AutoReviewWatch watch, Owner expected) {
-        assertThat(polling(watch).owner()).isEqualTo(expected);
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("http://host/mr/1").build(), false, watch, Map.of("proj", "dev"));
+
+        assertThat(view.owner()).isEqualTo(expected);
     }
 
     @ParameterizedTest
@@ -49,7 +41,8 @@ class TaskViewTest {
             "not a url at all",
     })
     void dropsALinkThatIsNotHttpRatherThanHandingItToAnAnchor(String hostile) {
-        TaskView view = viewOf(hostile, hostile);
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .ticketUrl(hostile).mrUrl(hostile).build(), false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 
         assertThat(view.ticketUrl()).isNull();
         assertThat(view.reviewRequestUrl()).isNull();
@@ -57,8 +50,10 @@ class TaskViewTest {
 
     @Test
     void keepsRealLinksAndTrimsTheWhitespaceAroundThem() {
-        TaskView view = viewOf("  https://tracker.example.com/browse/ABC-1  ",
-                "http://host.example.com/x/-/merge_requests/9");
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .ticketUrl("  https://tracker.example.com/browse/ABC-1  ")
+                .mrUrl("http://host.example.com/x/-/merge_requests/9").build(), false, AutoReviewWatch.none(),
+                Map.of("proj", "dev"));
 
         assertThat(view.ticketUrl()).isEqualTo("https://tracker.example.com/browse/ABC-1");
         assertThat(view.reviewRequestUrl()).isEqualTo("http://host.example.com/x/-/merge_requests/9");
@@ -66,7 +61,8 @@ class TaskViewTest {
 
     @Test
     void leavesBothLinksUnsetWhenTheTaskHasNone() {
-        TaskView view = viewOf(null, null);
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build(),
+                false, AutoReviewWatch.none(), Map.of("proj", "dev"));
 
         assertThat(view.ticketUrl()).isNull();
         assertThat(view.reviewRequestUrl()).isNull();
@@ -74,7 +70,10 @@ class TaskViewTest {
 
     @Test
     void stillSaysSomethingWhenTheStoredRequestLinkWasUnusable() {
-        assertThat(viewOf(null, "javascript:alert(1)").detail())
+        TaskView view = TaskView.of("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
+                .mrUrl("javascript:alert(1)").build(), false, AutoReviewWatch.none(), Map.of("proj", "dev"));
+
+        assertThat(view.detail())
                 .isEqualTo("PROBLEM: review request link unusable: javascript:alert(1)");
     }
 

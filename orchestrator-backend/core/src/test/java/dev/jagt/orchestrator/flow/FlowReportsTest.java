@@ -31,7 +31,9 @@ class FlowReportsTest {
 
         reports.report("ABC-1", TaskStatus.REVIEW_PENDING, "widget fixed");
 
-        assertThat(written("ABC-1").apply(current(TaskStatus.IN_PROGRESS)).status())
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        assertThat(write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()).status())
                 .isEqualTo(TaskStatus.REVIEW_PENDING);
     }
 
@@ -59,7 +61,10 @@ class FlowReportsTest {
 
         reports.read("ABC-1", TaskStatus.APPROVED, "approved");
 
-        assertThat(written("ABC-1").apply(current(TaskStatus.CI_POLLING)).status()).isEqualTo(TaskStatus.APPROVED);
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        assertThat(write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()).status())
+                .isEqualTo(TaskStatus.APPROVED);
     }
 
     @Test
@@ -68,7 +73,9 @@ class FlowReportsTest {
 
         reports.report("ABC-1", TaskStatus.IN_PROGRESS, "picking the task back up");
 
-        TaskState after = written("ABC-1").apply(current(TaskStatus.REVERTED));
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        TaskState after = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.REVERTED).build());
         assertThat(after.status()).isEqualTo(TaskStatus.REVERTED);
         assertThat(after.message()).isEqualTo("picking the task back up");
     }
@@ -80,18 +87,10 @@ class FlowReportsTest {
         reports.report("ABC-1", TaskStatus.CI_POLLING, "review request: http://host/1",
                 (was, task) -> task.withMrUrl("http://host/1"));
 
-        TaskState after = written("ABC-1").apply(current(TaskStatus.SHIPPING));
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        TaskState after = write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.SHIPPING).build());
         assertThat(after.status()).isEqualTo(TaskStatus.CI_POLLING);
         assertThat(after.mrUrl()).isEqualTo("http://host/1");
-    }
-
-    private static TaskState current(TaskStatus status) {
-        return TaskState.builder("proj", "/wt", status).alias("a1").build();
-    }
-
-    private UnaryOperator<TaskState> written(String taskId) {
-        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
-        verify(stateService).updateTask(eq(taskId), write.capture());
-        return write.getValue();
     }
 }

@@ -46,9 +46,10 @@ class FlowEngineTest {
     void saysTheTaskIsGoneRatherThanFailingObscurelyWhenAnotherTabClosedIt() {
         when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
         when(stateService.task("ABC-1")).thenReturn(Optional.empty());
+        FlowEngine engine = new FlowEngine(stateService,
+                new Capabilities(List.of(new NeverRunCapability(TaskAction.FOCUS))), sessions);
 
-        assertThatThrownBy(() -> engine(new NeverRunCapability(TaskAction.FOCUS))
-                .run("ABC-1", TaskAction.FOCUS))
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.FOCUS))
                 .asInstanceOf(type(Refusal.class))
                 .satisfies(refusal -> assertThat(refusal.code()).isEqualTo(Refusal.Code.NO_SUCH_TASK))
                 .satisfies(refusal -> assertThat(refusal).hasMessageContaining("No task ABC-1")
@@ -57,10 +58,13 @@ class FlowEngineTest {
 
     @Test
     void refusesAnActionTheStatusDoesNotAllowWithoutLettingTheWorkStart() {
-        havingTask("ABC-1", TaskStatus.IN_PROGRESS, false);
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()));
+        FlowEngine engine = new FlowEngine(stateService,
+                new Capabilities(List.of(new NeverRunCapability(TaskAction.DEPLOY))), sessions);
 
-        assertThatThrownBy(() -> engine(new NeverRunCapability(TaskAction.DEPLOY))
-                .run("ABC-1", TaskAction.DEPLOY))
+        assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.DEPLOY))
                 .asInstanceOf(type(Refusal.class))
                 .satisfies(refusal -> assertThat(refusal.code())
                         .isEqualTo(Refusal.Code.ACTION_NOT_AVAILABLE))
@@ -71,18 +75,28 @@ class FlowEngineTest {
 
     @Test
     void movesTheTaskToTheStatusTheRulesGiveForAnOutcomeThatWorked() {
-        havingTask("ABC-1", TaskStatus.REVIEW_PENDING, false);
-        FlowEngine engine = engine(new FixedCapability(TaskAction.SHIP,
-                Outcome.ok("ship ABC-1: request opened", "review request: http://host/1")));
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new FixedCapability(TaskAction.SHIP,
+                Outcome.ok("ship ABC-1: request opened", "review request: http://host/1")))), sessions);
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
 
-        assertThat(engine.run("ABC-1", TaskAction.SHIP)).isEqualTo("ship ABC-1: request opened");
-        assertThat(statusWritten("ABC-1", TaskStatus.REVIEW_PENDING)).isEqualTo(TaskStatus.CI_POLLING);
+        String said = engine.run("ABC-1", TaskAction.SHIP);
+
+        assertThat(said).isEqualTo("ship ABC-1: request opened");
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        assertThat(write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.REVIEW_PENDING).build())
+                .status()).isEqualTo(TaskStatus.CI_POLLING);
     }
 
     @Test
     void writesNothingAtAllForWorkThatOnlyLooksAtTheTask() {
-        havingTask("ABC-1", TaskStatus.IN_PROGRESS, false);
-        FlowEngine engine = engine(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1")));
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(
+                new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1")))), sessions);
 
         assertThat(engine.run("ABC-1", TaskAction.FOCUS)).isEqualTo("focused ABC-1");
         verify(stateService, never()).updateTask(any(), any());
@@ -90,16 +104,21 @@ class FlowEngineTest {
 
     @Test
     void stampsWhatALandingLeftBehindBeforeItRefusesTheHalfDoneRevert() {
-        havingTask("ABC-1", TaskStatus.DEPLOYED, true);
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).mrUrl("http://host/1").build()));
         RuntimeException cause = new RuntimeException("push rejected");
-        FlowEngine engine = engine(new FixedCapability(TaskAction.REVERT,
-                Outcome.partial("reverted widget-api, storefront still live", "revert stopped", cause)));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new FixedCapability(TaskAction.REVERT,
+                Outcome.partial("reverted widget-api, storefront still live", "revert stopped", cause)))), sessions);
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
 
         assertThatThrownBy(() -> engine.run("ABC-1", TaskAction.REVERT))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("reverted widget-api, storefront still live")
                 .hasCause(cause);
-        assertThat(statusWritten("ABC-1", TaskStatus.DEPLOYED)).isEqualTo(TaskStatus.DEPLOYED);
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        assertThat(write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.DEPLOYED).build())
+                .status()).isEqualTo(TaskStatus.DEPLOYED);
     }
 
     @Test
@@ -107,20 +126,33 @@ class FlowEngineTest {
         when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
         when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder("proj", "/wt", TaskStatus.APPROVED)
                 .mrUrl("http://host/1").deployCommit("cafebabe1234").build()));
-        FlowEngine engine = engine(new FixedCapability(TaskAction.REVERT, Outcome.ok("reverted ABC-1")));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(
+                new FixedCapability(TaskAction.REVERT, Outcome.ok("reverted ABC-1")))), sessions);
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
 
-        assertThat(engine.run("ABC-1", TaskAction.REVERT)).isEqualTo("reverted ABC-1");
-        assertThat(statusWritten("ABC-1", TaskStatus.APPROVED)).isEqualTo(TaskStatus.REVERTED);
+        String said = engine.run("ABC-1", TaskAction.REVERT);
+
+        assertThat(said).isEqualTo("reverted ABC-1");
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        assertThat(write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.APPROVED).build())
+                .status()).isEqualTo(TaskStatus.REVERTED);
     }
 
     @Test
     void leavesTheTaskWhereItIsWhenAnOutcomeLeadsNowhereButStillHasSomethingToSay() {
-        havingTask("ABC-1", TaskStatus.CI_POLLING, true);
-        FlowEngine engine = engine(new FixedCapability(TaskAction.SWEEP,
-                Outcome.ok("ABC-1: pipeline still running", "checks running")));
+        when(stateService.canonicalTaskId("ABC-1")).thenReturn("ABC-1");
+        when(stateService.task("ABC-1")).thenReturn(Optional.of(
+                TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).mrUrl("http://host/1").build()));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(new FixedCapability(TaskAction.SWEEP,
+                Outcome.ok("ABC-1: pipeline still running", "checks running")))), sessions);
+        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
 
-        assertThat(engine.run("ABC-1", TaskAction.SWEEP)).isEqualTo("ABC-1: pipeline still running");
-        assertThat(statusWritten("ABC-1", TaskStatus.CI_POLLING)).isEqualTo(TaskStatus.CI_POLLING);
+        String said = engine.run("ABC-1", TaskAction.SWEEP);
+
+        assertThat(said).isEqualTo("ABC-1: pipeline still running");
+        verify(stateService).updateTask(eq("ABC-1"), write.capture());
+        assertThat(write.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
+                .status()).isEqualTo(TaskStatus.CI_POLLING);
     }
 
     @Test
@@ -128,25 +160,9 @@ class FlowEngineTest {
         when(stateService.canonicalTaskId("a1")).thenReturn("ABC-1");
         when(stateService.task("ABC-1")).thenReturn(Optional.of(
                 TaskState.builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()));
-        FlowEngine engine = engine(new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1")));
+        FlowEngine engine = new FlowEngine(stateService, new Capabilities(List.of(
+                new FixedCapability(TaskAction.FOCUS, Outcome.ok("focused ABC-1")))), sessions);
 
         assertThat(engine.run("a1", TaskAction.FOCUS)).isEqualTo("focused ABC-1");
-    }
-
-    private FlowEngine engine(TaskCapability capability) {
-        return new FlowEngine(stateService, new Capabilities(List.of(capability)), sessions);
-    }
-
-    private void havingTask(String taskId, TaskStatus status, boolean hasReviewRequest) {
-        when(stateService.canonicalTaskId(taskId)).thenReturn(taskId);
-        when(stateService.task(taskId)).thenReturn(Optional.of(
-                TaskState.builder("proj", "/wt", status).alias("a1")
-                        .mrUrl(hasReviewRequest ? "http://host/1" : null).build()));
-    }
-
-    private TaskStatus statusWritten(String taskId, TaskStatus was) {
-        ArgumentCaptor<UnaryOperator<TaskState>> write = ArgumentCaptor.captor();
-        verify(stateService).updateTask(eq(taskId), write.capture());
-        return write.getValue().apply(TaskState.builder("proj", "/wt", was).build()).status();
     }
 }

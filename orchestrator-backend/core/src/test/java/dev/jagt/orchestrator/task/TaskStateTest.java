@@ -67,7 +67,8 @@ class TaskStateTest {
 
     @Test
     void reportsTheActivityStampForATaskWrittenBeforeHistoryExisted() {
-        TaskState legacy = legacyTask(TaskStatus.REVIEW_PENDING, 5_000, null, null);
+        TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.REVIEW_PENDING, 5_000, null,
+                "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null, null, null, null);
 
         assertThat(legacy.history()).isEmpty();
         assertThat(legacy.statusSince()).isEqualTo(5_000);
@@ -108,7 +109,9 @@ class TaskStateTest {
 
     @Test
     void keepsTheStatusStampOfALegacyTaskWhenTheAgentOnlyPingsItsKeepAlive() {
-        TaskState legacy = legacyTask(TaskStatus.IN_PROGRESS, 1_700_000_000_000L, "working", List.of());
+        TaskState legacy = new TaskState(List.of(TaskRepo.of("proj", "/wt")), TaskStatus.IN_PROGRESS,
+                1_700_000_000_000L, "working", "a1", null, null, null, 0, 0, 0, 0, null, null, null, false, null,
+                null, null, List.of());
 
         TaskState afterKeepAlive = legacy.touched();
 
@@ -242,11 +245,5 @@ class TaskStateTest {
                 .approved(true).pipelineStatus("success").build();
 
         assertThat(task.withMrUrl("https://host/mr/1").approved()).isTrue();
-    }
-
-    private static TaskState legacyTask(TaskStatus status, long lastActive, String message,
-                                        List<StatusChange> history) {
-        return new TaskState(List.of(TaskRepo.of("proj", "/wt")), status, lastActive, message, "a1", null,
-                null, null, 0, 0, 0, 0, null, null, null, false, null, null, null, history);
     }
 }
