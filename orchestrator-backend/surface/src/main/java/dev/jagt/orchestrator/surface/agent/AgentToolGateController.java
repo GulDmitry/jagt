@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.jagt.orchestrator.service.StateService;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,7 +16,6 @@ import java.util.Map;
 
 /** A gate that failed closed would make a stopped backend look like a rule, so anything not refused answers nothing. */
 @RestController
-@RequiredArgsConstructor
 public class AgentToolGateController {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,6 +29,12 @@ public class AgentToolGateController {
     }
 
     private final StateService stateService;
+    private final String serverAddress;
+
+    public AgentToolGateController(StateService stateService, @Value("${server.address:}") String serverAddress) {
+        this.stateService = stateService;
+        this.serverAddress = serverAddress;
+    }
 
     /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
     @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -41,7 +46,7 @@ public class AgentToolGateController {
         }
         // A directory no task owns has no branch a push could be refused against.
         String taskBranch = stateService.findByWorktree(cwd).map(Map.Entry::getKey).orElse(null);
-        return ToolGate.refusal(call.toolName(), call.command(), taskBranch, request.getLocalPort())
+        return ToolGate.refusal(call.toolName(), call.command(), taskBranch, request.getLocalPort(), serverAddress)
                 .map(reason -> ResponseEntity.ok(denied(reason)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }

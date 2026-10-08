@@ -26,10 +26,10 @@ public final class ToolGate {
     /** What the branch a worktree is on is called, so a push of it is a push of the task's branch. */
     private static final String CURRENT_BRANCH = "HEAD";
     /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
-    private static final String BOARD = "(127\\.0\\.0\\.1|localhost|\\[::1]|0\\.0\\.0\\.0):%d\\b|master-token|mcp_client\\.js";
-    private static final Pattern PUSH = Pattern.compile("\\bpush\\b");
-    /** A word quoted whole is still the command; one quoted with what follows is data. */
-    private static final Pattern GIT = Pattern.compile("([\"']?)(\\S*/)?git\\1");
+    private static final String BOARD = "(127\\.0\\.0\\.1|localhost|\\[::1]|0\\.0\\.0\\.0%s):0*%d\\b|master-token|mcp_client\\.js";
+    private static final String QUOTING = "[\\\\'\"]";
+    private static final Pattern PUSH =Pattern.compile("\\bpush\\b");
+    private static final Pattern GIT = Pattern.compile("(\\S*/)?git");
     private static final Pattern FORCE = Pattern.compile("--force|-[a-zA-Z]*f[a-zA-Z]*");
     private static final Pattern HOOK_OFF = Pattern.compile("--no-verify|GIT_CONFIG|(?i:core\\.hookspath)"
             + "|alias\\.|--config-env|\\benv\\s+(-\\w*[iu]\\b|-(\\s|$)|--ignore-environment|--unset)"
@@ -42,14 +42,15 @@ public final class ToolGate {
     }
 
     /** Why the call is refused, or empty when it is allowed. */
-    public static Optional<String> refusal(String toolName, String line, String taskBranch, int boardPort) {
+    public static Optional<String> refusal(String toolName, String line, String taskBranch, int boardPort,
+                                           String boardAddress) {
         if (!SHELL_TOOL.equalsIgnoreCase(toolName) || line == null || taskBranch == null
                 || taskBranch.isBlank()) {
             return Optional.empty();
         }
-        // The shell reads `\git` and `g''it` as git.
         String command = line.replace("\\\n", " ").replace("\\", "").replace("''", "").replace("\"\"", "");
-        if (Pattern.compile(BOARD.formatted(boardPort)).matcher(command).find()) {
+        String address = boardAddress == null || boardAddress.isBlank() ? "" : "|" + Pattern.quote(boardAddress);
+        if (Pattern.compile(BOARD.formatted(address, boardPort)).matcher(line.replaceAll(QUOTING, "")).find()) {
             return Optional.of("jagt refuses a line reaching its board or the Master's token: a session acts"
                     + " through its own MCP tools.");
         }
@@ -74,11 +75,11 @@ public final class ToolGate {
     private static Optional<List<String>> pushIn(String segment) {
         List<String> words = List.of(segment.trim().split("\\s+"));
         for (int at = 0; at < words.size(); at++) {
-            if (!isGit(words.get(at))) {
+            if (!GIT.matcher(bare(words.get(at))).matches()) {
                 continue;
             }
             int subcommand = afterGitOptions(words, at + 1);
-            if (subcommand < words.size() && "push".equals(words.get(subcommand))) {
+            if (subcommand < words.size() && "push".equals(bare(words.get(subcommand)))) {
                 return Optional.of(words.subList(subcommand + 1, words.size()));
             }
         }
@@ -93,8 +94,11 @@ public final class ToolGate {
         return at;
     }
 
-    private static boolean isGit(String word) {
-        return GIT.matcher(word).matches();
+    /** The shell reads {@code \\git}, {@code g'i't} and {@code "push"} as the bare word; an unclosed quote opens data. */
+    private static String bare(String word) {
+        boolean closed = word.chars().filter(c -> c == '\'').count() % 2 == 0
+                && word.chars().filter(c -> c == '"').count() % 2 == 0;
+        return closed ? word.replaceAll(QUOTING, "") : word;
     }
 
     /**
