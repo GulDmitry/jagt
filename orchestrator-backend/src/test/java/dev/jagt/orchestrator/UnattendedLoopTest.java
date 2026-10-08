@@ -14,6 +14,10 @@ class UnattendedLoopTest {
 
     private static final List<Path> UNATTENDED = List.of(
             Path.of("usecase/src/main/java/dev/jagt/orchestrator/service/ReviewSweepService.java"),
+            Path.of("usecase/src/main/java/dev/jagt/orchestrator/service/RoundReading.java"),
+            Path.of("usecase/src/main/java/dev/jagt/orchestrator/service/RoundRecord.java"),
+            Path.of("usecase/src/main/java/dev/jagt/orchestrator/service/RoundOutcome.java"),
+            Path.of("usecase/src/main/java/dev/jagt/orchestrator/service/RoundBrief.java"),
             Path.of("usecase/src/main/java/dev/jagt/orchestrator/job/AutoReviewScheduler.java"));
 
     @Test

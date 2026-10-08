@@ -7,7 +7,7 @@ How a review round is answered, reported and drafted into replies, and how an ex
 ## Requirements
 
 ### Requirement: The brief routes each thread
-`ReviewSweepService.brief` SHALL route each thread: fix, change nothing and say why — beyond the ticket is a task of its own —
+`RoundBrief.of` SHALL route each thread: fix, change nothing and say why — beyond the ticket is a task of its own —
 or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never CI_POLLING.
 
 #### Scenario: The comment is right
@@ -98,7 +98,7 @@ same, or every poll re-briefs.
 - **THEN** the session changes nothing and asks you, naming the job
 
 ### Requirement: The reply shape is prescribed once
-The round brief (`ReviewSweepService.brief`), relayed every round, SHALL prescribe one block per thread: its link, the quoted
+The round brief (`RoundBrief.of`), relayed every round, SHALL prescribe one block per thread: its link, the quoted
 newest note, `FIXED | NO CHANGE | QUESTION`, reply.
 
 #### Scenario: Replies too long

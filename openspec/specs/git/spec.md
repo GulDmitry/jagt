@@ -138,7 +138,7 @@ task's, or forcing it without the lease; and `HEAD` where the line may move it.
 ### Requirement: Repositories multiply worktrees, not agents
 `task/TaskRepo` SHALL be a list, `repos.get(0)` running the session. Creation is all-or-nothing (`resolveRepos`),
 unwinding what was cut; a task's repositories are one scope (`findByWorktree`). A round is merged as the least finished
-(`ReviewSweepService.merged`): approved only when all are, the **worst** pipeline, each comment prefixed with its
+(`RoundReading.merged`): approved only when all are, the **worst** pipeline, each comment prefixed with its
 repository.
 
 #### Scenario: Independent

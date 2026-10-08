@@ -111,7 +111,7 @@ leftover message cannot flip one.
 
 ### Requirement: The board says, never infers
 The board SHALL render `TaskStatus.label()` (`out for review`, `not shipped`, `not approved`), a state, never a
-move; the enum name is the wire value `state.json` carries. `ReviewSweepService.record` SHALL stamp
+move; the enum name is the wire value `state.json` carries. `RoundRecord.record` SHALL stamp
 `TaskState.approved` with the pipeline, null until read: an empty ring beside the request until it lands.
 
 #### Scenario: A new round

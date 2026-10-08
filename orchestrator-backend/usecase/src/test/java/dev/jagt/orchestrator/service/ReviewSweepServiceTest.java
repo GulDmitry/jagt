@@ -1,332 +1,82 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.notify.Notifications;
-import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.task.ReviewFacts;
-import dev.jagt.orchestrator.task.TaskRepo;
-import dev.jagt.orchestrator.task.TaskState;
-import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class ReviewSweepServiceTest {
 
-    private final ReviewReader reviewReader = mock(ReviewReader.class);
-    private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
-    private final AgentSessions sessions = mock(AgentSessions.class);
     private final StateService stateService = mock(StateService.class);
-    private final Notifications notifications = mock(Notifications.class);
-    private final ReviewSweepService sweep = new ReviewSweepService(reviewReader, statusReports, sessions,
-            stateService, notifications);
+    private final RoundReading reading = mock(RoundReading.class);
+    private final RoundOutcome outcome = mock(RoundOutcome.class);
+    private final ReviewSweepService sweep = new ReviewSweepService(stateService, reading, outcome);
 
     @BeforeEach
-    void aTaskWithAnOpenRequest() {
+    void aTaskWhoseIdIsItsOwn() {
         when(stateService.canonicalTaskId(anyString())).thenAnswer(call -> call.getArgument(0));
-        when(sessions.relayIfChanged(anyString(), anyString())).thenReturn(true);
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build()));
     }
 
     @Test
-    void advancesToApprovedOnceAHumanApprovedAndNoThreadIsLeftOpen() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
+    void settlesTheRoundItRead() {
+        ReviewFacts facts = new ReviewFacts(true, true, "success", List.of());
+        when(reading.read("ABC-1")).thenReturn(new RoundReading.Round("http://mr/1", facts));
+        when(outcome.settle("ABC-1", "http://mr/1", facts)).thenReturn(new ReviewSweepService.SweepResult(
+                ReviewSweepService.SweepResult.Kind.APPROVED, "approved"));
 
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.APPROVED);
-        verify(statusReports).markRead("ABC-1", TaskStatus.APPROVED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
     }
 
     @Test
-    void marksAGreenRoundReviewedWhileNobodyHasApprovedItYet() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
-        verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
-    }
-
-    @Test
-    void keepsAnEarlierRoundsVerdictFlaggedWhenThisSweepCouldNotReadTheChecks() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
-                .pipelineStatus("failed").build()));
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "unknown", List.of())));
-        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
-        TaskState after = stamped.getValue().apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING)
-                .pipelineStatus("failed").build());
-        assertThat(after.pipelineStatus()).isEqualTo("failed");
-        assertThat(after.pipelineUnread()).isTrue();
-    }
-
-    @Test
-    void leavesAGreenThisSweepCouldNotReReadOutOfTheReviewedDecision() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
-                .pipelineStatus("success").build()));
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "unknown", List.of())));
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
-    }
-
-    @Test
-    void stampsWhetherTheRoundIsApprovedSoBothSurfacesCanShowItBesideTheRequest() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
-        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
-        assertThat(stamped.getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build()).approved()).isTrue();
-    }
-
-    @Test
-    void relaysCommentsAsDraftsAndNeverAutoAdvancesEvenWhenApproved() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, true,
-                "success", List.of("coderabbit (a.java:3): rename x"))));
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
-        verify(sessions).relayIfChanged(eq("ABC-1"),
-                contains("review_replies.md"));
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
-    }
-
-    @Test
-    void reportsARoundUnchangedInsteadOfRelayingItASecondTime() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("reviewer (a.java:3): drop the cache"))));
-        when(sessions.relayIfChanged(anyString(), anyString())).thenReturn(false);
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNCHANGED);
-        assertThat(result.message()).contains("unchanged since the last relay");
-    }
-
-    @Test
-    void asksForRepliesInAShapeAHumanCanReadInOnePass() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("reviewer (a.java:3): drop the cache"))));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue())
-                .contains("FIXED | NO CHANGE | QUESTION")
-                .contains("NECESSARY AND SUFFICIENT");
-    }
-
-    @Test
-    void relaysAReviewRoundAsAJudgementCallAndNotAsAListOfOrders() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("reviewer (a.java:3): drop the cache"))));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue())
-                .contains("Wrong: change NOTHING")
-                .contains("outcome=question")
-                .contains("drop the cache");
-    }
-
-    @Test
-    void relaysAReviewRoundThatLeavesARightCommentBeyondTheTicketToATaskOfItsOwn() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("bot (a.java:3): also migrate the other listeners"))));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue()).contains("Right, but beyond the ticket: change NOTHING");
-    }
-
-    @Test
-    void relaysAThreadWholeSoTheAgentAnswersTheReviewersLastWord() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern\n"
-                        + "bot: then bound the input length"))));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue()).contains("<threads>\nhttp://mr/1#note_7\nbot: quote the pattern\n"
-                + "dev: the rule IS a pattern\nbot: then bound the input length");
-    }
-
-    @Test
-    void tellsTheAgentToWeighTheReviewersAnswerRatherThanRepostItsOwnReply() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern"))));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue())
-                .contains("what you answer is its NEWEST note")
-                .contains("never\nre-post the reply it has already read");
-    }
-
-    @Test
-    void tellsTheAgentToLeaveAThreadWaitingOnTheReviewerAlone() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("http://mr/1#note_7\nbot: quote the pattern\ndev: the rule IS a pattern"))));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue())
-                .contains("Where the newest note is your OWN and nobody\nanswered it, that thread is waiting"
-                        + " on the reviewer: leave it alone and give it no block.");
-    }
-
-    @Test
-    void asksTheAgentToReportWhetherTheRoundChangedAnything() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("reviewer (a.java:3): drop the cache"))));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue())
-                .contains("outcome=no_changes")
-                .contains("jagt reads the worktree")
-                .contains("The file holds DRAFTS: post nothing and resolve");
-    }
-
-    @Test
-    void tellsAnAgentFixingOnlyAFailedBuildWhenTheRoundIsOver() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue())
-                .contains("When the build is fixed locally, set status REVIEW_PENDING (outcome=progress).");
-    }
-
-    @Test
-    void handsTheAgentTheFailingJobsLogRatherThanOnlyTheWordFailed() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "failed", "test:unit\nWidgetTest > rendersLabel FAILED\n  expected 'on' but was 'off'",
-                List.of(), 0)));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue()).contains("<checks>\ntest:unit\nWidgetTest > rendersLabel FAILED\n"
-                + "  expected 'on' but was 'off'\n</checks>");
-    }
-
-    @Test
-    void stopsTheTaskOnTheBoardWhenItsChecksReadRed() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
-
-        sweep.sweep("ABC-1");
-
-        verify(statusReports).markRead("ABC-1", TaskStatus.CI_FAILED);
-    }
-
-    @Test
-    void briefsARedRoundToReproduceTheFailureAndAskWhereItIsNotTheCode() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
-        ArgumentCaptor<String> relayed = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), relayed.capture());
-        assertThat(relayed.getValue())
-                .contains("Reproduce it with the command that job ran")
-                .contains("A gate fails on EVERY condition it lists: answer each.")
-                .contains("A red check is this task's to turn green, code that predates it included")
-                .contains("outcome=question naming the job and why");
-    }
-
-    @Test
-    void reportsAnUnreadableReviewInsteadOfTreatingItAsClean() {
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenReturn(Optional.empty());
+    void judgesNothingWhereThereIsNoRoundToRead() {
+        when(reading.read("ABC-1")).thenReturn(new RoundReading.Refused(new ReviewSweepService.SweepResult(
+                ReviewSweepService.SweepResult.Kind.UNREADABLE, "error: read failed: http://mr/1")));
 
         var result = sweep.sweep("ABC-1");
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
+        verifyNoInteractions(outcome);
     }
 
     @Test
     void refusesASecondSweepOfATaskWhileTheFirstIsStillRunning() {
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
+        when(reading.read("ABC-1")).thenAnswer(call -> {
             reentrant.set(sweep.sweep("ABC-1"));
-            return Optional.of(new ReviewFacts(true, false, "running", List.of()));
+            return new RoundReading.Refused(new ReviewSweepService.SweepResult(
+                    ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
         });
 
         sweep.sweep("ABC-1");
 
         assertThat(reentrant.get().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.IN_FLIGHT);
         assertThat(reentrant.get().message()).contains("already running");
-        verify(reviewReader, times(1)).read("ABC-1", "http://mr/1");
+        verify(reading, times(1)).read("ABC-1");
     }
 
     @Test
     void guardsAnAliasAndItsTaskIdAsOneAndTheSameSweep() {
         var reentrant = new AtomicReference<ReviewSweepService.SweepResult>();
         when(stateService.canonicalTaskId("a1")).thenReturn("ABC-1");
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
+        when(reading.read("ABC-1")).thenAnswer(call -> {
             reentrant.set(sweep.sweep("a1"));
-            return Optional.of(new ReviewFacts(true, false, "running", List.of()));
+            return new RoundReading.Refused(new ReviewSweepService.SweepResult(
+                    ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
         });
 
         sweep.sweep("ABC-1");
@@ -336,14 +86,14 @@ class ReviewSweepServiceTest {
 
     @Test
     void sweepsAgainOnceThePreviousSweepHasFinished() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of())));
+        when(reading.read("ABC-1")).thenReturn(new RoundReading.Refused(new ReviewSweepService.SweepResult(
+                ReviewSweepService.SweepResult.Kind.PENDING, "waiting")));
 
         sweep.sweep("ABC-1");
         var second = sweep.sweep("ABC-1");
 
         assertThat(second.kind()).isNotEqualTo(ReviewSweepService.SweepResult.Kind.IN_FLIGHT);
-        verify(reviewReader, times(2)).read("ABC-1", "http://mr/1");
+        verify(reading, times(2)).read("ABC-1");
     }
 
     @Test
@@ -351,10 +101,11 @@ class ReviewSweepServiceTest {
         CountDownLatch firstSweepIsInside = new CountDownLatch(1);
         CountDownLatch secondSweepReturned = new CountDownLatch(1);
         AtomicReference<ReviewSweepService.SweepResult> fromOtherThread = new AtomicReference<>();
-        when(reviewReader.read("ABC-1", "http://mr/1")).thenAnswer(call -> {
+        when(reading.read("ABC-1")).thenAnswer(call -> {
             firstSweepIsInside.countDown();
             secondSweepReturned.await(5, TimeUnit.SECONDS);
-            return Optional.of(new ReviewFacts(true, false, "running", List.of()));
+            return new RoundReading.Refused(new ReviewSweepService.SweepResult(
+                    ReviewSweepService.SweepResult.Kind.PENDING, "waiting"));
         });
         Thread contender = new Thread(() -> {
             try {
@@ -372,222 +123,6 @@ class ReviewSweepServiceTest {
         contender.join(TimeUnit.SECONDS.toMillis(5));
 
         assertThat(fromOtherThread.get().kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.IN_FLIGHT);
-        verify(reviewReader, times(1)).read("ABC-1", "http://mr/1");
-    }
-
-    @Test
-    void saysThereIsNoRequestToReadWithoutTouchingTheCodeHost() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
-                .builder("proj", "/wt", TaskStatus.IN_PROGRESS).alias("a1").build()));
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.NO_MR);
-        verifyNoInteractions(reviewReader);
-    }
-
-    @Test
-    void holdsATaskBackWhileOneOfItsRepositoriesIsStillBuilding() {
-        twoRepositoriesUnderReview();
-        when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
-        when(reviewReader.read("ABC-1", "http://mr/web"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of())));
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
-        assertThat(result.message()).contains("checks running");
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
-    }
-
-    @Test
-    void isApprovedOnlyWhenEveryRepositoryIs() {
-        twoRepositoriesUnderReview();
-        when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
-        when(reviewReader.read("ABC-1", "http://mr/web"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.REVIEWED);
-        verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
-    }
-
-    @Test
-    void namesTheRepositoryEachRelayedThreadCameFrom() {
-        twoRepositoriesUnderReview();
-        when(reviewReader.read("ABC-1", "http://mr/api")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("http://mr/api#note_1\nbot: tighten this"))));
-        when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "success", List.of("http://mr/web#note_2\nbot: rename that"))));
-
-        var result = sweep.sweep("ABC-1");
-
-        ArgumentCaptor<String> brief = ArgumentCaptor.captor();
-        verify(sessions).relayIfChanged(eq("ABC-1"), brief.capture());
-        assertThat(brief.getValue()).contains("[api] http://mr/api#note_1\nbot: tighten this",
-                "[web] http://mr/web#note_2\nbot: rename that");
-        assertThat(result.message()).contains("2 thread(s) relayed");
-    }
-
-    @Test
-    void quotesTheLogOfTheRepositoryThatFailedRatherThanOfTheGreenOne() {
-        twoRepositoriesUnderReview();
-        when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
-        when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(Optional.of(new ReviewFacts(true, false,
-                "failed", "lint: unused import Widget", List.of(), 0)));
-        ArgumentCaptor<String> brief = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(sessions).relayIfChanged(eq("ABC-1"), brief.capture());
-        assertThat(brief.getValue()).contains("[web] lint: unused import Widget");
-    }
-
-    @Test
-    void failsTheWholeSweepWhenOneRepositoriesRequestCannotBeRead() {
-        twoRepositoriesUnderReview();
-        when(reviewReader.read("ABC-1", "http://mr/api"))
-                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
-        when(reviewReader.read("ABC-1", "http://mr/web")).thenReturn(Optional.empty());
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.UNREADABLE);
-        verifyNoInteractions(statusReports);
-    }
-
-    @Test
-    void doesNotCallARoundCleanWhileOneRepositoryHasNoRequestAtAll() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", null, null)),
-                TaskStatus.CI_POLLING).alias("a1").build()));
-
-        var result = sweep.sweep("ABC-1");
-
-        assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.PENDING);
-        assertThat(result.message()).contains("no request in web");
-        verifyNoInteractions(reviewReader);
-    }
-
-    @Test
-    void keepsWhatTheHostSaidAboutTheChecksOnTheTask() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "SUCCEEDED", List.of())));
-        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
-        assertThat(stamped.getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
-                .pipelineStatus()).isEqualTo("SUCCEEDED");
-    }
-
-    @Test
-    void keepsWhenTheHostSaysTheRequestWasOpened() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of(), 1_700_000_000_000L)));
-        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
-        assertThat(stamped.getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
-                .requestOpenedAt()).isEqualTo(1_700_000_000_000L);
-    }
-
-    @Test
-    void reportsTheOldestRequestOfAMultiRepoTaskAsHowLongTheReviewHasBeenWaiting() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState
-                .builder(List.of(TaskRepo.of("api", "/wt-api").withMrUrl("http://mr/1"),
-                        TaskRepo.of("web", "/wt-web").withMrUrl("http://mr/2")), TaskStatus.CI_POLLING)
-                .alias("a1").build()));
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of(), 1_700_000_100_000L)));
-        when(reviewReader.read("ABC-1", "http://mr/2"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of(), 1_700_000_000_000L)));
-        ArgumentCaptor<UnaryOperator<TaskState>> stamped = ArgumentCaptor.captor();
-
-        sweep.sweep("ABC-1");
-
-        verify(stateService).updateTask(eq("ABC-1"), stamped.capture());
-        assertThat(stamped.getValue()
-                .apply(TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).build())
-                .requestOpenedAt()).isEqualTo(1_700_000_000_000L);
-    }
-
-    @Test
-    void leavesTheRequestsAgeAloneWhenTheReadCouldNotSayWhenItWasOpened() {
-        TaskState known = TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1")
-                .mrUrl("http://mr/1").pipelineStatus("running").approved(false)
-                .requestOpenedAt(1_700_000_000_000L).build();
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(known));
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "running", List.of())));
-
-        sweep.sweep("ABC-1");
-
-        verify(stateService, never()).updateTask(eq("ABC-1"), any());
-    }
-
-    @Test
-    void tapsTheHumanWhenTheChecksGoRedAndSaysNothingOnALaterPollOfTheSameRun() {
-        AtomicReference<TaskState> stored = new AtomicReference<>(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1").build());
-        when(stateService.task("ABC-1")).thenAnswer(call -> Optional.of(stored.get()));
-        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
-            stored.set(call.<UnaryOperator<TaskState>>getArgument(1).apply(stored.get()));
-            return true;
-        });
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "failed", List.of())));
-
-        sweep.sweep("ABC-1");
-        sweep.sweep("ABC-1");
-
-        verify(notifications, times(1)).send(Notification.checksFailed("ABC-1", "failed"));
-        verifyNoMoreInteractions(notifications);
-    }
-
-    @Test
-    void saysNothingWhenAFailedRunComesBackGreen() {
-        AtomicReference<TaskState> stored = new AtomicReference<>(TaskState
-                .builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").mrUrl("http://mr/1")
-                .pipelineStatus("failed").build());
-        when(stateService.task("ABC-1")).thenAnswer(call -> Optional.of(stored.get()));
-        when(stateService.updateTask(eq("ABC-1"), any())).thenAnswer(call -> {
-            stored.set(call.<UnaryOperator<TaskState>>getArgument(1).apply(stored.get()));
-            return true;
-        });
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, false, "success", List.of())));
-
-        sweep.sweep("ABC-1");
-
-        verify(statusReports).markRead("ABC-1", TaskStatus.REVIEWED);
-        verifyNoInteractions(notifications);
-    }
-
-    @Test
-    void tellsTheHumanNothingAboutAGreenSweep() {
-        when(reviewReader.read("ABC-1", "http://mr/1"))
-                .thenReturn(Optional.of(new ReviewFacts(true, true, "success", List.of())));
-
-        sweep.sweep("ABC-1");
-
-        verifyNoInteractions(notifications);
-    }
-
-    private void twoRepositoriesUnderReview() {
-        when(stateService.task("ABC-1")).thenReturn(Optional.of(TaskState.builder(List.of(
-                new TaskRepo("api", "/wt", "git@host:g/api.git", "http://mr/api", null),
-                new TaskRepo("web", "/web-wt", "git@host:g/web.git", "http://mr/web", null)),
-                TaskStatus.CI_POLLING).alias("a1").build()));
+        verify(reading, times(1)).read(any());
     }
 }
