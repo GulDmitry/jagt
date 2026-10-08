@@ -48,8 +48,8 @@ and `flow/` depends on them.
 - no ring between the centre and the edge names `adapter/` — a use case naming the edge is the rule backwards.
 - it proves it read every ring, so a refactor cannot leave it guarding nothing.
 - it cannot see resources and scripts, the words a host invents, or a cycle between two *sibling* folders.
-- the `platform`, `viewer`, `tmux-command`, agent-binary and `kitty*` keys name vendors by design, its one
-  allow-list; renaming one a human already wrote is the owner's call.
+- it exempts only `tmuxCommand` and `tmuxSession`, keys naming a vendor by design; renaming one a human already
+  wrote is the owner's call.
 
 ## The flow machine
 

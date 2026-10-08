@@ -24,12 +24,11 @@ implementation plus a config value, never `if claude` or `if macos`.
 - **Nothing outside the runtime names an agent's files**: `WorktreeSetup` calls `provisionWorktree`,
   `AgentSessions` `displayName`.
 - **The hook wire is the CLI's own protocol, read where it lands**: `ToolGate`, `ReadGate` and
-  `AgentToolGateController` name its tools and `hookSpecificOutput`.
+  their two controllers name its tools and `hookSpecificOutput`.
 
 ## Which name holds the briefing is the runtime's to answer
 
-- `AGENTS.md` is `AgentRuntime.SYSTEM_KNOWLEDGE_FILE`; Claude reads `CLAUDE.md`, so its runtime symlinks one
-  to the other.
+- `AGENTS.md` is `AgentRuntime.SYSTEM_KNOWLEDGE_FILE`; Claude reads `CLAUDE.md`, so its runtime symlinks them.
 - Claude's fallback is `CLAUDE.local.md`, the one name a repository does not version; **every other runtime
   refuses**, and the bootstrap prompt names **no** file.
 - **A port answers what it achieved, never a value the caller must interpret**: `TerminalDriver.reveal` →

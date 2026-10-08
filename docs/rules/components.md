@@ -22,13 +22,14 @@ sessions break**. Claude reads `CLAUDE.md`, a symlink to `AGENTS.md`, and declar
 Master's token, in `.mcp.json`; Codex reads `AGENTS.md` and `.codex/config.toml`, and needs a **trusted** project.
 
 - `jagt.yml` is user config, gitignored, copied from `jagt.yml.dist`: ONE file, one
-  `orchestrator` root, re-read on every access, Spring binding it once for `orchestrator.*`. Sections are
+  `orchestrator` root, re-read per access, Spring binding it once for `orchestrator.*`. Sections are
   omissible value records (`ConfigService.ConfigFile.*Config`). Never commit user-specific paths; every key is
   described in `jagt.yml.dist` and nowhere else.
 - Root detection: the nearest parent holding `jagt.yml.dist` **or** `mcp_client.js` (`OrchestratorPaths`);
   `ORCHESTRATOR_ROOT` overrides.
-- `initialize_task` copies gitignored IDE and local files best-effort (`copyIdeProjectFiles`,
-  `copyLocalFiles`); the per-project `worktree.copyGlobs`, default `["**/.env"]`, are config, not code.
+- `initialize_task` copies gitignored IDE and local files best-effort
+  (`WorktreeFiles.copyProjectFiles(…, editor.projectFiles())`, `copyLocalFiles`); the per-project
+  `worktree.copyGlobs`, default `["**/.env"]`, are config, not code.
 
 ## `state.json`
 
