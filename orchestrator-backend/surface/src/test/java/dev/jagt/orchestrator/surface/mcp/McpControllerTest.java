@@ -1,12 +1,17 @@
 package dev.jagt.orchestrator.surface.mcp;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.service.StateService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -42,6 +47,34 @@ class McpControllerTest {
                 "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32001,\"message\":\"Unknown caller\"}}")));
         MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(protocol, mock(StateService.class),
                 mapper, mock(MasterToken.class))).build();
+
+        mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refusesAWrongMasterTokenUnauthorized(@TempDir Path root) throws Exception {
+        JsonMapper mapper = new JsonMapper();
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(mapper, paths);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state,
+                List.of()), state, mapper, new MasterToken(paths))).build();
+
+        mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON).header(MasterToken.HEADER, "0123abcd")
+                        .content("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refusesACallPresentingNoTokenUnauthorized(@TempDir Path root) throws Exception {
+        JsonMapper mapper = new JsonMapper();
+        OrchestratorPaths paths = new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()));
+        StateService state = new StateService(mapper, paths);
+        MockMvc mvc = MockMvcBuilders.standaloneSetup(new McpController(new McpProtocolService(mapper, state,
+                List.of()), state, mapper, new MasterToken(paths))).build();
 
         mvc.perform(post("/mcp").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"))

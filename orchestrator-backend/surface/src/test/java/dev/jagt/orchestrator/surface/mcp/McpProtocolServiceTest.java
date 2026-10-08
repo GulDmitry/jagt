@@ -186,6 +186,22 @@ class McpProtocolServiceTest {
     }
 
     @Test
+    void keepsATaskToItsOwnToolsThoughItPresentsTheMastersToken(@TempDir Path root) {
+        JsonMapper mapper = new JsonMapper();
+        StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.IN_PROGRESS)
+                .alias("a1").build());
+        McpProtocolService protocol = new McpProtocolService(mapper, state,
+                List.of(new DeployTools(mock(CommandService.class))));
+
+        JsonNode listed = protocol.handle(mapper.readTree("{\"jsonrpc\":\"2.0\",\"id\":8,\"method\":\"tools/list\"}"),
+                root.toString(), true).orElseThrow().path("result").path("tools");
+
+        assertThat(listed).isEmpty();
+    }
+
+    @Test
     void listsTheMasterTheToolsThatWriteASharedBranch(@TempDir Path root) {
         JsonMapper mapper = new JsonMapper();
         StateService state = new StateService(mapper, new OrchestratorPaths(OrchestratorProperties.defaults()
