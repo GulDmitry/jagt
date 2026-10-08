@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-07-27 (`8e695cd`), `revert` added 2026-08-13 (`4104986`), recorded retroactively 2026-10-02.
+Its rewrite bullet superseded by [0022](0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md).
 
 ## Context
 

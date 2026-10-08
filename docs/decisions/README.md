@@ -14,8 +14,8 @@ decision from a habit.
 - Sections: **Status** (date, accepted or superseded), **Context** (what forced it, with numbers),
   **Decision**, **Rejected** (each with its one reason), **Reopen when** (the measurement that would change it).
 - At most 400 words: a record needing more is two decisions.
-- **Linked**: a record names the rule it backs at its top; this index lists every record (`DecisionIndexTest`). A
-  session recovering why something holds starts here.
+- **Linked**: a record names the rule it backs at its top; this index lists every record (`DecisionIndexTest`). Recovering
+  why something holds starts here.
 - A record taken after the fact says `recorded retroactively` and carries only what the history proves.
 
 ## Index
@@ -41,3 +41,4 @@ decision from a habit.
 - [0019 — Large work is cut by its spec](0019-large-work-is-cut-by-its-spec-not-split-into-requests.md)
 - [0020 — jagt holds no token of its own](0020-jagt-holds-no-token-of-its-own.md)
 - [0021 — jagt runs from its clone](0021-jagt-runs-from-a-clone-of-its-repository.md)
+- [0022 — The one rewrite](0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md)

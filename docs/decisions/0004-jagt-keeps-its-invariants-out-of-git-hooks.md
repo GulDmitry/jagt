@@ -5,6 +5,7 @@
 ## Status
 
 Accepted 2026-08-04 (`9135f46`), refined 2026-08-28 (`3769208`), recorded retroactively 2026-10-02.
+Widened by [0022](0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md).
 
 ## Context
 

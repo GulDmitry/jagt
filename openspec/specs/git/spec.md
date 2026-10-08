@@ -21,10 +21,11 @@ the cut and the request's **target**, never the merge destination (`baseBranchOr
 - **THEN** read against the request's target, never `deployBranch`
 
 ### Requirement: Nothing rewrites what left the machine
-`pushBranch` SHALL push **one** branch, both-sided refspec, never `--force` or `-u`; no `commit --amend` or
-`reset --hard` onto a pushed commit (sub-agent rule 8), the ONE exception the resume rebase. `detachUpstream` unsets
-the inherited `origin/<baseBranch>` at creation. Each git call locks its repository (shared checkout). A task named
-after a base or deploy branch MUST be refused.
+`GitDeploy` (`HEAD:<target>`) and `GitWorktrees` (`refs/heads/x:refs/heads/x`) SHALL push **one** branch, never
+`--force` or `-u`; no `commit --amend` or `reset --hard` onto a pushed commit (sub-agent rule 8). The ONE exception:
+the resume rebase's `--force-with-lease` of the task's own branch. `detachUpstream` unsets the inherited
+`origin/<baseBranch>` at creation. Each git call locks its repository (shared checkout). A task named after a base or
+deploy branch MUST be refused.
 
 #### Scenario: Wrong push
 - **WHEN** a pushed commit turns out wrong
@@ -159,4 +160,4 @@ repository.
 
 #### Scenario: Diff worktrees
 - **WHEN** board-diff `jagt-diff-*` worktrees sit in the temp directory: `done <task>`
-- **THEN** retiring the task ends them
+- **THEN** removed
