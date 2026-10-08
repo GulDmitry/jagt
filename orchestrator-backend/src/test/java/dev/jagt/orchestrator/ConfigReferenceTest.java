@@ -31,7 +31,8 @@ class ConfigReferenceTest {
                 .flatMap(path -> named.matcher(read(path)).results()).map(match -> Pattern.compile("-([a-z])").matcher(match.group(1))
                         .replaceAll(letter -> letter.group(1).toUpperCase()));
 
-        assertThat(Stream.concat(bound, looked).distinct().filter(key -> !dist.contains(key))).isEmpty();
+        assertThat(Stream.concat(bound, looked).distinct()
+                .filter(key -> !Pattern.compile("(?m)^\\s*#?\\s*" + key + ":").matcher(dist).find())).isEmpty();
     }
 
     private static Stream<Path> javaFilesUnder(Path root) {

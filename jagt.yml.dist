@@ -140,10 +140,16 @@ orchestrator:
   # ── Safety ─────────────────────────────────────────────────────────────────────────────────────────────────
   startupChecks: true     # refuse to start when part of the installation is missing
 
-# Six more keys work here, left out because almost nobody sets them: `mcpUrl`, `hookUrl` and `gateUrl` are
-# derived from `server.port`, `stub.script` is for the e2e matrix, and `root` and `stateFile` move where
-# worktrees are cut and where state.json is kept. `configFile` alone cannot live here — it says where THIS file
-# is: pass `--orchestrator.config-file=…` or `ORCHESTRATOR_CONFIG_FILE=…`.
+  # ── Almost nobody sets these ───────────────────────────────────────────────────────────────────────────────
+  # root: /path/to/jagt          # where worktrees are cut; default the jagt checkout
+  # stateFile: /path/to/state.json   # where the tasks are kept; default `root`/state.json
+  # mcpUrl: http://127.0.0.1:8290/mcp                   # these three follow `server.port`
+  # hookUrl: http://127.0.0.1:8290/api/agent/session
+  # gateUrl: http://127.0.0.1:8290/api/agent
+  # stub:
+  #   script: …                # the e2e matrix's scripted agent
+  # configFile: cannot live here, it says where THIS file is:
+  #   `--orchestrator.config-file=…` or `ORCHESTRATOR_CONFIG_FILE=…`
 
 # The board listens on loopback: it asks for no password and can deploy, close a task and start an agent.
 server:
