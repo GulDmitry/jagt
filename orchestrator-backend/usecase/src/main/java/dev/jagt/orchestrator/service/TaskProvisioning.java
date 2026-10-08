@@ -31,19 +31,24 @@ public class TaskProvisioning {
         ConfigService.ConfigFile config = configService.load();
         boolean plan = AgentSessions.planMode(request.mode());
         BranchStrategy strategy = BranchStrategy.of(request.branchStrategy());
-        List<NewRepo> repos = worktrees.cut(request, config, strategy);
+        List<NewRepo> repos;
+        String alias;
+        // The cap and the duplicate checks in cut() read what putTask writes.
+        synchronized (this) {
+            repos = worktrees.cut(request, config, strategy);
+            alias = nextAlias(taskId);
+            stateService.putTask(taskId, TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
+                            TaskStatus.NEW)
+                    .lastActiveTimestamp(System.currentTimeMillis()).alias(alias)
+                    .title(request.title())
+                    .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank()
+                            ? null : request.ticketUrl())
+                    // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
+                    .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
+                    .autoReview(config.autoReview().enabledOrDefault())
+                    .build());
+        }
         NewRepo session = repos.get(0);
-
-        String alias = nextAlias(taskId);
-        stateService.putTask(taskId, TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
-                        TaskStatus.NEW)
-                .lastActiveTimestamp(System.currentTimeMillis()).alias(alias)
-                .title(request.title())
-                .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank() ? null : request.ticketUrl())
-                // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
-                .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
-                .autoReview(config.autoReview().enabledOrDefault())
-                .build());
 
         try {
             agentSessions.startAgent(taskId, alias, session.worktreePath(), plan);

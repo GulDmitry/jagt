@@ -13,10 +13,15 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -67,7 +72,7 @@ class TaskProvisioningTest {
     void assignsNextFreeAliasWhenTicketLetterAlreadyInUse() {
         state.putTask("ABC-1", TaskState.builder("proj", "/first", TaskStatus.IN_PROGRESS).alias("a1").build());
         when(worktrees.cut(any(), any(), any())).thenReturn(List.of(
-                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-2-proj"), null, "origin/main", null, true)));
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/two"), null, "origin/main", null, true)));
 
         provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
 
@@ -112,6 +117,31 @@ class TaskProvisioningTest {
                 .isInstanceOf(IllegalStateException.class);
 
         assertThat(state.task("ABC-9")).isEmpty();
+    }
+
+    @Test
+    void cutsASecondTaskOnlyOnceTheFirstIsRegistered() throws Exception {
+        CountDownLatch firstCutting = new CountDownLatch(1);
+        CountDownLatch secondCutting = new CountDownLatch(1);
+        AtomicBoolean firstRegisteredWhenSecondCut = new AtomicBoolean();
+        doAnswer(call -> {
+            firstCutting.countDown();
+            secondCutting.await(500, TimeUnit.MILLISECONDS);
+            return List.of(new NewRepo("proj", null, Path.of("/repo"), Path.of("/one"), null, "main", null, true));
+        }).when(worktrees).cut(argThat(task -> task.taskId().equals("ABC-1")), any(), any());
+        doAnswer(call -> {
+            firstRegisteredWhenSecondCut.set(state.task("ABC-1").isPresent());
+            secondCutting.countDown();
+            return List.of(new NewRepo("proj", null, Path.of("/repo"), Path.of("/two"), null, "main", null, true));
+        }).when(worktrees).cut(argThat(task -> task.taskId().equals("ABC-2")), any(), any());
+        Thread first = Thread.ofVirtual()
+                .start(() -> provisioning.initializeTask(NewTask.builder("ABC-1", "proj").build()));
+        firstCutting.await();
+
+        provisioning.initializeTask(NewTask.builder("ABC-2", "proj").build());
+        first.join();
+
+        assertThat(firstRegisteredWhenSecondCut).isTrue();
     }
 
     @Test
