@@ -4,15 +4,15 @@
 
 ## Pluggable by design
 
-**A firm invariant: never erode it.** Linux and macOS both, with terminals, notifiers, editors
-and agent runtimes (any MCP-capable CLI) behind a **strategy interface** selected by config: an
-implementation plus a config value, never `if claude` or `if macos`. The flow stays agent-agnostic.
+**A firm invariant.** Linux and macOS both, with terminals, notifiers, editors
+and agent runtimes (any MCP-capable CLI) behind a **strategy interface**: an
+implementation plus a config value, never `if claude` or `if macos`.
 
 - Selected by config: `UserNotifier` and `TerminalDriver` by `orchestrator.platform` (macos default, linux;
   kitty the one driver), `EditorDriver` by `orchestrator.editor-command`, `AgentRuntime` by
   `orchestrator.agent.cli` (claude default, codex).
-- **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`) —
-  except that a notifier reaching nothing logs and returns.
+- **A seam selected for the wrong OS is refused at startup, never degraded** (`adapter/PlatformCheck`);
+  a notifier reaching nothing logs and returns.
 - **The tracker and the code host are not seams of jagt's**: a model reads them through the MCP of whoever
   runs it, jagt holding no credential. Its WORKFLOW is one — `TrackerWorkflow` by
   `orchestrator.tracker.workflow` names the start and close stages, and reads nothing itself.
@@ -23,6 +23,8 @@ implementation plus a config value, never `if claude` or `if macos`. The flow st
   at it and **not** the worktree's `.codex/`).
 - **Nothing outside the runtime names an agent's files**: `WorktreeSetup` calls `provisionWorktree`,
   `AgentSessions` `displayName`.
+- **The hook wire is the CLI's own protocol, read where it lands**: `ToolGate`, `ReadGate` and
+  `AgentToolGateController` name its tools and `hookSpecificOutput`.
 
 ## Which name holds the briefing is the runtime's to answer
 
@@ -31,7 +33,7 @@ implementation plus a config value, never `if claude` or `if macos`. The flow st
 - Claude's fallback is `CLAUDE.local.md`, the one name a repository does not version; **every other runtime
   refuses**, and the bootstrap prompt names **no** file.
 - **A port answers what it achieved, never a value the caller must interpret**: `TerminalDriver.reveal` →
-  `Revealed`, `AgentRuntime.lastSessionActivity` → `OptionalLong` — never a boolean plus a comment, never a magic value.
+  `Revealed`, `AgentRuntime.lastSessionActivity` → `OptionalLong` — never a boolean plus a comment, nor a magic value.
 - A read that FAILED is a third thing, the adapter's to report: `ClaudeTranscripts` logs it rather than
   passing a zero up ([never an answer](#a-read-that-failed-is-never-an-answer)).
 
@@ -40,7 +42,7 @@ implementation plus a config value, never `if claude` or `if macos`. The flow st
 The **only** way jagt reads outside itself, headless and one-shot: `service/TicketReader`, `service/TicketTexts`,
 `service/ReviewReader`, the ⌘K palette.
 
-- It can **follow a URL** into a tracker or code host jagt was never told about; it cannot reach a server
+- It can **follow a URL** into a tracker or code host jagt was never told about; never a server
   behind an interactive login or a plugin scope — declared with `orchestrator.assistant.mcp-config` ([one
   command shows which](../installation.md#mcp-access-comes-first)).
 - `adapter/assistant/HeadlessClaude`, behind one port per read family, spawns `claude "<prompt>" -p --setting-sources
@@ -54,10 +56,9 @@ The **only** way jagt reads outside itself, headless and one-shot: `service/Tick
 
 ### A read that failed is never an answer
 
-- **"I could not look" and "there is no such thing" are two different answers**, and jagt must never merge
-  them.
-- Every read's schema carries a **`failure`** string, empty **only** when the host itself answered; whatever
-  stopped the read goes there, naming the tool or server.
+- **"I could not look" and "there is no such thing" are two answers, never merged.**
+- Every read's schema carries a **`failure`** string, empty **only** when the host itself answered,
+  else naming the tool or server that stopped it.
 - A non-empty `failure` comes back as **empty facts** (unreadable), logged at ERROR; it never becomes
   `exists=false`.
 - On an unreadable read the callers ask `McpHealth` (`adapter/assistant/ClaudeMcpHealthProbe`,
