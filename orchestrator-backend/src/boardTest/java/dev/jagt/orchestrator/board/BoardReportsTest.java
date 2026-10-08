@@ -369,6 +369,41 @@ class BoardReportsTest extends BoardPageContext {
     }
 
     @Test
+    void aRoundReadAgainTwiceShowsTheLaterReadWhenTheEarlierOneAnswersLast() throws IOException {
+        Path worktree = Files.createDirectories(root.resolve("ABC-19-alpha"));
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");
+        state.putTask("ABC-19", TaskState.builder("alpha", worktree.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a19").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
+                .build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("article .offer").click();
+        assertThat(page.locator("#report-body")).containsText("Renamed it.");
+        List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
+        List<APIResponse> read = new java.util.concurrent.CopyOnWriteArrayList<>();
+        page.route("**/api/commands/replies**", route -> {
+            read.add(route.fetch());
+            held.add(route);
+        });
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - The older read.\n");
+        page.waitForRequest("**/api/commands/replies**", () -> state.putTask("ABC-19",
+                state.task("ABC-19").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "older")));
+        page.waitForCondition(() -> held.size() == 1);
+        Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - The newer read.\n");
+        page.waitForRequest("**/api/commands/replies**", () -> state.putTask("ABC-19",
+                state.task("ABC-19").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "newer")));
+        page.waitForCondition(() -> held.size() == 2);
+        held.get(1).fulfill(new Route.FulfillOptions().setResponse(read.get(1)));
+        assertThat(page.locator("#report-body")).containsText("The newer read.");
+
+        page.waitForRequestFinished(() -> held.get(0).fulfill(new Route.FulfillOptions().setResponse(read.get(0))));
+
+        org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())
+                .contains("The newer read.");
+    }
+
+    @Test
     void aReportAboutOneTaskIsTitledByBothTheNamesItAnswersTo() throws IOException {
         Path worktree = Files.createDirectories(root.resolve("ABC-7-alpha"));
         Files.writeString(worktree.resolve("review_replies.md"), "## thread 1\nFIXED - Renamed it.\n");

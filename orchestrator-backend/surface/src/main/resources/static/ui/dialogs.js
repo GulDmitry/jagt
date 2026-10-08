@@ -18,6 +18,8 @@ let showing = {path: null, about: null, body: ''};
 let poll = 0;
 // Two reports opened in quick succession: the one asked for last is the one shown, whichever answers last.
 let asked = 0;
+// A poll and the board's own event read it again side by side, and the read sent last is the one that paints.
+let reread = 0;
 
 function paint(title, said, extra) {
   reportTitle.textContent = title;
@@ -61,6 +63,7 @@ export async function repaintReport() {
     return;
   }
   const read = showing.path;
+  const mine = ++reread;
   let said;
   try {
     said = await text(read);
@@ -68,7 +71,7 @@ export async function repaintReport() {
     return;                       // a read that failed is not an empty report: leave what is on screen
   }
   // The answer to a report nobody is reading any more belongs to no dialog on screen.
-  if (!report.open || showing.path !== read || said === showing.body) {
+  if (mine !== reread || !report.open || showing.path !== read || said === showing.body) {
     return;
   }
   showing = {...showing, body: said};
