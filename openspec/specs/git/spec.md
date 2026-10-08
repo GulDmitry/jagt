@@ -45,8 +45,7 @@ line comes from `TaskView.confirmations` (`TaskAction.confirmation`).
 `revert` SHALL take out the last deploy's merge wherever a `deployCommit` is recorded, DEPLOYED and DEPLOY_CONFLICT
 always; it refuses with a by-hand recipe where that is absent, reverted or conflicts. It walks back the merged
 repositories, each **forgetting** its commit, then discards a DEPLOY_CONFLICT's half-merge, sought only where
-`jagt.yml` still names the project; REVERTED once all that landed is out. Part way, **stamped on the task**, it leaves
-DEPLOYED, or DEPLOY_CONFLICT where it came from.
+`jagt.yml` still names the project; REVERTED once all that landed is out.
 
 #### Scenario: Deployed twice
 - **WHEN** `revert <task>` after several deploys
@@ -56,9 +55,9 @@ DEPLOYED, or DEPLOY_CONFLICT where it came from.
 - **WHEN** `revert` from DEPLOY_CONFLICT, no commit recorded
 - **THEN** the half-merge is discarded; REVERTED
 
-#### Scenario: Part-way revert from a conflict
-- **WHEN** `revert` from DEPLOY_CONFLICT stops part way
-- **THEN** DEPLOY_CONFLICT: the half-merge still waits
+#### Scenario: Part-way revert
+- **WHEN** `revert` stops part way
+- **THEN** **stamped on the task**: DEPLOYED, or from DEPLOY_CONFLICT still DEPLOY_CONFLICT, its half-merge waiting
 
 ### Requirement: Deploy stops at the first conflict
 `deploy` SHALL check every repository deployable before the **first** push, land them in the task's order, and stop at
