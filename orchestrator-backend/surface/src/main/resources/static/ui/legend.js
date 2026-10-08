@@ -24,6 +24,12 @@ const requestChip = (className, text) => {
   return anchor;
 };
 
+const repositories = () => {
+  const group = span('repos', '');
+  group.append(requestChip('mr-age', 'alpha'), ' + ', requestChip('mr-age', 'beta'), ' ', span('tick', '\u2713'));
+  return group;
+};
+
 const deployedButton = () => {
   const button = document.createElement('button');
   button.className = 'again';
@@ -62,12 +68,12 @@ const rows = () => [
     'the state and its age \u00b7 green: already on a shared branch'],
   [[deployedButton()],
     'already deployed \u2014 press again for what came after'],
-  [[requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age', 'MR 2d')],
-    'the request and how long it has been open \u00b7 green \u2713: approved'],
+  [[requestChip('id', 'ABC-42'), requestChip('mr-age approved', 'MR 5d \u2713'), requestChip('mr-age', 'MR 2d')],
+    'the ticket \u00b7 the request and how long it has been open \u00b7 green \u2713: approved'],
   [[span('checks red', ''), span('checks green', ''), span('checks running', '')],
     'its checks: failed \u00b7 passed \u00b7 still running. No dot: no pipeline, or nothing read it'],
-  [[span('tick', '\u2713')],
-    'approved, where a task spans repositories'],
+  [[repositories()],
+    'a task spanning repositories: each name opens its request \u00b7 \u2713 approved'],
   [[offerButton()],
     'replies are drafted \u2014 read them before you ship'],
   [[blockHead(), span('quote', '> the row count is wrong')],

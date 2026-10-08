@@ -1816,6 +1816,8 @@ class BoardPageTest {
         assertThat(page.locator("#report-section .legend button.again")).hasText("Deploy");
         assertThat(page.locator("#report-section .legend .checks.red")).hasCount(1);
         assertThat(page.locator("#report-section .legend button.offer")).hasCount(1);
+        assertThat(page.locator("#report-section .legend a.id")).hasCount(1);
+        assertThat(page.locator("#report-section .legend .repos .tick")).hasCount(1);
     }
 
     private static long now() {

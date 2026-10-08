@@ -35,11 +35,11 @@ translucent blacks (four shadows, the dialog backdrop) apart.
 - status chip — `.status`: the state, its age inside it. `.status.live` green: the work is on a shared branch.
 - green button — `button.again`, a ring on the primary one and a border otherwise: this verb ran and what it
   did is live, so pressing repeats it.
-- dotted underline — `a.id`, `a.mr-age`, `.drafts`: the text opens something.
+- dotted underline — `a.id`, `a.mr-age`, `button.offer`: the text opens something.
 - 9px dot — `.checks.red` / `.checks.green` filled: a verdict is in. `.checks.running` hollow ring, carrying
   the board's one `@keyframes`: waiting, as hollow means everywhere — under a said line too. The ring says it,
   the pulse only draws the eye (`prefers-reduced-motion` safe).
-- `✓` on the request, or `.tick` beside several: approved.
+- `✓` on the request, or `.tick` closing `.repos`: approved.
 - in a round's replies — `.block` head, its `.verdict` green fixed / amber a question / grey pushed back;
   the `.quote` it answers muted.
 - amber ring — `.mr-age.stalled` / `.repos.stalled`: the poll stopped, nothing will look again; the next poll
