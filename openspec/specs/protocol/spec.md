@@ -18,8 +18,7 @@ protocol's: a worktree claim is measured where the worktree is (`service/HandBac
 
 ### Requirement: No raw wire value travels inward
 A message SHALL arrive as the strings and maps it was written in: `violations(...)` judges it, `accepted(...)` returns it
-in jagt's own types or nothing. Which status, what a round claims, which request it is about and what the human is shown
-are resolved once, here.
+in jagt's own types or nothing. The status, the round's claim, its request and the human's line are resolved once, here.
 
 #### Scenario: Past the door
 - **WHEN** code needs a message's status
@@ -27,16 +26,20 @@ are resolved once, here.
 
 ### Requirement: Arguments are read into the message
 `MessageTool` SHALL be the one path from the wire to a verb: the arguments are read into the message and judged before
-the tool runs. A field the message does not declare is ignored, so a CLI a version ahead is not rejected.
+the tool runs. A field the message does not declare is ignored, so a CLI a version ahead is not rejected; one
+misspelling a field the call left out is refused.
 
 #### Scenario: An unknown field
 - **WHEN** a call carries a field the message does not declare
 - **THEN** the field is ignored and the call is judged on the rest
 
+#### Scenario: A misspelled field
+- **WHEN** a call sends `task_id` and no `taskId`
+- **THEN** it is refused naming `taskId`, never run on the caller's own task
+
 ### Requirement: Field and consistency rules, one report
 Field rules SHALL catch a value out of its enum, a missing required field, a link nobody can open. Consistency rules
-catch two fields that cannot both hold: `reviewRequests` beside `reviewRequestUrl`, CI_POLLING with no request anywhere
-in the message, a request filed under a project the task does not have.
+catch two fields that cannot both hold: `reviewRequests` beside `reviewRequestUrl`, CI_POLLING with no request, a request filed under a project the task does not have.
 
 #### Scenario: CI_POLLING without a request
 - **WHEN** a message reports CI_POLLING and names no request
@@ -70,7 +73,7 @@ what comes next off what the handler threw: `validation`, a wrong argument, is f
 
 ### Requirement: A hook's post is filtered, not refused
 `protocol/SessionHookReport` SHALL accept what a hook posts without correction, since the hook throws the answer away:
-jagt drops what it cannot believe, keeps the rest, and logs once what it dropped.
+what jagt cannot believe is dropped and logged once.
 
 #### Scenario: A relative log path
 - **WHEN** a hook posts a relative log path
@@ -94,8 +97,7 @@ ask: the identical question returns the identical answer.
 
 ### Requirement: Retries are bounded and end in a person
 `protocol/RetryPolicy` SHALL allow a paid read three attempts, spaced, under a budget. An exhausted policy answers with
-no facts, never a guess; reaching the human is the caller's. A round nobody could read taps the human once
-(`AutoReviewScheduler`).
+no facts, never a guess; reaching the human is the caller's (`AutoReviewScheduler`).
 
 #### Scenario: An unattended poll exhausts
 - **WHEN** the auto-review poll cannot read a round

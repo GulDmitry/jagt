@@ -61,6 +61,22 @@ class MessageToolTest {
     }
 
     @Test
+    void refusesAMisspellingOfAFieldItLeftOutRatherThanActingOnTheCallersOwnTask() {
+        AtomicBoolean ran = new AtomicBoolean();
+        ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
+                (said, caller) -> MessageContext.NONE,
+                (said, caller) -> {
+                    ran.set(true);
+                    return "ran";
+                });
+
+        assertThatThrownBy(() -> tool.call(mapper.readTree(
+                "{\"status\":\"IN_PROGRESS\",\"task_id\":\"ABC-9\"}"), "ABC-1"))
+                .hasMessageContaining("task_id: not a field; did you mean taskId?");
+        assertThat(ran).isFalse();
+    }
+
+    @Test
     void readsEveryFieldTheMessageDeclaresWithoutBeingToldOneByOne() {
         ToolHandler tool = MessageTool.of(mapper, "update_agent_status", Audience.ANYONE, AgentStatusMessage.class,
                 (said, caller) -> new MessageContext(java.util.List.of("api")),

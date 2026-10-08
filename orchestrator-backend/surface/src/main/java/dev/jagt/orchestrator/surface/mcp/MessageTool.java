@@ -4,10 +4,17 @@ import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Violation;
 import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import java.lang.reflect.RecordComponent;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * Admitting the caller, reading a tool's arguments as a message, judging it, and only then running it — in ONE
@@ -34,11 +41,27 @@ public final class MessageTool {
             } catch (JacksonException unreadable) {
                 throw new ToolRefusal(ToolFailure.VALIDATION, unreadable.getOriginalMessage());
             }
-            List<Violation> violations = said.violations(context.apply(said, callerTaskId));
+            List<Violation> violations = new ArrayList<>(misspelled(args, message));
+            violations.addAll(said.violations(context.apply(said, callerTaskId)));
             if (!violations.isEmpty()) {
                 throw new ToolRefusal(ToolFailure.VALIDATION, Message.refusal(violations));
             }
             return handler.call(said, callerTaskId);
         };
+    }
+
+    /** A misspelling of a field the call left out would otherwise run the call on that field's default. */
+    private static List<Violation> misspelled(JsonNode args, Class<? extends Message> message) {
+        Map<String, String> declared = Arrays.stream(message.getRecordComponents())
+                .collect(Collectors.toMap(component -> folded(component.getName()), RecordComponent::getName));
+        return args.properties().stream().map(Map.Entry::getKey)
+                .filter(name -> !declared.containsValue(name))
+                .filter(name -> declared.containsKey(folded(name)) && !args.has(declared.get(folded(name))))
+                .map(name -> new Violation(name, "not a field; did you mean " + declared.get(folded(name)) + "?"))
+                .toList();
+    }
+
+    private static String folded(String name) {
+        return name.replaceAll("[_-]", "").toLowerCase(Locale.ROOT);
     }
 }
