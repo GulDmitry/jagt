@@ -1,24 +1,17 @@
 package dev.jagt.orchestrator.service;
 
-import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.port.AgentRuntime;
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
-import dev.jagt.orchestrator.task.ProjectConfig;
-import dev.jagt.orchestrator.task.BranchStrategy;
-import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * What belongs to the AGENT rather than to jagt stays behind {@link AgentRuntime}: this class never learns what a
@@ -28,91 +21,30 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class TaskProvisioning {
 
-    private static final Pattern SAFE_KEY = Pattern.compile("[A-Za-z0-9][A-Za-z0-9_-]{0,63}");
-    /** Past this many tasks opening on the same words, the words are the problem. */
-    private static final int MAX_SAME_NAME = 20;
-
     private final ConfigService configService;
     private final StateService stateService;
-    private final GitWorktrees gitWorktrees;
+    private final NewTaskWorktrees worktrees;
     private final AgentSessions agentSessions;
-    private final WorktreeSetup worktreeSetup;
 
-    /** An empty {@code projectKeys} asks every configured project — what a task with no project named yet needs. */
     public String existingBranchProject(String taskId, Collection<String> projectKeys) {
-        ConfigService.ConfigFile config = configService.load();
-        Collection<String> keys = projectKeys == null || projectKeys.isEmpty()
-                ? config.projects().keySet() : projectKeys;
-        return keys.stream()
-                .filter(config.projects()::containsKey)
-                .filter(k -> gitWorktrees.branchExists(
-                        Path.of(config.projects().get(k).path()).toAbsolutePath().normalize(), taskId))
-                .findFirst().orElse(null);
+        return worktrees.existingBranchProject(taskId, projectKeys);
     }
 
-    /** Nobody stands at intake to choose, and neither answer here loses work: the branch's own commits resume. */
     public BranchStrategy strategyForExisting(String taskId, String projectKey) {
-        ProjectConfig project = configService.load().projects().get(projectKey);
-        Path path = Path.of(project.path()).toAbsolutePath().normalize();
-        if (!gitWorktrees.branchExists(path, taskId)) {
-            return BranchStrategy.FRESH;
-        }
-        return gitWorktrees.holdsOwnCommits(path, taskId, project.baseBranch())
-                ? BranchStrategy.RESUME : BranchStrategy.RECREATE;
+        return worktrees.strategyForExisting(taskId, projectKey);
     }
 
-    /**
-     * {@code base}, or the first {@code base-2}, {@code base-3}… no task and no branch has taken. The human did
-     * not choose this name, so a collision is stepped over rather than refused back at them.
-     */
     public String freeTaskName(String base, List<String> projectKeys) {
-        for (int suffix = 1; suffix <= MAX_SAME_NAME; suffix++) {
-            String candidate = suffix == 1 ? base : base + "-" + suffix;
-            if (!taken(candidate, projectKeys)) {
-                return candidate;
-            }
-        }
-        throw Refusal.byState(MAX_SAME_NAME + " tasks are already called '" + base
-                + "' — open the line with different words");
-    }
-
-    /** A ceiling rather than a queue: a board nobody can read is the failure this refuses, not a busy machine. */
-    static final int MAX_TASKS = 24;
-
-    private boolean taken(String name, List<String> projectKeys) {
-        return stateService.tasks().keySet().stream()
-                .anyMatch(registered -> TaskName.slug(registered).equals(TaskName.slug(name)))
-                || existingBranchProject(name, projectKeys) != null;
+        return worktrees.freeTaskName(base, projectKeys);
     }
 
     public String initializeTask(NewTask request) {
         String taskId = request.taskId();
-        TaskName.require(taskId, "taskId");
         ConfigService.ConfigFile config = configService.load();
-        requireOwnBranch(taskId, request.baseBranch(), config);
-        // Before anything is cut: a refusal after a worktree exists leaves the disk ahead of state.json.
-        if (stateService.tasks().size() >= MAX_TASKS) {
-            throw Refusal.byState(MAX_TASKS + " tasks are already open, which is the limit —"
-                    + " finish one with `done` before starting another.");
-        }
         boolean plan = AgentSessions.planMode(request.mode());
         BranchStrategy strategy = BranchStrategy.of(request.branchStrategy());
-        if (stateService.task(taskId).isPresent()) {
-            throw Refusal.byState("Task " + taskId + " is already registered in state.json. "
-                    + "Use open_task_tab to respawn its agent, or ask the human to press done on it first.");
-        }
-        // Two branches flatten to one directory, and cutting the second clears the first as a stale worktree.
-        stateService.tasks().keySet().stream()
-                .filter(registered -> TaskName.slug(registered).equals(TaskName.slug(taskId)))
-                .findFirst()
-                .ifPresent(registered -> {
-                    throw Refusal.byState("Task " + taskId + " and " + registered + " both become"
-                            + " the directory " + TaskName.slug(taskId) + ". Retire " + registered
-                            + " first, or take a different branch.");
-                });
-        List<NewRepo> repos = resolveRepos(request, config, strategy);
+        List<NewRepo> repos = worktrees.cut(request, config, strategy);
         NewRepo session = repos.get(0);
-        cutWorktrees(request, repos, strategy);
 
         String alias = nextAlias(taskId);
         stateService.putTask(taskId, TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
@@ -121,7 +53,7 @@ public class TaskProvisioning {
                 .title(request.title())
                 .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank() ? null : request.ticketUrl())
                 // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
-                .baseBranch(branchOverride(request.baseBranch()))
+                .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
                 .autoReview(config.autoReview().enabledOrDefault())
                 .build());
 
@@ -139,105 +71,9 @@ public class TaskProvisioning {
                 + (plan ? " Plan mode: approve its plan in the agent window (focus " + alias + ")." : "");
     }
 
-    /** Every repository the task will work in, validated to the last field before anything is created. */
-    private List<NewRepo> resolveRepos(NewTask request, ConfigService.ConfigFile config,
-                                       BranchStrategy strategy) {
-        List<NewRepo> repos = new ArrayList<>();
-        for (String projectKey : request.projectKeys()) {
-            requireSafeProjectKey(projectKey);
-            ProjectConfig project = config.projects().get(projectKey);
-            if (project == null) {
-                throw new IllegalArgumentException(
-                        "Unknown project '" + projectKey + "'. Known projects: " + config.projects().keySet());
-            }
-            Path projectPath = Path.of(project.path()).toAbsolutePath().normalize();
-            String override = branchOverride(request.baseBranch());
-            if (override != null) {
-                requireOnOrigin(override, projectKey, projectPath, strategy);
-            }
-            repos.add(new NewRepo(projectKey, project, projectPath,
-                    projectPath.getParent().resolve(TaskName.slug(request.taskId()) + "-" + projectKey),
-                    gitWorktrees.gitCommonDir(projectPath),
-                    override != null ? override : project.baseBranch(),
-                    gitWorktrees.remoteUrl(projectPath), repos.isEmpty()));
-        }
-        if (repos.isEmpty()) {
-            throw new IllegalArgumentException("A task needs at least one project");
-        }
-        return List.copyOf(repos);
-    }
-
-    /**
-     * A half-created task burns its id: the branch and directory exist while nothing is registered, so a retry hits
-     * "branch already exists". A failure anywhere therefore unwinds every repository already cut.
-     */
-    private void cutWorktrees(NewTask request, List<NewRepo> repos, BranchStrategy strategy) {
-        List<NewRepo> cut = new ArrayList<>();
-        try {
-            for (NewRepo repo : repos) {
-                gitWorktrees.createWorktree(repo.projectPath(), repo.worktreePath(), request.taskId(),
-                        repo.baseBranch(), strategy);
-                cut.add(repo);
-                worktreeSetup.fill(request, repo, repos);
-            }
-        } catch (RuntimeException e) {
-            // The branch goes with the worktree only where THIS call created it: a resumed task's branch was
-            // already there with the human's commits.
-            String branchToDelete = strategy == BranchStrategy.RESUME ? null : request.taskId();
-            cut.forEach(repo -> gitWorktrees.removeWorktree(repo.projectPath(), repo.worktreePath(),
-                    branchToDelete));
-            // A resumed branch survives, so the repository jagt detached to free it must go back.
-            if (branchToDelete == null) {
-                repos.forEach(repo -> gitWorktrees.reattach(repo.projectPath(), request.taskId()));
-            }
-            throw e;
-        }
-    }
-
     private static String alsoIn(List<NewRepo> repos) {
         return repos.size() < 2 ? "" : ", also in " + repos.stream().skip(1).map(NewRepo::project)
                 .collect(Collectors.joining(", "));
-    }
-
-    private static String branchOverride(String requested) {
-        if (requested == null || requested.isBlank()) {
-            return null;
-        }
-        String branch = requested.strip().replaceFirst("^origin/", "");
-        String unusable = TaskName.unusableReason(branch);
-        if (unusable != null) {
-            throw new IllegalArgumentException("Base branch '" + branch + "' is not a branch name: " + unusable);
-        }
-        return branch;
-    }
-
-    /** A task's branch is rebased and force-pushed, so it must not be one other work lands on. */
-    private static void requireOwnBranch(String taskId, String baseOverride, ConfigService.ConfigFile config) {
-        String task = ProjectConfig.localName(taskId);
-        Stream.concat(config.projects().values().stream()
-                                .flatMap(project -> Stream.of(project.baseBranch(), project.deployBranch())),
-                        Stream.of(baseOverride))
-                .map(ProjectConfig::localName)
-                .filter(task::equalsIgnoreCase)
-                .findFirst()
-                .ifPresent(shared -> {
-                    throw new IllegalArgumentException("Task " + taskId + " would be the shared branch " + shared
-                            + ", which a task rebases and pushes. Name the task after a branch of its own.");
-                });
-    }
-
-    /**
-     * Checked against the REMOTE before anything is created: the worktree is cut from {@code origin/<base>}, so a
-     * typo would otherwise surface as a raw git failure after the branch and directory exist.
-     */
-    private void requireOnOrigin(String branch, String projectKey, Path projectPath,
-                                 BranchStrategy strategy) {
-        // A RESUMED task is not cut from anything: the branch is only remembered as its review target.
-        if (strategy != BranchStrategy.RESUME && !gitWorktrees.remoteBranchExists(projectPath, branch)) {
-            throw Refusal.byState("Base branch '" + branch + "' does not exist on "
-                    + projectKey + "'s origin — the worktree is cut from origin/" + branch + ", so check the"
-                    + " name (or push it there first).");
-        }
     }
 
     private String nextAlias(String taskId) {
@@ -251,14 +87,6 @@ public class TaskProvisioning {
             if (!used.contains(candidate)) {
                 return candidate;
             }
-        }
-    }
-
-    /** A project key is a config key and a directory suffix, not a branch — it stays plain. */
-    private static void requireSafeProjectKey(String value) {
-        if (value == null || !SAFE_KEY.matcher(value).matches()) {
-            throw new IllegalArgumentException("Argument 'projectKey' must match " + SAFE_KEY.pattern()
-                    + "; got: " + value);
         }
     }
 }

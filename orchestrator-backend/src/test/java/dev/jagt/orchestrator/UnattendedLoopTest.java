@@ -20,7 +20,7 @@ class UnattendedLoopTest {
     void theSweepNobodyAskedForHoldsNoCollaboratorThatShipsDeploysOrPushes() {
         List<String> writers = List.of("GitCommands", "GitWorktrees", "GitDeploy", "DiffCheckouts", "CommandService",
                 "FlowEngine", "Capabilities", "ShipService", "DeployService", "RevertService", "TaskProvisioning",
-                "TaskLauncher", "TaskRetirement");
+                "NewTaskWorktrees", "TaskLauncher", "TaskRetirement");
 
         assertThat(UNATTENDED.stream()
                 .filter(path -> writers.stream()

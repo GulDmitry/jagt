@@ -118,7 +118,7 @@ half a change must be recorded, not merely complained about.
 
 ### Requirement: Starting a task
 `do` SHALL cut a branch from the project's base into its own worktree, an agent in it. At most 24 tasks SHALL be
-open (`TaskProvisioning.MAX_TASKS`).
+open (`NewTaskWorktrees.MAX_TASKS`).
 
 #### Scenario: New ticket
 - **WHEN** you run `do ABC-42`, or `do ABC-42 <project>`
