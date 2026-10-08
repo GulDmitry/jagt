@@ -441,6 +441,35 @@ class BoardReportsTest extends BoardPageContext {
     }
 
     @Test
+    void aReportOpenedEarlierThatFailsAfterALaterOneOpenedRaisesNoError() throws IOException {
+        Path first = Files.createDirectories(root.resolve("ABC-7-alpha"));
+        Files.writeString(first.resolve("review_replies.md"), "## thread 1\nFIXED - The first round.\n");
+        state.putTask("ABC-7", TaskState.builder("alpha", first.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a7").mrUrl("https://host.example/mr/7").lastActiveTimestamp(System.currentTimeMillis())
+                .build());
+        Path second = Files.createDirectories(root.resolve("ABC-8-alpha"));
+        Files.writeString(second.resolve("review_replies.md"), "## thread 1\nFIXED - The second round.\n");
+        state.putTask("ABC-8", TaskState.builder("alpha", second.toString(), TaskStatus.REVIEW_PENDING)
+                .alias("a8").mrUrl("https://host.example/mr/8").lastActiveTimestamp(System.currentTimeMillis())
+                .build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        List<Route> held = new java.util.concurrent.CopyOnWriteArrayList<>();
+        page.route(Pattern.compile("/api/commands/replies\\?about=a7$"), held::add);
+        page.waitForRequest(Pattern.compile("/api/commands/replies\\?about=a7$"),
+                () -> page.locator("article", new Page.LocatorOptions().setHasText("a7")).locator(".offer").click());
+        page.locator("article", new Page.LocatorOptions().setHasText("a8")).locator(".offer").click();
+        assertThat(page.locator("#report-title")).hasText("replies a8 \u00b7 ABC-8");
+
+        page.waitForRequestFinished(new Page.WaitForRequestFinishedOptions()
+                .setPredicate(request -> request.url().endsWith("about=a7")),
+                () -> held.get(0).fulfill(new Route.FulfillOptions().setStatus(500).setBody("{\"error\":\"too late\"}")));
+
+        assertThat(page.locator("#toasts .toast.error")).hasCount(0);
+    }
+
+    @Test
     void aReportOpenedLastStaysOnScreenWhenAnEarlierOneAnswersAfterIt() throws IOException {
         Path first = Files.createDirectories(root.resolve("ABC-7-alpha"));
         Files.writeString(first.resolve("review_replies.md"), "## thread 1\nFIXED - The first round.\n");

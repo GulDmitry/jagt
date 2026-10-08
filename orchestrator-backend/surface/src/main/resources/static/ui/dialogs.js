@@ -52,6 +52,7 @@ export async function openReport(title, path, {extra = null, about = null} = {})
     await repaintReport();
     return true;
   } catch (e) {
+    if (mine !== asked) return true;
     toast(refusal(e), true);
     return false;
   }
