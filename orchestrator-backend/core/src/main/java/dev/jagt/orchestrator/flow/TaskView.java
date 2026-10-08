@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.flow;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.StatusChange;
@@ -44,8 +45,8 @@ public record TaskView(
         List<StatusChange> history,
         // Whether its code is on a shared branch RIGHT NOW; only a revert takes it back off.
         boolean deployed,
-        // Drafted review replies are waiting in the worktree, and nothing else announces them.
-        boolean draftedReplies,
+        // Drafted review replies are waiting in the worktree; read on the record, so no page is sent it.
+        @JsonIgnore boolean draftedReplies,
         AutoReviewWatch autoReview,
         // `pipeline` is the verdict anything decides on; `pipelineSaid` is the host's own wording, for display.
         Pipeline pipeline,
