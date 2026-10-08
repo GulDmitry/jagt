@@ -21,6 +21,11 @@ public class FinishedCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 170;
+    }
+
+    @Override
     public String hint() {
         return "what has been closed, how long each took and how many rounds it cost";
     }

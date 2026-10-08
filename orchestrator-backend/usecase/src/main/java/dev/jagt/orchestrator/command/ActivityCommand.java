@@ -15,6 +15,11 @@ public class ActivityCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 140;
+    }
+
+    @Override
     public String hint() {
         return "what jagt did on its own, newest first";
     }

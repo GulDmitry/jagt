@@ -15,6 +15,11 @@ public class StatsCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 100;
+    }
+
+    @Override
     public String hint() {
         return "what jagt's own model calls cost, and where each task's time went";
     }

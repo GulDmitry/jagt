@@ -19,6 +19,11 @@ public class ResumeCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 80;
+    }
+
+    @Override
     public String hint() {
         return "reopened request: take over its branch and its commits, and link it — no second request";
     }

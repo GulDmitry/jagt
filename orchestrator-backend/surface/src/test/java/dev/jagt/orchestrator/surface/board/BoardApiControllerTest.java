@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 class BoardApiControllerTest {
 
-    private record Declared(String id, String hint, boolean report) implements GlobalCommand {
+    private record Declared(String id, String hint, boolean report, int rank) implements GlobalCommand {
         @Override
         public String run(String tail) {
             return tail.isBlank() ? id + " report" : id + " report about " + tail;
@@ -27,8 +27,8 @@ class BoardApiControllerTest {
     private final TaskViews taskViews = mock(TaskViews.class);
     private final BoardApiController api = new BoardApiController(taskViews,
             mock(TaskEventStream.class), new GlobalCommands(List.of(
-                    new Declared("stats", "what the calls cost", true),
-                    new Declared("do", "start a task", false))),
+                    new Declared("stats", "what the calls cost", true, 100),
+                    new Declared("do", "start a task", false, 40))),
             new dev.jagt.orchestrator.job.Jobs(List.of()));
 
     @Test

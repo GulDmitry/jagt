@@ -24,6 +24,11 @@ public class MasterCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 180;
+    }
+
+    @Override
     public String hint() {
         return "the unattended reviewer: what it may do, and what it judges by";
     }

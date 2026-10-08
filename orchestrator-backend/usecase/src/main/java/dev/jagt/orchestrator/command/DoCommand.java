@@ -19,6 +19,11 @@ public class DoCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 40;
+    }
+
+    @Override
     public String hint() {
         return "spin up a sub-agent in a worktree, from a ticket key, a URL, or your own words";
     }

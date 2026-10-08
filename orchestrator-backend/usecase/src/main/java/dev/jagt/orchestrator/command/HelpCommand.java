@@ -19,6 +19,11 @@ public class HelpCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 160;
+    }
+
+    @Override
     public String hint() {
         return "how jagt works";
     }

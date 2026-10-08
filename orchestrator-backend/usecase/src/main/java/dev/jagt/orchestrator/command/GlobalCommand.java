@@ -11,6 +11,9 @@ public interface GlobalCommand {
     /** One line. */
     String hint();
 
+    /** Where the verb sorts among every verb, task actions included: most-used lowest. */
+    int rank();
+
     /** What a human types. Lines after the first are modifiers, shown under it as they are given. */
     default List<String> usage() {
         return List.of(id());

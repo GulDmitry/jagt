@@ -18,6 +18,11 @@ public class RunCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 190;
+    }
+
+    @Override
     public String hint() {
         return "run an unattended job now instead of at its next tick";
     }

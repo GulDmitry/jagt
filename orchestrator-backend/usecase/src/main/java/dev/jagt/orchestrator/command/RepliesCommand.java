@@ -17,6 +17,11 @@ public class RepliesCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 20;
+    }
+
+    @Override
     public String hint() {
         return "the answers a round drafted, comment by comment, before `ship` posts them";
     }

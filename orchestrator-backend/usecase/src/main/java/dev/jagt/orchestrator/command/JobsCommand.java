@@ -20,6 +20,11 @@ public class JobsCommand implements GlobalCommand {
     }
 
     @Override
+    public int rank() {
+        return 150;
+    }
+
+    @Override
     public String hint() {
         return "what runs unattended, how often, and when each one runs next";
     }

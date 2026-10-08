@@ -14,18 +14,18 @@ import java.util.Set;
  */
 public enum TaskAction {
 
-    SHIP(Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
-    SWEEP(Group.FLOW, "sweep", "Check review",
+    SHIP(30, Group.FLOW, "ship", "Ship", "commit, push, open or update the review request"),
+    SWEEP(10, Group.FLOW, "sweep", "Check review",
             "read the checks and open threads, relay them to the agent"),
-    DEPLOY(Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
-    REVERT(Group.FLOW, "revert", "Revert",
+    DEPLOY(90, Group.FLOW, "deploy", "Deploy", "merge the task branch into the deploy branch and push"),
+    REVERT(120, Group.FLOW, "revert", "Revert",
             "revert the last deploy's merge commit and push; earlier deploys stay live"),
-    DONE(Group.FLOW, "done", "Done", "kill the session, delete the worktree, drop the task; the branch is kept"),
-    FOCUS(Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
-    IDE(Group.TOOL, "ide", "Open IDE", "open every worktree in the IDE; Local Changes holds the uncommitted diff",
+    DONE(130, Group.FLOW, "done", "Done", "kill the session, delete the worktree, drop the task; the branch is kept"),
+    FOCUS(70, Group.TOOL, "focus", "Focus", "open the agent's terminal window"),
+    IDE(50, Group.TOOL, "ide", "Open IDE", "open every worktree in the IDE; Local Changes holds the uncommitted diff",
             "ide <ticket> [diff]"),
-    DIFF(Group.TOOL, "diff", "Diff", "show every repository's diff against the branch its request targets"),
-    RESPAWN(Group.TOOL, "respawn", "Restart agent",
+    DIFF(60, Group.TOOL, "diff", "Diff", "show every repository's diff against the branch its request targets"),
+    RESPAWN(110, Group.TOOL, "respawn", "Restart agent",
             "start a new agent session in the same worktree");
 
     /**
@@ -59,17 +59,19 @@ public enum TaskAction {
     /** Spellings a verb was renamed from: accepted wherever one is typed, advertised nowhere. */
     private static final Map<String, TaskAction> RENAMED = Map.of("review", SWEEP);
 
+    private final int rank;
     private final Group group;
     private final String id;
     private final String label;
     private final String hint;
     private final String usage;
 
-    TaskAction(Group group, String id, String label, String hint) {
-        this(group, id, label, hint, id + " <ticket>");
+    TaskAction(int rank, Group group, String id, String label, String hint) {
+        this(rank, group, id, label, hint, id + " <ticket>");
     }
 
-    TaskAction(Group group, String id, String label, String hint, String usage) {
+    TaskAction(int rank, Group group, String id, String label, String hint, String usage) {
+        this.rank = rank;
         this.group = group;
         this.id = id;
         this.label = label;
@@ -79,6 +81,11 @@ public enum TaskAction {
 
     public Group group() {
         return group;
+    }
+
+    /** Where the verb sorts among every verb, global commands included: most-used lowest. */
+    public int rank() {
+        return rank;
     }
 
     /** Whether this verb stays a human's however much else is delegated. */

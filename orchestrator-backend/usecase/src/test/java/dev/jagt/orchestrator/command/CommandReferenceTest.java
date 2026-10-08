@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CommandReferenceTest {
 
     private record Declared(String id, String hint, List<String> usage, boolean report,
-                           boolean aboutOneTask) implements GlobalCommand {
+                           boolean aboutOneTask, int rank) implements GlobalCommand {
         @Override
         public String run(String tail) {
             return "ran";
@@ -17,7 +17,7 @@ class CommandReferenceTest {
     }
 
     private static final GlobalCommand SPEND = new Declared("spend", "what the calls cost",
-            List.of("spend [since]", "  … today — only this session"), true, false);
+            List.of("spend [since]", "  … today — only this session"), true, false, 15);
 
     @Test
     void advertisesOnlyTheCurrentSpellingOfARenamedVerb() {
@@ -48,6 +48,12 @@ class CommandReferenceTest {
     }
 
     @Test
+    void sortsACommandAmongTheTaskVerbsByTheRankItDeclares() {
+        assertThat(CommandReference.verbs(List.of(SPEND))).extracting(CommandReference.Verb::id)
+                .startsWith("sweep", "spend", "ship");
+    }
+
+    @Test
     void printsAModifierUnderTheVerbItBelongsTo() {
         List<String> lines = List.of(CommandReference.text(List.of(SPEND)).split("\n"));
 
@@ -58,7 +64,7 @@ class CommandReferenceTest {
     @Test
     void marksAReportAboutOneTaskSoNoSurfaceOffersItWithoutOne() {
         GlobalCommand drafts = new Declared("drafts", "what one task drafted", List.of("drafts <task>"), true,
-                true);
+                true, 200);
 
         assertThat(CommandReference.verbs(List.of(drafts))).filteredOn(verb -> verb.id().equals("drafts"))
                 .singleElement().extracting(CommandReference.Verb::aboutOneTask).isEqualTo(true);

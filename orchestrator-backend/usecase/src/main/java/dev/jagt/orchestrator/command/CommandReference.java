@@ -24,13 +24,8 @@ public final class CommandReference {
         }
     }
 
-    private record Declared(Verb verb, List<String> usage) {
+    private record Declared(int rank, Verb verb, List<String> usage) {
     }
-
-    /** Most-used first; a verb missing here sorts to the end rather than being dropped. */
-    private static final List<String> BY_USE = List.of(
-            "sweep", "replies", "ship", "do", "ide", "diff", "focus", "resume", "deploy", "stats", "respawn",
-            "revert", "done", "activity", "jobs", "help");
 
     private static final int HINT_COLUMN = 29;
 
@@ -56,13 +51,13 @@ public final class CommandReference {
     private static List<Declared> declared(Collection<GlobalCommand> globals) {
         List<Declared> declared = new ArrayList<>();
         for (TaskAction action : TaskAction.values()) {
-            declared.add(new Declared(Verb.of(action), List.of(action.usage())));
+            declared.add(new Declared(action.rank(), Verb.of(action), List.of(action.usage())));
         }
         for (GlobalCommand command : globals) {
-            declared.add(new Declared(Verb.of(command), command.usage()));
+            declared.add(new Declared(command.rank(), Verb.of(command), command.usage()));
         }
-        // Rank, then the id: two commands the order does not name would come out in container order.
-        declared.sort(Comparator.<Declared>comparingInt(entry -> rankOf(entry.verb().id()))
+        // Rank, then the id: two equal ranks would come out in container order.
+        declared.sort(Comparator.comparingInt(Declared::rank)
                 .thenComparing(entry -> entry.verb().id()));
         return List.copyOf(declared);
     }
@@ -70,10 +65,5 @@ public final class CommandReference {
     private static String row(String usage, String hint) {
         String gap = usage.length() < HINT_COLUMN ? " ".repeat(HINT_COLUMN - usage.length()) : " ";
         return "  " + usage + gap + hint;
-    }
-
-    private static int rankOf(String id) {
-        int rank = BY_USE.indexOf(id);
-        return rank < 0 ? BY_USE.size() : rank;
     }
 }
