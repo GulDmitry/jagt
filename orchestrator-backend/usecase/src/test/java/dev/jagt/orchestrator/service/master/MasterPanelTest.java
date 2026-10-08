@@ -38,6 +38,13 @@ class MasterPanelTest {
     }
 
     @Test
+    void tellsEachReviewerTheFlagsItsGitReadsMustCarry() {
+        String shared = MasterPanel.shared("judge hard", "never commit unasked", false, true);
+
+        assertThat(shared).contains("`--no-ext-diff --no-textconv`");
+    }
+
+    @Test
     void letsAReviewerStandingInForTheHumanDecideWhatItWouldHaveAsked() {
         String shared = MasterPanel.shared("judge hard", "never commit unasked", true, true);
 
