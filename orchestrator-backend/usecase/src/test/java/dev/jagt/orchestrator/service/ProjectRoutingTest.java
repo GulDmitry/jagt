@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.RoutingAssistant;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Answer;
@@ -15,8 +17,10 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,8 +38,8 @@ class ProjectRoutingTest {
     private final ConfigService configService = mock(ConfigService.class);
     private final RoutingAssistant assistant = mock(RoutingAssistant.class);
     private final FinishedTasks finished = mock(FinishedTasks.class);
-    private final RoutingMemory memory = mock(RoutingMemory.class);
-    private final ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+    @TempDir
+    Path root;
 
     @Test
     void matchesTheProjectWhoseLabelIsAmongTheTicketLabels() {
@@ -50,6 +54,9 @@ class ProjectRoutingTest {
 
     @Test
     void buysNoRoutingCallWhenThereIsNothingToChooseBetween() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(
                 Map.of("api", new ProjectConfig("/api", "origin/main", "dev", List.of()))));
 
@@ -60,6 +67,9 @@ class ProjectRoutingTest {
 
     @Test
     void placesAnItemWhoseLabelsNameOneRepositoryWithoutAskingTheRouter() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
         TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend"));
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
@@ -71,6 +81,9 @@ class ProjectRoutingTest {
 
     @Test
     void asksTheRouterWhereTheLabelsNameMoreThanOneRepository() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
         TicketFacts item = TicketFacts.defaults().withKey("ABC-42").withLabels(List.of("backend", "frontend"));
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
@@ -83,6 +96,9 @@ class ProjectRoutingTest {
 
     @Test
     void showsTheRouterOnlyThePlacementsSomethingConfirmed() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
@@ -103,55 +119,65 @@ class ProjectRoutingTest {
 
     @Test
     void writesDownWhatPlacedAnItemNoLabelCouldPlace() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
         when(finished.all()).thenReturn(List.of());
         when(assistant.routeProject(any())).thenReturn(new Answer<>(
-                Optional.of(new RoutingAnswer("api", "PAN items about quote import")), TokenUsage.NONE));
+                Optional.of(new RoutingAnswer("api", "ABC items about quote import")), TokenUsage.NONE));
 
         routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
-        verify(memory).remember("PAN items about quote import", "api");
+        assertThat(memory.rules()).containsExactly("ABC items about quote import -> api");
     }
 
     @Test
     void mergesTheWordingsOneRuleWasWrittenInOnceTheMemoryIsFull() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 2);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
         when(finished.all()).thenReturn(List.of());
         when(assistant.routeProject(any())).thenReturn(new Answer<>(
                 Optional.of(new RoutingAnswer("api", "importing quotes")), TokenUsage.NONE));
-        when(memory.remember("importing quotes", "api")).thenReturn(true);
-        when(memory.full()).thenReturn(true);
-        when(memory.rules()).thenReturn(List.of("quote import -> api", "importing quotes -> api"));
+        memory.remember("quote import", "api");
         when(assistant.sameRules(List.of("quote import -> api", "importing quotes -> api"))).thenReturn(new Answer<>(
                 Optional.of(new RulePair("quote import -> api", "importing quotes -> api")), TokenUsage.NONE));
 
         routing.projectFor(TicketFacts.defaults().withKey("ABC-42"));
 
-        verify(memory).merge("quote import -> api", "importing quotes -> api");
+        assertThat(memory.rules()).containsExactly("quote import -> api");
     }
 
     @Test
     void retiresTheRuleAHumanHasJustContradicted() {
-        when(memory.rules()).thenReturn(List.of("PAN items about quote import -> web"));
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+        memory.remember("ABC items about quote import", "web");
         when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-42",
                 TaskState.builder("web", "/wt", TaskStatus.DONE).title("Quote import")
                         .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.TRACKER)))
                         .build(), 2L)));
-        when(assistant.staleRule("ABC-42", "api", List.of("PAN items about quote import -> web")))
-                .thenReturn(new Answer<>(Optional.of("PAN items about quote import -> web"), TokenUsage.NONE));
+        when(assistant.staleRule("ABC-42", "api", List.of("ABC items about quote import -> web")))
+                .thenReturn(new Answer<>(Optional.of("ABC items about quote import -> web"), TokenUsage.NONE));
 
         routing.placedByHand("ABC-42", "api");
 
-        verify(memory).retire("PAN items about quote import -> web");
+        assertThat(memory.rules()).isEmpty();
     }
 
     @Test
     void asksNothingWhereTheRouterHadNeverPlacedThatItemItself() {
-        when(memory.rules()).thenReturn(List.of("PAN items about quote import -> web"));
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
+        memory.remember("ABC items about quote import", "web");
         when(finished.all()).thenReturn(List.of(FinishedTask.of("ABC-42",
                 TaskState.builder("web", "/wt", TaskStatus.DONE).title("Quote import")
                         .history(List.of(new StatusChange(TaskStatus.NEW, 1L, ActionOrigin.BOARD)))
@@ -160,11 +186,14 @@ class ProjectRoutingTest {
         routing.placedByHand("ABC-42", "api");
 
         verify(assistant, never()).staleRule(anyString(), anyString(), any());
-        verify(memory, never()).retire(anyString());
+        assertThat(memory.rules()).containsExactly("ABC items about quote import -> web");
     }
 
     @Test
     void leavesTheItemForAHumanWhenTheRouterNamedARepositoryJagtDoesNotHave() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
@@ -177,6 +206,9 @@ class ProjectRoutingTest {
 
     @Test
     void reportsARouterThatAnsweredNothingAsUnreadableRatherThanUndecided() {
+        RoutingMemory memory = new RoutingMemory(new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString())), 60);
+        ProjectRouting routing = new ProjectRouting(configService, assistant, finished, memory);
         when(configService.load()).thenReturn(ConfigFile.defaults().withProjects(Map.of(
                 "api", new ProjectConfig("/api", "origin/main", "dev", List.of("backend")),
                 "web", new ProjectConfig("/web", "origin/main", "dev", List.of("frontend")))));
