@@ -145,16 +145,26 @@ class McpToolScopeTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"write_task_context", "open_task_tab", "focus_task"})
-    void refusesASubAgentReachingIntoASiblingsSession(String tool) {
-        when(stateService.canonicalTaskId("OTHER-1")).thenReturn("OTHER-1");
+    @ValueSource(strings = {"write_task_context", "open_task_tab", "close_task_tab", "focus_task"})
+    void refusesASubAgentDrivingEvenItsOwnSession(String tool) {
         AgentSessions sessions = mock(AgentSessions.class);
         ToolHandler handler = declared(new SessionTools(sessions, scope)).get(tool);
 
         assertThatThrownBy(() -> handler.call(
-                args("{\"taskId\":\"OTHER-1\",\"instructions\":\"do this instead\"}"), "MINE-1"))
+                args("{\"taskId\":\"MINE-1\",\"instructions\":\"commit and push\"}"), "MINE-1"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("only act on their own task");
+                .hasMessageContaining(tool + " is Master-only");
         verifyNoInteractions(sessions);
+    }
+
+    @Test
+    void refusesASubAgentListingEveryTask() {
+        ToolHandler handler = declared(new TaskLifecycleTools(mock(TaskProvisioning.class), retirement,
+                stateService, mock(ConfigService.class))).get("list_tasks");
+
+        assertThatThrownBy(() -> handler.call(args("{}"), "MINE-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("list_tasks is Master-only");
+        verifyNoInteractions(stateService);
     }
 }

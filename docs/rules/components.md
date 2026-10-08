@@ -53,9 +53,8 @@ SSOT for tasks, gitignored, auto-created. Its statuses are [task-flow](../../ope
   the task and `TaskName.from` cuts its branch out of them.
 - **Sub-agents can only act on their own task**: `surface/mcp/CallerScope` enforces X-Working-Directory; the
   Master presents `surface/mcp/MasterToken`; anyone else is refused.
-  A tool taking a taskId gets a `McpToolScopeTest` row. `Audience.MASTER` tools (`initialize_task`,
-  `remove_task`, `deploy_task`, `revert_task`) are neither listed nor answered to a sub-agent; every call from a
-  registered worktree bumps `lastActiveTimestamp`.
+  A tool taking a taskId gets a `McpToolScopeTest` row. A sub-agent is listed and answered `update_agent_status`,
+  `notify_user` and `open_in_ide` alone, the rest being `Audience.MASTER`; its every call bumps `lastActiveTimestamp`.
 - **A task id is any name git accepts as a branch** (`core/task/TaskName`): a task IS its branch, and every
   directory, tmux session, socket and temp file goes through `TaskName.slug`.
 - **The MCP transport must never emit non-JSON-RPC bytes**: malformed JSON → `-32700`, an HTTP error → a

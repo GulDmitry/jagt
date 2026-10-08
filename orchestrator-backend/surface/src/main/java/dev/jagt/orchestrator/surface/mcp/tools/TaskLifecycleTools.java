@@ -47,7 +47,7 @@ public class TaskLifecycleTools implements McpTools {
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> retirement.retire(said.taskId()));
 
-        tools.tool("list_tasks", Audience.ANYONE, NoArguments.schema("Every task, one per line: its id, status,"
+        tools.tool("list_tasks", Audience.MASTER, NoArguments.schema("Every task, one per line: its id, status,"
                         + " title, last message, and each worktree with its review request."),
                 NoArguments.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> stateService.listing());
