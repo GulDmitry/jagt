@@ -25,7 +25,7 @@ public class HandBack {
     /** Whether this hand-back still owes jagt a verification run, which holds it at VERIFYING. */
     public boolean verificationOwed(TaskState task) {
         return task.repos().stream()
-                .anyMatch(repo -> !Verification.command(configService.project(repo.project())).isEmpty());
+                .anyMatch(repo -> !Verification.command(configService.load().projects().get(repo.project())).isEmpty());
     }
 
     public boolean masterReads() {

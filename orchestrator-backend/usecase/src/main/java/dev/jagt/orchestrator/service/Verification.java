@@ -37,7 +37,7 @@ public class Verification {
     }
 
     private Optional<String> failureOf(TaskRepo repo) {
-        List<String> command = command(configService.project(repo.project()));
+        List<String> command = command(configService.load().projects().get(repo.project()));
         if (command.isEmpty()) {
             return Optional.empty();
         }
