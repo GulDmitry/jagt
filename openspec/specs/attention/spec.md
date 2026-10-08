@@ -27,7 +27,7 @@ An agent MUST report `outcome=question` before the human sees the question, rule
 `WatchdogService` SHALL stamp silence from `service/SessionProbe` (`TaskState.silentSince`, `TaskState.silentBecause`):
 token limit, crash, unanswered prompt, or `SessionProbe.State.IDLE` at the shared threshold with nothing newer
 behind it: the same flip, a NEEDS YOU line, overruled at `NEW`. It MUST watch every status whose `Move.ownerOf`
-is AGENT (`WatchdogServiceTest`).
+is AGENT but `VERIFYING`, which jagt holds (`WatchdogServiceTest`).
 
 #### Scenario: Silent stop
 - **WHEN** a session stops unannounced

@@ -14,7 +14,7 @@ for as long as the session did.
 
 ## Decision
 
-- A red read stops a task waiting on the host at CI_FAILED (`FlowRules.readRed`): the human's move until the
+- A red read stops a task waiting on the host at CI_FAILED (`FlowRules.readLands`): the human's move until the
   session takes it; a session already on it keeps its status.
 - The read follows a trigger job into the pipeline it started, and reads a linked verdict over that tool's MCP.
 - The brief hands the session a method: find the job, reproduce it, fix, re-run; what is not code or not

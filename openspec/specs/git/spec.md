@@ -34,8 +34,9 @@ the inherited `origin/<baseBranch>` at creation. Each git call locks its reposit
 - **THEN** another commit, never a rewrite
 
 ### Requirement: No verdict gates deploy
-`FlowRules`' `DEPLOY` SHALL ask only for an open request, plus DEPLOY_CONFLICT; NEW, SHIPPING, IN_PROGRESS, REVERTED and
-DONE are not. The confirm's `project → branch` line comes from `RepoView.deployBranch`.
+`FlowRules`' `DEPLOY` SHALL ask only for an open request, plus DEPLOY_CONFLICT; NEW, PLAN_PENDING, IN_PROGRESS,
+VERIFYING, SHIPPING, REVERTED and DONE are refused; `ship` still runs from DEPLOYED. The confirm's `project → branch`
+line comes from `RepoView.deployBranch`.
 
 #### Scenario: Confirms
 - **WHEN** you press Deploy
@@ -112,7 +113,7 @@ or deploy is no failure (`NothingToDeployException`, `holdsWork`): passed over a
 
 #### Scenario: Ship
 - **WHEN** `ship ABC-42`
-- **THEN** a commit, push and request per repository onto its own base; an unchanged one gets none
+- **THEN** a commit, push and request per repository onto its own base
 
 ### Requirement: Resume reconciles origin and target
 `rebaseOntoTarget` SHALL put it on what origin holds: fast-forwarded when behind, REFUSED when both sides carry commits,
@@ -128,7 +129,7 @@ undoing it; a CONFLICTING rebase stands in the worktree for the session. One thi
 ### Requirement: Push guard lives in the worktree
 `ToolGate` (`POST /api/agent/tool`, the command LINE) and `.jagt/hooks/pre-push` (`WorktreeHooks`, the refs) SHALL
 refuse only a push not to the task's branch. `core.hooksPath` goes via `GIT_CONFIG_*` on the launch command
-(`WorktreeHooks.gitEnv` in `TmuxSessionHost`): that session and children, no repository config.
+(`WorktreeHooks.gitEnv`): that session and children, no repository config.
 `--no-verify` skips it; `deploy`, `revert` and a human's shell run ungated.
 
 #### Scenario: Hooks

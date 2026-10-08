@@ -8,7 +8,7 @@ How a review round is answered, reported and drafted into replies, and how an ex
 
 ### Requirement: The brief routes each thread
 `ReviewSweepService.brief` SHALL route each thread: fix, change nothing and say why — beyond the ticket is a task of its own —
-or ask via `outcome=question`. A question SHALL end the round (REVIEW_PENDING, `outcome=question`), never park in CI_POLLING.
+or ask via `outcome=question`. It SHALL send a question to REVIEW_PENDING, never CI_POLLING.
 
 #### Scenario: The comment is right
 - **WHEN** a comment is right
@@ -38,8 +38,8 @@ or ask via `outcome=question`. A question SHALL end the round (REVIEW_PENDING, `
 - **THEN** no re-brief
 
 ### Requirement: The outcome is a field
-`update_agent_status` SHALL take `outcome` (`question` | `no_changes` | `progress`) and `reviewRequestUrl`, all three ending
-at REVIEW_PENDING. `flow/AgentReport`, its one parser, SHALL read a marker jagt wrote (`AgentStatusReports.stated`).
+`update_agent_status` SHALL take `outcome` (`question` | `no_changes` | `progress`) and `reviewRequestUrl`, the brief ending
+all three at REVIEW_PENDING. `flow/AgentReport`, its one parser, SHALL read a marker jagt wrote (`AgentStatusReports.stated`).
 
 #### Scenario: Clean round, nobody approved
 - **WHEN** a round comes back clean, unapproved
@@ -82,7 +82,7 @@ pipeline), UNKNOWN (nobody read one). A round reading no listing SHALL write not
 - **THEN** nobody read one yet; `none` means the host listed none
 
 ### Requirement: A red round stops the task
-`FlowRules.readRed` SHALL stop the task and relay the failing job's lines as `<checks>`, a clue; read twice they MUST read the
+`FlowRules.readLands` SHALL stop the task and relay the failing job's lines as `<checks>`, a clue; read twice they MUST read the
 same, or every poll re-briefs.
 
 #### Scenario: Pipeline goes red
@@ -102,7 +102,7 @@ The round brief (`ReviewSweepService.brief`), relayed every round, SHALL prescri
 newest note, `FIXED | NO CHANGE | QUESTION`, reply.
 
 #### Scenario: Replies too long
-- **WHEN** replies run long, or an essay
+- **WHEN** replies run long
 - **THEN** the agent broke its brief; a re-`sweep` re-briefs
 
 ### Requirement: Drafted replies are a file
