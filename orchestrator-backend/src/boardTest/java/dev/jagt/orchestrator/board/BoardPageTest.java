@@ -867,6 +867,33 @@ class BoardPageTest {
     }
 
     @Test
+    void anOlderReadArrivingLastDoesNotPaintOverANewerOne() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        Page page = open();
+        List<Route> held = new java.util.ArrayList<>();
+        List<APIResponse> heldRead = new java.util.ArrayList<>();
+        page.route("**/api/tasks", route -> {
+            if (held.isEmpty()) {
+                heldRead.add(route.fetch());
+                held.add(route);
+            } else {
+                route.resume();
+            }
+        });
+
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "older"));
+        page.waitForCondition(() -> !held.isEmpty());
+        page.waitForResponse(response -> response.url().endsWith("/api/tasks"), () -> state.putTask("ABC-1",
+                state.task("ABC-1").orElseThrow().withStatus(TaskStatus.CI_POLLING, "newer")));
+        page.waitForResponse(response -> response.url().endsWith("/api/tasks"),
+                () -> held.get(0).fulfill(new Route.FulfillOptions().setResponse(heldRead.get(0))));
+        page.evaluate("() => new Promise((done) => setTimeout(done, 100))");
+
+        assertThat(page.locator("article .status")).containsText("out for review");
+    }
+
+    @Test
     void theHeaderCountsTheTasksWhoseTurnItIs() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());

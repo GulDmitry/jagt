@@ -5,9 +5,16 @@ import * as store from '../core/store.js';
 import {render} from './render.js';
 import {toast} from './toast.js';
 
+let asked = 0;
+let painted = 0;
+
 export async function refresh() {
+  const mine = ++asked;
   try {
     const data = await api('/api/tasks');
+    // Reads overlap, and one answered late describes the board before a later one.
+    if (mine < painted) return;
+    painted = mine;
     store.set({
       tasks: data.tasks,
       projects: data.projects || [],
