@@ -178,7 +178,6 @@ public class MasterPanel {
                 questions.add("The " + role + " could not read the round: " + OneLine.of(said.failure()));
                 continue;
             }
-            // Only what breaks something or misses the ticket stops a round; the rest is advice, a `#` line jagt skips.
             said.findings().forEach(f -> (f.stops() ? lines : advice).add((f.stops() ? "- [" : "# advice [") + role
                     + "] " + OneLine.of(f.file()) + " — " + (f.severity().equals("unproven") ? SHOW : "")
                     + OneLine.of(f.issue())
