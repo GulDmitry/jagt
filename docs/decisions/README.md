@@ -4,7 +4,7 @@
 
 One file per ARCHITECTURAL decision — the shape of jagt: its rings and seams, where state lives, how sessions
 run, what owns a move. Costly to reverse, or one a newcomer would undo because it looks wrong. A feature's rule or
-parameter is not one.
+parameter is none.
 The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidence and alternatives.
 
 - Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
@@ -15,7 +15,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - At most 400 words: a record needing more is two decisions.
 - **Linked**: a record names the rule it backs at its top; this index lists every record (`DecisionIndexTest`). Recovering
   a why starts here.
-- A record taken after the fact says `recorded retroactively` and carries only what the history proves.
+- A record taken after the fact says `recorded retroactively` and carries only what history proves.
 
 ## Index
 
@@ -43,3 +43,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0022 — The one rewrite](0022-the-resume-rebase-is-the-one-rewrite-and-the-guard-is-a-guardrail.md)
 - [0023 — The Master holds a token](0023-the-master-is-identified-by-a-token.md)
 - [0024 — Headless calls are metered where they run](0024-every-headless-call-is-metered-where-it-runs.md)
+- [0025 — Token-guarded board writes](0025-the-board-is-no-way-around-the-token.md)

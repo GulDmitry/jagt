@@ -6,10 +6,10 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * The one call a session may be refused: a push whose destination is not the task's own branch, a delete of the
- * branch its review request is built on, a force without the lease, and a push that could switch off the hook. Detaching a
- * worktree's upstream removes the DEFAULT target and nothing else, so an explicit {@code git push origin dev} still
- * needs refusing. Everything that is not a push is allowed: this is a gate on one command, not a permission layer.
+ * The calls a session may be refused: a push whose destination is not the task's own branch, a delete of the
+ * branch its review request is built on, a force without the lease, a push that could switch off the hook, and a
+ * line reaching the board. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an
+ * explicit {@code git push origin dev} still needs refusing. This is a gate on a few lines, not a permission layer.
  * What is read is the command LINE, so a push assembled at runtime is not seen.
  */
 public final class ToolGate {
@@ -24,6 +24,8 @@ public final class ToolGate {
     private static final List<String> DELETES = List.of("--delete", "-d");
     /** What the branch a worktree is on is called, so a push of it is a push of the task's branch. */
     private static final String CURRENT_BRANCH = "HEAD";
+    /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
+    private static final String BOARD = "(127\\.0\\.0\\.1|localhost|\\[::1]|0\\.0\\.0\\.0):%d\\b|master-token|mcp_client\\.js";
     private static final Pattern PUSH = Pattern.compile("\\bpush\\b");
     /** A word quoted whole is still the command; one quoted with what follows is data. */
     private static final Pattern GIT = Pattern.compile("([\"']?)(\\S*/)?git\\1");
@@ -39,13 +41,17 @@ public final class ToolGate {
     }
 
     /** Why the call is refused, or empty when it is allowed. */
-    public static Optional<String> refusal(String toolName, String line, String taskBranch) {
+    public static Optional<String> refusal(String toolName, String line, String taskBranch, int boardPort) {
         if (!SHELL_TOOL.equalsIgnoreCase(toolName) || line == null || taskBranch == null
                 || taskBranch.isBlank()) {
             return Optional.empty();
         }
         // The shell reads `\git` and `g''it` as git.
         String command = line.replace("\\\n", " ").replace("\\", "").replace("''", "").replace("\"\"", "");
+        if (Pattern.compile(BOARD.formatted(boardPort)).matcher(command).find()) {
+            return Optional.of("jagt refuses a line reaching its board or the Master's token: a session acts"
+                    + " through its own MCP tools.");
+        }
         if (PUSH.matcher(command).find() && HOOK_OFF.matcher(command).find()) {
             return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");

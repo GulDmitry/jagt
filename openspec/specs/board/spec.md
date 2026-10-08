@@ -92,16 +92,16 @@ its own.
 - **THEN** a sentence refuses it, not a git error
 
 ### Requirement: Loopback only
-The board SHALL bind loopback and ask no password; `surface/board/LoopbackFilter` SHALL refuse a foreign Host or
-Origin, and `/mcp` anything but JSON.
+The board SHALL bind loopback, password-free. `LoopbackFilter` SHALL refuse a foreign Host or Origin and `/mcp`
+anything but JSON; `BoardWriteFilter` an `/api` write without Origin or Master token.
 
 #### Scenario: A second machine
 - **WHEN** jagt runs with `--server.address=0.0.0.0`
-- **THEN** it is reachable elsewhere, without a password
+- **THEN** it is reachable elsewhere
 
-#### Scenario: Another site posts a verb
-- **WHEN** a page elsewhere, or a rebound name, sends one
-- **THEN** it is refused 403
+#### Scenario: A stranger posts
+- **WHEN** a foreign page, a rebound name or a session's `curl` posts a verb
+- **THEN** refused 403; `ToolGate` stops the `curl` first
 
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `StateService.onChange` is the one event, `TaskEventStream` forwarding it as SSE at

@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.surface.agent;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.jagt.orchestrator.service.StateService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,13 +35,13 @@ public class AgentToolGateController {
     @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> gate(
             @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
-            @RequestBody(required = false) ToolCall call) {
+            @RequestBody(required = false) ToolCall call, HttpServletRequest request) {
         if (call == null) {
             return ResponseEntity.noContent().build();
         }
         // A directory no task owns has no branch a push could be refused against.
         String taskBranch = stateService.findByWorktree(cwd).map(Map.Entry::getKey).orElse(null);
-        return ToolGate.refusal(call.toolName(), call.command(), taskBranch)
+        return ToolGate.refusal(call.toolName(), call.command(), taskBranch, request.getLocalPort())
                 .map(reason -> ResponseEntity.ok(denied(reason)))
                 .orElseGet(() -> ResponseEntity.noContent().build());
     }

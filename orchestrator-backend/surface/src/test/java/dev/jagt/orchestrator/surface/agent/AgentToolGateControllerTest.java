@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.util.Map;
 import java.util.Optional;
@@ -22,7 +23,8 @@ class AgentToolGateControllerTest {
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
         Map<String, Object> answered = new AgentToolGateController(stateService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin dev")))
+                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin dev")),
+                new MockHttpServletRequest())
                 .getBody();
 
         assertThat(answered).containsEntry("continue", true);
@@ -40,7 +42,8 @@ class AgentToolGateControllerTest {
                 TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build())));
 
         var answered = new AgentToolGateController(stateService).gate("/wt/ABC-1-proj",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin ABC-1")));
+                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin ABC-1")),
+                new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
     }
@@ -50,14 +53,16 @@ class AgentToolGateControllerTest {
         when(stateService.findByWorktree("/elsewhere")).thenReturn(Optional.empty());
 
         var answered = new AgentToolGateController(stateService).gate("/elsewhere",
-                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin dev")));
+                new AgentToolGateController.ToolCall("Bash", Map.of("command", "git push origin dev")),
+                new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
     }
 
     @Test
     void answersACallWithNoPayloadWithNothing() {
-        var answered = new AgentToolGateController(stateService).gate("/wt/ABC-1-proj", null);
+        var answered = new AgentToolGateController(stateService).gate("/wt/ABC-1-proj", null,
+                new MockHttpServletRequest());
 
         assertThat(answered.getBody()).isNull();
     }

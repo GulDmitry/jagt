@@ -386,6 +386,7 @@ class ReviewAndDeployFlowTest {
     private String post(String path, String body, Map<String, String> headers) throws Exception {
         HttpRequest.Builder request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                 .header("Content-Type", "application/json")
+                .header("Origin", "http://127.0.0.1:" + port)
                 .POST(HttpRequest.BodyPublishers.ofString(body));
         headers.forEach(request::header);
         HttpResponse<String> answer = client.send(request.build(), HttpResponse.BodyHandlers.ofString());

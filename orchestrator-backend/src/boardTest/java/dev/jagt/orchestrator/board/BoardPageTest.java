@@ -1454,7 +1454,8 @@ class BoardPageTest {
             "/api/tasks|{not json|not readable"})
     void aMalformedRequestIsRefusedInTheShapeEveryRefusalHas(String path, String body, String named) {
         APIResponse refused = session.request().post("http://localhost:" + port + path,
-                RequestOptions.create().setHeader("Content-Type", "application/json").setData(body));
+                RequestOptions.create().setHeader("Content-Type", "application/json")
+                        .setHeader("Origin", "http://localhost:" + port).setData(body));
 
         org.assertj.core.api.Assertions.assertThat(refused.status()).isEqualTo(400);
         org.assertj.core.api.Assertions.assertThat(refused.text()).startsWith("{\"error\":").contains(named)
