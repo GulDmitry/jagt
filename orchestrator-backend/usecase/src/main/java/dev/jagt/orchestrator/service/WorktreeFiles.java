@@ -16,7 +16,6 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /** The files a fresh worktree needs that git does not carry, and jagt's own plumbing kept out of git status. */
@@ -76,7 +75,7 @@ public final class WorktreeFiles {
 
     /** Gitignored local files the run configs reference but git omits. Best-effort; heavy directories skipped. */
     public static void copyLocalFiles(Path projectPath, Path worktreePath, List<String> globs,
-                                      Set<String> editorResidue) {
+                                      EditorDriver editor) {
         var matchers = localFileMatchers(globs);
         if (matchers.isEmpty()) {
             return;
@@ -86,7 +85,7 @@ public final class WorktreeFiles {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     String name = dir.getFileName().toString();
-                    return WorktreeNoise.UNWALKED.contains(name) || editorResidue.contains(name)
+                    return WorktreeNoise.UNWALKED.contains(name) || WorktreeNoise.isResidue(name, editor)
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 

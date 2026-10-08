@@ -46,7 +46,7 @@ public class WorktreeSetup {
                 .withAllowedTools(agentAllowedTools));
         WorktreeFiles.copyProjectFiles(repo.projectPath(), worktreePath, editor.projectFiles());
         WorktreeFiles.copyLocalFiles(repo.projectPath(), worktreePath,
-                configService.load().worktree().copyGlobsOrDefault(), editor.residue());
+                configService.load().worktree().copyGlobsOrDefault(), editor);
         WorktreeFiles.write(systemKnowledge, briefing.of(request, repo, repos));
         // The instructions live where the session reads them, and a relay writes to that same one worktree.
         if (repo.primary() && request.instructions() != null && !request.instructions().isBlank()) {

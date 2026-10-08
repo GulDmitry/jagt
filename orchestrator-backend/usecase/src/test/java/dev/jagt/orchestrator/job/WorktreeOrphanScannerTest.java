@@ -143,6 +143,24 @@ class WorktreeOrphanScannerTest {
     }
 
     @Test
+    void deletesAnOrphanHoldingTheIdesFilesAndWhatTheOsWroteBesideThem(@TempDir Path root) throws IOException {
+        Path repo = Files.createDirectories(root.resolve("demo-repo"));
+        Path husk = Files.createDirectories(root.resolve("ABC-42-demo"));
+        Files.createDirectories(husk.resolve(".idea"));
+        Files.writeString(husk.resolve(".idea").resolve("workspace.xml"), "<project/>");
+        Files.writeString(husk.resolve(".DS_Store"), "Bud1");
+        ConfigService config = mock(ConfigService.class);
+        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
+                .withProjects(Map.of("demo", new ProjectConfig(repo.toString(), "origin/main", "dev", List.of()))));
+        EditorDriver editor = mock(EditorDriver.class);
+        when(editor.residue()).thenReturn(Set.of(".idea"));
+
+        new WorktreeOrphanScanner(config, stateWith(root, Map.of()), mock(Notifications.class), editor).run();
+
+        assertThat(husk).doesNotExist();
+    }
+
+    @Test
     void keepsAnOrphanStillHoldingItsCheckout(@TempDir Path root) throws IOException {
         Path repo = Files.createDirectories(root.resolve("demo-repo"));
         Path orphan = Files.createDirectories(root.resolve("ABC-43-demo"));

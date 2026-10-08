@@ -327,7 +327,7 @@ public class GitDeploy {
         List<String> kept;
         try (var entries = Files.list(path)) {
             kept = entries.map(entry -> entry.getFileName().toString())
-                    .filter(name -> !editor.residue().contains(name) && !WorktreeNoise.SYSTEM_RESIDUE.contains(name))
+                    .filter(name -> !WorktreeNoise.isResidue(name, editor))
                     .sorted().toList();
         } catch (IOException e) {
             throw new UncheckedIOException("Could not read the deploy worktree path " + path, e);

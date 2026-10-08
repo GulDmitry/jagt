@@ -127,13 +127,13 @@ public class WorktreeOrphanScanner implements Job {
             Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
-                    return editor.residue().contains(dir.getFileName().toString())
+                    return WorktreeNoise.isResidue(dir.getFileName().toString(), editor)
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-                    if (attrs.size() == 0) {
+                    if (attrs.size() == 0 || WorktreeNoise.isResidue(file.getFileName().toString(), editor)) {
                         return FileVisitResult.CONTINUE;
                     }
                     onlyIdeFiles[0] = false;
@@ -255,7 +255,7 @@ public class WorktreeOrphanScanner implements Job {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) {
                     String name = dir.getFileName().toString();
-                    return WorktreeNoise.UNWALKED.contains(name) || editor.residue().contains(name)
+                    return WorktreeNoise.UNWALKED.contains(name) || WorktreeNoise.isResidue(name, editor)
                             ? FileVisitResult.SKIP_SUBTREE : FileVisitResult.CONTINUE;
                 }
 

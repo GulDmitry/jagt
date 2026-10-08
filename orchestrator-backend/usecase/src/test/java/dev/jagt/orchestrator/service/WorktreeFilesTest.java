@@ -47,8 +47,10 @@ class WorktreeFilesTest {
         Files.writeString(base.resolve(".editor/.env"), "IGNORED=1");
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
+        EditorDriver editor = mock(EditorDriver.class);
+        when(editor.residue()).thenReturn(Set.of(".editor"));
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), Set.of(".editor"));
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), editor);
 
         assertThat(wt.resolve(".editor/.env")).doesNotExist();
     }
@@ -65,7 +67,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"), Set.of());
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env", "**/*.pem"), mock(EditorDriver.class));
 
         assertThat(wt.resolve("app/.env")).exists().hasContent("SECRET=1");
         assertThat(wt.resolve("lib/key.pem")).exists().hasContent("PEM");
@@ -81,7 +83,7 @@ class WorktreeFilesTest {
         Files.createDirectories(wt);
         Files.writeString(wt.resolve(".env"), "AS COMMITTED");
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), Set.of());
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), mock(EditorDriver.class));
 
         assertThat(wt.resolve(".env")).hasContent("AS COMMITTED");
     }
@@ -94,7 +96,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), Set.of());
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("**/.env"), mock(EditorDriver.class));
 
         assertThat(wt.resolve(".env")).exists().hasContent("SECRET=1");
     }
@@ -107,7 +109,7 @@ class WorktreeFilesTest {
         Path wt = root.resolve("wt");
         Files.createDirectories(wt);
 
-        WorktreeFiles.copyLocalFiles(base, wt, List.of("vendor/**"), Set.of());
+        WorktreeFiles.copyLocalFiles(base, wt, List.of("vendor/**"), mock(EditorDriver.class));
 
         assertThat(wt.resolve("vendor")).doesNotExist();
     }
