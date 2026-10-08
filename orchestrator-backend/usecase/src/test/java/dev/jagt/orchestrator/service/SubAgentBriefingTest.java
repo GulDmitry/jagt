@@ -22,6 +22,33 @@ class SubAgentBriefingTest {
         String briefing = new SubAgentBriefing(new PromptTemplates())
                 .of(NewTask.builder("ABC-42", "web").build(), repo, List.of(repo));
 
-        assertThat(briefing).contains("The deploy branch (`dev`) is jagt's `deploy`");
+        assertThat(briefing).contains("The deploy branch `dev` is jagt's `deploy` alone.");
+    }
+
+    @Test
+    void namesTheDeployBranchOfEveryRepositoryOfTheTask() {
+        NewRepo web = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", "dev", List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+        NewRepo api = new NewRepo("api", new ProjectConfig("/repo/api", "origin/main", "stage", List.of()),
+                Path.of("/repo/api"), Path.of("/w/ABC-42-api"), Path.of("/repo/api/.git"), "origin/main",
+                "git@host:g/api.git", false);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").build(), web, List.of(web, api));
+
+        assertThat(briefing).contains("The deploy branches `dev` (web), `stage` (api) are jagt's `deploy` alone.");
+    }
+
+    @Test
+    void saysNothingOfADeployBranchWhenTheTaskHasNone() {
+        NewRepo repo = new NewRepo("web", new ProjectConfig("/repo/web", "origin/main", null, List.of()),
+                Path.of("/repo/web"), Path.of("/w/ABC-42"), Path.of("/repo/web/.git"), "origin/main",
+                "git@host:g/web.git", true);
+
+        String briefing = new SubAgentBriefing(new PromptTemplates())
+                .of(NewTask.builder("ABC-42", "web").build(), repo, List.of(repo));
+
+        assertThat(briefing).doesNotContain("deploy branch");
     }
 }

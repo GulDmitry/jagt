@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SubAgentBriefing {
 
-    private static final String NO_DEPLOY = "none here";
-
     private final PromptTemplates prompts;
 
     public String of(NewTask request, NewRepo repo, List<NewRepo> repos) {
@@ -25,12 +23,22 @@ public class SubAgentBriefing {
                 taskId, repo.project(), repo.config().path(), repo.baseBranch(), repo.remoteUrl(),
                 repo.worktreePath(),
                 alsoYours(repo, repos),
-                taskId, repo.baseBranch(), deployBranch(repo));
+                taskId, repo.baseBranch(), deployBranches(repos));
     }
 
-    private static String deployBranch(NewRepo repo) {
-        String branch = repo.config().deployBranch();
-        return branch == null || branch.isBlank() ? NO_DEPLOY : "`" + branch + "`";
+    private static String deployBranches(List<NewRepo> repos) {
+        List<NewRepo> deployed = repos.stream()
+                .filter(repo -> repo.config().deployBranch() != null && !repo.config().deployBranch().isBlank())
+                .toList();
+        String named = deployed.stream()
+                .map(repo -> "`" + repo.config().deployBranch() + "`"
+                        + (repos.size() == 1 ? "" : " (" + repo.project() + ")"))
+                .collect(Collectors.joining(", "));
+        return switch (deployed.size()) {
+            case 0 -> "";
+            case 1 -> " The deploy branch " + named + " is jagt's `deploy` alone.";
+            default -> " The deploy branches " + named + " are jagt's `deploy` alone.";
+        };
     }
 
     /** The task's OTHER worktrees, which this agent may edit as well, or a sentence saying there are none. */
