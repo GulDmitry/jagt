@@ -204,8 +204,7 @@ a { color: var(--accent); }
 .empty { color: var(--muted); padding: 0 16px 16px; }
 
 #show-log {
-  position: fixed; left: 16px; bottom: 16px; max-width: min(560px, 44vw); text-align: left;
-  color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  position: fixed; left: 16px; bottom: 16px; color: var(--muted); font-size: 12px;
   box-shadow: 0 6px 20px rgb(0 0 0 / 12%);
 }
 #tip {

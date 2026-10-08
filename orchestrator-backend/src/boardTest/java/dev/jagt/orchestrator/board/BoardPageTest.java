@@ -636,6 +636,20 @@ class BoardPageTest {
     }
 
     @Test
+    void theLogButtonKeepsItsNameAndCarriesTheLastMessageInItsHover() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());
+        when(commands.execute("ABC-1", TaskAction.FOCUS)).thenReturn("Focused ABC-1 — its window is in front.");
+
+        Page page = open();
+        page.getByRole(AriaRole.BUTTON, new Page.GetByRoleOptions().setName("Focus").setExact(true)).click();
+
+        assertThat(page.locator("#show-log")).hasText("log");
+        assertThat(page.locator("#show-log"))
+                .hasAttribute("data-tip", Pattern.compile("Focused ABC-1 — its window is in front."));
+    }
+
+    @Test
     void closingATaskAsksBeforeAnythingRuns() throws Exception {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now()).build());

@@ -12,7 +12,7 @@ export const showLog = (open) => { opener.onclick = open; };
 export function toast(message, isError) {
   messages.push(`${new Date().toLocaleTimeString()}  ${message}`);
   opener.hidden = false;
-  opener.textContent = message.split('\n')[0];
+  opener.dataset.tip = `every message this session; the last:\n${message}`;
 
   const node = document.createElement('div');
   node.className = isError ? 'toast error' : 'toast';
