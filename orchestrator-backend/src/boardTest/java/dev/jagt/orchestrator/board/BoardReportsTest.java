@@ -465,6 +465,7 @@ class BoardReportsTest extends BoardPageContext {
         page.waitForRequestFinished(new Page.WaitForRequestFinishedOptions()
                 .setPredicate(request -> request.url().endsWith("about=a7")),
                 () -> held.get(0).fulfill(new Route.FulfillOptions().setStatus(500).setBody("{\"error\":\"too late\"}")));
+        page.evaluate("() => new Promise(done => setTimeout(() => requestAnimationFrame(() => done(true))))");
 
         assertThat(page.locator("#toasts .toast.error")).hasCount(0);
     }
@@ -493,6 +494,7 @@ class BoardReportsTest extends BoardPageContext {
 
         page.waitForRequestFinished(new Page.WaitForRequestFinishedOptions()
                 .setPredicate(request -> request.url().endsWith("about=a7")), () -> held.get(0).resume());
+        page.evaluate("() => new Promise(done => setTimeout(() => requestAnimationFrame(() => done(true))))");
 
         org.assertj.core.api.Assertions.assertThat(page.locator("#report-body").textContent())
                 .contains("The second round.");

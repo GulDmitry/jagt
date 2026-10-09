@@ -78,6 +78,7 @@ class BoardConnectionTest extends BoardPageContext {
         assertThat(page.locator("article .status")).containsText("out for review");
 
         page.waitForRequestFinished(() -> held.get(0).fulfill(new Route.FulfillOptions().setResponse(read.get(0))));
+        page.evaluate("() => new Promise(done => setTimeout(() => requestAnimationFrame(() => done(true))))");
 
         org.assertj.core.api.Assertions.assertThat(page.locator("article .status").textContent())
                 .contains("out for review");

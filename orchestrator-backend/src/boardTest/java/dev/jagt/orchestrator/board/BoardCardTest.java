@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.board;
 
 import com.microsoft.playwright.Locator;
+import java.util.Collections;
+import dev.jagt.orchestrator.task.StatusChange;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
@@ -84,10 +86,10 @@ class BoardCardTest extends BoardPageContext {
     @Test
     void namesEachRequestByProjectAndAgesNoneWhenATaskSpansRepositories() {
         state.putTask("ABC-1", TaskState.builder(List.of(
-                        new dev.jagt.orchestrator.task.TaskRepo("alpha",
+                        new TaskRepo("alpha",
                                 root.resolve("ABC-1-alpha").toString(), null,
                                 "https://host.example/alpha/mr/7", null),
-                        new dev.jagt.orchestrator.task.TaskRepo("beta",
+                        new TaskRepo("beta",
                                 root.resolve("ABC-1-beta").toString(), null,
                                 "https://host.example/beta/mr/3", null)),
                 TaskStatus.CI_POLLING).alias("a1")
@@ -469,8 +471,8 @@ class BoardCardTest extends BoardPageContext {
     void keepsALongLivedTasksTimelineInsideAScrollingTipInsteadOfCoveringTheBoard() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis())
-                .history(java.util.Collections.nCopies(40,
-                        new dev.jagt.orchestrator.task.StatusChange(TaskStatus.IN_PROGRESS, System
+                .history(Collections.nCopies(40,
+                        new StatusChange(TaskStatus.IN_PROGRESS, System
                                 .currentTimeMillis(), null)))
                 .build());
 
@@ -505,8 +507,8 @@ class BoardCardTest extends BoardPageContext {
         long now = System.currentTimeMillis();
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now)
-                .history(java.util.Collections.nCopies(40,
-                        new dev.jagt.orchestrator.task.StatusChange(TaskStatus.IN_PROGRESS, now, null)))
+                .history(Collections.nCopies(40,
+                        new StatusChange(TaskStatus.IN_PROGRESS, now, null)))
                 .build());
         Page page = session.newPage();
         page.navigate("http://localhost:" + port + "/");
