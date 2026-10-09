@@ -27,9 +27,9 @@ public class DeployTools implements McpTools {
 
         tools.tool("revert_task", Audience.MASTER, TaskRef.schema("Undo a task's deploy: revert the merge commit it"
                         + " created on the deployBranch and push the revert. For a DEPLOYED or DEPLOY_CONFLICT task,"
-                        + " or any with a deploy still live; a conflict is discarded. Refuses (nothing is written)"
-                        + " when the commit is unknown or already reverted. A conflict stops it at that repository;"
-                        + " repositories reverted before it stay reverted: revert again."),
+                        + " or any with a deploy still live; a waiting deploy conflict is discarded. Refuses (nothing is"
+                        + " written) when the commit is unknown or already reverted. A revert that conflicts stops it at"
+                        + " that repository; repositories reverted before it stay reverted: revert again."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> commands.execute(said.taskId(), TaskAction.REVERT));
     }

@@ -264,7 +264,7 @@ public class MasterPanel {
             + " insist on it until it holds. Never hold the task, defer it or settle for red.\n\n";
 
     private static final String GIT = "git in plain words (no quote, ~, ^, brace or glob; diff, log, show and blame"
-            + " carry `--no-ext-diff --no-textconv`)";
+            + " carry `--no-ext-diff --no-textconv`; `git -C <worktree>` reads each worktree past the first)";
 
     /** Where no MCP server loads, no ticket the round does not quote was read. */
     private static String ticket(boolean tracker, String judged) {
@@ -301,8 +301,7 @@ public class MasterPanel {
                 + authorBrief + "\n\n"
                 + "The ticket is quoted in the round where jagt read it. Elsewhere: " + ticket(tracker, "diff")
                 + " Then read everything the task changed against its base, committed and not: quoted in the round"
-                + " where jagt read it, with " + GIT + " where it is not; `git -C <worktree>` reads each worktree"
-                + " past the first. Judge from the"
+                + " where jagt read it, with " + GIT + " where it is not. Judge from the"
                 + " ticket and the diff: the author's own account is not evidence, what it points at is. A"
                 + " `disputed:` line in the session's notes names a ticket line, a file:line or a command and what it"
                 + " printed: check it, and proven, it stands over your own earlier finding. Rule only on what you can"

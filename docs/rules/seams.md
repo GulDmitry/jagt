@@ -32,24 +32,24 @@ implementation plus a config value, never `if claude` or `if macos`.
 - Claude's fallback is `CLAUDE.local.md`, the one name a repository does not version; **every other runtime
   refuses**, and the bootstrap prompt names **no** file.
 - **A port answers what it achieved, never a value the caller must interpret**: `TerminalDriver.reveal` →
-  `Revealed`, `AgentRuntime.lastSessionActivity` → `OptionalLong` — never a boolean plus a comment, nor a magic value.
+  `Revealed`, `AgentRuntime.lastSessionActivity` → `OptionalLong` — never a boolean plus a comment or a magic value.
 - A read that FAILED is a third thing, the adapter's to report: `ClaudeTranscripts` logs it rather than
   passing a zero up ([never an answer](#a-read-that-failed-is-never-an-answer)).
 
 ## Master assistant
 
-The **only** way jagt reads outside itself, headless and one-shot: `service/TicketReader`, `service/TicketTexts`,
-`service/ReviewReader`, the ⌘K palette.
+The **only** way jagt reads outside itself, headless and one-shot: ticket, review, intake and routing reads, the
+Master's reviewer, the ⌘K palette.
 
 - It can **follow a URL** into a tracker or code host jagt was never told about; never a server
   behind an interactive login or a plugin scope — declared with `orchestrator.assistant.mcp-config` ([one
   command shows which](../installation.md#mcp-access-comes-first)).
-- `adapter/assistant/HeadlessClaude`, behind one port per read family, spawns `claude "<prompt>" -p --setting-sources
-  user,project,local --json-schema '<schema>'` through `ProcessRunner`, hardcoding **no** MCP server or path:
+- `adapter/assistant/HeadlessClaude`, behind one port per read family, spawns `claude "<prompt>" -p --tools "" --permission-mode
+  dontAsk --setting-sources user,project,local --json-schema '<schema>'`, fenced by `ReadGate`, naming **no** MCP server:
   `--setting-sources` inherits the human's **own** MCP, and `java.io.tmpdir` as cwd means only user-level MCP
   loads.
 - **Keep `user` in that list**: headless `-p` does not auto-load plugin MCP without it, and `project` alone
-  resolves to **zero** servers from the temp dir. Its ~7k tokens buy the tracker tools.
+  resolves to **zero** servers from the temp dir. ~7k tokens buy the tracker tools.
 - An install may **declare** the servers instead (`assistant.mcp-config` → `--strict-mcp-config`, `${ENV}`
   placeholders so jagt holds no credential): a **determinism knob only**, $0.09 cold against $0.04.
 
@@ -58,11 +58,10 @@ The **only** way jagt reads outside itself, headless and one-shot: `service/Tick
 - **"I could not look" and "there is no such thing" are two answers, never merged.**
 - Every read's schema carries a **`failure`** string, empty **only** when the host itself answered,
   else naming the tool or server that stopped it.
-- A non-empty `failure` comes back as **empty facts** (unreadable), logged at ERROR; it never becomes
-  `exists=false`.
+- A non-empty `failure` is **empty facts** (unreadable), logged at ERROR, never `exists=false`.
 - On an unreadable read the callers ask `McpHealth` (`adapter/assistant/ClaudeMcpHealthProbe`,
-  `claude mcp list`): **three** values — down / nothing down / **could not be established** — and collapsing
-  the last two is the same bug one layer down.
+  `claude mcp list`): **three** values — down / nothing down / **could not be established**; merging
+  the last two is the same bug.
 - The surfaces say which happened: **never "could not read (or not found)"**.
 
 ## Every assistant call is metered

@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /** A code host's CLI in command position runs only as a read; a quoted span is one word of data. */
 final class HostCliLine {
@@ -28,6 +31,13 @@ final class HostCliLine {
             Set.of("-u", "-C", "-S", "-a", "-n", "-I", "-L", "-P", "-s", "-d", "-E");
 
     private HostCliLine() {
+    }
+
+    /** What a host CLI may run, as the refusal names it. */
+    static String readsAllowed() {
+        return new TreeMap<>(HOST_READS).entrySet().stream()
+                .map(read -> read.getKey() + " " + String.join("/", new TreeSet<>(read.getValue())))
+                .collect(Collectors.joining(", ", "", ", api GET"));
     }
 
     static boolean writes(String segment) {

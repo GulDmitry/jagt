@@ -79,7 +79,7 @@ orchestrator:
     settingSources: user,project,local  # NOT `project` alone: the call runs from a temp dir, which has none
     # allowedTools: [mcp__your-jira-mcp, mcp__your-gitlab-mcp]   # a bare server gives a read its get*/list*/search*/
     #                     # read*/fetch*/find*/describe*/lookup* tools, a full tool name that tool too; the Master's
-    #                     # review loads these servers alone, else none
+    #                     # review calls these alone, and with none it loads no server
     # mcpConfig: /path/to/mcp-servers.json   # pin the servers instead of inheriting all of them
     # mcpConfigByKind:                       # one list per kind of read, so a cheap one loads only what it needs
     #   TICKET_READ: /path/to/tracker-only.json     # falls back to mcpConfig, then to your own configuration

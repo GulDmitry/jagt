@@ -7,10 +7,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * The calls a session may be refused: a push whose destination is not the task's own branch, a delete of the
- * branch its review request is built on, a force without the lease, a push that could switch off the hook, a write
- * to the code host past the push, and a line reaching the board. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an
- * explicit {@code git push origin dev} still needs refusing. This is a gate on a few lines, not a permission layer.
+ * The calls a session may be refused: a line reaching the board or the Master's token, a write to the code host
+ * past the push, {@code $'…'} or {@code $"…"} on a git line, a push that could switch off the hook, a push naming
+ * no branch or one not the task's own, a delete of the branch its review request is built on, and a force without
+ * the lease. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an explicit
+ * {@code git push origin dev} still needs refusing. This is a gate on a few lines, not a permission layer.
  * What is read is the command LINE, so a push assembled at runtime is not seen.
  */
 public final class ToolGate {
@@ -61,8 +62,8 @@ public final class ToolGate {
         }
         if (PLUMBING.matcher(line.replaceAll(QUOTING, "")).find()
                 || Stream.of(command.split(SEPARATORS)).anyMatch(HostCliLine::writes)) {
-            return Optional.of("jagt refuses writing to the code host from here: gh and glab only read (pr, mr,"
-                    + " issue, run: view, list, diff; api: GET). Push " + taskBranch
+            return Optional.of("jagt refuses writing to the code host from here: gh and glab only read ("
+                    + HostCliLine.readsAllowed() + "). Push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
         if (UNREAD_QUOTING.matcher(line).find() && GIT_WORD.matcher(line.replaceAll(QUOTING, "")).find()) {

@@ -99,23 +99,23 @@ class MasterPanelTest {
     }
 
     @Test
-    void tellsAPlanReaderTheFlagsItsGitReadsMustCarry() {
+    void tellsAPlanReaderHowToWriteItsGitReads() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.PLAN_PENDING).build();
 
         String prompt = MasterPanel.planPrompt("ABC-1", task, "judge hard", "1. add the v3 route",
                 new MasterPanel.RoundRead("", "", "", List.of(), ""), false, true);
 
-        assertThat(prompt).contains("`--no-ext-diff --no-textconv`");
+        assertThat(prompt).contains("`--no-ext-diff --no-textconv`", "`git -C <worktree>`");
     }
 
     @Test
-    void tellsTheMasterAnsweringAQuestionTheFlagsItsGitReadsMustCarry() {
+    void tellsTheMasterAnsweringAQuestionHowToWriteItsGitReads() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.IN_PROGRESS).build();
 
         String prompt = MasterPanel.answerPrompt("ABC-1", task, "judge hard", "never commit unasked",
                 "outcome=question — keep v2?", "", List.of(), false, true);
 
-        assertThat(prompt).contains("`--no-ext-diff --no-textconv`");
+        assertThat(prompt).contains("`--no-ext-diff --no-textconv`", "`git -C <worktree>`");
     }
 
     @Test
