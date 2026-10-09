@@ -1,16 +1,16 @@
 package dev.jagt.orchestrator.board;
 
 import com.microsoft.playwright.Locator;
-import java.util.Collections;
-import dev.jagt.orchestrator.task.StatusChange;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.assertions.LocatorAssertions;
 import com.microsoft.playwright.options.AriaRole;
+import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
 
