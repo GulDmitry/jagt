@@ -16,11 +16,12 @@ and 0029's and 0030's, stand.
 ## Decision
 
 - `HostCliLine` reads a line as words, a quoted span one word. A `gh`/`glab` word is a call in command position
-  or wherever the next word is one of its command groups or a repository flag (`-R`, `--repo`, `--hostname`, glued
-  or not); a call runs only as a read.
-- After a shell, `eval` or `env`, every later word is judged again as a line, a leading `-S` or
-  `--split-string=` dropped; `ToolGate` also judges the unsplit line, so a separator inside a quoted `-c`
-  argument does not hide what follows it.
+  or wherever the next word is one of its commands (every top-level `gh` and `glab` command), a repository flag
+  (`-R`, `--repo`, `--hostname`, glued or not) or a brace; a call runs only as a read, and `api` takes only its read
+  options.
+- After a shell (the sh family, `csh`, `tcsh`, `fish`), `eval` or `env`, every later word is judged again as a line,
+  a leading `-S` or `--split-string=` dropped; `ToolGate` also judges the unsplit line, so a separator inside a
+  quoted `-c` argument does not hide what follows it.
 - A host CLI quoted as data runs; named unquoted before a command group it is refused, the safe direction.
 
 ## Rejected

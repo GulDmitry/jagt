@@ -23,21 +23,29 @@ final class HostCliLine {
             "ci", Set.of("list", "status"),
             "repo", Set.of("view"),
             "auth", Set.of("status"));
-    /** A field or a body makes the host's API call a POST. */
-    private static final Pattern HOST_BODY = Pattern.compile("-[fF].*|--(field|raw-field|input)(=.*)?");
     private static final Pattern HOST_METHOD = Pattern.compile("(-X|--method=?)(.*)");
+    /** The only options an {@code api} read may carry; anything else, a body or a bundle, makes it a write. */
+    private static final Set<String> API_READ_FLAGS = Set.of("--paginate", "--slurp", "-i", "--include", "--silent",
+            "--verbose", "-q", "--jq", "-t", "--template", "-H", "--header", "--hostname", "--cache");
+    private static final Set<String> API_READ_VALUED = Set.of("-q", "--jq", "-t", "--template", "-H", "--header",
+            "--hostname", "--cache");
     private static final Pattern ASSIGNMENT = Pattern.compile("[A-Za-z_]\\w*=.*");
     private static final Set<String> WRAPPERS = Set.of("env", "command", "exec", "xargs");
     private static final Set<String> WRAPPER_OPTION_WITH_VALUE =
             Set.of("-u", "-C", "-S", "-a", "-n", "-I", "-L", "-P", "-s", "-d", "-E");
 
     /** A host CLI sitting after any word still runs where the next word is one of its own command groups. */
-    private static final Set<String> GROUPS = Set.of("pr", "mr", "issue", "run", "ci", "repo", "auth", "api",
-            "release", "workflow", "secret", "variable", "label", "gist", "alias", "extension", "ruleset",
-            "cache", "codespace", "project", "browse", "-R", "--repo", "--hostname");
+    private static final Set<String> GROUPS = Set.of("agent-task", "alias", "api", "artifact-registry",
+            "attestation", "auth", "browse", "cache", "changelog", "check-update", "ci", "cluster", "co", "codespace",
+            "completion", "config", "container-registry", "copilot", "dependency-firewall", "deploy-key",
+            "discussion", "duo", "extension", "gist", "govern", "gpg-key", "incident", "issue", "iteration", "job",
+            "label", "licenses", "mcp", "milestone", "mr", "opentofu", "orbit", "org", "packages", "pr", "preview",
+            "project", "release", "repo", "ruleset", "run", "runner", "runner-controller", "schedule", "search",
+            "secret", "securefile", "security", "skill", "skills", "snippet", "ssh-key", "stack", "status", "todo",
+            "token", "user", "variable", "work-items", "workflow", "-R", "--repo", "--hostname");
     private static final Set<String> REPO_FLAGS = Set.of("-R", "--repo", "--hostname");
     private static final Pattern GLUED_REPO = Pattern.compile("-R.+|--(repo|hostname)=.+");
-    private static final Set<String> SHELLS = Set.of("sh", "bash", "zsh", "dash", "ksh");
+    private static final Set<String> SHELLS = Set.of("sh", "bash", "zsh", "dash", "ksh", "csh", "tcsh", "fish");
 
     private HostCliLine() {
     }
@@ -56,7 +64,8 @@ final class HostCliLine {
             String word = words.get(at);
             String next = at + 1 < words.size() ? words.get(at + 1) : "";
             boolean glued = GLUED_REPO.matcher(next).matches();
-            boolean called = HOST_CLI.matcher(word).matches() && (at == command || GROUPS.contains(next) || glued);
+            boolean called = HOST_CLI.matcher(word).matches()
+                    && (at == command || GROUPS.contains(next) || glued || next.contains("{"));
             int from = REPO_FLAGS.contains(next) ? at + 3 : glued ? at + 2 : at + 1;
             if (called && !reads(words, from) || runsLines(words, at)) {
                 return true;
@@ -101,10 +110,19 @@ final class HostCliLine {
             return from + 1 < words.size() && HOST_READS.getOrDefault(command, Set.of()).contains(words.get(from + 1));
         }
         for (int at = from + 1; at < words.size(); at++) {
-            Matcher method = HOST_METHOD.matcher(words.get(at));
-            String named = !method.matches() ? "GET"
-                    : method.group(2).isEmpty() && at + 1 < words.size() ? words.get(at + 1) : method.group(2);
-            if (HOST_BODY.matcher(words.get(at)).matches() || !"GET".equalsIgnoreCase(named)) {
+            String word = words.get(at);
+            if (!word.startsWith("-")) {
+                continue;
+            }
+            Matcher method = HOST_METHOD.matcher(word);
+            if (method.matches()) {
+                String named = method.group(2).isEmpty() && at + 1 < words.size() ? words.get(++at) : method.group(2);
+                if (!"GET".equalsIgnoreCase(named)) {
+                    return false;
+                }
+            } else if (API_READ_VALUED.contains(word)) {
+                at++;
+            } else if (!API_READ_FLAGS.contains(word.replaceFirst("=.*", ""))) {
                 return false;
             }
         }
