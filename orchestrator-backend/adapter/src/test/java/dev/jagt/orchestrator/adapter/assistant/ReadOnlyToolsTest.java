@@ -65,7 +65,8 @@ class ReadOnlyToolsTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"mcp__plugin_omc_t__state_clear", "mcp__plugin_omc_t__notepad_write_manual",
-            "mcp__plugin_omc_t__lsp_rename", "mcp__plugin_acme_browser__new_page", "mcp__gitlab__save_note"})
+            "mcp__plugin_omc_t__lsp_rename", "mcp__plugin_acme_browser__new_page", "mcp__gitlab__save_note",
+            "mcp__x__getAndDeleteIssue", "mcp__x__getOrCreateSession", "mcp__x__get-delete"})
     void refusesAWriteNamedByItsVerbMidNameToo(String tool) {
         assertThat(ReadOnlyTools.MCP_WRITES)
                 .anyMatch(glob -> Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());
@@ -73,7 +74,8 @@ class ReadOnlyToolsTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"mcp__gitlab__get_merge_request", "mcp__plugin_omc_t__lsp_hover",
-            "mcp__docs__get_type_info"})
+            "mcp__docs__get_type_info", "mcp__atlassian__getJiraIssue", "mcp__atlassian__getTransitionsForJiraIssue",
+            "mcp__atlassian__searchJiraIssuesUsingJql", "mcp__atlassian__getConfluencePageFooterComments"})
     void letsAReadWhoseNameHoldsAWriteVerbThrough(String tool) {
         assertThat(ReadOnlyTools.MCP_WRITES)
                 .noneMatch(glob -> Pattern.compile(Pattern.quote(glob).replace("*", "\\E.*\\Q")).matcher(tool).matches());

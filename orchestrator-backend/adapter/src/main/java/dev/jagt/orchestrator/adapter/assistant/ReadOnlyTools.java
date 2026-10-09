@@ -46,7 +46,8 @@ class ReadOnlyTools {
             // A read's own name may hold `merge` or `type`, so only these verbs are refused mid-name.
             Stream.of("audit", "clear", "create", "delete", "remove", "rename", "replace", "send", "start", "submit",
                             "update", "upload", "write")
-                    .flatMap(verb -> Stream.of("mcp__*__*_" + verb, "mcp__*__*_" + verb + "_*")))
+                    .flatMap(verb -> Stream.of("mcp__*__*_" + verb, "mcp__*__*_" + verb + "_*", "mcp__*__*-" + verb + "*",
+                            "mcp__*__*" + Character.toUpperCase(verb.charAt(0)) + verb.substring(1) + "*")))
             .toList();
 
     private static final Pattern BARE_SERVER = Pattern.compile("mcp__(?!.*__)[^*]+");
