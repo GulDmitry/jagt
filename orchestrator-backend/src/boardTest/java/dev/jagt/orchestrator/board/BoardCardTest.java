@@ -501,6 +501,26 @@ class BoardCardTest extends BoardPageContext {
     }
 
     @Test
+    void aTipBeingReadStaysOpenInItsNewWordsWhenARepaintRebuildsItsCard() {
+        long now = System.currentTimeMillis();
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(now)
+                .history(java.util.Collections.nCopies(40,
+                        new dev.jagt.orchestrator.task.StatusChange(TaskStatus.IN_PROGRESS, now, null)))
+                .build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        page.locator("article .status").hover();
+        assertThat(page.locator("#tip")).hasClass("scrolls");
+        page.locator("#tip").hover();
+
+        state.putTask("ABC-1", state.task("ABC-1").orElseThrow().withStatus(TaskStatus.REVIEW_PENDING, "round 1"));
+
+        assertThat(page.locator("#tip")).containsText("REVIEW_PENDING");
+    }
+
+    @Test
     void aTooltipGoesAwayWithThePointerThatOpenedIt() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                 TaskStatus.IN_PROGRESS).alias("a1").lastActiveTimestamp(System.currentTimeMillis()).build());

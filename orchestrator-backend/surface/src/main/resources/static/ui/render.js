@@ -7,7 +7,7 @@ import * as header from './header.js';
 import * as launch from './launch.js';
 import * as order from './order.js';
 import * as projects from './projects.js';
-import {hideStaleTip} from './tips.js';
+import {hideStaleTip, tipped} from './tips.js';
 
 const board = document.getElementById('board');
 
@@ -19,8 +19,9 @@ export function render() {
   header.render(tasks, shown.length);
   // Read off the cards themselves: the configured list can be longer than the board, and shorter than the truth.
   const manyProjects = new Set(tasks.flatMap((task) => (task.repos || []).map((repo) => repo.project))).size > 1;
+  const read = located(tipped());
   place(shown.map((task) => card(task, manyProjects)));
-  hideStaleTip();
+  hideStaleTip(read && nodeOf(read));
 }
 
 const buttonOf = ({task, action, report, about}) => board.querySelector(action
@@ -28,8 +29,7 @@ const buttonOf = ({task, action, report, about}) => board.querySelector(action
   : `button[data-report="${CSS.escape(report)}"][data-about="${CSS.escape(about)}"]`);
 
 // A chip is found again by its card and its kind, where a button is by its names.
-const focusedOn = () => {
-  const node = document.activeElement;
+const located = (node) => {
   const article = node?.closest('#board article');
   if (!article) return null;
   if (node.matches('button[data-action], button[data-report]')) return {button: node.dataset};
@@ -43,7 +43,7 @@ const nodeOf = ({button, task, kind, index}) => (button ? buttonOf(button)
 
 // A card that reads the same stays the same node: rebuilding it drops keyboard focus and a click in progress.
 function place(fresh) {
-  const focused = focusedOn();
+  const focused = located(document.activeElement);
   fresh.forEach((built, index) => {
     const there = board.children[index];
     if (there?.isEqualNode(built)) return;
