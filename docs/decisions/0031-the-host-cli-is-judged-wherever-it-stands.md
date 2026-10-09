@@ -33,4 +33,5 @@ and 0029's and 0030's, stand.
 - A host-CLI write is seen run past `ToolGate` by a spelling these rules read, or the refusals block a read a
   session needs and no other spelling exists.
 - Still passing, and named here: a line piped into a shell (`echo '…' | sh`), a here-string (`bash <<< '…'`),
-  a language runtime (`python3 -c`), `${IFS}` or any line assembled at runtime (0028).
+  a language runtime (`python3 -c`), `${IFS}` or any line assembled at runtime (0028), and any spelling this word
+  reader reads differently from the shell: a guardrail, the code host's branch protection the boundary.
