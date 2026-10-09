@@ -10,7 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/** A code host's CLI in command position runs only as a read; a quoted span is one word of data. */
+/** A code host's CLI runs only as a read, however it is placed; a quoted span is data unless a shell runs it. */
 final class HostCliLine {
 
     private static final Pattern HOST_CLI = Pattern.compile("(\\S*/)?(gh|glab)");
@@ -42,6 +42,27 @@ final class HostCliLine {
 
     static boolean writes(String segment) {
         List<String> words = shellWords(segment);
+        int command = commandPosition(words);
+        for (int at = 0; at < words.size(); at++) {
+            String word = words.get(at);
+            String next = at + 1 < words.size() ? words.get(at + 1) : "";
+            boolean called = HOST_CLI.matcher(word).matches() && (at == command || GROUPS.contains(next));
+            int from = REPO_FLAGS.contains(next) ? at + 3 : at + 1;
+            if (called && !reads(words, from) || runsALine(words, at) && writesLine(words.get(at + 1 + skip(words, at)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** A host CLI sitting after any word still runs where the next word is one of its own command groups. */
+    private static final Set<String> GROUPS = Set.of("pr", "mr", "issue", "run", "ci", "repo", "auth", "api",
+            "release", "workflow", "secret", "variable", "label", "gist", "alias", "extension", "ruleset",
+            "cache", "codespace", "project", "browse", "-R", "--repo", "--hostname");
+    private static final Set<String> REPO_FLAGS = Set.of("-R", "--repo", "--hostname");
+    private static final Set<String> SHELLS = Set.of("sh", "bash", "zsh", "dash", "ksh");
+
+    private static int commandPosition(List<String> words) {
         int at = 0;
         while (at < words.size()) {
             if (ASSIGNMENT.matcher(words.get(at)).matches()) {
@@ -55,7 +76,31 @@ final class HostCliLine {
                 break;
             }
         }
-        return at < words.size() && HOST_CLI.matcher(words.get(at)).matches() && !reads(words, at + 1);
+        return at;
+    }
+
+    /** {@code sh -c '…'}, {@code eval '…'} and {@code env -S '…'} run their quoted argument as a line. */
+    private static boolean runsALine(List<String> words, int at) {
+        String word = words.get(at).replaceFirst(".*/", "");
+        int value = at + 1 + skip(words, at);
+        return value < words.size() && (SHELLS.contains(word) || "eval".equals(word) || "env".equals(word));
+    }
+
+    private static int skip(List<String> words, int at) {
+        String word = words.get(at).replaceFirst(".*/", "");
+        if ("eval".equals(word)) {
+            return 0;
+        }
+        String flag = SHELLS.contains(word) ? "c" : "S";
+        int from = at + 1;
+        while (from < words.size() && words.get(from).startsWith("-") && !words.get(from).endsWith(flag)) {
+            from++;
+        }
+        return from < words.size() && words.get(from).startsWith("-") ? from - at : words.size();
+    }
+
+    private static boolean writesLine(String line) {
+        return java.util.Arrays.stream(line.split("[;&|\\n]+")).anyMatch(HostCliLine::writes);
     }
 
     private static boolean reads(List<String> words, int from) {
