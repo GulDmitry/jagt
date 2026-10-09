@@ -61,7 +61,7 @@ public final class ToolGate {
                     + " through its own MCP tools.");
         }
         if (PLUMBING.matcher(line.replaceAll(QUOTING, "")).find()
-                || Stream.of(command.split(SEPARATORS)).anyMatch(HostCliLine::writes)) {
+                || (Stream.of(command.split(SEPARATORS)).anyMatch(HostCliLine::writes) || HostCliLine.writes(command))) {
             return Optional.of("jagt refuses writing to the code host from here: gh and glab only read ("
                     + HostCliLine.readsAllowed() + "). Push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");

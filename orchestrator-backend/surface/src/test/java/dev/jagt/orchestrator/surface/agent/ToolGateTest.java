@@ -140,7 +140,10 @@ class ToolGateTest {
             "eval gh pr merge 1", "while true; do glab mr merge 1; done", ">/dev/null gh pr merge 1",
             "find . -exec gh pr merge 1 ;", "builtin exec gh pr merge 1", "gh -R o/r pr merge 1",
             "bash -c 'gh pr merge 1'", "sh -c \"glab mr merge 1\"", "eval \"gh pr merge 1\"",
-            "env -S 'gh pr merge 1'", "zsh -lc 'gh release create v1'"})
+            "env -S 'gh pr merge 1'", "zsh -lc 'gh release create v1'", "bash -c -- 'gh pr merge 1'",
+            "bash --norc -c 'gh pr merge 1'", "env -S\"gh pr merge 1\"", "env --split-string='gh pr merge 1'",
+            "bash -c 'gh pr merge 1; true'", "bash -c 'gh pr merge 1 && true'", "bash -o pipefail -c 'gh pr merge 1'",
+            "env -u X -S 'gh pr merge 1'", "nohup gh --repo=o/r pr merge 1", "time gh -Ro/r pr merge 1"})
     void refusesAHostCliWriteHoweverItIsWrapped(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
                 .asString().contains("writing to the code host");
@@ -148,7 +151,7 @@ class ToolGateTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"gh api repos/o/r/pulls", "gh api -X GET repos/o/r", "glab api --method get projects/1",
-            "gh pr view 7", "glab mr view 7", "gh -R o/r pr view 1", "gh --repo o/r pr list"})
+            "gh pr view 7", "glab mr view 7", "gh -R o/r pr view 1", "gh --repo o/r pr list", "time gh --repo=o/r pr view 1"})
     void letsTheCodeHostBeRead(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
     }
