@@ -128,7 +128,7 @@ guardrail: a runtime-built push, an alias or a script passes; `deploy`, `revert`
 ### Requirement: ToolGate refuses the line
 `ToolGate` (`POST /api/agent/tool`) SHALL refuse that push too. It also refuses a push naming no branch, deleting the
 task's (`--de`, `-ud`) or forced unleased; `HEAD` unless bare and unmoved; `send-pack`, `http-push`, `receive-pack`;
-a `gh`/`glab` call but a read, however wrapped (named as data, it runs); a line naming the board's port or the
+a `gh`/`glab` call but a read, however wrapped (quoted as data, it runs); a line naming the board's port or the
 Master's token.
 
 #### Scenario: Skipping the hook
