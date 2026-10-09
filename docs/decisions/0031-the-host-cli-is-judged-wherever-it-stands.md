@@ -15,13 +15,14 @@ and 0029's and 0030's, stand.
 
 ## Decision
 
-- `HostCliLine` reads a line as words, a quoted span one word. A `gh`/`glab` word is a call in command position
-  or wherever the next word is one of its commands (every top-level `gh` and `glab` command), a repository flag
-  (`-R`, `--repo`, `--hostname`, glued or not) or a brace; a call runs only as a read, and `api` takes only its read
-  options.
-- After a shell (the sh family, `csh`, `tcsh`, `fish`), `eval` or `env`, every later word is judged again as a line,
-  a leading `-S` or `--split-string=` dropped; `ToolGate` also judges the unsplit line, so a separator inside a
-  quoted `-c` argument does not hide what follows it.
+- `HostCliLine` reads a line as words, a quoted span one word. A `gh`/`glab` word, in any case, is a call in command
+  position or wherever the next word is one of its commands (every top-level `gh` and `glab` command and alias), a
+  repository flag (`-R`, `--repo`, `--hostname`, glued or not) or a brace; a call runs only as a read, and `api`
+  takes only its read options.
+- After a shell, `eval`, `env` or a program that runs its argument as a line (`watch`, `ssh`, `su`, `sudo`,
+  `flock`), every later word holding a space is judged again as a line, a leading `-S` or `--split-string=` dropped;
+  `ToolGate` also judges the unsplit line, so a separator inside a quoted `-c` argument does not hide what follows
+  it.
 - A host CLI quoted as data runs; named unquoted before a command group it is refused, the safe direction.
 
 ## Rejected
@@ -32,6 +33,8 @@ and 0029's and 0030's, stand.
 
 - A host-CLI write is seen run past `ToolGate` by a spelling these rules read, or the refusals block a read a
   session needs and no other spelling exists.
-- Still passing, and named here: a line piped into a shell (`echo '…' | sh`), a here-string (`bash <<< '…'`),
-  a language runtime (`python3 -c`), `${IFS}` or any line assembled at runtime (0028), and any spelling this word
-  reader reads differently from the shell: a guardrail, the code host's branch protection the boundary.
+- Still passing, and named here: a line piped into a shell (`echo '…' | sh`), a language runtime (`python3 -c`,
+  `osascript -e`), a terminal multiplexer, a git `!` alias, even one set on the line (`git -c 'alias.m=!…'`), a
+  brace, glob or `${IFS}` the shell expands into the host CLI, any line assembled at runtime (0028), and any other
+  spelling this word reader reads differently from the shell: a guardrail, the code host's branch protection the
+  boundary.

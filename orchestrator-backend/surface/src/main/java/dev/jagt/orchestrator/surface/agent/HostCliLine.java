@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 /** A code host's CLI runs only as a read, however it is placed; a quoted span is data unless a shell runs it. */
 final class HostCliLine {
 
-    private static final Pattern HOST_CLI = Pattern.compile("(\\S*/)?(gh|glab)");
+    private static final Pattern HOST_CLI = Pattern.compile("(\\S*/)?(gh|glab)", Pattern.CASE_INSENSITIVE);
     private static final Map<String, Set<String>> HOST_READS = Map.of(
             "pr", Set.of("view", "list", "diff", "checks", "status"),
             "mr", Set.of("view", "list", "diff"),
@@ -27,6 +27,8 @@ final class HostCliLine {
     /** The only options an {@code api} read may carry; anything else, a body or a bundle, makes it a write. */
     private static final Set<String> API_READ_FLAGS = Set.of("--paginate", "--slurp", "-i", "--include", "--silent",
             "--verbose", "-q", "--jq", "-t", "--template", "-H", "--header", "--hostname", "--cache");
+    private static final java.util.function.Predicate<String> SHOWS_A_TOKEN =
+            Pattern.compile("-t|--show-token").asMatchPredicate();
     private static final Pattern METHOD_OVERRIDE = Pattern.compile("(?i)\\s*x-http-method");
     private static final Set<String> API_READ_VALUED = Set.of("-q", "--jq", "-t", "--template", "-H", "--header",
             "--hostname", "--cache");
@@ -43,10 +45,12 @@ final class HostCliLine {
             "label", "licenses", "mcp", "milestone", "mr", "opentofu", "orbit", "org", "packages", "pr", "preview",
             "project", "release", "repo", "ruleset", "run", "runner", "runner-controller", "schedule", "search",
             "secret", "securefile", "security", "skill", "skills", "snippet", "ssh-key", "stack", "status", "todo",
-            "token", "user", "variable", "work-items", "workflow", "-R", "--repo", "--hostname");
+            "token", "user", "variable", "work-items", "workflow", "pipe", "pipeline", "var", "ext", "extensions",
+            "cs", "at", "-R", "--repo", "--hostname");
     private static final Set<String> REPO_FLAGS = Set.of("-R", "--repo", "--hostname");
     private static final Pattern GLUED_REPO = Pattern.compile("-R.+|--(repo|hostname)=.+");
-    private static final Set<String> SHELLS = Set.of("sh", "bash", "zsh", "dash", "ksh", "csh", "tcsh", "fish");
+    private static final Set<String> SHELLS = Set.of("sh", "bash", "zsh", "dash", "ksh", "mksh", "csh", "tcsh",
+            "fish", "watch", "ssh", "su", "sudo", "flock", "script");
 
     private HostCliLine() {
     }
@@ -112,7 +116,8 @@ final class HostCliLine {
     private static boolean reads(List<String> words, int from) {
         String command = from < words.size() ? words.get(from) : "";
         if (!"api".equals(command)) {
-            return from + 1 < words.size() && HOST_READS.getOrDefault(command, Set.of()).contains(words.get(from + 1));
+            return from + 1 < words.size() && HOST_READS.getOrDefault(command, Set.of()).contains(words.get(from + 1))
+                    && words.subList(from + 2, words.size()).stream().noneMatch(SHOWS_A_TOKEN);
         }
         for (int at = from + 1; at < words.size(); at++) {
             String word = words.get(at);

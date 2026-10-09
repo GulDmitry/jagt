@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 /**
  * The calls a session may be refused: a line reaching the board or the Master's token, a write to the code host
- * past the push, {@code $'…'} or {@code $"…"} on a git line, a push that could switch off the hook, a push naming
+ * past the push, {@code $'…'} or {@code $"…"} on a git, gh or glab line, a push that could switch off the hook, a push naming
  * no branch or one not the task's own, a delete of the branch its review request is built on, and a force without
  * the lease. Detaching a worktree's upstream removes the DEFAULT target and nothing else, so an explicit
  * {@code git push origin dev} still needs refusing. This is a gate on a few lines, not a permission layer.
@@ -34,7 +34,7 @@ public final class ToolGate {
     private static final Pattern PUSH = Pattern.compile("\\bpush\\b");
     /** The shell decodes escapes inside these, which the line is not read through. */
     private static final Pattern UNREAD_QUOTING = Pattern.compile("\\$['\"]");
-    private static final Pattern GIT_WORD = Pattern.compile("\\bgit\\b");
+    private static final Pattern GIT_WORD = Pattern.compile("(?i)\\b(git|gh|glab)\\b");
     /** git's plumbing writes a remote ref with no pre-push hook. */
     private static final Pattern PLUMBING = Pattern.compile("(send|receive)-pack|http-push");
     private static final Pattern GIT = Pattern.compile("(\\S*/)?git");
@@ -67,7 +67,7 @@ public final class ToolGate {
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
         if (UNREAD_QUOTING.matcher(line).find() && GIT_WORD.matcher(line.replaceAll(QUOTING, "")).find()) {
-            return Optional.of("jagt refuses $'…' and $\"…\" on a git line: write it in plain quotes.");
+            return Optional.of("jagt refuses $'…' and $\"…\" on a git, gh or glab line: write it in plain quotes.");
         }
         if (PUSH.matcher(command).find() && (HOOK_OFF.matcher(command).find()
                 || Stream.of(command.split(SEPARATORS)).anyMatch(ToolGate::configuresAPush))) {
