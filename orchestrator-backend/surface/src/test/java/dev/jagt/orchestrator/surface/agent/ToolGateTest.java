@@ -146,7 +146,8 @@ class ToolGateTest {
             "env -u X -S 'gh pr merge 1'", "nohup gh --repo=o/r pr merge 1", "time gh -Ro/r pr merge 1",
             "time gh ssh-key add k.pub", "nohup glab schedule run 1", "time gh {pr,} merge 1", "eval -- 'gh pr merge 1'",
             "bash -O extglob -c 'gh pr merge 1'", "tcsh -c 'gh pr merge 1'", "gh api -iXPOST repos/o/r/merges",
-            "gh api -if title=x repos/o/r/issues", "glab api -iXPUT projects/1/merge_requests/1/merge"})
+            "gh api -if title=x repos/o/r/issues", "glab api -iXPUT projects/1/merge_requests/1/merge",
+            "gh api -H 'X-HTTP-Method-Override: DELETE' repos/o/r/git/refs/heads/x"})
     void refusesAHostCliWriteHoweverItIsWrapped(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).get()
                 .asString().contains("writing to the code host");
@@ -155,13 +156,15 @@ class ToolGateTest {
     @ParameterizedTest
     @ValueSource(strings = {"gh api repos/o/r/pulls", "gh api -X GET repos/o/r", "glab api --method get projects/1",
             "gh pr view 7", "glab mr view 7", "gh -R o/r pr view 1", "gh --repo o/r pr list", "time gh --repo=o/r pr view 1",
-            "gh api repos/o/r/pulls --paginate --jq .[].number", "gh api -i -H Accept:x repos/o/r"})
+            "gh api repos/o/r/pulls --paginate --jq .[].number", "gh api -i -H Accept:x repos/o/r",
+            "env gh pr view 1", "env GH_TOKEN=x gh pr view 1"})
     void letsTheCodeHostBeRead(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"grep -rn glab src", "ls docs/gh", "which gh", "git commit -m \"bump gh to 2.0\""})
+    @ValueSource(strings = {"grep -rn glab src", "ls docs/gh", "which gh", "git commit -m \"bump gh to 2.0\"",
+            "rg -t sh gh src", "bash scripts/check.sh gh"})
     void letsAHostCliBeNamedAnywhereButInCommandPosition(String command) {
         assertThat(ToolGate.refusal("Bash", command, "ABC-42", 8290)).isEmpty();
     }

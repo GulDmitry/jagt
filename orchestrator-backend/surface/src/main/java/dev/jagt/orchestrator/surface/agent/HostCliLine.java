@@ -27,6 +27,7 @@ final class HostCliLine {
     /** The only options an {@code api} read may carry; anything else, a body or a bundle, makes it a write. */
     private static final Set<String> API_READ_FLAGS = Set.of("--paginate", "--slurp", "-i", "--include", "--silent",
             "--verbose", "-q", "--jq", "-t", "--template", "-H", "--header", "--hostname", "--cache");
+    private static final Pattern METHOD_OVERRIDE = Pattern.compile("(?i)\\s*x-http-method");
     private static final Set<String> API_READ_VALUED = Set.of("-q", "--jq", "-t", "--template", "-H", "--header",
             "--hostname", "--cache");
     private static final Pattern ASSIGNMENT = Pattern.compile("[A-Za-z_]\\w*=.*");
@@ -91,12 +92,16 @@ final class HostCliLine {
         return at;
     }
 
-    /** A shell, {@code eval} and {@code env -S} may run any later word as a line, so every one is judged as one. */
+    /**
+     * A shell, {@code eval} and {@code env -S} may run a later quoted span as a line, so each one holding a space is
+     * judged as one; a bare word is already judged where it stands.
+     */
     private static boolean runsLines(List<String> words, int at) {
         String word = words.get(at).replaceFirst(".*/", "");
         return (SHELLS.contains(word) || "eval".equals(word) || "env".equals(word))
                 && words.subList(at + 1, words.size()).stream()
                 .map(later -> later.replaceFirst("^(-S|--split-string=)", ""))
+                .filter(later -> later.chars().anyMatch(Character::isWhitespace))
                 .anyMatch(HostCliLine::writesLine);
     }
 
@@ -121,7 +126,9 @@ final class HostCliLine {
                     return false;
                 }
             } else if (API_READ_VALUED.contains(word)) {
-                at++;
+                if (++at < words.size() && METHOD_OVERRIDE.matcher(words.get(at)).lookingAt()) {
+                    return false;
+                }
             } else if (!API_READ_FLAGS.contains(word.replaceFirst("=.*", ""))) {
                 return false;
             }
