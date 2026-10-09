@@ -42,11 +42,6 @@ import static org.mockito.Mockito.when;
 
 class McpToolScopeTest {
 
-    private final StateService stateService = mock(StateService.class);
-    private final CallerScope scope = new CallerScope(stateService);
-    private final CommandService commands = mock(CommandService.class);
-    private final AgentStatusReports statusReports = mock(AgentStatusReports.class);
-
     private static final class Registered implements McpToolRegistry {
 
         private final Map<String, ToolHandler> handlers = new HashMap<>();
@@ -62,6 +57,7 @@ class McpToolScopeTest {
     @ParameterizedTest
     @ValueSource(strings = {"deploy_task", "revert_task"})
     void refusesASubAgentReachingForTheToolsThatWriteASharedBranch(String tool) {
+        CommandService commands = mock(CommandService.class);
         Registered registered = new Registered();
         new DeployTools(commands).declare(registered);
         ToolHandler handler = registered.handlers.get(tool);
@@ -77,7 +73,7 @@ class McpToolScopeTest {
     void offersNoToolThatClosesATask() {
         Registered registered = new Registered();
         new TaskLifecycleTools(mock(TaskProvisioning.class),
-                stateService, mock(ConfigService.class)).declare(registered);
+                mock(StateService.class), mock(ConfigService.class)).declare(registered);
         Map<String, ToolHandler> tools = registered.handlers;
 
         assertThat(tools).doesNotContainKey("remove_task");
@@ -85,6 +81,7 @@ class McpToolScopeTest {
 
     @Test
     void letsTheMasterDeployBecauseItRunsInNoWorktree() {
+        CommandService commands = mock(CommandService.class);
         Registered registered = new Registered();
         new DeployTools(commands).declare(registered);
         ToolHandler handler = registered.handlers.get("deploy_task");
@@ -96,10 +93,12 @@ class McpToolScopeTest {
 
     @Test
     void refusesAStatusUpdateAimedAtASiblingTask() {
+        StateService stateService = mock(StateService.class);
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
         when(stateService.canonicalTaskId("OTHER-1")).thenReturn("OTHER-1");
         OwnStatusReports ownReports = mock(OwnStatusReports.class);
         Registered registered = new Registered();
-        new StatusTools(statusReports, ownReports, scope).declare(registered);
+        new StatusTools(statusReports, ownReports, new CallerScope(stateService)).declare(registered);
         ToolHandler handler = registered.handlers.get("update_agent_status");
 
         assertThatThrownBy(() -> handler.call(
@@ -111,10 +110,11 @@ class McpToolScopeTest {
 
     @Test
     void letsAnAgentReportOnItsOwnTaskWithoutNamingIt() {
+        AgentStatusReports statusReports = mock(AgentStatusReports.class);
         when(statusReports.contextFor(any())).thenReturn(MessageContext.NONE);
         OwnStatusReports ownReports = mock(OwnStatusReports.class);
         Registered registered = new Registered();
-        new StatusTools(statusReports, ownReports, scope).declare(registered);
+        new StatusTools(statusReports, ownReports, new CallerScope(mock(StateService.class))).declare(registered);
         ToolHandler handler = registered.handlers.get("update_agent_status");
 
         handler.call(new JsonMapper().readTree("{\"status\":\"IN_PROGRESS\",\"message\":\"working\"}"), "MINE-1");
@@ -126,7 +126,7 @@ class McpToolScopeTest {
     void refusesASubAgentCreatingATask() {
         TaskProvisioning provisioning = mock(TaskProvisioning.class);
         Registered registered = new Registered();
-        new TaskLifecycleTools(provisioning, stateService,
+        new TaskLifecycleTools(provisioning, mock(StateService.class),
                 mock(ConfigService.class)).declare(registered);
         ToolHandler handler = registered.handlers.get("initialize_task");
 
@@ -144,7 +144,7 @@ class McpToolScopeTest {
                 "origin/main", "dev", List.of("backend"), List.of(), "the order API"))));
         Registered registered = new Registered();
         new TaskLifecycleTools(mock(TaskProvisioning.class),
-                stateService, config).declare(registered);
+                mock(StateService.class), config).declare(registered);
         ToolHandler handler = registered.handlers.get("list_projects");
 
         Object listed = handler.call(new JsonMapper().readTree("{}"), null);
@@ -157,7 +157,7 @@ class McpToolScopeTest {
     void refusesASubAgentDrivingEvenItsOwnSession(String tool) {
         AgentSessions sessions = mock(AgentSessions.class);
         Registered registered = new Registered();
-        new SessionTools(sessions, commands).declare(registered);
+        new SessionTools(sessions, mock(CommandService.class)).declare(registered);
         ToolHandler handler = registered.handlers.get(tool);
 
         assertThatThrownBy(() -> handler.call(
@@ -170,8 +170,9 @@ class McpToolScopeTest {
     @ParameterizedTest
     @CsvSource({"diff, DIFF", "project, IDE"})
     void opensAnAgentsOwnTaskInTheIdeThroughTheCommandGate(String mode, TaskAction action) {
+        CommandService commands = mock(CommandService.class);
         Registered registered = new Registered();
-        new IdeTools(commands, scope).declare(registered);
+        new IdeTools(commands, new CallerScope(mock(StateService.class))).declare(registered);
         ToolHandler handler = registered.handlers.get("open_in_ide");
 
         handler.call(new JsonMapper().readTree("{\"mode\":\"" + mode + "\"}"), "MINE-1");
@@ -182,6 +183,7 @@ class McpToolScopeTest {
     @Test
     void focusesATaskThroughTheCommandGate() {
         AgentSessions sessions = mock(AgentSessions.class);
+        CommandService commands = mock(CommandService.class);
         Registered registered = new Registered();
         new SessionTools(sessions, commands).declare(registered);
         ToolHandler handler = registered.handlers.get("focus_task");
@@ -194,6 +196,7 @@ class McpToolScopeTest {
 
     @Test
     void refusesASubAgentListingEveryTask() {
+        StateService stateService = mock(StateService.class);
         Registered registered = new Registered();
         new TaskLifecycleTools(mock(TaskProvisioning.class),
                 stateService, mock(ConfigService.class)).declare(registered);

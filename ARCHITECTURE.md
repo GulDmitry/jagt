@@ -26,9 +26,9 @@ implementations. **If something fits no kind, the kind is missing. Add a kind, n
 | `protocol/` | what crosses into jagt, and what makes it valid | built — every tool, every read, the hooks |
 | `startup/` | why the assembly must not start | built — `port/StartupCheck`, `StartupValidation` and every check |
 
-`service/` is the rest: work more than one kind shares — git, the state file, config, worktrees, agent sessions —
-because a class two kinds use belongs to neither; the Master's reading is `service/master/`. A rule one surface
-asks stays here too (`OwnStatusReports`, `HandBackDue`): a surface never decides. The board renders
+`service/` is the rest: work kinds share — git, the state file, config, worktrees, agent sessions —
+because a class two kinds use belongs to neither; the Master's reading is `service/master/`. So does a rule one
+surface asks (`OwnStatusReports`, `HandBackDue`): a surface never decides. `KindsTest` asserts it. The board renders
 `flow/TaskView`; a report is text from the `GlobalCommand` that owns it.
 
 ## The rings

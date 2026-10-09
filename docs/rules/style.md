@@ -60,3 +60,6 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 State the scope and a **level** every time; the last one typed is remembered. Stay at `medium` unless the
 change is genuinely subtle — above it, eight to ten finder subagents plus a verifier each re-read the changed
 files. Re-review if the fixes are non-trivial.
+
+Before a release, or after work spanning many commits: the `release-review` skill, judged against what is decided
+([0032](../decisions/0032-a-global-review-is-judged-against-what-is-decided.md)).

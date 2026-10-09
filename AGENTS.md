@@ -32,7 +32,7 @@ A decided decision is no TODO: it lives in the code, these files and git history
 | the board, a card, a verb, a report | [`board`](openspec/specs/board/spec.md) |
 | a colour, a mark, the colour palette, the legend | [`docs/rules/design.md`](docs/rules/design.md) |
 | whose move it is, a badge, an owner, a clock | [`attention`](openspec/specs/attention/spec.md) |
-| git, `ship`, `deploy`, `revert`, worktrees, multi-repo | [`git`](openspec/specs/git/spec.md) |
+| git, `ship`, `deploy`, `revert`, worktrees, multi-repo, a guard | [`git`](openspec/specs/git/spec.md), [`guards`](docs/rules/guards.md) |
 | a review round, auto-review, jobs | [`review`](openspec/specs/review/spec.md), [`unattended-work`](openspec/specs/unattended-work/spec.md) |
 | a terminal, tmux, a spawned process | [`runtime`](openspec/specs/runtime/spec.md), [`master`](openspec/specs/master/spec.md) |
 | a seam (agent, terminal, editor, OS), the assistant | [`docs/rules/seams.md`](docs/rules/seams.md) |
@@ -52,20 +52,20 @@ A decided decision is no TODO: it lives in the code, these files and git history
 - **jagt's own hooks are not that**: under `.jagt/` in the worktree jagt cut, that session's alone, the project's
   hooks running underneath. They refuse a push off the task's branch, deleting, branchless, hook-skipping, with
   `-c`, `$'…'` or forced unleased; a plumbing push; `gh`/`glab` but a read; a line reaching the board or token.
-  Else they report session state ([0028](docs/decisions/0028-what-the-guards-still-pass-after-round-four.md)–
-  [0030](docs/decisions/0030-what-the-guards-still-pass-after-round-six.md)).
+  Else they report state; gaps: [`guards`](docs/rules/guards.md).
 - Never a warning, badge or gate on the deploy confirm: it names the writes and gets out of the way.
-- **Commit every finished piece of work in the turn it went green**; permission to commit is standing, to push is not.
+- **Commit every finished piece of work in the turn it went green**: left in the tree, it is not delivered.
+  Permission to commit is standing, to push is not.
 - **Code review before every commit**, scoped to what *this* session touched ([`docs/rules/style.md`](docs/rules/style.md)).
-- Where the review skill cannot run, read the diff yourself, say so in one line, and commit anyway.
-- **Work left sitting in the tree is not delivered.**
+  **A rejected finding keeps its why where the next review meets it**: a site comment or a Rejected row.
+- No review skill to run: read the diff yourself, say so in one line, commit anyway.
 
 ## Code
 
 - Gradle, **Groovy DSL only**. Never Maven, never Kotlin, `.kts` included.
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
 - **Three collaborators per class is the target, five the ceiling**, delegates included: group them into a component, never add a field.
-- **A test needing more than ~3 mocks means the class does too much.** Fix the class, never the fixture.
+- **A test wiring over 3 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
 - **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it.
 - **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring and no Lombok.
 - **The board has no build step, no CDN and no external asset** ([`docs/rules/design.md`](docs/rules/design.md)).
@@ -99,18 +99,18 @@ A decided decision is no TODO: it lives in the code, these files and git history
 
 - **Write less than feels complete.** Delete every sentence that explains, argues, reassures or names the
   option you rejected — `docs/decisions/` alone keeps it. Load `sob-ai:commenting` before writing a comment.
-- **One fact per line**: a decision plus one clause of why, never the road to it nor what it used to be. This
+- **One fact per line**: a decision plus one clause of why, never the road to it nor what it used to be. It
   holds in comments, docs, prompts, output and commit messages alike.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
-- **Never cite a line number or a line count** in a doc or a comment — it is wrong at the next edit; name the file, the symbol or the rule.
+- **Never cite a line number or a line count** in a doc or a comment — wrong at the next edit; name the file, the symbol or the rule.
 - **Budgets, asserted by `TextBudgetTest`**: a `docs/rules/` file ≤ 700 words, a guide or spec ≤ 1200, no line over 220
   characters, comments ≤ 15% of main sources. Counted in WORDS — a paragraph folded into a table cell is the
   same paragraph. Over budget means cut text; raising a number is the owner's call.
 - **Every log line is structured**: constant event, values as fields, `cause` on every failure, never `{}` or `+`
   in a message. Keys: [`docs/rules/style.md`](docs/rules/style.md).
-- **English only.** The one exception: kitty's ЙЦУКЕН keymap, where the symbols are the key events.
+- **English only**, but for kitty's ЙЦУКЕН keymap, where the symbols are the key events.
 - **Never a real ticket key, project name or issue title**, tests and fixtures included. Invent `ABC-42`.
-- Markdown ~120 columns, hard max 150. A non-obvious case earns a scenario in its spec, not a paragraph.
+- Markdown ~120 columns, hard max 150; a non-obvious case earns a spec scenario, not a paragraph.
 
 ## The human in the loop
 
@@ -138,5 +138,4 @@ curl -s localhost:8290/state               # verify
 ```
 
 > [!IMPORTANT]
-> **Run the staged jar.** `./gradlew build` rewrites `jagt.jar` in place, and a JVM reading it dies with a
-> `NoClassDefFoundError` that masks the real error — [why](docs/troubleshooting.md).
+> **Run the staged jar**: `./gradlew build` rewrites `jagt.jar` under a running JVM — [why](docs/troubleshooting.md).

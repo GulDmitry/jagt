@@ -26,7 +26,7 @@ class TicketPrefetchJobTest {
     private final StateService state = mock(StateService.class);
     private final ConfigService config = mock(ConfigService.class);
     private final TrackerAssistant assistant = mock(TrackerAssistant.class);
-    private final TicketTexts tickets = new TicketTexts(assistant, mock(UsageTracker.class));
+    private final TicketTexts tickets = new TicketTexts(assistant, new UsageTracker(state));
     private final TicketPrefetchJob job = new TicketPrefetchJob(state, config, tickets);
 
     @Test
