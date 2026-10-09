@@ -7,7 +7,6 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TerminalDriver;
-import dev.jagt.orchestrator.service.ConfigService.ConfigFile.ViewerConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,12 +45,12 @@ class AgentSessionsTest {
     private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
 
     @BeforeEach
-    void aReadableConfigOverAnEmptyStateFile() {
-        OrchestratorProperties properties = OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString());
+    void aReadableConfigOverAnEmptyStateFile() throws Exception {
+        Path configFile = Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withStateFile(root.resolve("state.json").toString()).withConfigFile(configFile.toString());
         state = new StateService(new JsonMapper(), new OrchestratorPaths(properties));
-        config = mock(ConfigService.class);
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
+        config = new ConfigService(new OrchestratorPaths(properties), agentRuntime);
     }
 
     @Test
@@ -65,10 +64,10 @@ class AgentSessionsTest {
     }
 
     @Test
-    void givesEachTaskItsOwnSessionWhenViewModeIsTabPerTask() {
+    void givesEachTaskItsOwnSessionWhenViewModeIsTabPerTask() throws Exception {
         state.putTask("TEST-1", TaskState.builder("proj", "/wt", TaskStatus.DONE).alias("t1").build());
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withViewer(ViewerConfig.defaults().withTmuxSession("jagt").withViewMode("tab-per-task")));
+        Files.writeString(root.resolve("jagt.yml"),
+                "orchestrator:\n  projects: {}\n  viewer:\n    tmuxSession: jagt\n    viewMode: tab-per-task\n");
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         when(tmux.killTaskWindows("jagt-TEST-1", "TEST-1")).thenReturn(1);
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
@@ -279,9 +278,8 @@ class AgentSessionsTest {
     }
 
     @Test
-    void keepsTheAgentsViewerOpenAfterTheLastTaskByDefault() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withViewer(ConfigService.ConfigFile.ViewerConfig.defaults().withTmuxSession("jagt")));
+    void keepsTheAgentsViewerOpenAfterTheLastTaskByDefault() throws Exception {
+        Files.writeString(root.resolve("jagt.yml"), "orchestrator:\n  projects: {}\n  viewer:\n    tmuxSession: jagt\n");
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
@@ -290,10 +288,9 @@ class AgentSessionsTest {
     }
 
     @Test
-    void closesTheAgentsViewerAfterTheLastTaskWhenReservingItIsTurnedOff() {
-        when(config.load()).thenReturn(ConfigService.ConfigFile.defaults()
-                .withViewer(ConfigService.ConfigFile.ViewerConfig.defaults().withTmuxSession("jagt")
-                        .withKeepViewer(false)));
+    void closesTheAgentsViewerAfterTheLastTaskWhenReservingItIsTurnedOff() throws Exception {
+        Files.writeString(root.resolve("jagt.yml"),
+                "orchestrator:\n  projects: {}\n  viewer:\n    tmuxSession: jagt\n    keepViewer: false\n");
         when(tmux.sessionName("jagt")).thenReturn("jagt");
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
