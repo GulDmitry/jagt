@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.surface.agent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,6 +31,13 @@ final class HostCliLine {
     private static final Set<String> WRAPPER_OPTION_WITH_VALUE =
             Set.of("-u", "-C", "-S", "-a", "-n", "-I", "-L", "-P", "-s", "-d", "-E");
 
+    /** A host CLI sitting after any word still runs where the next word is one of its own command groups. */
+    private static final Set<String> GROUPS = Set.of("pr", "mr", "issue", "run", "ci", "repo", "auth", "api",
+            "release", "workflow", "secret", "variable", "label", "gist", "alias", "extension", "ruleset",
+            "cache", "codespace", "project", "browse", "-R", "--repo", "--hostname");
+    private static final Set<String> REPO_FLAGS = Set.of("-R", "--repo", "--hostname");
+    private static final Set<String> SHELLS = Set.of("sh", "bash", "zsh", "dash", "ksh");
+
     private HostCliLine() {
     }
 
@@ -54,13 +62,6 @@ final class HostCliLine {
         }
         return false;
     }
-
-    /** A host CLI sitting after any word still runs where the next word is one of its own command groups. */
-    private static final Set<String> GROUPS = Set.of("pr", "mr", "issue", "run", "ci", "repo", "auth", "api",
-            "release", "workflow", "secret", "variable", "label", "gist", "alias", "extension", "ruleset",
-            "cache", "codespace", "project", "browse", "-R", "--repo", "--hostname");
-    private static final Set<String> REPO_FLAGS = Set.of("-R", "--repo", "--hostname");
-    private static final Set<String> SHELLS = Set.of("sh", "bash", "zsh", "dash", "ksh");
 
     private static int commandPosition(List<String> words) {
         int at = 0;
@@ -100,7 +101,7 @@ final class HostCliLine {
     }
 
     private static boolean writesLine(String line) {
-        return java.util.Arrays.stream(line.split("[;&|\\n]+")).anyMatch(HostCliLine::writes);
+        return Arrays.stream(line.split("[;&|\\n]+")).anyMatch(HostCliLine::writes);
     }
 
     private static boolean reads(List<String> words, int from) {
