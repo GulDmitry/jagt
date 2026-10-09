@@ -153,7 +153,7 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 - **The surface holds no list** — the usual way to break that is building a button in `static/ui/card.js`.
 - An action the table never mentions is offered by nobody, so `startup/FlowCheck` refuses to start.
 - A capability gets a folder once it owns work (`capability/ship/`); the rest are flat.
-- `do` and `resume` are named literally only in tier 2 (`surface/board/PaletteContext`): its prompt maps a
+- `do` and `resume` are named literally only in tier 2 (`surface/board/PaletteContext`, `NaturalLanguageDispatch`): its prompt maps a
   line onto their fields.
 
 ## The board is two rings too

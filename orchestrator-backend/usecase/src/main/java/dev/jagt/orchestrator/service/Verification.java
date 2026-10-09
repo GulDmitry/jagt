@@ -31,7 +31,7 @@ public class Verification {
     private final ConfigService configService;
     private final Processes processes;
 
-    /** What the commands said, worst first: empty means every one of them passed, or none is configured. */
+    /** The first failure the commands reported: empty means every one of them passed, or none is configured. */
     public Optional<String> failure(TaskState task) {
         return task.repos().stream().map(this::failureOf).flatMap(Optional::stream).findFirst();
     }

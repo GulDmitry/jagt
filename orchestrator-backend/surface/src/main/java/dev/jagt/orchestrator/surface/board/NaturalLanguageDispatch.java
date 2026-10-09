@@ -32,7 +32,7 @@ public class NaturalLanguageDispatch {
                     + " to do with git.");
 
     private final CommandAssistant assistant;
-    private final PaletteContext board;
+    private final PaletteContext palette;
     private final CommandService commands;
     private final TaskLauncher launcher;
 
@@ -57,7 +57,7 @@ public class NaturalLanguageDispatch {
             return "Unknown command '" + text.strip() + "' — type `help` for the grammar, or say what you"
                     + " want in a few words.";
         }
-        Optional<CommandProposal> proposal = assistant.mapCommand(text, board.prompt()).facts();
+        Optional<CommandProposal> proposal = assistant.mapCommand(text, palette.prompt()).facts();
         if (proposal.isEmpty()) {
             return "Could not reach the assistant to interpret \"" + text.strip() + "\" — type `help` for the"
                     + " command grammar.";
@@ -84,7 +84,7 @@ public class NaturalLanguageDispatch {
     private String run(TaskAction action, CommandProposal mapped) {
         // Echoed as the action's OWN id: the model may have proposed a spelling the grammar was renamed from.
         String verb = action.id();
-        String task = board.existingTask(mapped.task());
+        String task = palette.existingTask(mapped.task());
         if (task == null) {
             return "Understood as `" + verb + "` but not which task (" + reasonOf(mapped)
                     + ") — name it: `" + verb + " <ticket|alias>`.";

@@ -89,8 +89,7 @@ on the target). Editor residue is **deleted** (`clearEditorResidue`); anything e
 ### Requirement: Commits carry task work, approved once
 A commit SHALL carry task work, never jagt's plumbing (`WorktreeFiles.generated`, out of every diff jagt
 reads); a modified `AGENTS.md` is the agent's. A ship
-approves ONE commit: only the next relay replaces `task_context.md` (`writeTaskContext` truncates, `relayIfChanged`
-skips an identical brief); re-reading it is no permission.
+approves ONE commit: only the next relay replaces `task_context.md`; re-reading it is no permission.
 
 #### Scenario: Follow-up
 - **WHEN** one more change after a ship: instruct the session
@@ -128,12 +127,13 @@ guardrail: a runtime-built push, an alias or a script passes; `deploy`, `revert`
 
 ### Requirement: ToolGate refuses the line
 `ToolGate` (`POST /api/agent/tool`) SHALL refuse that push too. It also refuses a push naming no branch, deleting the
-task's (`--de`, `-ud`), or forcing it without the lease; `HEAD` unless bare and unmoved; `send-pack`, `http-push`,
-`receive-pack` and every `gh`/`glab` command, however wrapped, but a read; any line naming the board's port or
-the Master's token.
+task's (`--de`, `-ud`) or forced unleased; `HEAD` unless bare and unmoved; `send-pack`, `http-push`, `receive-pack`;
+a `gh`/`glab` call but a read, however wrapped (named as data, it runs); a line naming the board's port or the
+Master's token.
 
 #### Scenario: Skipping the hook
-- **WHEN** a push line could skip the hook: `--no-verify`, `git -c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c`, `eval`, however quoted or escaped; a git line's `$'…'`
+- **WHEN** a push line holds `--no-verify`, `git -c`, `core.hooksPath`, `alias.`, `GIT_CONFIG*`, `env -i`, `sh -c` or
+  `eval`, however quoted; a git line holds `$'…'` or `$"…"`
 - **THEN** refused
 
 ### Requirement: Repositories multiply worktrees, not agents

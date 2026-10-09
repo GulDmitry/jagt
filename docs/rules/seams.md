@@ -4,7 +4,7 @@
 
 ## Pluggable by design
 
-**A firm invariant.** Linux and macOS both, with terminals, notifiers, editors
+Linux and macOS both, with terminals, notifiers, editors
 and agent runtimes (any MCP-capable CLI) behind a **strategy interface**: an
 implementation plus a config value, never `if claude` or `if macos`.
 
@@ -24,7 +24,7 @@ implementation plus a config value, never `if claude` or `if macos`.
 - **Nothing outside the runtime names an agent's files**: `WorktreeSetup` calls `provisionWorktree`,
   `AgentSessions` `displayName`.
 - **The hook wire is the CLI's own protocol, read where it lands**: `ToolGate`, `ReadGate` and
-  their two controllers name its tools and `hookSpecificOutput`.
+  their two controllers name its tools and `hookSpecificOutput`, `HostCliLine` the host CLIs.
 
 ## Which name holds the briefing is the runtime's to answer
 
