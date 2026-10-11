@@ -52,7 +52,7 @@ gets a short alias (`p1`, `s2`) usable anywhere instead of the ticket id.
 
 | command | what it does |
 |---------|--------------|
-| `stats` | what jagt's own model calls cost, per task, plus cycle time |
+| `stats` | subscription limits, jagt's own model spend per task, cycle time |
 | `activity` | what jagt did unattended |
 | `jobs` | every scheduled job, its cadence, last and next run |
 | `help` | command reference and recovery cheatsheet |

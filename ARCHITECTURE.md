@@ -126,8 +126,9 @@ playbook](https://claude.com/blog/the-ai-native-sdlc-playbook)'s; jagt is its lo
 | `TrackerWorkflow` | `adapter/tracker/JiraWorkflow`, `NoTrackerWorkflow` |
 | `Notifier` | `adapter/DesktopNotifier`; `notify/Notifications` fans out to every one |
 | `Processes` | `adapter/ProcessRunner` |
-| `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one seam with a single impl, not selectable by config |
+| `SessionHost` | `adapter/tmux/TmuxSessionHost` — the one seam with a single impl |
 | `SessionLog` | `adapter/agent/ClaudeSessionLog` — what a session's own log says it last did |
+| `SubscriptionUsage` | `adapter/agent/{Claude,Codex}SubscriptionUsage` |
 | `WorktreeProcesses` | `adapter/LsofWorktreeProcesses` |
 | `UserNotifier` | `adapter/macos/MacNotifier`, `adapter/linux/LibNotifyNotifier` |
 | `TerminalDriver` | `adapter/AbstractKittyTerminalDriver` (+ one per platform) |

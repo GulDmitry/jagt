@@ -12,7 +12,9 @@ public record Notification(Topic topic, String taskId, String title, String body
         /** Nothing is wrong with the work — something on disk or in the install wants a human eventually. */
         HOUSEKEEPING,
         /** jagt itself cannot go on correctly until the human acts. */
-        INSTALL
+        INSTALL,
+        /** A subscription window filled up, or paid usage is being spent. */
+        USAGE
     }
 
     public static Notification fromAgent(String taskId, String title, String body) {
@@ -35,5 +37,9 @@ public record Notification(Topic topic, String taskId, String title, String body
 
     public static Notification install(String title, String body) {
         return new Notification(Topic.INSTALL, null, title, body);
+    }
+
+    public static Notification usage(String title, String body) {
+        return new Notification(Topic.USAGE, null, title, body);
     }
 }

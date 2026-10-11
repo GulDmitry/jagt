@@ -21,7 +21,7 @@ public class StatsCommand implements GlobalCommand {
 
     @Override
     public String hint() {
-        return "what jagt's own model calls cost, and where each task's time went";
+        return "the subscription's limits, what jagt's own model calls cost, and where each task's time went";
     }
 
     @Override

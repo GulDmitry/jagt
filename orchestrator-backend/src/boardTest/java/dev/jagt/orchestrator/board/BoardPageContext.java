@@ -30,7 +30,8 @@ import java.nio.file.Path;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.config.import=",
-                "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false"})
+                "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false",
+                "orchestrator.usage-limits.enabled=false"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 abstract class BoardPageContext {
 

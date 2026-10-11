@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.service.UsageLimits;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -14,7 +16,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,7 +35,7 @@ class UsageStatsRendererTest {
         UsageTracker tracker = new UsageTracker(state);
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-        String out = new UsageStatsRenderer(tracker).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
 
         assertThat(out).contains("BY CALL");
         assertThat(out.indexOf("review sweep")).isLessThan(out.indexOf("ticket read"));
@@ -46,7 +53,7 @@ class UsageStatsRendererTest {
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 100, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
         tracker.chargeTask("ABC-2", TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-        String out = new UsageStatsRenderer(tracker).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
 
         assertThat(out.indexOf("ABC-2")).isLessThan(out.indexOf("ABC-1"));
         assertThat(out).contains("average per call");
@@ -61,7 +68,7 @@ class UsageStatsRendererTest {
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
         state.removeTask("ABC-1");
-        String out = new UsageStatsRenderer(tracker).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out.lines().filter(l -> l.startsWith("this session")).findFirst().orElseThrow())
@@ -73,10 +80,40 @@ class UsageStatsRendererTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
-        String out = new UsageStatsRenderer(new UsageTracker(state)).render(state.tasks());
+        String out = new UsageStatsRenderer(new UsageTracker(state), new UsageLimits(Optional.empty())).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out).doesNotContain("average per call");
+    }
+
+    @Test
+    void showsEachWindowWithItsUseAndResetAndThePaidSpend() {
+        var snapshot = new SubscriptionUsage.Snapshot(
+                List.of(new SubscriptionUsage.Window("5h", 82, Optional.of(Instant.parse("2026-10-10T16:00:00Z")))),
+                Optional.of(new SubscriptionUsage.Paid(Optional.of(new BigDecimal("12.5")),
+                        Optional.of(new BigDecimal("500")), "USD", Optional.empty())));
+
+        String out = UsageStatsRenderer.limits(Optional.of(new UsageLimits.Reading(
+                new SubscriptionUsage.Read(snapshot), Instant.parse("2026-10-10T14:02:00Z"))), ZoneOffset.UTC);
+
+        assertThat(out).contains("subscription limits, read Sat 14:02")
+                .containsPattern("5h +82%  Sat 16:00")
+                .containsPattern("paid usage +12.50 of 500.00 USD");
+    }
+
+    @Test
+    void saysCouldNotReadAndWhyWhenTheReadFailed() {
+        String out = UsageStatsRenderer.limits(Optional.of(new UsageLimits.Reading(
+                new SubscriptionUsage.Unreadable("http 500"), Instant.parse("2026-10-10T14:02:00Z"))), ZoneOffset.UTC);
+
+        assertThat(out).isEqualTo("subscription limits, read Sat 14:02: could not read, http 500\n\n");
+    }
+
+    @Test
+    void showsNoLimitsSectionBeforeAnythingWasRead() {
+        String out = UsageStatsRenderer.limits(Optional.empty(), ZoneOffset.UTC);
+
+        assertThat(out).isEmpty();
     }
 
     @ParameterizedTest
@@ -94,7 +131,7 @@ class UsageStatsRendererTest {
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
-        String out = new UsageStatsRenderer(tracker).render(state.tasks());
+        String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
 
         assertThat(out.lines().filter(l -> l.startsWith("ticket read")).findFirst().orElseThrow())
                 .endsWith("1/3");

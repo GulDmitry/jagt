@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(properties = {"spring.config.import=",
         "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false",
+        "orchestrator.usage-limits.enabled=false",
         "orchestrator.platform=linux"})
 @ResourceLock("spring-logging")
 class LinuxProfileContextTest {

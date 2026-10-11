@@ -11,7 +11,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - Sections: **Status** (date, state), **Context** (what forced it, with numbers),
   **Decision**, **Rejected** (each with its reason), **Reopen when** (what measurement changes it).
 - At most 400 words, or it is two decisions.
-- **Linked**: a record names its rule first; this index, where a why is recovered, lists every record
+- **Linked**: a record names its rule first; this index lists every record
   (`DecisionIndexTest`).
 - A record taken after the fact says `recorded retroactively`, carrying only what history proves.
 
@@ -20,7 +20,7 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0001 — A session lives one round](0001-a-task-session-lives-one-round.md)
 - [0002 — The board is jagt's only UI](0002-the-board-is-jagts-only-ui.md)
 - [0003 — Tracker, code host via MCP](0003-tracker-and-code-host-are-read-through-the-agents-own-mcp.md)
-- [0004 — Invariants stay out of git hooks](0004-jagt-keeps-its-invariants-out-of-git-hooks.md)
+- [0004 — Invariants out of git hooks](0004-jagt-keeps-its-invariants-out-of-git-hooks.md)
 - [0005 — The base branch is read-only](0005-the-base-branch-is-read-only.md)
 - [0006 — The machine moves, a model judges](0006-the-machine-owns-every-move-a-model-only-judges.md)
 - [0007 — Only adapter names a vendor or an OS](0007-only-adapter-names-a-vendor-or-an-os.md)
@@ -49,3 +49,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0030 — Guard gaps, six](0030-what-the-guards-still-pass-after-round-six.md)
 - [0031 — Host CLI anywhere](0031-the-host-cli-is-judged-wherever-it-stands.md)
 - [0032 — Reviews keep decisions](0032-a-global-review-is-judged-against-what-is-decided.md)
+- [0033 — Usage via login](0033-jagt-reads-the-clis-own-login-for-usage-and-keeps-none.md)

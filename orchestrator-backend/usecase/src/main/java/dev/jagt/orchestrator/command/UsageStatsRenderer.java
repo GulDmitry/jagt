@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.command;
 
+import dev.jagt.orchestrator.port.SubscriptionUsage;
+import dev.jagt.orchestrator.service.UsageLimits;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import dev.jagt.orchestrator.task.TaskState;
@@ -7,9 +9,12 @@ import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * What a task has consumed, in tokens and at list price. Two sources kept apart — jagt's own metered reads and what
@@ -24,11 +29,15 @@ public class UsageStatsRenderer {
     static final int LABEL_W = 18;
     private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s %8s %8s%n";
 
+    private static final String LIMIT_ROW = "%-" + LABEL_W + "s %6s  %s%n";
+    private static final DateTimeFormatter AT = DateTimeFormatter.ofPattern("EEE HH:mm", Locale.ROOT);
+
     private final UsageTracker usageTracker;
+    private final UsageLimits limits;
 
     public String render(Map<String, TaskState> tasks) {
-        StringBuilder out = new StringBuilder("token spend — jagt's own reads, then what the agent"
-                + " sessions burned\n\n");
+        StringBuilder out = new StringBuilder(limits(limits.last(), ZoneId.systemDefault()))
+                .append("token spend — jagt's own reads, then what the agent sessions burned\n\n");
         out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD", "COLD"));
 
         TokenUsage tasksTotal = TokenUsage.NONE;
@@ -84,6 +93,28 @@ public class UsageStatsRenderer {
                             + " beats shortening a prompt.\n");
         }
         return out.toString();
+    }
+
+    static String limits(Optional<UsageLimits.Reading> reading, ZoneId zone) {
+        if (reading.isEmpty()) {
+            return "";
+        }
+        String head = "subscription limits, read " + AT.format(reading.get().at().atZone(zone));
+        return switch (reading.get().answer()) {
+            case SubscriptionUsage.NoSubscription none ->
+                    head + ": none, the agent CLI is signed in without a subscription\n\n";
+            case SubscriptionUsage.Unreadable failed -> head + ": could not read, " + failed.cause() + "\n\n";
+            case SubscriptionUsage.Read(SubscriptionUsage.Snapshot snapshot) -> {
+                StringBuilder out = new StringBuilder(head).append("\n\n")
+                        .append(String.format(LIMIT_ROW, "WINDOW", "USED", "RESETS"));
+                snapshot.windows().forEach(window -> out.append(String.format(LIMIT_ROW, window.name(),
+                        String.format(Locale.ROOT, "%.0f%%", window.percentUsed()),
+                        window.resetsAt().map(at -> AT.format(at.atZone(zone))).orElse("-"))));
+                snapshot.paid().ifPresent(paid -> out.append(String.format(LIMIT_ROW, "paid usage", "",
+                        UsageLimits.spent(paid))));
+                yield out.append('\n').toString();
+            }
+        };
     }
 
     private static String row(String label, TokenUsage usage) {

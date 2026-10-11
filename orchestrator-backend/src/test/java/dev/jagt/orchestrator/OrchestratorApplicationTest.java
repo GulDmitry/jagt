@@ -21,7 +21,8 @@ import java.nio.file.Path;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(properties = {"spring.config.import=",
-        "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false"})
+        "orchestrator.open-terminal-window=false", "orchestrator.startup-checks=false",
+        "orchestrator.usage-limits.enabled=false"})
 @ResourceLock("spring-logging")
 class OrchestratorApplicationTest {
 
