@@ -142,7 +142,7 @@ orchestrator:
   # Read through the agent CLI's own stored login, never kept; shown in `stats` and told as a banner, never a gate.
   usageLimits:
     enabled: true             # false: nothing is read, told or shown
-    every: 5m
+    every: 30m
     thresholds: [80, 95]      # % of a window, each told once per window period
     paidThresholds: [80, 95]  # % of paid usage's monthly limit; the first paid spend is always told
 

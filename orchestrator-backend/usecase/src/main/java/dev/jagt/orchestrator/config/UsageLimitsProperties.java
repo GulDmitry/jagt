@@ -9,7 +9,7 @@ import java.util.List;
 public record UsageLimitsProperties(Duration every, List<Integer> thresholds, List<Integer> paidThresholds) {
 
     public UsageLimitsProperties {
-        every = every == null ? Duration.ofMinutes(5) : every;
+        every = every == null ? Duration.ofMinutes(30) : every;
         thresholds = thresholds == null ? List.of(80, 95) : List.copyOf(thresholds);
         paidThresholds = paidThresholds == null ? List.of(80, 95) : List.copyOf(paidThresholds);
     }
