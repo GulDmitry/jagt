@@ -26,7 +26,7 @@ class ClaudeSessionLogTest {
 
         SessionLog.Spent spent = new ClaudeSessionLog().spent(log, 0, Files.size(log));
 
-        assertThat(spent.usage()).isEqualTo(new TokenUsage(2, 1005, 41000, 190, 0));
+        assertThat(spent.usage()).isEqualTo(new TokenUsage(2, 1005, 41000, 190, 0, 0, 1));
         assertThat(spent.upTo()).isEqualTo(Files.size(log));
     }
 
@@ -135,5 +135,44 @@ class ClaudeSessionLogTest {
 
         assertThat(spent.usage()).isEqualTo(TokenUsage.NONE);
         assertThat(spent.upTo()).isEqualTo(50);
+    }
+
+    @Test
+    void countsOnlyTheFirstTurnOfALogAsAStart(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"usage":{"input_tokens":3,\
+                "cache_creation_input_tokens":1000,"cache_read_input_tokens":0,"output_tokens":150}}}
+                {"type":"assistant","message":{"usage":{"input_tokens":2,\
+                "cache_read_input_tokens":21000,"output_tokens":40}}}
+                """);
+
+        TokenUsage usage = new ClaudeSessionLog().spent(log, 0, Files.size(log)).usage();
+
+        assertThat(usage.coldStarts()).isEqualTo(1);
+        assertThat(usage.warmStarts()).isZero();
+    }
+
+    @Test
+    void countsNoStartWhenTheFirstTurnCarriesNoCacheFields(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"assistant","message":{"usage":{"input_tokens":3,"output_tokens":150}}}
+                """);
+
+        assertThat(new ClaudeSessionLog().spent(log, 0, Files.size(log)).usage().measuredStarts()).isZero();
+    }
+
+    @Test
+    void countsNoStartForTurnsReadFromAMark(@TempDir Path dir) throws IOException {
+        Path log = dir.resolve("session.jsonl");
+        Files.writeString(log, """
+                {"type":"user","message":{"content":"go"}}
+                {"type":"assistant","message":{"usage":{"input_tokens":3,\
+                "cache_read_input_tokens":0,"output_tokens":150}}}
+                """);
+        long mark = Files.readAllLines(log).get(0).length() + 1;
+
+        assertThat(new ClaudeSessionLog().spent(log, mark, Files.size(log) - mark).usage().measuredStarts()).isZero();
     }
 }

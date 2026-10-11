@@ -50,8 +50,11 @@ public class ClaudeSessionLog implements SessionLog {
                     : new Spent(TokenUsage.NONE, from + window.length);
         }
         TokenUsage total = TokenUsage.NONE;
+        boolean firstTurn = from == 0;
         for (String line : new String(window, 0, lastLine, StandardCharsets.UTF_8).split("\n")) {
-            total = total.plus(usageIn(line));
+            TokenUsage turn = usageIn(line, firstTurn);
+            firstTurn &= turn.isNone();
+            total = total.plus(turn);
         }
         return new Spent(total, from + lastLine + 1);
     }
@@ -66,7 +69,7 @@ public class ClaudeSessionLog implements SessionLog {
     }
 
     /** One unreadable line costs one turn, never the whole log: throwing would stop the mark advancing. */
-    private TokenUsage usageIn(String line) {
+    private TokenUsage usageIn(String line, boolean firstTurn) {
         if (!line.contains("\"usage\"")) {
             return TokenUsage.NONE;
         }
@@ -77,8 +80,9 @@ public class ClaudeSessionLog implements SessionLog {
             long cacheWrite = usage.path("cache_creation_input_tokens").asLong(0);
             long cacheRead = usage.path("cache_read_input_tokens").asLong(0);
             long output = usage.path("output_tokens").asLong(0);
-            return TokenUsage.ofCall(input + cacheWrite, cacheRead, output,
+            TokenUsage turn = TokenUsage.ofCall(input + cacheWrite, cacheRead, output,
                     priceOf(message.path("model").asString(null), usage, input, cacheRead, output));
+            return firstTurn && usage.has("cache_read_input_tokens") ? turn.asStart() : turn;
         } catch (RuntimeException unreadable) {
             return TokenUsage.NONE;
         }

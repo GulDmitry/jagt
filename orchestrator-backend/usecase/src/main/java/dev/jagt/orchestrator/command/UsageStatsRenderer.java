@@ -22,14 +22,14 @@ public class UsageStatsRenderer {
 
     /** Must fit the longest {@link AssistantCallKind} label, or a number shifts out of its column. */
     static final int LABEL_W = 18;
-    private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s %8s%n";
+    private static final String ROW = "%-" + LABEL_W + "s %6s %9s %9s %9s %9s %8s %8s%n";
 
     private final UsageTracker usageTracker;
 
     public String render(Map<String, TaskState> tasks) {
         StringBuilder out = new StringBuilder("token spend — jagt's own reads, then what the agent"
                 + " sessions burned\n\n");
-        out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD"));
+        out.append(String.format(ROW, "TASK", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD", "COLD"));
 
         TokenUsage tasksTotal = TokenUsage.NONE;
         var billed = tasks.entrySet().stream()
@@ -55,7 +55,7 @@ public class UsageStatsRenderer {
                 .toList();
         if (!agents.isEmpty()) {
             out.append('\n').append(String.format(ROW, "AGENT SESSION", "TURNS", "IN", "CACHED", "OUT", "TOTAL",
-                    "USD"));
+                    "USD", "COLD"));
             TokenUsage agentTotal = TokenUsage.NONE;
             for (var entry : agents) {
                 TokenUsage usage = entry.getValue().agentSpendOrNone().usageOrNone();
@@ -67,7 +67,7 @@ public class UsageStatsRenderer {
 
         var byKind = usageTracker.sessionByKind();
         if (!byKind.isEmpty()) {
-            out.append('\n').append(String.format(ROW, "BY CALL", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD"));
+            out.append('\n').append(String.format(ROW, "BY CALL", "CALLS", "IN", "CACHED", "OUT", "TOTAL", "USD", "COLD"));
             byKind.entrySet().stream()
                     .sorted(Comparator.comparingLong((Map.Entry<AssistantCallKind, TokenUsage> e) ->
                             e.getValue().total()).reversed())
@@ -92,6 +92,11 @@ public class UsageStatsRenderer {
                 TokenFormat.compact(usage.cachedInputTokens()),
                 TokenFormat.compact(usage.outputTokens()),
                 TokenFormat.compact(usage.total()),
-                String.format(Locale.ROOT, "%.2f", usage.costUsd()));
+                String.format(Locale.ROOT, "%.2f", usage.costUsd()),
+                cold(usage));
+    }
+
+    private static String cold(TokenUsage usage) {
+        return usage.measuredStarts() == 0 ? "?" : usage.coldStarts() + "/" + usage.measuredStarts();
     }
 }

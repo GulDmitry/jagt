@@ -30,4 +30,21 @@ class TokenUsageTest {
         assertThat(total.outputTokens()).isEqualTo(300);
         assertThat(total.total()).isEqualTo(51_800);
     }
+
+    @ParameterizedTest
+    @CsvSource({"500,0,1,0", "500,9000,0,1", "0,9000,0,1"})
+    void callsAStartColdOnlyWhenItHadInputAndReadNothingFromTheCache(long input, long cached, int cold, int warm) {
+        TokenUsage start = TokenUsage.ofCall(input, cached, 10, 0).asStart();
+
+        assertThat(start.coldStarts()).isEqualTo(cold);
+        assertThat(start.warmStarts()).isEqualTo(warm);
+    }
+
+    @Test
+    void leavesACallWithoutCacheFieldsOutOfBothStartCounts() {
+        TokenUsage total = TokenUsage.ofCall(500, 0, 10, 0).asStart().plus(TokenUsage.ofCall(500, 0, 10, 0));
+
+        assertThat(total.calls()).isEqualTo(2);
+        assertThat(total.measuredStarts()).isEqualTo(1);
+    }
 }

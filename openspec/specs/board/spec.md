@@ -9,7 +9,7 @@ What a card shows, which verbs exist, how a command reaches the core.
 ### Requirement: One surface, one projection
 The board, served by the jar, SHALL be the one front-end. Its projection is `flow/Move` + `flow/TaskView`, built by
 `service/TaskViews`, rendered by `/api/tasks`; gate and button read one `FlowRules.allows`;
-`TaskViews.snapshot()` reads the configuration once per render. A second surface MUST add no second answer to a board
+`TaskViews.snapshot()` reads the configuration once a render. A second surface MUST add no second answer to a board
 question. Stopping the backend is no verb.
 
 #### Scenario: Ship
@@ -19,7 +19,7 @@ question. Stopping the backend is no verb.
 ### Requirement: A mark says what it replaces
 The colour legend SHALL be a section of the `help` report (`static/ui/legend.js`), never a control beside it; colours
 are [design.md](../../../docs/rules/design.md)'s. A control the board lacks is the bug: the launch row's branch-strategy
-picker and MCP schema both read `task/BranchStrategy`. A verb carrying all its inputs gets no form beside it. The
+picker and MCP schema both read `task/BranchStrategy`. A verb with all its inputs gets no form. The
 project key renders only where projects are several, in the install or the task.
 
 #### Scenario: A mark is unclear
@@ -38,7 +38,7 @@ project key renders only where projects are several, in the install or the task.
 ### Requirement: Verbs come off the wire in groups
 Per-task verbs SHALL come from `Move.actions()`, grouped by `TaskAction.Group`, a row per group.
 A hint's text lives in `command/CommandReference` alone. A renamed verb still answers to its old spelling (`review`
-runs `sweep`), advertised nowhere (`TaskAction.RENAMED`).
+runs `sweep`), unadvertised (`TaskAction.RENAMED`).
 
 #### Scenario: Which buttons change something
 - **WHEN** the human reads a card's buttons
@@ -47,12 +47,13 @@ runs `sweep`), advertised nowhere (`TaskAction.RENAMED`).
 ### Requirement: Commands are two declarations
 A verb a task owns SHALL be a `flow/TaskAction` row gated by `Move`, run by `CommandService`; one no task owns is a
 `command/GlobalCommand` bean (`command/*`, collected by `GlobalCommands`) running itself. It declares
-the board part it opens typed alone and the card offering it (`offeredOn`). `CommandReference` renders both: `help`'s
-text and the palette's verb list. A launch that creates no task is refused.
+the board part it opens typed alone and its card (`offeredOn`). `CommandReference` renders both: `help`'s
+text and the palette's verb list. A launch creating no task is refused.
 
 #### Scenario: Reports
 - **WHEN** the human runs `stats`, `master` or `finished`
 - **THEN** `stats` gives per task the time on the human, the agent, the host
+- **AND** `stats` adds a `COLD` column, starts that read no cache as `3/40`, `?` where usage has no cache field
 - **AND** `master` the Master's verdicts the human overrode: passed then reverted or never deployed, failed then
   deployed
 - **AND** `finished` every retired task with its status log
@@ -62,7 +63,7 @@ text and the palette's verb list. A launch that creates no task is refused.
 - **THEN** the launch row takes the focus
 
 ### Requirement: One endpoint, one dialog
-`GET /api/commands/{id}` SHALL serve any report and `POST` run any other; no command but the launch row's pickers
+`GET /api/commands/{id}` SHALL serve any report, `POST` run any other; no command but the launch row's pickers
 (`POST /api/tasks`) gets its own endpoint, a GET never starts a task. A report opens in a `<dialog>` over the board,
 never a page. One about one task (`aboutOneTask`) gets no bar button, no tier 2 offer, and one line typing into that
 session (`POST /api/tasks/say`): not a verb, the only control there.
@@ -76,7 +77,7 @@ Tier 1, a parsing palette line or a board button, SHALL stay LLM-free. Tier 2,
 `surface/board/NaturalLanguageDispatch`, sends ⌘K free text via `POST /api/interpret` to a model proposing one grammar
 command, validated (task and verb exist) and run through `CommandService`: never more than a button. The call is
 stripped (`--strict-mcp-config
---mcp-config '{"mcpServers":{}}'`, no `--setting-sources`) and answers with the interpretation first.
+--mcp-config '{"mcpServers":{}}'`, no `--setting-sources`), interpretation first.
 
 #### Scenario: A proposal names no real verb
 - **WHEN** the model proposes a missing task or verb
@@ -84,7 +85,7 @@ stripped (`--strict-mcp-config
 
 ### Requirement: Rules live behind the controller
 `service/CommandService` SHALL validate against `Move` first; `service/TaskLauncher` starts a task; controller and
-palette own no rules. A refusal's sentence is the whole answer; one a caller must act on carries a `flow/Refusal.Code`,
+palette own no rules. A refusal's sentence is the whole answer; one a caller acts on carries a `flow/Refusal.Code`,
 grown only when something branches on it. No tools facade: each MCP tool group under `surface/mcp/tools` declares
 its own.
 
@@ -106,8 +107,8 @@ anything but JSON; `BoardWriteFilter` any write without Origin but `/mcp` and `/
 
 ### Requirement: Pushed, not polled, acted on by data
 The board SHALL NOT poll: `TaskEventStream` forwards `StateService.onChange`, the one event, as payload-free SSE at
-`/api/events` beside a 20s beat. Each connect reads the board once. A periodic tick survives for the ACTIVE clock,
-time in that status. A card carries `data-action`, never a closure: rebuilt under the pointer, it cannot act for its old task.
+`/api/events` beside a 20s beat. Each connect reads the board once. A periodic tick survives for the ACTIVE clock. A
+card carries `data-action`, never a closure, so a rebuilt card cannot act for its old task.
 
 #### Scenario: The backend goes away
 - **WHEN** the push connection drops, or misses two beats
@@ -133,7 +134,7 @@ Deploy button is green while the work is live. A `⚐` beside the title flags th
 
 ### Requirement: Only news is on screen
 The line under a card SHALL carry news only: NEEDS INPUT, ANSWERED, PROBLEM, NEEDS YOU. The next poll or job run sits
-in a tooltip; a stopped poll and a failed job get their own mark. A status says itself in words; the highlighted button
+in a tooltip; a stopped poll or failed job gets its own mark. A status says itself in words; the highlighted button
 says what to do. A badge is the human's move; a quiet "you can …" can wait.
 
 #### Scenario: A deployed task

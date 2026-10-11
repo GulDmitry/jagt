@@ -346,7 +346,7 @@ class HeadlessClaudeTest {
                 AssistantCallKind.REVIEW_SWEEP);
 
         assertThat(answer.facts()).isEmpty();
-        assertThat(answer.usage()).isEqualTo(TokenUsage.ofCall(25_005, 0, 40, 0.12));
+        assertThat(answer.usage()).isEqualTo(TokenUsage.ofCall(25_005, 0, 40, 0.12).asStart());
     }
 
     @Test
@@ -405,5 +405,21 @@ class HeadlessClaudeTest {
         ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
         verify(runner).run(any(Path.class), any(Duration.class), command.capture());
         assertThat(command.getValue()).containsSequence("--settings", "{\"hooks\":{}}");
+    }
+
+    @Test
+    void countsACallColdWhenItsCacheReadIsZero() {
+        var envelope = new JsonMapper().readTree("""
+                {"usage":{"input_tokens":4,"cache_creation_input_tokens":30000,
+                 "cache_read_input_tokens":0,"output_tokens":60}}""");
+
+        assertThat(HeadlessClaude.usageOf(envelope).coldStarts()).isEqualTo(1);
+    }
+
+    @Test
+    void countsACallInNeitherStartCountWhenItsUsageHasNoCacheFields() {
+        var envelope = new JsonMapper().readTree("{\"usage\":{\"input_tokens\":4,\"output_tokens\":60}}");
+
+        assertThat(HeadlessClaude.usageOf(envelope).measuredStarts()).isZero();
     }
 }

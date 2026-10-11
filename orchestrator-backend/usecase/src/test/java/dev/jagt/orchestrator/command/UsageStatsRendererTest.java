@@ -84,4 +84,21 @@ class UsageStatsRendererTest {
     void keepsEveryCallKindLabelInsideItsColumn(AssistantCallKind kind) {
         assertThat(kind.label().length()).isLessThanOrEqualTo(UsageStatsRenderer.LABEL_W);
     }
+
+    @Test
+    void showsColdStartsPerKindAndAQuestionMarkWhereNoCacheFieldWasRead(@TempDir Path root) {
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
+        UsageTracker tracker = new UsageTracker(state);
+        tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05).asStart());
+        tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());
+        tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());
+        tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
+        String out = new UsageStatsRenderer(tracker).render(state.tasks());
+
+        assertThat(out.lines().filter(l -> l.startsWith("ticket read")).findFirst().orElseThrow())
+                .endsWith("1/3");
+        assertThat(out.lines().filter(l -> l.startsWith("review sweep")).findFirst().orElseThrow())
+                .endsWith("?");
+    }
 }
