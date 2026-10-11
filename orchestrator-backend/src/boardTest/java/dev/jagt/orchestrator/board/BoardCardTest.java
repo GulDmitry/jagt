@@ -38,6 +38,22 @@ class BoardCardTest extends BoardPageContext {
     }
 
     @Test
+    void aFlaggedCardStaysFlaggedAfterTheBoardIsReloaded() {
+        state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
+                        TaskStatus.IN_PROGRESS).alias("a1").title("Widget layout is off")
+                .lastActiveTimestamp(System.currentTimeMillis()).build());
+        Page page = session.newPage();
+        page.navigate("http://localhost:" + port + "/");
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+
+        page.locator("article button.flag").click();
+        page.reload();
+
+        assertThat(page.locator("#live")).hasClass(Pattern.compile("\\bon\\b"));
+        assertThat(page.locator("article button.flag")).hasAttribute("aria-pressed", "true");
+    }
+
+    @Test
     void aCardSaysHowLongTheReviewRequestHasBeenOpen() {
         state.putTask("ABC-1", TaskState.builder("alpha", root.resolve("ABC-1-alpha").toString(),
                         TaskStatus.CI_POLLING).alias("a1").mrUrl("https://host.example/mr/7")

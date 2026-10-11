@@ -2,6 +2,7 @@
 
 import {link, named, span} from '../core/dom.js';
 import * as store from '../core/store.js';
+import * as flags from './flags.js';
 import {blocked} from './inflight.js';
 import {meta} from './meta.js';
 
@@ -21,6 +22,18 @@ const actionRow = (group) => {
   row.className = `actions ${group}`;
   row.dataset.group = group;
   return row;
+};
+
+const flag = (taskId) => {
+  const on = flags.holds(taskId);
+  const button = document.createElement('button');
+  button.className = 'flag';
+  button.textContent = on ? '\u2691' : '\u2690';
+  button.dataset.flag = taskId;
+  button.dataset.tip = 'important \u2014 kept in this browser only';
+  button.setAttribute('aria-pressed', String(on));
+  button.setAttribute('aria-label', 'flag as important');
+  return button;
 };
 
 export function card(task, manyProjects) {
@@ -45,8 +58,11 @@ export function card(task, manyProjects) {
   const title = document.createElement('div');
   title.className = 'title';
   clipped(title, task.title || '');
+  const heading = document.createElement('div');
+  heading.className = 'heading';
+  heading.append(flag(task.id), title);
 
-  const parts = [top, title, meta(task, manyProjects)];
+  const parts = [top, heading, meta(task, manyProjects)];
 
   if (task.detail) {
     const detail = document.createElement('div');

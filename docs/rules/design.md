@@ -6,7 +6,7 @@
 page's own element. Every legend row is a mark, bar a **transient** one inside an open control
 (`#palette-state.ok`/`.bad`, a said line's wait). The COST of adding one: [`board`](../../openspec/specs/board/spec.md).
 
-Also marks: every sample `legend.js` renders. **`--ok` and `--you` on one card do not
+**`--ok` and `--you` on one card do not
 disagree**: APPROVED wears both — the approval landed, the deploy is yours.
 
 ## The colour palette
@@ -44,6 +44,7 @@ translucent blacks (four shadows, the dialog backdrop) apart.
   the `.quote` it answers muted.
 - amber ring — `.mr-age.stalled` / `.repos.stalled` / `.status.stalled` (no link): the poll stopped,
   nothing will look again; the next poll sits in the request's hover.
+- `button.flag` ⚐/⚑ — flagged important, this browser only.
 - absence — no dot, no tick, no badge: the expected state, no pipeline, or nothing read yet, the hover saying
   which. **Absence is the cheapest mark**: a fact earning neither height nor colour goes in `data-tip`, not
   `title`.
@@ -64,6 +65,6 @@ buttons, legend heads.
 Radii climb with size: `999px` pills, `50%` dots, `6px` a control, `8px` a
 card or toast, `10px` the report dialog. Grid gap 12px, card padding 10px, dialog padding 14px, meta gap 8px.
 Shadow lifts a thing OFF the page and nothing else (report dialog, log button, toast, tip); its one exception
-is not depth: the 2px `--ok` ring on a primary deploy button. **One animation exists**, `checks-pulse`.
+is not depth: the 2px `--ok` ring on a primary deploy button.
 
 **No build step, no CDN, no external asset**: every mark is a border, a background or a character in the jar.

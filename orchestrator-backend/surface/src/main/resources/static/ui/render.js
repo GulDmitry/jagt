@@ -3,6 +3,7 @@
 import * as store from '../core/store.js';
 import {card} from './card.js';
 import * as filters from './filters.js';
+import * as flags from './flags.js';
 import * as header from './header.js';
 import * as launch from './launch.js';
 import * as order from './order.js';
@@ -63,6 +64,12 @@ export function refocus(pressed) {
 // used to describe.
 export const onClick = ({action, report}) => {
   board.onclick = (event) => {
+    const flagged = event.target.closest('button[data-flag]');
+    if (flagged) {
+      flags.toggle(flagged.dataset.flag);
+      render();
+      return;
+    }
     const button = event.target.closest('button[data-action], button[data-report]');
     if (!button) return;
     if (button.dataset.action) action(button.dataset.task, button.dataset.action);

@@ -43,6 +43,14 @@ const deployedButton = () => {
   return button;
 };
 
+const flagButton = (on) => {
+  const button = document.createElement('button');
+  button.className = 'flag';
+  button.textContent = on ? '\u2691' : '\u2690';
+  button.setAttribute('aria-pressed', String(on));
+  return button;
+};
+
 const offerButton = () => {
   const button = document.createElement('button');
   button.className = 'offer';
@@ -70,6 +78,8 @@ const rows = () => [
     + '\u00b7 nothing waiting, or a move of yours that can wait'],
   [[span('badge required', 'ship it'), span('badge optional', 'read the round')],
     'you are the hold-up \u00b7 yours whenever you like'],
+  [[flagButton(false), flagButton(true)],
+    'not flagged \u00b7 flagged important by you, in this browser only'],
   [[statusChip(), liveStatusChip()],
     'the state and its age \u00b7 green: already on a shared branch'],
   [[deployedButton()],
