@@ -17,6 +17,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -181,8 +182,36 @@ class AgentSessionsTest {
 
         sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
-        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false);
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
         verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void startsTheFreshSessionOnTheModelTheNotesName() throws Exception {
+        Files.writeString(root.resolve("task_notes.md"), "kept the retry\nnext-model: sonnet\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.choosesModel()).thenReturn(true);
+        when(agentRuntime.models()).thenReturn(List.of("opus", "sonnet"));
+        when(agentRuntime.displayName()).thenReturn("Claude");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.openTaskTab("ABC-1", "auto");
+
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "sonnet");
+    }
+
+    @Test
+    void startsTheFreshSessionOnTheDefaultModelWhenTheRuntimeCannotChoose() throws Exception {
+        Files.writeString(root.resolve("task_notes.md"), "next-model: sonnet\n");
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(agentRuntime.displayName()).thenReturn("Codex");
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.openTaskTab("ABC-1", "auto");
+
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
     }
 
     @Test
@@ -198,7 +227,7 @@ class AgentSessionsTest {
 
         sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
 
-        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(), eq(false));
+        verify(tmux, never()).openTaskWindow(anyString(), anyString(), anyString(), any(), any(), eq(false), anyString());
     }
 
     @Test
@@ -233,7 +262,7 @@ class AgentSessionsTest {
         AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
 
         assertThat(sessions.openTaskTab("ABC-1", "auto")).contains("New Claude session started");
-        verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false));
+        verify(tmux).openTaskWindow(anyString(), anyString(), eq("ABC-1"), any(), any(), eq(false), anyString());
         verify(tmux, never()).reviveTaskWindow(anyString(), anyString(), anyString(), any(), any());
     }
 

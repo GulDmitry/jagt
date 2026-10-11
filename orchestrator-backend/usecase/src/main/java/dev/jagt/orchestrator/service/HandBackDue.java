@@ -1,6 +1,8 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.Specs;
+import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +17,12 @@ public class HandBackDue {
 
     private final WorktreeChanges worktreeChanges;
     private final Specs specs;
+    private final AgentRuntime agentRuntime;
+
+    public Optional<String> invalid(TaskState task) {
+        return WorktreeFiles.read(Path.of(task.worktreePath()).resolve(Artifact.NOTES.fileName()))
+                .flatMap(notes -> TaskNotes.unknownModel(notes, agentRuntime));
+    }
 
     public Optional<String> owed(String taskId, TaskState task) {
         return notesOwed(task).or(() -> specsOwed(taskId, task));

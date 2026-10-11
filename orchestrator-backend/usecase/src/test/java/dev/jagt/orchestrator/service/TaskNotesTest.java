@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.AgentRuntime;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -9,6 +10,7 @@ import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class TaskNotesTest {
 
@@ -55,5 +57,20 @@ class TaskNotesTest {
 
         assertThat(TaskNotes.agentFileOwed(worktree, 4)).contains("this task adds 4 lines to the project's agent file,"
                 + " at most 3: keep the gaps the next task would hit");
+    }
+
+    @Test
+    void readsTheModelTheNotesNameForTheNextFreshRound() {
+        assertThat(TaskNotes.nextModel("kept the retry\n  next-model: haiku \n")).contains("haiku");
+    }
+
+    @Test
+    void readsNoModelWhenTheNotesNameNone() {
+        assertThat(TaskNotes.nextModel("kept the retry\nnext-model:\n")).isEmpty();
+    }
+
+    @Test
+    void ignoresTheModelLineWhenTheRuntimeCannotChoose() {
+        assertThat(TaskNotes.unknownModel("next-model: gpt", mock(AgentRuntime.class))).isEmpty();
     }
 }

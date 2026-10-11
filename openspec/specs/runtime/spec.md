@@ -2,15 +2,14 @@
 
 ## Purpose
 
-How jagt runs agent sessions: terminals in a session host, detached processes, the kitty viewer, the agent CLI's
-settings and hooks, and the processes a worktree leaves behind.
+How jagt runs agent sessions: session-host terminals, detached processes, the kitty viewer, the agent CLI's settings
+and hooks, and what a worktree leaves behind.
 
 ## Requirements
 
 ### Requirement: The backend owns no terminal
-The backend SHALL own no terminal, and no terminal UI SHALL come back. It MUST NOT automate a GUI or keystrokes:
-they land in whatever is focused. Agent terminals SHALL be windows in a session host (`port/SessionHost`, tmux
-today), one kitty window attached.
+The backend SHALL own no terminal, and no terminal UI SHALL come back. It MUST NOT automate a GUI or keystrokes.
+Agent terminals SHALL be windows in a session host (`port/SessionHost`, tmux today), one kitty window attached.
 
 #### Scenario: An agent terminal opens
 - **WHEN** jagt starts an agent session
@@ -35,7 +34,9 @@ Closing the viewer SHALL only detach; killing SHALL be explicit — `done` or `c
 A session jagt revives SHALL re-enter (`AgentRuntime.reviveCommand`, Claude `--continue`): a lost tmux server costs
 the window, not the context. A human's `respawn` SHALL be fresh. A relay past the cache lifetime
 (`AgentRuntime.continuesWithin`, Claude 1h) SHALL start fresh from `task_notes.md`: rewritten every hand-back,
-capped (`TaskNotes`).
+capped (`TaskNotes`). A fresh start SHALL run the model its `next-model: <name>` line names, else the CLI default.
+A name outside `AgentRuntime.models()` (Claude `fable`, `opus`, `sonnet`, `haiku`) refuses the hand-back as
+`validation`; a runtime that cannot choose ignores it.
 
 #### Scenario: The tmux server is lost
 - **WHEN** jagt revives a session after its tmux server died
@@ -43,17 +44,20 @@ capped (`TaskNotes`).
 
 #### Scenario: A relay comes late
 - **WHEN** a relay comes after the cache lifetime
-- **THEN** the session starts fresh from the current `task_notes.md`
+- **THEN** the session starts fresh from the current `task_notes.md`, on the model its `next-model:` line names
+
+#### Scenario: The notes name an unknown model
+- **WHEN** a hand-back follows `next-model: gpt`
+- **THEN** it is refused as `validation`, naming the allowed models
 
 #### Scenario: The human respawns
 - **WHEN** the human runs `respawn`
 - **THEN** the session starts fresh
 
 ### Requirement: A detached launch gets its own session
-Ctrl-C reaches jagt's whole process group, which `ProcessBuilder.start()` never leaves, so
-`ProcessRunner.detachedFrom` SHALL run it under `setsid`, or `perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV'` where
-there is none. Trapping the signals is wrong: every descendant inherits the disposition. Both wrappers `exec`, so
-`destroy()` on the returned `Process` reaches the app (only the editor's `runDetached` needs it).
+A launch SHALL leave jagt's process group, which Ctrl-C reaches and `ProcessBuilder.start()` never leaves:
+`ProcessRunner.detachedFrom` runs it under `setsid`, or `perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV'` where there
+is none. Both wrappers `exec`, so `destroy()` on the returned `Process` reaches the app.
 
 #### Scenario: Ctrl-C stops jagt
 - **WHEN** the human presses Ctrl-C in jagt's terminal
@@ -75,7 +79,7 @@ tmux (the tab execs `tmux attach`).
 - **THEN** the kitty instance is killed by its socket path
 
 ### Requirement: Every call a session needs is pre-approved
-Claude Code's auto-mode classifier silently blocks calls not pre-approved: the backend SHALL make none; the
+Claude Code's auto-mode classifier blocks calls not pre-approved: the backend SHALL make none; the
 committed root `.claude/settings.json` covers sessions there. Every sub-agent worktree's generated
 `.claude/settings.local.json` MUST carry `enableAllProjectMcpServers: true` plus
 `permissions.allow: ["mcp__jagt-orchestrator", "Bash(git:*)"]` and every tool in `agentAllowedTools`.
@@ -94,14 +98,14 @@ committed root `.claude/settings.json` covers sessions there. Every sub-agent wo
 
 ### Requirement: The session compacts at 300k tokens
 A Claude session SHALL compact at 300k tokens (`ClaudeAgentRuntime.COMPACT_AT_TOKENS`), set on the command too. Its
-settings SHALL carry `autoMemoryEnabled: false`: keyed by the repository, auto memory reaches every worktree.
+settings SHALL carry `autoMemoryEnabled: false`.
 
 #### Scenario: Worktree settings predate the limit
 - **WHEN** older settings lack the limit
 - **THEN** the command still sets it
 
 ### Requirement: The worktree is trusted
-The allow-list is dead text until the worktree is trusted, so `wireAgent` SHALL write
+`wireAgent` SHALL trust the worktree, writing
 `projects["<worktree>"].hasTrustDialogAccepted` in `~/.claude.json` (`$CLAUDE_CONFIG_DIR/.claude.json` where set),
 replacing that one flag.
 
@@ -125,11 +129,10 @@ The payload adds the session's log (else derived from the worktree), which gives
 - **THEN** it costs a detail, never the report
 
 ### Requirement: What jagt answers a hook, the harness reads
-The hook SHALL print jagt's answer (`curl -sf` prints the body). Two hooks are answered, each declared:
+The hook SHALL print jagt's answer. Two hooks are answered:
 `gate=PreToolUse`, scoped to the shell tool; and `turn-end=Stop`. The latter refuses once a turn that leaves the
 agent's move unreported (`Move.endsUnreported`), and shows the human alone a round handed to the Master
-(`AgentRuntime.toldTheHuman`). They are not git hooks; that ban does not reach them.
-
+(`AgentRuntime.toldTheHuman`).
 #### Scenario: A session starts after compaction
 - **WHEN** a start report follows a COMPACTION
 - **THEN** the answer names its brief and restates the task's facts
@@ -141,7 +144,7 @@ agent's move unreported (`Move.endsUnreported`), and shows the human alone a rou
 
 ### Requirement: jagt reaps a worktree's processes
 Each sub-agent spawns its own language server (jdtls ~1–2 GB per Java worktree), never released. jagt SHALL reap
-it on `done` (`port/WorktreeProcesses`, `LsofWorktreeProcesses.reap`: `lsof` by cwd, `kill -9`).
+it on `done` (`port/WorktreeProcesses`, `LsofWorktreeProcesses.reap`).
 `orchestrator.agent-disabled-plugins` SHALL write `enabledPlugins: {"<name>": false}` into worktree settings,
 default empty.
 

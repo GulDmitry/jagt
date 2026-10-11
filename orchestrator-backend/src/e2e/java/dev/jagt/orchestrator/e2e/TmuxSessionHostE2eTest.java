@@ -47,8 +47,8 @@ class TmuxSessionHostE2eTest {
     void leavesOneWindowPerTaskWhenTheSameTaskIsStartedTwice(@TempDir Path root) {
         SessionHost host = hostIn(root);
 
-        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false);
-        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false);
+        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
+        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
 
         assertThat(windowNames()).containsOnlyOnce("ABC-1");
     }
@@ -56,8 +56,8 @@ class TmuxSessionHostE2eTest {
     @Test
     void killsOnlyTheNamedTasksWindowsAndSaysHowMany(@TempDir Path root) {
         SessionHost host = hostIn(root);
-        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false);
-        host.openTaskWindow(SESSION, "jagt", "ABC-2", "a2", root, false);
+        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
+        host.openTaskWindow(SESSION, "jagt", "ABC-2", "a2", root, false, "");
 
         int killed = host.killTaskWindows(SESSION, "ABC-1");
 
@@ -78,7 +78,7 @@ class TmuxSessionHostE2eTest {
     @Test
     void reportsAWindowThatWasNeverOpenedAsMissing(@TempDir Path root) {
         SessionHost host = hostIn(root);
-        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false);
+        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
 
         assertThat(host.taskWindowState(SESSION, "ABC-9")).isEqualTo(SessionHost.WindowState.MISSING);
     }
@@ -86,7 +86,7 @@ class TmuxSessionHostE2eTest {
     @Test
     void showsALongTaskNameCutToTenCharactersWhileTheWindowKeepsItWhole(@TempDir Path root) {
         SessionHost host = hostIn(root);
-        host.openTaskWindow(SESSION, "jagt", "abcservice-1234567890-xyz", "a1", root, false);
+        host.openTaskWindow(SESSION, "jagt", "abcservice-1234567890-xyz", "a1", root, false, "");
 
         String shown = processes.run(null, Duration.ofSeconds(10), List.of("tmux", "display-message",
                 "-p", "-t", "=" + SESSION + ":", "#{E:window-status-current-format}")).stdout().strip();

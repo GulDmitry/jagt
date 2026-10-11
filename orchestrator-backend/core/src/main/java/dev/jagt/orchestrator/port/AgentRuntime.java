@@ -50,9 +50,14 @@ public interface AgentRuntime {
         return Optional.empty();
     }
 
+    /** The model names a session may ask for, a closed list of aliases; EMPTY where this runtime cannot be told. */
+    default List<String> models() {
+        return List.of();
+    }
+
     /** Whether this runtime can be told which model to run. */
     default boolean choosesModel() {
-        return false;
+        return !models().isEmpty();
     }
 
     /** The log a session in {@code worktree} is appending to, where this runtime keeps one jagt can find. */

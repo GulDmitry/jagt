@@ -35,6 +35,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     private static final Pattern DIMMED = Pattern.compile("\u001b\\[2m.*?(?=\u001b\\[(?:0|22)?m|$)");
     private static final String CLAUDE_MEMORY_FILE = "CLAUDE.md";
     private static final String LOCAL_MEMORY_FILE = "CLAUDE.local.md";
+    private static final List<String> MODELS = List.of("fable", "opus", "sonnet", "haiku");
 
     private final OrchestratorProperties properties;
     private final ClaudeProperties claude;
@@ -77,8 +78,8 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
-    public boolean choosesModel() {
-        return true;
+    public List<String> models() {
+        return MODELS;
     }
 
     @Override

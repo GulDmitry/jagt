@@ -5,7 +5,10 @@ import dev.jagt.orchestrator.flow.Refusal;
 import dev.jagt.orchestrator.protocol.AgentStatusMessage;
 import dev.jagt.orchestrator.protocol.Reported;
 import lombok.RequiredArgsConstructor;
+import dev.jagt.orchestrator.task.TaskState;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 /** A session reporting on its own task, whose hand-back must leave the notes the next session starts from. */
 @Service
@@ -17,12 +20,15 @@ public class OwnStatusReports {
     private final AgentStatusReports statusReports;
 
     public String report(AgentStatusMessage said, String taskId) {
-        said.accepted(statusReports.contextFor(taskId)).map(Reported::status)
+        Optional<TaskState> handedBack = said.accepted(statusReports.contextFor(taskId)).map(Reported::status)
                 .filter(status -> FlowRules.readByTheMaster(status) && !FlowRules.holdsAPlan(status))
-                .flatMap(status -> stateService.task(taskId)).flatMap(task -> due.owed(taskId, task))
-                .ifPresent(owed -> {
-                    throw Refusal.byState(owed);
-                });
+                .flatMap(status -> stateService.task(taskId));
+        handedBack.flatMap(due::invalid).ifPresent(invalid -> {
+            throw new IllegalArgumentException(invalid);
+        });
+        handedBack.flatMap(task -> due.owed(taskId, task)).ifPresent(owed -> {
+            throw Refusal.byState(owed);
+        });
         return statusReports.report(said, taskId);
     }
 }

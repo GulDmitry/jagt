@@ -257,8 +257,15 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                            boolean planMode) {
         String session = agentSession(config, taskId);
         sessions.openTaskWindow(session, sessions.sessionName(config.viewer().session()), taskId,
-                alias, worktreePath, planMode);
+                alias, worktreePath, planMode, nextModel(worktreePath));
         return session;
+    }
+
+    private String nextModel(Path worktree) {
+        return agentRuntime.choosesModel()
+                ? WorktreeFiles.read(worktree.resolve(Artifact.NOTES.fileName())).flatMap(TaskNotes::nextModel)
+                        .filter(agentRuntime.models()::contains).orElse("")
+                : "";
     }
 
     private String agentSession(ConfigService.ConfigFile config, String taskId) {

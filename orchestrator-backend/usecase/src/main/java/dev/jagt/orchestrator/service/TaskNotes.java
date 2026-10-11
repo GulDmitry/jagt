@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.service;
 
+import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.task.Artifact;
 
 import java.io.IOException;
@@ -16,6 +17,8 @@ final class TaskNotes {
     static final int MAX_AGENT_FILE_LINES = 3;
 
     private static final String AGENT_FILE_LINE = "agent-file:";
+
+    private static final String NEXT_MODEL_LINE = "next-model:";
 
     private TaskNotes() {
     }
@@ -41,6 +44,21 @@ final class TaskNotes {
         } catch (IOException e) {
             return Optional.of("could not read " + Artifact.NOTES.fileName() + ": " + e.getMessage());
         }
+    }
+
+    static Optional<String> nextModel(String notes) {
+        return notes.lines().map(String::strip).filter(line -> line.startsWith(NEXT_MODEL_LINE))
+                .map(line -> line.substring(NEXT_MODEL_LINE.length()).strip()).filter(name -> !name.isEmpty())
+                .findFirst();
+    }
+
+    static Optional<String> unknownModel(String notes, AgentRuntime runtime) {
+        return runtime.choosesModel()
+                ? nextModel(notes).filter(name -> !runtime.models().contains(name))
+                        .map(name -> Artifact.NOTES.fileName() + " names the model '" + name + "', which "
+                                + runtime.displayName() + " does not offer: one of "
+                                + String.join(", ", runtime.models()))
+                : Optional.empty();
     }
 
     static Optional<String> agentFileOwed(Path worktree, int added) {

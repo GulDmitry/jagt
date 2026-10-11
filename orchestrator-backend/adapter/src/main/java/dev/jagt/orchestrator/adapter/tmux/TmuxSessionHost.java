@@ -53,9 +53,10 @@ public class TmuxSessionHost implements SessionHost {
 
     @Override
     public void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias,
-                               Path worktreePath, boolean planMode) {
-        taskWindow(session, dedicatedTitle, taskId, alias, worktreePath,
-                agentRuntime.launchCommand(worktreePath, planMode));
+                               Path worktreePath, boolean planMode, String model) {
+        taskWindow(session, dedicatedTitle, taskId, alias, worktreePath, model.isBlank()
+                ? agentRuntime.launchCommand(worktreePath, planMode)
+                : agentRuntime.launchCommand(worktreePath, planMode, model));
     }
 
     @Override

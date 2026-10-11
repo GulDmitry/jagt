@@ -31,9 +31,9 @@ public interface SessionHost {
         return Optional.empty();
     }
 
-    /** Starts a task's agent in its own window, replacing any window of the same name. */
+    /** Starts a task's agent in its own window, replacing any window of the same name; a blank model is the default. */
     void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias, Path worktreePath,
-                        boolean planMode);
+                        boolean planMode, String model);
 
     /**
      * Re-enters a task's window after the session behind it was lost — a killed session server, a rebooted machine —
