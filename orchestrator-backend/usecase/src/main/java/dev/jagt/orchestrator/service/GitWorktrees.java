@@ -72,12 +72,14 @@ public class GitWorktrees {
                             git.run(projectPath,
                                             List.of("git", "worktree", "add", worktreePath.toString(), branch))
                                     .expectSuccess("git worktree add (resume) " + worktreePath);
-                            detachUpstream(projectPath, branch);
-                            fastForward(worktreePath, branch, counts.behind());
-                            // A branch holding commits origin has never seen is not jagt's to publish.
-                            if (counts.tracked() && counts.ahead() == 0) {
-                                rebaseOntoTarget(worktreePath, branch, base);
-                            }
+                            run(() -> git.clearWorktreePath(projectPath, worktreePath), () -> {
+                                detachUpstream(projectPath, branch);
+                                fastForward(worktreePath, branch, counts.behind());
+                                // A branch holding commits origin has never seen is not jagt's to publish.
+                                if (counts.tracked() && counts.ahead() == 0) {
+                                    rebaseOntoTarget(worktreePath, branch, base);
+                                }
+                            });
                         });
                         return;
                     }
@@ -86,7 +88,8 @@ public class GitWorktrees {
             cutFrom(projectPath, worktreePath, branch,
                     strategy == BranchStrategy.RESUME ? resumeBase(projectPath, branch, base) : base);
             if (strategy == BranchStrategy.RESUME) {
-                rebaseOntoTarget(worktreePath, branch, base);
+                run(() -> git.removeWorktreeAndBranch(projectPath, worktreePath, branch),
+                        () -> rebaseOntoTarget(worktreePath, branch, base));
             }
         });
     }
@@ -393,6 +396,11 @@ public class GitWorktrees {
     public void removeDiffWorktrees(Path projectPath, String taskId, String project) {
         git.locked(projectPath,
                 () -> DiffCheckouts.diffWorktreePaths(taskId, project).forEach(temp -> git.clearWorktreePath(projectPath, temp)));
+    }
+
+    /** Of a repository nobody can name any more: the directories go, and git prunes what pointed at them. */
+    public void discardDiffWorktrees(String taskId, String project) {
+        DiffCheckouts.diffWorktreePaths(taskId, project).forEach(git::forceDeleteDir);
     }
 
     public String remoteUrl(Path projectPath) {

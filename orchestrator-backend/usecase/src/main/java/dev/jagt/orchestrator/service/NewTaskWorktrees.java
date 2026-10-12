@@ -160,16 +160,24 @@ public class NewTaskWorktrees {
                 worktreeSetup.fill(request, repo, repos);
             }
         } catch (RuntimeException e) {
-            // The branch goes with the worktree only where THIS call created it: a resumed task's branch was
-            // already there with the human's commits.
-            String branchToDelete = strategy == BranchStrategy.RESUME ? null : request.taskId();
-            cut.forEach(repo -> gitWorktrees.removeWorktree(repo.projectPath(), repo.worktreePath(),
-                    branchToDelete));
-            // A resumed branch survives, so the repository jagt detached to free it must go back.
-            if (branchToDelete == null) {
-                repos.forEach(repo -> gitWorktrees.reattach(repo.projectPath(), request.taskId()));
-            }
+            unwind(request, cut, repos, strategy);
             throw e;
+        }
+    }
+
+    /** Every worktree {@link #cut} made goes again, for a task whose registration failed after it. */
+    public void uncut(NewTask request, List<NewRepo> repos, BranchStrategy strategy) {
+        unwind(request, repos, repos, strategy);
+    }
+
+    private void unwind(NewTask request, List<NewRepo> cut, List<NewRepo> repos, BranchStrategy strategy) {
+        // The branch goes with the worktree only where THIS call created it: a resumed task's branch was
+        // already there with the human's commits.
+        String branchToDelete = strategy == BranchStrategy.RESUME ? null : request.taskId();
+        cut.forEach(repo -> gitWorktrees.removeWorktree(repo.projectPath(), repo.worktreePath(), branchToDelete));
+        // A resumed branch survives, so the repository jagt detached to free it must go back.
+        if (branchToDelete == null) {
+            repos.forEach(repo -> gitWorktrees.reattach(repo.projectPath(), request.taskId()));
         }
     }
 

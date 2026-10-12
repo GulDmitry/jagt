@@ -32,9 +32,12 @@ class RetiredWorktrees {
             // Before the project lookup: a project deleted from jagt.yml is exactly when a stale registration
             // would be left behind.
             editorDriver.forgetProject(Path.of(repo.worktreePath()));
+            // The agent's record of the worktree goes too, or the next session there stops at the prompt it answers.
+            sessions.forgetWorktree(Path.of(repo.worktreePath()));
             ProjectConfig project = projects.get(repo.project());
             if (project == null) {
                 anyProjectMissing = true;
+                gitWorktrees.discardDiffWorktrees(taskId, Objects.requireNonNull(repo.project()));
                 log.atWarn().setMessage("worktree removal skipped")
                         .addKeyValue("task", taskId)
                         .addKeyValue("project", repo.project())
@@ -43,8 +46,6 @@ class RetiredWorktrees {
                 continue;
             }
             Path projectPath = Path.of(project.path());
-            // The agent's record of the worktree goes too, or the next session there stops at the prompt it answers.
-            sessions.forgetWorktree(Path.of(repo.worktreePath()));
             gitWorktrees.removeWorktree(projectPath, Path.of(repo.worktreePath()), null);
             // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.
             gitWorktrees.removeDeployWorktreeIfPresent(projectPath, taskId);

@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
+import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.GitTrust;
 import dev.jagt.orchestrator.task.NewRepo;
 import dev.jagt.orchestrator.task.NewTask;
@@ -132,6 +133,19 @@ class TaskProvisioningTest {
                 .isInstanceOf(IllegalStateException.class);
 
         assertThat(state.task("ABC-9")).isEmpty();
+    }
+
+    @Test
+    void removesTheCutWorktreesWhenTheTaskCannotBeRegistered() {
+        List<NewRepo> repos = List.of(
+                new NewRepo("proj", null, Path.of("/repo"), Path.of("/ABC-1-proj"), null, "origin/main", null, true));
+        when(worktrees.cut(any(), any(), any())).thenReturn(repos);
+        root.toFile().setWritable(false);
+        NewTask request = NewTask.builder("ABC-1", "proj").build();
+
+        assertThatThrownBy(() -> provisioning.initializeTask(request)).isInstanceOf(java.io.UncheckedIOException.class);
+
+        verify(worktrees).uncut(request, repos, BranchStrategy.FRESH);
     }
 
     @Test

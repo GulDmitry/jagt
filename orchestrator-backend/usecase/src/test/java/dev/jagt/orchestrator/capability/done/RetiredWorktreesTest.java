@@ -33,6 +33,20 @@ class RetiredWorktreesTest {
     }
 
     @Test
+    void hasTheAgentRuntimeForgetTheWorktreeEvenWhenItsProjectIsGoneFromConfig() {
+        new RetiredWorktrees(git, editor, sessions).remove("ABC-1", List.of(TaskRepo.of("gone", "/wt")), Map.of());
+
+        verify(sessions).forgetWorktree(Path.of("/wt"));
+    }
+
+    @Test
+    void discardsTheDiffCheckoutsEvenWhenTheProjectIsGoneFromConfig() {
+        new RetiredWorktrees(git, editor, sessions).remove("ABC-1", List.of(TaskRepo.of("gone", "/wt")), Map.of());
+
+        verify(git).discardDiffWorktrees("ABC-1", "gone");
+    }
+
+    @Test
     void dropsTheDeadWorktreeFromTheEditorsRecentProjects() {
         new RetiredWorktrees(git, editor, sessions).remove("ABC-1", List.of(TaskRepo.of("demo", "/wt")),
                 Map.of("demo", new ProjectConfig("/repo", "origin/main", "dev", List.of())));

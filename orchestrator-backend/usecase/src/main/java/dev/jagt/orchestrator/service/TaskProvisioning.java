@@ -37,17 +37,22 @@ public class TaskProvisioning {
         synchronized (this) {
             repos = worktrees.cut(request, config, strategy);
             alias = nextAlias(taskId);
-            stateService.putTask(taskId, TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
-                            TaskStatus.NEW)
-                    .lastActiveTimestamp(System.currentTimeMillis()).alias(alias)
-                    .title(request.title())
-                    .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank()
-                            ? null : request.ticketUrl())
-                    // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
-                    .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
-                    .autoReview(config.autoReview().enabledOrDefault())
-                    .gitTrust(worktrees.trust(repos))
-                    .build());
+            try {
+                stateService.putTask(taskId, TaskState.builder(repos.stream().map(NewRepo::registered).toList(),
+                                TaskStatus.NEW)
+                        .lastActiveTimestamp(System.currentTimeMillis()).alias(alias)
+                        .title(request.title())
+                        .ticketUrl(request.ticketUrl() == null || request.ticketUrl().isBlank()
+                                ? null : request.ticketUrl())
+                        // Only the OVERRIDE is persisted: a task that took the project default must keep following it.
+                        .baseBranch(NewTaskWorktrees.branchOverride(request.baseBranch()))
+                        .autoReview(config.autoReview().enabledOrDefault())
+                        .gitTrust(worktrees.trust(repos))
+                        .build());
+            } catch (RuntimeException e) {
+                worktrees.uncut(request, repos, strategy);
+                throw e;
+            }
         }
         NewRepo session = repos.get(0);
 

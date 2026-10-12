@@ -227,6 +227,74 @@ class GitWorktreesTest {
     }
 
     @Test
+    void removesTheResumedWorktreeAndKeepsTheBranchWhenThePushBackIsRefused(@TempDir Path dir) throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        Files.writeString(repo.resolve("task.txt"), "the task's work");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        Files.writeString(repo.resolve("release.txt"), "shipped while the request waited");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "release"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "remote", "set-url", "--push", "origin", dir.resolve("gone.git").toString()));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
+                BranchStrategy.RESUME))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("push was refused");
+        assertThat(dir.resolve("wt")).doesNotExist();
+        assertThat(git.branchExists(repo, "ABC-1")).isTrue();
+    }
+
+    @Test
+    void removesTheWorktreeAndTheBranchItCutWhenAResumeFromOriginCannotPushBack(@TempDir Path dir)
+            throws Exception {
+        Processes runner = new ProcessRunner();
+        Duration timeout = Duration.ofSeconds(30);
+        Path origin = dir.resolve("origin.git");
+        Path repo = dir.resolve("repo");
+        runner.run(dir, timeout, List.of("git", "init", "-q", "--bare", "-b", "main", origin.toString()));
+        runner.run(dir, timeout, List.of("git", "clone", "-q", origin.toString(), repo.toString()));
+        Files.writeString(repo.resolve("f.txt"), "base");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "init"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-qb", "ABC-1"));
+        Files.writeString(repo.resolve("task.txt"), "the task's work");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "work"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "ABC-1"));
+        runner.run(repo, timeout, List.of("git", "checkout", "-q", "main"));
+        runner.run(repo, timeout, List.of("git", "branch", "-qD", "ABC-1"));
+        Files.writeString(repo.resolve("release.txt"), "shipped while the request waited");
+        runner.run(repo, timeout, List.of("git", "add", "."));
+        runner.run(repo, timeout, List.of("git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "release"));
+        runner.run(repo, timeout, List.of("git", "push", "-q", "origin", "main"));
+        runner.run(repo, timeout, List.of("git", "remote", "set-url", "--push", "origin", dir.resolve("gone.git").toString()));
+        GitWorktrees git = new GitWorktrees(new GitCommands(runner, new LsofWorktreeProcesses(runner)));
+
+        assertThatThrownBy(() -> git.createWorktree(repo, dir.resolve("wt"), "ABC-1", "origin/main",
+                BranchStrategy.RESUME))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("push was refused");
+        assertThat(dir.resolve("wt")).doesNotExist();
+        assertThat(git.branchExists(repo, "ABC-1")).isFalse();
+    }
+
+    @Test
     void replaysAResumedBranchOnTheTargetItMergesIntoAndPushesItBack(@TempDir Path dir) throws Exception {
         Processes runner = new ProcessRunner();
         Duration timeout = Duration.ofSeconds(30);
