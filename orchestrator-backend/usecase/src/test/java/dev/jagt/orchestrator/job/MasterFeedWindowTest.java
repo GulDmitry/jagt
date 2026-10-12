@@ -24,7 +24,7 @@ class MasterFeedWindowTest {
                 .withMaster(new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null)));
         when(sessions.sessionName(any())).thenReturn("jagt");
 
-        new MasterFeedWindow(config, sessions).run();
+        new MasterFeedWindow(config, sessions, "jagt-master.log").run();
 
         verify(sessions).keepFeedWindow("jagt", "master", Path.of("jagt-master.log").toAbsolutePath());
     }
@@ -33,7 +33,7 @@ class MasterFeedWindowTest {
     void opensNoMasterWindowWhereTheMasterIsOff() {
         when(config.load()).thenReturn(ConfigService.ConfigFile.defaults());
 
-        new MasterFeedWindow(config, sessions).run();
+        new MasterFeedWindow(config, sessions, "jagt-master.log").run();
 
         verify(sessions, never()).keepFeedWindow(anyString(), anyString(), any());
     }

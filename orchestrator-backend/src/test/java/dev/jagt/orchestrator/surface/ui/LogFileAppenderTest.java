@@ -23,6 +23,7 @@ class LogFileAppenderTest {
             throws Exception {
         LoggerContext context = new LoggerContext();
         context.putProperty("LOG_FILE", directory.resolve("jagt.log").toString());
+        context.putProperty("MASTER_LOG", directory.resolve("master.log").toString());
         context.putObject(Environment.class.getName(), new MockEnvironment());
         JoranConfigurator configurator = new JoranConfigurator();
         configurator.setContext(context);

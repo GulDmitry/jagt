@@ -27,6 +27,9 @@ logging:
     # One file, emptied at every start. What replaces Boot's rolling appender, and the format the file is
     # written in, are in `logback-spring.xml`.
     name: ${LOG_FILE:jagt-backend.log}
+  # The Master's own feed, emptied at the same start.
+  master:
+    name: jagt-master.log
   pattern:
     # `%kvp` is the point: the values are key-value pairs, not part of the message, and a pattern without it
     # prints the event and drops every field. Spelled out rather than derived from Boot's, whose

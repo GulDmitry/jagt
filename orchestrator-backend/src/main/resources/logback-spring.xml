@@ -2,7 +2,7 @@
 
 <!--
 Each log holds at most two files: past 10MB it rolls into `<log>.1`, replacing the last one. Boot's own appender
-rolls daily and keeps a week of archives. `LogFileReset` empties the backend log and its `.1` at start.
+rolls daily and keeps a week of archives. `LogFileReset` empties the backend log, the Master's and their `.1` at start.
 -->
 <configuration>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
@@ -29,13 +29,14 @@ rolls daily and keeps a week of archives. `LogFileReset` empties the backend log
     </appender>
 
     <!-- The human's: what the Master does, followed in the `master` window (`MasterFeedWindow`). -->
+    <springProperty name="MASTER_LOG" source="logging.master.name" defaultValue="jagt-master.log"/>
     <appender name="MASTER" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <encoder>
             <pattern>%gray(%d{HH:mm:ss}) %highlight(%msg) %kvp%n</pattern>
         </encoder>
-        <file>jagt-master.log</file>
+        <file>${MASTER_LOG}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>jagt-master.log.%i</fileNamePattern>
+            <fileNamePattern>${MASTER_LOG}.%i</fileNamePattern>
             <minIndex>1</minIndex>
             <maxIndex>1</maxIndex>
         </rollingPolicy>

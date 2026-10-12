@@ -44,6 +44,24 @@ class LogFileResetTest {
     }
 
     @Test
+    void clearsTheMasterFeedAsWellAsTheMainLog(@TempDir Path root) throws IOException {
+        Path feed = root.resolve("master.log");
+        Files.writeString(feed, "yesterday's steps\n");
+        int freePort;
+        try (ServerSocket probe = new ServerSocket()) {
+            probe.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0));
+            freePort = probe.getLocalPort();
+        }
+
+        new LogFileReset().apply(new MockEnvironment()
+                .withProperty("logging.file.name", root.resolve("jagt.log").toString())
+                .withProperty("logging.master.name", feed.toString())
+                .withProperty("server.port", String.valueOf(freePort)));
+
+        assertThat(feed).doesNotExist();
+    }
+
+    @Test
     void leavesTheLogOfAJagtThatIsStillListeningAlone(@TempDir Path root) throws Exception {
         Path log = root.resolve("jagt.log");
         Files.writeString(log, "the running instance's own record\n");

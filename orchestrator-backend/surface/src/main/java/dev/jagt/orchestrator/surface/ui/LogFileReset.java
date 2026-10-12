@@ -28,8 +28,11 @@ public class LogFileReset implements ApplicationListener<ApplicationEnvironmentP
 
     /** @return whether this run cleared the log; false means it deliberately left the file alone. */
     boolean apply(ConfigurableEnvironment environment) {
-        String configured = environment.getProperty("logging.file.name", "");
-        if (configured.isBlank()) {
+        List<String> configured = Stream.of("logging.file.name", "logging.master.name")
+                .map(key -> environment.getProperty(key, ""))
+                .filter(name -> !name.isBlank())
+                .toList();
+        if (configured.isEmpty()) {
             return false;
         }
         // Another jagt already holds the file open: unlinking it leaves that appender writing to a path
@@ -37,7 +40,7 @@ public class LogFileReset implements ApplicationListener<ApplicationEnvironmentP
         if (portTaken(environment.getProperty("server.port", "8290"))) {
             return false;
         }
-        start(Path.of(configured));
+        configured.forEach(name -> start(Path.of(name)));
         return true;
     }
 

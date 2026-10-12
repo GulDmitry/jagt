@@ -133,8 +133,13 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
                     String pruned = prune.apply(xml);
                     if (!pruned.equals(xml)) {
                         Path tmp = recent.resolveSibling(recent.getFileName() + ".jagt.tmp");
-                        Files.writeString(tmp, pruned);
-                        Files.move(tmp, recent, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                        try {
+                            Files.writeString(tmp, pruned);
+                            Files.move(tmp, recent, StandardCopyOption.REPLACE_EXISTING,
+                                    StandardCopyOption.ATOMIC_MOVE);
+                        } finally {
+                            Files.deleteIfExists(tmp);
+                        }
                         log.atInfo().setMessage("jetbrains recent projects pruned")
                                 .addKeyValue("file", recent)
                                 .log();

@@ -188,6 +188,23 @@ class StateServiceTest {
     }
 
     @Test
+    void leavesNoStagedCopyBehindWhenTheStateFileCannotBeReplaced(@TempDir Path root) throws IOException {
+        Path stateFile = Files.createDirectories(root.resolve("state.json"));
+        Files.writeString(stateFile.resolve("occupant"), "");
+        Files.writeString(Files.createDirectories(root.resolve("state.json.corrupt")).resolve("occupant"), "");
+        Files.writeString(root.resolve("state.json.bak"), "{\"tasks\":{}}");
+        StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
+                .withRoot(root.toString()).withStateFile(stateFile.toString())));
+
+        assertThatThrownBy(() -> state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).build()))
+                .isInstanceOf(UncheckedIOException.class);
+        try (var left = Files.list(root)) {
+            assertThat(left).map(path -> path.getFileName().toString())
+                    .containsExactlyInAnyOrder("state.json", "state.json.bak", "state.json.corrupt");
+        }
+    }
+
+    @Test
     void answersFromTheLastParseWhileTheFileOnDiskHasNotMoved(@TempDir Path root) throws IOException {
         Path stateFile = root.resolve("state.json");
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()

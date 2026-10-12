@@ -150,18 +150,28 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         if (cwd == null || cwd.isBlank()) {
             return Optional.empty();
         }
-        Path callerPath = canonical(Path.of(cwd));
-        return tasks().entrySet().stream()
-                .filter(e -> e.getValue().repos().stream().anyMatch(repo -> holds(repo, callerPath)))
+        Map<String, TaskState> tasks = tasks();
+        // Resolving every worktree on disk costs a walk per path; most callers match without it.
+        return holder(tasks, lexical(Path.of(cwd)), StateService::lexical)
+                .or(() -> holder(tasks, canonical(Path.of(cwd)), StateService::canonical));
+    }
+
+    private static Optional<Map.Entry<String, TaskState>> holder(Map<String, TaskState> tasks, Path callerPath,
+                                                                 UnaryOperator<Path> resolve) {
+        return tasks.entrySet().stream()
+                .filter(e -> e.getValue().repos().stream().anyMatch(repo -> holds(repo, callerPath, resolve)))
                 .findFirst();
     }
 
-    private static boolean holds(TaskRepo repo, Path callerPath) {
+    private static boolean holds(TaskRepo repo, Path callerPath, UnaryOperator<Path> resolve) {
         if (repo.worktreePath() == null || repo.worktreePath().isBlank()) {
             return false;
         }
-        Path worktree = canonical(Path.of(repo.worktreePath()));
-        return callerPath.equals(worktree) || callerPath.startsWith(worktree);
+        return callerPath.startsWith(resolve.apply(Path.of(repo.worktreePath())));
+    }
+
+    private static Path lexical(Path path) {
+        return path.toAbsolutePath().normalize();
     }
 
     /**
@@ -336,17 +346,35 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     private void writeUnlocked(StateFile state) {
+        String json = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(state);
         backUpCurrentVersion();
+        Path temp = null;
         try {
-            Path temp = Files.createTempFile(stateFile.getParent(), "state", ".json.tmp");
-            Files.writeString(temp, mapper.writerWithDefaultPrettyPrinter().writeValueAsString(state));
+            temp = Files.createTempFile(stateFile.getParent(), "state", ".json.tmp");
+            Files.writeString(temp, json);
             Files.move(temp, stateFile, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             cache(null, null);
             throw new UncheckedIOException("Cannot write state file " + stateFile, e);
+        } finally {
+            discard(temp);
         }
         // Own writes never rely on the version key: two within one filesystem timestamp tick are the same by it.
         cache(state, versionOnDisk());
+    }
+
+    private static void discard(@Nullable Path temp) {
+        if (temp == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(temp);
+        } catch (IOException e) {
+            log.atWarn().setMessage("staged state left behind")
+                    .addKeyValue("file", temp)
+                    .addKeyValue("cause", e.toString())
+                    .log();
+        }
     }
 
     /** Best-effort: a failed backup must not stop the write — the live file matters more than its copy. */
