@@ -75,7 +75,7 @@ public interface AgentRuntime {
         return Optional.empty();
     }
 
-    /** Whether {@link #humanSaid} can answer at all: a Master reading without it would stop every round. */
+    /** Whether {@link #humanSaid} can answer at all. */
     default boolean readsWhatTheHumanTyped() {
         return false;
     }

@@ -7,7 +7,6 @@
 - The `sob-ai:commenting` gate deletes on sight: narration of what the code does; an argument that a change
   is correct; how the code got this way; a fact whose source of truth is elsewhere.
 - **A situation is a scenario in its spec** (`openspec/specs/`): "the request does not target the base branch → …".
-- No real ticket number or abbreviation either; tests use invented `ABC-N` ids.
 - The one exception to English is functional: `KittyTerminalDriver`'s ЙЦУКЕН keymap (`map=cmd+м …`).
 - **A form field explains itself with a placeholder**, never a paragraph beside its button; the `*-state`
   spans are progress and verdict slots and start **empty**.
@@ -45,20 +44,22 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 
 - **The test is the litmus of the production code**: ~5+ objects of setup or high cognitive load means the
   smell is in the **production code** (`sob-ai:unit-testing` §5) — fix the code, never the fixture.
+- **A unit knows what it needs, never who uses it**, a comment included. `RingsTest` fails an inner module
+  naming an outer type, review a caller named as a concept.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).
 - **Lombok carries the mechanical boilerplate and nothing else**: `@RequiredArgsConstructor`, `@Slf4j`,
-  `@With` for a record's positional copy-withers (1.18.48: `@With` and `@Builder` work on records under Java 25).
+  `@With` for a record's positional copy-withers (`@With` and `@Builder` work on records).
   By hand when not mechanical: `OrchestratorPaths`' validating constructor, `TaskState.withStatus` stamping history,
   `TaskState.builder(project, worktree, status)`.
 - **What may be null is `@Nullable`**, all else not: NullAway fails the build
   ([0034](../decisions/0034-null-is-declared-and-the-compiler-checks-it.md)).
-- The self-control loop, on every code + test change: changed tests through `sob-ai:unit-testing`, refactor
-  the production code until they are light, re-run. Deliver only light, green **and** reviewed.
+- On every code + test change: tests through `sob-ai:unit-testing`, the production code refactored until they
+  are light. Deliver only light, green **and** reviewed.
 
 ## Code review is mandatory after every code change, before committing
 
-State the scope and a **level** every time; the last one typed is remembered. Stay at `medium` unless the
+State the scope and a **level** every time. Stay at `medium` unless the
 change is genuinely subtle — above it, eight to ten finder subagents plus a verifier each re-read the changed
 files. Re-review if the fixes are non-trivial.
 

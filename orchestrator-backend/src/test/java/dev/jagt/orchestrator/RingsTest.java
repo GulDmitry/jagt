@@ -2,6 +2,7 @@ package dev.jagt.orchestrator;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
@@ -11,9 +12,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RingsTest {
@@ -59,6 +62,19 @@ class RingsTest {
     void theCentreCarriesNoFrameworkAtAll(String ring) {
         assertThat(sources(ring).filter(text -> text.contains("org.springframework")
                 || text.contains("lombok"))).isEmpty();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"core, usecase adapter surface .", "usecase, adapter surface ."})
+    void aModuleNamesNoTypeOfTheModulesAroundItEvenInAComment(String inner, String outer) {
+        Set<String> outerTypes = Stream.of(outer.split(" "))
+                .flatMap(module -> javaFilesUnder(Path.of(module, "src/main/java")))
+                .map(path -> path.getFileName().toString().replace(".java", "")).collect(toSet());
+
+        assertThat(javaFilesUnder(Path.of(inner, "src/main/java"))
+                .filter(path -> Pattern.compile("\\b[A-Z]\\w+").matcher(read(path)).results()
+                        .map(MatchResult::group).anyMatch(outerTypes::contains))
+                .map(Path::getFileName)).isEmpty();
     }
 
     @Test

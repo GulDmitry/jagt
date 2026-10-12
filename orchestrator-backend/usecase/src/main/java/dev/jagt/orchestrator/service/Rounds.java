@@ -7,7 +7,7 @@ import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-/** What a task's last round left behind, one answer for the board and the ping alike. */
+/** What a task's last round left behind. */
 @Component
 @RequiredArgsConstructor
 public class Rounds {

@@ -177,7 +177,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         }
     }
 
-    /** A task per line, carrying what an agent acts on: its history and spend are the board's, not a prompt's. */
+    /** A task per line, without its history or spend. */
     public String listing() {
         String listing = tasks().entrySet().stream().map(entry -> listed(entry.getKey(), entry.getValue()))
                 .collect(Collectors.joining("\n"));

@@ -3,10 +3,10 @@
 [← AGENTS.md](../../AGENTS.md)
 
 One file per ARCHITECTURAL decision — jagt's rings and seams, where state lives, how sessions run, what owns a
-move: costly to reverse, or one a newcomer would undo as wrong. Never a feature's rule or parameter.
+move: costly to reverse, or one a newcomer would undo. Never a feature's rule or parameter.
 The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence and alternatives.
 
-- Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
+- Named `NNNN-what-is-decided.md`, never renumbered.
 - **Never edited once accepted**, typos aside: a change is a new record, marking the old `superseded by NNNN`.
 - Sections: **Status** (date, state), **Context** (what forced it, with numbers),
   **Decision**, **Rejected** (each with its reason), **Reopen when** (what measurement changes it).
@@ -50,3 +50,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0032 — Reviews keep decisions](0032-a-global-review-is-judged-against-what-is-decided.md)
 - [0033 — Usage via login](0033-jagt-reads-the-clis-own-login-for-usage-and-keeps-none.md)
 - [0034 — Null declared](0034-null-is-declared-and-the-compiler-checks-it.md)
+- [0035 — Callerless units](0035-a-unit-never-names-who-uses-it.md)

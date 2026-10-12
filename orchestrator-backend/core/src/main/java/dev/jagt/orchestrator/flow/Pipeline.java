@@ -53,8 +53,7 @@ public enum Pipeline {
                 || said.contains("progress") || said.contains("created") || said.contains("waiting")) {
             return RUNNING;
         }
-        // No host words it: an empty pipeline list is what "no checks" looks like on the wire, and the read that
-        // saw that list is the only caller that can say so.
+        // No host words it: "none" is jagt's own spelling of an empty pipeline list.
         if (said.contains("none")) {
             return NONE;
         }

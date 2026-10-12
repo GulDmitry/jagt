@@ -3,8 +3,13 @@
 Local orchestration of AI coding-agent CLI sessions across isolated Git worktrees. Java 25 / Spring Boot 4.x,
 macOS-first, every OS- and agent-specific piece behind a strategy interface. **This file is `AGENTS.md`**,
 `CLAUDE.md` a symlink to it, and nothing here is named after one vendor. Every CLI reads it and reaches the same
-MCP server; a root session presents jagt's Master token, so every one is Master. Which file each CLI reads it
-through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-jagt-reads-the-same-file-and-reaches-the-same-server).
+MCP server; a root session presents jagt's Master token, so every one is Master. Each CLI's file:
+[`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-jagt-reads-the-same-file-and-reaches-the-same-server).
+
+## First priority
+
+**One source of truth, no leaking abstraction, composition pinned by small tests**, above all. A unit knows
+what it needs, never who uses it: it names no caller, surface or feature, a comment included (`RingsTest`).
 
 ## Where things are written down
 
@@ -20,8 +25,7 @@ through: [`docs/rules/components.md`](docs/rules/components.md#whoever-works-on-
 | [`docs/roadmap.md`](docs/roadmap.md) | where jagt grows next, in order, and what no step may break |
 | [`docs/decisions/`](docs/decisions/README.md) | why an architectural decision holds: its evidence, what reopens it |
 
-A decided decision is no TODO: it lives in the code, these files and git history. **An architectural one gets its
-`docs/decisions/` record in the commit taking it.** **A behaviour change carries its
+**An architectural decision gets its `docs/decisions/` record in the commit taking it.** **A behaviour change carries its
 `openspec/changes/<task>/`** ([`spec-changes`](openspec/specs/spec-changes/spec.md)).
 
 ## Read before you change
@@ -72,7 +76,6 @@ A decided decision is no TODO: it lives in the code, these files and git history
 - **A capability the board cannot express is a bug**: per-task verbs from `Move.actions()`, global from `GlobalCommand` beans; no surface has a list.
 - **No GUI or keystroke automation, ever.** Keystrokes land in whatever is focused.
 - No positional null-soup: value records get `defaults()` + `withX` withers or a builder.
-- Lombok carries the mechanical boilerplate only.
 
 ## Interfaces
 
@@ -99,10 +102,9 @@ A decided decision is no TODO: it lives in the code, these files and git history
 
 - **Write less than feels complete.** Delete every sentence that explains, argues, reassures or names the
   option you rejected — `docs/decisions/` alone keeps it. Load `sob-ai:commenting` before writing a comment.
-- **One fact per line**: a decision plus one clause of why, never the road to it nor what it used to be. It
-  holds in comments, docs, prompts, output and commit messages alike.
+- **One fact per line**, in every text: a decision plus one clause of why, never the road to it nor what it used to be.
 - **Comments default to none**: one non-obvious WHY at most, never in a test; a multi-line javadoc only for a `core/port` contract.
-- **Never cite a line number or a line count** in a doc or a comment — wrong at the next edit; name the file, the symbol or the rule.
+- **Never cite a line number or a line count** in a doc or a comment; name the file, the symbol or the rule.
 - **Budgets, asserted by `TextBudgetTest`**: a `docs/rules/` file ≤ 700 words, a guide or spec ≤ 1200, no line over 220
   characters, comments ≤ 15% of main sources. Counted in WORDS — a paragraph folded into a table cell is the
   same paragraph. Over budget means cut text; raising a number is the owner's call.
