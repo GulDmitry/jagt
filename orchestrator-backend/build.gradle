@@ -120,8 +120,9 @@ tasks.register('stageJar') {
     description = 'Stages build/libs/jagt-run-<stamp>.jar and points jagt-run.jar at it — run THAT.'
     group = 'application'
     dependsOn tasks.named('bootJar')
+    def libsDir = layout.buildDirectory.dir('libs')
     doLast {
-        def libs = layout.buildDirectory.dir('libs').get().asFile.toPath()
+        def libs = libsDir.get().asFile.toPath()
         def built = libs.resolve('jagt.jar')
         def stamp = new java.text.SimpleDateFormat('yyyyMMdd-HHmmss').format(new Date())
         def staged = libs.resolve("jagt-run-${stamp}.jar")
@@ -218,7 +219,7 @@ tasks.register('linuxDriverTest', Test) {
     classpath = sourceSets.linuxTest.runtimeClasspath
     useJUnitPlatform()
     // Gated on CAPABILITY, never on which harness is running it, and it names what is missing.
-    onlyIf {
+    onlyIf { task ->
         List<String> missing = []
         if (!System.getProperty('os.name').toLowerCase().contains('linux')) {
             missing << 'Linux'
@@ -233,7 +234,7 @@ tasks.register('linuxDriverTest', Test) {
             missing << 'DISPLAY (start it with scripts/with-linux-desktop.sh)'
         }
         if (missing) {
-            logger.lifecycle("Skipping linuxDriverTest — missing: ${missing.join(', ')}."
+            task.logger.lifecycle("Skipping linuxDriverTest — missing: ${missing.join(', ')}."
                     + " On a Mac: scripts/linux-suite.sh runs it in a container.")
         }
         missing.isEmpty()
@@ -281,7 +282,8 @@ tasks.register('masterEval', Test) {
         }
     }
     // Gated on CAPABILITY, and it names what is missing rather than failing every round on it.
-    onlyIf {
+    def brief = file('../master-brief.md.dist')
+    onlyIf { task ->
         List<String> missing = []
         ['claude', 'tmux', 'git'].each { binary ->
             if (!(System.getenv('PATH') ?: '').split(File.pathSeparator)
@@ -289,11 +291,11 @@ tasks.register('masterEval', Test) {
                 missing << binary
             }
         }
-        if (!file('../master-brief.md.dist').exists()) {
+        if (!brief.exists()) {
             missing << 'master-brief.md.dist'
         }
         if (missing) {
-            logger.lifecycle("Skipping masterEval — missing: ${missing.join(', ')}.")
+            task.logger.lifecycle("Skipping masterEval — missing: ${missing.join(', ')}.")
         }
         missing.isEmpty()
     }
@@ -307,11 +309,11 @@ tasks.register('promptEval', Test) {
     classpath = sourceSets.promptEval.runtimeClasspath
     useJUnitPlatform()
     // Gated on the binary that answers, and it names what is missing rather than failing every row on it.
-    onlyIf {
+    onlyIf { task ->
         boolean present = (System.getenv('PATH') ?: '').split(File.pathSeparator)
                 .any { dir -> dir && new File(dir, 'claude').canExecute() }
         if (!present) {
-            logger.lifecycle('Skipping promptEval — no `claude` on PATH; the rows are answered by the'
+            task.logger.lifecycle('Skipping promptEval — no `claude` on PATH; the rows are answered by the'
                     + ' assistant configured in jagt.yml, through its own CLI.')
         }
         present
