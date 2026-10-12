@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.StartupCheck;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +52,7 @@ public class PlatformCheck implements StartupCheck {
         return platform == null || platform.isBlank() ? "macos" : platform.toLowerCase(Locale.ROOT);
     }
 
-    private String running() {
+    private @Nullable String running() {
         String name = osName.toLowerCase(Locale.ROOT);
         if (name.contains("linux")) {
             return "linux";

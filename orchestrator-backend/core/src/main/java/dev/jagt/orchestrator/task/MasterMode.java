@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -27,7 +29,7 @@ public enum MasterMode {
     }
 
     /** Empty where the word is not one of these; a caller refuses rather than guessing which was meant. */
-    public static Optional<MasterMode> of(String mode) {
+    public static Optional<MasterMode> of(@Nullable String mode) {
         return mode == null || mode.isBlank()
                 ? Optional.of(JUDGE)
                 : Arrays.stream(values()).filter(value -> value.id().equals(mode.strip().toLowerCase(Locale.ROOT)))

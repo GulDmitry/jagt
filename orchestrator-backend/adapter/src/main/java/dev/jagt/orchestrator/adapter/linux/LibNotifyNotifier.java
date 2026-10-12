@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.List;
@@ -45,7 +46,7 @@ public class LibNotifyNotifier implements UserNotifier, StartupCheck {
     /** The link is dropped: {@code --action} is the only click mechanism, and it needs the process to stay alive
      *  waiting for the daemon to answer. */
     @Override
-    public void notify(String title, String message, String link) {
+    public void notify(String title, String message, @Nullable String link) {
         try {
             processRunner.run(null, TIMEOUT, command(notifySendCommand, title, message))
                     .expectSuccess("notify-send");

@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import lombok.With;
+import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
 import dev.jagt.orchestrator.port.AgentRuntime;
@@ -43,20 +44,22 @@ public class ConfigService {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @With
-    public record ConfigFile(Map<String, ProjectConfig> projects, ViewerConfig viewer,
-                             CodeReviewConfig codeReview, AgentConfig agent, WorktreeConfig worktree,
-                             AutoReviewConfig autoReview, MasterConfig master, TrackerConfig tracker) {
+    public record ConfigFile(Map<String, ProjectConfig> projects, @Nullable ViewerConfig viewer,
+                             @Nullable CodeReviewConfig codeReview, @Nullable AgentConfig agent,
+                             @Nullable WorktreeConfig worktree, @Nullable AutoReviewConfig autoReview,
+                             @Nullable MasterConfig master, @Nullable TrackerConfig tracker) {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record ViewerConfig(String tmuxSession, String viewMode, Boolean keepViewer) {
+        public record ViewerConfig(@Nullable String tmuxSession, @Nullable String viewMode,
+                                   @Nullable Boolean keepViewer) {
 
             public static ViewerConfig defaults() {
                 return new ViewerConfig(null, null, null);
             }
 
             /** The session the viewer attaches to, as written; the session host names a blank one. */
-            public String session() {
+            public @Nullable String session() {
                 return tmuxSession;
             }
 
@@ -71,8 +74,8 @@ public class ConfigService {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record CodeReviewConfig(String mrTitlePattern, Boolean postReviewReplies,
-                                       List<String> reviewReplyAuthors) {
+        public record CodeReviewConfig(@Nullable String mrTitlePattern, @Nullable Boolean postReviewReplies,
+                                       @Nullable List<String> reviewReplyAuthors) {
 
             public static CodeReviewConfig defaults() {
                 return new CodeReviewConfig(null, null, null);
@@ -103,14 +106,14 @@ public class ConfigService {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record AgentConfig(String outputStyle, Integer probeSeconds) {
+        public record AgentConfig(@Nullable String outputStyle, @Nullable Integer probeSeconds) {
 
             public static AgentConfig defaults() {
                 return new AgentConfig(null, null);
             }
 
             /** Null: nothing is written and the agent resolves its own style. */
-            public String outputStyleOrNull() {
+            public @Nullable String outputStyleOrNull() {
                 return outputStyle == null || outputStyle.isBlank() ? null : outputStyle.strip();
             }
 
@@ -126,8 +129,8 @@ public class ConfigService {
          */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record MasterConfig(String mode, String brief, String model, List<String> mine,
-                                   List<String> withhold) {
+        public record MasterConfig(@Nullable String mode, @Nullable String brief, @Nullable String model,
+                                   @Nullable List<String> mine, @Nullable List<String> withhold) {
 
             /** Copied from `master-brief.md.dist`, beside `jagt.yml`, and not versioned. */
             private static final String BRIEF = "master-brief.md";
@@ -176,8 +179,9 @@ public class ConfigService {
         /** The numbers only; {@code AutoReviewCadence} is the policy that reads them. */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record AutoReviewConfig(Boolean enabled, Integer windowHours, Integer minIntervalMinutes,
-                                       Integer maxIntervalMinutes) {
+        public record AutoReviewConfig(@Nullable Boolean enabled, @Nullable Integer windowHours,
+                                       @Nullable Integer minIntervalMinutes,
+                                       @Nullable Integer maxIntervalMinutes) {
 
             public static AutoReviewConfig defaults() {
                 return new AutoReviewConfig(null, null, null, null);
@@ -206,7 +210,7 @@ public class ConfigService {
 
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record WorktreeConfig(List<String> copyGlobs) {
+        public record WorktreeConfig(@Nullable List<String> copyGlobs) {
 
             public static WorktreeConfig defaults() {
                 return new WorktreeConfig(null);
@@ -226,11 +230,13 @@ public class ConfigService {
          */
         @JsonIgnoreProperties(ignoreUnknown = true)
         @With
-        public record TrackerConfig(String mode, String workflow, String assignee, String startStatus,
-                                    String doneStatus, Integer everyMinutes, List<String> projects) {
+        public record TrackerConfig(@Nullable String mode, @Nullable String workflow, @Nullable String assignee,
+                                    @Nullable String startStatus, @Nullable String doneStatus,
+                                    @Nullable Integer everyMinutes, @Nullable List<String> projects) {
 
-            public TrackerConfig(String mode, String workflow, String assignee, String startStatus,
-                                 String doneStatus, Integer everyMinutes) {
+            public TrackerConfig(@Nullable String mode, @Nullable String workflow, @Nullable String assignee,
+                                 @Nullable String startStatus, @Nullable String doneStatus,
+                                 @Nullable Integer everyMinutes) {
                 this(mode, workflow, assignee, startStatus, doneStatus, everyMinutes, null);
             }
 
@@ -274,7 +280,7 @@ public class ConfigService {
                 return List.copyOf(blank);
             }
 
-            private static boolean blank(String value) {
+            private static boolean blank(@Nullable String value) {
                 return value == null || value.isBlank();
             }
         }
@@ -352,7 +358,7 @@ public class ConfigService {
                 : Set.of();
     }
 
-    private Object section() {
+    private @Nullable Object section() {
         Path file = paths.configFile();
         if (!Files.exists(file)) {
             throw new IllegalStateException("Missing " + file

@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -55,7 +56,7 @@ public class Verification {
     }
 
     /** A project the configuration no longer names runs nothing, rather than failing the report that asks. */
-    static List<String> command(ProjectConfig project) {
+    static List<String> command(@Nullable ProjectConfig project) {
         return project == null || project.verifyCommand() == null ? List.of() : project.verifyCommand();
     }
 

@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskState;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * The one contextual line under a task — empty whenever the status and the next move already answer, so a
  * surface must expect nothing to render. Never the agent's own status chatter ("tests green"): what it says
@@ -21,7 +23,7 @@ public final class DashboardLine {
     private DashboardLine() {
     }
 
-    public static Line forTask(TaskState task, String usableRequestLink) {
+    public static Line forTask(TaskState task, @Nullable String usableRequestLink) {
         String message = task.message();
         AgentReport report = AgentReport.of(message);
         // A question OUTRANKS every other line and is reachable from every status — an agent may ask without
@@ -50,7 +52,7 @@ public final class DashboardLine {
      * A request every surface links from needs no line of its own; one nothing can link to does. Only a web URL
      * can be followed, so a stored value that is not one leaves the task with a request and no way to reach it.
      */
-    private static Line requestProblem(TaskState task, String usableRequestLink) {
+    private static Line requestProblem(TaskState task, @Nullable String usableRequestLink) {
         if (!hasMr(task)) {
             return Line.NONE;
         }
@@ -74,7 +76,7 @@ public final class DashboardLine {
         return new Line(Kind.YOURS, "NEEDS YOU: agent stopped: " + because);
     }
 
-    private static Line needsInput(String message) {
+    private static Line needsInput(@Nullable String message) {
         return new Line(Kind.YOURS,
                 "NEEDS INPUT: " + orDefault(AgentReport.QUESTION.detailOf(message), "the agent is waiting on you"));
     }
@@ -87,7 +89,7 @@ public final class DashboardLine {
         return task.mrUrl() != null && !task.mrUrl().isBlank();
     }
 
-    private static String orDefault(String value, String fallback) {
+    private static String orDefault(@Nullable String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
     }
 }

@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.protocol;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -9,11 +11,11 @@ final class Wire {
     private Wire() {
     }
 
-    static boolean blank(String value) {
+    static boolean blank(@Nullable String value) {
         return value == null || value.isBlank();
     }
 
-    static String absent(String value) {
+    static @Nullable String absent(@Nullable String value) {
         return blank(value) ? null : value;
     }
 

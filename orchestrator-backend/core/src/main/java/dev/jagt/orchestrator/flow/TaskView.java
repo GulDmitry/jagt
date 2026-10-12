@@ -6,6 +6,8 @@ import dev.jagt.orchestrator.task.AutoReviewWatch;
 import dev.jagt.orchestrator.task.StatusChange;
 import dev.jagt.orchestrator.task.TaskState;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +18,9 @@ import java.util.Map;
  */
 public record TaskView(
         String id,
-        String alias,
-        String project,
-        String title,
+        @Nullable String alias,
+        @Nullable String project,
+        @Nullable String title,
         TaskStatus status,
         // The same status in words a human needs no glossary for; the enum name stays the wire value.
         String statusLabel,
@@ -27,15 +29,15 @@ public record TaskView(
         // How loudly it asks: what the header counts and what the own-move filter keeps.
         Attention attention,
         // WHICH act is wanted, short enough for a chip; null exactly when the tier above is NONE.
-        String ask,
+        @Nullable String ask,
         String hint,
         List<ActionView> actions,
         // Keyed by action id for every verb asked before it is sent, offered on this card or not.
         Map<String, String> confirmations,
         String detail,
         DashboardLine.Kind detailKind,
-        String ticketUrl,
-        String reviewRequestUrl,
+        @Nullable String ticketUrl,
+        @Nullable String reviewRequestUrl,
         // A single-repo task has one entry, so nothing needs a second shape for the ordinary case.
         List<RepoView> repos,
         // Since when it has been in THIS status — not the activity stamp a keep-alive bumps.
@@ -50,11 +52,11 @@ public record TaskView(
         AutoReviewWatch autoReview,
         // `pipeline` is the verdict anything decides on; `pipelineSaid` is the host's own wording, for display.
         Pipeline pipeline,
-        String pipelineSaid,
+        @Nullable String pipelineSaid,
         // Whether the newest round could not read them, so the verdict above is an older round's.
         boolean pipelineUnread,
         // Whether the request is approved; null until a read has said. No status can answer this.
-        Boolean approved
+        @Nullable Boolean approved
 ) {
 
     /** {@code again} = this verb has already run and what it did is still live, so pressing it repeats it. */
@@ -62,7 +64,7 @@ public record TaskView(
                             boolean readOnly, boolean again) {
     }
 
-    public record RepoView(String project, String reviewRequestUrl) {
+    public record RepoView(@Nullable String project, @Nullable String reviewRequestUrl) {
     }
 
     public static TaskView of(String id, TaskState task, boolean draftedReplies, AutoReviewWatch autoReview,
@@ -116,7 +118,7 @@ public record TaskView(
      * A link a page can put in an {@code href}, or nothing. Neither URL is jagt's own, so a {@code javascript:} or
      * {@code data:} URL would run on the page that renders it; anything but http(s) is dropped, not escaped.
      */
-    private static String webLink(String url) {
+    private static @Nullable String webLink(@Nullable String url) {
         if (url == null) {
             return null;
         }

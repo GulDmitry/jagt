@@ -13,6 +13,7 @@ import dev.jagt.orchestrator.service.WorktreeHooks;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -47,12 +48,12 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     @Override
-    public String sessionName(String configured) {
+    public String sessionName(@Nullable String configured) {
         return configured == null || configured.isBlank() ? "jagt" : configured;
     }
 
     @Override
-    public void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias,
+    public void openTaskWindow(String session, String dedicatedTitle, String taskId, @Nullable String alias,
                                Path worktreePath, boolean planMode, String model) {
         taskWindow(session, dedicatedTitle, taskId, alias, worktreePath, model.isBlank()
                 ? agentRuntime.launchCommand(worktreePath, planMode)
@@ -60,13 +61,13 @@ public class TmuxSessionHost implements SessionHost {
     }
 
     @Override
-    public void reviveTaskWindow(String session, String dedicatedTitle, String taskId, String alias,
+    public void reviveTaskWindow(String session, String dedicatedTitle, String taskId, @Nullable String alias,
                                  Path worktreePath) {
         taskWindow(session, dedicatedTitle, taskId, alias, worktreePath,
                 agentRuntime.reviveCommand(worktreePath));
     }
 
-    private void taskWindow(String session, String dedicatedTitle, String taskId, String alias,
+    private void taskWindow(String session, String dedicatedTitle, String taskId, @Nullable String alias,
                             Path worktreePath, String command) {
         synchronized (lock) {
             ensureSession(session);

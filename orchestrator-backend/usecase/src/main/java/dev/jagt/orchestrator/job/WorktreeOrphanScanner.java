@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -50,7 +51,7 @@ public class WorktreeOrphanScanner implements Job {
     }
 
     @Override
-    public Duration every() {
+    public @Nullable Duration every() {
         return null;
     }
 

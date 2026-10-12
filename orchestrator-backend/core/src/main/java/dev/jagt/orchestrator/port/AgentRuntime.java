@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.port;
 
+import org.jspecify.annotations.Nullable;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -30,7 +32,7 @@ public interface AgentRuntime {
      * The same session started on a brief of its own rather than on the sub-agent bootstrap. A runtime that
      * cannot be told what to start on falls back to that bootstrap, which is wrong for a session owning no task.
      */
-    default String launchCommand(Path worktree, boolean planMode, String model, String prompt) {
+    default String launchCommand(Path worktree, boolean planMode, String model, @Nullable String prompt) {
         return launchCommand(worktree, planMode, model);
     }
 

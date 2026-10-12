@@ -48,10 +48,11 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).
 - **Lombok carries the mechanical boilerplate and nothing else**: `@RequiredArgsConstructor`, `@Slf4j`,
-  `@With` for a record's positional copy-withers (1.18.46 supports `@With` **and** `@Builder` on records
-  under the Java 25 toolchain). By hand where the code is not mechanical:
-  `OrchestratorPaths`' validating constructor, `TaskState.withStatus` stamping history,
+  `@With` for a record's positional copy-withers (1.18.46: `@With` and `@Builder` work on records under Java 25).
+  By hand when not mechanical: `OrchestratorPaths`' validating constructor, `TaskState.withStatus` stamping history,
   `TaskState.builder(project, worktree, status)`.
+- **What may be null is `@Nullable`**, all else not: NullAway fails the build
+  ([0034](../decisions/0034-null-is-declared-and-the-compiler-checks-it.md)).
 - The self-control loop, on every code + test change: changed tests through `sob-ai:unit-testing`, refactor
   the production code until they are light, re-run. Deliver only light, green **and** reviewed.
 

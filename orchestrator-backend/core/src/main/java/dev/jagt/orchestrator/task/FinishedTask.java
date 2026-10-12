@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -15,25 +17,25 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record FinishedTask(
         String id,
-        String alias,
-        String title,
+        @Nullable String alias,
+        @Nullable String title,
         List<String> projects,
-        String ticketUrl,
+        @Nullable String ticketUrl,
         long finishedAt,
         int rounds,
         // The host's last word on the checks, or null if nothing ever read one.
-        String checks,
+        @Nullable String checks,
         long tokens,
         List<StatusChange> history,
         // What the unattended reviewer concluded last, or null where nothing judged this task.
-        String masterVerdict
+        @Nullable String masterVerdict
 ) {
 
     public static FinishedTask of(String id, TaskState task, long finishedAt) {
         return of(id, task, finishedAt, null);
     }
 
-    public static FinishedTask of(String id, TaskState task, long finishedAt, String masterVerdict) {
+    public static FinishedTask of(String id, TaskState task, long finishedAt, @Nullable String masterVerdict) {
         return new FinishedTask(id, task.alias(), task.title(), task.projects(), task.ticketUrl(), finishedAt,
                 task.rounds(), task.pipelineStatus(), task.totalUsage().total(), task.history(), masterVerdict);
     }
@@ -54,7 +56,7 @@ public record FinishedTask(
     }
 
     /** Who opened it, which is who chose its repository; null for a task opened before origins were stamped. */
-    public ActionOrigin openedBy() {
+    public @Nullable ActionOrigin openedBy() {
         return history.isEmpty() ? null : history.get(0).origin();
     }
 

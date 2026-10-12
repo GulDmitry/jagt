@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.service.OneLine;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
@@ -56,7 +57,8 @@ public class ActivityReport {
             return "could not read " + path + ": " + e.getMessage() + "\n";
         }
         // A format switched mid-file must not let yesterday's JSON pass as today's, so the newest line decides.
-        if (newestLine(lines) != null && parse(newestLine(lines)) == null) {
+        String newest = newestLine(lines);
+        if (newest != null && parse(newest) == null) {
             return "log file " + path + " is not structured JSON (logging.structured.format.file), so jagt"
                     + " cannot read its own entries back.\n";
         }
@@ -97,7 +99,7 @@ public class ActivityReport {
         }
     }
 
-    private static String newestLine(List<String> lines) {
+    private static @Nullable String newestLine(List<String> lines) {
         for (int i = lines.size() - 1; i >= 0; i--) {
             if (!lines.get(i).isBlank()) {
                 return lines.get(i);
@@ -132,7 +134,7 @@ public class ActivityReport {
         }
     }
 
-    private JsonNode parse(String line) {
+    private @Nullable JsonNode parse(String line) {
         if (line.isBlank() || line.charAt(0) != '{') {
             return null;
         }
@@ -144,7 +146,7 @@ public class ActivityReport {
     }
 
     /** Null rather than "null": an empty field must not print as one. */
-    private static String text(JsonNode event, String field) {
+    private static @Nullable String text(JsonNode event, String field) {
         JsonNode value = event.get(field);
         if (value == null || value.isNull()) {
             return null;

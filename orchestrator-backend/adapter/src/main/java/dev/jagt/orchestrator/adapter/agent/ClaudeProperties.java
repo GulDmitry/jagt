@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.adapter.agent;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.jspecify.annotations.Nullable;
 
 /** One agent's own settings, under its own key: the generic install config carries no vendor name. */
 @ConfigurationProperties(prefix = "orchestrator.claude")
@@ -11,6 +12,6 @@ public record ClaudeProperties(String command) {
     }
 
     public static ClaudeProperties defaults() {
-        return new ClaudeProperties(null);
+        return new ClaudeProperties("");
     }
 }

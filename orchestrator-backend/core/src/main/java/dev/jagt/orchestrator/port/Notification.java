@@ -1,7 +1,9 @@
 package dev.jagt.orchestrator.port;
 
+import org.jspecify.annotations.Nullable;
+
 /** Something a human must be told, carrying what KIND of thing it is so a channel can route on that. */
-public record Notification(Topic topic, String taskId, String title, String body) {
+public record Notification(Topic topic, @Nullable String taskId, String title, String body) {
 
     /** What the notification is ABOUT. A channel takes or leaves a notification by this, not by its wording. */
     public enum Topic {
@@ -17,7 +19,7 @@ public record Notification(Topic topic, String taskId, String title, String body
         USAGE
     }
 
-    public static Notification fromAgent(String taskId, String title, String body) {
+    public static Notification fromAgent(@Nullable String taskId, String title, String body) {
         return new Notification(Topic.AGENT, taskId, title, body);
     }
 

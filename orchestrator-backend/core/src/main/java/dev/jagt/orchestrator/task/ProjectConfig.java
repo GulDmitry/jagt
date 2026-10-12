@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -12,9 +14,9 @@ public record ProjectConfig(
         String deployBranch,
         List<String> labels,
         // What jagt runs in the worktree before a hand-back reaches a human. Null or empty = nothing is run.
-        List<String> verifyCommand,
+        @Nullable List<String> verifyCommand,
         // One line saying what this repository IS, for placing an item no label places. Blank = its path.
-        String about
+        @Nullable String about
 ) {
 
     private static final Pattern REF_PREFIX = Pattern.compile("^\\+?(refs/heads/|refs/remotes/origin/|origin/)?");
@@ -25,7 +27,7 @@ public record ProjectConfig(
     }
 
     public ProjectConfig(String path, String baseBranch, String deployBranch, List<String> labels,
-                         List<String> verifyCommand) {
+                         @Nullable List<String> verifyCommand) {
         this(path, baseBranch, deployBranch, labels, verifyCommand, null);
     }
 

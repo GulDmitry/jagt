@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.service;
 
 import dev.jagt.orchestrator.port.SubscriptionUsage;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -16,7 +17,7 @@ public class UsageLimits {
     }
 
     private final Optional<SubscriptionUsage> source;
-    private volatile Reading last;
+    private volatile @Nullable Reading last;
 
     public UsageLimits(Optional<SubscriptionUsage> source) {
         this.source = source;

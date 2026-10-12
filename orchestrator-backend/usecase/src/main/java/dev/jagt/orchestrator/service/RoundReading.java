@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -48,7 +49,7 @@ public class RoundReading {
         // One unreadable request fails the WHOLE sweep: half a task's repositories cannot say "green".
         List<ReviewFacts> rounds = new ArrayList<>();
         for (TaskRepo repo : reviewed) {
-            Optional<ReviewFacts> read = reviewReader.read(taskId, repo.mrUrl());
+            Optional<ReviewFacts> read = reviewReader.read(taskId, Objects.requireNonNull(repo.mrUrl()));
             if (read.isEmpty()) {
                 return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,
                         "error: read failed: " + repo.mrUrl() + " (cause in the log)"));
@@ -57,7 +58,7 @@ public class RoundReading {
                 return new Refused(new SweepResult(SweepResult.Kind.UNREADABLE,
                         "error: no such request: " + repo.mrUrl() + " (the host says so)"));
             }
-            rounds.add(reviewed.size() == 1 ? read.get() : named(repo.project(), read.get()));
+            rounds.add(reviewed.size() == 1 ? read.get() : named(Objects.requireNonNull(repo.project()), read.get()));
         }
         return new Round(reviewed.stream().map(TaskRepo::mrUrl).collect(Collectors.joining(", ")), merged(rounds));
     }

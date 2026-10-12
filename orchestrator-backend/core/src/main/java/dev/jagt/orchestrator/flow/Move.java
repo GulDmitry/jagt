@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.AutoReviewWatch;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 
 /**
@@ -11,8 +13,8 @@ import java.util.List;
  * review round end at the same status. WHICH actions are legal is {@link FlowRules}. Liveness is projected as "not
  * live" for the rules: probing per task per render would cost a process spawn.
  */
-public record Move(Phase phase, Owner owner, Attention attention, String ask, List<TaskAction> actions,
-                   TaskAction primary, String hint) {
+public record Move(Phase phase, Owner owner, Attention attention, @Nullable String ask,
+                   List<TaskAction> actions, @Nullable TaskAction primary, String hint) {
 
     public static Move forTask(TaskStatus status, Facts facts, RoundState round, boolean agentSilent) {
         return forTask(status, facts, round, agentSilent, AutoReviewWatch.none());
@@ -76,7 +78,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
      * WHICH act is wanted, in the words a chip has room for; null exactly when {@link Attention} is {@code NONE}.
      * The quiet tier says so in grammar rather than in colour: an imperative interrupts, an offer does not.
      */
-    private static String ask(TaskStatus status, boolean hasReviewRequest, RoundState round, boolean agentSilent,
+    private static @Nullable String ask(TaskStatus status, boolean hasReviewRequest, RoundState round, boolean agentSilent,
                               Attention attention) {
         if (attention == Attention.NONE) {
             return null;
@@ -89,7 +91,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         return attention == Attention.OPTIONAL ? "you can " + act : act;
     }
 
-    private static String act(TaskStatus status, boolean hasReviewRequest, RoundState round,
+    private static @Nullable String act(TaskStatus status, boolean hasReviewRequest, RoundState round,
                               boolean agentSilent) {
         if (asking(status, round)) {
             // A round already back is READ, not answered: the session that asked it has finished the round.
@@ -145,7 +147,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
     }
 
     /** A turn ending on a move still the agent's, with no question put, is a session stopping unannounced. */
-    public static boolean endsUnreported(TaskStatus status, String message) {
+    public static boolean endsUnreported(TaskStatus status, @Nullable String message) {
         return ownerOf(status) == Owner.AGENT && !FlowRules.awaitingVerification(status)
                 && AgentReport.of(message) != AgentReport.QUESTION;
     }
@@ -163,7 +165,7 @@ public record Move(Phase phase, Owner owner, Attention attention, String ask, Li
         };
     }
 
-    private static TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest, RoundState round,
+    private static @Nullable TaskAction primaryOf(TaskStatus status, boolean hasReviewRequest, RoundState round,
                                         boolean polled) {
         // The answer is what unblocks the session, whatever state-changing verb the status would advise.
         if (asking(status, round)) {

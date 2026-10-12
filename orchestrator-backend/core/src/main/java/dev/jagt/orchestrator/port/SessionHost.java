@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.port;
 
+import org.jspecify.annotations.Nullable;
+
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -24,7 +26,7 @@ public interface SessionHost {
     }
 
     /** The session name to use, given whatever the human configured (blank included). */
-    String sessionName(String configured);
+    String sessionName(@Nullable String configured);
 
     /** Why the host cannot address a session by this name, empty where it can. */
     default Optional<String> unaddressable(String name) {
@@ -32,7 +34,7 @@ public interface SessionHost {
     }
 
     /** Starts a task's agent in its own window, replacing any window of the same name; a blank model is the default. */
-    void openTaskWindow(String session, String dedicatedTitle, String taskId, String alias, Path worktreePath,
+    void openTaskWindow(String session, String dedicatedTitle, String taskId, @Nullable String alias, Path worktreePath,
                         boolean planMode, String model);
 
     /**
@@ -40,7 +42,7 @@ public interface SessionHost {
      * keeping what that session knew where the runtime can. A human asking for a restart gets {@link
      * #openTaskWindow} instead.
      */
-    void reviveTaskWindow(String session, String dedicatedTitle, String taskId, String alias, Path worktreePath);
+    void reviveTaskWindow(String session, String dedicatedTitle, String taskId, @Nullable String alias, Path worktreePath);
 
     /** A window following a file as it grows, opened where it is missing and left alone where it is there. */
     void keepFeedWindow(String session, String name, Path file);

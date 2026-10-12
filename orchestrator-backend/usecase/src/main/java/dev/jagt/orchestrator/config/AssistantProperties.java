@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.task.AssistantCallKind;
 import lombok.With;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -9,7 +10,7 @@ import java.util.Map;
 
 @With
 @ConfigurationProperties(prefix = "orchestrator.assistant")
-public record AssistantProperties(String settingSources, String model,
+public record AssistantProperties(String settingSources, @Nullable String model,
                                   List<String> allowedTools, String mcpConfig,
                                   Map<AssistantCallKind, String> mcpConfigByKind) {
 
@@ -32,6 +33,6 @@ public record AssistantProperties(String settingSources, String model,
     }
 
     public static AssistantProperties empty() {
-        return new AssistantProperties(null, null, null, null, null);
+        return new AssistantProperties("", null, List.of(), "", Map.of());
     }
 }

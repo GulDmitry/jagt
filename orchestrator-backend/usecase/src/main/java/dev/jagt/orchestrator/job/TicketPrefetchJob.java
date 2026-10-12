@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.Objects;
 
 /** Read while the session works, so the round it hands back starts with the ticket in every reviewer's prompt. */
 @Service
@@ -41,7 +42,7 @@ public class TicketPrefetchJob implements Job {
         }
         stateService.tasks().forEach((taskId, task) -> {
             if (due(taskId, task)) {
-                tickets.read(taskId, task.ticketUrl(), task.statusSince());
+                tickets.read(taskId, Objects.requireNonNull(task.ticketUrl()), task.statusSince());
             }
         });
     }

@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import org.jspecify.annotations.Nullable;
 import lombok.With;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -14,15 +15,15 @@ import java.util.List;
 @ConfigurationProperties(prefix = "orchestrator")
 @With
 public record OrchestratorProperties(
-        String root,
-        String configFile,
-        String stateFile,
-        String platform,
-        List<String> editorCommand,
-        List<String> editorDiffCommand,
-        String agentPrompt,
-        String agentRevivePrompt,
-        String tmuxCommand,
+        @Nullable String root,
+        @Nullable String configFile,
+        @Nullable String stateFile,
+        @Nullable String platform,
+        @Nullable List<String> editorCommand,
+        @Nullable List<String> editorDiffCommand,
+        @Nullable String agentPrompt,
+        @Nullable String agentRevivePrompt,
+        @Nullable String tmuxCommand,
         boolean openTerminalWindow,
         Watchdog watchdog
 ) {

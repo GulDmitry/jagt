@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
 import dev.jagt.orchestrator.task.TokenUsage;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,7 +32,7 @@ public class TicketPlacement {
     }
 
     /** {@code chosen} is null where no human named a project. */
-    public Outcome place(String ref, Answer<TicketFacts> read, List<String> chosen) {
+    public Outcome place(String ref, Answer<TicketFacts> read, @Nullable List<String> chosen) {
         // Three different answers: one names a missing item, the others a read that never got there.
         if (read.facts().isEmpty()) {
             return new Refused("error: read failed: " + ref + " (cause in the log) — no task created");
@@ -59,7 +60,7 @@ public class TicketPlacement {
     }
 
     /** Only NOW does the task exist, so only now can the read that named it be charged to it. */
-    public void created(String taskId, List<String> chosen, TokenUsage usage) {
+    public void created(String taskId, @Nullable List<String> chosen, TokenUsage usage) {
         // Only where the human named it: their word against a rule is the correction, and the router's own
         // placement contradicts nothing.
         if (chosen != null) {

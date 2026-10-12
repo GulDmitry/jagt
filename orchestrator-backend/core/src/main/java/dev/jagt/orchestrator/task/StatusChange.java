@@ -3,15 +3,17 @@ package dev.jagt.orchestrator.task;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * One step a task actually took, in the order it happened. {@code at} is epoch millis; {@code origin} is null for a
  * step recorded before origins existed.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record StatusChange(TaskStatus status, long at, ActionOrigin origin) {
+public record StatusChange(TaskStatus status, long at, @Nullable ActionOrigin origin) {
 
-    public StatusChange by(ActionOrigin origin) {
+    public StatusChange by(@Nullable ActionOrigin origin) {
         return new StatusChange(status, at, origin);
     }
 }

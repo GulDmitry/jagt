@@ -87,10 +87,11 @@ public class HeadlessClaudeRoundReviewer implements RoundReviewer {
     }
 
     private static Answer<Judgement> judged(HeadlessClaude.Reply reply) {
-        if (!reply.answered()) {
+        JsonNode envelope = reply.envelope();
+        if (envelope == null) {
             return new Answer<>(Optional.of(Judgement.failed("the review failed: " + reply.cause())), reply.usage());
         }
-        JsonNode answer = reply.envelope().path("structured_output");
+        JsonNode answer = envelope.path("structured_output");
         return new Answer<>(Optional.of(answer.isObject() ? judgement(answer)
                 : Judgement.failed("the review answered nothing readable")), reply.usage());
     }

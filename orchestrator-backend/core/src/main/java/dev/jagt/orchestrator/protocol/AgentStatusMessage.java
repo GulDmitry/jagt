@@ -6,10 +6,13 @@ import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.task.TaskStatus;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -21,8 +24,9 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
  * VIOLATION to report back, not an exception on the way in.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record AgentStatusMessage(String status, String message, String outcome, String reviewRequestUrl,
-                                 Map<String, String> reviewRequests, String taskId) implements Message {
+public record AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
+                                 @Nullable String reviewRequestUrl, Map<String, String> reviewRequests,
+                                 @Nullable String taskId) implements Message {
 
     /** The wire spelling of what a report says about a round; absent falls back to a marker in the message. */
     public static final Set<String> OUTCOMES = Set.of("progress", "question", "no_changes");
@@ -70,20 +74,20 @@ public record AgentStatusMessage(String status, String message, String outcome, 
     }
 
     /** The five-field form, for jagt's own reports, which name no task of someone else's. */
-    public AgentStatusMessage(String status, String message, String outcome, String reviewRequestUrl,
-                              Map<String, String> reviewRequests) {
+    public AgentStatusMessage(@Nullable String status, @Nullable String message, @Nullable String outcome,
+                              @Nullable String reviewRequestUrl, Map<String, String> reviewRequests) {
         this(status, message, outcome, reviewRequestUrl, reviewRequests, null);
     }
 
-    public static AgentStatusMessage of(String status, String message) {
-        return new AgentStatusMessage(status, message, null, null, null, null);
+    public static AgentStatusMessage of(@Nullable String status, @Nullable String message) {
+        return new AgentStatusMessage(status, message, null, null, Map.of(), null);
     }
 
-    public AgentStatusMessage withOutcome(String outcome) {
+    public AgentStatusMessage withOutcome(@Nullable String outcome) {
         return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
     }
 
-    public AgentStatusMessage withReviewRequestUrl(String reviewRequestUrl) {
+    public AgentStatusMessage withReviewRequestUrl(@Nullable String reviewRequestUrl) {
         return new AgentStatusMessage(status, message, outcome, reviewRequestUrl, reviewRequests, taskId);
     }
 
@@ -130,7 +134,7 @@ public record AgentStatusMessage(String status, String message, String outcome, 
         if (!violations(context).isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(new Reported(parsedStatus(), claimed(), detail(),
+        return Optional.of(new Reported(Objects.requireNonNull(parsedStatus()), claimed(), detail(),
                 link(context.projectsOnTask()), reviewRequests));
     }
 
@@ -147,12 +151,12 @@ public record AgentStatusMessage(String status, String message, String outcome, 
     }
 
     /** The human's half of the message, with any marker taken off; null stays null. */
-    private String detail() {
+    private @Nullable String detail() {
         return message == null ? null : AgentReport.withoutMarker(message);
     }
 
     /** The status this message names, or null when it names none this machine has. */
-    public TaskStatus parsedStatus() {
+    public @Nullable TaskStatus parsedStatus() {
         if (status == null || status.isBlank()) {
             return null;
         }
@@ -164,9 +168,9 @@ public record AgentStatusMessage(String status, String message, String outcome, 
     }
 
     /** The request this report is about, wherever it was written: the named field, the map, or the message. */
-    private String link(List<String> projectsOnTask) {
+    private @Nullable String link(List<String> projectsOnTask) {
         if (!reviewRequests.isEmpty()) {
-            String sessionRepo = projectsOnTask.isEmpty() ? null : projectsOnTask.get(0);
+            @Nullable String sessionRepo = projectsOnTask.isEmpty() ? null : projectsOnTask.get(0);
             return reviewRequests.getOrDefault(sessionRepo, reviewRequests.values().iterator().next());
         }
         if (reviewRequestUrl != null && !reviewRequestUrl.isBlank()) {

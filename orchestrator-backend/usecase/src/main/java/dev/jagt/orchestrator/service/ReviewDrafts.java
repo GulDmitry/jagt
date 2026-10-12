@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -64,7 +65,7 @@ public class ReviewDrafts {
         }
     }
 
-    private static Path draftsIn(String worktree) {
+    private static @Nullable Path draftsIn(@Nullable String worktree) {
         return worktree == null || worktree.isBlank()
                 ? null
                 : Path.of(worktree).resolve(Artifact.REPLIES.fileName());

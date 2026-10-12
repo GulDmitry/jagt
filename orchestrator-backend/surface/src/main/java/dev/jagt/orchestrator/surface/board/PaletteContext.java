@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.flow.TaskAction;
 import dev.jagt.orchestrator.flow.TaskView;
 import dev.jagt.orchestrator.service.StateService;
@@ -41,7 +42,7 @@ public class PaletteContext {
     }
 
     /** Only a task that EXISTS may be acted on; an id the model invented resolves to nothing and is refused. */
-    String existingTask(String proposed) {
+    @Nullable String existingTask(String proposed) {
         if (proposed == null || proposed.isBlank()) {
             return null;
         }

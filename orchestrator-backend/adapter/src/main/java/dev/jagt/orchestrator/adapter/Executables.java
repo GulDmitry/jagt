@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.adapter;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,12 +33,12 @@ public final class Executables {
     private Executables() {
     }
 
-    public static String resolve(String configured) {
+    public static String resolve(@Nullable String configured) {
         return resolve(configured, System.getenv("PATH"), Executables::isExecutableFile);
     }
 
     /** True when {@link #resolve} found nothing and handed the bare name back. */
-    public static boolean unresolved(String resolved) {
+    public static boolean unresolved(@Nullable String resolved) {
         return resolved == null || resolved.isBlank() || !resolved.contains("/");
     }
 
@@ -45,16 +47,17 @@ public final class Executables {
         return onPath(name, System.getenv("PATH"), Executables::isExecutableFile);
     }
 
-    static boolean onPath(String name, String pathEnv, Predicate<Path> isExecutable) {
+    static boolean onPath(String name, @Nullable String pathEnv, Predicate<Path> isExecutable) {
         return firstMatch(splitPath(pathEnv), name, isExecutable) != null;
     }
 
-    static String resolve(String configured, String pathEnv, Predicate<Path> isExecutable) {
+    static String resolve(@Nullable String configured, @Nullable String pathEnv, Predicate<Path> isExecutable) {
         return resolve(configured, pathEnv, System.getProperty("user.home"), isExecutable,
                 Executables::bundlesIn);
     }
 
-    static String resolve(String configured, String pathEnv, String userHome, Predicate<Path> isExecutable,
+    static String resolve(@Nullable String configured, @Nullable String pathEnv, @Nullable String userHome,
+                          Predicate<Path> isExecutable,
                           Function<Path, List<Path>> bundles) {
         String name = configured == null ? "" : configured.strip();
         if (name.isEmpty()) {
@@ -80,7 +83,7 @@ public final class Executables {
     }
 
     /** Not an {@code if macos}: a system without bundles holds none, and the search costs one listing. */
-    private static String inBundles(String name, String userHome, Predicate<Path> isExecutable,
+    private static @Nullable String inBundles(String name, @Nullable String userHome, Predicate<Path> isExecutable,
                                     Function<Path, List<Path>> bundles) {
         List<Path> appDirs = new ArrayList<>();
         APP_DIRS.forEach(dir -> appDirs.add(Path.of(dir)));
@@ -102,7 +105,7 @@ public final class Executables {
         return null;
     }
 
-    private static List<String> homeBinDirs(String userHome) {
+    private static List<String> homeBinDirs(@Nullable String userHome) {
         if (userHome == null || userHome.isBlank()) {
             return List.of();
         }
@@ -128,7 +131,7 @@ public final class Executables {
         }
     }
 
-    private static String firstMatch(List<String> dirs, String name, Predicate<Path> isExecutable) {
+    private static @Nullable String firstMatch(List<String> dirs, String name, Predicate<Path> isExecutable) {
         for (String dir : dirs) {
             if (dir.isBlank()) {
                 continue;
@@ -141,7 +144,7 @@ public final class Executables {
         return null;
     }
 
-    private static List<String> splitPath(String pathEnv) {
+    private static List<String> splitPath(@Nullable String pathEnv) {
         return pathEnv == null || pathEnv.isBlank() ? List.of() : List.of(pathEnv.split(":"));
     }
 

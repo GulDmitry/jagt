@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Processes;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,13 +25,13 @@ public class ProcessRunner implements Processes {
     private static final Duration LAUNCH_CHECK = Duration.ofMillis(200);
 
     @Override
-    public Result run(Path workingDir, Duration timeout, List<String> command) {
+    public Result run(@Nullable Path workingDir, Duration timeout, List<String> command) {
         return run(workingDir, timeout, Map.of(), command);
     }
 
     /** A GUI launcher's CLI blocks until its window closes, so waiting would time out and destroy that window. */
     @Override
-    public Process runDetached(Path workingDir, List<String> command) {
+    public Process runDetached(@Nullable Path workingDir, List<String> command) {
         try {
             List<String> detached = detachedFrom(command);
             long startedAt = System.nanoTime();
@@ -107,13 +108,13 @@ public class ProcessRunner implements Processes {
         return signal != null ? "on SIG" + signal + " (" + exitValue + ")" : "with exit " + exitValue;
     }
 
-    private static String firstExecutable(List<String> candidates) {
+    private static @Nullable String firstExecutable(List<String> candidates) {
         return candidates.stream().filter(candidate -> Files.isExecutable(Path.of(candidate))).findFirst()
                 .orElse(null);
     }
 
     @Override
-    public Result run(Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
+    public Result run(@Nullable Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             if (workingDir != null) {

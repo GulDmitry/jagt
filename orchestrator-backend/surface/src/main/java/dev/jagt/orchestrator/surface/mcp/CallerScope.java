@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.service.StateService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,7 +13,7 @@ public class CallerScope {
     private final StateService stateService;
 
     /** A sub-agent that names no task means itself; one that names a sibling is refused, not corrected. */
-    public String resolve(String explicitTaskId, String callerTaskId) {
+    public String resolve(@Nullable String explicitTaskId, @Nullable String callerTaskId) {
         if (explicitTaskId == null || explicitTaskId.isBlank()) {
             if (callerTaskId == null) {
                 throw new IllegalArgumentException(

@@ -19,10 +19,12 @@ import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -188,7 +190,7 @@ public class AgentStatusReports {
      * typed argument first, the agent's own opening as the fallback. NO_CHANGES is then CHECKED — it is the one
      * claim jagt can measure, and a round that edited files is a diff for the human to read.
      */
-    private String stated(Reported said, Optional<TaskState> task, String taskId) {
+    private @Nullable String stated(Reported said, Optional<TaskState> task, String taskId) {
         AgentReport claimed = said.claimed();
         String detail = said.detail();
         if (claimed == AgentReport.NO_CHANGES && task.filter(handBack::anyUncommitted).isPresent()) {
@@ -200,8 +202,8 @@ public class AgentStatusReports {
             claimed = AgentReport.PLAIN;
         }
         return switch (claimed) {
-            case QUESTION -> marked("awaiting", detail);
-            case NO_CHANGES -> marked("no changes", detail);
+            case QUESTION -> marked("awaiting", Objects.requireNonNull(detail));
+            case NO_CHANGES -> marked("no changes", Objects.requireNonNull(detail));
             case PLAIN -> detail;
         };
     }

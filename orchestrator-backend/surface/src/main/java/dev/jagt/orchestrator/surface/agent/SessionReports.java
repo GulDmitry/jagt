@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.service.SessionProbe;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.port.AgentRuntime;
@@ -27,26 +28,27 @@ public class SessionReports {
      * {@code said} what the CLI told the human; {@code task} the task it runs for. Each null where nothing was
      * named.
      */
-    public record Report(Path sessionLog, String startedBy, String said, TaskState task) {
+    public record Report(@Nullable Path sessionLog, @Nullable String startedBy, @Nullable String said,
+                         @Nullable TaskState task) {
 
         /** Everything absent: a harness may hand a hook nothing jagt can use, and most of them do. */
         public static Report defaults() {
             return new Report(null, null, null, null);
         }
 
-        public Report withSessionLog(Path sessionLog) {
+        public Report withSessionLog(@Nullable Path sessionLog) {
             return new Report(sessionLog, startedBy, said, task);
         }
 
-        public Report withStartedBy(String startedBy) {
+        public Report withStartedBy(@Nullable String startedBy) {
             return new Report(sessionLog, startedBy, said, task);
         }
 
-        public Report withSaid(String said) {
+        public Report withSaid(@Nullable String said) {
             return new Report(sessionLog, startedBy, said, task);
         }
 
-        public Report withTask(TaskState task) {
+        public Report withTask(@Nullable TaskState task) {
             return new Report(sessionLog, startedBy, said, task);
         }
     }
@@ -66,7 +68,7 @@ public class SessionReports {
      * One event, two waits: a session refused a permission cannot go on, one merely quiet may be part-way through
      * something long. The CLI's own wording separates them, and an unrecognised one stays the quieter.
      */
-    private SessionProbe.State blocked(SessionProbe.State state, String said) {
+    private SessionProbe.State blocked(SessionProbe.State state, @Nullable String said) {
         // Asked only where an answer could change anything: every start and every turn end says nothing.
         if (state != SessionProbe.State.IDLE || said == null) {
             return state;
@@ -78,7 +80,7 @@ public class SessionReports {
     }
 
     /** A compaction drops the brief and the task's facts silently: the rules are named, the facts restated. */
-    private String brief(String taskId, String startedBy, TaskState task) {
+    private String brief(String taskId, @Nullable String startedBy, @Nullable TaskState task) {
         String compacted = runtime.compactedStart();
         if (compacted == null || compacted.isBlank() || startedBy == null
                 || !compacted.equalsIgnoreCase(startedBy.strip())) {
@@ -89,7 +91,7 @@ public class SessionReports {
                 + " repository's own agent instructions, before doing anything else.\n";
     }
 
-    private static String facts(TaskState task) {
+    private static String facts(@Nullable TaskState task) {
         if (task == null) {
             return "";
         }
@@ -100,7 +102,7 @@ public class SessionReports {
                 + ". On the board: " + task.status() + asked;
     }
 
-    private static boolean present(String value) {
+    private static boolean present(@Nullable String value) {
         return value != null && !value.isBlank();
     }
 }

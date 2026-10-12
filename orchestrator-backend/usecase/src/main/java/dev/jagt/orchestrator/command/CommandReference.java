@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.TaskAction;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,7 +12,7 @@ import java.util.List;
 public final class CommandReference {
 
     public record Verb(String id, String hint, boolean takesTask, List<String> aliases, boolean report,
-                       boolean aboutOneTask, String part) {
+                       boolean aboutOneTask, @Nullable String part) {
 
         /** Built from the declaration rather than by a caller: adjacent flags transpose in silence. */
         static Verb of(TaskAction action) {

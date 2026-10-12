@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.config;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Files;
@@ -39,7 +40,7 @@ public class OrchestratorPaths {
         return stateFile;
     }
 
-    private Path resolve(String override, String defaultName) {
+    private Path resolve(@Nullable String override, String defaultName) {
         return override != null && !override.isBlank()
                 ? Path.of(override).toAbsolutePath().normalize()
                 : root.resolve(defaultName);
@@ -61,7 +62,7 @@ public class OrchestratorPaths {
                 : findRoot()).resolve("jagt.yml");
     }
 
-    private static String named(String[] args, String flag) {
+    private static @Nullable String named(String[] args, String flag) {
         for (String arg : args) {
             if (arg.startsWith(flag)) {
                 return arg.substring(flag.length());

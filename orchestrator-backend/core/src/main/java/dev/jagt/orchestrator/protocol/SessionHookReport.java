@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.protocol;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.jspecify.annotations.Nullable;
+
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -16,10 +18,10 @@ import static dev.jagt.orchestrator.protocol.Wire.absent;
  * one place so the rest of jagt never spells them.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record SessionHookReport(@JsonProperty("transcript_path") String transcriptPath,
-                                @JsonProperty("source") String source,
-                                @JsonProperty("message") String message,
-                                @JsonProperty("stop_hook_active") Boolean continuing,
+public record SessionHookReport(@JsonProperty("transcript_path") @Nullable String transcriptPath,
+                                @JsonProperty("source") @Nullable String source,
+                                @JsonProperty("message") @Nullable String message,
+                                @JsonProperty("stop_hook_active") @Nullable Boolean continuing,
                                 @JsonProperty("background_tasks") List<Object> backgroundTasks) implements Message {
 
     public SessionHookReport {
@@ -29,8 +31,8 @@ public record SessionHookReport(@JsonProperty("transcript_path") String transcri
         backgroundTasks = backgroundTasks == null ? List.of() : backgroundTasks;
     }
 
-    public SessionHookReport(String transcriptPath, String source, String message) {
-        this(transcriptPath, source, message, null, null);
+    public SessionHookReport(@Nullable String transcriptPath, @Nullable String source, @Nullable String message) {
+        this(transcriptPath, source, message, null, List.of());
     }
 
     /** Nothing was posted at all, which is a state the address alone still reports. */

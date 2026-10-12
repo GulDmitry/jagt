@@ -4,11 +4,13 @@ import dev.jagt.orchestrator.port.TerminalDriver;
 import lombok.extern.slf4j.Slf4j;
 import dev.jagt.orchestrator.config.OrchestratorProperties;
 import dev.jagt.orchestrator.port.StartupCheck;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /** kitty's tabs are addressable, so they can be titled, focused and closed; the tab execs {@code tmux attach},
@@ -60,7 +62,7 @@ public abstract class AbstractKittyTerminalDriver implements TerminalDriver, Sta
         openedAt.put(tmuxSession, now);
 
         String socket = socket(tmuxSession);
-        String tmux = properties.tmuxCommand();
+        String tmux = Objects.requireNonNull(properties.tmuxCommand());
         if (instanceRunning(socket)) {
             var launch = processRunner.run(null, TIMEOUT, List.of(kittyCommand, "@", "--to", socket,
                     "launch", "--type=tab", "--tab-title", dedicatedTitle, "--cwd", tabCwd.toString(),

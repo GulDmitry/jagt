@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /** Every checkout a retired task leaves, in every repository: nothing else would ever delete them. */
 @Component
@@ -48,7 +49,7 @@ class RetiredWorktrees {
             // An abandoned deploy conflict leaves a jagt-deploy-* worktree and branch behind.
             gitWorktrees.removeDeployWorktreeIfPresent(projectPath, taskId);
             // A diff opened from the board cuts throwaway checkouts in the temp directory; nothing else ends them.
-            gitWorktrees.removeDiffWorktrees(projectPath, taskId, repo.project());
+            gitWorktrees.removeDiffWorktrees(projectPath, taskId, Objects.requireNonNull(repo.project()));
             editorDriver.forgetProject(GitDeploy.deployWorktreePath(projectPath, taskId));
         }
         return anyProjectMissing;

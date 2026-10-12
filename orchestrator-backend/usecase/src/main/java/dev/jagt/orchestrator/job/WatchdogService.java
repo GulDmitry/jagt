@@ -11,6 +11,7 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -107,7 +108,7 @@ public class WatchdogService implements Job {
      * Written only when the verdict CHANGES: every surface repaints on a state write. Keeping the first detection's
      * timestamp is what makes the duration grow instead of resetting.
      */
-    void stamp(String taskId, TaskState task, SessionProbe.Silence silence) {
+    void stamp(String taskId, TaskState task, SessionProbe.@Nullable Silence silence) {
         String because = silence == null ? null : silence.detail();
         if (task.agentIsSilent() == (silence != null) && Objects.equals(task.silentBecause(), because)) {
             return;

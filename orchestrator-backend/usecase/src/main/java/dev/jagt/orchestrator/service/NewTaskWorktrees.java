@@ -7,12 +7,14 @@ import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskName;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -33,20 +35,20 @@ public class NewTaskWorktrees {
     private final WorktreeSetup worktreeSetup;
 
     /** An empty {@code projectKeys} asks every configured project — what a task with no project named yet needs. */
-    public String existingBranchProject(String taskId, Collection<String> projectKeys) {
+    public @Nullable String existingBranchProject(String taskId, @Nullable Collection<String> projectKeys) {
         ConfigService.ConfigFile config = configService.load();
         Collection<String> keys = projectKeys == null || projectKeys.isEmpty()
                 ? config.projects().keySet() : projectKeys;
         return keys.stream()
                 .filter(config.projects()::containsKey)
                 .filter(k -> gitWorktrees.branchExists(
-                        Path.of(config.projects().get(k).path()).toAbsolutePath().normalize(), taskId))
+                        Path.of(Objects.requireNonNull(config.projects().get(k)).path()).toAbsolutePath().normalize(), taskId))
                 .findFirst().orElse(null);
     }
 
     /** Nobody stands at intake to choose, and neither answer here loses work: the branch's own commits resume. */
     public BranchStrategy strategyForExisting(String taskId, String projectKey) {
-        ProjectConfig project = configService.load().projects().get(projectKey);
+        ProjectConfig project = Objects.requireNonNull(configService.load().projects().get(projectKey));
         Path path = Path.of(project.path()).toAbsolutePath().normalize();
         if (!gitWorktrees.branchExists(path, taskId)) {
             return BranchStrategy.FRESH;
@@ -119,7 +121,7 @@ public class NewTaskWorktrees {
                 requireOnOrigin(override, projectKey, projectPath, strategy);
             }
             repos.add(new NewRepo(projectKey, project, projectPath,
-                    projectPath.getParent().resolve(TaskName.slug(request.taskId()) + "-" + projectKey),
+                    Objects.requireNonNull(projectPath.getParent()).resolve(TaskName.slug(request.taskId()) + "-" + projectKey),
                     gitWorktrees.gitCommonDir(projectPath),
                     override != null ? override : project.baseBranch(),
                     gitWorktrees.remoteUrl(projectPath), repos.isEmpty()));
@@ -157,7 +159,7 @@ public class NewTaskWorktrees {
         }
     }
 
-    static String branchOverride(String requested) {
+    static @Nullable String branchOverride(@Nullable String requested) {
         if (requested == null || requested.isBlank()) {
             return null;
         }
@@ -170,7 +172,7 @@ public class NewTaskWorktrees {
     }
 
     /** A task's branch is rebased and force-pushed, so it must not be one other work lands on. */
-    private static void requireOwnBranch(String taskId, String baseOverride, ConfigService.ConfigFile config) {
+    private static void requireOwnBranch(String taskId, @Nullable String baseOverride, ConfigService.ConfigFile config) {
         String task = ProjectConfig.localName(taskId);
         Stream.concat(config.projects().values().stream()
                                 .flatMap(project -> Stream.of(project.baseBranch(), project.deployBranch())),

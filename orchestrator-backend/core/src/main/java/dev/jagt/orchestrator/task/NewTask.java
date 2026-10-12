@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -10,70 +12,71 @@ import java.util.stream.Collectors;
  * base — the branch the worktree is cut from AND the branch its review request targets; null means the project's
  * own. {@code projectKeys} holds every repository the one session works in, the agent's own FIRST.
  */
-public record NewTask(String taskId, List<String> projectKeys, String instructions, String mode,
-                      String branchStrategy, String baseBranch, String title, String ticketUrl) {
+public record NewTask(String taskId, List<String> projectKeys, @Nullable String instructions, @Nullable String mode,
+                      @Nullable String branchStrategy, @Nullable String baseBranch, @Nullable String title,
+                      @Nullable String ticketUrl) {
 
     public NewTask {
         projectKeys = projectKeys == null ? List.of() : List.copyOf(projectKeys);
     }
 
-    public String projectKey() {
+    public @Nullable String projectKey() {
         return projectKeys.isEmpty() ? null : projectKeys.get(0);
     }
 
-    public static Builder builder(String taskId, String projectKey) {
+    public static Builder builder(String taskId, @Nullable String projectKey) {
         return new Builder(taskId, projectKey);
     }
 
     public static final class Builder {
         private final String taskId;
         private final List<String> projectKeys = new ArrayList<>();
-        private String instructions;
-        private String mode;
-        private String branchStrategy;
-        private String baseBranch;
-        private String title;
-        private String ticketUrl;
+        private @Nullable String instructions;
+        private @Nullable String mode;
+        private @Nullable String branchStrategy;
+        private @Nullable String baseBranch;
+        private @Nullable String title;
+        private @Nullable String ticketUrl;
 
-        private Builder(String taskId, String projectKey) {
+        private Builder(String taskId, @Nullable String projectKey) {
             this.taskId = taskId;
             this.projectKeys.add(projectKey);
         }
 
         /** Further repositories the same session works in; the session's own project stays first. */
-        public Builder alsoIn(List<String> projects) {
+        public Builder alsoIn(@Nullable List<String> projects) {
             if (projects != null) {
                 projects.stream().filter(p -> p != null && !p.isBlank()).forEach(projectKeys::add);
             }
             return this;
         }
 
-        public Builder instructions(String instructions) {
+        public Builder instructions(@Nullable String instructions) {
             this.instructions = instructions;
             return this;
         }
 
-        public Builder mode(String mode) {
+        public Builder mode(@Nullable String mode) {
             this.mode = mode;
             return this;
         }
 
-        public Builder branchStrategy(String branchStrategy) {
+        public Builder branchStrategy(@Nullable String branchStrategy) {
             this.branchStrategy = branchStrategy;
             return this;
         }
 
-        public Builder baseBranch(String baseBranch) {
+        public Builder baseBranch(@Nullable String baseBranch) {
             this.baseBranch = baseBranch;
             return this;
         }
 
-        public Builder title(String title) {
+        public Builder title(@Nullable String title) {
             this.title = title;
             return this;
         }
 
-        public Builder ticketUrl(String ticketUrl) {
+        public Builder ticketUrl(@Nullable String ticketUrl) {
             this.ticketUrl = ticketUrl;
             return this;
         }

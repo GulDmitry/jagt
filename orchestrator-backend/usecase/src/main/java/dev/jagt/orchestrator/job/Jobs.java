@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -21,20 +22,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class Jobs {
 
-    public record Status(String id, String describe, Duration every, Long lastStartedAt, String lastError,
-                         Long nextRunAt, boolean running) {
+    public record Status(String id, String describe, @Nullable Duration every, @Nullable Long lastStartedAt,
+                         @Nullable String lastError, @Nullable Long nextRunAt, boolean running) {
     }
 
     /** {@code nextRunAt} is the soonest run of any job, or null when nothing is scheduled. */
-    public record Summary(int count, Long nextRunAt, int failing) {
+    public record Summary(int count, @Nullable Long nextRunAt, int failing) {
     }
 
     private static final class Run {
         private final AtomicBoolean running = new AtomicBoolean();
         private volatile long nextAt;
-        private volatile Long startedAt;
-        private volatile String lastError;
-        private volatile Duration every;
+        private volatile @Nullable Long startedAt;
+        private volatile @Nullable String lastError;
+        private volatile @Nullable Duration every;
     }
 
     private final Map<String, Job> jobs = new LinkedHashMap<>();
@@ -62,7 +63,7 @@ public class Jobs {
     /** {@code now} is passed in so a report reads the clock once, outside. */
     public List<Status> statuses(long now) {
         return jobs.values().stream().map(job -> {
-            Run run = runs.get(job.id());
+            Run run = Objects.requireNonNull(runs.get(job.id()));
             // Never behind the present: a job that has not run yet is due at the tick about to happen.
             Long next = run.nextAt == Long.MAX_VALUE ? null : Math.max(run.nextAt, now);
             return new Status(job.id(), job.describe(), every(job, run), run.startedAt, run.lastError, next,
@@ -71,7 +72,7 @@ public class Jobs {
     }
 
     /** The last interval a job named stands in for one it cannot: a report answers for all of them. */
-    private static Duration every(Job job, Run run) {
+    private static @Nullable Duration every(Job job, Run run) {
         try {
             return job.every();
         } catch (RuntimeException e) {
@@ -105,7 +106,7 @@ public class Jobs {
 
     void tick(long now) {
         jobs.forEach((id, job) -> {
-            Run run = runs.get(id);
+            Run run = Objects.requireNonNull(runs.get(id));
             if (run.nextAt > now || !run.running.compareAndSet(false, true)) {
                 return;
             }

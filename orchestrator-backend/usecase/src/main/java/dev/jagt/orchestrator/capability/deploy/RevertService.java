@@ -9,10 +9,12 @@ import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -52,11 +54,11 @@ public class RevertService {
         }
         landed.forEach(DeployTargets::requireDeployable);
         List<String> reverted = new ArrayList<>();
-        String lastRevertCommit = null;
+        @Nullable String lastRevertCommit = null;
         for (Target target : landed.reversed()) {
             try {
                 lastRevertCommit = gitDeploy.revertMergeAndPush(target.path(), taskId, target.deployBranch(),
-                        mergeCommit(task, target));
+                        Objects.requireNonNull(mergeCommit(task, target)));
             } catch (RuntimeException e) {
                 return stillLive(taskId, target, reverted, e);
             }
@@ -78,7 +80,7 @@ public class RevertService {
     }
 
     private Outcome allReverted(String taskId, boolean singleRepo, List<Target> landed, List<String> reverted,
-                               String revertCommit) {
+                               @Nullable String revertCommit) {
         String tail = "; REVERTED — fix and ship again, or `done`.";
         if (singleRepo) {
             String on = "on " + landed.getFirst().deployBranch() + " (" + GitDeploy.shortSha(revertCommit) + ")";
@@ -108,7 +110,7 @@ public class RevertService {
         List<TaskRepo> repos = task.repos();
         String where = repos.stream()
                 .map(repo -> "`git log --merges --grep " + taskId + " origin/"
-                        + deployTargets.deployBranch(repo.project()).orElse("<its deploy branch>") + "`"
+                        + deployTargets.deployBranch(Objects.requireNonNull(repo.project())).orElse("<its deploy branch>") + "`"
                         + (repos.size() > 1 ? " in " + repo.project() : ""))
                 .collect(Collectors.joining(", "));
         return new IllegalStateException("revert " + taskId + ": jagt records no merge commit of this task's —"

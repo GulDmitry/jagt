@@ -7,6 +7,7 @@ import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,7 +53,7 @@ public class JiraWorkflow implements TrackerWorkflow {
     }
 
     /** Spelled as the tracker reports it, case aside: anything looser starts work on an item nobody meant. */
-    private static boolean same(String read, String configured) {
+    private static boolean same(@Nullable String read, @Nullable String configured) {
         return configured != null && !configured.isBlank() && read != null
                 && read.strip().equalsIgnoreCase(configured.strip());
     }

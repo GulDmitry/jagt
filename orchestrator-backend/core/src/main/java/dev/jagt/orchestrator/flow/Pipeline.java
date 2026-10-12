@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Locale;
 
 /**
@@ -32,7 +34,7 @@ public enum Pipeline {
         return severity;
     }
 
-    public static Pipeline of(String hostStatus) {
+    public static Pipeline of(@Nullable String hostStatus) {
         if (hostStatus == null || hostStatus.isBlank()) {
             return UNKNOWN;
         }

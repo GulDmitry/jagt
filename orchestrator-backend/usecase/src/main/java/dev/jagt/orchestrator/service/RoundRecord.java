@@ -42,7 +42,7 @@ public class RoundRecord {
         Pipeline was = Pipeline.of(standing);
         Pipeline now = Pipeline.of(checks);
         if (newChecks && now.worthATap() && now != was) {
-            notifications.send(Notification.checksFailed(taskId, checks));
+            notifications.send(Notification.checksFailed(taskId, Objects.requireNonNull(checks)));
         }
     }
 

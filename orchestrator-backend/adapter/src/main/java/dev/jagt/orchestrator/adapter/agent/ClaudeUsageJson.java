@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /** The undocumented answer of Claude's OAuth usage endpoint: a shape it does not know is unreadable, never zero. */
@@ -35,7 +36,7 @@ final class ClaudeUsageJson {
             for (String field : ORDER) {
                 JsonNode window = root.path(field);
                 if (window.isObject() && !window.path("utilization").isNull()) {
-                    windows.add(new Window(WINDOWS.get(field), number(window, "utilization", field),
+                    windows.add(new Window(Objects.requireNonNull(WINDOWS.get(field)), number(window, "utilization", field),
                             instant(window.path("resets_at"))));
                 }
             }

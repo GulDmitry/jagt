@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -36,7 +37,7 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
                 .flatMap(List::stream).toList();
     }
 
-    private static List<String> problems(List<String> configured, String configKey) {
+    private static List<String> problems(@Nullable List<String> configured, String configKey) {
         try {
             launcher(configured, configKey);
             return List.of();
@@ -72,7 +73,7 @@ public class CliEditorDriver implements EditorDriver, StartupCheck {
     }
 
     /** The sentence names the key to set, not the binary the human never chose. */
-    private static List<String> launcher(List<String> configured, String configKey) {
+    private static List<String> launcher(@Nullable List<String> configured, String configKey) {
         if (configured == null || configured.isEmpty() || configured.getFirst().isBlank()) {
             throw new IllegalStateException(configKey + " is empty — set it to the launcher of the editor you"
                     + " want jagt to open worktrees with.");

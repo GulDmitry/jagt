@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -80,8 +81,8 @@ public class ShipService {
 
     private List<Target> targets(TaskState task) {
         return task.repos().stream()
-                .map(repo -> new Target(repo.project(), repo.worktreePath(),
-                        WorktreeChanges.targetBranch(task, configService.project(repo.project()).baseBranch()),
+                .map(repo -> new Target(Objects.requireNonNull(repo.project()), Objects.requireNonNull(repo.worktreePath()),
+                        WorktreeChanges.targetBranch(task, configService.project(Objects.requireNonNull(repo.project())).baseBranch()),
                         repo.hasReviewRequest()))
                 .toList();
     }

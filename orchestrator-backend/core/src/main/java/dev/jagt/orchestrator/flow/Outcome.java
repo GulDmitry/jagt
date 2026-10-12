@@ -1,11 +1,13 @@
 package dev.jagt.orchestrator.flow;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * What a capability reports back. It never DECIDES a status — which one this leads to is the table's answer —
  * though its sentence may tell a human which one was reached.
  * {@code stamp} is the short line the task carries afterwards, or null to leave what it says alone.
  */
-public record Outcome(Kind kind, String message, String stamp, Throwable cause) {
+public record Outcome(Kind kind, String message, @Nullable String stamp, @Nullable Throwable cause) {
 
     public enum Kind {
         /** The work was done here and now. */
@@ -54,7 +56,7 @@ public record Outcome(Kind kind, String message, String stamp, Throwable cause) 
         return new Outcome(Kind.CONFLICT, message, stamp, null);
     }
 
-    public static Outcome partial(String message, String stamp, Throwable cause) {
+    public static Outcome partial(String message, @Nullable String stamp, @Nullable Throwable cause) {
         return new Outcome(Kind.PARTIAL, message, stamp, cause);
     }
 

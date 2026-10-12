@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.port.StartupCheck;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,7 +58,7 @@ public class CodexAgentRuntime extends AbstractAgentRuntime implements StartupCh
     }
 
     @Override
-    public String launchCommand(Path worktree, boolean planMode, String model, String prompt) {
+    public String launchCommand(Path worktree, boolean planMode, String model, @Nullable String prompt) {
         // A read-only sandbox IS plan mode here: the agent can reason but cannot touch the files.
         return "CODEX_HOME=" + shellQuote(worktree.resolve(CODEX_HOME_DIR).toString()) + " " + codex.command()
                 + (planMode ? " --sandbox read-only" : "")

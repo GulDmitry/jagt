@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.service.ReadScopes.ReadScope;
 
 import java.nio.file.Path;
@@ -102,7 +103,7 @@ final class GitReadLine {
     }
 
     /** What an allowed option carries, empty when it carries nothing, or null when the option is not allowed. */
-    private static String valueOf(String argument, String subcommand, Set<String> options) {
+    private static @Nullable String valueOf(String argument, String subcommand, Set<String> options) {
         String name = argument.split("=", 2)[0];
         if (options.contains(name)) {
             return argument.length() > name.length() ? argument.substring(name.length() + 1) : "";

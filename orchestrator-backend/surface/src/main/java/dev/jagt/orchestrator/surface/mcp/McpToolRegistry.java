@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Schema;
@@ -16,5 +17,5 @@ public interface McpToolRegistry {
 
     /** {@code context} answers what the message's rules need to know about the world. */
     <T extends Message> void tool(String name, Audience audience, Schema schema, Class<T> message,
-                                  BiFunction<T, String, MessageContext> context, MessageHandler<T> handler);
+                                  BiFunction<T, @Nullable String, MessageContext> context, MessageHandler<T> handler);
 }

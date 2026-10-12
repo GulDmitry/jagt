@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.board;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.service.OriginContext;
 import jakarta.servlet.FilterChain;
@@ -27,7 +28,7 @@ public class OriginFilter extends OncePerRequestFilter {
         }
     }
 
-    private static ActionOrigin originOf(HttpServletRequest request) {
+    private static @Nullable ActionOrigin originOf(HttpServletRequest request) {
         String path = request.getServletPath();
         if (path.equals("/mcp")) {
             return ActionOrigin.MCP;

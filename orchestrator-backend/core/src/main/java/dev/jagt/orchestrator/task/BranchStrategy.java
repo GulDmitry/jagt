@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -42,7 +44,7 @@ public enum BranchStrategy {
     }
 
     /** What a launch that named nothing gets. */
-    public static BranchStrategy of(String value) {
+    public static BranchStrategy of(@Nullable String value) {
         if (value == null || value.isBlank()) {
             return FRESH;
         }

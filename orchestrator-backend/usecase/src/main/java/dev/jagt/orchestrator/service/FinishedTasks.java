@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.service.master.MasterReview;
 import dev.jagt.orchestrator.task.FinishedTask;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -69,7 +70,7 @@ public class FinishedTasks {
         }
     }
 
-    private FinishedTask parse(String line) {
+    private @Nullable FinishedTask parse(String line) {
         try {
             return mapper.readValue(line, FinishedTask.class);
         } catch (RuntimeException e) {

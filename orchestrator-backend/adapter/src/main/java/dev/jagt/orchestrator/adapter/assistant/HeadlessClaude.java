@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -77,25 +78,23 @@ class HeadlessClaude {
 
     Answer<JsonNode> ask(String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
         Reply first = call(prompt, schema, label, kind, timeout);
-        Optional<JsonNode> answer = first.answered() ? answerOf(first.envelope(), label, schema) : Optional.empty();
-        if (!first.answered() || answer.isPresent()) {
+        JsonNode firstEnvelope = first.envelope();
+        Optional<JsonNode> answer = firstEnvelope != null ? answerOf(firstEnvelope, label, schema) : Optional.empty();
+        if (firstEnvelope == null || answer.isPresent()) {
             return new Answer<>(answer, first.usage());
         }
         // The CLI at times hands back the model's prose without the object its schema tool validated.
         Reply second = call(prompt, schema, label, kind, timeout);
-        return new Answer<>(second.answered() ? answerOf(second.envelope(), label, schema) : Optional.empty(),
+        JsonNode secondEnvelope = second.envelope();
+        return new Answer<>(secondEnvelope != null ? answerOf(secondEnvelope, label, schema) : Optional.empty(),
                 first.usage().plus(second.usage()));
     }
 
     /** A failed call carries no envelope, only its cause: asking again would not mend it. */
-    record Reply(JsonNode envelope, TokenUsage usage, String cause) {
+    record Reply(@Nullable JsonNode envelope, TokenUsage usage, String cause) {
 
         static Reply failed(TokenUsage usage, String cause) {
             return new Reply(null, usage, cause);
-        }
-
-        boolean answered() {
-            return envelope != null;
         }
     }
 
@@ -158,7 +157,8 @@ class HeadlessClaude {
             unheard = readOnlyTools.lift(fence);
         }
         // The schema's own tool call passes the hook, so an object no call reached jagt for ran unfenced.
-        if (unheard.isPresent() && reply.answered() && reply.envelope().path("structured_output").isObject()) {
+        JsonNode replied = reply.envelope();
+        if (unheard.isPresent() && replied != null && replied.path("structured_output").isObject()) {
             log.atError().setMessage("assistant call unfenced")
                     .addKeyValue("ref", label)
                     .addKeyValue("cause", unheard.get())
@@ -221,11 +221,11 @@ class HeadlessClaude {
     }
 
     /** `%kvp` quotes a value but escapes nothing, so a multi-line stderr would break the console line apart. */
-    private static String oneLine(String value) {
+    private static @Nullable String oneLine(@Nullable String value) {
         return OneLine.of(value == null ? "" : value.replace('"', '\''), MAX_CAUSE);
     }
 
-    private JsonNode parseEnvelope(String stdout, String label) {
+    private @Nullable JsonNode parseEnvelope(String stdout, String label) {
         if (stdout == null || stdout.isBlank()) {
             return null;
         }
@@ -285,7 +285,7 @@ class HeadlessClaude {
     }
 
     /** An answer read as facts would report a read that never happened as the item not existing. */
-    private Optional<JsonNode> outsideSchema(String label, String cause, String said) {
+    private Optional<JsonNode> outsideSchema(String label, @Nullable String cause, String said) {
         log.atWarn().setMessage("assistant answered outside the schema")
                 .addKeyValue("ref", label)
                 .addKeyValue("cause", oneLine(cause))
@@ -295,7 +295,7 @@ class HeadlessClaude {
     }
 
     /** Fresh input = prompt + cache WRITES, both billed at input rates; cache reads count apart, being cheaper. */
-    static TokenUsage usageOf(JsonNode envelope) {
+    static TokenUsage usageOf(@Nullable JsonNode envelope) {
         if (envelope == null) {
             return TokenUsage.NONE;
         }

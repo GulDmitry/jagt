@@ -4,6 +4,8 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -21,15 +23,15 @@ public final class Schema {
 
     private static final JsonMapper MAPPER = new JsonMapper();
 
-    private final String description;
+    private final @Nullable String description;
     private final ObjectNode properties = MAPPER.createObjectNode();
     private final List<String> required = new ArrayList<>();
 
-    private Schema(String description) {
+    private Schema(@Nullable String description) {
         this.description = description;
     }
 
-    public static Schema of(String description) {
+    public static Schema of(@Nullable String description) {
         return new Schema(description);
     }
 
@@ -38,46 +40,46 @@ public final class Schema {
         return new Schema(null);
     }
 
-    public Schema text(String name, String describes) {
+    public Schema text(String name, @Nullable String describes) {
         field(name, "string", describes);
         return this;
     }
 
-    public Schema required(String name, String type, String describes) {
+    public Schema required(String name, String type, @Nullable String describes) {
         field(name, type, describes);
         required.add(name);
         return this;
     }
 
     /** The values a field may carry, taken from whatever enumerates them, so the two cannot disagree. */
-    public Schema choice(String name, Collection<?> values, String describes) {
+    public Schema choice(String name, Collection<?> values, @Nullable String describes) {
         ObjectNode field = field(name, "string", describes);
         ArrayNode allowed = field.putArray("enum");
         values.forEach(value -> allowed.add(String.valueOf(value)));
         return this;
     }
 
-    public Schema choiceRequired(String name, Collection<?> values, String describes) {
+    public Schema choiceRequired(String name, Collection<?> values, @Nullable String describes) {
         choice(name, values, describes);
         required.add(name);
         return this;
     }
 
     /** A list of strings; an absent list and an empty one are the same answer. */
-    public Schema texts(String name, String describes) {
+    public Schema texts(String name, @Nullable String describes) {
         ObjectNode field = field(name, "array", describes);
         field.putObject("items").put("type", "string");
         return this;
     }
 
-    public Schema requiredTexts(String name, String describes) {
+    public Schema requiredTexts(String name, @Nullable String describes) {
         texts(name, describes);
         required.add(name);
         return this;
     }
 
     /** A list of objects, every one of {@code fields} a required string. */
-    public Schema records(String name, String describes, List<String> fields) {
+    public Schema records(String name, @Nullable String describes, List<String> fields) {
         ObjectNode item = field(name, "array", describes).putObject("items");
         item.put("type", "object");
         ObjectNode props = item.putObject("properties");
@@ -90,7 +92,7 @@ public final class Schema {
     }
 
     /** A string-to-string object, with examples because a shape is easier shown than described. */
-    public Schema pairs(String name, String describes, List<Map<String, String>> examples) {
+    public Schema pairs(String name, @Nullable String describes, List<Map<String, String>> examples) {
         ObjectNode field = field(name, "object", describes);
         field.putObject("additionalProperties").put("type", "string");
         if (!examples.isEmpty()) {
@@ -116,7 +118,7 @@ public final class Schema {
         return root.toString();
     }
 
-    private ObjectNode field(String name, String type, String describes) {
+    private ObjectNode field(String name, String type, @Nullable String describes) {
         ObjectNode field = properties.putObject(name);
         field.put("type", type);
         if (describes != null && !describes.isBlank()) {

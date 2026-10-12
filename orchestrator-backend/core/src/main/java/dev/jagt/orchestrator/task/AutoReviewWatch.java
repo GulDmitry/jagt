@@ -1,12 +1,14 @@
 package dev.jagt.orchestrator.task;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Whether anything is polling this task's review request, and when it will next look. {@code nextPollAt} is epoch
  * millis, absolute rather than a remaining duration because a page repaints its own clocks long after it fetched
  * them; 0 unless {@link State#WATCHING}. {@code note} is the wording written once for every surface and carries no
  * countdown; {@code label} is the same state in the two or three words a chip holds. Both null when nothing to say.
  */
-public record AutoReviewWatch(State state, long nextPollAt, String note, String label) {
+public record AutoReviewWatch(State state, long nextPollAt, @Nullable String note, @Nullable String label) {
 
     /**
      * {@link #NONE} covers every "nothing to poll here" case, including polling switched off install-wide.

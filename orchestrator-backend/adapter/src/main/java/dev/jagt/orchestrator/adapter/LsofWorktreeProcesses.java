@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.WorktreeProcesses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -65,7 +66,7 @@ public class LsofWorktreeProcesses implements WorktreeProcesses {
     /** Command NEVER reaped: see {@link #reapable}. */
     private static final String VIEWER_COMMAND = "tmux";
 
-    record Reapable(String pid, String command, String cwd) {}
+    record Reapable(String pid, @Nullable String command, String cwd) {}
 
     /**
      * {@code lsof -d cwd -Fpcn} emits {@code p<pid>}, {@code c<command>}, then {@code n<cwd>}, so the command is

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ public class MacNotifier implements UserNotifier {
 
     private final OsaScript osaScript;
     private final ProcessRunner processRunner;
-    private final String terminalNotifier;
+    private final @Nullable String terminalNotifier;
 
     public MacNotifier(OsaScript osaScript, ProcessRunner processRunner,
                        @Value("${orchestrator.terminal-notifier-command:terminal-notifier}")
@@ -39,16 +40,17 @@ public class MacNotifier implements UserNotifier {
     }
 
     @Override
-    public void notify(String title, String message, String link) {
-        if (terminalNotifier != null && bannerShown(title, message, link)) {
+    public void notify(String title, String message, @Nullable String link) {
+        String notifier = terminalNotifier;
+        if (notifier != null && bannerShown(notifier, title, message, link)) {
             return;
         }
         displayNotification(title, message);
     }
 
-    private boolean bannerShown(String title, String message, String link) {
+    private boolean bannerShown(String notifier, String title, String message, @Nullable String link) {
         try {
-            processRunner.run(null, TIMEOUT, command(terminalNotifier, title, message, link))
+            processRunner.run(null, TIMEOUT, command(notifier, title, message, link))
                     .expectSuccess("terminal-notifier");
             return true;
         } catch (RuntimeException e) {
@@ -73,7 +75,7 @@ public class MacNotifier implements UserNotifier {
     }
 
     /** {@code -open} is what makes the banner clickable; osascript has no equivalent. */
-    static List<String> command(String terminalNotifier, String title, String message, String link) {
+    static List<String> command(String terminalNotifier, String title, String message, @Nullable String link) {
         List<String> command = new ArrayList<>(List.of(terminalNotifier,
                 "-title", title == null ? "jagt" : title, "-message", message == null ? "" : message,
                 "-sound", "default"));

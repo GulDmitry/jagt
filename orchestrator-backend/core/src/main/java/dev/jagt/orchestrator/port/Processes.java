@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.port;
 
+import org.jspecify.annotations.Nullable;
+
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -23,13 +25,13 @@ public interface Processes {
         }
     }
 
-    Result run(Path workingDir, Duration timeout, List<String> command);
+    Result run(@Nullable Path workingDir, Duration timeout, List<String> command);
 
-    Result run(Path workingDir, Duration timeout, Map<String, String> env, List<String> command);
+    Result run(@Nullable Path workingDir, Duration timeout, Map<String, String> env, List<String> command);
 
     /**
      * Starts a command that OUTLIVES jagt and does not share its signals. The returned handle is the command
      * itself, so {@code destroy()} still reaches it.
      */
-    Process runDetached(Path workingDir, List<String> command);
+    Process runDetached(@Nullable Path workingDir, List<String> command);
 }

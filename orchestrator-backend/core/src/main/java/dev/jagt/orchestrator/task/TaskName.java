@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -31,11 +33,11 @@ public final class TaskName {
     private TaskName() {
     }
 
-    public static boolean isTicketKey(String name) {
+    public static boolean isTicketKey(@Nullable String name) {
         return name != null && TICKET_KEY.matcher(name).matches();
     }
 
-    private static boolean isValid(String name) {
+    private static boolean isValid(@Nullable String name) {
         return name != null && VALID.matcher(name).matches();
     }
 
@@ -43,7 +45,7 @@ public final class TaskName {
      * A branch name made of what a human wrote, for a task no tracker named. Null when their words leave nothing
      * a branch can be called.
      */
-    public static String from(String text) {
+    public static @Nullable String from(@Nullable String text) {
         if (text == null) {
             return null;
         }
@@ -74,7 +76,7 @@ public final class TaskName {
     }
 
     /** Names the ONE thing that makes {@code name} unusable, or null when it is usable. */
-    public static String unusableReason(String name) {
+    public static @Nullable String unusableReason(@Nullable String name) {
         if (isValid(name)) {
             return null;
         }

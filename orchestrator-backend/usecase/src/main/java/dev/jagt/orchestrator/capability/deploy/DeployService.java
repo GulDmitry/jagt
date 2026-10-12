@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static dev.jagt.orchestrator.service.DeployTargets.because;
@@ -76,7 +77,7 @@ public class DeployService {
             editorDriver.forgetProject(GitDeploy.deployWorktreePath(target.path(), taskId));
         }
         if (!blocked.isEmpty()) {
-            return notFinished(taskId, merged, blocked, obstacle);
+            return notFinished(taskId, merged, blocked, Objects.requireNonNull(obstacle));
         }
         // Nothing landed and nothing resumed past means there was nothing to deploy at all.
         if (merged.isEmpty() && idle != null && from == 0) {

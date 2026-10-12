@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.port.EditorDriver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -11,6 +12,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 /** The only writes to a shared branch: a deploy's merge, and the revert that undoes it. */
 @Service
@@ -291,7 +293,7 @@ public class GitDeploy {
         }
     }
 
-    public static String shortSha(String sha) {
+    public static String shortSha(@Nullable String sha) {
         return sha == null || sha.length() < 8 ? String.valueOf(sha) : sha.substring(0, 8);
     }
 
@@ -300,7 +302,7 @@ public class GitDeploy {
     }
 
     public static Path deployWorktreePath(Path projectPath, String sourceBranch) {
-        return projectPath.toAbsolutePath().normalize().getParent()
+        return Objects.requireNonNull(projectPath.toAbsolutePath().normalize().getParent())
                 .resolve(TaskName.slug(sourceBranch) + "-deploy");
     }
 
@@ -340,7 +342,7 @@ public class GitDeploy {
 
     /** Where a revert is staged — separate from the deploy worktree, which may be sitting in a conflict. */
     public static Path revertWorktreePath(Path projectPath, String sourceBranch) {
-        return projectPath.toAbsolutePath().normalize().getParent()
+        return Objects.requireNonNull(projectPath.toAbsolutePath().normalize().getParent())
                 .resolve(TaskName.slug(sourceBranch) + "-revert");
     }
 

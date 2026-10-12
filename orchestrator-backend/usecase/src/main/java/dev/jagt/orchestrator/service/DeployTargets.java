@@ -6,12 +6,14 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /** Each repository of a task paired with where it lands, as the deploy, its undo and the conflict registry read it. */
@@ -29,7 +31,7 @@ public class DeployTargets {
     public List<Target> all(TaskState task) {
         List<Target> targets = new ArrayList<>();
         for (TaskRepo repo : task.repos()) {
-            targets.add(new Target(repo.project(), configService.project(repo.project())));
+            targets.add(new Target(Objects.requireNonNull(repo.project()), configService.project(Objects.requireNonNull(repo.project()))));
         }
         return targets;
     }
@@ -42,7 +44,7 @@ public class DeployTargets {
         List<Target> landed = new ArrayList<>();
         for (TaskRepo repo : task.repos()) {
             if (repo.deployCommit() != null && !repo.deployCommit().isBlank()) {
-                landed.add(new Target(repo.project(), configService.project(repo.project())));
+                landed.add(new Target(Objects.requireNonNull(repo.project()), configService.project(Objects.requireNonNull(repo.project()))));
             }
         }
         return landed;
@@ -67,7 +69,8 @@ public class DeployTargets {
         Map<String, ProjectConfig> projects = configService.load().projects();
         return task.repos().stream()
                 .filter(repo -> projects.containsKey(repo.project()))
-                .map(repo -> new Target(repo.project(), projects.get(repo.project())))
+                .map(repo -> new Target(Objects.requireNonNull(repo.project()),
+                        Objects.requireNonNull(projects.get(repo.project()))))
                 .filter(target -> gitDeploy.hasDeployWorktree(target.path(), taskId))
                 .findFirst();
     }
@@ -87,7 +90,7 @@ public class DeployTargets {
         }
     }
 
-    public static String mergeCommit(TaskState task, Target target) {
+    public static @Nullable String mergeCommit(TaskState task, Target target) {
         String commit = task.repo(target.project()).map(TaskRepo::deployCommit).orElse(null);
         return commit == null || commit.isBlank() ? null : commit;
     }

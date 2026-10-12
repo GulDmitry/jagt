@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.task.BranchStrategy;
 import dev.jagt.orchestrator.task.GitRemote;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
@@ -343,7 +344,7 @@ public class GitWorktrees {
     }
 
     /** Deletes {@code branchToDelete} too when non-null. Best-effort: failures are logged, not thrown. */
-    public void removeWorktree(Path projectPath, Path worktreePath, String branchToDelete) {
+    public void removeWorktree(Path projectPath, Path worktreePath, @Nullable String branchToDelete) {
         git.locked(projectPath, () -> {
             git.reap(worktreePath);
             var removed = git.run(projectPath,

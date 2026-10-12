@@ -3,6 +3,8 @@ package dev.jagt.orchestrator.protocol;
 import dev.jagt.orchestrator.flow.AgentReport;
 import dev.jagt.orchestrator.task.TaskStatus;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Map;
 
 /**
@@ -11,7 +13,7 @@ import java.util.Map;
  * here, once. {@code claimed} is a claim rather than a verdict — measuring it needs a worktree, which no message
  * carries.
  */
-public record Reported(TaskStatus status, AgentReport claimed, String detail, String link,
+public record Reported(TaskStatus status, AgentReport claimed, @Nullable String detail, @Nullable String link,
                        Map<String, String> requests) {
 
     public Reported {

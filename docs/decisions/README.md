@@ -4,15 +4,14 @@
 
 One file per ARCHITECTURAL decision — jagt's rings and seams, where state lives, how sessions run, what owns a
 move: costly to reverse, or one a newcomer would undo as wrong. Never a feature's rule or parameter.
-The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidence and alternatives.
+The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence and alternatives.
 
 - Named `NNNN-what-is-decided.md`, numbered in order, never renumbered.
-- **Never edited once accepted**, typos aside: a change is a new record, the old one's status `superseded by NNNN`.
+- **Never edited once accepted**, typos aside: a change is a new record, marking the old `superseded by NNNN`.
 - Sections: **Status** (date, state), **Context** (what forced it, with numbers),
   **Decision**, **Rejected** (each with its reason), **Reopen when** (what measurement changes it).
-- At most 400 words, or it is two decisions.
-- **Linked**: a record names its rule first; this index lists every record
-  (`DecisionIndexTest`).
+- At most 400 words, else two decisions.
+- **Linked**: a record names its rule first; this index lists all (`DecisionIndexTest`).
 - A record taken after the fact says `recorded retroactively`, carrying only what history proves.
 
 ## Index
@@ -50,3 +49,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; a record keeps its evidenc
 - [0031 — Host CLI anywhere](0031-the-host-cli-is-judged-wherever-it-stands.md)
 - [0032 — Reviews keep decisions](0032-a-global-review-is-judged-against-what-is-decided.md)
 - [0033 — Usage via login](0033-jagt-reads-the-clis-own-login-for-usage-and-keeps-none.md)
+- [0034 — Null declared](0034-null-is-declared-and-the-compiler-checks-it.md)

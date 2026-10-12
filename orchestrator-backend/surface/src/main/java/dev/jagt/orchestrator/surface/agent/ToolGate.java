@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -50,7 +51,7 @@ public final class ToolGate {
     }
 
     /** Why the call is refused, or empty when it is allowed. */
-    public static Optional<String> refusal(String toolName, String line, String taskBranch, int boardPort) {
+    public static Optional<String> refusal(@Nullable String toolName, @Nullable String line, @Nullable String taskBranch, int boardPort) {
         if (!SHELL_TOOL.equalsIgnoreCase(toolName) || line == null || taskBranch == null
                 || taskBranch.isBlank()) {
             return Optional.empty();

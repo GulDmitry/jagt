@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp.tools;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.surface.mcp.Audience;
 import dev.jagt.orchestrator.surface.mcp.McpToolRegistry;
 import dev.jagt.orchestrator.surface.mcp.McpTools;
@@ -22,7 +23,7 @@ public class StatusTools implements McpTools {
     private final CallerScope callerScope;
 
     /** The task a report is about: the one it names where a Master sent it, else the caller's own worktree. */
-    private String taskOf(AgentStatusMessage said, String caller) {
+    private String taskOf(AgentStatusMessage said, @Nullable String caller) {
         return callerScope.resolve(said.taskId(), caller);
     }
 

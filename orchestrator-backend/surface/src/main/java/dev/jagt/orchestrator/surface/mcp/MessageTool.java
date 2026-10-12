@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
 import dev.jagt.orchestrator.protocol.Violation;
@@ -28,7 +29,7 @@ public final class MessageTool {
 
     public static <T extends Message> ToolHandler of(ObjectMapper mapper, String name, Audience audience,
                                                      Class<T> message,
-                                                     BiFunction<T, String, MessageContext> context,
+                                                     BiFunction<T, @Nullable String, MessageContext> context,
                                                      MessageHandler<T> handler) {
         return (given, callerTaskId) -> {
             JsonNode args = given.isMissingNode() || given.isNull() ? mapper.createObjectNode() : given;

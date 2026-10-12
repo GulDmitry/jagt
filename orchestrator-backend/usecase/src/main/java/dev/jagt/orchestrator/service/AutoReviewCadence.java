@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import dev.jagt.orchestrator.service.ConfigService.ConfigFile.AutoReviewConfig;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 
@@ -71,7 +72,7 @@ public final class AutoReviewCadence {
 
     /** The wait before the next poll for a request open this long, or {@code null} once the window has
      *  elapsed. */
-    public Duration pollInterval(Duration elapsed) {
+    public @Nullable Duration pollInterval(Duration elapsed) {
         if (elapsed.compareTo(window) > 0) {
             return null;
         }

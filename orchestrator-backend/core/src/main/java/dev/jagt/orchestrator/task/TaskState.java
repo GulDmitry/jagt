@@ -6,9 +6,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -23,12 +26,12 @@ public record TaskState(
         List<TaskRepo> repos,
         TaskStatus status,
         long lastActiveTimestamp,
-        String message,
-        String alias,
-        String title,
-        String ticketUrl,
+        @Nullable String message,
+        @Nullable String alias,
+        @Nullable String title,
+        @Nullable String ticketUrl,
         // Null = the project's configured baseBranch, so a config change still reaches the task.
-        String baseBranch,
+        @Nullable String baseBranch,
         // mrCreatedAt is when jagt stamped the round, not the host's own creation time. Zero = unset.
         long mrCreatedAt,
         // When the HOST says the request was opened; 0 until a read said so (a model read cannot).
@@ -37,18 +40,18 @@ public record TaskState(
         // When the watchdog last saw a sign of life from an agent it found silent; 0 = not silent.
         long silentSince,
         // Why it is silent, in the words a human reads. Null while it is not.
-        String silentBecause,
-        Boolean autoReview,
+        @Nullable String silentBecause,
+        @Nullable Boolean autoReview,
         // The host's own wording for the checks, unparsed. Null = never read.
-        String pipelineStatus,
+        @Nullable String pipelineStatus,
         // Whether the NEWEST round failed to read them, so the word above is an older round's.
         boolean pipelineUnread,
         // Whether the host says this round is approved. Null = no read has said yet.
-        Boolean approved,
+        @Nullable Boolean approved,
         // Null until the first metered call.
-        TokenUsage usage,
+        @Nullable TokenUsage usage,
         // What this task's own agent sessions have burned, and how far their log has been read.
-        AgentSpend agentSpend,
+        @Nullable AgentSpend agentSpend,
         // Append-only, oldest first: every status this task actually moved TO, with when.
         List<StatusChange> history
 ) {
@@ -64,40 +67,40 @@ public record TaskState(
     /** Reads BOTH shapes: the current one with {@code repos}, and older files with those fields at the top level. */
     @JsonCreator
     static TaskState fromJson(
-            @JsonProperty("repos") List<TaskRepo> repos,
-            @JsonProperty("project") String project,
-            @JsonProperty("worktreePath") String worktreePath,
-            @JsonProperty("remoteUrl") String remoteUrl,
-            @JsonProperty("mrUrl") String mrUrl,
-            @JsonProperty("deployCommit") String deployCommit,
+            @JsonProperty("repos") @Nullable List<TaskRepo> repos,
+            @JsonProperty("project") @Nullable String project,
+            @JsonProperty("worktreePath") @Nullable String worktreePath,
+            @JsonProperty("remoteUrl") @Nullable String remoteUrl,
+            @JsonProperty("mrUrl") @Nullable String mrUrl,
+            @JsonProperty("deployCommit") @Nullable String deployCommit,
             @JsonProperty("status") TaskStatus status,
             @JsonProperty("lastActiveTimestamp") long lastActiveTimestamp,
-            @JsonProperty("message") String message,
-            @JsonProperty("alias") String alias,
-            @JsonProperty("title") String title,
-            @JsonProperty("ticketUrl") String ticketUrl,
-            @JsonProperty("baseBranch") String baseBranch,
+            @JsonProperty("message") @Nullable String message,
+            @JsonProperty("alias") @Nullable String alias,
+            @JsonProperty("title") @Nullable String title,
+            @JsonProperty("ticketUrl") @Nullable String ticketUrl,
+            @JsonProperty("baseBranch") @Nullable String baseBranch,
             @JsonProperty("mrCreatedAt") long mrCreatedAt,
-            @JsonProperty("requestOpenedAt") Long requestOpenedAt,
+            @JsonProperty("requestOpenedAt") @Nullable Long requestOpenedAt,
             @JsonProperty("lastPolledAt") long lastPolledAt,
             // Boxed: a file written before this field existed omits it, and Jackson refuses an absent value
             // onto a primitive.
-            @JsonProperty("silentSince") Long silentSince,
-            @JsonProperty("silentBecause") String silentBecause,
-            @JsonProperty("autoReview") Boolean autoReview,
-            @JsonProperty("pipelineStatus") String pipelineStatus,
-            @JsonProperty("pipelineUnread") Boolean pipelineUnread,
-            @JsonProperty("approved") Boolean approved,
-            @JsonProperty("usage") TokenUsage usage,
-            @JsonProperty("agentSpend") AgentSpend agentSpend,
-            @JsonProperty("history") List<StatusChange> history) {
+            @JsonProperty("silentSince") @Nullable Long silentSince,
+            @JsonProperty("silentBecause") @Nullable String silentBecause,
+            @JsonProperty("autoReview") @Nullable Boolean autoReview,
+            @JsonProperty("pipelineStatus") @Nullable String pipelineStatus,
+            @JsonProperty("pipelineUnread") @Nullable Boolean pipelineUnread,
+            @JsonProperty("approved") @Nullable Boolean approved,
+            @JsonProperty("usage") @Nullable TokenUsage usage,
+            @JsonProperty("agentSpend") @Nullable AgentSpend agentSpend,
+            @JsonProperty("history") @Nullable List<StatusChange> history) {
         List<TaskRepo> resolved = repos != null && !repos.isEmpty()
                 ? repos
                 : List.of(new TaskRepo(project, worktreePath, remoteUrl, mrUrl, deployCommit));
         return new TaskState(resolved, status, lastActiveTimestamp, message, alias, title, ticketUrl,
                 baseBranch, mrCreatedAt, requestOpenedAt == null ? 0 : requestOpenedAt, lastPolledAt,
                 silentSince == null ? 0 : silentSince, silentBecause, autoReview, pipelineStatus,
-                pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history);
+                pipelineUnread != null && pipelineUnread, approved, usage, agentSpend, history == null ? List.of() : history);
     }
 
     @JsonIgnore
@@ -106,28 +109,28 @@ public record TaskState(
     }
 
     @JsonIgnore
-    public String project() {
+    public @Nullable String project() {
         return primary().project();
     }
 
     @JsonIgnore
-    public String worktreePath() {
+    public @Nullable String worktreePath() {
         return primary().worktreePath();
     }
 
     @JsonIgnore
-    public String remoteUrl() {
+    public @Nullable String remoteUrl() {
         return primary().remoteUrl();
     }
 
     /** The primary repo's request only; a multi-repo task has one per repo. */
     @JsonIgnore
-    public String mrUrl() {
+    public @Nullable String mrUrl() {
         return primary().mrUrl();
     }
 
     @JsonIgnore
-    public String deployCommit() {
+    public @Nullable String deployCommit() {
         return primary().deployCommit();
     }
 
@@ -144,7 +147,7 @@ public record TaskState(
     /** Empty when that project is not one of the task's, or holds no request yet. */
     @JsonIgnore
     public Optional<String> reviewRequestOf(String project) {
-        return repos.stream().filter(repo -> repo.project().equals(project))
+        return repos.stream().filter(repo -> Objects.requireNonNull(repo.project()).equals(project))
                 .map(TaskRepo::mrUrl).filter(url -> url != null && !url.isBlank()).findFirst();
     }
 
@@ -161,7 +164,7 @@ public record TaskState(
     }
 
     /** A status move — the ONE place history grows. */
-    public TaskState withStatus(TaskStatus status, String message) {
+    public TaskState withStatus(TaskStatus status, @Nullable String message) {
         return withStatus(status, message, false);
     }
 
@@ -169,7 +172,7 @@ public record TaskState(
      * {@code event} records a step even when the status is unchanged: true for something DONE to the task, false for
      * a task repeating itself, whose keep-alives would otherwise drown the real transitions.
      */
-    public TaskState withStatus(TaskStatus status, String message, boolean event) {
+    public TaskState withStatus(TaskStatus status, @Nullable String message, boolean event) {
         long now = System.currentTimeMillis();
         List<StatusChange> known = seededHistory();
         boolean record = event || status != this.status;
@@ -180,7 +183,7 @@ public record TaskState(
     }
 
     /** A NEW review round on one repository's request. The status that follows is not decided here. */
-    public TaskState withReviewRound(String project, String reviewRequestUrl) {
+    public TaskState withReviewRound(@Nullable String project, String reviewRequestUrl) {
         long now = System.currentTimeMillis();
         return relinked(project, reviewRequestUrl).lastActiveTimestamp(now)
                 // A new round has new checks and no verdict yet; the last one's answers describe a dead state.
@@ -233,7 +236,7 @@ public record TaskState(
      * What the watchdog found. Its own wither because silence is not activity: stamping it must not bump
      * {@code lastActiveTimestamp}. Any report clears it, since an agent that speaks is alive.
      */
-    public TaskState withSilentSince(long silentSince, String because) {
+    public TaskState withSilentSince(long silentSince, @Nullable String because) {
         return toBuilder().silentSince(silentSince).silentBecause(silentSince > 0 ? because : null).build();
     }
 
@@ -307,7 +310,7 @@ public record TaskState(
     }
 
     /** The merge commit a deploy created in THAT repo; the status move is a separate step. */
-    public TaskState withDeployCommit(String project, String deployCommit) {
+    public TaskState withDeployCommit(@Nullable String project, @Nullable String deployCommit) {
         return toBuilder().repos(mapRepo(project, repo -> repo.withDeployCommit(deployCommit))).build();
     }
 
@@ -315,7 +318,7 @@ public record TaskState(
         return withDeployCommit(primary().project(), deployCommit);
     }
 
-    public TaskState withMrUrl(String project, String mrUrl) {
+    public TaskState withMrUrl(@Nullable String project, String mrUrl) {
         return relinked(project, mrUrl).build();
     }
 
@@ -324,7 +327,7 @@ public record TaskState(
      * one as opened NOW — a request reaches here only as it is being opened. A {@code resume} adopting somebody
      * else's request is linked through the builder instead, and keeps its unknown age.
      */
-    private Builder relinked(String project, String mrUrl) {
+    private Builder relinked(@Nullable String project, String mrUrl) {
         List<TaskRepo> repos = mapRepo(project, repo -> repo.withMrUrl(mrUrl));
         if (repos.equals(this.repos)) {
             return toBuilder().repos(repos);
@@ -346,7 +349,7 @@ public record TaskState(
     }
 
     /** A null project key means the primary repo. */
-    private List<TaskRepo> mapRepo(String project, java.util.function.UnaryOperator<TaskRepo> change) {
+    private List<TaskRepo> mapRepo(@Nullable String project, java.util.function.UnaryOperator<TaskRepo> change) {
         List<TaskRepo> updated = new ArrayList<>(repos.size());
         for (TaskRepo repo : repos) {
             boolean matches = project == null
@@ -415,24 +418,24 @@ public record TaskState(
         private List<TaskRepo> repos;
         private TaskStatus status;
         private long lastActiveTimestamp;
-        private String message;
-        private String alias;
-        private String title;
-        private String ticketUrl;
-        private String baseBranch;
+        private @Nullable String message;
+        private @Nullable String alias;
+        private @Nullable String title;
+        private @Nullable String ticketUrl;
+        private @Nullable String baseBranch;
         private long mrCreatedAt;
         private long requestOpenedAt;
         private long lastPolledAt;
         private long silentSince;
-        private String silentBecause;
-        private Boolean autoReview;
-        private String pipelineStatus;
+        private @Nullable String silentBecause;
+        private @Nullable Boolean autoReview;
+        private @Nullable String pipelineStatus;
         private boolean pipelineUnread;
-        private Boolean approved;
-        private TokenUsage usage;
-        private AgentSpend agentSpend;
+        private @Nullable Boolean approved;
+        private @Nullable TokenUsage usage;
+        private @Nullable AgentSpend agentSpend;
         /** Null means "a brand-new task". */
-        private List<StatusChange> history;
+        private @Nullable List<StatusChange> history;
 
         private Builder(List<TaskRepo> repos, TaskStatus status) {
             this.repos = repos == null || repos.isEmpty() ? List.of(TaskRepo.of(null, null)) : List.copyOf(repos);
@@ -454,30 +457,30 @@ public record TaskState(
             return this;
         }
 
-        public Builder message(String message) {
+        public Builder message(@Nullable String message) {
             this.message = message;
             return this;
         }
 
-        public Builder alias(String alias) {
+        public Builder alias(@Nullable String alias) {
             this.alias = alias;
             return this;
         }
 
-        public Builder remoteUrl(String remoteUrl) {
+        public Builder remoteUrl(@Nullable String remoteUrl) {
             return firstRepo(repo -> repo.withRemoteUrl(remoteUrl));
         }
 
-        public Builder title(String title) {
+        public Builder title(@Nullable String title) {
             this.title = title;
             return this;
         }
 
-        public Builder mrUrl(String mrUrl) {
+        public Builder mrUrl(@Nullable String mrUrl) {
             return firstRepo(repo -> repo.withMrUrl(mrUrl));
         }
 
-        public Builder deployCommit(String deployCommit) {
+        public Builder deployCommit(@Nullable String deployCommit) {
             return firstRepo(repo -> repo.withDeployCommit(deployCommit));
         }
 
@@ -488,12 +491,12 @@ public record TaskState(
             return this;
         }
 
-        public Builder ticketUrl(String ticketUrl) {
+        public Builder ticketUrl(@Nullable String ticketUrl) {
             this.ticketUrl = ticketUrl;
             return this;
         }
 
-        public Builder baseBranch(String baseBranch) {
+        public Builder baseBranch(@Nullable String baseBranch) {
             this.baseBranch = baseBranch;
             return this;
         }
@@ -513,7 +516,7 @@ public record TaskState(
             return this;
         }
 
-        public Builder silentBecause(String silentBecause) {
+        public Builder silentBecause(@Nullable String silentBecause) {
             this.silentBecause = silentBecause;
             return this;
         }
@@ -523,12 +526,12 @@ public record TaskState(
             return this;
         }
 
-        public Builder autoReview(Boolean autoReview) {
+        public Builder autoReview(@Nullable Boolean autoReview) {
             this.autoReview = autoReview;
             return this;
         }
 
-        public Builder pipelineStatus(String pipelineStatus) {
+        public Builder pipelineStatus(@Nullable String pipelineStatus) {
             this.pipelineStatus = pipelineStatus;
             return this;
         }
@@ -538,22 +541,22 @@ public record TaskState(
             return this;
         }
 
-        public Builder approved(Boolean approved) {
+        public Builder approved(@Nullable Boolean approved) {
             this.approved = approved;
             return this;
         }
 
-        public Builder usage(TokenUsage usage) {
+        public Builder usage(@Nullable TokenUsage usage) {
             this.usage = usage;
             return this;
         }
 
-        public Builder agentSpend(AgentSpend agentSpend) {
+        public Builder agentSpend(@Nullable AgentSpend agentSpend) {
             this.agentSpend = agentSpend;
             return this;
         }
 
-        public Builder history(List<StatusChange> history) {
+        public Builder history(@Nullable List<StatusChange> history) {
             this.history = history;
             return this;
         }

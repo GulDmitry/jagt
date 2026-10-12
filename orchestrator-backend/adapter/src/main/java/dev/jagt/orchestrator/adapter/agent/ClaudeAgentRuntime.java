@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import tools.jackson.databind.json.JsonMapper;
+import org.jspecify.annotations.Nullable;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -58,7 +59,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
     }
 
     @Override
-    public String launchCommand(Path worktree, boolean planMode, String model, String prompt) {
+    public String launchCommand(Path worktree, boolean planMode, String model, @Nullable String prompt) {
         return COMPACT_ENV + claude.command()
                 + (planMode ? " --permission-mode plan" : "")
                 + (model == null || model.isBlank() ? "" : " --model " + shellQuote(model.strip()))
@@ -196,7 +197,7 @@ public class ClaudeAgentRuntime extends AbstractAgentRuntime {
      * worktree is an untrusted project, where the human's global output style may not apply; disabling plugins
      * keeps a ~1-2GB language server from spawning per worktree.
      */
-    static String settingsJson(String outputStyle, List<String> disabledPlugins, List<String> allowedTools,
+    static String settingsJson(@Nullable String outputStyle, List<String> disabledPlugins, List<String> allowedTools,
                                String hooksLine) {
         String styleLine = outputStyle == null || outputStyle.isBlank() ? ""
                 : "\n  \"outputStyle\": " + quoted(outputStyle) + ",";

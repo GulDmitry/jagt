@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.flow;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.TaskStore;
 import dev.jagt.orchestrator.task.TaskState;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,7 +27,7 @@ public class FlowReports {
     public record Landed(TaskStatus previous, TaskStatus now) {
     }
 
-    public boolean report(String taskId, TaskStatus status, String message) {
+    public boolean report(String taskId, TaskStatus status, @Nullable String message) {
         return report(taskId, status, message, (was, next) -> next).isPresent();
     }
 
@@ -34,7 +35,7 @@ public class FlowReports {
      * The same, plus whatever else the report established. Applied in the SAME write, because a status that refuses
      * to exist without its link must not be able to land first; {@code alsoRecord} is handed the status BEFORE it.
      */
-    public Optional<Landed> report(String taskId, TaskStatus status, String message,
+    public Optional<Landed> report(String taskId, TaskStatus status, @Nullable String message,
                                    BiFunction<TaskStatus, TaskState, TaskState> alsoRecord) {
         return report(taskId, status, message, alsoRecord, task -> false);
     }
@@ -43,7 +44,7 @@ public class FlowReports {
      * The same, told per task whether a hand-back still owes jagt a verification run. Asked of the state being
      * written, so two reports arriving together cannot disagree about it.
      */
-    public Optional<Landed> report(String taskId, TaskStatus status, String message,
+    public Optional<Landed> report(String taskId, TaskStatus status, @Nullable String message,
                                    BiFunction<TaskStatus, TaskState, TaskState> alsoRecord,
                                    Predicate<TaskState> verificationOwed) {
         if (!FlowRules.reportable(status)) {

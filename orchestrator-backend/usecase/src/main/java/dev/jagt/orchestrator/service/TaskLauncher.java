@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Answer;
 import dev.jagt.orchestrator.task.LaunchRequest;
 import dev.jagt.orchestrator.task.Launched;
 import dev.jagt.orchestrator.task.TicketFacts;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -59,7 +60,7 @@ public class TaskLauncher {
     }
 
     /** In the order given, the FIRST being where the agent's session runs; or the only project configured. */
-    public List<String> resolveProjects(String project) {
+    public List<String> resolveProjects(@Nullable String project) {
         Set<String> keys = configService.load().projects().keySet();
         if (project != null && !project.isBlank()) {
             List<String> named = Arrays.stream(project.split(",")).map(String::strip)

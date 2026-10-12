@@ -6,6 +6,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.SerializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
+import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -49,7 +50,7 @@ final class ClaudeTrust {
     }
 
     /** Null rather than the unchanged text, so a file nothing was added to is never rewritten. */
-    static String accepted(String config, String worktree) {
+    static @Nullable String accepted(String config, String worktree) {
         ObjectNode root = object(config, worktree, UNTRUSTED);
         if (root == null) {
             return null;
@@ -68,7 +69,7 @@ final class ClaudeTrust {
     }
 
     /** The whole entry: a retired worktree is a path nothing will ever run in again. */
-    static String forgotten(String config, String worktree) {
+    static @Nullable String forgotten(String config, String worktree) {
         ObjectNode root = object(config, worktree, STALE);
         if (root == null || !root.path(PROJECTS).isObject()) {
             return null;
@@ -80,7 +81,7 @@ final class ClaudeTrust {
         return JSON.writeValueAsString(root);
     }
 
-    private static ObjectNode object(String config, String worktree, String effect) {
+    private static @Nullable ObjectNode object(String config, String worktree, String effect) {
         JsonNode parsed = JSON.readTree(config.isBlank() ? "{}" : config);
         if (!parsed.isObject()) {
             log.atWarn().setMessage("trust config unusable")
@@ -134,7 +135,7 @@ final class ClaudeTrust {
         }
     }
 
-    private static void discard(Path staged) {
+    private static void discard(@Nullable Path staged) {
         if (staged == null) {
             return;
         }

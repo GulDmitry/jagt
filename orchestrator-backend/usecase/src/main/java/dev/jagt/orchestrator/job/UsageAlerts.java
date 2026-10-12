@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.port.SubscriptionUsage.Paid;
 import dev.jagt.orchestrator.port.SubscriptionUsage.Snapshot;
 import dev.jagt.orchestrator.port.SubscriptionUsage.Window;
 import dev.jagt.orchestrator.service.UsageLimits;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -37,7 +38,7 @@ class UsageAlerts {
     private final List<Integer> paidThresholds;
     private final ZoneId zone;
     private final Map<String, String> firedIn = new HashMap<>();
-    private Paid previous;
+    private @Nullable Paid previous;
 
     UsageAlerts(List<Integer> thresholds, List<Integer> paidThresholds, ZoneId zone) {
         this.thresholds = thresholds.stream().sorted(Comparator.reverseOrder()).toList();

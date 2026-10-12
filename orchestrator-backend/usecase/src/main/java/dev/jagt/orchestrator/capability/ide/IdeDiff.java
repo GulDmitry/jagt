@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /** A task opened as a static diff against what its request targets. */
 @Component
@@ -35,7 +36,7 @@ class IdeDiff {
 
     /** The base it was read against. */
     private String openDiffOf(String taskId, TaskState task, TaskRepo repo) {
-        ProjectConfig project = configService.project(repo.project());
+        ProjectConfig project = configService.project(Objects.requireNonNull(repo.project()));
         Path projectPath = Path.of(project.path());
         // The effective base, read exactly as the request's target is.
         String configured = task.baseBranchOr(project.baseBranch());
@@ -44,9 +45,9 @@ class IdeDiff {
                     + " so a diff of " + taskId + " has nothing to read against");
         }
         String diffBase = "origin/" + configured.replaceFirst("^origin/", "");
-        Path base = diffCheckouts.checkoutBaseForDiff(projectPath, diffBase, taskId, repo.project());
+        Path base = diffCheckouts.checkoutBaseForDiff(projectPath, diffBase, taskId, Objects.requireNonNull(repo.project()));
         Path clean = diffCheckouts.checkoutWorktreeCleanForDiff(Path.of(repo.worktreePath()), projectPath,
-                diffBase, taskId, repo.project());
+                diffBase, taskId, Objects.requireNonNull(repo.project()));
         editorDriver.openDiff(base, clean);
         return diffBase;
     }

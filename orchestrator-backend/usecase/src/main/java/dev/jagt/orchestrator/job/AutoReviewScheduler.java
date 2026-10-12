@@ -12,11 +12,13 @@ import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -102,7 +104,7 @@ public class AutoReviewScheduler implements Job {
                     // Keyed by the WINDOW: another round starts a new one without ever leaving CI_POLLING.
                     if (windowElapsedNotified.add(taskId + "@" + task.mrCreatedAt())) {
                         notifications.send(Notification.fromAgent(taskId, "auto-review",
-                                AutoReviewWatch.windowElapsed(cadence.windowHours()).note()));
+                                Objects.requireNonNull(AutoReviewWatch.windowElapsed(cadence.windowHours()).note())));
                     }
                 }
                 case POLL -> poll(taskId, task.alias(), task.mrCreatedAt());
@@ -121,7 +123,7 @@ public class AutoReviewScheduler implements Job {
         };
     }
 
-    private void poll(String taskId, String alias, long round) {
+    private void poll(String taskId, @Nullable String alias, long round) {
         // Stops the tick from QUEUING polls behind a sweep that runs for minutes. It does NOT make a task's
         // sweeps mutually exclusive; that exclusion lives where every trigger passes through.
         if (!inFlight.add(taskId)) {

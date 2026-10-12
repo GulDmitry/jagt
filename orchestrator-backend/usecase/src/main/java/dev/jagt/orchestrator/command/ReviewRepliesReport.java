@@ -8,6 +8,7 @@ import dev.jagt.orchestrator.service.WorktreeFiles;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -103,7 +104,7 @@ public class ReviewRepliesReport {
     }
 
     /** {@code number} 0 for text that stands outside every block — it is printed where it was written. */
-    private static String rendered(String heading, List<String> lines, int number) {
+    private static String rendered(@Nullable String heading, List<String> lines, int number) {
         List<String> kept = new ArrayList<>(lines.stream().dropWhile(String::isBlank).toList());
         while (!kept.isEmpty() && kept.get(kept.size() - 1).isBlank()) {
             kept.remove(kept.size() - 1);

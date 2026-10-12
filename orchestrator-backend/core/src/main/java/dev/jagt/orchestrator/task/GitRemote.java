@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * What jagt reads off a git remote URL, in both shapes a remote comes in:
  * {@code git@host:group/proj.git} and {@code https://host/group/proj(.git)}.
@@ -10,7 +12,7 @@ public final class GitRemote {
     }
 
     /** {@code group/proj}, or null when the remote is blank or has no path part. */
-    public static String projectPath(String remoteUrl) {
+    public static @Nullable String projectPath(@Nullable String remoteUrl) {
         String s = stripSuffix(remoteUrl);
         if (s == null) {
             return null;
@@ -25,11 +27,11 @@ public final class GitRemote {
     }
 
     /** The remote as it may be written down: what an https remote carries up to its last {@code @} is a credential. */
-    public static String withoutCredentials(String remoteUrl) {
+    public static @Nullable String withoutCredentials(@Nullable String remoteUrl) {
         return remoteUrl == null ? null : remoteUrl.replaceFirst("^(?i)(https?://)[^/]*@", "$1");
     }
 
-    private static String stripSuffix(String remoteUrl) {
+    private static @Nullable String stripSuffix(@Nullable String remoteUrl) {
         if (remoteUrl == null || remoteUrl.isBlank()) {
             return null;
         }

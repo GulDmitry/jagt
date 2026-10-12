@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.task.ActionOrigin;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.ObjectMapper;
@@ -54,8 +55,8 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
      * The last parse, keyed by the file version it came from: re-parsing per accessor lets one decision straddle
      * two versions of the file. Handed out as a COPY, always — callers mutate the task map in place.
      */
-    private StateFile cached;
-    private FileVersion cachedVersion;
+    private @Nullable StateFile cached;
+    private @Nullable FileVersion cachedVersion;
 
     private record FileVersion(FileTime modified, long size) {
     }
@@ -146,7 +147,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     }
 
     /** The task a caller's working directory belongs to. ANY of its repositories answers, not just the first. */
-    public Optional<Map.Entry<String, TaskState>> findByWorktree(String cwd) {
+    public Optional<Map.Entry<String, TaskState>> findByWorktree(@Nullable String cwd) {
         if (cwd == null || cwd.isBlank()) {
             return Optional.empty();
         }
@@ -194,7 +195,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
      * Names the asker on a step that was just taken. The only layer that sees both the step and
      * {@link OriginContext}.
      */
-    private static TaskState stamped(TaskState before, TaskState after) {
+    private static TaskState stamped(@Nullable TaskState before, TaskState after) {
         ActionOrigin origin = OriginContext.current();
         if (origin == null || after.history().isEmpty() || !tookAStep(before, after)) {
             return after;
@@ -202,7 +203,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         return after.withLastChangeOrigin(origin);
     }
 
-    private static boolean tookAStep(TaskState before, TaskState after) {
+    private static boolean tookAStep(@Nullable TaskState before, TaskState after) {
         if (before == null) {
             return true;
         }
@@ -247,7 +248,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     private StateFile readUnlocked() {
         if (!Files.exists(stateFile)) {
             cache(null, null);
-            return new StateFile(null);
+            return new StateFile(Map.of());
         }
         FileVersion version = versionOnDisk();
         if (cached != null && cachedVersion != null && cachedVersion.equals(version)) {
@@ -285,13 +286,13 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
         return recovered;
     }
 
-    private void cache(StateFile state, FileVersion version) {
+    private void cache(@Nullable StateFile state, @Nullable FileVersion version) {
         cached = state == null || version == null ? null : new StateFile(state.tasks());
         cachedVersion = version;
     }
 
     /** Null when the attributes cannot be read, which simply keeps every read a re-parse. */
-    private FileVersion versionOnDisk() {
+    private @Nullable FileVersion versionOnDisk() {
         try {
             BasicFileAttributes attributes = Files.readAttributes(stateFile, BasicFileAttributes.class);
             return new FileVersion(attributes.lastModifiedTime(), attributes.size());

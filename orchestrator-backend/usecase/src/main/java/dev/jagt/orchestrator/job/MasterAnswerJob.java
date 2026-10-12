@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -53,7 +54,7 @@ public class MasterAnswerJob implements Job {
         }
         stateService.tasks().entrySet().stream()
                 .filter(entry -> asking(entry.getValue())
-                        && !entry.getValue().message().equals(unanswered.get(entry.getKey())))
+                        && !Objects.requireNonNull(entry.getValue().message()).equals(unanswered.get(entry.getKey())))
                 .findFirst()
                 .ifPresent(entry -> answer(entry.getKey(), entry.getValue(), config));
     }
@@ -77,8 +78,8 @@ public class MasterAnswerJob implements Job {
         boolean stuck = given >= MasterDecisions.ANSWERS_PER_TREE;
         log.atInfo().setMessage("master answers").addKeyValue("task", taskId).addKeyValue("alias", task.alias())
                 .log();
-        Optional<String> decision = panel.answer(taskId, task, task.message(), config, stuck);
-        if (decision.isEmpty() || !verdicts.answered(taskId, task, task.message(), decision.get(), stuck)) {
+        Optional<String> decision = panel.answer(taskId, task, Objects.requireNonNull(task.message()), config, stuck);
+        if (decision.isEmpty() || !verdicts.answered(taskId, task, Objects.requireNonNull(task.message()), decision.get(), stuck)) {
             log.atWarn().setMessage("master answer unusable").addKeyValue("task", taskId)
                     .addKeyValue("effect", "the question waits for the human")
                     .log();

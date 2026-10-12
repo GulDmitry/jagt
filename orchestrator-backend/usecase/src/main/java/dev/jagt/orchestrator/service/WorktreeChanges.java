@@ -4,9 +4,11 @@ import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -52,7 +54,7 @@ public class WorktreeChanges {
         StringBuilder state = new StringBuilder();
         for (TaskRepo repo : task.repos()) {
             try {
-                state.append(inspection.treeState(projectPath(repo.project()), Path.of(repo.worktreePath())))
+                state.append(inspection.treeState(projectPath(Objects.requireNonNull(repo.project())), Path.of(repo.worktreePath())))
                         .append(';');
             } catch (RuntimeException e) {
                 warn(repo.worktreePath(), e);
@@ -64,7 +66,7 @@ public class WorktreeChanges {
 
     private Optional<Boolean> uncommitted(TaskRepo repo) {
         try {
-            return Optional.of(inspection.hasUncommittedChanges(projectPath(repo.project()),
+            return Optional.of(inspection.hasUncommittedChanges(projectPath(Objects.requireNonNull(repo.project())),
                     Path.of(repo.worktreePath())));
         } catch (RuntimeException e) {
             warn(repo.worktreePath(), e);
@@ -91,8 +93,8 @@ public class WorktreeChanges {
     /** Whether a ship would carry anything: a request already open, or work some repository holds. */
     public boolean anyToShip(TaskState task) {
         return task.repos().stream().anyMatch(repo -> repo.hasReviewRequest()
-                || holdsWork(repo.project(), repo.worktreePath(),
-                        targetBranch(task, configService.project(repo.project()).baseBranch())));
+                || holdsWork(Objects.requireNonNull(repo.project()), Objects.requireNonNull(repo.worktreePath()),
+                        targetBranch(task, configService.project(Objects.requireNonNull(repo.project())).baseBranch())));
     }
 
     /** A task cut from a parent feature branch merges back into it, not into that repository's configured base. */
@@ -107,8 +109,8 @@ public class WorktreeChanges {
         for (TaskRepo repo : task.repos()) {
             diff.append("# ").append(repo.project()).append('\n');
             try {
-                String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
-                diff.append(inspection.changesSince(projectPath(repo.project()), Path.of(repo.worktreePath()), base));
+                String base = task.baseBranchOr(configService.project(Objects.requireNonNull(repo.project())).baseBranch());
+                diff.append(inspection.changesSince(projectPath(Objects.requireNonNull(repo.project())), Path.of(repo.worktreePath()), base));
             } catch (RuntimeException e) {
                 warn(repo.worktreePath(), e);
                 diff.append("jagt could not read it: ").append(e.getMessage()).append('\n');
@@ -122,8 +124,8 @@ public class WorktreeChanges {
         int added = 0;
         for (TaskRepo repo : task.repos()) {
             try {
-                String base = task.baseBranchOr(configService.project(repo.project()).baseBranch());
-                added += inspection.agentFileLinesAdded(projectPath(repo.project()), Path.of(repo.worktreePath()), base);
+                String base = task.baseBranchOr(configService.project(Objects.requireNonNull(repo.project())).baseBranch());
+                added += inspection.agentFileLinesAdded(projectPath(Objects.requireNonNull(repo.project())), Path.of(repo.worktreePath()), base);
             } catch (RuntimeException e) {
                 warn(repo.worktreePath(), e);
                 return Optional.empty();
@@ -136,7 +138,7 @@ public class WorktreeChanges {
         return Path.of(configService.project(project).path()).toAbsolutePath().normalize();
     }
 
-    private void warn(String worktreePath, RuntimeException cause) {
+    private void warn(@Nullable String worktreePath, RuntimeException cause) {
         log.atWarn().setMessage("worktree read failed")
                 .addKeyValue("path", worktreePath)
                 .addKeyValue("cause", cause.toString())

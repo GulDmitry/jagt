@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.flow.FlowRules;
 import dev.jagt.orchestrator.flow.Move;
 import dev.jagt.orchestrator.port.AgentRuntime;
@@ -21,7 +22,7 @@ public class TurnEnds {
     private final AgentRuntime runtime;
     private final ConfigService configService;
 
-    public String answer(String taskId, TaskState task, boolean sentOn, boolean pausedOnBackgroundWork) {
+    public String answer(String taskId, @Nullable TaskState task, boolean sentOn, boolean pausedOnBackgroundWork) {
         long turnStarted = probe.turnStartedAt(taskId);
         if (sentOn || pausedOnBackgroundWork || task == null || turnStarted == 0
                 || task.lastActiveTimestamp() >= turnStarted || !Move.endsUnreported(task.status(), task.message())) {
@@ -32,7 +33,7 @@ public class TurnEnds {
                 + " if the work is done, outcome=question if you need the human, IN_PROGRESS if you go on.");
     }
 
-    private String withTheMaster(TaskState task) {
+    private String withTheMaster(@Nullable TaskState task) {
         if (task == null || !FlowRules.headedForTheMaster(task.status()) || !configService.load().master().running()) {
             return "";
         }

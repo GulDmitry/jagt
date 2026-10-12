@@ -6,6 +6,7 @@ import dev.jagt.orchestrator.port.UserNotifier;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 /** A task notification links to the board narrowed to that task, through the filter the page already has. */
 @Component
@@ -29,7 +30,7 @@ public class DesktopNotifier implements Notifier {
         os.notify(title(notification), notification.body(), link(notification.taskId()));
     }
 
-    private String link(String taskId) {
+    private @Nullable String link(@Nullable String taskId) {
         return taskId == null ? null
                 : boardUrl + "?task=" + java.net.URLEncoder.encode(taskId, java.nio.charset.StandardCharsets.UTF_8);
     }

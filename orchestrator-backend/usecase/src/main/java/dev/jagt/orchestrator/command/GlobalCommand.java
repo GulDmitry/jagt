@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.flow.TaskView;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 
@@ -37,7 +38,7 @@ public interface GlobalCommand {
     }
 
     /** The part of a surface the verb typed alone hands over to, or null: the one place a page names it. */
-    default String part() {
+    default @Nullable String part() {
         return null;
     }
 

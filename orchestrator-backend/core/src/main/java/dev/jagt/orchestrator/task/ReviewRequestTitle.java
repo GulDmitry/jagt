@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.task;
 
+import org.jspecify.annotations.Nullable;
+
 /** The title of a task's review request (and of its first commit), expanded from the configured pattern. */
 public final class ReviewRequestTitle {
 
@@ -10,7 +12,7 @@ public final class ReviewRequestTitle {
      * {@code {ticket}}/{@code {title}} filled in, with the id never appearing twice however often it runs. A task
      * that never got a title expands to the ticket alone.
      */
-    public static String expand(String pattern, String taskId, String storedTitle) {
+    public static String expand(String pattern, String taskId, @Nullable String storedTitle) {
         String title = stripTicketPrefix(storedTitle, taskId);
         // With no title the placeholder's own separators go with it, wherever it sits in the pattern. Cleaning
         // up the RESULT instead would edit a title that legitimately ends in one of them.
@@ -25,7 +27,7 @@ public final class ReviewRequestTitle {
      * double the ticket. Idempotent: stripping an already-bare title is a no-op. Empty ("") when the title
      * carried nothing but the ticket; null stays null.
      */
-    public static String stripTicketPrefix(String title, String taskId) {
+    public static @Nullable String stripTicketPrefix(@Nullable String title, @Nullable String taskId) {
         if (title == null) {
             return null;
         }

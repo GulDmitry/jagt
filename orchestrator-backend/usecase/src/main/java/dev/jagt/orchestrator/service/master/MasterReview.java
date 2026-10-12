@@ -5,6 +5,7 @@ import dev.jagt.orchestrator.task.Artifact;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -63,7 +64,7 @@ public class MasterReview {
         return of(task).filter(verdict -> verdict.writtenAt() >= task.statusSince()).isPresent();
     }
 
-    public Path file(TaskState task) {
+    public @Nullable Path file(TaskState task) {
         String worktree = task.worktreePath();
         return worktree == null || worktree.isBlank() ? null : Path.of(worktree).resolve(FILE);
     }

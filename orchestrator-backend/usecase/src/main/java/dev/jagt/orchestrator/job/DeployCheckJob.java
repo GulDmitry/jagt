@@ -8,10 +8,12 @@ import dev.jagt.orchestrator.task.ProjectConfig;
 import dev.jagt.orchestrator.task.TaskRepo;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -75,8 +77,9 @@ public class DeployCheckJob implements Job {
                 + " fix it, and hand the round back as usual — it is reviewed, deployed and checked again.");
     }
 
-    private static String landed(TaskRepo repo, ProjectConfig project) {
-        String sha = repo.deployCommit().length() > 8 ? repo.deployCommit().substring(0, 8) : repo.deployCommit();
+    private static String landed(TaskRepo repo, @Nullable ProjectConfig project) {
+        String commit = Objects.requireNonNull(repo.deployCommit());
+        String sha = commit.length() > 8 ? commit.substring(0, 8) : commit;
         String branch = project == null || project.deployBranch() == null ? "its deploy branch"
                 : project.deployBranch();
         return "- " + repo.project() + ": " + sha + " on " + branch;

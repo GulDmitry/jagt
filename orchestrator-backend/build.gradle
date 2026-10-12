@@ -4,6 +4,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.1.0'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'net.ltgt.errorprone' version '5.1.1' apply false
 }
 
 group = 'dev.jagt'
@@ -24,11 +25,15 @@ dependencies {
 // names Spring needs. Declared once here, root assembly included, rather than copied into five build files.
 allprojects {
     apply plugin: 'java'
+    apply plugin: 'net.ltgt.errorprone'
 
     // Versions come from gradle.properties, which every project reads on its own. The centre is IN here: a
     // ring pinned below the versions the jar ships would have its tests pass against a library nothing runs.
     dependencies {
         implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+        implementation 'org.jspecify:jspecify'
+        errorprone "com.google.errorprone:error_prone_core:${errorProneVersion}"
+        errorprone "com.uber.nullaway:nullaway:${nullAwayVersion}"
     }
 
     // A tool writing its state relative to the working directory lands it in a resources folder, gitignored
@@ -50,6 +55,14 @@ allprojects {
 
     tasks.withType(JavaCompile).configureEach {
         options.compilerArgs.add('-parameters')
+        // NullAway alone: Error Prone's own checks are a separate decision.
+        options.errorprone {
+            disableAllChecks = true
+            enabled = name == 'compileJava'
+            error('NullAway')
+            option('NullAway:AnnotatedPackages', 'dev.jagt')
+            option('NullAway:JSpecifyMode', 'true')
+        }
     }
 
     tasks.withType(Test).configureEach {

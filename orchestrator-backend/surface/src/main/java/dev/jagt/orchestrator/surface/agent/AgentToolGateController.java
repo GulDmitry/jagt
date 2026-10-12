@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.agent;
 
+import org.jspecify.annotations.Nullable;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.jagt.orchestrator.service.StateService;
@@ -18,10 +19,10 @@ import java.util.Map;
 public class AgentToolGateController {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record ToolCall(@JsonProperty("tool_name") String toolName,
-                           @JsonProperty("tool_input") Map<String, Object> toolInput) {
+    public record ToolCall(@JsonProperty("tool_name") @Nullable String toolName,
+                           @JsonProperty("tool_input") @Nullable Map<String, Object> toolInput) {
 
-        String command() {
+        @Nullable String command() {
             Object command = toolInput == null ? null : toolInput.get("command");
             return command == null ? null : command.toString();
         }
@@ -36,8 +37,8 @@ public class AgentToolGateController {
     /** Whatever comes back here is printed into the session, so an allowed call answers no body. */
     @PostMapping(value = "/api/agent/tool", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> gate(
-            @RequestHeader(value = "X-Working-Directory", required = false) String cwd,
-            @RequestBody(required = false) ToolCall call, HttpServletRequest request) {
+            @RequestHeader(value = "X-Working-Directory", required = false) @Nullable String cwd,
+            @RequestBody(required = false) @Nullable ToolCall call, HttpServletRequest request) {
         if (call == null) {
             return ResponseEntity.noContent().build();
         }

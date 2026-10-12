@@ -1,5 +1,6 @@
 package dev.jagt.orchestrator.surface.mcp;
 
+import org.jspecify.annotations.Nullable;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.protocol.Message;
 import dev.jagt.orchestrator.protocol.MessageContext;
@@ -48,7 +49,7 @@ public class McpProtocolService implements McpToolRegistry {
     }
 
     /** {@code master}: the call presented the Master's token; a worktree of a registered task outranks it. */
-    public Optional<JsonNode> handle(JsonNode message, String callerCwd, boolean master) {
+    public Optional<JsonNode> handle(JsonNode message, @Nullable String callerCwd, boolean master) {
         String method = message.path("method").asString(null);
         JsonNode id = message.get("id");
         if (method == null) {
@@ -90,12 +91,12 @@ public class McpProtocolService implements McpToolRegistry {
         }
     }
 
-    public ObjectNode parseError(String message) {
+    public ObjectNode parseError(@Nullable String message) {
         return error(mapper.nullNode(), -32700, "Parse error: " + message);
     }
 
     /** Any MCP traffic from a registered worktree proves the agent is alive. */
-    private String keepAlive(String callerCwd) {
+    private @Nullable String keepAlive(@Nullable String callerCwd) {
         var caller = stateService.findByWorktree(callerCwd);
         caller.ifPresent(entry -> {
             if (System.currentTimeMillis() - entry.getValue().lastActiveTimestamp() > KEEP_ALIVE_THROTTLE_MS) {
@@ -116,7 +117,7 @@ public class McpProtocolService implements McpToolRegistry {
         return result;
     }
 
-    private JsonNode toolsList(String callerTaskId) {
+    private JsonNode toolsList(@Nullable String callerTaskId) {
         ObjectNode result = mapper.createObjectNode();
         ArrayNode list = result.putArray("tools");
         tools.values().stream().filter(spec -> spec.audience().admits(callerTaskId)).forEach(spec -> {
@@ -133,12 +134,12 @@ public class McpProtocolService implements McpToolRegistry {
     /** The one place a message is read off the wire and judged, so no tool can be the one that forgot. */
     @Override
     public <T extends Message> void tool(String name, Audience audience, Schema schema, Class<T> message,
-                                         BiFunction<T, String, MessageContext> context,
+                                         BiFunction<T, @Nullable String, MessageContext> context,
                                          MessageHandler<T> handler) {
         register(name, audience, schema.json(), MessageTool.of(mapper, name, audience, message, context, handler));
     }
 
-    private JsonNode callTool(JsonNode message, String callerTaskId) {
+    private JsonNode callTool(JsonNode message, @Nullable String callerTaskId) {
         String name = message.path("params").path("name").asString("");
         JsonNode args = message.path("params").path("arguments");
         ToolSpec spec = tools.get(name);

@@ -10,6 +10,7 @@ import dev.jagt.orchestrator.port.TerminalDriver;
 import dev.jagt.orchestrator.task.Artifact;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
@@ -40,7 +41,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     private final ConcurrentHashMap<String, Object> relayLocks = new ConcurrentHashMap<>();
     private final Set<String> draftWaits = ConcurrentHashMap.newKeySet();
 
-    public String startAgent(String taskId, String alias, Path worktreePath, boolean planMode) {
+    public String startAgent(String taskId, @Nullable String alias, Path worktreePath, boolean planMode) {
         return openTab(taskId, alias, worktreePath, configService.load(), planMode);
     }
 
@@ -74,7 +75,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 .orElseThrow(() -> Refusal.noSuchTask(taskId));
     }
 
-    public String openTaskTab(String taskId, String mode) {
+    public String openTaskTab(String taskId, @Nullable String mode) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         String session = openTab(taskId, task.alias(), Path.of(task.worktreePath()), configService.load(),
@@ -219,7 +220,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     }
 
     /** A line typed over a draft is glued to it and sent as the human's, so the nudge waits for an empty prompt. */
-    private void nudgeOnceSent(String session, String taskId, String alias) {
+    private void nudgeOnceSent(String session, String taskId, @Nullable String alias) {
         if (!draftWaits.add(taskId)) {
             return;
         }
@@ -253,7 +254,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         return relayLocks.computeIfAbsent(taskId, id -> new Object());
     }
 
-    private String openTab(String taskId, String alias, Path worktreePath, ConfigService.ConfigFile config,
+    private String openTab(String taskId, @Nullable String alias, Path worktreePath, ConfigService.ConfigFile config,
                            boolean planMode) {
         String session = agentSession(config, taskId);
         sessions.openTaskWindow(session, sessions.sessionName(config.viewer().session()), taskId,
@@ -276,7 +277,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     }
 
     /** `plan` = the agent plans first and the human approves the plan in its window; `auto` = straight to work. */
-    static boolean planMode(String mode) {
+    static boolean planMode(@Nullable String mode) {
         if (mode == null || mode.equalsIgnoreCase("auto")) {
             return false;
         }

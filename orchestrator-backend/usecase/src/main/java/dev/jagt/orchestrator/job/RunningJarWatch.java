@@ -3,6 +3,7 @@ package dev.jagt.orchestrator.job;
 import dev.jagt.orchestrator.port.Notification;
 import dev.jagt.orchestrator.notify.Notifications;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -58,8 +59,8 @@ public class RunningJarWatch implements Job {
 
     private final Notifications notifications;
     /** Null when this JVM is not running from a jar at all, and there is nothing to watch. */
-    private final Path jar;
-    private final Stamp atStartup;
+    private final @Nullable Path jar;
+    private final @Nullable Stamp atStartup;
     private boolean reported;
 
     // @Autowired disambiguates: with two constructors Spring otherwise refuses to choose.
@@ -68,7 +69,7 @@ public class RunningJarWatch implements Job {
         this(notifications, ownJar());
     }
 
-    RunningJarWatch(Notifications notifications, Path jar) {
+    RunningJarWatch(Notifications notifications, @Nullable Path jar) {
         this.notifications = notifications;
         this.jar = jar;
         this.atStartup = stamp(jar);
@@ -103,14 +104,14 @@ public class RunningJarWatch implements Job {
     }
 
     /** A rewrite, not a read: either fact changing is enough, and a file that VANISHED counts too. */
-    static boolean rewritten(Stamp atStartup, Stamp now) {
+    static boolean rewritten(@Nullable Stamp atStartup, @Nullable Stamp now) {
         if (atStartup == null) {
             return false;
         }
         return now == null || now.lastModified() != atStartup.lastModified() || now.size() != atStartup.size();
     }
 
-    private static Stamp stamp(Path jar) {
+    private static @Nullable Stamp stamp(@Nullable Path jar) {
         if (jar == null) {
             return null;
         }
@@ -121,7 +122,7 @@ public class RunningJarWatch implements Job {
         }
     }
 
-    private static Path ownJar() {
+    private static @Nullable Path ownJar() {
         return jarFromClassPath(System.getProperty("java.class.path"), Files::isRegularFile);
     }
 
@@ -130,7 +131,7 @@ public class RunningJarWatch implements Job {
      * a fat jar {@code getProtectionDomain().getCodeSource()} answers a {@code jar:nested:…} URL that
      * {@code Path.of} refuses. Anything else means several entries or a directory, and no single jar to watch.
      */
-    static Path jarFromClassPath(String classPath, java.util.function.Predicate<Path> isFile) {
+    static @Nullable Path jarFromClassPath(@Nullable String classPath, java.util.function.Predicate<Path> isFile) {
         if (classPath == null || classPath.isBlank() || classPath.contains(java.io.File.pathSeparator)) {
             return null;
         }

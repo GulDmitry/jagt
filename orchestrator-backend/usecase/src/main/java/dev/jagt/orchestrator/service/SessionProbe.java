@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.AgentRuntime;
 import dev.jagt.orchestrator.port.SessionHost;
 import dev.jagt.orchestrator.task.TaskState;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -28,10 +29,10 @@ public class SessionProbe {
     public enum State { WAITING, GONE, IDLE, WORKING }
 
     /** Since when nothing has moved, and what a harness said about it — null where none of them did. */
-    public record Silence(long since, State reported) {
+    public record Silence(long since, @Nullable State reported) {
 
         /** The words a human is owed, or null where nothing was said and the sentence is the surface's own. */
-        public String detail() {
+        public @Nullable String detail() {
             if (reported == State.GONE) {
                 return "the session ended";
             }

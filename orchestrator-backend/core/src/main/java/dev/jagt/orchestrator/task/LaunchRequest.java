@@ -2,6 +2,8 @@ package dev.jagt.orchestrator.task;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -13,8 +15,8 @@ import java.util.Set;
  * target with the review request, null = the project's own.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record LaunchRequest(String ref, String project, String mode, String strategy, String baseBranch,
-                            String notes) {
+public record LaunchRequest(@Nullable String ref, @Nullable String project, @Nullable String mode,
+                            @Nullable String strategy, @Nullable String baseBranch, @Nullable String notes) {
 
     public static final String GRAMMAR = "do <ticket|url> [project[,project…]] [plan] [from <branch>] [notes…]";
     /** No tracker item: the project comes first and the rest is the task itself. */
@@ -74,27 +76,27 @@ public record LaunchRequest(String ref, String project, String mode, String stra
         return !named.isEmpty() && known.containsAll(named);
     }
 
-    public LaunchRequest withRef(String ref) {
+    public LaunchRequest withRef(@Nullable String ref) {
         return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
     }
 
-    public LaunchRequest withProject(String project) {
+    public LaunchRequest withProject(@Nullable String project) {
         return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
     }
 
-    public LaunchRequest withMode(String mode) {
+    public LaunchRequest withMode(@Nullable String mode) {
         return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
     }
 
-    public LaunchRequest withStrategy(String strategy) {
+    public LaunchRequest withStrategy(@Nullable String strategy) {
         return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
     }
 
-    public LaunchRequest withBaseBranch(String baseBranch) {
+    public LaunchRequest withBaseBranch(@Nullable String baseBranch) {
         return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
     }
 
-    public LaunchRequest withNotes(String notes) {
+    public LaunchRequest withNotes(@Nullable String notes) {
         return new LaunchRequest(ref, project, mode, strategy, baseBranch, notes);
     }
 
@@ -104,7 +106,7 @@ public record LaunchRequest(String ref, String project, String mode, String stra
                 blankToNull(strategy), blankToNull(baseBranch), blankToNull(notes));
     }
 
-    private static String blankToNull(String value) {
+    private static @Nullable String blankToNull(@Nullable String value) {
         return value == null || value.isBlank() ? null : value.strip();
     }
 }

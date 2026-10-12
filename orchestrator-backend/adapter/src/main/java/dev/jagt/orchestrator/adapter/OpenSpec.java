@@ -4,6 +4,7 @@ import dev.jagt.orchestrator.port.Processes;
 import dev.jagt.orchestrator.port.Specs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -56,7 +58,7 @@ public class OpenSpec implements Specs {
                     .collect(Collectors.joining("\n"));
             return refused.isEmpty() ? Optional.empty() : Optional.of(refused);
         } catch (UncheckedIOException e) {
-            return Optional.of("could not read openspec/changes: " + e.getCause().getMessage());
+            return Optional.of("could not read openspec/changes: " + Objects.requireNonNull(e.getCause()).getMessage());
         }
     }
 

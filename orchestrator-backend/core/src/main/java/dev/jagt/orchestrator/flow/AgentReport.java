@@ -1,5 +1,7 @@
 package dev.jagt.orchestrator.flow;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -22,7 +24,7 @@ public enum AgentReport {
             "(?i)^\\s*(?:outcome\\s*[:=]\\s*(?:question|no[ _-]changes|progress)"
                     + "|awaiting|no[ _-]changes)\\b[\\s:.]*(?:[–—-]\\s+)?");
 
-    public static AgentReport of(String message) {
+    public static AgentReport of(@Nullable String message) {
         var matcher = MARKER.matcher(message == null ? "" : message);
         if (!matcher.find()) {
             return PLAIN;
@@ -35,12 +37,12 @@ public enum AgentReport {
     }
 
     /** The message without its marker, for a line that supplies its own label. */
-    public String detailOf(String message) {
+    public String detailOf(@Nullable String message) {
         return withoutMarker(message);
     }
 
     /** The same, for a caller that is DECIDING which marker belongs there rather than reading one. */
-    public static String withoutMarker(String message) {
+    public static String withoutMarker(@Nullable String message) {
         return message == null ? "" : MARKER.matcher(message).replaceFirst("");
     }
 }

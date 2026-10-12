@@ -8,9 +8,11 @@ import dev.jagt.orchestrator.task.NewTask;
 import dev.jagt.orchestrator.task.TaskName;
 import dev.jagt.orchestrator.task.TicketFacts;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -28,19 +30,21 @@ public class TaskLaunches {
     private final NewTaskWorktrees worktrees;
     private final TicketPlacement placement;
 
-    public Launched ticket(LaunchRequest request, List<String> chosen) {
+    public Launched ticket(LaunchRequest request, @Nullable List<String> chosen) {
         // The read answers with the canonical key, which is what names the branch and the worktree.
         return refusedForExistingBranch(request, chosen)
-                .orElseGet(() -> launched(request, placement.read(request.ref()), chosen));
+                .orElseGet(() -> launched(request, placement.read(Objects.requireNonNull(request.ref())), chosen));
     }
 
     /**
      * The same launch with the item's facts already read and PAID FOR. Intake reads them to decide the item may
      * be started at all, and paying a second time for the one answer is a cost jagt need not carry.
      */
-    public Launched ticket(LaunchRequest request, List<String> chosen, Answer<TicketFacts> read) {
+    public Launched ticket(LaunchRequest request, @Nullable List<String> chosen,
+                          Answer<TicketFacts> read) {
         LaunchRequest settled = request.strategy() != null || request.project() == null ? request
-                : request.withStrategy(worktrees.strategyForExisting(request.ref(), request.project()).id());
+                : request.withStrategy(worktrees.strategyForExisting(Objects.requireNonNull(request.ref()),
+                request.project()).id());
         return refusedForExistingBranch(settled, chosen).orElseGet(() -> launched(settled, read, chosen));
     }
 
@@ -49,7 +53,7 @@ public class TaskLaunches {
      * IS its branch and no tracker handed this one a key.
      */
     public Launched written(LaunchRequest request, List<String> projects) {
-        String written = request.notes();
+        String written = Objects.requireNonNull(request.notes());
         String named = TaskName.from(written);
         if (named == null) {
             return Launched.refused("error: nothing in that line can name a branch — open it with a word: "
@@ -61,26 +65,29 @@ public class TaskLaunches {
     }
 
     /** Warns before a task is started that would only collide later; empty where nothing is in the way. */
-    private Optional<Launched> refusedForExistingBranch(LaunchRequest request, List<String> chosen) {
+    private Optional<Launched> refusedForExistingBranch(LaunchRequest request,
+                                                               @Nullable List<String> chosen) {
         String ref = request.ref();
         if (!TaskName.isTicketKey(ref) || BranchStrategy.of(request.strategy()) != BranchStrategy.FRESH) {
             return Optional.empty();
         }
-        String existing = worktrees.existingBranchProject(ref, chosen == null ? List.of() : chosen);
+        String existing = worktrees.existingBranchProject(Objects.requireNonNull(ref), chosen == null ? List.of() : chosen);
         return existing == null ? Optional.empty()
                 : Optional.of(Launched.refused("branch '" + ref + "' already exists in " + existing
                         + " (previous run of this ticket). Say which: " + choice(BranchStrategy.RECREATE)
                         + ", or " + choice(BranchStrategy.RESUME) + "."));
     }
 
-    private Launched launched(LaunchRequest request, Answer<TicketFacts> read, List<String> chosen) {
-        return switch (placement.place(request.ref(), read, chosen)) {
+    private Launched launched(LaunchRequest request, Answer<TicketFacts> read,
+                              @Nullable List<String> chosen) {
+        return switch (placement.place(Objects.requireNonNull(request.ref()), read, chosen)) {
             case TicketPlacement.Refused refused -> Launched.refused(refused.message());
             case TicketPlacement.Placed placed -> created(request, placed, chosen, read);
         };
     }
 
-    private Launched created(LaunchRequest request, TicketPlacement.Placed placed, List<String> chosen,
+    private Launched created(LaunchRequest request, TicketPlacement.Placed placed,
+                             @Nullable List<String> chosen,
                              Answer<TicketFacts> read) {
         TicketFacts f = placed.facts();
         String instructions = withNotes("Implement " + f.key() + " — \"" + f.title()
@@ -107,7 +114,7 @@ public class TaskLaunches {
                 .baseBranch(request.baseBranch());
     }
 
-    private static String withNotes(String instructions, String notes) {
+    private static String withNotes(String instructions, @Nullable String notes) {
         return notes == null || notes.isBlank()
                 ? instructions
                 : instructions + "\n\nAdditional instructions from the human:\n" + notes;
