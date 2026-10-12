@@ -38,16 +38,17 @@ implements the ports, and the use cases (`capability/` `command/` `job/` `notify
 centre, `port/` `task/` `flow/` `protocol/`: the records, the rules, and the interfaces they declare. `port/` is
 *inside* that centre: the rules write those interfaces for their own needs, and `flow/` depends on them.
 
-`RingsTest` asserts exactly this:
+`RingsTest` asserts exactly this, on the bytecode through ArchUnit, on the text where bytecode is blind:
 
-- `task/`, `flow/` and `port/` name no other ring — by import, static import or qualified name;
-  `protocol/` names only them; `task/` names neither `flow/` nor `port/`, and `port/` no `flow/`.
+- `task/`, `flow/` and `port/` depend on no other ring; `protocol/` only on them; `task/` on neither `flow/` nor
+  `port/`, and `port/` not on `flow/`.
+- no two top-level folders depend on each other, either way round.
 - those four import no Spring and no Lombok. Jackson annotations stay: the record **is** the file format.
 - no OS name (`osascript`, `notify-send`, `setsid`, an install prefix, a Windows shell), and no vendor or editor
   name anywhere in a source, outside `adapter/`.
-- no ring between the centre and the edge names `adapter/` — a use case naming the edge is the rule backwards.
+- no ring between the centre and the edge depends on `adapter/`.
 - it proves it read every ring, so a refactor cannot empty it.
-- it cannot see resources and scripts, the words a host invents, or a cycle between two *sibling* folders.
+- it cannot see resources and scripts, or the words a host invents.
 - it exempts only `tmuxCommand` and `tmuxSession`, keys naming a vendor by design; renaming one a human already
   wrote is the owner's call.
 
@@ -77,8 +78,8 @@ answer. Every type in `flow/`, one question each:
 | `Attention` | whether the card is an interruption — one value for the badge, the count and the filter |
 | `TaskView` | what the board renders, built by `service/TaskViews` |
 
-- `withStatus` has exactly two callers outside the record itself: the two doors. One honest exception — a task is born
-  at NEW (`service/TaskProvisioning`).
+- `withStatus` has exactly two callers outside the record itself: the two doors (`FlowDoorsTest`). A task is born at NEW
+  (`service/TaskProvisioning`).
 - **A declaration without `.add()` is not in the table**; `FlowRules.allows(...)` is the query the engine and the
   projection call, not a declaration.
 - **An outcome with no stamp keeps the line the task already carries**, and still transitions if the table names one.

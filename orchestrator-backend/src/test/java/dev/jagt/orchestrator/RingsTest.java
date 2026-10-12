@@ -1,5 +1,8 @@
 package dev.jagt.orchestrator;
 
+import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -16,10 +19,18 @@ import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideOutsideOfPackage;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RingsTest {
+
+    private static final JavaClasses CODE = new ClassFileImporter()
+            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS).importPackages("dev.jagt.orchestrator");
 
     private static final List<Path> ROOTS = List.of(
             Path.of("core/src/main/java/dev/jagt/orchestrator"),
@@ -27,34 +38,27 @@ class RingsTest {
             Path.of("adapter/src/main/java/dev/jagt/orchestrator"),
             Path.of("surface/src/main/java/dev/jagt/orchestrator"),
             Path.of("src/main/java/dev/jagt/orchestrator"));
-    private static final Set<String> CORE = Set.of("flow", "task", "port");
-    private static final Set<String> PROTOCOL_MAY_SEE = Set.of("flow", "task", "port", "protocol");
 
     @ParameterizedTest
-    @ValueSource(strings = {"flow", "task", "port"})
-    void theCentreImportsNothingFromTheRingsAroundIt(String ring) {
-        assertThat(importsOf(ring).filter(imported -> !CORE.contains(imported))).isEmpty();
-    }
-
-    @Test
-    void theTaskRecordImportsNoRuleAndNoPort() {
-        assertThat(importsOf("task").filter(imported -> !imported.equals("task"))).isEmpty();
-    }
-
-    @Test
-    void aPortImportsNoRule() {
-        assertThat(importsOf("port").filter("flow"::equals)).isEmpty();
-    }
-
-    @Test
-    void theProtocolSpeaksOnlyTheCentresVocabulary() {
-        assertThat(importsOf("protocol").filter(imported -> !PROTOCOL_MAY_SEE.contains(imported))).isEmpty();
+    @CsvSource({"task, task", "port, task port", "flow, task port flow", "protocol, task port flow protocol"})
+    void aCentreRingDependsOnlyOnTheRingsItMaySee(String ring, String maySee) {
+        classes().that().resideInAPackage(packageOf(ring)).should().onlyDependOnClassesThat(
+                        resideOutsideOfPackage("dev.jagt.orchestrator..")
+                                .or(resideInAnyPackage(Stream.of(maySee.split(" ")).map(RingsTest::packageOf)
+                                        .toArray(String[]::new))))
+                .check(CODE);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"capability", "command", "job", "notify", "service", "surface", "config", "startup"})
     void nothingBetweenTheCentreAndTheEdgeNamesTheEdge(String ring) {
-        assertThat(importsOf(ring).filter("adapter"::equals)).isEmpty();
+        noClasses().that().resideInAPackage(packageOf(ring)).should().dependOnClassesThat()
+                .resideInAPackage(packageOf("adapter")).check(CODE);
+    }
+
+    @Test
+    void noTwoRingsDependOnEachOther() {
+        slices().matching("dev.jagt.orchestrator.(*)..").should().beFreeOfCycles().check(CODE);
     }
 
     @ParameterizedTest
@@ -110,10 +114,8 @@ class RingsTest {
                 .map(Path::getFileName)).isEmpty();
     }
 
-    private static Stream<String> importsOf(String ring) {
-        Pattern named = Pattern.compile("dev\\.jagt\\.orchestrator\\.([a-z]\\w*)");
-        return sources(ring).flatMap(text -> named.matcher(text).results())
-                .map(match -> match.group(1)).distinct();
+    private static String packageOf(String ring) {
+        return "dev.jagt.orchestrator." + ring + "..";
     }
 
     private static Stream<String> sources(String ring) {

@@ -68,9 +68,10 @@ what it needs, never who uses it: it names no caller, surface or feature, a comm
 
 - Gradle, **Groovy DSL only**. Never Maven, never Kotlin, `.kts` included.
 - Jackson v3 (`tools.jackson.*`, unchecked); annotations stay `com.fasterxml.jackson.annotation`.
-- **Three collaborators per class is the target, five the ceiling**, delegates included: group them into a component, never add a field.
+- **Three collaborators per class is the target, five the ceiling**, delegates included (`CollaboratorCeilingTest`):
+  group them into a component, never add a field.
 - **A test wiring over 3 mocks means the class does too much** (`MockCeilingTest`): fix the class, never the fixture.
-- **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it.
+- **Nothing below `flow/` decides a status.** `withStatus` lives in `flow/` and the record implementing it (`FlowDoorsTest`).
 - **Only `adapter/` names an OS or a vendor.** `core/` imports no Spring and no Lombok.
 - **The board has no build step, no CDN and no external asset** ([`docs/rules/design.md`](docs/rules/design.md)).
 - **A capability the board cannot express is a bug**: per-task verbs from `Move.actions()`, global from `GlobalCommand` beans; no surface has a list.
