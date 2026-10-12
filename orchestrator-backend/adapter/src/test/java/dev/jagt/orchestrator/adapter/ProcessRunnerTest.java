@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.parallel.Isolated;
 import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
@@ -11,12 +12,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.awaitility.Awaitility.await;
 
 @Isolated
@@ -27,13 +31,16 @@ class ProcessRunnerTest {
         ProcessRunner runner = new ProcessRunner();
         Process launched = runner.runDetached(null, List.of("sleep", "5"));
 
-        String launchedGroup = runner.run(null, Duration.ofSeconds(5),
-                List.of("ps", "-o", "pgid=", "-p", String.valueOf(launched.pid()))).stdout().strip();
-        String ownGroup = runner.run(null, Duration.ofSeconds(5),
-                List.of("ps", "-o", "pgid=", "-p", String.valueOf(ProcessHandle.current().pid()))).stdout().strip();
+        try {
+            String launchedGroup = runner.run(null, Duration.ofSeconds(5),
+                    List.of("ps", "-o", "pgid=", "-p", String.valueOf(launched.pid()))).stdout().strip();
+            String ownGroup = runner.run(null, Duration.ofSeconds(5),
+                    List.of("ps", "-o", "pgid=", "-p", String.valueOf(ProcessHandle.current().pid()))).stdout().strip();
 
-        assertThat(launchedGroup).isNotEqualTo(ownGroup);
-        launched.destroyForcibly();
+            assertThat(launchedGroup).isNotEqualTo(ownGroup);
+        } finally {
+            launched.destroyForcibly();
+        }
     }
 
     @Test
@@ -41,11 +48,57 @@ class ProcessRunnerTest {
         ProcessRunner runner = new ProcessRunner();
         Process launched = runner.runDetached(null, List.of("sleep", "5"));
 
-        String command = runner.run(null, Duration.ofSeconds(5),
-                List.of("ps", "-o", "comm=", "-p", String.valueOf(launched.pid()))).stdout().strip();
+        try {
+            String command = runner.run(null, Duration.ofSeconds(5),
+                    List.of("ps", "-o", "comm=", "-p", String.valueOf(launched.pid()))).stdout().strip();
 
-        assertThat(command).isEqualTo("sleep");
-        launched.destroyForcibly();
+            assertThat(command).isEqualTo("sleep");
+        } finally {
+            launched.destroyForcibly();
+        }
+    }
+
+    @Test
+    void killsWhatATimedOutCommandSpawnedSoNoChildOutlivesIt(@TempDir Path dir) throws Exception {
+        Path childPid = dir.resolve("pid");
+
+        assertThatThrownBy(() -> new ProcessRunner().run(null, Duration.ofMillis(500),
+                List.of("sh", "-c", "sleep 30 & echo $! > " + childPid + "; wait")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("timed out");
+
+        long child = Long.parseLong(Files.readString(childPid).strip());
+        await().atMost(Duration.ofSeconds(5))
+                .until(() -> ProcessHandle.of(child).filter(ProcessHandle::isAlive).isEmpty());
+    }
+
+    @Test
+    void killsTheCommandWhenTheCallerWaitingOnItIsInterrupted(@TempDir Path dir) throws Exception {
+        Path pid = dir.resolve("pid");
+        Thread caller = Thread.startVirtualThread(() -> catchThrowable(() -> new ProcessRunner().run(null,
+                Duration.ofSeconds(30), List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30"))));
+        await().ignoreExceptions().atMost(Duration.ofSeconds(5)).until(() -> Files.readString(pid).endsWith("\n"));
+        long command = Long.parseLong(Files.readString(pid).strip());
+
+        caller.interrupt();
+
+        await().atMost(Duration.ofSeconds(5))
+                .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
+    }
+
+    @Test
+    void killsTheCommandsStillRunningWhenJagtStops(@TempDir Path dir) throws Exception {
+        ProcessRunner runner = new ProcessRunner();
+        Path pid = dir.resolve("pid");
+        Thread.startVirtualThread(() -> catchThrowable(() -> runner.run(null, Duration.ofSeconds(30),
+                List.of("sh", "-c", "echo $$ > " + pid + "; exec sleep 30"))));
+        await().ignoreExceptions().atMost(Duration.ofSeconds(5)).until(() -> Files.readString(pid).endsWith("\n"));
+        long command = Long.parseLong(Files.readString(pid).strip());
+
+        runner.destroyRunning();
+
+        await().atMost(Duration.ofSeconds(5))
+                .until(() -> ProcessHandle.of(command).filter(ProcessHandle::isAlive).isEmpty());
     }
 
     @Test

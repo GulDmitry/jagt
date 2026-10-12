@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.adapter;
 
 import dev.jagt.orchestrator.port.Processes;
 
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.jspecify.annotations.Nullable;
@@ -12,6 +13,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 @Component
@@ -23,6 +26,8 @@ public class ProcessRunner implements Processes {
     private static final List<String> PERL = List.of("/usr/bin/perl", "/bin/perl");
     /** Long enough for a wrapper that could not exec to have exited, short enough to be invisible. */
     private static final Duration LAUNCH_CHECK = Duration.ofMillis(200);
+
+    private final Set<Process> running = ConcurrentHashMap.newKeySet();
 
     @Override
     public Result run(@Nullable Path workingDir, Duration timeout, List<String> command) {
@@ -115,6 +120,7 @@ public class ProcessRunner implements Processes {
 
     @Override
     public Result run(@Nullable Path workingDir, Duration timeout, Map<String, String> env, List<String> command) {
+        Process process = null;
         try {
             ProcessBuilder builder = new ProcessBuilder(command);
             if (workingDir != null) {
@@ -123,7 +129,8 @@ public class ProcessRunner implements Processes {
             builder.environment().putAll(env);
             // /dev/null so no subprocess steals the console's stdin, and a CLI waiting on it gets instant EOF.
             builder.redirectInput(ProcessBuilder.Redirect.from(new java.io.File("/dev/null")));
-            Process process = builder.start();
+            process = builder.start();
+            running.add(process);
             // Drain both streams before waitFor to avoid pipe-buffer deadlock on chatty commands.
             var stdoutReader = process.inputReader();
             var stderrReader = process.errorReader();
@@ -133,7 +140,7 @@ public class ProcessRunner implements Processes {
             Thread errThread = Thread.startVirtualThread(() -> stderrReader.lines().forEach(l -> stderr.append(l).append('\n')));
             boolean finished = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
             if (!finished) {
-                process.destroyForcibly();
+                destroyTree(process, "timeout");
                 throw new IllegalStateException("Command timed out after " + timeout + ": " + String.join(" ", command));
             }
             outThread.join(2_000);
@@ -142,8 +149,33 @@ public class ProcessRunner implements Processes {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to start command: " + String.join(" ", command), e);
         } catch (InterruptedException e) {
+            if (process != null) {
+                destroyTree(process, "interrupted");
+            }
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Interrupted while running: " + String.join(" ", command), e);
+        } finally {
+            if (process != null) {
+                running.remove(process);
+            }
         }
+    }
+
+    /** A detached launch outlives jagt by design, so only a command something waits on is stopped. */
+    @PreDestroy
+    void destroyRunning() {
+        running.forEach(process -> destroyTree(process, "shutdown"));
+    }
+
+    /** Listed first: a descendant whose parent died is reparented and no longer reachable from it. */
+    private static void destroyTree(Process process, String reason) {
+        List<ProcessHandle> descendants = process.descendants().toList();
+        process.destroyForcibly();
+        descendants.forEach(ProcessHandle::destroyForcibly);
+        log.atWarn().setMessage("process killed")
+                .addKeyValue("pid", process.pid())
+                .addKeyValue("descendants", descendants.size())
+                .addKeyValue("reason", reason)
+                .log();
     }
 }
