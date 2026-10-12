@@ -134,16 +134,11 @@ public class TmuxSessionHost implements SessionHost {
     @Override
     public WindowState taskWindowState(String session, String taskId) {
         synchronized (lock) {
-            var windowId = findWindowId(session, taskId);
-            if (windowId.isEmpty()) {
+            var window = findWindow(session, taskId);
+            if (window.isEmpty()) {
                 return WindowState.MISSING;
             }
-            var panePid = processRunner.run(null, TIMEOUT, List.of(tmux(), "display-message",
-                    "-p", "-t", windowId.get(), "#{pane_pid}"));
-            if (panePid.exitCode() != 0 || panePid.stdout().isBlank()) {
-                return WindowState.MISSING;
-            }
-            var children = processRunner.run(null, TIMEOUT, List.of("pgrep", "-P", panePid.stdout().trim()));
+            var children = processRunner.run(null, TIMEOUT, List.of("pgrep", "-P", window.get().panePid()));
             return children.exitCode() == 0 && !children.stdout().isBlank()
                     ? WindowState.AGENT_RUNNING
                     : WindowState.DEAD_SHELL;
@@ -212,32 +207,27 @@ public class TmuxSessionHost implements SessionHost {
     @Override
     public long lastWindowActivityMillis(String session, String taskId) {
         synchronized (lock) {
-            var windowId = findWindowId(session, taskId);
-            if (windowId.isEmpty()) {
-                return 0;
-            }
-            var r = processRunner.run(null, TIMEOUT, List.of(tmux(), "display-message",
-                    "-p", "-t", windowId.get(), "#{window_activity}"));
-            if (r.exitCode() != 0 || r.stdout().isBlank()) {
-                return 0;
-            }
-            try {
-                return Long.parseLong(r.stdout().trim()) * 1000L;
-            } catch (NumberFormatException e) {
-                return 0;
-            }
+            return findWindow(session, taskId).map(window -> window.activitySeconds() * 1000L).orElse(0L);
         }
     }
 
+    private record Window(String id, String panePid, long activitySeconds) {
+    }
+
     private Optional<String> findWindowId(String session, String taskId) {
+        return findWindow(session, taskId).map(Window::id);
+    }
+
+    private Optional<Window> findWindow(String session, String taskId) {
         var windows = processRunner.run(null, TIMEOUT, List.of(tmux(), "list-windows",
-                "-t", "=" + session, "-F", "#{window_id} #{window_name}"));
+                "-t", "=" + session, "-F", "#{window_id} #{pane_pid} #{window_activity} #{window_name}"));
         if (windows.exitCode() != 0) {
             return Optional.empty();
         }
         return windows.stdout().lines()
                 .filter(line -> line.endsWith(" " + taskId))
-                .map(line -> line.substring(0, line.indexOf(' ')))
+                .map(line -> line.split(" ", 4))
+                .map(fields -> new Window(fields[0], fields[1], Long.parseLong(fields[2])))
                 .findFirst();
     }
 
@@ -248,29 +238,36 @@ public class TmuxSessionHost implements SessionHost {
                             "-d", "-s", session, "-c", paths.root().toString()))
                     .expectSuccess("tmux new-session " + session);
         }
-        // escape-time 0 removes the ESC delay that makes TUIs feel sluggish. Warp does not grab
-        // Shift+Left/Right, unlike Ctrl+b. Re-applied each time; server-global and cheap.
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-sg", "escape-time", "0"));
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "focus-events", "on"));
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-t", session, "mouse", "on"));
-        // A title-aware terminal decorates its tab with the active window name.
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles", "on"));
-        // "taskId (alias)" when the window carries an alias, else just the window name.
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "set-titles-string",
-                "#{?#{@jagt_alias}," + SHOWN_NAME + " (#{@jagt_alias})," + SHOWN_NAME + "}"));
         // The default is #I:#W#F. Keep the trailing #F: it renders the window flags (`*` current, `-` last,
         // `Z` zoomed), and dropping it loses the marker on the active window.
         String windowFormat = "#I:" + SHOWN_NAME + "#{?#{@jagt_alias}, (#{@jagt_alias}),}#F";
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-format", windowFormat));
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g", "window-status-current-format", windowFormat));
-        // Two levels, both lost in tmux's black-on-green default: the bar reads as a bar and not as more
-        // pane output, and the active window reads as the active window.
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g",
-                "status-style", "bg=colour252,fg=colour235"));
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "set-option", "-g",
-                "window-status-current-style", "bg=colour160,fg=colour231,bold"));
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Left", "previous-window"));
-        processRunner.run(null, TIMEOUT, List.of(tmux(), "bind-key", "-n", "S-Right", "next-window"));
+        // One invocation: this runs every few seconds under the lock every other window call waits on.
+        var options = processRunner.run(null, TIMEOUT, List.of(tmux(),
+                // No ESC delay, which makes TUIs feel sluggish.
+                "set-option", "-sg", "escape-time", "0", ";",
+                "set-option", "-g", "focus-events", "on", ";",
+                "set-option", "-t", session, "mouse", "on", ";",
+                // A title-aware terminal decorates its tab with the active window name.
+                "set-option", "-g", "set-titles", "on", ";",
+                // "taskId (alias)" when the window carries an alias, else just the window name.
+                "set-option", "-g", "set-titles-string",
+                "#{?#{@jagt_alias}," + SHOWN_NAME + " (#{@jagt_alias})," + SHOWN_NAME + "}", ";",
+                "set-option", "-g", "window-status-format", windowFormat, ";",
+                "set-option", "-g", "window-status-current-format", windowFormat, ";",
+                // Two levels, both lost in tmux's black-on-green default: the bar reads as a bar and not as more
+                // pane output, and the active window reads as the active window.
+                "set-option", "-g", "status-style", "bg=colour252,fg=colour235", ";",
+                "set-option", "-g", "window-status-current-style", "bg=colour160,fg=colour231,bold", ";",
+                // Warp does not grab Shift+Left/Right, unlike Ctrl+b.
+                "bind-key", "-n", "S-Left", "previous-window", ";",
+                "bind-key", "-n", "S-Right", "next-window"));
+        // tmux stops a command list at its first error, so one bad option costs the rest.
+        if (options.exitCode() != 0) {
+            log.atWarn().setMessage("tmux session options failed")
+                    .addKeyValue("session", session)
+                    .addKeyValue("cause", options.stderr())
+                    .log();
+        }
     }
 
     /** The viewer must NOT open inside a worktree: removing one reaps every process whose cwd is under it, and

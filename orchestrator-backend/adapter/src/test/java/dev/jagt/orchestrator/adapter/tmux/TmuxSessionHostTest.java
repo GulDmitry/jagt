@@ -33,7 +33,7 @@ class TmuxSessionHostTest {
     void throwsRatherThanReportingNoWindowWhenTheWindowIsThereButItsScreenCannotBeRead() {
         Processes processes = mock(Processes.class);
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
-                command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@1 ABC-1\n", ""));
+                command.contains("list-windows")))).thenReturn(new Processes.Result(0, "@1 100 1700000000 ABC-1\n", ""));
         when(processes.run(isNull(), any(Duration.class), argThat((List<String> command) ->
                 command.contains("capture-pane")))).thenReturn(new Processes.Result(1, "", "can't find pane"));
         OrchestratorProperties properties = OrchestratorProperties.defaults();

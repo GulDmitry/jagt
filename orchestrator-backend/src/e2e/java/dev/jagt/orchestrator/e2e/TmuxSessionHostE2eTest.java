@@ -20,14 +20,19 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class TmuxSessionHostE2eTest {
 
     private static final String SESSION = "jagt-host-e2e-" + UUID.randomUUID().toString().substring(0, 8);
 
-    private final Processes processes = new ProcessRunner();
+    private final Processes processes = spy(new ProcessRunner());
     private final AgentRuntime agentRuntime = mock(AgentRuntime.class);
 
     private TmuxSessionHost hostIn(Path root) {
@@ -73,6 +78,41 @@ class TmuxSessionHostE2eTest {
         host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
 
         assertThat(windowNames()).containsOnlyOnce("master");
+    }
+
+    @Test
+    void keepsAFeedWindowThatIsAlreadyThereInThreeCommands(@TempDir Path root) {
+        SessionHost host = hostIn(root);
+        host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
+        clearInvocations(processes);
+
+        host.keepFeedWindow(SESSION, "master", root.resolve("feed.log"));
+
+        verify(processes, times(3)).run(any(), any(), anyList());
+    }
+
+    @Test
+    void readsARunningAgentInTwoCommands(@TempDir Path root) {
+        SessionHost host = hostIn(root);
+        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
+        clearInvocations(processes);
+
+        SessionHost.WindowState state = host.taskWindowState(SESSION, "ABC-1");
+
+        assertThat(state).isEqualTo(SessionHost.WindowState.AGENT_RUNNING);
+        verify(processes, times(2)).run(any(), any(), anyList());
+    }
+
+    @Test
+    void readsAWindowsLastActivityInOneCommand(@TempDir Path root) {
+        SessionHost host = hostIn(root);
+        host.openTaskWindow(SESSION, "jagt", "ABC-1", "a1", root, false, "");
+        clearInvocations(processes);
+
+        long activity = host.lastWindowActivityMillis(SESSION, "ABC-1");
+
+        assertThat(activity).isPositive();
+        verify(processes, times(1)).run(any(), any(), anyList());
     }
 
     @Test
