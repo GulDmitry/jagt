@@ -6,11 +6,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 final class MasterEvalWorkspace {
 
-    static final String TMUX_SESSION = "jagt-master-eval-" + UUID.randomUUID().toString().substring(0, 8);
+    private static final String TMUX_PREFIX = "jagt-master-eval";
+    static final String TMUX_SESSION = TMUX_PREFIX + "-" + ProcessHandle.current().pid();
     private static final Path FIXED_ROOT_A_HUMAN_TRUSTED_ONCE = Path.of("..", ".master-eval").toAbsolutePath().normalize();
 
     private MasterEvalWorkspace() {
@@ -19,7 +19,7 @@ final class MasterEvalWorkspace {
     static Path root() {
         return FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolve("root");
     }
-    static void claim() throws IOException {
+    static void claim() throws Exception {
         Path lock = FIXED_ROOT_A_HUMAN_TRUSTED_ONCE.resolveSibling(".master-eval.lock");
         if (Files.isRegularFile(lock) && alive(Files.readString(lock).strip())) {
             throw new IllegalStateException("Another masterEval run holds " + lock + " — one session cannot"
@@ -27,6 +27,24 @@ final class MasterEvalWorkspace {
         }
         Files.createDirectories(lock.getParent());
         Files.writeString(lock, String.valueOf(ProcessHandle.current().pid()));
+        reapSessionsOfDeadRuns();
+    }
+
+    private static void reapSessionsOfDeadRuns() throws Exception {
+        Process listing = new ProcessBuilder("tmux", "list-sessions", "-F", "#{session_name}")
+                .redirectErrorStream(true).start();
+        String listed = new String(listing.getInputStream().readAllBytes());
+        for (String session : listed.lines().filter(MasterEvalWorkspace::ofADeadRun).toList()) {
+            new ProcessBuilder("tmux", "kill-session", "-t", "=" + session).start().waitFor(10, TimeUnit.SECONDS);
+        }
+    }
+
+    private static boolean ofADeadRun(String session) {
+        if (!session.startsWith(TMUX_PREFIX + "-")) {
+            return false;
+        }
+        String pid = session.substring(TMUX_PREFIX.length() + 1).split("-", 2)[0];
+        return pid.chars().allMatch(Character::isDigit) && !pid.isEmpty() && !alive(pid);
     }
 
     static void release() throws Exception {

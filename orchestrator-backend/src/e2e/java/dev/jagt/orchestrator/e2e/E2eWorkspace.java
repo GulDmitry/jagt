@@ -13,7 +13,7 @@ import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -21,7 +21,8 @@ import static org.awaitility.Awaitility.await;
 
 final class E2eWorkspace {
 
-    static final String TMUX_SESSION = "jagt-e2e-" + UUID.randomUUID().toString().substring(0, 8);
+    private static final String TMUX_PREFIX = "jagt-e2e-";
+    static final String TMUX_SESSION = TMUX_PREFIX + ProcessHandle.current().pid();
 
     private E2eWorkspace() {
     }
@@ -123,6 +124,9 @@ final class E2eWorkspace {
                 GitDeploy.deployWorktreePath(repo, branch).toString());
         gitQuietly(repo, "worktree", "remove", "--force",
                 GitDeploy.revertWorktreePath(repo, branch).toString());
+        for (Path diffCheckout : diffCheckouts(repo)) {
+            gitQuietly(repo, "worktree", "remove", "--force", diffCheckout.toString());
+        }
         gitQuietly(repo, "worktree", "prune");
         gitQuietly(repo, "branch", "-D", branch);
         gitQuietly(repo, "branch", "-D", GitDeploy.deployBranch(branch));
@@ -130,10 +134,38 @@ final class E2eWorkspace {
         gitQuietly(repo, "push", "origin", "--delete", branch);
     }
 
+    private static List<Path> diffCheckouts(Path repo) {
+        try {
+            return git(repo, "worktree", "list", "--porcelain").lines()
+                    .filter(line -> line.startsWith("worktree "))
+                    .map(line -> Path.of(line.substring("worktree ".length())))
+                    .filter(path -> path.getFileName().toString().startsWith("jagt-diff-"))
+                    .toList();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return List.of();
+        } catch (Exception unreadable) {
+            return List.of();
+        }
+    }
+
     static void killTmuxSessions(String tmuxCommand) {
         String listed = run(tmuxCommand, "list-sessions", "-F", "#{session_name}");
-        for (String session : own(listed == null ? "" : listed)) {
+        for (String session : (listed == null ? "" : listed).lines().filter(E2eWorkspace::ownOrOrphaned).toList()) {
             run(tmuxCommand, "kill-session", "-t", "=" + session);
+        }
+    }
+
+    private static boolean ownOrOrphaned(String session) {
+        if (!session.startsWith(TMUX_PREFIX)) {
+            return false;
+        }
+        String pid = session.substring(TMUX_PREFIX.length()).split("-", 2)[0];
+        try {
+            return ProcessHandle.of(Long.parseLong(pid)).map(handle -> !handle.isAlive()
+                    || handle.pid() == ProcessHandle.current().pid()).orElse(true);
+        } catch (NumberFormatException notARunsSession) {
+            return false;
         }
     }
 
@@ -156,12 +188,20 @@ final class E2eWorkspace {
         full.addAll(List.of(args));
         try {
             Process process = new ProcessBuilder(full).redirectErrorStream(true).start();
-            String output = new String(process.getInputStream().readAllBytes());
+            var output = new CompletableFuture<String>();
+            Thread.startVirtualThread(() -> {
+                try {
+                    output.complete(new String(process.getInputStream().readAllBytes()));
+                } catch (IOException unreadable) {
+                    output.complete("");
+                }
+            });
             if (!process.waitFor(10, TimeUnit.SECONDS)) {
+                process.descendants().forEach(ProcessHandle::destroyForcibly);
                 process.destroyForcibly();
                 return null;
             }
-            return process.exitValue() == 0 ? output : null;
+            return process.exitValue() == 0 ? output.completeOnTimeout("", 2, TimeUnit.SECONDS).join() : null;
         } catch (IOException e) {
             return null;
         } catch (InterruptedException e) {
