@@ -48,7 +48,7 @@ Never `+` into a message, never `{}`. `logging.pattern.console` carries `%kvp`.
 - Over the ceiling, group by composition and never inheritance, or use a registry of small units
   (`surface/mcp/McpTools`, `Move.actions()`).
 - **Lombok carries the mechanical boilerplate and nothing else**: `@RequiredArgsConstructor`, `@Slf4j`,
-  `@With` for a record's positional copy-withers (1.18.46: `@With` and `@Builder` work on records under Java 25).
+  `@With` for a record's positional copy-withers (1.18.48: `@With` and `@Builder` work on records under Java 25).
   By hand when not mechanical: `OrchestratorPaths`' validating constructor, `TaskState.withStatus` stamping history,
   `TaskState.builder(project, worktree, status)`.
 - **What may be null is `@Nullable`**, all else not: NullAway fails the build
