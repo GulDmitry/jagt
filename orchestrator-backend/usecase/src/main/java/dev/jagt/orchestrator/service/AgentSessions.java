@@ -43,6 +43,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     private final SessionHost sessions;
     private final TerminalDriver terminalDriver;
     private final AgentRuntime agentRuntime;
+    /** Never pruned: a lock dropped while a relay holds it lets a second writer in, and an entry costs bytes. */
     private final ConcurrentHashMap<String, Object> relayLocks = new ConcurrentHashMap<>();
     private final Set<String> draftWaits = ConcurrentHashMap.newKeySet();
 

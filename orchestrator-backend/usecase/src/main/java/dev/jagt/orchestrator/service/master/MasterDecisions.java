@@ -29,6 +29,7 @@ public class MasterDecisions {
     public static final int REPEATED_ROUNDS = 2;
 
     private final WorktreeChanges changes;
+    /** Never pruned: one small entry per worktree the Master ever answered in, for the life of the process. */
     private final Map<String, Answered> answeredOver = new ConcurrentHashMap<>();
     private final Map<String, Repeated> repeatedRounds = new ConcurrentHashMap<>();
 

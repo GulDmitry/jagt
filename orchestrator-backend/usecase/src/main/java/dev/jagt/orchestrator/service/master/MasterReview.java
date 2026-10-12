@@ -61,7 +61,7 @@ public class MasterReview {
 
     /** Whether the reviewer has looked at the task AS IT STANDS, rather than at an earlier hand-back. */
     public boolean readsTheRoundInFront(TaskState task) {
-        return of(task).filter(verdict -> verdict.writtenAt() >= task.statusSince()).isPresent();
+        return of(task).filter(verdict -> verdict.answers(task)).isPresent();
     }
 
     public @Nullable Path file(TaskState task) {
@@ -82,6 +82,11 @@ public class MasterReview {
             }
             boolean ready = said.equalsIgnoreCase("ready") && findings.size() <= 1;
             return new Verdict(ready ? Kind.READY : Kind.NOT_READY, findings, writtenAt);
+        }
+
+        /** Written about the task as it stands, rather than about an earlier hand-back. */
+        public boolean answers(TaskState task) {
+            return writtenAt >= task.statusSince();
         }
 
         public boolean ready() {

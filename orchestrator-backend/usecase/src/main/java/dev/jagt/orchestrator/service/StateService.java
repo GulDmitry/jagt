@@ -16,8 +16,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.List;
@@ -56,9 +54,6 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
      */
     private @Nullable StateFile cached;
     private @Nullable FileVersion cachedVersion;
-
-    private record FileVersion(FileTime modified, long size) {
-    }
 
     public StateService(ObjectMapper mapper, OrchestratorPaths paths) {
         // A missing primitive defaults to 0/false instead of failing the whole load: adding a `long` to
@@ -245,7 +240,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             cache(null, null);
             return new StateFile(Map.of());
         }
-        FileVersion version = versionOnDisk();
+        FileVersion version = FileVersion.of(stateFile);
         if (cached != null && cachedVersion != null && cachedVersion.equals(version)) {
             return new StateFile(cached.tasks());
         }
@@ -284,16 +279,6 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
     private void cache(@Nullable StateFile state, @Nullable FileVersion version) {
         cached = state == null || version == null ? null : new StateFile(state.tasks());
         cachedVersion = version;
-    }
-
-    /** Null when the attributes cannot be read, which simply keeps every read a re-parse. */
-    private @Nullable FileVersion versionOnDisk() {
-        try {
-            BasicFileAttributes attributes = Files.readAttributes(stateFile, BasicFileAttributes.class);
-            return new FileVersion(attributes.lastModifiedTime(), attributes.size());
-        } catch (IOException e) {
-            return null;
-        }
     }
 
     private StateFile parse(Path file) throws IOException {
@@ -360,7 +345,7 @@ public class StateService implements dev.jagt.orchestrator.port.TaskStore {
             discard(temp);
         }
         // Own writes never rely on the version key: two within one filesystem timestamp tick are the same by it.
-        cache(state, versionOnDisk());
+        cache(state, FileVersion.of(stateFile));
     }
 
     private static void discard(@Nullable Path temp) {

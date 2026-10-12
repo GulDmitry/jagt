@@ -13,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Asks the Master's panel to read a round that has been handed back and not yet judged. The trigger is
@@ -56,23 +59,24 @@ public class MasterReviewJob implements Job {
         if (!config.running()) {
             return;
         }
+        Map<String, Optional<MasterReview.Verdict>> read = new HashMap<>();
         stateService.tasks().forEach((taskId, task) -> {
             if (!FlowRules.readByTheMaster(task.status())) {
                 return;
             }
-            reviews.of(task).filter(verdict -> verdict.writtenAt() >= task.statusSince())
-                    .ifPresent(verdict -> verdicts.act(taskId, task, verdict, config));
+            Optional<MasterReview.Verdict> verdict = reviews.of(task);
+            read.put(taskId, verdict);
+            verdict.filter(written -> written.answers(task))
+                    .ifPresent(written -> verdicts.act(taskId, task, written, config));
         });
+        boolean questionsAnswered = config.may(MasterRight.ANSWER);
         // Asked LAST: a round holds this thread until every role answered, and verdicts already written go first.
         stateService.tasks().entrySet().stream()
-                .filter(entry -> waiting(entry.getValue()))
+                .filter(entry -> reviewable(entry.getValue(), read.computeIfAbsent(entry.getKey(),
+                        taskId -> reviews.of(entry.getValue()))
+                        .filter(written -> written.answers(entry.getValue())).isPresent(), questionsAnswered))
                 .findFirst()
                 .ifPresent(entry -> ask(entry.getKey(), entry.getValue(), config));
-    }
-
-    private boolean waiting(TaskState task) {
-        return reviewable(task, reviews.readsTheRoundInFront(task),
-                configService.load().master().may(MasterRight.ANSWER));
     }
 
     /** A question the Master answers is the answer job's: reviewing its round ships around the question. */

@@ -80,6 +80,21 @@ class ConfigServiceTest {
         assertThat(mode).isEqualTo("judge");
     }
 
+    @Test
+    void readsAnEditToTheConfigFileOnTheNextLoad(@TempDir Path root) throws Exception {
+        Path configFile = root.resolve("jagt.yml");
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: off\n");
+        OrchestratorProperties properties = OrchestratorProperties.defaults().withRoot(root.toString())
+                .withConfigFile(configFile.toString()).withStateFile(root.resolve("state.json").toString());
+        ConfigService configService = new ConfigService(new OrchestratorPaths(properties), mock(AgentRuntime.class));
+        configService.load();
+        Files.writeString(configFile, "orchestrator:\n  master:\n    mode: act\n");
+
+        String mode = configService.load().master().mode();
+
+        assertThat(mode).isEqualTo("act");
+    }
+
     @ParameterizedTest
     @CsvSource({"true, judge", "false, off"})
     void leavesTheMasterJudgingByDefaultOnlyWhereTheRuntimeReadsWhatTheHumanTyped(boolean reads, String expected,

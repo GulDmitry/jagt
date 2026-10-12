@@ -18,7 +18,7 @@ import java.util.stream.Stream;
 public final class ToolGate {
 
     /** An {@code &} beside a redirection ({@code 2>&1}, {@code &>}) separates nothing. */
-    private static final String SEPARATORS = "&&|\\|\\||;|\\n|\\||(?<![<>])&(?!>)|\\(|\\)|`|\\$\\(";
+    private static final Pattern SEPARATORS = Pattern.compile("&&|\\|\\||;|\\n|\\||(?<![<>])&(?!>)|\\(|\\)|`|\\$\\(");
     private static final List<String> GIT_OPTION_WITH_VALUE =
             List.of("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env");
     private static final List<String> PUSH_OPTION_WITH_VALUE =
@@ -29,7 +29,10 @@ public final class ToolGate {
     private static final String CURRENT_BRANCH = "HEAD";
     /** The board acts as the human, and the token as the Master: neither is a session's to reach. */
     private static final String BOARD = "(?i):0*%d\\b|master-token|mcp_client\\.js";
-    private static final String QUOTING = "[\\\\'\"]";
+    private static final Pattern QUOTING = Pattern.compile("[\\\\'\"]");
+    private static final Pattern ESCAPED = Pattern.compile("\\\\(.)");
+    private static final Pattern WHITESPACE = Pattern.compile("\\s+");
+    private static final Pattern OUTER_QUOTES = Pattern.compile("^[\"']|[\"']$");
     private static final Pattern PUSH = Pattern.compile("\\bpush\\b");
     /** The shell decodes escapes inside these, which the line is not read through. */
     private static final Pattern UNREAD_QUOTING = Pattern.compile("\\$['\"]");
@@ -45,7 +48,21 @@ public final class ToolGate {
     private static final Pattern HEAD_MOVES = Pattern.compile(
             "\\b(cd|pushd|checkout|switch|GIT_DIR|GIT_WORK_TREE)\\b|(^|\\s)(-C|--git-dir|--work-tree)(\\s|=)");
 
+    private static volatile @Nullable BoardPattern board;
+
+    private record BoardPattern(int port, Pattern pattern) {
+    }
+
     private ToolGate() {
+    }
+
+    private static Pattern board(int port) {
+        BoardPattern last = board;
+        if (last == null || last.port() != port) {
+            last = new BoardPattern(port, Pattern.compile(BOARD.formatted(port)));
+            board = last;
+        }
+        return last.pattern();
     }
 
     /** Why the line is refused, or empty when it is allowed. */
@@ -54,28 +71,29 @@ public final class ToolGate {
             return Optional.empty();
         }
         String command = line.replace("\\\n", " ").replace("\\", "").replace("''", "").replace("\"\"", "");
-        if (Pattern.compile(BOARD.formatted(boardPort)).matcher(line.replaceAll(QUOTING, "")).find()) {
+        String unquotedLine = QUOTING.matcher(line).replaceAll("");
+        if (board(boardPort).matcher(unquotedLine).find()) {
             return Optional.of("jagt refuses a line reaching its board or the Master's token: a session acts"
                     + " through its own MCP tools.");
         }
-        if (PLUMBING.matcher(line.replaceAll(QUOTING, "")).find()
-                || Stream.of(command.split(SEPARATORS)).anyMatch(HostCliLine::writes) || HostCliLine.writes(command)) {
+        if (PLUMBING.matcher(unquotedLine).find()
+                || Stream.of(SEPARATORS.split(command)).anyMatch(HostCliLine::writes) || HostCliLine.writes(command)) {
             return Optional.of("jagt refuses writing to the code host from here: gh and glab only read ("
                     + HostCliLine.readsAllowed() + "). Push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
-        if (UNREAD_QUOTING.matcher(line).find() && GIT_WORD.matcher(line.replaceAll(QUOTING, "")).find()) {
+        if (UNREAD_QUOTING.matcher(line).find() && GIT_WORD.matcher(unquotedLine).find()) {
             return Optional.of("jagt refuses $'…' and $\"…\" on a git, gh or glab line: write it in plain quotes.");
         }
         if (PUSH.matcher(command).find() && (HOOK_OFF.matcher(command).find()
-                || Stream.of(command.split(SEPARATORS)).anyMatch(ToolGate::configuresAPush))) {
+                || Stream.of(SEPARATORS.split(command)).anyMatch(ToolGate::configuresAPush))) {
             return Optional.of("jagt refuses a push that could skip its pre-push check: push " + taskBranch
                     + " with a plain `git push origin " + taskBranch + "`.");
         }
         boolean headIsTheTask = !HEAD_MOVES.matcher(command).find();
-        String escapesQuoted = line.replace("\\\n", " ").replace("''", "").replace("\"\"", "")
-                .replaceAll("\\\\(.)", "\"$1\"");
-        for (String segment : escapesQuoted.split(SEPARATORS)) {
+        String escapesQuoted = ESCAPED.matcher(line.replace("\\\n", " ").replace("''", "").replace("\"\"", ""))
+                .replaceAll("\"$1\"");
+        for (String segment : SEPARATORS.split(escapesQuoted)) {
             Optional<String> refusal = pushIn(segment).flatMap(push -> refuse(push, taskBranch, headIsTheTask));
             if (refusal.isPresent()) {
                 return refusal;
@@ -89,7 +107,7 @@ public final class ToolGate {
      * options sit BEFORE the subcommand ({@code git -C <dir> push …}).
      */
     private static Optional<List<String>> pushIn(String segment) {
-        List<String> words = List.of(segment.trim().split("\\s+"));
+        List<String> words = List.of(WHITESPACE.split(segment.trim()));
         for (int at = 0; at < words.size(); at++) {
             if (!GIT.matcher(bare(words.get(at))).matches()) {
                 continue;
@@ -104,7 +122,7 @@ public final class ToolGate {
 
     /** A config before the subcommand may rewrite where a push lands. */
     private static boolean configuresAPush(String segment) {
-        List<String> words = Stream.of(segment.trim().split("\\s+")).map(ToolGate::bare).toList();
+        List<String> words = Stream.of(WHITESPACE.split(segment.trim())).map(ToolGate::bare).toList();
         for (int at = 0; at < words.size(); at++) {
             int subcommand = afterGitOptions(words, at + 1);
             if (GIT.matcher(words.get(at)).matches() && subcommand < words.size()
@@ -127,7 +145,7 @@ public final class ToolGate {
     private static String bare(String word) {
         boolean closed = word.chars().filter(c -> c == '\'').count() % 2 == 0
                 && word.chars().filter(c -> c == '"').count() % 2 == 0;
-        return closed ? word.replaceAll(QUOTING, "") : word;
+        return closed ? QUOTING.matcher(word).replaceAll("") : word;
     }
 
     /**
@@ -197,7 +215,7 @@ public final class ToolGate {
     }
 
     private static String unquoted(String argument) {
-        return argument.replaceAll("^[\"']|[\"']$", "");
+        return OUTER_QUOTES.matcher(argument).replaceAll("");
     }
 
     private static boolean writes(String refspec, String taskBranch, boolean headIsTheTask) {

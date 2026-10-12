@@ -361,6 +361,10 @@ public class ConfigService {
     private final JsonMapper mapper = new JsonMapper();
     private final OrchestratorPaths paths;
     private final AgentRuntime agentRuntime;
+    private volatile @Nullable Parsed parsed;
+
+    private record Parsed(FileVersion version, @Nullable Object section) {
+    }
 
     public ConfigFile load() {
         Object section = section();
@@ -399,11 +403,18 @@ public class ConfigService {
             throw new IllegalStateException("Missing " + file
                     + " — copy jagt.yml.dist to jagt.yml and fill in your projects.");
         }
+        FileVersion version = FileVersion.of(file);
+        Parsed last = parsed;
+        if (last != null && last.version().equals(version)) {
+            return last.section();
+        }
         try {
             // SafeConstructor: the file is hand-edited, and a YAML tag naming a class is not a setting.
             Object tree = new Yaml(new SafeConstructor(new LoaderOptions()), new Representer(new DumperOptions()),
                     new DumperOptions(), new WordsStayWords()).load(Files.readString(file));
-            return tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
+            Object section = tree instanceof Map<?, ?> document ? document.get(ROOT) : null;
+            parsed = version == null ? null : new Parsed(version, section);
+            return section;
         } catch (IOException e) {
             throw new UncheckedIOException("Cannot read " + file, e);
         } catch (RuntimeException malformed) {

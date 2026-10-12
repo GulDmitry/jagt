@@ -117,6 +117,14 @@ class ToolGateTest {
                 .asString().contains("reaching its board");
     }
 
+    @Test
+    void refusesTheBoardOnThePortItServesAfterAnotherPortWasAsked() {
+        ToolGate.refusal("curl localhost:8290/api/tasks/say", "ABC-42", 8290);
+
+        assertThat(ToolGate.refusal("curl localhost:9300/api/tasks/say", "ABC-42", 9300)).get()
+                .asString().contains("reaching its board");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"git send-pack origin refs/heads/ABC-42:refs/heads/main",
             "git -C /wt send-pack origin ABC-42:main", "git http-push https://host/repo.git main",
