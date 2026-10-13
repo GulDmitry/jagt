@@ -54,3 +54,4 @@ The rule lives in `openspec/specs/` or `docs/rules/`; the record, its evidence a
 - [0036 Bytecode structure checks](0036-structure-is-checked-on-the-bytecode.md)
 - [0037 One-shot caches minutes](0037-a-one-shot-caches-for-minutes.md)
 - [0038 First role writes the round](0038-a-panels-first-role-writes-the-round.md)
+- [0039 No JVM flag](0039-jagt-starts-with-no-jvm-flag.md)
