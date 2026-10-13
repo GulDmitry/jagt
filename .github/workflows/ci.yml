@@ -24,14 +24,14 @@ jobs:
     name: unit tests (hermetic)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           java-version: '25'
           distribution: temurin
           cache: gradle
       - run: ./gradlew --no-daemon test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: unit-test-report
@@ -45,8 +45,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           java-version: '25'
           distribution: temurin
@@ -58,7 +58,7 @@ jobs:
           version=$(./gradlew --no-daemon -q printVersion)
           cp build/libs/jagt.jar "build/libs/jagt-$version.jar"
           echo "asset=orchestrator-backend/build/libs/jagt-$version.jar" >> "$GITHUB_OUTPUT"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: jagt-jar
           path: ${{ steps.jar.outputs.asset }}
@@ -82,8 +82,8 @@ jobs:
     name: e2e matrix + Linux drivers
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           java-version: '25'
           distribution: temurin
@@ -99,7 +99,7 @@ jobs:
       # linuxDriverTest needs a display, a session bus and a notification daemon: one script provides all three.
       - name: run the matrix and the drivers
         run: scripts/with-linux-desktop.sh ./gradlew --no-daemon e2eTest linuxDriverTest
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: linux-test-reports
@@ -113,8 +113,8 @@ jobs:
     name: web board (headless Chromium)
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           java-version: '25'
           distribution: temurin
@@ -124,13 +124,13 @@ jobs:
         run: sudo scripts/linux-test-deps.sh
       # Playwright's own Chromium is cached between runs; the suite installs it when the cache is cold. The
       # restore key keeps an unrelated build.gradle edit from paying for the browser again.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('orchestrator-backend/build.gradle') }}
           restore-keys: playwright-
       - run: ./gradlew --no-daemon boardTest
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: board-test-report
@@ -143,8 +143,8 @@ jobs:
     name: unit tests on macOS
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
         with:
           java-version: '25'
           distribution: temurin
