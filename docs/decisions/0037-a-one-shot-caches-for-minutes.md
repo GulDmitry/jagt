@@ -15,7 +15,7 @@ more than the common prefix from an earlier run, one of them more than 5 minutes
 
 ## Decision
 
-- `HeadlessClaude` runs the CLI with `FORCE_PROMPT_CACHING_5M=1`: a 5m write costs 1.25×, a 1h write 2×.
+- Every `HeadlessClaude` run, the Master's included, runs the CLI with `FORCE_PROMPT_CACHING_5M=1`: a 5m write costs 1.25×, a 1h write 2×.
 - Interactive sessions keep the 1h TTL: their next turn may come after five minutes.
 
 ## Rejected
@@ -25,4 +25,4 @@ more than the common prefix from an earlier run, one of them more than 5 minutes
 ## Reopen when
 
 - `stats` shows headless COLD starts rising: the shared prefix expiring between runs costs more than it saves.
-- The Master's roles run staggered so the later ones read the first one's round: they then need the window it buys.
+- A panel's first role outruns the 5-minute window, so the later roles find the round expired ([0038](0038-a-panels-first-role-writes-the-round.md)).

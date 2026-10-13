@@ -15,12 +15,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,7 +65,7 @@ class MasterPanelTest {
     void quotesTheTicketReadForTheRoundToEachReviewer() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+        String prompt = MasterPanel.quote("ABC-1", task,
                 new MasterPanel.RoundRead("Summary: accept v3 calls", "", "", List.of(), ""));
 
         assertThat(prompt).contains("<ticket>\nSummary: accept v3 calls\n</ticket>");
@@ -172,22 +176,56 @@ class MasterPanelTest {
     void quotesTheDiffReadForTheRoundToEachReviewer() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+        String prompt = MasterPanel.quote("ABC-1", task,
                 new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), ""));
 
         assertThat(prompt).contains("<diff>\n+int x;\n</diff>");
     }
 
     @Test
-    void opensEveryRolesPromptWithTheSameRoundSoItIsReadFromCache() {
-        TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
+    void givesEveryRoleTheRoundAsTheSamePrefixSoItIsReadFromCache(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(
+                "| role | question |\n| chaplain | should it exist |\n| developer | is the code right |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(
+                new MasterPanel.RoundRead("", "+int x;\n", "", List.of(), "")));
+        when(reviews.review(eq("ABC-1"), any())).thenReturn(Judgement.failed("stopped"));
 
-        String qa = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
-                new MasterPanel.RoundRead("Summary: accept v3 calls", "+int x;\n", "", List.of(), ""));
-        String developer = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("developer", "is the code right",
-                ""), new MasterPanel.RoundRead("Summary: accept v3 calls", "+int x;\n", "", List.of(), ""));
+        new MasterPanel(reviews, briefs, quotes)
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
 
-        assertThat(qa.substring(0, qa.indexOf("</diff>"))).isEqualTo(developer.substring(0, developer.indexOf("</diff>")));
+        ArgumentCaptor<RoundReviewer.Round> round = ArgumentCaptor.captor();
+        verify(reviews, times(2)).review(eq("ABC-1"), round.capture());
+        assertThat(round.getAllValues()).extracting(RoundReviewer.Round::shared).containsOnly(
+                round.getAllValues().getFirst().shared()).allMatch(shared -> shared.contains("<diff>\n+int x;\n</diff>"));
+    }
+
+    @Test
+    void startsTheOtherRolesOnlyOnceTheFirstHasAnswered(@TempDir Path worktree) {
+        ChargedReviews reviews = mock(ChargedReviews.class);
+        MasterBriefs briefs = mock(MasterBriefs.class);
+        RoundQuotes quotes = mock(RoundQuotes.class);
+        TaskState task = TaskState.builder("proj", worktree.toString(), TaskStatus.REVIEW_PENDING).build();
+        when(briefs.master(eq("ABC-1"), any())).thenReturn(Optional.of(
+                "| role | question |\n| chaplain | should it exist |\n| developer | is the code right |"));
+        when(briefs.author()).thenReturn("");
+        when(quotes.round("ABC-1", task)).thenReturn(Optional.of(new MasterPanel.RoundRead("", "", "", List.of(), "")));
+        CountDownLatch developerStarted = new CountDownLatch(1);
+        when(reviews.review(eq("ABC-1"), argThat(round -> round.prompt().contains("chaplain")))).thenAnswer(call ->
+                Judgement.failed("developer started: " + developerStarted.await(300, TimeUnit.MILLISECONDS)));
+        when(reviews.review(eq("ABC-1"), argThat(round -> round.prompt().contains("developer")))).thenAnswer(call -> {
+            developerStarted.countDown();
+            return Judgement.failed("stopped");
+        });
+
+        new MasterPanel(reviews, briefs, quotes)
+                .review("ABC-1", task, new ConfigService.ConfigFile.MasterConfig("judge", null, null, null, null));
+
+        assertThat(worktree.resolve(MasterReview.FILE)).content().contains("developer started: false");
     }
 
     @Test
@@ -237,7 +275,7 @@ class MasterPanelTest {
     void holdsEveryReviewerToWhatEarlierRoundsSettled() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+        String prompt = MasterPanel.quote("ABC-1", task,
                 new MasterPanel.RoundRead("", "", "- keep the extraction per the human", List.of(), ""));
 
         assertThat(prompt).contains("binding").contains("- keep the extraction per the human");
@@ -247,7 +285,7 @@ class MasterPanelTest {
     void quotesWhatTheHumanTypedToTheSessionToEachReviewer() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+        String prompt = MasterPanel.quote("ABC-1", task,
                 new MasterPanel.RoundRead("", "", "- keep the old field name", List.of("rename it everywhere"), ""));
 
         assertThat(prompt).contains("<human_said>\nrename it everywhere\n</human_said>");
@@ -257,7 +295,7 @@ class MasterPanelTest {
     void quotesTheSessionsNotesSoAReviewerCanCheckWhatItDisputed() {
         TaskState task = TaskState.builder("proj", "/wt/ABC-1-proj", TaskStatus.REVIEW_PENDING).build();
 
-        String prompt = MasterPanel.prompt("ABC-1", task, new MasterPanel.Role("QA", "is it tested right", ""),
+        String prompt = MasterPanel.quote("ABC-1", task,
                 new MasterPanel.RoundRead("", "", "", List.of(), "disputed: drop v2 — Api.java:12 has no caller"));
 
         assertThat(prompt).contains("<session_notes>\ndisputed: drop v2 — Api.java:12 has no caller\n</session_notes>");

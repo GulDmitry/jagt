@@ -23,7 +23,7 @@ Three of its five questions hit jagt:
 
 - `list_tasks` returns one line per task: id, status, title, message, each worktree with its request.
 - `WorktreeChanges.diff` reads the round once — committed and not since the base, new files by name — and every
-  role's prompt quotes it, the round before the role, so the roles after the first read it from cache.
+  role reads it quoted ([0038](0038-a-panels-first-role-writes-the-round.md) says how it is cached).
 - A diff over 100,000 characters is not quoted; a repository git cannot read is named, never left silent.
 - The worker's brief names no other project and no other task.
 - A worker reports when its status changes, never as a keep-alive: `SessionProbe` reads liveness from hooks,
@@ -35,7 +35,7 @@ Three of its five questions hit jagt:
 - Review-only sections out of the worker's brief: ~530 tokens, cached after the first turn.
 - A model summarising tool output: the report's own finding — a parser is exact, a model guesses. jagt computes
   the projection itself (0006).
-- The diff in the cached system prompt: it names no task, so it stays cached across every round.
+- The diff in the cached system prompt: overruled by [0038](0038-a-panels-first-role-writes-the-round.md).
 - Dropping `history` from `state.json`: the board's timeline reads it; only the prompt does not need it.
 
 ## Reopen when

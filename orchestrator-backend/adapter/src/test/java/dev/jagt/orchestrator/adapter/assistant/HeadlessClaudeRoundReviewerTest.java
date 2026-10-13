@@ -62,6 +62,18 @@ class HeadlessClaudeRoundReviewerTest {
     }
 
     @Test
+    void cachesTheRoundForMinutesSinceTheOtherRolesReadItWithinThem() {
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"verdict\":\"ready\"}}", ""));
+
+        reviewer.review(new RoundReviewer.Round("", "review ABC-42", List.of(Path.of("/w/ABC-42")), ""));
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).startsWith("env", "FORCE_PROMPT_CACHING_5M=1");
+    }
+
+    @Test
     void saysItLoadsAServerWhereTheHumanNamesOne() {
         HeadlessClaudeRoundReviewer named = new HeadlessClaudeRoundReviewer(new HeadlessClaude(runner,
                 ClaudeProperties.defaults(), AssistantProperties.empty(), usage, reads), ClaudeProperties.defaults(),

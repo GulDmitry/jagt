@@ -9,7 +9,8 @@ human stands.
 
 ### Requirement: The Master is a headless run per role, not a window
 One headless run per role of the brief SHALL read each round in the task's worktrees, loading no worktree setting.
-jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy read per role, charged as `master`.
+jagt SHALL write the verdict (`MasterPanel`); each round SHALL cost one heavy read per role, charged as `master`,
+the rest after the first, reading its cached round.
 
 #### Scenario: What a role may call
 - **WHEN** a role reads
@@ -65,7 +66,7 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 
 #### Scenario: A ready round holds nothing to ship
 - **WHEN** a `ready` round has nothing to ship in `master.mode: act`
-- **THEN** it presses nothing and the task waits for you
+- **THEN** it presses nothing; the task waits for you
 
 #### Scenario: A session stops to ask
 - **WHEN** a session asks a question in `master.mode: act`
@@ -84,7 +85,7 @@ deploy a `REVIEWED` or `APPROVED` task once (`MasterDeployJob`); `master.mine` S
 A nudge to a session SHALL wait while the human is typing in its window.
 
 #### Scenario: You are typing when instructions arrive
-- **WHEN** instructions arrive mid-line
+- **WHEN** they arrive mid-line
 - **THEN** the nudge waits until you send your line
 
 ### Requirement: Only blocking, wrong and unproven stop a round
@@ -108,7 +109,7 @@ SHALL be a `#` line in `master-review.md`. Its findings SHALL go back to the ses
 - **WHEN** a round skipped it
 - **THEN** it is not ready, or a question where the check cannot be run
 
-#### Scenario: A round removes something no ticket line asks for
+#### Scenario: A round removes what no ticket line asks
 - **WHEN** it removes an endpoint or version unasked
 - **THEN** it is a question, not a verdict
 
@@ -117,18 +118,18 @@ The Master SHALL read the ticket (else `task_request.md`) and the diff, or a `PL
 (`MasterPanel.plan`). It SHALL prove each premise by a run, never from the author; an unread ticket proves nothing.
 
 #### Scenario: The reviewer cannot prove a finding
-- **WHEN** a finding cannot be proven
+- **WHEN** it cannot prove one
 - **THEN** it asks the session to `show:` it, settling nothing
 
 #### Scenario: The session thinks a finding wrong
-- **WHEN** the session disagrees with a finding
+- **WHEN** it disagrees
 - **THEN** it writes `disputed:` with evidence in `task_notes.md`; proven, it reopens even a settled decision
 
 ### Requirement: A settled decision holds across rounds
 `master-decisions.md` in the worktree SHALL hold what earlier rounds settled.
 
 #### Scenario: An earlier round settled something
-- **WHEN** a later reviewer meets a settled decision
+- **WHEN** a later reviewer meets it
 - **THEN** it reopens it only for a blocking reason
 
 ### Requirement: Another branch is another task

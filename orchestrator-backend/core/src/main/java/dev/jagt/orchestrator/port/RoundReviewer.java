@@ -10,7 +10,7 @@ import java.util.List;
 public interface RoundReviewer {
 
     /**
-     * {@code shared} is what every reader of every round is given alike, apart from {@code prompt} so a later
+     * {@code shared} is what every reader of one round is given alike, apart from {@code prompt} so a later
      * reader finds it cached; blank where there is none. {@code model} blank inherits the agent CLI's own.
      */
     record Round(String shared, String prompt, List<Path> worktrees, String model) {

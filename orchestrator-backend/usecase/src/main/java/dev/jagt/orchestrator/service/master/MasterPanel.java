@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * Each role the brief names reads the round on its own, in parallel and without the others' reasoning; the
+ * Each role the brief names reads the round on its own, without the others' reasoning; the
  * verdict is then the code's: a question or an unreadable round goes to the human, any finding back to the
  * session, and ready only where every role found nothing and proved what it rested on.
  */
@@ -68,12 +68,14 @@ public class MasterPanel {
         if (read.isEmpty()) {
             roles.forEach(role -> judgements.add(Judgement.failed(HUMAN_UNREAD)));
         } else {
-            RoundRead quoted = read.get();
+            String round = shared + "\n\n" + quote(taskId, task, read.get());
+            List<RoundReviewer.Round> rounds = roles.stream().map(role -> new RoundReviewer.Round(round, prompt(role),
+                    worktrees, role.modelOr(config.modelOrInherited()))).toList();
             try (var threads = Executors.newVirtualThreadPerTaskExecutor()) {
-                List<Future<Judgement>> asked = roles.stream()
-                        .map(role -> new RoundReviewer.Round(shared, prompt(taskId, task, role, quoted), worktrees,
-                                role.modelOr(config.modelOrInherited())))
-                        .map(round -> threads.submit(() -> reviews.review(taskId, round))).toList();
+                // Started together, every role writes the round to the cache; after the first, the rest read it.
+                judgements.add(read(threads.submit(() -> reviews.review(taskId, rounds.getFirst()))));
+                List<Future<Judgement>> asked = rounds.stream().skip(1)
+                        .map(next -> threads.submit(() -> reviews.review(taskId, next))).toList();
                 for (Future<Judgement> answer : asked) {
                     judgements.add(read(answer));
                 }
@@ -294,7 +296,7 @@ public class MasterPanel {
                 + " test.\n";
     }
 
-    /** Names no role and no task, so every reader of every round sends it alike and finds it cached. */
+    /** Names no role and no task. */
     static String shared(String brief, String authorBrief, boolean decides, boolean tracker) {
         return GOAL + "The brief you judge by:\n" + brief + "\n\n"
                 + "The brief the author worked to, its %s filled per task; yours extends it:\n"
@@ -328,8 +330,8 @@ public class MasterPanel {
                 + " unless something stopped you reading the round, then what.";
     }
 
-    /** The round before the role, so every role after the first finds it cached. */
-    static String prompt(String taskId, TaskState task, Role role, RoundRead read) {
+    /** What every role of one round reads alike, so the roles after the first find it cached. */
+    static String quote(String taskId, TaskState task, RoundRead read) {
         String link = task.ticketUrl() == null || task.ticketUrl().isBlank() ? "none" : task.ticketUrl();
         return "The round: task " + taskId + ", worktrees " + task.repos().stream().map(TaskRepo::worktreePath)
                         .toList() + ", base " + task.baseBranchOr("the base branch") + ", ticket " + link + ".\n"
@@ -338,8 +340,11 @@ public class MasterPanel {
                 + (read.diff().isBlank() ? "" : "The diff, read for this round:\n<diff>\n" + read.diff() + "</diff>\n")
                 + (read.notes().isBlank() ? "" : "The session's notes:\n<session_notes>\n" + read.notes()
                         + "\n</session_notes>\n")
-                + settled(read.decided()) + humanSaid(read.said())
-                + "\nYou are the " + role.name() + " of jagt's unattended reviewer, and only that role: "
-                + role.question() + ". The other roles read this round separately; say nothing outside yours.\n";
+                + settled(read.decided()) + humanSaid(read.said());
+    }
+
+    static String prompt(Role role) {
+        return "You are the " + role.name() + " of jagt's unattended reviewer, and only that role: " + role.question()
+                + ". The other roles read this round separately; say nothing outside yours.";
     }
 }
