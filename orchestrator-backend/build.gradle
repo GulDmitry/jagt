@@ -69,6 +69,8 @@ allprojects {
     tasks.withType(Test).configureEach {
         useJUnitPlatform()
         maxHeapSize = '2g'
+        // Mockito's inline mock maker appends to the bootstrap classpath, which a shared archive warns about on every fork.
+        jvmArgs '-Xshare:off'
         // Never the developer's own log file: `activity` reads that file back, so a fixture task would come
         // out as work jagt did unattended. Relative on purpose too — an absolute path is a task input that
         // differs per worktree, so nothing would ever be a cache hit across them.
