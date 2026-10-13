@@ -94,8 +94,9 @@ configure(allprojects - project(':core')) {
 }
 
 tasks.register('printVersion') {
+    def version = project.version.toString()
     doLast {
-        println project.version
+        println version
     }
 }
 
