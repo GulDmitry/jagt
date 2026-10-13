@@ -41,6 +41,7 @@ memory/
 
 # Records of finished tasks, written beside state.json and never read back
 finished.jsonl
+usage-by-day.jsonl
 /artifacts/
 # The masterEval suite's own root, trusted once by a human and rebuilt each run, and its run lock
 .master-eval/
