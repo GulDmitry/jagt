@@ -29,13 +29,14 @@ public class OrchestratorApplication {
      * A launch is the only place that knows where `jagt.yml` is before a context exists. Not the packaged
      * {@code application.yml}: an import written there is loaded by every test context too.
      */
-    private static String[] withConfigFile(String[] args) {
+    static String[] withConfigFile(String[] args) {
         String resolved = OrchestratorPaths.configFileOutside(args).toString();
-        String[] launched = java.util.Arrays.copyOf(args, args.length + 2);
-        launched[args.length] = "--spring.config.additional-location=optional:file:" + resolved;
         // Pinned as well as imported: `root` inside that file would otherwise send the bean to a second jagt.yml.
-        launched[args.length + 1] = "--orchestrator.config-file=" + resolved;
-        return launched;
+        // Spring joins a repeated argument with a comma, so the human's own is replaced, not repeated.
+        return java.util.stream.Stream.concat(java.util.Arrays.stream(args)
+                        .filter(arg -> !arg.startsWith("--orchestrator.config-file=")),
+                java.util.stream.Stream.of("--spring.config.additional-location=optional:file:" + resolved,
+                        "--orchestrator.config-file=" + resolved)).toArray(String[]::new);
     }
 
     // Visible for a test: the REGISTRATION is what breaks while the listener itself works.
