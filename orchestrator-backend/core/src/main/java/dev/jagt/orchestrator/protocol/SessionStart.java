@@ -13,8 +13,9 @@ public record SessionStart(String taskId, String mode) implements Message {
     public static final List<String> MODES = List.of("auto", "plan");
 
     public static final Schema SCHEMA = Schema
-            .of("Start a fresh sub-agent session in its own tab for an ALREADY registered task whose"
-                    + " session is gone or unresponsive.")
+            .of("Start a fresh sub-agent session in its own tab for an ALREADY registered task, replacing"
+                    + " whatever ran there: the new conversation remembers nothing of the old one. For a session"
+                    + " that hangs, or one to restart in plan mode; to only show a task, focus_task.")
             .required("taskId", "string", "Task id or its short alias.")
             .choice("mode", MODES, "plan = start the agent in its planning mode, which writes plan.md and stops."
                     + " Default: auto.");

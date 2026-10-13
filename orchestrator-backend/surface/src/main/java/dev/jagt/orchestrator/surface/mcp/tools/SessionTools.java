@@ -34,8 +34,9 @@ public class SessionTools implements McpTools {
                 (said, caller) -> sessions.closeTaskTab(said.taskId()));
 
         tools.tool("focus_task", Audience.MASTER, TaskRef.schema("Bring the task's agent window to the user's"
-                        + " screen: select its tab and raise the viewer. If the session was closed, a fresh one"
-                        + " is started first."),
+                        + " screen: select its tab and raise the viewer. A running session is kept; one that is"
+                        + " down is re-entered, keeping what it knew where it can. Returns what the human still"
+                        + " has to do to see it."),
                 TaskRef.class, (said, caller) -> MessageContext.NONE,
                 (said, caller) -> commands.execute(said.taskId(), TaskAction.FOCUS));
 
