@@ -215,6 +215,22 @@ class HeadlessClaudeTest {
     }
 
     @Test
+    void cachesForMinutesSinceNoLaterReadComesBackWithinTheHour() {
+        ProcessRunner runner = mock(ProcessRunner.class);
+        when(runner.run(any(Path.class), any(Duration.class), any()))
+                .thenReturn(new Processes.Result(0, "{\"structured_output\":{\"exists\":false}}", ""));
+        var claude = new HeadlessClaude(runner, ClaudeProperties.defaults(), AssistantProperties.empty(),
+                mock(UsageTracker.class), mock(ReadOnlyTools.class));
+
+        claude.read("Read https://host/mr/9.", ReviewRead.SCHEMA.json(), "https://host/mr/9",
+                AssistantCallKind.REVIEW_SWEEP);
+
+        ArgumentCaptor<List<String>> command = ArgumentCaptor.captor();
+        verify(runner).run(any(Path.class), any(Duration.class), command.capture());
+        assertThat(command.getValue()).startsWith("env", "FORCE_PROMPT_CACHING_5M=1");
+    }
+
+    @Test
     void readsNoFactsFromAnAnswerCarryingOnlyTheSchemasGenericFields() {
         ProcessRunner runner = mock(ProcessRunner.class);
         when(runner.run(any(Path.class), any(Duration.class), any())).thenReturn(new Processes.Result(0,

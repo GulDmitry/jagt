@@ -102,7 +102,8 @@ class HeadlessClaude {
     private Reply call(String prompt, String schema, String label, AssistantCallKind kind, Duration timeout) {
         boolean withMcp = kind != AssistantCallKind.COMMAND_MAP;
         String pinned = assistant.mcpConfigFor(kind);
-        List<String> cmd = new ArrayList<>(List.of(claude.command(), prompt, "-p",
+        // A one-shot's prompt is never read again past its minute, so the 1h TTL's double write price buys nothing.
+        List<String> cmd = new ArrayList<>(List.of("env", "FORCE_PROMPT_CACHING_5M=1", claude.command(), prompt, "-p",
                 "--json-schema", schema,
                 // The envelope carries the call's token usage and cost alongside the answer.
                 "--output-format", "json",
