@@ -12,6 +12,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.nio.file.Path;
 
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
@@ -20,7 +21,7 @@ class UsageTrackerTest {
     @Test
     void splitsTheSessionSpendByWhatEachCallWasFor(@TempDir Path root) {
         UsageTracker tracker = new UsageTracker(new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()))));
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()))), mock(UsageLedger.class));
 
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(30_000, 0, 200, 0.06));
@@ -39,7 +40,7 @@ class UsageTrackerTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-        UsageTracker tracker = new UsageTracker(state);
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 170, 0.05));
@@ -53,7 +54,7 @@ class UsageTrackerTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-        UsageTracker tracker = new UsageTracker(state);
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 100, 0.05));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(26_000, 500, 120, 0.06));
@@ -71,7 +72,7 @@ class UsageTrackerTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-        UsageTracker tracker = new UsageTracker(state);
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
         tracker.chargeTask("a1", TokenUsage.ofCall(1_000, 0, 10, 0.01));
 
@@ -82,7 +83,7 @@ class UsageTrackerTest {
     void keepsTheSessionTotalForACallThatBelongsToNoTask(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        UsageTracker tracker = new UsageTracker(state);
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
 
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(24_000, 0, 150, 0.05));
         tracker.chargeTask(null, TokenUsage.ofCall(24_000, 0, 150, 0.05));
@@ -94,7 +95,7 @@ class UsageTrackerTest {
     @Test
     void ignoresAnEmptyMeasurementSoUnmeteredCallsDoNotInflateTheCallCount(@TempDir Path root) {
         UsageTracker tracker = new UsageTracker(new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
-                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()))));
+                .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString()))), mock(UsageLedger.class));
 
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.NONE);
 

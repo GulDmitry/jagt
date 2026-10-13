@@ -15,7 +15,9 @@ Probed 2026-10-13 with two `claude -p` runs a few seconds apart, the second diff
 | in the prompt, before the role's line | 6.3k | 38.1k |
 | in `--append-system-prompt`, the role's line the prompt | 52.1k | 1.8k |
 
-The cache matches a prefix only up to a block boundary. Roles started together all write before any can read.
+The cache matches a prefix only up to a block boundary. Replayed on 648 real role runs, 135 panels of 11 tasks
+(2026-09-30..10-07, transcripts from before reads stopped persisting): of 91.1M input-equivalent the Master paid
+for cache, the 5m TTL saves 22.7M and the stagger 20.1M more; the first role ran a median 0.5 minutes, past 5 in 6. Roles started together all write before any can read.
 The Master's reads ran without `FORCE_PROMPT_CACHING_5M`, so at the 1h TTL's 2× write.
 
 ## Decision
@@ -31,5 +33,6 @@ The Master's reads ran without `FORCE_PROMPT_CACHING_5M`, so at the 1h TTL's 2×
 
 ## Reopen when
 
+- `usage-by-day.jsonl` shows `MASTER_REVIEW` cost per call not falling against the replay.
 - `stats` shows a panel's later roles starting COLD: the first role ran past the 5-minute window.
 - The panel's added latency, one role's run, delays the human's verdict more than the saving is worth.

@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class UsageTracker {
 
     private final StateService stateService;
+    private final UsageLedger ledger;
     /** Session spend split by what the call was FOR; the session total is the sum, never a second counter. */
     private final Map<AssistantCallKind, TokenUsage> sessionByKind = new ConcurrentHashMap<>();
 
@@ -30,6 +31,7 @@ public class UsageTracker {
             return;
         }
         sessionByKind.merge(kind, usage, TokenUsage::plus);
+        ledger.add(kind, usage);
     }
 
     /**

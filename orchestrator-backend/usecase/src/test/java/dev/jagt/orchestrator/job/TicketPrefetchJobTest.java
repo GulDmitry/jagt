@@ -1,6 +1,7 @@
 package dev.jagt.orchestrator.job;
 
 import dev.jagt.orchestrator.port.TrackerAssistant;
+import dev.jagt.orchestrator.service.UsageLedger;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.task.TaskStatus;
 import dev.jagt.orchestrator.port.Answer;
@@ -10,6 +11,13 @@ import dev.jagt.orchestrator.service.TicketTexts;
 import dev.jagt.orchestrator.task.TaskState;
 import dev.jagt.orchestrator.task.TokenUsage;
 import org.junit.jupiter.api.Test;
+import dev.jagt.orchestrator.config.OrchestratorPaths;
+import dev.jagt.orchestrator.config.OrchestratorProperties;
+import org.junit.jupiter.api.io.TempDir;
+import tools.jackson.databind.json.JsonMapper;
+
+import java.nio.file.Path;
+
 
 import java.util.Map;
 import java.util.Optional;
@@ -23,10 +31,15 @@ import static org.mockito.Mockito.when;
 
 class TicketPrefetchJobTest {
 
+    @TempDir
+    static Path root;
+
     private final StateService state = mock(StateService.class);
     private final ConfigService config = mock(ConfigService.class);
     private final TrackerAssistant assistant = mock(TrackerAssistant.class);
-    private final TicketTexts tickets = new TicketTexts(assistant, new UsageTracker(state));
+    private final TicketTexts tickets = new TicketTexts(assistant, new UsageTracker(state, new UsageLedger(new JsonMapper(),
+            new OrchestratorPaths(OrchestratorProperties.defaults().withRoot(root.toString())
+                    .withStateFile(root.resolve("state.json").toString())))));
     private final TicketPrefetchJob job = new TicketPrefetchJob(state, config, tickets);
 
     @Test

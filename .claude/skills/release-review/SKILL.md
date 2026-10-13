@@ -1,6 +1,6 @@
 ---
 name: release-review
-description: A global review — architecture, security, tests, specs — before a release or after work spanning many commits, judged against what jagt already decided so no round reopens a settled question. Use when asked for a full, architectural or security review of the tree.
+description: A global review — architecture, security, tests, specs, onboarding — before a release or after work spanning many commits, judged against what jagt already decided so no round reopens a settled question. Use when asked for a full, architectural or security review of the tree.
 ---
 
 # A round is judged against what is decided
@@ -14,7 +14,8 @@ Range: the last `Release` commit to `HEAD` unless one is named (`git log --grep=
      `reopens` or `breaks` class like any other finding.
    - The range's diff, and the files it touches in full.
 2. **One reviewer per dimension**: architecture (kinds, rings, collaborators), security (the guards), tests
-   (RED-proven, light, necessary), specs and docs (each says what the code does).
+   (RED-proven, light, necessary), specs and docs (each says what the code does), onboarding (a light model, from
+   a fresh clone and `README.md` alone, starts jagt, adds a project and configures it; each stumble or guess is a finding).
 3. **A finding names its class**, or it is dropped:
    - `new` — no rule, record or commit subject in the range covers it;
    - `reopens NNNN` — quotes the record's Reopen when line that now holds, with the evidence;

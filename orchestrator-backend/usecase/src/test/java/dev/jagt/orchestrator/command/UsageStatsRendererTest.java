@@ -2,6 +2,7 @@ package dev.jagt.orchestrator.command;
 
 import dev.jagt.orchestrator.port.SubscriptionUsage;
 import dev.jagt.orchestrator.service.UsageLimits;
+import dev.jagt.orchestrator.service.UsageLedger;
 import dev.jagt.orchestrator.service.UsageTracker;
 import dev.jagt.orchestrator.service.StateService;
 import dev.jagt.orchestrator.config.OrchestratorPaths;
@@ -23,6 +24,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.Mockito.mock;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class UsageStatsRendererTest {
@@ -32,7 +34,7 @@ class UsageStatsRendererTest {
     void showsWhichKindOfCallTheSpendWentOnBiggestFirst(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        UsageTracker tracker = new UsageTracker(state);
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
         String out = new UsageStatsRenderer(tracker, new UsageLimits(Optional.empty())).render(state.tasks());
@@ -48,7 +50,7 @@ class UsageStatsRendererTest {
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
         state.putTask("ABC-2", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a2").build());
-        UsageTracker tracker = new UsageTracker(state);
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 100, 0.05));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(25_000, 0, 100, 0.05));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(900_000, 0, 5_000, 1.80));
@@ -64,7 +66,7 @@ class UsageStatsRendererTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.CI_POLLING).alias("a1").build());
-        UsageTracker tracker = new UsageTracker(state);
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
         tracker.record(AssistantCallKind.REVIEW_SWEEP, TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
         tracker.chargeTask("ABC-1", TokenUsage.ofCall(500_000, 0, 1_000, 1.0));
         state.removeTask("ABC-1");
@@ -80,7 +82,7 @@ class UsageStatsRendererTest {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
         state.putTask("ABC-1", TaskState.builder("proj", "/wt", TaskStatus.NEW).alias("a1").build());
-        String out = new UsageStatsRenderer(new UsageTracker(state), new UsageLimits(Optional.empty())).render(state.tasks());
+        String out = new UsageStatsRenderer(new UsageTracker(state, mock(UsageLedger.class)), new UsageLimits(Optional.empty())).render(state.tasks());
 
         assertThat(out).contains("(nothing spent on the current tasks)");
         assertThat(out).doesNotContain("average per call");
@@ -126,7 +128,7 @@ class UsageStatsRendererTest {
     void showsColdStartsPerKindAndAQuestionMarkWhereNoCacheFieldWasRead(@TempDir Path root) {
         StateService state = new StateService(new JsonMapper(), new OrchestratorPaths(OrchestratorProperties.defaults()
                 .withRoot(root.toString()).withStateFile(root.resolve("state.json").toString())));
-        UsageTracker tracker = new UsageTracker(state);
+        UsageTracker tracker = new UsageTracker(state, mock(UsageLedger.class));
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(25_000, 0, 170, 0.05).asStart());
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());
         tracker.record(AssistantCallKind.TICKET_READ, TokenUsage.ofCall(900, 24_000, 170, 0.02).asStart());

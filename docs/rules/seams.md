@@ -68,8 +68,8 @@ Master's reviewer, the ⌘K palette.
 
 ## Every assistant call is metered
 
-- `HeadlessClaude` books every call to the session under its kind, **before its answer is judged**; the
-  caller charges the task (`UsageTracker.chargeTask`), as a call can precede its task.
+- `HeadlessClaude` books every call under its kind, **before its answer is judged**, in memory and
+  `UsageLedger`; the caller charges the task (`UsageTracker.chargeTask`): a call can precede its task.
 - A sub-agent's own spend is read apart (`AgentSpendReader`, tokens only): `stats` lists both, a
   finished task's record sums them.
 - Floor per call: ~25k baseline input tokens, ~$0.41 on the inherited default model against ~$0.06 on
