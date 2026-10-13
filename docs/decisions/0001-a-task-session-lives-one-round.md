@@ -22,6 +22,9 @@ model wrote was 1.5–5% of context; tool results were the rest (browser snapsho
 ## Decision
 
 - New instructions to a session idle past the CLI's cache lifetime (Claude: 1h) start a fresh session.
+- A code-review round starts a fresh session whatever the idle time: the work was handed back. Measured
+  2026-10-05..07: 8 rounds typed into a stale conversation rewrote 147–253k tokens each at the 1h write price (2×).
+- Idle time is the interactive session's own log; a headless run in the worktree once hid it.
 - The fresh session starts from `task_notes.md`, which the session rewrites at every REVIEW_PENDING; jagt refuses
   a hand-back whose notes are missing, older than the round, or past 16,000 characters (~4k tokens: twice the
   1–2k Anthropic gives a condensed hand-off, for tasks that run for months).

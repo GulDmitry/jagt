@@ -16,14 +16,30 @@ class ClaudeTranscriptsTest {
     @Test
     void answersWhenTheNewestOfASessionsLogsWasLastAppendedTo(@TempDir Path root) throws Exception {
         Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
-        Files.setLastModifiedTime(Files.writeString(logs.resolve("earlier.jsonl"), "{}"),
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("earlier.jsonl"), "{\"entrypoint\":\"cli\"}"),
                 FileTime.fromMillis(1_700_000_000_000L));
-        Files.setLastModifiedTime(Files.writeString(logs.resolve("current.jsonl"), "{}"),
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("current.jsonl"), "{\"entrypoint\":\"cli\"}"),
                 FileTime.fromMillis(1_700_000_600_000L));
 
         long at = ClaudeTranscripts.lastEntryMillis(root, Path.of("/wt/ABC-1-proj"));
 
         assertThat(at).isEqualTo(1_700_000_600_000L);
+    }
+
+    @Test
+    void readsNoSignOfTheSessionFromAHeadlessRunInItsDirectory(@TempDir Path root) throws Exception {
+        Path logs = Files.createDirectories(root.resolve("-wt-ABC-1-proj"));
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("session.jsonl"), """
+                {"type":"mode","mode":"normal"}
+                {"type":"user","entrypoint":"cli"}
+                """), FileTime.fromMillis(1_700_000_000_000L));
+        Files.setLastModifiedTime(Files.writeString(logs.resolve("headless.jsonl"), """
+                {"type":"user","entrypoint":"sdk-cli"}
+                """), FileTime.fromMillis(1_700_000_600_000L));
+
+        long at = ClaudeTranscripts.lastEntryMillis(root, Path.of("/wt/ABC-1-proj"));
+
+        assertThat(at).isEqualTo(1_700_000_000_000L);
     }
 
     @Test

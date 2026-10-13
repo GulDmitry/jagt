@@ -40,7 +40,7 @@ public class RoundOutcome {
                     "sweep " + taskId + ": checks " + said
                             + ", nothing unresolved yet, not approved — waiting");
         }
-        if (!sessions.relayIfChanged(taskId, RoundBrief.of(mrUrl, r, said))) {
+        if (!sessions.relayFreshIfChanged(taskId, RoundBrief.of(mrUrl, r, said))) {
             return new SweepResult(SweepResult.Kind.UNCHANGED, "sweep " + taskId + ": "
                     + r.threads().size() + " thread(s), checks " + said
                     + " — unchanged since the last relay, so the agent was left alone");

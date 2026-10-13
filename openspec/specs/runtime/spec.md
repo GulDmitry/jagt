@@ -32,11 +32,11 @@ Closing the viewer SHALL only detach; killing SHALL be explicit — `done` or `c
 
 ### Requirement: What jagt revives it re-enters
 A session jagt revives SHALL re-enter (`AgentRuntime.reviveCommand`, Claude `--continue`): a lost tmux server costs
-the window, not the context. A human's `respawn` SHALL be fresh. A relay past the cache lifetime
-(`AgentRuntime.continuesWithin`, Claude 1h) SHALL start fresh from `task_notes.md`: rewritten every hand-back,
-capped (`TaskNotes`). A fresh start SHALL run the model its `next-model: <name>` line names, else the CLI default.
-A name outside `AgentRuntime.models()` (Claude `fable`, `opus`, `sonnet`, `haiku`) refuses the hand-back as
-`validation`; a runtime that cannot choose ignores it.
+the window, not the context. A human's `respawn` SHALL be fresh, as SHALL a review round (`relayFreshIfChanged`).
+So SHALL a relay past the cache lifetime (`AgentRuntime.continuesWithin`), read on the session's own log as it is sent.
+A fresh start reads `task_notes.md`, rewritten every hand-back and capped (`TaskNotes`). It runs the model its
+`next-model: <name>` line names, else the CLI default. A name outside `AgentRuntime.models()` refuses the hand-back
+as `validation`; a runtime that cannot choose ignores it.
 
 #### Scenario: The tmux server is lost
 - **WHEN** jagt revives a session after its tmux server died
@@ -45,6 +45,10 @@ A name outside `AgentRuntime.models()` (Claude `fable`, `opus`, `sonnet`, `haiku
 #### Scenario: A relay comes late
 - **WHEN** a relay comes after the cache lifetime
 - **THEN** the session starts fresh from the current `task_notes.md`, on the model its `next-model:` line names
+
+#### Scenario: A review round comes early
+- **WHEN** a review round comes within the cache lifetime, or a headless run wrote after the session
+- **THEN** the session starts fresh
 
 #### Scenario: The notes name an unknown model
 - **WHEN** a hand-back follows `next-model: gpt`
@@ -56,8 +60,7 @@ A name outside `AgentRuntime.models()` (Claude `fable`, `opus`, `sonnet`, `haiku
 
 ### Requirement: A detached launch gets its own session
 A launch SHALL leave jagt's process group, which Ctrl-C reaches and `ProcessBuilder.start()` never leaves:
-`ProcessRunner.detachedFrom` runs it under `setsid`, or `perl -MPOSIX -e 'POSIX::setsid(); exec @ARGV'` where there
-is none. Both wrappers `exec`, so `destroy()` on the returned `Process` reaches the app.
+`ProcessRunner.detachedFrom` runs it under `setsid`, or perl's `POSIX::setsid` where there is none. Both wrappers `exec`, so `destroy()` on the returned `Process` reaches the app.
 
 #### Scenario: Ctrl-C stops jagt
 - **WHEN** the human presses Ctrl-C in jagt's terminal
@@ -70,9 +73,8 @@ is none. Both wrappers `exec`, so `destroy()` on the returned `Process` reaches 
 ### Requirement: kitty is one driver, not one per OS
 `AbstractKittyTerminalDriver` SHALL hold remote control, the per-session socket, tabs, reveal and close; a platform
 subclass supplies `bringToFront()` and `platformOptions()`: macOS an AppleScript raise and the Cyrillic `cmd+`
-keymap, `LinuxKittyTerminalDriver` nothing. `KittyTerminalDriver` SHALL drive `kitty @ --to unix:<per-session socket>`
-against one dedicated instance (`--single-instance --instance-group --listen-on -o allow_remote_control=yes`), over
-tmux (the tab execs `tmux attach`).
+keymap, `LinuxKittyTerminalDriver` nothing. `KittyTerminalDriver` SHALL drive one dedicated instance
+through its per-session socket, each tab attached to tmux.
 
 #### Scenario: jagt closes the viewer
 - **WHEN** `closeViewerWindow` runs
@@ -91,10 +93,6 @@ committed root `.claude/settings.json` covers sessions there. Every sub-agent wo
 #### Scenario: The generated settings change
 - **WHEN** they change while a worktree already exists
 - **THEN** it keeps its old file until patched or re-created: only `initialize_task` writes it
-
-#### Scenario: The classifier refuses a ship's request
-- **WHEN** the code host's request write is not in `agentAllowedTools`
-- **THEN** the classifier may refuse it; listed, it is pre-approved
 
 ### Requirement: The session compacts at 300k tokens
 A Claude session SHALL compact at 300k tokens (`ClaudeAgentRuntime.COMPACT_AT_TOKENS`), set on the command too. Its
@@ -115,8 +113,8 @@ replacing that one flag.
 
 ### Requirement: A session reports itself through its CLI's own hooks
 A session SHALL report through its CLI's own hooks, never the model: `HookEndpoint` writes each line, a POST to
-`/api/agent/session/<state>` carrying the worktree as `X-Working-Directory`. Which event means what SHALL be a
-resource, not code: `adapter/src/main/resources/hooks/<runtime>.properties`, one line per event naming its state.
+`/api/agent/session/<state>` carrying the worktree as `X-Working-Directory`. Each event's state SHALL be one line
+of the resource `hooks/<runtime>.properties`, not code.
 The payload adds the session's log (else derived from the worktree), which gives last sign of life and spend
 (`AgentSpendReader`), and what STARTED it.
 
@@ -159,3 +157,4 @@ A REVIEW_PENDING SHALL be refused past 3 lines the task added to the repository'
 #### Scenario: Two lines added, one named
 - **WHEN** a hand-back follows two added lines and one `agent-file:` line
 - **THEN** it is refused, as when git cannot count
+

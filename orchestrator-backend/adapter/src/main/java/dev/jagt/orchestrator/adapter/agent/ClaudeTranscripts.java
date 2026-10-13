@@ -8,6 +8,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.stream.Stream;
 final class ClaudeTranscripts {
 
     private static final String SUFFIX = ".jsonl";
+    private static final String ENTRYPOINT = "\"entrypoint\":";
     private static final JsonMapper JSON = new JsonMapper();
 
     private ClaudeTranscripts() {
@@ -61,6 +63,7 @@ final class ClaudeTranscripts {
         }
         try (Stream<Path> logs = Files.list(dir)) {
             return logs.filter(log -> log.getFileName().toString().endsWith(SUFFIX))
+                    .filter(ClaudeTranscripts::interactive)
                     .mapToLong(FileStamps::modified)
                     .max()
                     .orElse(0);
@@ -70,6 +73,16 @@ final class ClaudeTranscripts {
                     .addKeyValue("cause", e.toString())
                     .log();
             return 0;
+        }
+    }
+
+    /** Headless runs share the directory, and their activity is no sign of the session's. */
+    private static boolean interactive(Path log) {
+        try (Stream<String> lines = Files.lines(log)) {
+            return lines.filter(line -> line.contains(ENTRYPOINT)).findFirst()
+                    .filter(line -> line.contains(ENTRYPOINT + "\"cli\"")).isPresent();
+        } catch (IOException | UncheckedIOException unreadable) {
+            return false;
         }
     }
 

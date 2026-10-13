@@ -187,6 +187,38 @@ class AgentSessionsTest {
     }
 
     @Test
+    void startsAFreshSessionWhenTheDraftItWaitedOnOutlastedTheCacheLifetime() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        when(tmux.screenOf("jagt", "ABC-1")).thenReturn(Optional.of("> where is the merge re"), Optional.of("> "));
+        when(agentRuntime.holdsDraft("> where is the merge re")).thenReturn(true);
+        when(agentRuntime.continuesWithin()).thenReturn(Optional.of(Duration.ofHours(1)));
+        when(agentRuntime.lastSessionActivity(root)).thenReturn(
+                OptionalLong.of(System.currentTimeMillis() - Duration.ofMinutes(10).toMillis()),
+                OptionalLong.of(1_700_000_000_000L));
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.writeTaskContext("ABC-1", "Review round for http://mr/1.");
+
+        verify(tmux, timeout(5000)).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+        verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void startsAFreshSessionForWorkOnAHandedBackRoundThoughTheConversationIsStillCached() {
+        state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());
+        when(tmux.sessionName(null)).thenReturn("jagt");
+        when(tmux.taskWindowState("jagt", "ABC-1")).thenReturn(SessionHost.WindowState.AGENT_RUNNING);
+        AgentSessions sessions = new AgentSessions(config, state, tmux, terminal, agentRuntime);
+
+        sessions.relayFreshIfChanged("ABC-1", "Review round for http://mr/1.");
+
+        verify(tmux).openTaskWindow("jagt", "jagt", "ABC-1", null, root, false, "");
+        verify(tmux, never()).nudgeTaskWindow(anyString(), anyString(), anyString());
+    }
+
+    @Test
     void startsTheFreshSessionOnTheModelTheNotesName() throws Exception {
         Files.writeString(root.resolve("task_notes.md"), "kept the retry\nnext-model: sonnet\n");
         state.putTask("ABC-1", TaskState.builder("proj", root.toString(), TaskStatus.REVIEW_PENDING).build());

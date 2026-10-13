@@ -75,20 +75,20 @@ class RoundOutcomeTest {
 
     @Test
     void relaysCommentsAsDraftsAndNeverAutoAdvancesEvenWhenApproved() {
-        when(sessions.relayIfChanged(anyString(), anyString())).thenReturn(true);
+        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
 
         var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, true, "success",
                 List.of("coderabbit (a.java:3): rename x")));
 
         assertThat(result.kind()).isEqualTo(ReviewSweepService.SweepResult.Kind.RELAYED);
-        verify(sessions).relayIfChanged(eq("ABC-1"), contains("review_replies.md"));
+        verify(sessions).relayFreshIfChanged(eq("ABC-1"), contains("review_replies.md"));
         verify(statusReports, never()).markRead("ABC-1", TaskStatus.APPROVED);
         verify(statusReports, never()).markRead("ABC-1", TaskStatus.REVIEWED);
     }
 
     @Test
     void countsTheThreadsItRelayed() {
-        when(sessions.relayIfChanged(anyString(), anyString())).thenReturn(true);
+        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(true);
 
         var result = outcome.settle("ABC-1", "http://mr/api, http://mr/web", new ReviewFacts(true, false,
                 "success", List.of("[api] http://mr/api#note_1", "[web] http://mr/web#note_2")));
@@ -98,7 +98,7 @@ class RoundOutcomeTest {
 
     @Test
     void reportsARoundUnchangedInsteadOfRelayingItASecondTime() {
-        when(sessions.relayIfChanged(anyString(), anyString())).thenReturn(false);
+        when(sessions.relayFreshIfChanged(anyString(), anyString())).thenReturn(false);
 
         var result = outcome.settle("ABC-1", "http://mr/1", new ReviewFacts(true, false, "success",
                 List.of("reviewer (a.java:3): drop the cache")));

@@ -127,7 +127,7 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
     }
 
     public String writeTaskContext(String taskId, String instructions) {
-        return relay(taskId, instructions);
+        return relay(taskId, instructions, false);
     }
 
     /**
@@ -153,18 +153,27 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
      * A relay NUDGES the session, so an unchanged brief would interrupt the agent every poll interval.
      */
     public boolean relayIfChanged(String taskId, String instructions) {
+        return relayIfChanged(taskId, instructions, false);
+    }
+
+    /** Work on a round already handed back needs the notes and the brief, not the conversation that wrote them. */
+    public boolean relayFreshIfChanged(String taskId, String instructions) {
+        return relayIfChanged(taskId, instructions, true);
+    }
+
+    private boolean relayIfChanged(String taskId, String instructions, boolean fresh) {
         String id = stateService.canonicalTaskId(taskId);
         Path contextFile = Path.of(requireTask(id).worktreePath()).resolve(Artifact.CONTEXT.fileName());
         synchronized (relayLock(id)) {
             if (WorktreeFiles.read(contextFile).filter(instructions::equals).isPresent()) {
                 return false;
             }
-            writeTaskContext(id, instructions);
+            relay(id, instructions, fresh);
             return true;
         }
     }
 
-    private String relay(String taskId, String instructions) {
+    private String relay(String taskId, String instructions, boolean fresh) {
         taskId = stateService.canonicalTaskId(taskId);
         TaskState task = requireTask(taskId);
         Path contextFile = Path.of(task.worktreePath()).resolve(Artifact.CONTEXT.fileName());
@@ -181,14 +190,11 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
         // A file on disk doesn't wake a running agent session — nudge it directly.
         ConfigService.ConfigFile config = configService.load();
         String session = agentSession(config, taskId);
-        if (pastContinuing(Path.of(task.worktreePath()))) {
-            log.atInfo().setMessage("agent session started fresh").addKeyValue("task", taskId)
-                    .addKeyValue("alias", task.alias())
-                    .addKeyValue("cause", "conversation idle past its cache lifetime")
-                    .log();
-            openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false);
-            return "Instructions written to task_context.md; the session had been idle past its cache lifetime,"
-                    + " so a fresh one was started to read them with task_notes.md.";
+        if (fresh || pastContinuing(Path.of(task.worktreePath()))) {
+            startFresh(taskId, task, config, fresh ? "the round was already handed back"
+                    : "conversation idle past its cache lifetime");
+            return "Instructions written to task_context.md; a fresh session was started to read them with"
+                    + " task_notes.md.";
         }
         if (sessions.taskWindowState(session, taskId) == SessionHost.WindowState.AGENT_RUNNING) {
             if (composing(session, taskId)) {
@@ -231,15 +237,25 @@ public class AgentSessions implements dev.jagt.orchestrator.port.AgentPresence {
                 while (running(session, taskId) && composing(session, taskId)) {
                     Thread.sleep(DRAFT_POLL);
                 }
-                if (running(session, taskId)) {
-                    sessions.nudgeTaskWindow(session, taskId, NUDGE);
-                }
+                stateService.task(taskId).ifPresent(task -> {
+                    if (pastContinuing(Path.of(task.worktreePath()))) {
+                        startFresh(taskId, task, configService.load(), "conversation idle past its cache lifetime");
+                    } else if (running(session, taskId)) {
+                        sessions.nudgeTaskWindow(session, taskId, NUDGE);
+                    }
+                });
             } catch (InterruptedException stopped) {
                 Thread.currentThread().interrupt();
             } finally {
                 draftWaits.remove(taskId);
             }
         });
+    }
+
+    private void startFresh(String taskId, TaskState task, ConfigService.ConfigFile config, String cause) {
+        log.atInfo().setMessage("agent session started fresh").addKeyValue("task", taskId)
+                .addKeyValue("alias", task.alias()).addKeyValue("cause", cause).log();
+        openTab(taskId, task.alias(), Path.of(task.worktreePath()), config, false);
     }
 
     private boolean pastContinuing(Path worktree) {
